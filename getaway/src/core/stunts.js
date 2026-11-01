@@ -8,6 +8,7 @@ export class Stunts {
     this.score = 0; this.combo = 1; this.comboT = 0; this.driftT = 0; this.oncT = 0; this.nearCD = new Map(); this.session = { air: 0, nearMiss: 0, takedowns: 0, best: 0, flips: 0 };
     G.on('landed', (v, d) => { if (!v.isPlayer) return; const t = d.airTime; if (t > 0.7) { const pts = Math.round(t * 180 + d.height * 40); const flips = Math.floor(d.rot / (Math.PI * 1.7)); this.award(t > 1.6 ? 'HUGE AIR' : 'BIG AIR', pts + flips * 400, `${t.toFixed(1)}s · ${d.height.toFixed(0)}m${flips ? ` · ${flips}x FLIP` : ''}`); this.session.air = Math.max(this.session.air, t); if (flips) this.session.flips += flips; G.save.stats.airtime += t; } });
     G.on('vehicleCollision', (a, b, imp) => { const p = a.isPlayer ? a : b.isPlayer ? b : null; const o = p === a ? b : a; if (!p || imp < 10) return; if (o.ai && o.ai.kind === 'pursuit') { this.award('TAKEDOWN!', 300 + Math.round(imp * 10)); this.session.takedowns++; if (imp > 18) G.emit('slowmo', 0.9, 0.35); } else if (o.ai && o.ai.kind === 'hunter') { this.award('SLAMMED!', 300); } });
+    G.on('vehicleImpact', (v, imp) => { if (v.isPlayer && imp > 20 && G.time - (this._crashT || 0) > 3) { this._crashT = G.time; G.emit('slowmo', 0.6, 0.3); if (G.cam) G.cam.shake(0.7); if (G.input) G.input.rumble(1, 1, 300); } });
     G.on('vehicleGlass', (v) => { if (v.isPlayer && (this._gT || 0) < G.time) { this._gT = G.time + 0.8; this.award('SMASH THROUGH', 150); } });
     G.on('vehicleHitProp', (v, p, sp) => { if (v.isPlayer && sp > 15) { this.score += 10; if (v.boost !== undefined) v.boost = Math.min(1, v.boost + 0.01); } });
     G.on('bailout', () => this.award('BAIL OUT!', 250));
@@ -21,7 +22,9 @@ export class Stunts {
   }
   update(dt) {
     this.comboT -= dt; if (this.comboT <= 0) this.combo = 1;
-    const v = G.player.vehicle; if (!v || v.mode !== 'drive' || v.airborne) { this.driftT = 0; this.oncT = 0; return; }
+    const v = G.player.vehicle;
+    if (v && v.airborne) { if (!this.airSlow && v.airTime > 0.4 && v.maxAirH > 2.2 && v.vel.y > -6) { this.airSlow = true; G.emit('slowmo', 0.9, 0.35); if (G.cam) G.cam.shake(0.15); } } else this.airSlow = false;
+    if (!v || v.mode !== 'drive' || v.airborne) { this.driftT = 0; this.oncT = 0; return; }
     const sp = v.speed;
     // drift
     if (v.slip > 4.5 && sp > 12) { this.driftT += dt; v.boost = Math.min(1, v.boost + dt * 0.04); } else { if (this.driftT > 1.4) this.award('DRIFT', Math.round(this.driftT * 120), `${this.driftT.toFixed(1)}s`); this.driftT = 0; }

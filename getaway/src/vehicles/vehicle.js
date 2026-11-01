@@ -50,8 +50,8 @@ export class Vehicle {
     const dmgF = this.dead || this.drowned ? 0 : 0.55 + 0.45 * clamp(this.hp / (this.maxHp * 0.5), 0, 1);
     const throttle = this.engineOn && !this.wreck ? c.throttle : 0;
     // steering (speed sensitive)
-    const lock = sp.steer / (1 + Math.abs(vF) / (this.isPlayer ? 30 : 32));
-    const tgt = -c.steer * lock; this.steerAngle = approach(this.steerAngle, tgt, (this.isPlayer ? 3.4 : 2.6) * h);
+    const lock = sp.steer / (1 + Math.abs(vF) / (this.isPlayer ? 40 : 32));
+    const tgt = -c.steer * lock; this.steerAngle = approach(this.steerAngle, tgt, (this.isPlayer ? 5.5 : 2.6) * h);
     const d = this.steerAngle;
     if (!this.airborne) {
       // --- virtual gearbox ---
@@ -68,7 +68,7 @@ export class Vehicle {
       // --- longitudinal forces ---
       let drive = 0, brake = 0; const rev = c.brake > 0.1 && vF < 1.2 && throttle < 0.1;
       if (rev) { drive = -c.brake * m * sp.accel * 0.45 * (vF > -11 ? 1 : 0) * dmgF; this.reversing = true; } else this.reversing = false;
-      if (throttle > 0) drive = throttle * m * sp.accel * (1 - Math.pow(frac, 2.1)) * (this.shiftT > 0 ? 0.35 : 1) * (c.boost ? 1.55 : 1) * dmgF * (vF < -0.5 ? 1.6 : 1);
+      if (throttle > 0) drive = throttle * m * sp.accel * (1 - Math.pow(frac, 2.1)) * (this.shiftT > 0 ? (this.isPlayer ? 0.7 : 0.35) : 1) * (c.boost ? 1.55 : 1) * dmgF * (vF < -0.5 ? 1.6 : 1);
       if (!rev && c.brake > 0 && Math.abs(vF) > 0.2) brake = c.brake * m * sp.brake * Math.sign(vF);
       if (c.handbrake && Math.abs(vF) > 0.2) brake += m * sp.brake * (throttle > 0.2 ? 0.05 : 0.18) * Math.sign(vF);
       const drag = 0.38 * sp.W * sp.H * vF * Math.abs(vF) + m * 0.11 * vF + (this.engineOn ? 0 : m * 0.4 * vF);
@@ -96,13 +96,24 @@ export class Vehicle {
       let dvF = (Fx - Fyf * Math.sin(d)) / m + r * vL;
       let dvL = (Fyf * Math.cos(d) + Fyr) / m - r * vF;
       let dr = (this.a * Fyf * Math.cos(d) - this.b * Fyr) / this.I;
-      if (this.isPlayer) dr -= r * 0.6; // stability assist
       vF += dvF * h; vL += dvL * h; r += dr * h;
       // braking cannot reverse direction
       if (brake !== 0 && Math.sign(vF) !== Math.sign(this.vF) && Math.abs(this.vF) > 0) vF = 0;
       // low-speed kinematic blend
       const s = smoothstep(0.8, 4, Math.abs(vF));
       const rk = vF * Math.tan(d) / this.wb; r = lerp(rk, r, s); vL *= 1 - (1 - s) * 12 * h;
+      // ARCADE HANDLING (player): turn where you steer, up to the grip limit; slides only when you ask for them
+      if (this.isPlayer) {
+        const rMax = (sp.grip * GRAV * 1.25 + (c.boost ? 2 : 0)) / Math.max(4, Math.abs(vF));
+        const rWant = clamp(vF * Math.tan(d) / this.wb, -rMax, rMax);
+        if (c.handbrake && Math.abs(vF) > 6) { r += -c.steer * 3.2 * h * clamp(Math.abs(vF) / 18, 0, 1.2); vF *= 1 - 0.05 * h; this.drifting = 0.6; }
+        else {
+          this.drifting = Math.max(0, (this.drifting || 0) - h);
+          const grip = this.drifting > 0 && throttle > 0.3 ? 0.3 : clamp(1.25 - this.slip / 20, 0.6, 1);
+          r = lerp(r, rWant, 1 - Math.exp(-h * 10 * grip));
+          vL *= 1 - Math.min(1, h * 5 * grip);
+        }
+      }
       if (Math.abs(vF) < 0.08 && throttle === 0 && !rev) vF *= 0.5;
       this.axPrev = lerp(this.axPrev, clamp(dvF - r * vL, -25, 25), 0.3); this.ayPrev = lerp(this.ayPrev, clamp(dvL + r * vF, -25, 25), 0.3);
       this.slip = Math.abs(vL - r * this.b);

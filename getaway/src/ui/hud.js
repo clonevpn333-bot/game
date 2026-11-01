@@ -3,6 +3,8 @@ import { G } from '../core/context.js';
 import { clamp, fmtTime, lerp } from '../core/utils.js';
 import { WEAPONS } from '../combat/combat.js';
 import { DISTRICT_NAMES, RIVER, SEA_X, SEA_Z, HWY } from '../world/layout.js';
+import * as THREE from 'three';
+import { nearestNode, astar } from '../police/police.js';
 
 const MAP = { x0: -2300, z0: -1400, x1: 900, z1: 1000, s: 0.5 };
 const CHAR_COL = { KIT: '#ffd36b', DEZ: '#5ad1ff', JUNO: '#ff7be0', GRAMPS: '#b5e86b', DISPATCH: '#9aa7c0', HALCYON: '#ff5a4a', SAINT: '#d4af37', VANCE: '#ffd36b' };
@@ -31,6 +33,8 @@ export class HUD {
     this.cross = el('hud-cross', this.wrap); this.hitm = el('hud-hitmark', this.wrap); this.prompt = el('hud-prompt', this.wrap);
     this.feed = el('hud-feed', this.wrap); this.subs = el('hud-subs', this.wrap); this.big = el('hud-big', this.wrap); this.stunt = el('hud-stunt', this.wrap);
     this.warn = el('hud-warn', this.wrap); this.fps = el('hud-fps', this.wrap);
+    this.wpEl = el('hud-wp', this.wrap); this.wpEl.innerHTML = '<div class="wp-arrow"></div><div class="wp-dia"></div><div class="wp-dist"></div>'; this.wpDist = this.wpEl.querySelector('.wp-dist'); this.wpArrow = this.wpEl.querySelector('.wp-arrow');
+    this.waypoint = null; this.route = null; this.routeT = 0; this._wv = new THREE.Vector3();
     this.mapCanvas = this.buildMap(); this.blips = []; this.objTarget = null; this.subQ = []; this.subT = 0; this.lastDistrict = ''; this.hitT = 0; this.timerVal = null;
     G.on('playerHitTarget', (t, head) => { this.hitT = 0.15; this.hitm.classList.toggle('head', !!head); });
     G.on('policeIntel', (m) => this.notify(m, 'intel'));
@@ -67,6 +71,40 @@ export class HUD {
   setWarn(t) { if (this._wr !== t) { this._wr = t; this.warn.innerHTML = t || ''; this.warn.style.opacity = t ? 1 : 0; } }
   flashWanted() { this.wanted.classList.remove('flash'); void this.wanted.offsetWidth; this.wanted.classList.add('flash'); }
   // blips: {pos (Vector3|fn), color, kind:'target'|'enemy'|'police'|'dest', label}
+  setWaypoint(pos, ref = null) { this.waypoint = pos; this.wpRef = ref; this.route = null; this.routeT = 0; }
+  clearWaypoint(ref) { if (!ref || this.wpRef === ref) { this.waypoint = null; this.wpRef = null; this.route = null; } }
+  wpPos() { const w = this.waypoint; return !w ? null : typeof w === 'function' ? w() : w; }
+  updateRoute(dt) {
+    const tgt = this.wpPos(); const P = G.player; if (!tgt || !P.vehicle) { this.route = null; return; }
+    this.routeT -= dt; if (this.routeT > 0) return; this.routeT = 0.8;
+    const f = P.focus; if (Math.hypot(tgt.x - f.x, tgt.z - f.z) < 40) { this.route = [f.clone(), tgt.clone()]; return; }
+    const g = G.world.graph; const a = nearestNode(g, f.x, f.z), b = nearestNode(g, tgt.x, tgt.z); const path = astar(g, a, b); if (!path) { this.route = null; return; }
+    if (path.length > 1 && Math.hypot(path[1].x - f.x, path[1].z - f.z) < Math.hypot(path[1].x - path[0].x, path[1].z - path[0].z)) path.shift();
+    const pts = [new THREE.Vector3(f.x, f.y, f.z)];
+    for (let i = 0; i < path.length; i++) { const n = path[i]; if (i > 0) { const prev = path[i - 1]; const e = prev.out.map((id) => g.edges[id]).find((e2) => e2.b === n.id); if (e && e.pts.length > 2) for (let k = 1; k < e.pts.length - 1; k++) pts.push(new THREE.Vector3(e.pts[k].x, e.pts[k].y, e.pts[k].z)); } pts.push(new THREE.Vector3(n.x, n.y, n.z)); }
+    pts.push(new THREE.Vector3(tgt.x, tgt.y, tgt.z)); this.route = pts;
+  }
+  updateChevrons() {
+    if (!this.chev) { const mk = (w, rot) => { const g = new THREE.BoxGeometry(w, 0.12, 0.55); g.translate(w / 2 - 0.15, 0, 0); g.rotateY(rot); return g; }; const a = mk(1.7, -0.75 + Math.PI / 2), b = mk(1.7, 0.75 + Math.PI / 2); b.scale(-1, 1, 1); const geo = new THREE.BufferGeometry(); const pa = [...a.toNonIndexed().attributes.position.array, ...b.toNonIndexed().attributes.position.array]; geo.setAttribute('position', new THREE.Float32BufferAttribute(pa, 3)); geo.computeVertexNormals();
+      this.chev = new THREE.InstancedMesh(geo, new THREE.MeshBasicMaterial({ color: 0xffc23a, transparent: true, opacity: 1, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false, side: THREE.DoubleSide }), 12); this.chev.frustumCulled = false; this.chev.renderOrder = 6; G.scene.add(this.chev); this._m = new THREE.Matrix4(); this._q = new THREE.Quaternion(); this._s = new THREE.Vector3(); this._p = new THREE.Vector3(); this._up = new THREE.Vector3(0, 1, 0); }
+    const r = this.route; const P = G.player; if (!r || r.length < 2 || !P.vehicle || G.cam.cine) { this.chev.count = 0; return; }
+    const v = P.vehicle; const start = 12 + clamp(v.speed * 0.6, 0, 22), gap = 9 + clamp(v.speed * 0.3, 0, 12); let n = 0; const phase = (G.time * 1.6) % 1;
+    let seg = 0, acc = 0; for (let i = 0; i < 12; i++) {
+      const want = start + (i + phase) * gap; while (seg < r.length - 1) { const L = Math.hypot(r[seg + 1].x - r[seg].x, r[seg + 1].z - r[seg].z); if (acc + L >= want) break; acc += L; seg++; } if (seg >= r.length - 1) break;
+      const a = r[seg], b = r[seg + 1]; const L = Math.hypot(b.x - a.x, b.z - a.z) || 1; const t = (want - acc) / L; const x = a.x + (b.x - a.x) * t, z = a.z + (b.z - a.z) * t;
+      const y = G.world.static.groundAt(x, z, lerp(a.y, b.y, t) + 2, 0.5).h + 0.35; const yaw = Math.atan2(b.x - a.x, b.z - a.z); const fade = Math.min(1, i / 1.5) * (1 - i / 12);
+      this._m.compose(this._p.set(x, y, z), this._q.setFromAxisAngle(this._up, yaw), this._s.setScalar(1.1 + fade * 0.9)); this.chev.setMatrixAt(n++, this._m);
+    }
+    this.chev.count = n; this.chev.instanceMatrix.needsUpdate = true;
+  }
+  updateMarker() {
+    const tgt = this.wpPos(); const el = this.wpEl; if (!tgt || G.cam.cine) { el.style.display = 'none'; return; } el.style.display = '';
+    const P = G.player; const d = Math.hypot(tgt.x - P.focus.x, tgt.z - P.focus.z); this.wpDist.textContent = d > 999 ? (d / 1000).toFixed(1) + ' km' : Math.round(d) + ' m';
+    const v = this._wv.set(tgt.x, tgt.y + 2.5, tgt.z).project(G.camera); let x = v.x, y = v.y; const behind = v.z > 1; if (behind) { x = -x; y = -y; }
+    const off = behind || Math.abs(x) > 0.9 || Math.abs(y) > 0.82; if (off) { const k = Math.max(Math.abs(x) / 0.9, Math.abs(y) / 0.82); x /= k; y /= k; if (behind) y = Math.min(y, -0.75); }
+    el.style.left = ((x + 1) / 2 * innerWidth) + 'px'; el.style.top = ((1 - y) / 2 * innerHeight) + 'px'; el.classList.toggle('off', off);
+    this.wpArrow.style.transform = `rotate(${Math.atan2(x, y)}rad)`; el.style.opacity = d < 6 ? 0.3 : 1;
+  }
   addBlip(b) { this.blips.push(b); return b; } removeBlip(b) { const i = this.blips.indexOf(b); if (i >= 0) this.blips.splice(i, 1); } clearBlips() { this.blips = []; }
   update(dt) {
     if (!this.visible) return; const P = G.player, pol = G.police; const pv = P.vehicle;
@@ -93,6 +131,7 @@ export class HUD {
     if (!pv && !P.entering && P.alive) { const v = P.nearestVehicle(4); this.setPrompt(v && !this.promptOverride ? `<kbd>F</kbd> ${v.hasDriver ? 'Hijack' : 'Enter'} <b>${v.spec.name}</b>` : this.promptOverride || ''); }
     else if (pv && pv.flipped) this.setPrompt('<kbd>E</kbd> Flip vehicle &nbsp; <kbd>F</kbd> Exit'); else this.setPrompt(this.promptOverride || '');
     if (pv && pv.burnT > 0 && !pv.dead) this.setWarn(`VEHICLE ON FIRE — BAIL OUT! <kbd>F</kbd> ${pv.burnT.toFixed(1)}`); else if (pol && pol.bustedT > 1) this.setWarn('MOVE! YOU\'RE BEING BOXED IN'); else if (pol && pol.arrestT > 0.4) this.setWarn('GET AWAY FROM THE OFFICER!'); else this.setWarn(this.warnOverride || '');
+    this.updateRoute(dt); this.updateChevrons(); this.updateMarker();
     this.drawMinimap();
     if (G.debug) this.fps.textContent = `${G.game ? G.game.fps.toFixed(0) : ''} fps · ${G.vehicles.list.length} veh · ${G.peds.list.length} peds`;
   }
@@ -123,6 +162,7 @@ export class HUD {
     const dot = (x, z, col, r = 4, shape = 'dot') => { let [bx, bz] = toM(x, z); const lim = (R - 10) / zoom; const l = Math.hypot(bx, bz); let edge = false; if (l > lim) { bx *= lim / l; bz *= lim / l; edge = true; } g.fillStyle = col; g.beginPath(); if (shape === 'sq') g.rect(bx - r / zoom, bz - r / zoom, 2 * r / zoom, 2 * r / zoom); else g.arc(bx, bz, (edge ? r * 0.8 : r) / zoom, 0, Math.PI * 2); g.fill(); g.strokeStyle = '#000'; g.lineWidth = 1.2 / zoom; g.stroke(); };
     if (pol) { const blink = Math.floor(G.time * 4) % 2; for (const u of pol.units) if (!u.v.dead) dot(u.v.pos.x, u.v.pos.z, blink ? '#ff3b3b' : '#3b7bff', 4); if (pol.heli && pol.heli.alive) dot(pol.heli.pos.x, pol.heli.pos.z, blink ? '#ff3b3b' : '#3b7bff', 6, 'sq'); for (const o of pol.officers) if (o.alive) dot(o.pos.x, o.pos.z, '#6b8cff', 2.5); }
     if (G.npcs) for (const n of G.npcs.list) if (n.alive && n.team !== 'police' && !n.calm) dot(n.pos.x, n.pos.z, '#ff4a3a', 3);
+    if (this.route) { g.strokeStyle = '#ffb21e'; g.lineWidth = 6 / zoom; g.lineJoin = 'round'; g.shadowColor = '#ffb21e'; g.shadowBlur = 6; g.beginPath(); this.route.forEach((p, i) => { const [x, z] = toM(p.x, p.z); i ? g.lineTo(x, z) : g.moveTo(x, z); }); g.stroke(); g.shadowBlur = 0; }
     for (const b of this.blips) { const p = typeof b.pos === 'function' ? b.pos() : b.pos; if (!p) continue; dot(p.x, p.z, b.color || '#ffd36b', b.size || 6, b.shape); }
     g.restore();
     // player arrow (fixed, pointing up = camera dir)

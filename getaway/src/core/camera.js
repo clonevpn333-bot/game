@@ -29,10 +29,10 @@ export class CameraRig {
     } else if (P && P.vehicle) this._vehicle(dt, input, P.vehicle);
     else if (P) this._foot(dt, input, P);
     // shake
-    const tr = this.trauma * this.trauma; const sp = P && P.vehicle ? clamp((P.vehicle.speed - 25) / 50, 0, 1) * 0.06 : 0;
+    const tr = this.trauma * this.trauma; const pvv = P && P.vehicle; const sp = pvv ? clamp((pvv.speed - 18) / 45, 0, 1) * 0.09 + (pvv.ctrl.boost && pvv.ctrl.throttle ? 0.05 : 0) : 0;
     const sx = (noise1(this.t * 18) * tr * 0.9 + noise1(this.t * 7 + 3) * sp), sy = (noise1(this.t * 19 + 10) * tr * 0.7 + noise1(this.t * 8 + 13) * sp * 0.6);
     cam.position.copy(this.pos);
-    cam.lookAt(this.look); cam.rotateX(sy * 0.08); cam.rotateY(sx * 0.08); cam.rotateZ(noise1(this.t * 15 + 30) * tr * 0.05);
+    cam.lookAt(this.look); cam.rotateX(sy * 0.08); cam.rotateY(sx * 0.08); cam.rotateZ(noise1(this.t * 15 + 30) * tr * 0.05 + (P && P.vehicle && !this.cine ? (this.roll || 0) : 0));
     if (Math.abs(cam.fov - this.fov) > 0.01) { cam.fov = this.fov; cam.updateProjectionMatrix(); }
     this.vel.subVectors(cam.position, this.prev).divideScalar(Math.max(dt, 1e-3)); this.prev.copy(cam.position);
     if (!this.cine) this.letterbox = damp(this.letterbox, 0, 4, dt);
@@ -52,12 +52,13 @@ export class CameraRig {
     let head = v.mode === 'rigid' ? Math.atan2(v.vel.x, v.vel.z) : v.yaw;
     if (speed > 8 && v.mode === 'drive') { const vh = Math.atan2(v.vel.x, v.vel.z); const fwd = v.vF > 0; if (fwd) head = v.yaw + wrapAngle(vh - v.yaw) * 0.45; }
     if (v.vF < -3 && v.mode === 'drive') head = v.yaw; // reversing keeps behind
-    if (this.orbitT <= 0) { this.yaw = dampAngle(this.yaw, head, v.airborne ? 1.5 : 4.5, dt); this.pitch = damp(this.pitch, 0.2, 2, dt); }
+    if (this.orbitT <= 0) { this.yaw = dampAngle(this.yaw, head, v.airborne ? 1.5 : 6.5, dt); this.pitch = damp(this.pitch, 0.2, 2, dt); }
     const back = input.down('lookBack') ? Math.PI : 0;
     const L = sp.L, H = sp.H; const target = _t.set(v.pos.x, v.pos.y + H * 0.85 + 0.4, v.pos.z);
     if (v.mode === 'rigid' && v.rigid) target.copy(v.rigid.pos).y += 1.2;
-    let dist = 3.2 + L * 0.75 + clamp(speed * 0.035, 0, 2.2) + (v.airborne ? 1.2 : 0); let height = 1.0 + H * 0.55;
-    let fovT = this.baseFov + clamp(speed - 10, 0, 60) * 0.32 + (v.ctrl.boost && v.ctrl.throttle ? 8 : 0);
+    let dist = 2.6 + L * 0.7 + clamp(speed * 0.05, 0, 3.2) + (v.airborne ? 1.4 : 0) + (v.ctrl.boost && v.ctrl.throttle ? 0.8 : 0); let height = 0.85 + H * 0.5;
+    let fovT = this.baseFov + clamp(speed - 8, 0, 70) * 0.42 + (v.ctrl.boost && v.ctrl.throttle ? 13 : 0);
+    this.roll = damp(this.roll || 0, v.mode === 'drive' ? clamp(-v.yawRate * clamp(speed / 35, 0, 1.2) * 0.07, -0.1, 0.1) : 0, 4, dt);
     const view = this.view;
     if (view === 1) { dist *= 1.7; height *= 1.8; }
     const yaw = this.yaw + back;
@@ -71,7 +72,7 @@ export class CameraRig {
     }
     const desired = _d.set(target.x - Math.sin(yaw) * dist * Math.cos(this.pitch * 0.6), target.y + height + Math.sin(this.pitch) * dist * 0.6 - 0.2, target.z - Math.cos(yaw) * dist * Math.cos(this.pitch * 0.6));
     this._collide(target, desired);
-    const k = v.airborne ? 6 : 10; this.pos.x = damp(this.pos.x, desired.x, k, dt); this.pos.z = damp(this.pos.z, desired.z, k, dt); this.pos.y = damp(this.pos.y, desired.y, 6, dt);
+    const k = v.airborne ? 6 : 8.5; this.pos.x = damp(this.pos.x, desired.x, k, dt); this.pos.z = damp(this.pos.z, desired.z, k, dt); this.pos.y = damp(this.pos.y, desired.y, 6, dt);
     // never let the lag put the camera inside a wall
     this._collide(target, this.pos);
     const ahead = _l.copy(v.vel).multiplyScalar(0.12); ahead.y = 0;

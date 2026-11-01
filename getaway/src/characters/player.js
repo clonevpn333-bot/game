@@ -247,7 +247,7 @@ export class Player {
   updateDriving(dt, input) {
     const v = this.vehicle, c = v.ctrl, h = this.human; const locked = this.controlsLocked;
     const sx = locked ? 0 : input.moveX();
-    const kb = !input.usingPad; if (kb) c.steer = approach(c.steer, sx, (Math.sign(sx) !== Math.sign(c.steer) || sx === 0 ? 7 : 3.6) * dt); else c.steer = sx;
+    const kb = !input.usingPad; if (kb) c.steer = approach(c.steer, sx, (Math.sign(sx) !== Math.sign(c.steer) || sx === 0 ? 10 : 6) * dt); else c.steer = sx;
     c.throttle = locked ? 0 : input.throttle(); c.brake = locked ? (v.speed > 1 ? 0.6 : 1) : input.brake(); c.handbrake = !locked && input.down('handbrake');
     const wantBoost = !locked && input.down('boost') && c.throttle > 0.1;
     c.boost = wantBoost && v.boost > 0.02; if (c.boost) v.boost = Math.max(0, v.boost - dt * (v.spec.thrusters ? 0.2 : 0.28));

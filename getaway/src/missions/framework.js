@@ -14,8 +14,8 @@ export class MissionContext {
   say(who, text, dur) { G.hud.say(who, text, dur); }
   async sayWait(who, text, dur) { const d = dur || clamp(1.6 + text.length * 0.055, 2, 6.5); this.say(who, text, d); await this.wait(d * 0.85); }
   objective(text, sub = '') { G.hud.objective(text, sub); this.r.stats.objectives++; if (G.music) G.music.stinger('objective'); }
-  blip(pos, opts = {}) { const b = G.hud.addBlip({ pos, ...opts }); this.blips.push(b); return b; }
-  unblip(b) { G.hud.removeBlip(b); const i = this.blips.indexOf(b); if (i >= 0) this.blips.splice(i, 1); }
+  blip(pos, opts = {}) { const b = G.hud.addBlip({ pos, ...opts }); this.blips.push(b); if (opts.color === '#ffd36b' || opts.waypoint) G.hud.setWaypoint(pos, b); return b; }
+  unblip(b) { G.hud.clearWaypoint(b); G.hud.removeBlip(b); const i = this.blips.indexOf(b); if (i >= 0) this.blips.splice(i, 1); }
   marker(pos, { r = 4, color = 0xffd36b, h = 30 } = {}) {
     const g = new THREE.Group(); const beam = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 32, 1, true), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.16, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false })); beam.position.y = h / 2; g.add(beam);
     const ring = new THREE.Mesh(new THREE.TorusGeometry(r, 0.12, 6, 48), new THREE.MeshBasicMaterial({ color, toneMapped: false })); ring.rotation.x = Math.PI / 2; ring.position.y = 0.2; g.add(ring);
@@ -43,7 +43,7 @@ export class MissionContext {
   lock(on) { G.player.controlsLocked = on; }
   cleanup() {
     for (const w of this.waiters) w.rej(new Abort()); this.waiters = [];
-    for (const b of this.blips) G.hud.removeBlip(b); this.blips = []; for (const m of [...this.markers]) this.unmark(m);
+    for (const b of this.blips) G.hud.removeBlip(b); this.blips = []; G.hud.clearWaypoint(); for (const m of [...this.markers]) this.unmark(m);
     for (const v of this.ents.vehicles) if (!v.removed && v !== G.player.vehicle) G.vehicles.remove(v);
     for (const n of this.ents.npcs) { n.dispose(); const i = G.npcs.list.indexOf(n); if (i >= 0) G.npcs.list.splice(i, 1); }
     for (const o of this.ents.meshes) { if (o.dispose) o.dispose(); else if (o.parent) o.parent.remove(o); }

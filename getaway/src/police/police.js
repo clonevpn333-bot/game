@@ -10,8 +10,8 @@ import { HWY, TUNNEL } from '../world/layout.js';
 
 const _v = new THREE.Vector3();
 // ---------------- graph helpers ----------------
-function nearestNode(graph, x, z, filter) { let best = null, bd = 1e18; for (const n of graph.nodes) { if (!n.out.length || (filter && !filter(n))) continue; const d = (n.x - x) ** 2 + (n.z - z) ** 2; if (d < bd) { bd = d; best = n; } } return best; }
-function astar(graph, a, b) {
+export function nearestNode(graph, x, z, filter) { let best = null, bd = 1e18; for (const n of graph.nodes) { if (!n.out.length || (filter && !filter(n))) continue; const d = (n.x - x) ** 2 + (n.z - z) ** 2; if (d < bd) { bd = d; best = n; } } return best; }
+export function astar(graph, a, b) {
   if (!a || !b) return null; if (a === b) return [a];
   const open = new Map([[a.id, 0]]), came = new Map(), gS = new Map([[a.id, 0]]); const H = (n) => Math.hypot(n.x - b.x, n.z - b.z);
   let guard = 0;

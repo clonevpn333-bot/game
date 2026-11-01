@@ -124,3 +124,10 @@ kbd{display:inline-block;min-width:18px;padding:1px 6px;border:1px solid rgba(25
 .fail .t{color:var(--red)}
 .toast{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);font:600 14px Rajdhani;opacity:.6;letter-spacing:.15em}
 .hud.cine .hud-minimap,.hud.cine .hud-bars,.hud.cine .hud-speedo,.hud.cine .hud-weapon,.hud.cine .hud-cross,.hud.cine .hud-wanted,.hud.cine .hud-money,.hud.cine .hud-prompt,.hud.cine .hud-district,.hud.cine .hud-wanted-label{opacity:0!important;transition:opacity .4s}
+.hud-wp{position:absolute;width:0;height:0;pointer-events:none;transition:opacity .2s}
+.hud-wp .wp-dia{position:absolute;left:-11px;top:-11px;width:18px;height:18px;border:3px solid #ffc23a;transform:rotate(45deg);box-shadow:0 0 14px #ffb21e,inset 0 0 8px #ffb21e;animation:wpp 1s infinite}
+.hud-wp .wp-dist{position:absolute;left:-50px;width:100px;top:16px;text-align:center;font:700 16px Rajdhani;color:#ffd36b;letter-spacing:.08em}
+.hud-wp .wp-arrow{display:none;position:absolute;left:-14px;top:-40px;width:0;height:0;border-left:14px solid transparent;border-right:14px solid transparent;border-bottom:22px solid #ffc23a;transform-origin:14px 40px;filter:drop-shadow(0 0 6px #ffb21e)}
+.hud-wp.off .wp-arrow{display:block}
+@keyframes wpp{50%{transform:rotate(45deg) scale(1.25)}}
+.hud.cine .hud-wp{opacity:0!important}
