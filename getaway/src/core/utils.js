@@ -9,7 +9,7 @@ export const smoothstep = (a, b, v) => { const t = invLerp(a, b, v); return t * 
 // frame-rate independent exponential smoothing
 export const damp = (a, b, lambda, dt) => lerp(a, b, 1 - Math.exp(-lambda * dt));
 export const sign = (v) => (v < 0 ? -1 : 1);
-export const wrapAngle = (a) => { while (a > Math.PI) a -= TAU; while (a < -Math.PI) a += TAU; return a; };
+export const wrapAngle = (a) => { if (!Number.isFinite(a)) return 0; if (a > Math.PI || a < -Math.PI) a = ((a + Math.PI) % TAU + TAU) % TAU - Math.PI; return a; }; // O(1), never loops (Infinity used to hang the game)
 export const dampAngle = (a, b, lambda, dt) => a + wrapAngle(b - a) * (1 - Math.exp(-lambda * dt));
 export const approach = (v, target, rate) => (v < target ? Math.min(target, v + rate) : Math.max(target, v - rate));
 

@@ -83,6 +83,8 @@ export class Music {
   _tick() {
     if (!this.playing || !this.track) return;
     const spb = 60 / this.track.bpm / 4; // seconds per 16th
+    if (!(spb > 0.01)) return;
+    if (this.nextTime < this.t - 0.1) this.nextTime = this.t + 0.02; // after a hitch: resume cleanly instead of firing every missed note at once
     while (this.nextTime < this.t + 0.15) {
       if (this.step % 16 === 0) this._bar(this.nextTime);
       this._step(this.nextTime, this.step % 16, spb);

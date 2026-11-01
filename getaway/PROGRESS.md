@@ -32,7 +32,8 @@ its full sequence exists as real gameplay and has been run end to end.
 | 02 | BANKROLL | ✅ Playable. Bank job: guards, vault, cash pallets, SWAT, back-door escape, highway roadblock, lose the cops. Smoke-tested start to results. |
 | 03 | SHOPPING SPREE | ✅ Playable. Galleria at night: lift the key from LUXE JEWELS, lockdown shutters, Halcyon rappels through the skylight, firefight, steal the Vortice off the showroom podium, drive down the promenade under the closing shutter and through the glass doors, street chase (Halcyon SUVs + police heli), drive off the end of Sunstrip Pier, swim to Juno's boat. Smoke-tested start to results (`tests/m03_smoke.js`). Not hand-played on a real GPU. |
 | 04 | ARMORED DELIVERY | ✅ Playable. Rain. Tail Halcyon's armored convoy in the Strada SV (stay 25–110 m), the Marrow crew ambushes it (escort explodes), wreck 3 Marrow muscle cars and the last escort, pull alongside the moving truck and leap aboard, drive the 9-ton truck through a police roadblock into the river tunnel, 90 s kill-switch countdown to Dez's garage, reveal. Smoke-tested start to results (`tests/m04_smoke.js`). Not hand-played on a real GPU. |
-| 05–30 | (see menu) | ⏳ **not built yet.** Listed in the campaign screen and marked "in development". Not playable, **not** counted as done. |
+| 05 | THE SKYLINE JOB | ✅ Playable. Dusk stealth into the tower site, builders' hoist up the steel skeleton, firefight on floor 10, restart the generator, hoist to floor 13, hold a 50 s download against stairwell waves, demolition charges: sprint across the floor through falling beams (they become new obstacles) to the crane hook, swing out as the tower's crown comes down, 4-star escape in the Strada, ending. Smoke-tested start to results (`tests/m05_smoke.js`). Not hand-played on a real GPU. |
+| 06–30 | (see menu) | ⏳ **not built yet.** Not playable, **not** counted as done. |
 
 ### Mission 01: WRONG CAR (what you actually play)
 1. **Cold open.** A cinematic orbit of a pearl-white ROSTR double-parked downtown. Steal it.
@@ -54,6 +55,11 @@ Fail states: you go down, you get busted, or you wreck the prototype before the 
 Retry restarts instantly from the last checkpoint. Results show time, style points, biggest air,
 near misses, takedowns, enemies downed, a grade, and personal bests.
 
+## Stability + damage (latest)
+- **Freeze fix:** the main loop used to call `frame()` and only then schedule the next frame, so any thrown error froze the whole game (music kept droning one note). The loop now schedules first and contains errors. Root error found: imported/modelled cars (the SV) have placeholder bumpers, and a hard crash tried to detach them → exception → freeze. Fixed. `wrapAngle` can no longer spin forever on a non-finite angle, and the music scheduler no longer machine-guns every missed note after a hitch.
+- **Fair damage:** your car loses ~0.35× health per hit, AI cars ~1.4×; dents are deeper and jagged (AI ×2.2, yours ×1.1 visual). Imported .glb cars dent too. Measured: identical 90 km/h head-on into concrete — your sedan −32 %, AI sedan wrecked.
+- **Buildings take damage:** persistent cracked craters where cars hit walls (with concrete chunks + dust), bullet holes, explosion scorch + cracks on nearby walls and ground (`src/fx/decals.js`, fixed instanced pools created at boot).
+
 ## ROSTR model
 Hand-modelled faceted body (`src/vehicles/rostr.js`), matched against the user's reference photos with a same-camera comparison (`tests/showroom.html?ids=rostr&dark=1&fov=15&cy=0.95&cz=9.3&ly=0.62`). Knife-edge nose + light bar, hood trapezoid, V facets with emissive gradient headlights (own shader, warmed at boot), wrap-around glass canopy, active rear wing (stowed in the deck, rises above ~80 km/h or under hard braking).
 
@@ -73,7 +79,7 @@ needs a real desktop browser. The music and SFX code runs without errors, but I 
 it.
 
 ## Known limitations / next up
-- Missions 05–30 are not built. Next group: **Act I (02–06)**, reusing the bank, mall, armored
+- Missions 06–30 are not built. Next group: **Act I (02–06)**, reusing the bank, mall, armored
   truck, construction tower and citywide pursuit systems already in the city.
 - Regions outside Port Sol (desert, Italy, Alps and so on) aren't built yet.
 - Aircraft and boats aren't drivable yet; models exist only for the police helicopter.

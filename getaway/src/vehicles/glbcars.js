@@ -68,11 +68,13 @@ export function buildCustomCar(spec, paintColor, id) {
     } else w = { x: sx * wh.track * hw, z: (sz2 > 0 ? wh.f - 0.5 : wh.b - 0.5) * spec.L, r: wh.r, w: wh.w };
     wheels.push({ ...w, front: sz2 > 0, side: sx, spin: 0, comp: 0, lastP: null, skid: false });
   }
+  // dentable body: every non-wheel mesh gets its own geometry copy (shared source stays pristine) + rest pose
+  const deformList = []; holder.traverse((o) => { if (!o.isMesh || WHEEL_RE.test(nameChain(o)) || GLASS_RE.test(nameChain(o))) return; o.geometry = o.geometry.clone(); deformList.push([o, o.geometry.attributes.position.array.slice()]); });
   // glTF lights stay as modelled; the light uniform array keeps brake/indicator logic happy
   const lmat = makeLightMaterial();
   // modelled lights: emissive materials named light_* follow the game's light groups (head, brake, indicators, reverse)
   const LG = { light_head: 0, light_tail: 1, light_ind_l: 2, light_ind_r: 3, light_rev: 4, light_drl: 7 }; const glow = [];
   for (const m of mats.values()) { const k = Object.keys(LG).find((n) => (m.name || '').startsWith(n)); if (k && m.emissive) glow.push({ m, g: LG[k], base: m.emissiveIntensity || 1 }); }
   const dummy = () => { const m = new THREE.Object3D(); body.add(m); return m; };
-  return { root, body, bodyMesh: null, cabMesh: null, paint, glass, detail: null, lights: null, lightU: lmat.uniforms.L.value, bumpers: [dummy(), dummy()], doors: [], wheels, interior: null, custom: true, hideWheels: found, glow };
+  return { root, body, bodyMesh: null, cabMesh: null, paint, glass, detail: null, lights: null, lightU: lmat.uniforms.L.value, bumpers: [dummy(), dummy()], doors: [], wheels, interior: null, custom: true, hideWheels: found, glow, deformList };
 }

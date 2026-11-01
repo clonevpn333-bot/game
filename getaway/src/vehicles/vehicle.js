@@ -217,29 +217,31 @@ export class Vehicle {
   // ------------------------------------------------------------------ damage
   damage(amount, worldPoint, dirWorld, source = null) {
     if (amount <= 0 || this.dead) return;
-    amount /= this.armor; if (this.isPlayer) amount *= 0.5; this.hp -= amount; this.lastHitBy = source || this.lastHitBy;
-    if (worldPoint) this.deform(worldPoint, dirWorld, amount);
+    amount /= this.armor; const hpLoss = amount * (this.isPlayer ? 0.35 : 1.4); this.hp -= hpLoss; this.lastHitBy = source || this.lastHitBy; // fair: your car is tougher than traffic/cops
+    if (worldPoint) this.deform(worldPoint, dirWorld, amount * (this.isPlayer ? 1.1 : 2.2));
     if (this.hp < this.maxHp * 0.3 && !this.dead) this.smoking = 1;
     if (this.hp <= 0 && !this.dead) { this.hp = 0; this.burnT = this.burnT || 4.5; }
     G.emit('vehicleDamaged', this, amount, source);
   }
   deform(worldPoint, dirWorld, amount) {
-    const md = this.model; if (!md.bodyMesh) return;
-    const inv = new THREE.Matrix4().copy(md.body.matrixWorld).invert(); const lp = worldPoint.clone().applyMatrix4(inv);
-    const ld = dirWorld ? dirWorld.clone().transformDirection(inv).normalize() : lp.clone().setY(0).negate().normalize();
-    const R = 0.7 + Math.min(1.2, amount * 0.025); const depth = Math.min(0.32, amount * 0.006);
-    for (const [mesh, orig] of [[md.bodyMesh, md.origBody], [md.cabMesh, md.origCab]]) {
+    const md = this.model; const list = md.deformList || (md.bodyMesh ? [[md.bodyMesh, md.origBody], [md.cabMesh, md.origCab]] : null); if (!list) return;
+    const R = 0.75 + Math.min(1.4, amount * 0.02); const depth = Math.min(0.42, amount * 0.0095); const lim = 0.6;
+    for (const [mesh, orig] of list) {
+      if (!mesh) continue; mesh.updateMatrixWorld(); const inv = new THREE.Matrix4().copy(mesh.matrixWorld).invert(); const lp = worldPoint.clone().applyMatrix4(inv);
+      const sc = mesh.matrixWorld.getMaxScaleOnAxis() || 1; const Rl = R / sc, dl = depth / sc, liml = lim / sc;
+      const ld = dirWorld ? dirWorld.clone().transformDirection(inv).normalize() : lp.clone().setY(0).negate().normalize();
       const pa = mesh.geometry.attributes.position; const arr = pa.array; let changed = false;
       for (let i = 0; i < arr.length; i += 3) {
-        const dx = arr[i] - lp.x, dy = arr[i + 1] - lp.y, dz = arr[i + 2] - lp.z; const dd = Math.sqrt(dx * dx + dy * dy + dz * dz); if (dd > R) continue;
-        const f = (1 - dd / R) ** 2 * depth; arr[i] += ld.x * f; arr[i + 1] += ld.y * f * 0.6 - f * 0.15; arr[i + 2] += ld.z * f;
-        // clamp total displacement
+        const dx = arr[i] - lp.x, dy = arr[i + 1] - lp.y, dz = arr[i + 2] - lp.z; const dd = Math.sqrt(dx * dx + dy * dy + dz * dz); if (dd > Rl) continue;
+        const crumple = 0.65 + 0.7 * Math.abs(Math.sin(orig[i] * 37.1 + orig[i + 1] * 17.3 + orig[i + 2] * 23.7)); // jagged folds, not a smooth dimple
+        const f = (1 - dd / Rl) ** 1.6 * dl * crumple; arr[i] += ld.x * f; arr[i + 1] += ld.y * f * 0.6 - f * 0.2; arr[i + 2] += ld.z * f;
         const ox = arr[i] - orig[i], oy = arr[i + 1] - orig[i + 1], oz = arr[i + 2] - orig[i + 2]; const ol = Math.sqrt(ox * ox + oy * oy + oz * oz);
-        if (ol > 0.45) { const k = 0.45 / ol; arr[i] = orig[i] + ox * k; arr[i + 1] = orig[i + 1] + oy * k; arr[i + 2] = orig[i + 2] + oz * k; }
+        if (ol > liml) { const k = liml / ol; arr[i] = orig[i] + ox * k; arr[i + 1] = orig[i + 1] + oy * k; arr[i + 2] = orig[i + 2] + oz * k; }
         changed = true;
       }
       if (changed) { pa.needsUpdate = true; mesh.geometry.computeVertexNormals(); }
     }
+    const inv = new THREE.Matrix4().copy(md.body.matrixWorld).invert(); const lp = worldPoint.clone().applyMatrix4(inv);
     // detach parts near impact
     const zf = this.spec.L / 2; const front = lp.z > zf * 0.55, rear = lp.z < -zf * 0.55;
     if (amount > 9) {
@@ -249,7 +251,7 @@ export class Vehicle {
     if (amount > 6) this.crackGlass(amount > 18 ? 2 : 1);
   }
   detach(mesh, dir) {
-    if (!mesh || !mesh.visible || !G.rigid) return; mesh.updateMatrixWorld(); mesh.visible = false;
+    if (!mesh || !mesh.visible || !G.rigid || !mesh.geometry) return; mesh.updateMatrixWorld(); mesh.visible = false;
     const m = new THREE.Mesh(mesh.geometry, mesh.material); m.castShadow = true; G.scene.add(m);
     const p = new THREE.Vector3(), q = new THREE.Quaternion(); mesh.matrixWorld.decompose(p, q, _v);
     const bb = mesh.geometry.boundingBox || (mesh.geometry.computeBoundingBox(), mesh.geometry.boundingBox); const half = bb.getSize(new THREE.Vector3()).multiplyScalar(0.5).max(new THREE.Vector3(0.06, 0.06, 0.06));

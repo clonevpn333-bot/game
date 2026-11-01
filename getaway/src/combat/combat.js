@@ -117,7 +117,7 @@ export class Combat {
       } else if (sh) {
         end = new THREE.Vector3(sh.x, sh.y, sh.z); const n = new THREE.Vector3(sh.nx, sh.ny, sh.nz);
         if (sh.box && sh.box.glass && sh.box.onBreak) sh.box.onBreak(sh.box, d.clone().multiplyScalar(6));
-        else { fx && fx.impact(end, n, sh.mat === 'metal' ? 'metal' : sh.mat === 'glass' ? 'glass' : sh.mat === 'ground' && end.y < -0.5 ? 'water' : sh.mat); A && Math.random() < 0.5 && A.bulletImpact(end, sh.mat); }
+        else { fx && fx.impact(end, n, sh.mat === 'metal' ? 'metal' : sh.mat === 'glass' ? 'glass' : sh.mat === 'ground' && end.y < -0.5 ? 'water' : sh.mat); A && Math.random() < 0.5 && A.bulletImpact(end, sh.mat); if (G.decals && !(sh.mat === 'ground' && end.y < -0.5)) G.decals.bullet(end, n, sh.mat); }
       } else end = origin.clone().addScaledVector(d, maxT);
       // near-miss whiz for player
       if (!isP && G.player && G.audio) { const pp = G.player.pos; const tt = clamp((pp.x - origin.x) * d.x + (pp.y + 1.2 - origin.y) * d.y + (pp.z - origin.z) * d.z, 0, 200); const cx = origin.x + d.x * tt - pp.x, cy = origin.y + d.y * tt - pp.y - 1.2, cz = origin.z + d.z * tt - pp.z; if (cx * cx + cy * cy + cz * cz < 4 && Math.random() < 0.5) G.audio.whoosh(new THREE.Vector3(pp.x + cx, pp.y + 1.2 + cy, pp.z + cz), 0.25, 0.15); }
@@ -146,7 +146,7 @@ export class Combat {
     }
   }
   explode(p, size = 1, cause, src) {
-    const fx = G.fx; if (fx) fx.explosion(p, size); if (G.audio) G.audio.explosion(p, size);
+    const fx = G.fx; if (fx) fx.explosion(p, size); if (G.audio) G.audio.explosion(p, size); if (G.decals) G.decals.explosion(p, size);
     if (G.cam && G.camera) { const d = G.camera.position.distanceTo(p); G.cam.shake(clamp(1.1 - d / 90, 0, 1) * size); if (d < 40 && G.input) G.input.rumble(1, 1, 400); }
     if (G.music && G.camera.position.distanceTo(p) < 120) G.music.stinger('boom');
     const R = 9 * size;

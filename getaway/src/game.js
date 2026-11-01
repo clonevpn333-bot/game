@@ -12,6 +12,7 @@ import { generateCity } from './world/city.js';
 import { Sky } from './world/sky.js';
 import { Props } from './world/props.js';
 import { FX } from './fx/fx.js';
+import { Decals } from './fx/decals.js';
 import { RigidWorld } from './fx/rigid.js';
 import { VehicleManager } from './vehicles/manager.js';
 import { Traffic } from './vehicles/traffic.js';
@@ -34,7 +35,7 @@ export class Game {
     progress(0.1, 'Paving the streets of Port Sol…'); await tick();
     G.world = generateCity(G.scene, G.quality);
     progress(0.5, 'Planting palm trees & hydrants…'); await tick();
-    G.props = new Props(G.world, G.scene); G.fx = new FX(G.scene, G.world.static); G.fx.quality = G.quality === 'low' ? 0.4 : G.quality === 'medium' ? 0.7 : 1;
+    G.props = new Props(G.world, G.scene); G.fx = new FX(G.scene, G.world.static); G.decals = new Decals(G.scene); G.fx.quality = G.quality === 'low' ? 0.4 : G.quality === 'medium' ? 0.7 : 1;
     G.rigid = new RigidWorld(G.world.static);
     G.sky = new Sky(G.scene, G.renderer); G.sky.nightMats = G.world.nightMats; G.sky.registerWet([G.world.mats.road, G.world.mats.roadRes, G.world.mats.hwy, G.world.mats.isect, G.world.mats.asphalt, G.world.mats.walk]);
     progress(0.7, 'Fueling 40 cars…'); await tick();
@@ -59,7 +60,8 @@ export class Game {
   addUpdater(fn) { this.extraUpdaters.push(fn); return () => this.extraUpdaters.splice(this.extraUpdaters.indexOf(fn), 1); }
   saveNow() { storeSave(G.save); }
   saveSettings() { storeSettings(G.settings); }
-  start() { const loop = () => { this.frame(); requestAnimationFrame(loop); }; requestAnimationFrame(loop); }
+  // never let one bad frame kill the game: schedule the next frame first, contain + log errors (a thrown error used to freeze everything)
+  start() { let errs = 0; const loop = () => { requestAnimationFrame(loop); try { this.frame(); } catch (e) { if (errs++ < 20) console.error('frame error (recovered)', e); } }; requestAnimationFrame(loop); }
   // headless/test helper: advance the simulation without rendering
   simulate(seconds, dt = 1 / 60) { const n = Math.round(seconds / dt); window.__fixedDt = dt; for (let i = 0; i < n; i++) this.frame(true); window.__fixedDt = 0; }
   frame(noRender = false) {
