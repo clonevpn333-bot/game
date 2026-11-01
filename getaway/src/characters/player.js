@@ -242,7 +242,8 @@ export class Player {
   }
   leaveVehicleInstant(dead = false) {
     const v = this.vehicle; if (!v) return; v.isPlayer = false; v.driver = null; v.ctrl.throttle = 0; v.ctrl.brake = v.speed < 3 ? 1 : 0; v.ctrl.steer = 0; v.ctrl.boost = false; v.engineOn = v.speed > 3; this.vehicle = null; G.vehicles.playerVehicle = null; this.boost = v.boost; this.driveAim = false;
-    const p = v.local(v.spec.W / 2 + 0.7, 0); this.pos.set(p.x, v.pos.y, p.z); const col = G.world.static.pushCircle(this.pos.x, this.pos.z, 0.35, this.pos.y + 0.4, this.pos.y + 1.7); if (col.hit) { const q = v.local(-v.spec.W / 2 - 0.7, 0); this.pos.set(q.x, v.pos.y, q.z); }
+    this.human.visible = true; this.human.mode = 'anim'; const cpos = v.rigid ? v.rigid.pos : v.pos; const sy0 = v.rigid ? Math.atan2(new THREE.Vector3(0, 0, 1).applyQuaternion(v.rigid.quat).x, new THREE.Vector3(0, 0, 1).applyQuaternion(v.rigid.quat).z) : v.yaw;
+    const p = new THREE.Vector3(cpos.x + Math.cos(sy0) * (v.spec.W / 2 + 0.8), 0, cpos.z - Math.sin(sy0) * (v.spec.W / 2 + 0.8)); this.pos.set(p.x, G.world.static.groundAt(p.x, p.z, cpos.y + 2, 0.5).h, p.z); const col = G.world.static.pushCircle(this.pos.x, this.pos.z, 0.35, this.pos.y + 0.4, this.pos.y + 1.7); if (col.hit) { const q = v.local(-v.spec.W / 2 - 0.7, 0); this.pos.set(q.x, v.pos.y, q.z); }
     this.human.state = 'idle'; this.human.yaw = v.yaw; this.vel.set(0, 0, 0); this.grounded = false; this.vy = 0;
     G.emit('playerExitedVehicle', v, dead);
   }
@@ -256,7 +257,7 @@ export class Player {
     c.airPitch = v.airborne ? input.moveY() : 0; c.airRoll = v.airborne ? -input.moveX() : 0;
     if (!locked && input.pressed('horn') && G.audio) G.audio.horn(v.pos, 0.35);
     if (!locked && input.key('KeyH') && v.isPolice()) v.siren = true;
-    if (v.flipped && !locked && input.pressed('interact')) { v.flipUpright(); v.vel.y = 3; G.emit('flipped', v); }
+    if (!locked && input.pressed('interact') && v.isUpsideDown() && v.speed < 6) { v.flipUpright(); v.vel.y = 2; G.emit('flipped', v); if (G.audio) G.audio.impact(v.pos, 0.5, 'metal'); }
     // drive-by
     this.driveAim = !locked && input.aim() && !v.spec.bike !== undefined; const W = WEAPONS[this.weapon === 'fists' || this.weapon === 'shotgun' || this.weapon === 'rifle' || this.weapon === 'heavy' ? (this.inv.smg ? 'smg' : 'pistol') : this.weapon];
     if (this.driveAim && this.inv.pistol) {

@@ -129,7 +129,7 @@ export class HUD {
     this.hitT -= dt; this.hitm.style.opacity = this.hitT > 0 ? 1 : 0;
     // prompts
     if (!pv && !P.entering && P.alive) { const v = P.nearestVehicle(4); this.setPrompt(v && !this.promptOverride ? `<kbd>F</kbd> ${v.hasDriver ? 'Hijack' : 'Enter'} <b>${v.spec.name}</b>` : this.promptOverride || ''); }
-    else if (pv && pv.flipped) this.setPrompt('<kbd>E</kbd> Flip vehicle &nbsp; <kbd>F</kbd> Exit'); else this.setPrompt(this.promptOverride || '');
+    else if (pv && pv.isUpsideDown() && pv.speed < 6) this.setPrompt('<kbd>E</kbd> Flip it back over &nbsp; <kbd>F</kbd> Get out'); else this.setPrompt(this.promptOverride || '');
     if (pv && pv.burnT > 0 && !pv.dead) this.setWarn(`VEHICLE ON FIRE — BAIL OUT! <kbd>F</kbd> ${pv.burnT.toFixed(1)}`); else if (pol && pol.bustedT > 1) this.setWarn('MOVE! YOU\'RE BEING BOXED IN'); else if (pol && pol.arrestT > 0.4) this.setWarn('GET AWAY FROM THE OFFICER!'); else this.setWarn(this.warnOverride || '');
     this.updateRoute(dt); this.updateChevrons(); this.updateMarker();
     this.drawMinimap();

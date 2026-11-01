@@ -201,9 +201,10 @@ export class Vehicle {
     if (up.y > 0.75) {
       const f = new THREE.Vector3(0, 0, 1).applyQuaternion(b.quat); this.yaw = Math.atan2(f.x, f.z); this.pitch = 0; this.roll = 0;
       this.pos.copy(b.pos).y -= this.spec.H / 2; this.vel.copy(b.vel); this.vel.y = 0; this.yawRate = 0; G.rigid.remove(b); this.rigid = null; this.mode = 'drive'; this.flipped = false;
-    } else { this.flipped = true; this.wreck = this.wreck || !this.isPlayer; }
+    } else { this.flipped = true; this.wreck = this.wreck || !this.isPlayer; b.vel.set(0, 0, 0); b.angVel.set(0, 0, 0); b.sleeping = true; }
   }
-  flipUpright() { if (this.mode !== 'rigid') return; const b = this.rigid; const f = new THREE.Vector3(0, 0, 1).applyQuaternion(b.quat); this.yaw = Math.atan2(f.x, f.z); this.pitch = this.roll = 0; this.pos.copy(b.pos); this.pos.y = this.groundY ?? b.pos.y; this.vel.set(0, 0, 0); G.rigid.remove(b); this.rigid = null; this.mode = 'drive'; this.flipped = false; this.wreck = false; }
+  isUpsideDown() { if (this.mode === 'rigid' && this.rigid) return new THREE.Vector3(0, 1, 0).applyQuaternion(this.rigid.quat).y < 0.8; return Math.abs(this.roll) > 0.9 || Math.abs(this.pitch) > 0.9 || this.flipped; }
+  flipUpright() { if (this.mode !== 'rigid') { this.roll = 0; this.pitch = 0; this.flipped = false; this.pos.y += 0.3; return; } const b = this.rigid; const f = new THREE.Vector3(0, 0, 1).applyQuaternion(b.quat); this.yaw = Math.atan2(f.x, f.z); this.pitch = this.roll = 0; this.pos.copy(b.pos); this.pos.y = this.groundY ?? b.pos.y; this.vel.set(0, 0, 0); G.rigid.remove(b); this.rigid = null; this.mode = 'drive'; this.flipped = false; this.wreck = false; }
 
   // ------------------------------------------------------------------ damage
   damage(amount, worldPoint, dirWorld, source = null) {
@@ -267,7 +268,8 @@ export class Vehicle {
   update(dt, night, time) {
     if (this.mode === 'rigid' && this.rigid) {
       const b = this.rigid; this.vel.copy(b.vel);
-      if (b.sleeping && !this.dead) this._fromRigid();
+      this.restT = b.vel.length() < 1.2 && b.angVel.length() < 1.2 ? (this.restT || 0) + dt : 0;
+      if ((b.sleeping || this.restT > 1.2) && !this.dead) this._fromRigid();
       if (this.mode === 'rigid') { this.pos.copy(b.pos).addScaledVector(_v.set(0, -this.spec.H / 2, 0).applyQuaternion(b.quat), 1); }
     }
     // fire / smoke

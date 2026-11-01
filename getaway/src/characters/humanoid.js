@@ -38,16 +38,22 @@ function zero(o) { o.fill(0); o[P.hipH] = DIM.hipH; return o; }
 export const Poses = {
   idle(o, t, w = 0) { zero(o); const b = Math.sin(t * 1.6) * 0.012; o[P.hipH] -= 0.02 + b; o[P.spP] = 0.03 + b; o[P.lKn] = o[P.rKn] = 0.08; o[P.lHP] = o[P.rHP] = 0.04; o[P.lSR] = o[P.rSR] = 0.12; o[P.lEl] = o[P.rEl] = 0.2; o[P.lHR] = o[P.rHR] = 0.04; o[P.hdY] = Math.sin(t * 0.4 + w) * 0.3; return o; },
   walk(o, ph, k = 1) {
-    zero(o); const s = Math.sin(ph), c = Math.cos(ph); const A = 0.42 * k;
-    o[P.lHP] = A * s + 0.05; o[P.rHP] = -A * s + 0.05; o[P.lKn] = 0.12 + Math.max(0, -c) * 0.75 * k; o[P.rKn] = 0.12 + Math.max(0, c) * 0.75 * k;
-    o[P.lSP] = -A * 0.8 * s; o[P.rSP] = A * 0.8 * s; o[P.lEl] = o[P.rEl] = 0.25; o[P.lSR] = o[P.rSR] = 0.1;
-    o[P.hipH] -= 0.03 + Math.abs(c) * 0.03 * k; o[P.spP] = 0.05; o[P.spY] = s * 0.12 * k; o[P.lean] = s * 0.02; return o;
+    zero(o); const s = Math.sin(ph), c = Math.cos(ph); const A = 0.38 * k; const sw = (x) => Math.max(0, x) ** 1.3;
+    o[P.lHP] = A * s + 0.04; o[P.rHP] = -A * s + 0.04; o[P.lKn] = 0.08 + sw(c) * 0.85 * k; o[P.rKn] = 0.08 + sw(-c) * 0.85 * k;
+    o[P.lSP] = -A * 0.75 * s; o[P.rSP] = A * 0.75 * s; o[P.lEl] = 0.22 + Math.max(0, -s) * 0.25; o[P.rEl] = 0.22 + Math.max(0, s) * 0.25; o[P.lSR] = o[P.rSR] = 0.09;
+    o[P.hipH] -= 0.025 + Math.abs(s) * 0.03 * k; o[P.spP] = 0.04; o[P.spY] = -s * 0.1 * k; o[P.spR] = s * 0.03; o[P.lean] = 0; o[P.hdY] = s * 0.06 * k; return o;
   },
   run(o, ph, k = 1) {
-    zero(o); const s = Math.sin(ph), c = Math.cos(ph); const A = 0.75 * k;
-    o[P.lHP] = A * s + 0.25; o[P.rHP] = -A * s + 0.25; o[P.lKn] = 0.3 + Math.max(0, -c) * 1.5 * k; o[P.rKn] = 0.3 + Math.max(0, c) * 1.5 * k;
-    o[P.lSP] = -A * 0.9 * s + 0.1; o[P.rSP] = A * 0.9 * s + 0.1; o[P.lEl] = o[P.rEl] = 1.45; o[P.lSR] = o[P.rSR] = 0.18;
-    o[P.hipH] -= 0.07 + Math.abs(c) * 0.06 * k; o[P.spP] = 0.22 * k; o[P.spY] = s * 0.22; o[P.hdP] = -0.12 * k; return o;
+    zero(o); const s = Math.sin(ph), c = Math.cos(ph); const sw = (x) => Math.max(0, x) ** 1.2; const A = 0.8 * k;
+    // legs: thigh swing, knee drives up during swing, near-straight on push-off
+    o[P.lHP] = 0.22 + A * s; o[P.rHP] = 0.22 - A * s;
+    o[P.lKn] = 0.25 + sw(c) * 1.75 * k + sw(-s) * 0.25; o[P.rKn] = 0.25 + sw(-c) * 1.75 * k + sw(s) * 0.25;
+    // arms pump opposite to legs, elbows ~90deg, slightly across the body
+    o[P.lSP] = -A * 1.0 * s + 0.15; o[P.rSP] = A * 1.0 * s + 0.15; o[P.lEl] = 1.55 - s * 0.25; o[P.rEl] = 1.55 + s * 0.25;
+    o[P.lSR] = o[P.rSR] = 0.12; o[P.lSY] = o[P.rSY] = 0.18;
+    // torso: forward lean, shoulders counter-rotate, flight-phase bob
+    o[P.spP] = 0.16 + 0.12 * k; o[P.spY] = -s * 0.2 * k; o[P.spR] = s * 0.04;
+    o[P.hipH] -= 0.06 + 0.05 * k - Math.cos(2 * ph) * 0.035 * k; o[P.hdP] = -0.14 * k; o[P.hdY] = s * 0.08; return o;
   },
   crouch(o, ph, moving) { zero(o); const s = Math.sin(ph) * (moving ? 1 : 0), c = Math.cos(ph) * (moving ? 1 : 0); o[P.hipH] = 0.62; o[P.lHP] = 0.95 + s * 0.3; o[P.rHP] = 0.95 - s * 0.3; o[P.lKn] = 1.7 - Math.max(0, c) * 0.4; o[P.rKn] = 1.7 - Math.max(0, -c) * 0.4; o[P.spP] = 0.45; o[P.lEl] = o[P.rEl] = 1.0; o[P.lSP] = o[P.rSP] = 0.4; o[P.hdP] = -0.35; return o; },
   leap(o, vy) { zero(o); const t = clamp(vy / 7, -1, 1); o[P.lHP] = 1.25; o[P.lKn] = 0.35 + Math.max(0, -t) * 0.9; o[P.rHP] = -0.55; o[P.rKn] = 0.9; o[P.lSP] = 2.3 - t * 0.4; o[P.rSP] = -0.6 + t * 0.4; o[P.lSR] = 0.3; o[P.rSR] = 0.45; o[P.lEl] = 0.3; o[P.rEl] = 0.9; o[P.spP] = 0.35; o[P.hdP] = -0.3; o[P.hipH] -= 0.05; return o; },
@@ -141,7 +147,7 @@ export class Human {
     this.state = 'idle'; this.aim = null; this.weapon = null; this.upper = null; this.upperT = 0; this.carryBag = false;
     this.visible = true; this.grounded = true; this.vy = 0; this.crouch = false; this.alive = true;
     this.rp = new Float32Array(NJ * 3); this.rprev = new Float32Array(NJ * 3); this.rlen = new Float32Array(RAG_LINKS.length); this.ragT = 0; this.snap = new Float32Array(NJ * 3); this.getupT = 0;
-    this.footstepT = 0; this.lastFoot = 0;
+    this.footstepT = 0; this.lastFoot = 0; this.outPose = zero(new Float32Array(NP)); this.fromPose = zero(new Float32Array(NP)); this.blendT = 1; this._lastSt = ''; this.aimW = 0; this._lastAim = null;
   }
   // locomotion animation drive (speed m/s) - called by controllers
   animate(dt, opts = {}) {
@@ -174,16 +180,22 @@ export class Human {
         const fs = Math.floor(this.phase / Math.PI); if (fs !== this.lastFoot) { this.lastFoot = fs; if (this.onFootstep) this.onFootstep(sp); }
       }
     }
-    // upper body overlays
-    if (this.aim && this.mode === 'anim' && st !== 'climb' && st !== 'swim' && st !== 'ride' && st !== 'sit') {
-      this.tmpB.set(p); Poses.aim(this.tmpB, this.aim.kind, this.aim.pitch); this._blendIdx(p, this.tmpB, UPPER, this.aim.w ?? 1);
-      if (this.aim.recoil) { p[P.rSP] += this.aim.recoil * 0.4; p[P.rEl] += this.aim.recoil * 0.3; p[P.spP] -= this.aim.recoil * 0.1; this.aim.recoil *= Math.exp(-dt * 18); }
+    // upper body overlays (aim eases in/out)
+    if (this.aim) this._lastAim = this.aim; this.aimW += ((this.aim ? 1 : 0) - this.aimW) * Math.min(1, dt * 14);
+    if (this._lastAim && this.aimW > 0.01 && this.mode === 'anim' && st !== 'climb' && st !== 'swim' && st !== 'ride' && st !== 'sit') {
+      this.tmpB.set(p); Poses.aim(this.tmpB, this._lastAim.kind, this._lastAim.pitch); this._blendIdx(p, this.tmpB, UPPER, (this._lastAim.w ?? 1) * this.aimW);
+      if (this.aim && this.aim.recoil) { p[P.rSP] += this.aim.recoil * 0.4; p[P.rEl] += this.aim.recoil * 0.3; p[P.spP] -= this.aim.recoil * 0.1; this.aim.recoil *= Math.exp(-dt * 18); }
     } else if (this.weapon && (st === 'idle' || st === 'walk' || st === 'run' || st === 'flee' || st === 'crouch' || !st)) { this.tmpB.set(p); Poses.hold(this.tmpB, this.weapon); this._blendIdx(p, this.tmpB, ARMS_R, this.weapon === 'pistol' ? 0.6 : 0.9); if (this.weapon !== 'pistol') this._blendIdx(p, this.tmpB, [P.lSP, P.lSY, P.lEl], 0.85); }
     if (this.carryBag && st !== 'climb') Poses.carry(p);
     if (this.upper) { this.upperT += dt; const u = this.upper; const k = clamp(this.upperT / u.dur, 0, 1); this.tmpB.set(p); if (u.name === 'reload') Poses.reload(this.tmpB, this.upperT); else if (u.name === 'punch') Poses.punch(this.tmpB, k, u.right); else if (u.name === 'hit') Poses.hit(this.tmpB, k); else if (u.name === 'wave') { this.tmpB[P.rSP] = 0.3; this.tmpB[P.rSR] = 2.4 + Math.sin(this.upperT * 12) * 0.3; this.tmpB[P.rEl] = 0.6; }
       this._blendIdx(p, this.tmpB, UPPER, Math.min(1, Math.sin(k * Math.PI) * 3)); if (k >= 1) this.upper = null; }
     if (opts.lean) p[P.lean] += opts.lean;
-    solveFK(p, this.scale, this.local);
+    // cross-fade between states so nothing ever snaps
+    const key = st === 'run' || st === 'idle' || st === 'flee' ? 'loco' : st;
+    if (key !== this._lastSt) { this.fromPose.set(this.outPose); this.blendT = 0; this._lastSt = key; }
+    this.blendT += dt; const bw = smoothstep(0, 1, this.blendT / (key === 'jump' ? 0.12 : 0.2));
+    for (let i = 0; i < NP; i++) this.outPose[i] = bw < 1 ? lerp(this.fromPose[i], p[i], bw) : p[i];
+    solveFK(this.outPose, this.scale, this.local);
     this._toWorld();
     if (this.mode === 'getup') { this.getupT += dt / 1.1; const k = smoothstep(0, 1, this.getupT); for (let i = 0; i < NJ * 3; i++) this.joints[i] = lerp(this.snap[i], this.joints[i], k); if (this.getupT >= 1) this.mode = 'anim'; }
   }
@@ -262,11 +274,12 @@ export class HumanRenderer {
       beanie: (() => { const a = new THREE.SphereGeometry(1.12, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.5); a.translate(0, 0.12, -0.04); return a; })(),
       shades: (() => { const g = new THREE.BoxGeometry(1.6, 0.28, 0.12); g.translate(0, 0.14, 0.95); return g; })(),
       bag: (() => { const g = new THREE.CylinderGeometry(1, 1, 2.4, 12); g.rotateZ(Math.PI / 2); const s = new THREE.TorusGeometry(0.9, 0.08, 6, 12, Math.PI); s.translate(0, 0.9, 0); return mergeParts([{ geo: g, c: 0xffffff }, { geo: s, c: 0x222222 }]); })(),
+      joint: new THREE.SphereGeometry(1, 10, 8),
       vest: (() => { const g = new THREE.CylinderGeometry(1.08, 0.95, 0.75, 12); g.translate(0, 0.55, 0); return g; })(),
     };
     for (const [k, g0] of Object.entries(defs)) {
       const g = g0.attributes.color ? g0 : mergeParts([{ geo: g0, c: 0xffffff }]);
-      const cnt = k === 'limb' ? max * 8 : k === 'hand' || k === 'foot' ? max * 2 : max;
+      const cnt = k === 'limb' ? max * 9 : k === 'joint' ? max * 6 : k === 'hand' || k === 'foot' ? max * 2 : max;
       const m = new THREE.InstancedMesh(g, mat, cnt); m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); m.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(cnt * 3), 3); m.instanceColor.setUsage(THREE.DynamicDrawUsage);
       m.frustumCulled = false; m.castShadow = true; m.receiveShadow = true; m.count = 0; scene.add(m); this.meshes[k] = { mesh: m, n: 0, arr: m.instanceMatrix.array, col: m.instanceColor.array };
     }
@@ -310,7 +323,10 @@ export class HumanRenderer {
       HumanRenderer.mat(e, px * r, py * r, pz * r, dx * len, dy * len, dz * len, qx * r, qy * r, qz * r, ax, ay, az); this._put('limb', e, col);
     };
     const sleeve = L.sleeve === 'long' || L.jacket ? shirt : L.skin;
-    limb(3, 4, 0.06 * b, shirt); limb(4, 5, 0.05 * b, sleeve); limb(6, 7, 0.06 * b, shirt); limb(7, 8, 0.05 * b, sleeve);
+    limb(3, 4, 0.065 * b, shirt); limb(4, 5, 0.052 * b, sleeve); limb(6, 7, 0.065 * b, shirt); limb(7, 8, 0.052 * b, sleeve);
+    { const nr = 0.055 * S; const ax = jx(1), ay = jy(1) - 0.02, az = jz(1); let dx = hx - ax, dy = hy - 0.09 - ay, dz = hz - az; const len = Math.hypot(dx, dy, dz) || 0.1; dx /= len; dy /= len; dz /= len; let px = dy * fz - dz * fy, py = dz * fx - dx * fz, pz = dx * fy - dy * fx; const pl = Math.hypot(px, py, pz) || 1; px /= pl; py /= pl; pz /= pl; const qx = py * dz - pz * dy, qy = pz * dx - px * dz, qz = px * dy - py * dx; HumanRenderer.mat(e, px * nr, py * nr, pz * nr, dx * len, dy * len, dz * len, qx * nr, qy * nr, qz * nr, ax, ay, az); this._put('limb', e, L.skin); }
+    const jt = (j, r, col) => { const rr = r * S; HumanRenderer.mat(e, rr, 0, 0, 0, rr, 0, 0, 0, rr, jx(j), jy(j), jz(j)); this._put('joint', e, col); };
+    jt(3, 0.08 * b, shirt); jt(6, 0.08 * b, shirt); jt(4, 0.058 * b, sleeve); jt(7, 0.058 * b, sleeve); jt(10, 0.075 * b, L.pants); jt(13, 0.075 * b, L.pants);
     limb(9, 10, 0.085 * b, L.pants); limb(10, 11, 0.065 * b, L.pants); limb(12, 13, 0.085 * b, L.pants); limb(13, 14, 0.065 * b, L.pants);
     for (const j of [5, 8]) { const r = 0.05 * S; HumanRenderer.mat(e, r, 0, 0, 0, r, 0, 0, 0, r, jx(j), jy(j), jz(j)); this._put('hand', e, L.skin); }
     // feet: oriented along body forward (flattened)
