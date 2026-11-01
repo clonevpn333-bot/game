@@ -20,6 +20,7 @@ import { Peds } from './characters/peds.js';
 import { Player } from './characters/player.js';
 import { Combat } from './combat/combat.js';
 import { setAniso } from './world/textures.js';
+import { Lighting } from './fx/lighting.js';
 
 export class Game {
   constructor() { this.last = performance.now(); this.fpsT = 0; this.frames = 0; this.fps = 60; this.hooks = []; }
@@ -41,6 +42,7 @@ export class Game {
     G.traffic = new Traffic(G.world); G.humans = new HumanRenderer(G.scene, 380); G.peds = new Peds(G.world); G.peds.setDensity(G.settings.pedDensity);
     G.player = new Player(); G.combat.addTarget(G.player.target);
     G.cam = new CameraRig(G.camera); G.cam.baseFov = G.settings.fov;
+    G.lighting = new Lighting(G.scene); G.lighting.buildLampPools(G.props);
     G.composer = createComposer(G.renderer, G.scene, G.camera, G.settings);
     this.interiorLights = G.world.interiorLights.map((l) => { const p = new THREE.PointLight(l.color, l.intensity, l.distance, 1.5); p.userData.i0 = l.intensity; p.position.set(l.x, l.y, l.z); G.scene.add(p); return p; });
     // one shared searchlight for the police helicopter, created up front so no shader ever recompiles mid-game
@@ -88,6 +90,7 @@ export class Game {
     for (const l of this.interiorLights) l.intensity = l.position.distanceToSquared(G.camera.position) < 120 * 120 ? l.userData.i0 : 0;
     // characters
     G.humans.begin(); G.peds.draw(G.humans); if (G.player.human.visible) G.humans.draw(G.player.human); if (G.npcs) G.npcs.draw(G.humans); G.humans.end();
+    if (G.lighting) G.lighting.update(rdt);
     // audio listener + ambience
     if (G.audio.ready) {
       G.audio.updateListener(G.camera.position, G.camera.getWorldDirection(new THREE.Vector3()), G.cam.vel);

@@ -259,7 +259,8 @@ export class Player {
     const kb = !input.usingPad; if (kb) c.steer = approach(c.steer, sx, (Math.sign(sx) !== Math.sign(c.steer) || sx === 0 ? 10 : 6) * dt); else c.steer = sx;
     c.throttle = locked ? 0 : input.throttle(); c.brake = locked ? (v.speed > 1 ? 0.6 : 1) : input.brake(); c.handbrake = !locked && input.down('handbrake');
     const wantBoost = !locked && input.down('boost') && c.throttle > 0.1;
-    c.boost = wantBoost && v.boost > 0.02; if (c.boost) v.boost = Math.max(0, v.boost - dt * (v.spec.thrusters ? 0.2 : 0.28));
+    if (!locked && v.spec.thrusters && input.down('boost') && input.pressed('handbrake') && v.thrusterHop()) { c.handbrake = false; G.stunts && G.stunts.award('THRUSTER HOP', 150); }
+    c.boost = (wantBoost || (v.spec.thrusters && v.airborne && input.down('boost'))) && v.boost > 0.02; if (c.boost) v.boost = Math.max(0, v.boost - dt * (v.spec.thrusters ? 0.2 : 0.28));
     c.airPitch = v.airborne ? input.moveY() : 0; c.airRoll = v.airborne ? -input.moveX() : 0;
     if (!locked && input.pressed('horn') && G.audio) G.audio.horn(v.pos, 0.35);
     if (!locked && input.key('KeyH') && v.isPolice()) v.siren = true;

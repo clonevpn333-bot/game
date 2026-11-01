@@ -1,5 +1,6 @@
 // GETAWAY! — sky dome, sun/moon lighting, day-night cycle, weather (rain, storm, fog), environment reflections
 import * as THREE from 'three';
+import { G } from '../core/context.js';
 import { clamp, lerp, smoothstep, rand } from '../core/utils.js';
 
 const SKY_VS = `varying vec3 vDir; void main(){ vDir = normalize((modelMatrix * vec4(position,0.0)).xyz); vec4 p = projectionMatrix * modelViewMatrix * vec4(position,1.0); gl_Position = p.xyww; }`;
@@ -50,7 +51,7 @@ export class Sky {
     const mat = new THREE.ShaderMaterial({ vertexShader: SKY_VS, fragmentShader: SKY_FS, uniforms: this.uniforms, side: THREE.BackSide, depthWrite: false, fog: false });
     this.dome = new THREE.Mesh(new THREE.SphereGeometry(5000, 32, 16), mat); this.dome.renderOrder = -10; this.dome.frustumCulled = false; scene.add(this.dome);
     this.sun = new THREE.DirectionalLight(0xffffff, 3); this.sun.castShadow = true;
-    this.sun.shadow.mapSize.set(2048, 2048); const sc = this.sun.shadow.camera; sc.left = -90; sc.right = 90; sc.top = 90; sc.bottom = -90; sc.near = 10; sc.far = 600;
+    const hq = G.settings && (G.settings.quality === 'high' || G.settings.quality === 'ultra'); this.sun.shadow.mapSize.set(hq ? 4096 : 2048, hq ? 4096 : 2048); const sc = this.sun.shadow.camera; sc.left = -80; sc.right = 80; sc.top = 80; sc.bottom = -80; this.sun.shadow.radius = 3; sc.near = 10; sc.far = 600;
     this.sun.shadow.bias = -0.0004; this.sun.shadow.normalBias = 0.6; scene.add(this.sun); scene.add(this.sun.target);
     this.hemi = new THREE.HemisphereLight(0xbcd, 0x554, 0.8); scene.add(this.hemi);
     scene.fog = new THREE.Fog(0xb0c8dc, 200, 2200);

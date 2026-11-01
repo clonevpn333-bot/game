@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { G } from '../core/context.js';
 import { clamp, SpatialHash, rand, lerp } from '../core/utils.js';
 import { Vehicle } from './vehicle.js';
-import { wheelAssets } from './models.js';
+import { wheelAssets, RIM_OF } from './models.js';
 
 const _m = new THREE.Matrix4(), _m2 = new THREE.Matrix4(), _p = new THREE.Vector3(), _q = new THREE.Quaternion(), _s = new THREE.Vector3(), _e = new THREE.Euler(), _flip = new THREE.Matrix4().makeRotationY(Math.PI);
 const C1 = new Float32Array(8), C2 = new Float32Array(8);
@@ -13,7 +13,8 @@ export class VehicleManager {
   constructor(scene, S) {
     this.scene = scene; this.S = S; this.list = []; this.hash = new SpatialHash(12); this.near = [];
     const W = wheelAssets(); const N = 480;
-    this.tires = new THREE.InstancedMesh(W.tireGeo, W.tireMat, N); this.rims = new THREE.InstancedMesh(W.rimGeo, W.rimMat, N);
+    this.tires = new THREE.InstancedMesh(W.tireGeo, W.tireMat, N); this.rims = new THREE.InstancedMesh(W.rimGeo, W.rimMat, 4);
+    this.rimSets = {}; for (const k in W.rimGeos) { const m = new THREE.InstancedMesh(W.rimGeos[k], W.rimMat, N); m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); m.frustumCulled = false; m.castShadow = true; m.count = 0; scene.add(m); this.rimSets[k] = { m, n: 0 }; }
     for (const m of [this.tires, this.rims]) { m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); m.frustumCulled = false; m.castShadow = true; m.count = 0; scene.add(m); }
     this.voices = []; this.sirens = []; this.acc = 0; this.playerVehicle = null; this.skidVoice = null;
   }
@@ -181,7 +182,7 @@ export class VehicleManager {
 
   // ---------------- wheels, skids, smoke ----------------
   _wheels(dt) {
-    let i = 0; const cam = G.camera ? G.camera.position : _p.set(0, 0, 0); const fx = G.fx;
+    let i = 0; const cam = G.camera ? G.camera.position : _p.set(0, 0, 0); const fx = G.fx; for (const k in this.rimSets) this.rimSets[k].n = 0;
     for (const v of this.list) {
       const dcam = v.pos.distanceToSquared(cam); const vis = dcam < 320 * 320;
       const ws = v.model.wheels; const sy = Math.sin(v.yaw), cy = Math.cos(v.yaw);
@@ -196,7 +197,7 @@ export class VehicleManager {
         _q.setFromEuler(_e.set(0, w.front ? v.steerAngle : 0, 0)); _m2.compose(_p.set(w.x, w.r + w.comp, w.z), _q, _s.set(1, 1, 1)); _m.multiply(_m2);
         _m2.makeRotationX(w.spin); _m.multiply(_m2); if (w.side < 0) _m.multiply(_flip);
         _m2.makeScale(w.w / 0.95, w.r, w.r); _m.multiply(_m2);
-        this.tires.setMatrixAt(i, _m); this.rims.setMatrixAt(i, _m); i++;
+        this.tires.setMatrixAt(i, _m); const rs = this.rimSets[RIM_OF[v.type] || 'sport6']; rs.m.setMatrixAt(rs.n++, _m); i++;
         // skid marks + tire smoke
         if (fx && v.mode === 'drive' && !v.airborne && dcam < 200 * 200) {
           const sliding = (!w.front && (v.slip > 3.2 || v.spin > 0.25)) || (v.ctrl.brake > 0.9 && v.speed > 9 && !v.reversing) || (w.front && v.slip > 7);
@@ -210,10 +211,12 @@ export class VehicleManager {
           } else w.lastP = null;
         }
       }
+      if (v.spec.thrusters && fx && (v.hovering || v.thrustBrake)) { for (const sx of [-1, 1]) for (const sz of [0.32, -0.32]) { const p = v.local(sx * v.spec.W * 0.42, sz * v.spec.L); p.y += 0.3; fx.smoke.emit(p.x, p.y, p.z, v.vel.x * 0.3 + (v.thrustBrake ? Math.sin(v.yaw) * 10 : 0), v.hovering ? -14 : 0.5, v.vel.z * 0.3 + (v.thrustBrake ? Math.cos(v.yaw) * 10 : 0), { life: 0.7, size: 0.3, grow: 5, r: 0.96, g: 0.98, b: 1, a: 0.5, drag: 2.5 }); } }
       if (v.thrusting && fx) { const sy2 = Math.sin(v.yaw), cy2 = Math.cos(v.yaw); for (let n2 = 0; n2 < 4; n2++) { const p = v.local((n2 - 1.5) * 0.3, -v.spec.L / 2 - 0.15); p.y += 0.62 + v.heave; fx.smoke.emit(p.x, p.y, p.z, -sy2 * 16 + v.vel.x * 0.3 + rand(-1, 1), rand(-0.5, 0.8), -cy2 * 16 + v.vel.z * 0.3 + rand(-1, 1), { life: rand(0.6, 1.1), size: 0.35, grow: 6, r: 0.95, g: 0.97, b: 1, a: 0.5, drag: 2.2, spin: rand(-1, 1) }); fx.glow.emit(p.x, p.y, p.z, -sy2 * 8, 0, -cy2 * 8, { life: 0.08, size: 0.25, r: 0.7, g: 0.85, b: 1, a: 0.8, fade: 2 }); } }
+      if (!v.spec.thrusters && !v.spec.bike && fx && v.ctrl.boost && v.ctrl.throttle > 0 && v.mode === 'drive') { const s2 = Math.sin(v.yaw), c2 = Math.cos(v.yaw); for (const ex of [-0.35, 0.35]) { const p = v.local(ex * v.spec.W * 0.7, -v.spec.L / 2 - 0.15); p.y += 0.35; fx.fireL.emit(p.x, p.y, p.z, -s2 * 9 + v.vel.x * 0.6, rand(-0.2, 0.4), -c2 * 9 + v.vel.z * 0.6, { life: 0.12, size: 0.42, grow: -0.4, r: 0.45, g: 0.65, b: 1, a: 0.95, fade: 2 }); fx.fireL.emit(p.x, p.y, p.z, -s2 * 6 + v.vel.x * 0.6, 0.2, -c2 * 6 + v.vel.z * 0.6, { life: 0.18, size: 0.3, grow: 0.5, r: 1, g: 0.55, b: 0.2, a: 0.8, fade: 3 }); } }
       if (v.boostFx && fx && v.ctrl.boost && v.ctrl.throttle > 0) { const p = v.local(0, -v.spec.L / 2 - 0.2); p.y += 0.35; fx.glow.emit(p.x, p.y, p.z, -Math.sin(v.yaw) * 6, 0.3, -Math.cos(v.yaw) * 6, { life: 0.15, size: 0.35, r: 0.4, g: 0.6, b: 1, a: 0.9, grow: 0.5, fade: 2 }); }
     }
-    this.tires.count = i; this.rims.count = i; this.tires.instanceMatrix.needsUpdate = true; this.rims.instanceMatrix.needsUpdate = true;
+    this.tires.count = i; this.rims.count = 0; this.tires.instanceMatrix.needsUpdate = true; for (const k in this.rimSets) { const r = this.rimSets[k]; r.m.count = r.n; r.m.instanceMatrix.needsUpdate = true; }
   }
 
   // ---------------- audio voice pooling ----------------

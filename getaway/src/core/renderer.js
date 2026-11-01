@@ -22,6 +22,9 @@ const GradeShader = {
       col = mix(col, col*vec3(1.05,0.98,0.92), slowmo*0.5);
       if (underwater > 0.0) col = mix(col, vec3(0.05,0.25,0.3)*l*2.0 + col*0.3, underwater*0.8);
       float v = smoothstep(0.85, 0.2, length(c*vec2(1.0,0.85)));
+      // filmic grade: gentle S-curve, cool shadows / warm highlights
+      float L2 = dot(col, vec3(0.2126,0.7152,0.0722)); vec3 tone = mix(vec3(0.92,0.98,1.08), vec3(1.07,1.0,0.9), smoothstep(0.05, 0.9, L2)); col *= tone;
+      vec3 cc = col / (1.0 + col); cc = cc*cc*(3.0-2.0*cc); col = mix(col, cc / max(vec3(0.001), 1.0 - cc), 0.22);
       col *= mix(1.0, v, vignette + damage*0.5);
       col = mix(col, vec3(0.6,0.0,0.0), damage*0.35*(1.0-v));
       col += flash;
@@ -45,7 +48,7 @@ export function createRenderer(container, settings) {
 export function createComposer(renderer, scene, camera, settings) {
   const composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
-  const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth / 2, innerHeight / 2), 0.45, 0.6, 0.86);
+  const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth / 2, innerHeight / 2), 0.55, 0.55, 0.82);
   bloom.enabled = settings.bloom && settings.quality !== 'low';
   composer.addPass(bloom);
   const grade = new ShaderPass(GradeShader); composer.addPass(grade);

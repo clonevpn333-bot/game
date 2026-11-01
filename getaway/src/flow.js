@@ -21,7 +21,7 @@ class Flow {
     const ui = document.getElementById('ui');
     G.hud = new HUD(ui); G.npcs = new Npcs(); G.police = new Police(G.world); G.stunts = new Stunts();
     this.menus = new Menus(ui, this); this.runner = new MissionRunner(this); this.free = new FreeRoam(this);
-    G.hud.show(false);
+    G.hud.show(false); G.lighting.buildFlare(ui);
     // ESC / pause, pointer lock on click
     addEventListener('keydown', (e) => {
       if (e.code === 'Escape' || e.code === 'KeyP') { if (this.state === 'play') this.pause(); else if (this.state === 'paused' && this.menus.cur && this.menus.cur.querySelector('.logo')?.textContent === 'PAUSED') this.resume(); }

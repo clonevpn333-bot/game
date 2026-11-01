@@ -73,7 +73,7 @@ export class Vehicle {
       if (c.handbrake && Math.abs(vF) > 0.2) brake += m * sp.brake * (throttle > 0.2 ? 0.05 : 0.18) * Math.sign(vF);
       const drag = 0.38 * sp.W * sp.H * vF * Math.abs(vF) + m * 0.11 * vF + (this.engineOn ? 0 : m * 0.4 * vF);
       // --- loads ---
-      const down = sp.cls === 'Super' || sp.cls === 'Sports' ? 0.9 * vF * vF : 0.3 * vF * vF;
+      const down = sp.thrusters ? 2.2 * vF * vF + m * GRAV * 0.25 : sp.cls === 'Super' || sp.cls === 'Sports' ? 0.9 * vF * vF : 0.3 * vF * vF;
       const Wt = m * GRAV + down; let Wf = Wt * this.b / this.wb - m * this.axPrev * sp.cgH / this.wb; Wf = clamp(Wf, Wt * 0.15, Wt * 0.85); const Wr = Wt - Wf;
       const surf = this.surface === 'ground' ? 0.72 : this.surface === 'sand' ? 0.6 : this.surface === 'dirt' ? 0.8 : 1;
       const mu = sp.grip * surf * (1 - this.wet * 0.14) * (this.drowned ? 0.2 : 1);
@@ -104,7 +104,7 @@ export class Vehicle {
       const rk = vF * Math.tan(d) / this.wb; r = lerp(rk, r, s); vL *= 1 - (1 - s) * 12 * h;
       // ARCADE HANDLING (player): turn where you steer, up to the grip limit; slides only when you ask for them
       if (this.isPlayer) {
-        const rMax = (sp.grip * GRAV * 1.25 + (c.boost ? 2 : 0)) / Math.max(4, Math.abs(vF));
+        const rMax = (sp.grip * GRAV * 1.25 + (c.boost ? (sp.thrusters ? 9 : 2) : 0)) / Math.max(4, Math.abs(vF));
         const rWant = clamp(vF * Math.tan(d) / this.wb, -rMax, rMax);
         if (c.handbrake && Math.abs(vF) > 6) { r += -c.steer * 3.2 * h * clamp(Math.abs(vF) / 18, 0, 1.2); vF *= 1 - 0.05 * h; this.drifting = 0.6; }
         else {
@@ -125,7 +125,9 @@ export class Vehicle {
       this.rpm = lerp(this.rpm, 3000 + throttle * 4000, 1 - Math.exp(-6 * h));
     }
     // ROSTR cold-gas thrusters: extra shove that works even in mid-air
-    if (sp.thrusters && c.boost && this.engineOn) { const k = (this.airborne ? 11 : 7) * h; this.vel.x += sy * k; this.vel.z += cy * k; if (this.airborne) this.vel.y += 5.5 * h; else { vF += k; } this.thrusting = true; } else this.thrusting = false;
+    if (sp.thrusters && c.boost && this.engineOn && c.brake > 0.3 && !this.airborne && vF > 2) { vF = Math.max(0, vF - 22 * h); this.thrustBrake = true; } else this.thrustBrake = false;
+    if (sp.thrusters && this.airborne && c.boost && this.engineOn) { this.vel.y += GRAV * 0.72 * h; this.hovering = true; } else this.hovering = false;
+    if (sp.thrusters && c.boost && this.engineOn && !(c.brake > 0.3)) { const k = (this.airborne ? 11 : 14) * h; this.vel.x += sy * k; this.vel.z += cy * k; if (this.airborne) this.vel.y += 5.5 * h; else { vF += k; } this.thrusting = true; } else this.thrusting = false;
     this.vF = vF; this.vL = vL; this.yawRate = r;
     this.yaw = wrapAngle(this.yaw + r * h);
     this.pos.x += this.vel.x * h; this.pos.z += this.vel.z * h;
@@ -202,6 +204,12 @@ export class Vehicle {
       const f = new THREE.Vector3(0, 0, 1).applyQuaternion(b.quat); this.yaw = Math.atan2(f.x, f.z); this.pitch = 0; this.roll = 0;
       this.pos.copy(b.pos).y -= this.spec.H / 2; this.vel.copy(b.vel); this.vel.y = 0; this.yawRate = 0; G.rigid.remove(b); this.rigid = null; this.mode = 'drive'; this.flipped = false;
     } else { this.flipped = true; this.wreck = this.wreck || !this.isPlayer; b.vel.set(0, 0, 0); b.angVel.set(0, 0, 0); b.sleeping = true; }
+  }
+  thrusterHop() {
+    if (!this.spec.thrusters || this.airborne || this.mode !== 'drive' || this.boost < 0.22) return false;
+    this.boost -= 0.22; this.airborne = true; this.airTime = 0; this.airRot = 0; this.launchY = this.pos.y; this.maxAirH = 0; this.vel.y = 11.5; this.pitchV = 0.6;
+    if (G.fx) { G.fx.dust(this.pos, 18, 3.2, 0.75); for (let i = 0; i < 4; i++) { const p = this.local((i - 1.5) * 0.9, (i % 2 ? 1 : -1) * this.spec.L * 0.3); G.fx.smokePuff(p, { n: 4, size: 0.8, life: 1.2, color: 0.96, alpha: 0.6, vel: { x: 0, y: -6, z: 0 }, spread: 0.3, rise: -3 }); } }
+    if (G.audio) { G.audio.whoosh(this.pos, 0.9, 0.7); G.audio.impact(this.pos, 0.5, 'metal'); } if (G.cam) G.cam.shake(0.35); G.emit('thrusterHop', this); return true;
   }
   isUpsideDown() { if (this.mode === 'rigid' && this.rigid) return new THREE.Vector3(0, 1, 0).applyQuaternion(this.rigid.quat).y < 0.8; return Math.abs(this.roll) > 0.9 || Math.abs(this.pitch) > 0.9 || this.flipped; }
   flipUpright() { if (this.mode !== 'rigid') { this.roll = 0; this.pitch = 0; this.flipped = false; this.pos.y += 0.3; return; } const b = this.rigid; const f = new THREE.Vector3(0, 0, 1).applyQuaternion(b.quat); this.yaw = Math.atan2(f.x, f.z); this.pitch = this.roll = 0; this.pos.copy(b.pos); this.pos.y = this.groundY ?? b.pos.y; this.vel.set(0, 0, 0); G.rigid.remove(b); this.rigid = null; this.mode = 'drive'; this.flipped = false; this.wreck = false; }

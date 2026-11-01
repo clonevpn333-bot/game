@@ -1,6 +1,7 @@
 // GETAWAY! — pooled visual effects: particles (smoke/fire/sparks/dust/water/glass), debris chunks,
 // shell casings, tracers, muzzle flashes, dynamic flash lights, shockwave rings, decals and skid marks.
 import * as THREE from 'three';
+import { G } from '../core/context.js';
 import { rand, clamp, lerp } from '../core/utils.js';
 import { softParticle, sparkTexture, bulletHoleTexture, scorchTexture, skidTexture } from '../world/textures.js';
 
@@ -91,6 +92,28 @@ class ChunkLayer {
   }
 }
 
+// velocity-stretched glowing streaks (sparks, embers, speed lines)
+class StreakLayer {
+  constructor(scene, max = 900) {
+    this.max = max; this.n = 0; this.p = new Float32Array(max * 3); this.v = new Float32Array(max * 3); this.life = new Float32Array(max); this.age = new Float32Array(max); this.col = new Float32Array(max * 3); this.len = new Float32Array(max); this.grav = new Float32Array(max);
+    const g = new THREE.BufferGeometry(); this.pos = new Float32Array(max * 6); this.vc = new Float32Array(max * 6);
+    g.setAttribute('position', new THREE.BufferAttribute(this.pos, 3).setUsage(THREE.DynamicDrawUsage)); g.setAttribute('color', new THREE.BufferAttribute(this.vc, 3).setUsage(THREE.DynamicDrawUsage));
+    this.mesh = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false })); this.mesh.frustumCulled = false; this.mesh.renderOrder = 6; scene.add(this.mesh);
+  }
+  emit(x, y, z, vx, vy, vz, life, r, g, b, len = 0.035, grav = 12) { const i = this.n < this.max ? this.n++ : (Math.random() * this.max) | 0; const i3 = i * 3; this.p[i3] = x; this.p[i3 + 1] = y; this.p[i3 + 2] = z; this.v[i3] = vx; this.v[i3 + 1] = vy; this.v[i3 + 2] = vz; this.life[i] = life; this.age[i] = 0; this.col[i3] = r; this.col[i3 + 1] = g; this.col[i3 + 2] = b; this.len[i] = len; this.grav[i] = grav; }
+  update(dt) {
+    let i = 0; while (i < this.n) {
+      this.age[i] += dt; if (this.age[i] >= this.life[i]) { const j = --this.n; for (const a of [this.p, this.v, this.col]) { a[i * 3] = a[j * 3]; a[i * 3 + 1] = a[j * 3 + 1]; a[i * 3 + 2] = a[j * 3 + 2]; } this.life[i] = this.life[j]; this.age[i] = this.age[j]; this.len[i] = this.len[j]; this.grav[i] = this.grav[j]; continue; }
+      const i3 = i * 3; this.v[i3 + 1] -= this.grav[i] * dt; this.v[i3] *= 1 - 0.8 * dt; this.v[i3 + 2] *= 1 - 0.8 * dt;
+      this.p[i3] += this.v[i3] * dt; this.p[i3 + 1] += this.v[i3 + 1] * dt; this.p[i3 + 2] += this.v[i3 + 2] * dt; if (this.p[i3 + 1] < -0.5 && this.grav[i] > 0) { this.p[i3 + 1] = -0.5; this.v[i3 + 1] *= -0.4; }
+      const k = 1 - this.age[i] / this.life[i], L = this.len[i], o = i * 6;
+      this.pos[o] = this.p[i3]; this.pos[o + 1] = this.p[i3 + 1]; this.pos[o + 2] = this.p[i3 + 2]; this.pos[o + 3] = this.p[i3] - this.v[i3] * L; this.pos[o + 4] = this.p[i3 + 1] - this.v[i3 + 1] * L; this.pos[o + 5] = this.p[i3 + 2] - this.v[i3 + 2] * L;
+      for (let c = 0; c < 3; c++) { this.vc[o + c] = this.col[i3 + c] * k * 2; this.vc[o + 3 + c] = 0; } i++;
+    }
+    this.mesh.geometry.setDrawRange(0, this.n * 2); this.mesh.geometry.attributes.position.needsUpdate = true; this.mesh.geometry.attributes.color.needsUpdate = true;
+  }
+}
+
 export class FX {
   constructor(scene, staticWorld) {
     this.scene = scene; this.S = staticWorld; this.quality = 1;
@@ -115,7 +138,7 @@ export class FX {
     for (let i = 0; i < 4; i++) { const m = new THREE.Mesh(rg, new THREE.MeshBasicMaterial({ color: 0xffe0b0, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, toneMapped: false })); m.visible = false; m.userData.t = 0; scene.add(m); this.rings.push(m); }
     const sg = new THREE.SphereGeometry(1, 24, 12);
     this.balls = []; for (let i = 0; i < 4; i++) { const m = new THREE.Mesh(sg, new THREE.MeshBasicMaterial({ color: 0xffcf8a, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false })); m.visible = false; m.userData.t = 0; scene.add(m); this.balls.push(m); }
-    this.decals = new Decals(scene); this.skids = new Skids(scene);
+    this.decals = new Decals(scene); this.skids = new Skids(scene); this.streaks = new StreakLayer(scene); this.burning = [];
     this.emitters = [];
   }
   _light(pos, color, intensity, dist, dur) {
@@ -123,6 +146,7 @@ export class FX {
     l.position.copy(pos); l.color.set(color); l.intensity = intensity; l.distance = dist; l.userData.t = dur; l.userData.dur = dur; l.userData.i0 = intensity;
   }
   spark(p, dir, n = 8, speed = 8) {
+    for (let i = 0; i < n * 1.5 * this.quality; i++) this.streaks.emit(p.x, p.y, p.z, (dir ? dir.x * speed : 0) + rand(-6, 6), (dir ? dir.y * speed : 0) + rand(0, 7), (dir ? dir.z * speed : 0) + rand(-6, 6), rand(0.2, 0.55), 1, rand(0.55, 0.85), 0.25, 0.03, 14);
     for (let i = 0; i < n * this.quality; i++) this.glow.emit(p.x, p.y, p.z, (dir ? dir.x * speed : 0) + rand(-4, 4), (dir ? dir.y * speed : 0) + rand(0, 5), (dir ? dir.z * speed : 0) + rand(-4, 4), { life: rand(0.25, 0.6), size: rand(0.08, 0.16), r: 1, g: rand(0.6, 0.9), b: 0.4, a: 1, drag: 1.5, grav: 12, fade: 2 });
   }
   smokePuff(p, { n = 1, size = 1.5, life = 2, color = 0.85, alpha = 0.35, vel = null, spread = 0.5, rise = 1 } = {}) {
@@ -170,6 +194,17 @@ export class FX {
     for (let i = 0; i < 40 * size * q; i++) { const d = new THREE.Vector3(rand(-1, 1), rand(0, 1), rand(-1, 1)).normalize().multiplyScalar(rand(2, 9) * size); const c = rand(0.1, 0.25); this.smoke.emit(p.x, p.y + 1, p.z, d.x, d.y + 2, d.z, { life: rand(3, 7), size: rand(2.5, 5) * size, grow: 2, r: c, g: c, b: c, a: 0.55, drag: 1.4, spin: rand(-0.3, 0.3) }); }
     for (let i = 0; i < 60 * q; i++) this.glow.emit(p.x, p.y + 0.5, p.z, rand(-25, 25), rand(5, 30), rand(-25, 25), { life: rand(0.6, 1.6), size: rand(0.1, 0.25), r: 1, g: 0.7, b: 0.3, a: 1, drag: 0.8, grav: 15, fade: 2 });
     this.debris(p, 18 * size, 0x2a2a2a, 14 * size, 0.3);
+    // flaming debris arcing out with fire/smoke trails
+    for (let i = 0; i < 9 * size * q; i++) this.burning.push({ p: p.clone().setY(p.y + 0.8), v: new THREE.Vector3(rand(-1, 1), rand(0.6, 1.4), rand(-1, 1)).normalize().multiplyScalar(rand(9, 20) * Math.sqrt(size)), life: rand(1.4, 3) });
+    // ember streaks
+    for (let i = 0; i < 90 * q; i++) this.streaks.emit(p.x, p.y + 0.6, p.z, rand(-22, 22), rand(4, 26), rand(-22, 22), rand(0.6, 1.5), 1, rand(0.45, 0.75), 0.15, 0.05, 11);
+    // ground shockwave dust ring
+    const gy = this.S ? this.S.groundAt(p.x, p.z, p.y + 1).h : p.y;
+    for (let i = 0; i < 46 * size * q; i++) { const a = (i / 46) * Math.PI * 2 + rand(-0.05, 0.05); const sp = rand(14, 24) * size; this.smoke.emit(p.x + Math.cos(a) * 1.5, gy + 0.3, p.z + Math.sin(a) * 1.5, Math.cos(a) * sp, rand(0.2, 1.2), Math.sin(a) * sp, { life: rand(1.2, 2.2), size: rand(1.4, 2.4) * size, grow: 2.5, r: 0.62, g: 0.58, b: 0.52, a: 0.38, drag: 2.6, spin: rand(-0.5, 0.5) }); }
+    // fire keeps burning on the ground
+    let t = 7 * size; const fp = new THREE.Vector3(p.x, gy + 0.2, p.z); this.addEmitter({ update: (dt) => { t -= dt; this.fire(fp, clamp(t / 4, 0.25, 1.2) * size, 1.6 * size); return t > 0; } });
+    // secondary pops
+    for (let k = 0; k < 2; k++) setTimeout(() => { const q2 = p.clone().add(new THREE.Vector3(rand(-3, 3), rand(0.5, 2.5), rand(-3, 3))); this._light(q2, 0xff8a30, 40 * size, 20, 0.25); this.spark(q2, null, 14, 8); for (let i = 0; i < 12 * q; i++) this.fireL.emit(q2.x, q2.y, q2.z, rand(-4, 4), rand(1, 5), rand(-4, 4), { life: rand(0.4, 0.8), size: rand(0.8, 1.6), grow: 1, r: 1, g: 0.6, b: 0.2, a: 0.9, drag: 2, fade: 3 }); }, 250 + k * 380 + Math.random() * 200);
     this.decals.add('scorch', new THREE.Vector3(p.x, this.S ? this.S.groundAt(p.x, p.z, p.y + 1).h : 0, p.z), new THREE.Vector3(0, 1, 0), 5 * size);
   }
   addEmitter(e) { this.emitters.push(e); return e; } // { update(dt) -> bool alive }
@@ -183,7 +218,13 @@ export class FX {
     let any = false; for (let i = 0; i < this.trMax; i++) { if (this.trLife[i] > 0) { this.trLife[i] -= dt; any = true; if (this.trLife[i] <= 0) { this.trPos.fill(0, i * 6, i * 6 + 6); } } }
     if (any) { this.tracers.geometry.attributes.position.needsUpdate = true; this.tracers.geometry.attributes.color.needsUpdate = true; }
     for (let i = this.emitters.length - 1; i >= 0; i--) if (!this.emitters[i].update(dt)) this.emitters.splice(i, 1);
-    this.decals.update(dt); this.skids.update();
+    this.decals.update(dt); this.skids.update(); this.streaks.update(dt);
+    // flaming debris
+    for (let i = this.burning.length - 1; i >= 0; i--) { const b = this.burning[i]; b.life -= dt; b.v.y -= 15 * dt; b.p.addScaledVector(b.v, dt); const gh = this.S ? this.S.groundAt(b.p.x, b.p.z, b.p.y + 0.5, 0.5).h : 0; if (b.p.y < gh + 0.1) { b.p.y = gh + 0.1; b.v.multiplyScalar(0.3); b.v.y = Math.abs(b.v.y) * 0.3; } if (Math.random() < 0.9 * this.quality) this.fireL.emit(b.p.x, b.p.y, b.p.z, rand(-0.3, 0.3), rand(0.2, 0.8), rand(-0.3, 0.3), { life: rand(0.25, 0.5), size: rand(0.35, 0.7), grow: -0.3, r: 1, g: rand(0.45, 0.65), b: 0.15, a: 0.9, fade: 3 }); if (Math.random() < 0.5 * this.quality) this.smokePuff(b.p, { size: 0.6, life: 1.6, color: 0.2, alpha: 0.35, rise: 0.6, spread: 0.1 }); if (b.life <= 0) this.burning.splice(i, 1); }
+    // speed lines & rain splashes
+    const P = G.player; const pv = P && P.vehicle; const cam = G.camera;
+    if (pv && pv.speed > 34 && cam && G.mode === 'play') { const f = cam.getWorldDirection(this._fd || (this._fd = new THREE.Vector3())); const n = (pv.speed - 34) * 0.12 * (pv.ctrl.boost ? 2.5 : 1); for (let i = 0; i < n; i++) { const a = rand(0, Math.PI * 2), r = rand(2.2, 6); const up = Math.sin(a) * r, side = Math.cos(a) * r; const x = cam.position.x + f.x * rand(8, 22) + f.z * side, y = cam.position.y + up * 0.6, z = cam.position.z + f.z * rand(8, 22) - f.x * side; this.streaks.emit(x, y, z, -f.x * pv.speed * 1.4, -f.y * pv.speed * 1.4, -f.z * pv.speed * 1.4, 0.18, 0.35, 0.38, 0.42, 0.06, 0); } }
+    if (G.sky && G.sky.w.rain > 0.2 && cam) { const n = G.sky.w.rain * 8 * this.quality; for (let i = 0; i < n; i++) { const x = cam.position.x + rand(-22, 22), z = cam.position.z + rand(-22, 22); const y = this.S.groundAt(x, z, cam.position.y + 5, 0).h + 0.05; for (let k = 0; k < 2; k++) this.streaks.emit(x, y, z, rand(-1, 1), rand(1.5, 2.5), rand(-1, 1), 0.2, 0.3, 0.33, 0.38, 0.04, 14); } }
   }
 }
 
