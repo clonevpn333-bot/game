@@ -5,6 +5,10 @@ import { G } from '../core/context.js';
 import { clamp, fmtTime } from '../core/utils.js';
 
 class Abort extends Error {}
+export function makeMarkerMesh(r = 4, color = 0xffd36b, h = 30) {
+  const g = new THREE.Group(); const beam = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 32, 1, true), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.16, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false })); beam.position.y = h / 2; g.add(beam);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(r, 0.12, 6, 48), new THREE.MeshBasicMaterial({ color, toneMapped: false })); ring.rotation.x = Math.PI / 2; ring.position.y = 0.2; g.add(ring); return { g, ring };
+}
 export class MissionContext {
   constructor(runner, def) { this.r = runner; this.def = def; this.waiters = []; this.blips = []; this.markers = []; this.ents = { vehicles: [], npcs: [], meshes: [], timers: [], offs: [] }; this.vars = runner.vars; this.aborted = false; }
   _check() { if (this.aborted) throw new Abort(); }
@@ -17,8 +21,7 @@ export class MissionContext {
   blip(pos, opts = {}) { const b = G.hud.addBlip({ pos, ...opts }); this.blips.push(b); if (opts.color === '#ffd36b' || opts.waypoint) G.hud.setWaypoint(pos, b); return b; }
   unblip(b) { G.hud.clearWaypoint(b); G.hud.removeBlip(b); const i = this.blips.indexOf(b); if (i >= 0) this.blips.splice(i, 1); }
   marker(pos, { r = 4, color = 0xffd36b, h = 30 } = {}) {
-    const g = new THREE.Group(); const beam = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 32, 1, true), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.16, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false })); beam.position.y = h / 2; g.add(beam);
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(r, 0.12, 6, 48), new THREE.MeshBasicMaterial({ color, toneMapped: false })); ring.rotation.x = Math.PI / 2; ring.position.y = 0.2; g.add(ring);
+    const { g, ring } = makeMarkerMesh(r, color, h);
     g.position.copy(pos); G.scene.add(g); const m = { g, pos: pos.clone(), r, ring }; this.markers.push(m); return m;
   }
   unmark(m) { if (!m) return; G.scene.remove(m.g); const i = this.markers.indexOf(m); if (i >= 0) this.markers.splice(i, 1); }

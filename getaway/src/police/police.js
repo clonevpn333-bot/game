@@ -81,7 +81,7 @@ function heliModel() {
 export class Helicopter {
   constructor(police, pos) {
     this.p = police; const m = heliModel(); this.m = m; this.g = m.g; G.scene.add(this.g); this.pos = pos.clone(); this.vel = new THREE.Vector3(); this.yaw = 0; this.t = 0; this.fireT = 4; this.alive = true; this.hp = 260;
-    this.spot = new THREE.SpotLight(0xf4f8ff, 0, 160, 0.16, 0.5, 1.2); this.spot.castShadow = false; G.scene.add(this.spot); G.scene.add(this.spot.target);
+    this.spot = G.heliSpot; this.spot.intensity = 0;
     const cone = new THREE.ConeGeometry(1, 1, 24, 1, true); cone.translate(0, -0.5, 0); cone.rotateX(-Math.PI / 2);
     this.beam = new THREE.Mesh(cone, new THREE.MeshBasicMaterial({ color: 0xdfe8ff, transparent: true, opacity: 0.06, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide })); G.scene.add(this.beam);
     this.snd = G.audio && G.audio.createLoop('rotor', { ref: 40, wet: 0.3 });
@@ -109,7 +109,7 @@ export class Helicopter {
   }
   crash() { if (!this.alive) return; this.alive = false; this.spin = 0; G.emit('heliDown', this); if (G.fx) G.fx.explosion(this.pos, 0.6); if (G.audio) G.audio.explosion(this.pos, 0.6); }
   updateCrash(dt) { this.vel.y -= 12 * dt; this.pos.addScaledVector(this.vel, dt); this.spin += dt * 4; this.g.rotation.y += this.spin * dt * 3; this.g.position.copy(this.pos); if (G.fx) G.fx.fire(this.pos, 1); const gh = G.world.static.groundAt(this.pos.x, this.pos.z, this.pos.y, 0).h; if (this.pos.y < gh + 1) { G.emit('explosion', this.pos.clone(), 1.6, 'heli'); this.dispose(); } }
-  dispose() { this.alive = false; this.disposed = true; G.scene.remove(this.g); G.scene.remove(this.spot); G.scene.remove(this.spot.target); G.scene.remove(this.beam); if (this.snd) this.snd.dispose(); }
+  dispose() { this.alive = false; this.disposed = true; G.scene.remove(this.g); this.spot.intensity = 0; G.scene.remove(this.beam); if (this.snd) this.snd.dispose(); }
 }
 
 // ---------------- police system ----------------

@@ -144,7 +144,8 @@ export function buildCarModel(spec, paintColor) {
   const S = shared(); const { L, W } = spec; const out = {};
   const root = new THREE.Group(); const body = new THREE.Group(); root.add(body);
   const paint = new THREE.MeshPhysicalMaterial({ color: paintColor, roughness: 0.32, metalness: 0.55, clearcoat: 1, clearcoatRoughness: 0.08 });
-  const glass = new THREE.MeshStandardMaterial({ color: 0x0d1418, roughness: 0.04, metalness: 0.95, transparent: true, opacity: 0.85 });
+  if (!SHARED.white) { SHARED.white = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1); SHARED.white.needsUpdate = true; }
+  const glass = new THREE.MeshStandardMaterial({ color: 0x0d1418, roughness: 0.04, metalness: 0.95, transparent: true, opacity: 0.85, map: SHARED.white });
   loftBody(spec, out); loftCabin(spec, out);
   const bodyGeo = geoFrom(out.bodyP, out.bodyGroups, ['paint', 'trim']); const bodyMesh = new THREE.Mesh(bodyGeo, [paint, S.trim]);
   const cabGeo = geoFrom(out.cabP, out.cabGroups, ['paint', 'glass']); const cabMesh = new THREE.Mesh(cabGeo, [paint, glass]);

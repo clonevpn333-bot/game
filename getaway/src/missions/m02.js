@@ -97,8 +97,9 @@ async function cp5(m, fresh) {
   if (!onDeck) return;
   m.say('JUNO', 'Roadblock on the deck! Ram the gap between the cruisers — aim for the TRUNKS, they spin!'); m.slowmo(0.8, 0.4);
   m.objective('BREAK THROUGH THE ROADBLOCK', 'HIT THE GAP AT FULL SPEED — HOLD SHIFT');
+  const rb = m.blip(V3(blockX + 40, 12, -544), { color: '#ffd36b', size: 7 });
   await m.until(() => G.player.focus.x > blockX + 15 || (G.player.focus.y < 6 && G.player.focus.x > blockX - 100), { timeout: 60 });
-  G.stunts.award('ROADBLOCK BUSTER', 600);
+  m.unblip(rb); G.stunts.award('ROADBLOCK BUSTER', 600);
   m.say('GRAMPS', 'Ha! They\'ll be picking cruiser out of their teeth for a week.');
 }
 async function cp6(m, fresh) {

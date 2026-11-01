@@ -6,7 +6,7 @@ import { Menus } from './ui/menus.js';
 import { Police } from './police/police.js';
 import { Npcs } from './combat/npcs.js';
 import { Stunts } from './core/stunts.js';
-import { MissionRunner } from './missions/framework.js';
+import { MissionRunner, makeMarkerMesh } from './missions/framework.js';
 import { CAMPAIGN } from './missions/campaign.js';
 import { FreeRoam } from './missions/freeroam.js';
 
@@ -31,6 +31,11 @@ class Flow {
     G.renderer.domElement.addEventListener('click', () => { if (this.state === 'play') G.input.requestLock(); });
     document.addEventListener('pointerlockchange', () => { if (!document.pointerLockElement && this.state === 'play' && !this.noAutoPause) { /* keep playing; ESC handled above */ } });
     this.applySettings();
+    // shader warm-up: everything that can appear mid-game exists (hidden under the map) when we compile
+    const warm = makeMarkerMesh(1, 0xffd36b, 2); warm.g.position.set(0, -300, 0); G.scene.add(warm.g);
+    const hidden = []; G.scene.traverse((o) => { if (!o.visible) { hidden.push(o); o.visible = true; } });
+    try { G.renderer.compile(G.scene, G.camera); } catch (e) {}
+    for (const o of hidden) o.visible = false;
     const q = new URLSearchParams(location.search);
     if (q.get('mission')) { this.startMission(CAMPAIGN.find((m) => m.id === q.get('mission')), +(q.get('cp') || 0)); return; }
     if (q.get('free') || q.get('drive')) { this.startFreeRoam(q.get('car') || null, q); return; }

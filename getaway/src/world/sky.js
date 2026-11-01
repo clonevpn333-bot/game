@@ -67,7 +67,7 @@ export class Sky {
     this.wetMats = []; this.nightMats = [];
     this.update(0, new THREE.Vector3(), new THREE.Vector3());
   }
-  setTime(h) { this.hour = ((h % 24) + 24) % 24; this.envT = 0; }
+  setTime(h) { this.hour = ((h % 24) + 24) % 24; this.envT = 0; this._envSig = -99; }
   setWeather(name, instant = false) {
     this.weather = name; const t = this.wTarget;
     Object.assign(t, { clear: { clouds: 0.25, overcast: 0, rain: 0, fog: 0, wet: 0, lightning: 0 }, cloudy: { clouds: 0.85, overcast: 0.35, rain: 0, fog: 0.1, wet: 0, lightning: 0 }, rain: { clouds: 1, overcast: 0.8, rain: 0.7, fog: 0.25, wet: 1, lightning: 0 }, storm: { clouds: 1, overcast: 1, rain: 1, fog: 0.35, wet: 1, lightning: 1 }, fog: { clouds: 0.6, overcast: 0.6, rain: 0, fog: 1, wet: 0.3, lightning: 0 } }[name] || {});
@@ -116,7 +116,7 @@ export class Sky {
       this.rain.geometry.attributes.position.needsUpdate = true;
     }
     // environment map refresh
-    this.envT -= dt; if (this.envT <= 0) { this.envT = 6; this.refreshEnv(); }
+    this.envT -= dt; const sig = this.hour * 4 + this.w.overcast * 10 + this.w.rain * 10; if (this.envT <= 0 && Math.abs(sig - (this._envSig ?? -99)) > 1) { this.envT = 2; this._envSig = sig; this.refreshEnv(); }
     return this;
   }
   refreshEnv() {

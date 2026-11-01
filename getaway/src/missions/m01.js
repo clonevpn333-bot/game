@@ -148,7 +148,7 @@ async function cp2(m, fresh) {
   await m.wait(1); G.hud.warnOverride = null;
   car.engineOn = false; car.killed = true; car.model.lightU.fill(0); m.vars.failOnWreck = false; G.audio.ui('fail'); G.cam.shake(0.2);
   m.say('KIT', '…Of course they are.');
-  m.objective('BAIL OUT', 'THE CAR IS DEAD — GET OUT'); m.unblip(gb);
+  m.objective('BAIL OUT', 'THE CAR IS DEAD — PRESS F TO GET OUT'); m.unblip(gb);
   await m.until(() => G.player.vehicle !== car || car.speed < 1.5);
   if (G.player.vehicle === car) await m.until(() => G.player.vehicle !== car);
   car.noEnter = true;
@@ -177,8 +177,10 @@ async function cp3(m, fresh) {
   m.say('DEZ', 'Same fire escape you came down — go UP. They can\'t follow you up there.');
   await m.until(() => G.player.pos.y > 3.5 && Math.abs(G.player.pos.x + 13.2) < 2.5 && G.player.pos.z > 112 && G.player.pos.z < 134);
   m.unblip(b); m.unmark(mk);
-  m.objective('CLIMB!', '');
+  m.objective('CLIMB TO THE ROOF', 'UP THE STAIRS — TWO FLIGHTS');
+  const top = V3(-13.2, 8.15, 115); const b2 = m.blip(top, { color: '#ffd36b', size: 7 }); const mk2 = m.marker(top, { r: 1.6, h: 6 });
   await m.until(() => G.player.pos.y > 7.6 && G.player.pos.x < -12 && G.player.pos.z > 112 && G.player.pos.z < 134);
+  m.unblip(b2); m.unmark(mk2);
 }
 async function cp4(m, fresh) {
   if (fresh) { setup(m); m.vars.case = true; G.player.carrying = { bag: true }; G.player.teleport(-20, 8.15, 123, -Math.PI / 2); m.music('wrongcar', 4); G.traffic.populate(); G.peds.populate(); G.police.addHeat(2.2); }
@@ -216,8 +218,9 @@ async function cp5(m, fresh) {
   await m.until(() => G.player.vehicle === loaner); m.unblip(b); G.player.carrying = null; m.vars.case = true;
   m.say('KIT', 'Case is riding shotgun. Hold on, case.');
   m.objective('GET OUT OF THE GARAGE', 'RAMPS ON THE EAST SIDE — FOUR LEVELS DOWN'); m.intensity(4);
+  const ex = V3(g.entrance.x, 0.15, g.entrance.z - 6); const bex = m.blip(ex, { color: '#ffd36b', size: 7 });
   await m.until(() => G.player.focus.y < 1 && (G.player.focus.z < g.z0 - 1 || G.player.focus.x < g.x0 - 1 || G.player.focus.x > g.x1 + 1 || G.player.focus.z > g.z1 + 1));
-  G.police.addHeat(1.0); G.stunts.award('GARAGE RUN', 300);
+  m.unblip(bex); G.police.addHeat(1.0); G.stunts.award('GARAGE RUN', 300);
   m.say('DISPATCH', 'Suspect exiting the Galleria structure in an orange muscle car. All units!');
 }
 async function cp6(m, fresh) {

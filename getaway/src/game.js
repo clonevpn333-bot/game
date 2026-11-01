@@ -42,7 +42,9 @@ export class Game {
     G.player = new Player(); G.combat.addTarget(G.player.target);
     G.cam = new CameraRig(G.camera); G.cam.baseFov = G.settings.fov;
     G.composer = createComposer(G.renderer, G.scene, G.camera, G.settings);
-    this.interiorLights = G.world.interiorLights.map((l) => { const p = new THREE.PointLight(l.color, l.intensity, l.distance, 1.5); p.position.set(l.x, l.y, l.z); G.scene.add(p); return p; });
+    this.interiorLights = G.world.interiorLights.map((l) => { const p = new THREE.PointLight(l.color, l.intensity, l.distance, 1.5); p.userData.i0 = l.intensity; p.position.set(l.x, l.y, l.z); G.scene.add(p); return p; });
+    // one shared searchlight for the police helicopter, created up front so no shader ever recompiles mid-game
+    G.heliSpot = new THREE.SpotLight(0xf4f8ff, 0, 160, 0.16, 0.5, 1.2); G.heliSpot.castShadow = false; G.scene.add(G.heliSpot); G.scene.add(G.heliSpot.target);
     this.extraUpdaters = [];
     progress(0.9, 'Tuning engines…'); await tick();
     addEventListener('resize', () => this.resize());
@@ -83,7 +85,7 @@ export class Game {
     G.cam.update(G.paused ? 0 : rdt, input);
     // pier wheel
     if (G.world.landmarks.pier) G.world.landmarks.pier.wheel.rotation.x += dt * 0.06;
-    for (const l of this.interiorLights) l.visible = l.position.distanceToSquared(G.camera.position) < 120 * 120;
+    for (const l of this.interiorLights) l.intensity = l.position.distanceToSquared(G.camera.position) < 120 * 120 ? l.userData.i0 : 0;
     // characters
     G.humans.begin(); G.peds.draw(G.humans); if (G.player.human.visible) G.humans.draw(G.player.human); if (G.npcs) G.npcs.draw(G.humans); G.humans.end();
     // audio listener + ambience

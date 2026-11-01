@@ -252,13 +252,13 @@ export class Vehicle {
   detachDoor(dr, dir) { dr.attached = false; const mesh = dr.pivot.children[0]; this.detach(mesh, dir); }
   crackGlass(level) {
     const gm = this.model.glass; if (!gm || level <= this.glassLevel) return; this.glassLevel = level;
-    if (level === 1) { gm.map = crackedGlass(); gm.color.set(0x8a9aa2); gm.opacity = 0.92; gm.needsUpdate = true; if (G.audio) G.audio.glass(this.pos, 0.5); }
+    if (level === 1) { gm.map = crackedGlass(); gm.color.set(0x8a9aa2); gm.opacity = 0.92; if (G.audio) G.audio.glass(this.pos, 0.5); }
     else { gm.visible = false; if (G.fx) G.fx.glass(_v.copy(this.pos).setY(this.pos.y + this.spec.cabin.belt + 0.3), 40, null, 4); if (G.audio) G.audio.glass(this.pos, 1); }
   }
   explode() {
     if (this.dead) return; this.dead = true; this.hp = 0; this.engineOn = false; this.siren = false; this.wreck = true;
     const p = this.pos.clone().setY(this.pos.y + 1); G.emit('explosion', p, 1.3, 'vehicle', this);
-    this.model.paint.color.set(0x1a1816); if (this.model.paint.clearcoat !== undefined) this.model.paint.clearcoat = 0; this.model.paint.roughness = 0.95; this.model.paint.metalness = 0.2;
+    this.model.paint.color.set(0x1a1816); if (this.model.paint.clearcoat !== undefined) this.model.paint.clearcoat = 0.02; this.model.paint.roughness = 0.95; this.model.paint.metalness = 0.2;
     this.crackGlass(2); for (const b of this.model.bumpers) if (Math.random() < 0.7) this.detach(b, null);
     this.model.lightU.fill(0); this.burnT = -1; this.fireLeft = 25;
     if (!this.spec.bike) { this.toRigid(new THREE.Vector3(rand(-2, 2), rand(-1, 1), rand(-2, 2))); this.rigid.vel.y += 9; }

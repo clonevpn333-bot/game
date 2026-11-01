@@ -34,7 +34,7 @@ export class HUD {
     this.feed = el('hud-feed', this.wrap); this.subs = el('hud-subs', this.wrap); this.big = el('hud-big', this.wrap); this.stunt = el('hud-stunt', this.wrap);
     this.warn = el('hud-warn', this.wrap); this.fps = el('hud-fps', this.wrap);
     this.wpEl = el('hud-wp', this.wrap); this.wpEl.innerHTML = '<div class="wp-arrow"></div><div class="wp-dia"></div><div class="wp-dist"></div>'; this.wpDist = this.wpEl.querySelector('.wp-dist'); this.wpArrow = this.wpEl.querySelector('.wp-arrow');
-    this.waypoint = null; this.route = null; this.routeT = 0; this._wv = new THREE.Vector3();
+    this.waypoint = null; this.route = null; this.routeT = 0; this._wv = new THREE.Vector3(); this.updateChevrons(); // create up front so its shader is warmed at load
     this.mapCanvas = this.buildMap(); this.blips = []; this.objTarget = null; this.subQ = []; this.subT = 0; this.lastDistrict = ''; this.hitT = 0; this.timerVal = null;
     G.on('playerHitTarget', (t, head) => { this.hitT = 0.15; this.hitm.classList.toggle('head', !!head); });
     G.on('policeIntel', (m) => this.notify(m, 'intel'));
