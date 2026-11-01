@@ -47,6 +47,10 @@ const RIV = {
       // Y-shaped headlights: slit along the nose edge + the two arms of the Y
       const A = V(X(0.36), 0.455, 2.44), B = V(X(0.8), 0.49, 2.33), M = V(X(0.6), 0.47, 2.39);
       lights.push(seg(A, B, 0.03, 0.04, 0xf4f9ff, 7)); lights.push(seg(M, V(X(0.72), 0.53, 2.33), 0.03, 0.035, 0xf4f9ff, 7)); lights.push(seg(M, V(X(0.66), 0.42, 2.38), 0.03, 0.035, 0xf4f9ff, 7));
+      // headlight recess: body-colour eyebrow overhanging the light + dark inner housing
+      paintParts.push(seg(V(X(0.34), 0.49, 2.455), V(X(0.83), 0.525, 2.325), 0.07, 0.025, 0xffffff)); parts.push(seg(V(X(0.36), 0.44, 2.43), V(X(0.81), 0.475, 2.3), 0.05, 0.05, 0x0c0d0f));
+      // front intakes: vertical fins for depth
+      for (let k = 0; k < 4; k++) { const x = 0.32 + k * 0.12; parts.push(box(0.018, 0.2, 0.06, X(x), 0.27, 2.43 - k * 0.025, 0x1c1e22)); }
       lights.push(box(0.12, 0.035, 0.03, X(0.5), 0.445, 2.43, 0xffffff, 0, 0)); lights.push(box(0.1, 0.03, 0.03, X(0.68), 0.46, 2.37, 0xffffff, 0, 0));
       parts.push(poly([A, B, V(X(0.82), 0.42, 2.31), V(X(0.38), 0.4, 2.43)].map((v) => v.clone().setZ(v.z - 0.004)), 0x15171a));
       // the Y light wraps back along the fender side: dark housing + light blade
@@ -63,6 +67,14 @@ const RIV = {
       for (const z of [-0.5, 0.86]) { const p = profile(z); for (let i = 3; i < 5; i++) parts.push(seg(V(X(p[i].x + 0.005), p[i].y, z), V(X(p[i + 1].x + 0.005), p[i + 1].y, z), 0.008, 0.008, 0x050506)); }
     }
     sidePatch([[-0.42, 0.5], [-0.44, 0.86], [-0.98, 0.9], [-0.86, 0.6], [-0.66, 0.48]], 0.006, 0x050506, parts, 64);
+    // depth: raised body-colour lip around the side intake, fins inside it, slats in the front-wheel vent
+    for (const sd of [-1, 1]) {
+      const ring = [[-0.42, 0.5], [-0.44, 0.86], [-0.98, 0.9], [-0.86, 0.6], [-0.66, 0.48]]; const P = ring.map(([z, y]) => V(sd * (sideX(z, y) + 0.022), y, z));
+      for (let i = 0; i < P.length; i++) paintParts.push(seg(P[i], P[(i + 1) % P.length], 0.035, 0.022, 0xffffff));
+      for (let k = 0; k < 5; k++) { const z = -0.5 - k * 0.09; const y0 = 0.53 + k * 0.01, y1 = 0.84 + k * 0.012; parts.push(seg(V(sd * (sideX(z, y0) + 0.014), y0, z), V(sd * (sideX(z, y1) + 0.014), y1, z - 0.03), 0.028, 0.014, 0x1c1e22)); }
+      for (let k = 0; k < 4; k++) { const y = 0.34 + k * 0.07; parts.push(seg(V(sd * (sideX(0.84, y) + 0.016), y, 0.84), V(sd * (sideX(0.66, y) + 0.016), y - 0.03, 0.66), 0.03, 0.014, 0x1c1e22)); }
+      const vr = [[0.86, 0.3], [0.86, 0.62], [0.66, 0.5], [0.62, 0.28]].map(([z, y]) => V(sd * (sideX(z, y) + 0.02), y, z)); for (let i = 0; i < 3; i++) paintParts.push(seg(vr[i], vr[i + 1], 0.03, 0.02, 0xffffff));
+    }
     sidePatch([[0.86, 0.3], [0.86, 0.62], [0.66, 0.5], [0.62, 0.28]], 0.006, 0x050506, parts, 40); // vent behind the front wheel
     for (const s of [-1, 1]) { const pts = [[-0.46, 0.6], [-0.92, 0.85]].map(([z, y]) => V(s * (sideX(z, y) + 0.02), y, z)); paintParts.push(seg(pts[0], pts[1], 0.05, 0.05, 0xffffff)); }
     // dark sill blade
@@ -83,11 +95,12 @@ const RIV = {
 
 // ===================== STRADA SV =====================
 const STR = {
+  subdiv: { iters: 2, r: 0.22 }, smooth: 48, tailMat: (y) => (y > 0.62 ? 'paint' : 'trim'),
   photo: { views: [{ img: 'sv_side', slot: 0, ortho: { cx: 334.5, s: 123.5, gy: 333, ys: 0.97, side: -1 } }, { img: 'sv_front', slot: 1, cam: [-0.0105, 1.1607, 7.3781, 0.3231, 0.871, 27.9753, -1.7439] }], minFacing: 0.25 },
   ZF: 2.473, ZR: -2.473, nz: 150, archLip: 0.05,
   // traced from a flat side photo (123.5 px/m): hood 1.27 -> 1.22 m then a short tall front face, belt 1.30-1.36 m,
   // roof 1.83 m, near-vertical rear glass, axles at +1.84 / -1.49
-  axles: [{ z: 1.84, r: 0.41, R: 0.455 }, { z: -1.49, r: 0.41, R: 0.455 }],
+  axles: [{ z: 1.84, r: 0.41, R: 0.44 }, { z: -1.49, r: 0.41, R: 0.44 }],
   lines: {
     p0: [[[0, 0]], [[-2.42, 0.44], [-2.1, 0.24], [2.2, 0.24], [2.42, 0.28]], -2.42, 2.42],
     p1: [[[-2.42, 0.86], [-2.1, 0.93], [2.2, 0.93], [2.42, 0.88]], [[-2.42, 0.44], [-2.1, 0.24], [2.2, 0.24], [2.42, 0.28]], -2.42, 2.42],
@@ -99,7 +112,7 @@ const STR = {
     p7: [[[0, 0]], [[-2.34, 1.36], [-1.5, 1.365], [0, 1.345], [1.16, 1.275], [1.98, 1.23], [2.15, 1.18], [2.36, 1.085]], -2.34, 2.36],
   },
   canopy: {
-    z0: -2.34, z1: 1.16, rail: 0.22, n: 130,
+    z0: -2.34, z1: 1.16, rail: 0.22, n: 130, subdiv: { iters: 2, r: 0.2 },
     belt: [[-2.34, 1.365], [-1.5, 1.365], [0, 1.345], [1.16, 1.3]], x0: [[-2.34, 0.8], [-2.1, 0.86], [0.3, 0.875], [1.16, 0.84]],
     roof: [[-2.34, 1.38], [-2.16, 1.74], [-1.9, 1.78], [-0.77, 1.83], [0.33, 1.78], [1.16, 1.31]], x1: [[-2.34, 0.7], [-2.16, 0.7], [0.33, 0.74], [1.16, 0.82]], drop: [[-2.34, 0.0], [-2.16, 0.06], [0.33, 0.075], [1.16, 0]],
     mat: (j, zc, yc, belt) => {
@@ -109,7 +122,7 @@ const STR = {
     },
     rearCap: 'glass',
   },
-  doors: { z0: -0.2, z1: 1.12, rows: [3, 4] },
+  doors: { z0: -0.2, z1: 1.12, rows: [3, 4], segs: [3, 4], yMin: 0.45 },
   plate: { text: 'SV 0001', y: 0.88 },
   noseCap(f, fan) { const [p0, p1, p2, p2m, p3, p4, p5, p6, p7] = f; fan('paint', [new THREE.Vector3(0, 0.7, 2.45), p7, p6, p5, p4, p3, p2m, p2, p1, p0], new THREE.Vector3(0, 0, 1)); },
   tailCap(r, fan) { const [p0, p1, p2, p2m, p3, p4, p5, p6, p7] = r; fan('paint', [new THREE.Vector3(0, 1.0, -2.46), p7, p6, p5, p4, p3], new THREE.Vector3(0, 0, -1)); fan('trim', [new THREE.Vector3(0, 0.62, -2.44), p3, p2m, p2, p1, p0], new THREE.Vector3(0, 0, -1)); },
@@ -143,10 +156,10 @@ const STR = {
     // black cladding along the sills
     for (const s of [-1, 1]) { const pts = []; for (let i = 0; i <= 12; i++) { const z = -0.95 + i / 12 * 2.3; const p = profile(z)[2]; pts.push(V(s * (p.x + 0.02), p.y + 0.03, z)); } for (let i = 0; i < 12; i++) parts.push(seg(pts[i], pts[i + 1], 0.03, 0.06, DARK)); }
     // roof spoiler, shark-fin, tailgate light bar
-    parts.push(box(1.38, 0.035, 0.3, 0, 1.79, -2.04, DARK)); parts.push(box(0.06, 0.06, 0.2, 0, 1.83, -1.75, DARK));
+    parts.push(box(1.3, 0.035, 0.3, 0, 1.765, -2.0, DARK)); parts.push(box(0.06, 0.06, 0.2, 0, 1.8, -1.75, DARK));
     const tz = rz(1.24) - 0.006; parts.push(box(1.6, 0.08, 0.02, 0, 1.24, tz, 0x101114));
-    for (const s of [-1, 1]) { lights.push(box(0.42, 0.04, 0.02, s * 0.68, 1.25, tz - 0.004, 0xff140c, 0, 1)); lights.push(box(0.12, 0.03, 0.02, s * 0.36, 1.23, tz - 0.004, 0xffffff, 0, 4)); lights.push(box(0.1, 0.02, 0.02, s * 0.88, 1.22, tz - 0.004, 0xffa21a, 0, s > 0 ? 2 : 3)); lights.push(seg(V(s * (sideX(-2.3, 1.25) + 0.005), 1.25, -2.3), V(s * (sideX(-2.12, 1.26) + 0.005), 1.26, -2.12), 0.03, 0.035, 0xff140c, 1)); }
-    lights.push(box(0.5, 0.02, 0.02, 0, 1.765, -2.11, 0xff140c, 0, 1));
+    for (const s of [-1, 1]) { lights.push(box(0.42, 0.04, 0.02, s * 0.68, 1.25, tz - 0.004, 0xff140c, 0, 1)); lights.push(box(0.12, 0.03, 0.02, s * 0.36, 1.23, tz - 0.004, 0xffffff, 0, 4)); lights.push(box(0.1, 0.02, 0.02, s * 0.88, 1.22, tz - 0.004, 0xffa21a, 0, s > 0 ? 2 : 3)); lights.push(seg(V(s * (sideX(-2.3, 1.25) - 0.03), 1.25, -2.3), V(s * (sideX(-2.12, 1.26) - 0.022), 1.26, -2.12), 0.03, 0.035, 0xff140c, 1)); }
+    lights.push(box(0.5, 0.02, 0.02, 0, 1.745, -2.08, 0xff140c, 0, 1));
     // interior
     for (const s of [-1, 1]) { const x = s * 0.42; for (const z of [0.25, -0.75]) { interior.push(box(0.5, 0.12, 0.5, x, 0.78, z, 0x2a1d18)); interior.push(box(0.5, 0.7, 0.12, x, 1.12, z - 0.3, 0x2a1d18, -0.15)); } }
     interior.push(box(1.6, 0.12, 0.4, 0, 1.24, 0.9, 0x161618)); lights.push(box(0.34, 0.16, 0.01, 0.0, 1.33, 0.84, 0x3aa0ff, -0.4, 7));

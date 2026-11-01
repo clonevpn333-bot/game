@@ -100,6 +100,17 @@ export function projectUVs(def, geo, atlas, offset = null) {
   }
   geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
 }
+// subdivision (Chaikin corner cutting on each cross-section ring) -> rounded, flowing panels like a Subdivision Surface
+function chaikin(pts, segs, closed, iters, r) {
+  for (let it = 0; it < iters; it++) {
+    const P = [], Sg = []; const n = pts.length; const m = closed ? n : n - 1;
+    if (!closed) { P.push(pts[0]); Sg.push(segs[0]); }
+    for (let k = 0; k < m; k++) { const a = pts[k], b = pts[(k + 1) % n]; if (closed || k > 0) { P.push(lerpV(a, b, r)); Sg.push(segs[k]); } if (closed || k < m - 1) { P.push(lerpV(a, b, 1 - r)); Sg.push(segs[k]); } }
+    if (!closed) { P.push(pts[n - 1]); Sg.push(segs[m - 1]); }
+    pts = P; segs = Sg;
+  }
+  return [pts, segs];
+}
 const ORDER = ['p0', 'p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7'];
 function inPoly(pt, poly2) { let ins = false; for (let i = 0, j = poly2.length - 1; i < poly2.length; j = i++) { const [zi, yi] = poly2[i], [zj, yj] = poly2[j]; if ((yi > pt[1]) !== (yj > pt[1]) && pt[0] < (zj - zi) * (pt[1] - yi) / (yj - yi) + zi) ins = !ins; } return ins; }
 
@@ -134,19 +145,29 @@ export function buildCreaseCar(def, spec, paintColor) {
   // ---- body shell ----
   const T = new Tris(['paint', 'trim']); const NZ = def.nz || 130; const cols = [];
   for (let i = 0; i <= NZ; i++) { const z = def.ZR + (def.ZF - def.ZR) * i / NZ; const r = profile(z); const ring = [...r]; for (let k = 7; k >= 1; k--) ring.push(mirror(r[k])); cols.push(ring); }
-  const segMat = def.segMat || ((j) => (j <= 2 ? 'trim' : 'paint')); const RN = cols[0].length;
-  for (let i = 0; i < NZ; i++) for (let k = 0; k < RN; k++) { const k2 = (k + 1) % RN; const j = k < 8 ? k : RN - 1 - k; const a = cols[i][k], b = cols[i][k2], cc = cols[i + 1][k2], d = cols[i + 1][k]; T.quad(segMat(j, (a.z + cc.z) / 2, (a.y + b.y + cc.y + d.y) / 4), a, b, cc, d); }
+  const segMat = def.segMat || ((j) => (j <= 2 ? 'trim' : 'paint')); const sub = def.subdiv;
+  let segs0 = cols[0].map((_, k) => (k < 8 ? k : cols[0].length - 1 - k));
+  const rings = sub ? cols.map((ring) => chaikin(ring, segs0, true, sub.iters ?? 2, sub.r ?? 0.2)[0]) : cols; const segs = sub ? chaikin(cols[0], segs0, true, sub.iters ?? 2, sub.r ?? 0.2)[1] : segs0; const RN = rings[0].length;
+  const DTs = sub && def.doors ? { 1: new Tris(['paint']), '-1': new Tris(['paint']) } : null; const dSegs = def.doors?.segs || [3, 4];
+  for (let i = 0; i < NZ; i++) for (let k = 0; k < RN; k++) {
+    const k2 = (k + 1) % RN; const a = rings[i][k], b = rings[i][k2], cc = rings[i + 1][k2], d = rings[i + 1][k]; const zc = (a.z + cc.z) / 2, yc = (a.y + b.y + cc.y + d.y) / 4; const j = segs[k];
+    T.quad(segMat(j, zc, yc), a, b, cc, d);
+    if (DTs && zc > def.doors.z0 && zc < def.doors.z1 && dSegs.includes(j) && yc > (def.doors.yMin ?? 0)) { const sd = a.x + b.x > 0 ? 1 : -1; const o = (v) => V(v.x + sd * 0.005, v.y, v.z); DTs[sd].quad('paint', o(a), o(b), o(cc), o(d)); }
+  }
   const capFan = (mat, pts, dir) => { for (const s of [1, -1]) T.fan(mat, pts.map((v) => (s > 0 ? v : mirror(v))), dir); };
-  if (def.noseCap) def.noseCap(cols[NZ], capFan); else { const [p0, p1, p2, p2m, p3, p4, p5, p6, p7] = cols[NZ]; capFan('trim', [V(0, p0.y, p0.z), p7, p6, p5, p4, p3, p2m, p2, p1, p0], V(0, 0, 1)); }
-  if (def.tailCap) def.tailCap(cols[0], capFan); else { const [p0, p1, p2, p2m, p3, p4, p5, p6, p7] = cols[0]; capFan('paint', [V(0, p3.y, p0.z), p7, p6, p5, p4, p3], V(0, 0, -1)); capFan('trim', [V(0, p3.y, p0.z), p3, p2m, p2, p1, p0], V(0, 0, -1)); }
+  const ringCap = (ring, dir, matFn) => { const c0 = ring.reduce((acc, v) => acc.add(v), V(0, 0, 0)).multiplyScalar(1 / ring.length); c0.z += dir.z * 0.012; for (let k = 0; k < ring.length; k++) { let p1 = ring[k], p2 = ring[(k + 1) % ring.length]; const nrm = new THREE.Vector3().subVectors(p1, c0).cross(new THREE.Vector3().subVectors(p2, c0)); if (nrm.dot(dir) < 0) { const t = p1; p1 = p2; p2 = t; } T.tri(matFn((c0.y + p1.y + p2.y) / 3), c0, p1, p2); } };
+  if (sub) { ringCap(rings[NZ], V(0, 0, 1), def.noseMat || (() => 'paint')); ringCap(rings[0], V(0, 0, -1), def.tailMat || ((y) => (y > 0.62 ? 'paint' : 'trim'))); }
+  else if (def.noseCap) def.noseCap(cols[NZ], capFan); else { const [p0, p1, p2, p2m, p3, p4, p5, p6, p7] = cols[NZ]; capFan('trim', [V(0, p0.y, p0.z), p7, p6, p5, p4, p3, p2m, p2, p1, p0], V(0, 0, 1)); }
+  if (sub) {} else if (def.tailCap) def.tailCap(cols[0], capFan); else { const [p0, p1, p2, p2m, p3, p4, p5, p6, p7] = cols[0]; capFan('paint', [V(0, p3.y, p0.z), p7, p6, p5, p4, p3], V(0, 0, -1)); capFan('trim', [V(0, p3.y, p0.z), p3, p2m, p2, p1, p0], V(0, 0, -1)); }
   const atlas = def.photo ? photoAtlas(def.photo.views.map((v) => v.img)) : null; if (atlas) photoPaint(paint, atlas.tex);
   const bodyGeo = autoSmooth(T.geometry(['paint', 'trim']), def.smooth ?? 32); const bodyMesh = new THREE.Mesh(bodyGeo, [paint, trim]); if (atlas) projectUVs(def, bodyGeo, atlas);
   // ---- canopy ----
   const C = def.canopy; const CT = new Tris(['paint', 'glass', 'trim']); const NC = C.n || 100; const ccols = [];
   for (let i = 0; i <= NC; i++) { const z = C.z0 + (C.z1 - C.z0) * i / NC; const r = canopy(z); const ring = [...r]; for (let k = 4; k >= 0; k--) ring.push(mirror(r[k])); ccols.push(ring); }
-  const CN = ccols[0].length;
-  for (let i = 0; i < NC; i++) for (let k = 0; k < CN - 1; k++) { const a = ccols[i][k], b = ccols[i][k + 1], cc = ccols[i + 1][k + 1], d = ccols[i + 1][k]; const j = k < 5 ? k : CN - 2 - k; const zc = (a.z + cc.z) / 2, yc = (a.y + b.y + cc.y + d.y) / 4; CT.quad(C.mat(j, zc, yc, pwl(C.belt, zc)), a, b, cc, d); }
-  { const r = ccols[0]; CT.fan(C.rearCap || 'paint', [V(0, r[0].y, r[0].z), ...r], V(0, 0.3, -1)); const f = ccols[NC]; CT.fan(C.frontCap || 'glass', [V(0, f[0].y, f[0].z), ...f], V(0, 0.3, 1)); }
+  let cseg0 = ccols[0].map((_, k) => (k < 5 ? k : ccols[0].length - 2 - k)); const csub = C.subdiv;
+  const crings = csub ? ccols.map((r) => chaikin(r, cseg0, false, csub.iters ?? 2, csub.r ?? 0.2)[0]) : ccols; const csegs = csub ? chaikin(ccols[0], cseg0, false, csub.iters ?? 2, csub.r ?? 0.2)[1] : cseg0; const CN = crings[0].length;
+  for (let i = 0; i < NC; i++) for (let k = 0; k < CN - 1; k++) { const a = crings[i][k], b = crings[i][k + 1], cc = crings[i + 1][k + 1], d = crings[i + 1][k]; const j = csegs[k]; const zc = (a.z + cc.z) / 2, yc = (a.y + b.y + cc.y + d.y) / 4; CT.quad(C.mat(j, zc, yc, pwl(C.belt, zc)), a, b, cc, d); }
+  { const r = crings[0]; CT.fan(C.rearCap || 'paint', [V(0, r[0].y, r[0].z), ...r], V(0, 0.3, -1)); const f = crings[NC]; CT.fan(C.frontCap || 'glass', [V(0, f[0].y, f[0].z), ...f], V(0, 0.3, 1)); }
   const cabGeo = autoSmooth(CT.geometry(['paint', 'glass', 'trim']), def.smooth ?? 32); const cabMesh = new THREE.Mesh(cabGeo, [paint, glass, trim]); if (atlas) projectUVs(def, cabGeo, atlas);
   for (const m of [bodyMesh, cabMesh]) { m.castShadow = true; m.receiveShadow = true; body.add(m); }
   // ---- details ----
@@ -164,7 +185,11 @@ export function buildCreaseCar(def, spec, paintColor) {
   for (const [list, pos] of [[def.frontLip, def.ZF], [def.rearLip, def.ZR]]) { const g = list ? mergeParts(list(api)) : mergeParts([box(0.4, 0.02, 0.1, 0, 0, 0, 0x0b0c0e)]); const m = new THREE.Mesh(g, S.detail); m.castShadow = true; body.add(m); bumpers.push(m); }
   // ---- doors: panels lifted off the side between the cut lines ----
   const doors = [];
-  for (const side of [1, -1]) {
+  if (DTs) for (const side of [1, -1]) {
+    const geo = autoSmooth(DTs[side].geometry(['paint']), def.smooth ?? 32); if (atlas) projectUVs(def, geo, atlas); const hz = def.doors.z1; const hinge = V(side * (profile(hz)[4].x), 0, hz); geo.translate(-hinge.x, 0, -hinge.z);
+    const pivot = new THREE.Group(); pivot.position.copy(hinge); const dm = new THREE.Mesh(geo, paint); dm.castShadow = true; pivot.add(dm); body.add(pivot); doors.push({ pivot, side, open: 0, target: 0, attached: true });
+  }
+  else for (const side of [1, -1]) {
     const DT = new Tris(['paint']); const ND = 18; const dc = []; const { z0: DZ0, z1: DZ1, rows = [3, 4, 5] } = def.doors;
     for (let i = 0; i <= ND; i++) { const z = DZ0 + (DZ1 - DZ0) * i / ND; const p = profile(z); dc.push(rows.map((r) => V(side * (p[r].x + 0.004), p[r].y, z))); }
     for (let i = 0; i < ND; i++) for (let k = 0; k < rows.length - 1; k++) { if (side > 0) DT.quad('paint', dc[i][k], dc[i][k + 1], dc[i + 1][k + 1], dc[i + 1][k]); else DT.quad('paint', dc[i][k], dc[i + 1][k], dc[i + 1][k + 1], dc[i][k + 1]); }
