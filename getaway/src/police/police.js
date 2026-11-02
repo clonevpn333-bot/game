@@ -65,7 +65,7 @@ export class PursuitAI {
 }
 
 // ---------------- helicopter ----------------
-function heliModel() {
+export function heliModel() {
   const B = (w, h, d, x, y, z, c) => ({ geo: new THREE.BoxGeometry(w, h, d).translate(x, y, z), c }); const parts = [];
   const body = new THREE.SphereGeometry(1, 16, 12); body.scale(1.3, 1.15, 2.4); parts.push({ geo: body, c: 0x1d2c4f });
   const canopy = new THREE.SphereGeometry(1, 14, 10, 0, Math.PI * 2, 0, Math.PI / 2); canopy.scale(1.15, 0.9, 1.3); canopy.rotateX(0.5); canopy.translate(0, 0.25, 1.4); parts.push({ geo: canopy, c: 0x0d1418 });

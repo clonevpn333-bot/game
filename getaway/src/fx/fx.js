@@ -6,7 +6,7 @@ import { rand, clamp, lerp } from '../core/utils.js';
 import { softParticle, sparkTexture, bulletHoleTexture, scorchTexture, skidTexture } from '../world/textures.js';
 
 const PVS = `attribute float size; attribute vec4 pcolor; attribute float rot; varying vec4 vColor; varying float vRot;
-void main(){ vColor = pcolor; vRot = rot; vec4 mv = modelViewMatrix * vec4(position,1.0); gl_PointSize = size * (900.0 / max(0.5, -mv.z)) * (projectionMatrix[1][1] / 1.7); gl_Position = projectionMatrix * mv; }`;
+void main(){ vColor = pcolor; vRot = rot; vec4 mv = modelViewMatrix * vec4(position,1.0); gl_PointSize = min(size * (900.0 / max(0.5, -mv.z)) * (projectionMatrix[1][1] / 1.7), 320.0); gl_Position = projectionMatrix * mv; if (-mv.z < 1.2) vColor.a *= clamp((-mv.z - 0.4) / 0.8, 0.0, 1.0); }`;
 const PFS = `uniform sampler2D map; varying vec4 vColor; varying float vRot;
 void main(){ vec2 c = gl_PointCoord - 0.5; float s = sin(vRot), co = cos(vRot); vec2 uv = vec2(co*c.x - s*c.y, s*c.x + co*c.y) + 0.5; vec4 t = texture2D(map, uv); gl_FragColor = vec4(vColor.rgb * t.rgb, vColor.a * t.a); if (gl_FragColor.a < 0.003) discard; }`;
 

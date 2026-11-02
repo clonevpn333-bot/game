@@ -10,7 +10,8 @@ import { MissionRunner, makeMarkerMesh } from './missions/framework.js';
 import { CAMPAIGN } from './missions/campaign.js';
 import { FreeRoam } from './missions/freeroam.js';
 import { headlightMaterials } from './vehicles/rostr.js';
-import { buildCarModel } from './vehicles/models.js';
+import { buildCarModel, buildBikeModel } from './vehicles/models.js';
+import { heliModel } from './police/police.js';
 import { VEHICLES } from './vehicles/types.js';
 import { loadCustomCars } from './vehicles/glbcars.js';
 
@@ -39,10 +40,13 @@ class Flow {
     // shader warm-up: everything that can appear mid-game exists (hidden under the map) when we compile
     const warm = makeMarkerMesh(1, 0xffd36b, 2); warm.g.position.set(0, -300, 0); G.scene.add(warm.g);
     { const hm = headlightMaterials({ value: new Array(8).fill(0) }); const q = new THREE.PlaneGeometry(0.1, 0.1); q.setAttribute('ku', new THREE.Float32BufferAttribute(new Float32Array(8), 2)); for (const mt of [hm.lens, hm.glow]) { const w = new THREE.Mesh(q, mt); w.position.set(0, -300, 0); warm.g.add(w); } }
-    for (const id of ['rivolta', 'strada', 'rostr']) { const wm = buildCarModel(VEHICLES[id], VEHICLES[id].colors[0]); wm.root.position.set(0, -300, 0); warm.g.add(wm.root); } // car shaders (photo paint, headlight lens) compiled at boot
+    // compile EVERY vehicle's shaders at boot (bikes, police bike, helicopter included): first-time compiles mid-game = multi-second freezes
+    for (const id in VEHICLES) { const sp = VEHICLES[id]; const wm = sp.bike ? buildBikeModel(sp, sp.colors[0]) : buildCarModel(sp, sp.colors[0]); wm.root.position.set(0, -300, 0); warm.g.add(wm.root); }
+    { const hm = heliModel(); (hm.g || hm).position.set(0, -300, 0); warm.g.add(hm.g || hm); }
     const hidden = []; G.scene.traverse((o) => { if (!o.visible) { hidden.push(o); o.visible = true; } });
     try { G.renderer.compile(G.scene, G.camera); } catch (e) {}
     for (const o of hidden) o.visible = false;
+    G.scene.remove(warm.g); // programs stay cached; the stand-ins don't need to live in the scene
     const q = new URLSearchParams(location.search);
     if (q.get('mission')) { this.startMission(CAMPAIGN.find((m) => m.id === q.get('mission')), +(q.get('cp') || 0)); return; }
     if (q.get('free') || q.get('drive')) { this.startFreeRoam(q.get('car') || null, q); return; }
