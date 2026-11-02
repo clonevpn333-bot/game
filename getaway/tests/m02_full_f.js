@@ -1,5 +1,5 @@
 (async () => { try {
-  const G = __G, g = __game, K = G.input.keys; const log = []; const obj = () => document.querySelector('.hud-obj-text').textContent; G.player.godMode = true;
+  const G = __G, g = __game, K = G.input.keys; var log = []; const obj = () => document.querySelector('.hud-obj-text').textContent; G.player.godMode = true;
   const settle = async (s = 1) => { window.__fixedDt = 1 / 20; for (let i = 0; i < Math.round(s * 20); i++) { g.frame(true); await Promise.resolve(); await Promise.resolve(); } window.__fixedDt = 0; };
   const tap = async (c) => { K.add(c); await settle(0.05); K.delete(c); await settle(0.1); };
   const step = (l) => log.push(`${l} | cp=${G.mission ? G.mission.cpReached : '-'} obj="${obj()}" stars=${G.police.stars}`);
@@ -17,4 +17,4 @@
   s.pos.set(550, 0.15, 104); s.vel.set(0, 0, 0); await settle(2.5); s.pos.set(550, 0.15, 150); await settle(2); step('inside garage');
   await settle(19); await new Promise((r) => setTimeout(r, 3500));
   log.push('completed: ' + JSON.stringify(Object.keys(G.save.completed)) + ' results=' + !!document.querySelector('.results'));
-  return log.join('\n'); } catch (e) { return 'ERR ' + e.stack; } })()
+  return log.join('\n'); } catch (e) { return log.join('\n') + '\nERR ' + e.stack; } })()

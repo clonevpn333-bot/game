@@ -5,7 +5,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { makeLightMaterial } from './models.js';
+import { makeLightMaterial, KEEP_GEO } from './models.js';
 
 export const CUSTOM = {}; // id -> { scene, flip, name }
 const DB = 'getaway-cars', STORE = 'models';
@@ -16,7 +16,7 @@ async function dbDel(key) { const d = await db(); return new Promise((res) => { 
 async function dbKeys() { const d = await db(); return new Promise((res) => { const t = d.transaction(STORE).objectStore(STORE).getAllKeys(); t.onsuccess = () => res(t.result || []); t.onerror = () => res([]); }); }
 
 const loader = new GLTFLoader(); loader.setMeshoptDecoder(MeshoptDecoder);
-function parse(buf) { return new Promise((res, rej) => loader.parse(buf, '', (g) => res(g.scene), (e) => rej(e))); }
+function parse(buf) { return new Promise((res, rej) => loader.parse(buf, '', (g) => { g.scene.traverse((o) => { if (o.geometry) KEEP_GEO.add(o.geometry); }); res(g.scene); }, (e) => rej(e))); }
 
 export async function loadCustomCars(ids) {
   try { for (const key of await dbKeys()) { const rec = await dbGet(key); if (rec && rec.buf) { try { CUSTOM[key] = { scene: await parse(rec.buf), flip: !!rec.flip, name: rec.name || key }; } catch (e) { console.warn('custom car parse failed', key, e); } } } } catch (e) { /* no IndexedDB (private mode) */ }

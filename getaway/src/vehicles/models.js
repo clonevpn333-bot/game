@@ -14,6 +14,7 @@ const LIGHT_FS = `uniform float L[8]; varying vec3 vC; varying float vG; void ma
 export function makeLightMaterial() { return new THREE.ShaderMaterial({ vertexShader: LIGHT_VS, fragmentShader: LIGHT_FS, uniforms: { L: { value: new Array(8).fill(0) } } }); }
 
 const SHARED = {};
+export const KEEP_GEO = new WeakSet(); // geometries shared between cars (never disposed with one car)
 function shared() {
   if (SHARED.trim) return SHARED;
   SHARED.trim = new THREE.MeshStandardMaterial({ color: 0x15171a, roughness: 0.7, metalness: 0.2 });

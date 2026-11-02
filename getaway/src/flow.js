@@ -14,6 +14,7 @@ import { buildCarModel, buildBikeModel } from './vehicles/models.js';
 import { heliModel } from './police/police.js';
 import { VEHICLES } from './vehicles/types.js';
 import { loadCustomCars } from './vehicles/glbcars.js';
+import { warmShaders } from './core/warm.js';
 
 export async function setupFlow(game) {
   const flow = new Flow(game); G.flow = flow; G.game = game;
@@ -43,9 +44,8 @@ class Flow {
     // compile EVERY vehicle's shaders at boot (bikes, police bike, helicopter included): first-time compiles mid-game = multi-second freezes
     for (const id in VEHICLES) { const sp = VEHICLES[id]; const wm = sp.bike ? buildBikeModel(sp, sp.colors[0]) : buildCarModel(sp, sp.colors[0]); wm.root.position.set(0, -300, 0); warm.g.add(wm.root); }
     { const hm = heliModel(); (hm.g || hm).position.set(0, -300, 0); warm.g.add(hm.g || hm); }
-    const hidden = []; G.scene.traverse((o) => { if (!o.visible) { hidden.push(o); o.visible = true; } });
-    try { G.renderer.compile(G.scene, G.camera); } catch (e) {}
-    for (const o of hidden) o.visible = false;
+    if (G.hud.updateChevrons) try { G.hud.updateChevrons(); } catch (e) {} // route chevrons: built now, not on the first GPS route
+    warmShaders(warm.g);
     G.scene.remove(warm.g); // programs stay cached; the stand-ins don't need to live in the scene
     const q = new URLSearchParams(location.search);
     if (q.get('mission')) { this.startMission(CAMPAIGN.find((m) => m.id === q.get('mission')), +(q.get('cp') || 0)); return; }

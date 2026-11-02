@@ -2,6 +2,7 @@
 // cancellable so a retry can restart instantly from the last checkpoint with its own state setup.
 import * as THREE from 'three';
 import { G } from '../core/context.js';
+import { warmNew } from '../core/warm.js';
 import { clamp, fmtTime } from '../core/utils.js';
 
 class Abort extends Error {}
@@ -72,7 +73,7 @@ export class MissionRunner {
     this._offs = [G.on('playerDied', () => this.fail(def.deathText || 'YOU WENT DOWN')), G.on('busted', () => this.fail('BUSTED')), G.on('npcDied', (n) => { if (n.team !== 'player') this.stats.kills++; }), G.on('playerDamaged', (d) => { this.stats.damage += d; })];
     const run = async () => {
       try {
-        for (let i = cp; i < def.checkpoints.length; i++) { this.cpReached = Math.max(this.cpReached, i); await def.checkpoints[i](ctx, i === cp && cp > 0, i === cp); }
+        for (let i = cp; i < def.checkpoints.length; i++) { this.cpReached = Math.max(this.cpReached, i); const run = def.checkpoints[i](ctx, i === cp && cp > 0, i === cp); warmNew(); await run; }
         this.complete();
       } catch (e) { if (!(e instanceof Abort)) { console.error('mission error', e); } }
     };

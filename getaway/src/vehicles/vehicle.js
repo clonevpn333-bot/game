@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { G } from '../core/context.js';
 import { clamp, lerp, approach, smoothstep, wrapAngle, rand, sign } from '../core/utils.js';
 import { VEHICLES } from './types.js';
-import { buildCarModel, buildBikeModel } from './models.js';
+import { buildCarModel, buildBikeModel, KEEP_GEO } from './models.js';
 import { RigidBody } from '../fx/rigid.js';
 import { crackedGlass } from '../world/textures.js';
 
@@ -252,23 +252,23 @@ export class Vehicle {
   }
   detach(mesh, dir) {
     if (!mesh || !mesh.visible || !G.rigid || !mesh.geometry) return; mesh.updateMatrixWorld(); mesh.visible = false;
-    const m = new THREE.Mesh(mesh.geometry, mesh.material); m.castShadow = true; G.scene.add(m);
+    mesh.geometry.userData.debris = true; const m = new THREE.Mesh(mesh.geometry, mesh.material); m.castShadow = true; G.scene.add(m);
     const p = new THREE.Vector3(), q = new THREE.Quaternion(); mesh.matrixWorld.decompose(p, q, _v);
     const bb = mesh.geometry.boundingBox || (mesh.geometry.computeBoundingBox(), mesh.geometry.boundingBox); const half = bb.getSize(new THREE.Vector3()).multiplyScalar(0.5).max(new THREE.Vector3(0.06, 0.06, 0.06));
     const b = new RigidBody({ half, mass: 18, pos: p, quat: q, vel: this.vel.clone().multiplyScalar(0.7).add(new THREE.Vector3(rand(-2, 2), rand(2, 4), rand(-2, 2))).addScaledVector(dir || _v.set(0, 0, 0), -3), angVel: new THREE.Vector3(rand(-6, 6), rand(-6, 6), rand(-6, 6)), mesh: m, life: 25 });
-    b.onRemove = () => G.scene.remove(m); b.onImpact = (bb2, imp) => G.audio && G.audio.impact(bb2.pos, Math.min(0.5, imp / 15), 'metal'); G.rigid.add(b);
+    b.onRemove = () => { G.scene.remove(m); if (this.removed && !KEEP_GEO.has(m.geometry)) m.geometry.dispose(); }; b.onImpact = (bb2, imp) => G.audio && G.audio.impact(bb2.pos, Math.min(0.5, imp / 15), 'metal'); G.rigid.add(b);
     if (G.audio) G.audio.impact(p, 0.6, 'metal');
   }
   detachDoor(dr, dir) { dr.attached = false; const mesh = dr.pivot.children[0]; this.detach(mesh, dir); }
   crackGlass(level) {
     const gm = this.model.glass; if (!gm || level <= this.glassLevel) return; this.glassLevel = level;
-    if (level === 1) { gm.map = crackedGlass(); gm.color.set(0x8a9aa2); gm.opacity = 0.92; if (G.audio) G.audio.glass(this.pos, 0.5); }
+    if (level === 1) { if (gm.map) gm.map = crackedGlass(); /* swapping map->map keeps the same shader; adding one would recompile */ gm.color.set(0x8a9aa2); gm.opacity = 0.92; if (G.audio) G.audio.glass(this.pos, 0.5); }
     else { gm.visible = false; if (G.fx) G.fx.glass(_v.copy(this.pos).setY(this.pos.y + this.spec.cabin.belt + 0.3), 40, null, 4); if (G.audio) G.audio.glass(this.pos, 1); }
   }
   explode() {
     if (this.dead) return; this.dead = true; this.hp = 0; this.engineOn = false; this.siren = false; this.wreck = true;
     const p = this.pos.clone().setY(this.pos.y + 1); G.emit('explosion', p, 1.3, 'vehicle', this);
-    this.model.paint.color.set(0x1a1816); if (this.model.paint.clearcoat !== undefined) this.model.paint.clearcoat = 0.02; this.model.paint.roughness = 0.95; this.model.paint.metalness = 0.2;
+    this.model.paint.color.set(0x1a1816); if (this.model.paint.clearcoat > 0.02) this.model.paint.clearcoat = 0.02; /* never toggle shader features at runtime (= recompile freeze) */ this.model.paint.roughness = 0.95; this.model.paint.metalness = 0.2;
     this.crackGlass(2); for (const b of this.model.bumpers) if (Math.random() < 0.7) this.detach(b, null);
     this.model.lightU.fill(0); this.burnT = -1; this.fireLeft = 25;
     if (!this.spec.bike) { this.toRigid(new THREE.Vector3(rand(-2, 2), rand(-1, 1), rand(-2, 2))); this.rigid.vel.y += 9; }
@@ -323,6 +323,8 @@ export class Vehicle {
     if (this.voice) { this.voice.dispose(); this.voice = null; }
     if (this.sirenVoice) { this.sirenVoice.dispose(); this.sirenVoice = null; }
     this.root.parent && this.root.parent.remove(this.root);
-    this.root.traverse((o) => { if (o.geometry && (o === this.model.bodyMesh || o === this.model.cabMesh)) o.geometry.dispose(); });
+    // free this car's GPU buffers (every car builds its own geometry; leaking them crashed the tab on long chases).
+    // Materials are NOT disposed: that would release shared shader programs and force a recompile freeze next spawn.
+    this.root.traverse((o) => { const g = o.geometry; if (g && !KEEP_GEO.has(g) && !g.userData.debris) g.dispose(); });
   }
 }

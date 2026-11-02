@@ -57,7 +57,7 @@ export class Game {
   }
   resize() { G.camera.aspect = innerWidth / innerHeight; G.camera.updateProjectionMatrix(); G.renderer.setSize(innerWidth, innerHeight); G.composer.setSize(innerWidth, innerHeight); }
   slowmo(dur = 1.2, scale = 0.3) { this.smT = Math.max(this.smT || 0, dur); this.smScale = scale; }
-  addUpdater(fn) { this.extraUpdaters.push(fn); return () => this.extraUpdaters.splice(this.extraUpdaters.indexOf(fn), 1); }
+  addUpdater(fn) { this.extraUpdaters.push(fn); return () => { const i = this.extraUpdaters.indexOf(fn); if (i >= 0) this.extraUpdaters.splice(i, 1); }; }
   saveNow() { storeSave(G.save); }
   saveSettings() { storeSettings(G.settings); }
   // never let one bad frame kill the game: schedule the next frame first, contain + log errors (a thrown error used to freeze everything)
