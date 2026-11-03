@@ -11,7 +11,7 @@
   await settle(1); step('cash');
   G.player.teleport(-30, 0.15, -84, Math.PI); await settle(1.5); step('back door');
   const s = G.mission.ctx.vars.saetta; G.player.teleport(s.pos.x - 2.2, 0.15, s.pos.z, Math.PI / 2); await settle(0.5); K.add('KeyF'); await settle(0.1); K.delete('KeyF'); await settle(3); step('in saetta inCar=' + (G.player.vehicle === s)); K.add('KeyW'); await settle(3); K.delete('KeyW'); step('drove');
-  s.pos.set(-60, 2.7, -568); s.vel.set(0, 0, 0); await settle(1.5); step('on ramp');
+  s.pos.set(-106, 0.2, -568); s.vel.set(0, 0, 0); await settle(1.5); step('ramp mouth'); s.pos.set(30, 12.1, -556); s.vel.set(0, 0, 0); await settle(1.5); step('on deck');
   s.pos.set(150, 12, -544); s.vel.set(0, 0, 0); await settle(1); s.pos.set(300, 12, -544); await settle(1.5); step('past roadblock');
   await settle(1); G.police.escaped(); await settle(1.5); step('escaped');
   s.pos.set(550, 0.15, 104); s.vel.set(0, 0, 0); await settle(2.5); s.pos.set(550, 0.15, 150); await settle(2); step('inside garage');

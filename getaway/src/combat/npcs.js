@@ -2,6 +2,7 @@
 // retreat, drive-by shooting from vehicles, arrests. Difficulty comes from tactics, not bullet sponges.
 import * as THREE from 'three';
 import { G } from '../core/context.js';
+import { inView } from '../core/perf.js';
 import { clamp, rand, chance, dampAngle, pick, lerp } from '../core/utils.js';
 import { Human, LOOKS, J } from '../characters/humanoid.js';
 import { WEAPONS, makeWeaponMesh, poseWeapon, muzzlePoint } from './combat.js';
@@ -155,7 +156,7 @@ export class Npcs {
     const cam = G.camera.position;
     for (let i = this.list.length - 1; i >= 0; i--) { const n = this.list[i]; n.update(dt); if (!n.alive && n.human.ragT > 25 && n.pos.distanceTo(cam) > 60) { n.dispose(); this.list.splice(i, 1); } else if (n.pos.distanceTo(cam) > 400 && !n.keep) { n.dispose(); this.list.splice(i, 1); } }
   }
-  draw(R) { for (const n of this.list) if (n.human.visible) R.draw(n.human); }
+  draw(R) { for (const n of this.list) if (n.human.visible && inView(n.pos, 1.2, 160)) R.draw(n.human); }
   clear() { for (const n of this.list) n.dispose(); this.list = []; this.coverTaken.clear(); }
   get aliveCount() { return this.list.filter((n) => n.alive).length; }
 }

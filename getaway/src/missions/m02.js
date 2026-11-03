@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import { G } from '../core/context.js';
 import { PursuitAI } from '../police/police.js';
+import { clamp } from '../core/utils.js';
 
 const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
 function setup(m) {
@@ -12,6 +13,9 @@ function setup(m) {
   G.dmgScale = 0.6; G.enemyAcc = 0.65; m.ents.offs.push(() => { G.dmgScale = 1; G.enemyAcc = 1; });
   G.sky.setWeather('clear', true); G.sky.dayScale = 0.2 / 60; if (!m.vars.hourSet) { G.sky.setTime(11.2); m.vars.hourSet = true; }
   G.police.reset(); G.police.setTier(1); G.police.maxStars = 3; G.police.tactics = { pit: true, roadblocks: true, heli: false };
+  // lighter chase: at most 4 cruisers at once, a bit less traffic and fewer pedestrians (smooth on modest PCs)
+  G.police.unitCap = 4; G.traffic.density = Math.min(G.settings.trafficDensity, 0.75); G.peds.setDensity(Math.min(G.settings.pedDensity, 0.6));
+  if (!m.ents.restoreSet) { m.ents.restoreSet = true; m.ents.offs.push(() => { G.police.unitCap = 0; G.traffic.density = G.settings.trafficDensity; G.peds.setDensity(G.settings.pedDensity); }); }
   resetVault();
 }
 function resetVault() { const b = G.world.landmarks.bank; b.vaultDoor.rotation.y = 0; b.vaultBox.disabled = false; }
@@ -84,8 +88,8 @@ async function cp4(m, fresh) {
   await m.until(() => G.player.vehicle === saetta); m.unblip(b); G.player.carrying = null; G.stunts.award('GETAWAY!', 300);
   G.police.addHeat(1.2);
   m.say('DEZ', 'Bridges are already blocked. Take the HIGHWAY — on-ramp north of here, off Second Ave.');
-  m.objective('GET ON THE HIGHWAY', 'ON-RAMP NORTH ON 2ND AVENUE');
-  await m.goTo(V3(-60, 4, -568), null, '', { r: 9 });
+  m.objective('GET ON THE HIGHWAY', 'FOLLOW THE ARROWS TO THE ON-RAMP');
+  await m.goTo(V3(-106, 0.15, -568), null, '', { r: 10 }); // the foot of the 2nd Ave on-ramp (the old mid-ramp target pulled the GPS line through a wall)
 }
 async function cp5(m, fresh) {
   if (fresh) { setup(m); m.vars.cash = 3; const v = m.vehicle('saetta', { x: -60, y: 4, z: -568, yaw: Math.PI / 2, color: 0xc0392b }); m.vars.saetta = v; playerIn(m, v); m.music('bankroll', 4); G.traffic.populate(); G.peds.populate(); G.police.setStars(3); }
@@ -93,7 +97,17 @@ async function cp5(m, fresh) {
   const blockX = 260;
   for (const [z, yaw] of [[-548.5, 0.3], [-543.5, -0.4], [-538.6, 0.2]]) { const v = m.vehicle('police', { x: blockX, y: 12, z, yaw }); v.siren = true; v.lightsOn = true; const ai = new PursuitAI(v, G.police, 'roadblock'); ai.parked = true; G.police.units.push({ v, ai }); }
   for (const z of [-546, -541]) m.npc('police', blockX - 8, 12, z, -Math.PI / 2, { role: 'hold', acc: 0.35 });
-  const onDeck = await m.until(() => G.player.focus.y > 10 && G.player.focus.x > blockX - 170, { timeout: 60 });
+  // guide up the ramp: the waypoint rides ahead of you along it until you're on the deck
+  m.objective('UP THE RAMP', 'ONTO THE HIGHWAY — HEAD EAST');
+  const S = G.world.static; const rampH = (x) => clamp((x + 92) / 102, 0, 1) * 12; // slope -92..10, then the merge lane at deck height to x=50
+  const onRamp = () => { const f = G.player.focus; return f.x > -92 && f.x < 50 && Math.abs(f.z + 568) < 5.5 && f.y > rampH(f.x) - 1.2; };
+  // not on the ramp yet → lead to its mouth (west end, facing east); on it → a point riding 32 m ahead up the slope
+  const ahead = () => { const f = G.player.focus; if (!onRamp()) return Math.hypot(f.x + 104, f.z + 568) < 16 ? (Math.abs(f.z + 568) < 2.5 ? V3(-72, rampH(-72), -568) : V3(Math.min(f.x + 6, -96), 0.15, -568)) : V3(-104, 0.15, -568); const x = clamp(G.player.focus.x + 32, -80, 70); const z = x > 22 ? -556 : -568; return V3(x, S.groundAt(x, z, 14, 0).h, z); };
+  const up = m.blip(ahead, { color: '#ffd36b', size: 7 });
+  await m.until(() => G.player.focus.y > 10 && G.player.focus.x > 30); m.unblip(up);
+  m.objective('HEAD EAST ON THE HIGHWAY', 'JUNO SAYS THE DECK IS CLEAR… FOR NOW');
+  const east = m.blip(V3(blockX - 40, 12, -546), { color: '#ffd36b', size: 7 });
+  const onDeck = await m.until(() => G.player.focus.y > 10 && G.player.focus.x > blockX - 170, { timeout: 90 }); m.unblip(east);
   if (!onDeck) return;
   m.say('JUNO', 'Roadblock on the deck! Ram the gap between the cruisers — aim for the TRUNKS, they spin!'); m.slowmo(0.8, 0.4);
   m.objective('BREAK THROUGH THE ROADBLOCK', 'HIT THE GAP AT FULL SPEED — HOLD SHIFT');
@@ -113,7 +127,7 @@ async function cp6(m, fresh) {
   const h = G.world.landmarks.hideout; const front = V3(h.front.x, 0.15, h.front.z);
   await m.goTo(front, null, '', { r: 6, slow: true });
   h.doorBox.disabled = true; for (let i = 0; i <= 30; i++) { h.door.position.y = 3.15 + i * 0.2; await m.wait(0.03); }
-  const inside = V3(550, 0.15, 150); m.objective('PULL IN', ''); await m.goTo(inside, null, '', { r: 4, slow: true });
+  const inside = V3(550, 0.15, 150); m.objective('PULL IN', ''); await m.goTo(inside, null, '', { r: 6, slow: true });
   m.lock(true); h.doorBox.disabled = false; for (let i = 30; i >= 0; i--) { h.door.position.y = 3.15 + i * 0.2; await m.wait(0.02); }
   G.police.reset(); m.intensity(1);
   const p = m.cine({ dur: 14, fov: 45, pos: (k) => V3(540 + k * 4, 2.6, 166 - k * 2), look: () => V3(550, 1.0, 150) });

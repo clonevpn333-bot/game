@@ -3,6 +3,7 @@
 // searchlight, line-of-sight search & evasion, fair arrests, and campaign pursuit memory.
 import * as THREE from 'three';
 import { G } from '../core/context.js';
+import { inView } from '../core/perf.js';
 import { clamp, rand, chance, pick, lerp, damp, dampAngle, wrapAngle } from '../core/utils.js';
 import { driveTo, edgePoint, laneOffset, edgeDir } from '../vehicles/traffic.js';
 import { mergeParts } from '../world/props.js';
@@ -163,6 +164,10 @@ export class Police {
     if (this.heli && this.heli.disposed) this.heli = null; if (this.heli) this.heli.update(dt);
     for (const u of this.units) u.ai.update(dt);
     if (this.state === 'none') { this.retire(dt); return; }
+    // mid-chase cleanup: wrecks behind you and units left far behind go away (they used to pile up for the whole chase)
+    if (G.frame % 20 === 0) { const cam = G.camera.position; for (const u of [...this.units]) { const d = u.v.pos.distanceTo(cam); const wreck = u.v.dead || u.v.flipped || u.v.mode === 'rigid' && u.v.hp <= 0;
+      if ((wreck && d > 110 && !inView(u.v.pos, 3, 400)) || (wreck && d > 220) || d > 480 || (u.ai && u.ai.dismounted && d > 200)) { G.vehicles.remove(u.v); this.units.splice(this.units.indexOf(u), 1); } }
+      const wrecks = this.units.filter((u) => u.v.dead); while (wrecks.length > 4) { const u = wrecks.shift(); if (u.v.pos.distanceTo(cam) < 40 && inView(u.v.pos, 3, 400)) continue; G.vehicles.remove(u.v); this.units.splice(this.units.indexOf(u), 1); } }
     const P = G.player; const tp = P.vehicle ? P.vehicle.pos : P.pos;
     // vision every few frames
     if (G.frame % 4 === 0) this._seen = this.anyLOS();
@@ -193,7 +198,7 @@ export class Police {
   searchPoint(ai) { if (!ai.sp || ai.v.pos.distanceTo(ai.sp) < 15 || (ai.spT = (ai.spT || 0) + G.dt) > 14) { ai.spT = 0; const a = rand(0, Math.PI * 2), r = rand(0.2, 1) * this.searchR; ai.sp = new THREE.Vector3(this.searchCenter.x + Math.cos(a) * r, 0, this.searchCenter.z + Math.sin(a) * r); } return ai.sp; }
   wantedUnits() { const s = this.stars; return s === 0 ? 0 : s === 1 ? 2 : s === 2 ? 3 : s === 3 ? 5 : s === 4 ? 6 : 8; }
   dispatch() {
-    const want = this.wantedUnits() + Math.floor(this.tier / 2); const active = this.units.filter((u) => !u.v.dead && u.v.mode === 'drive').length;
+    const want = Math.min(this.unitCap || 8, this.wantedUnits() + Math.floor(this.tier / 2)); if (this.units.length >= (this.unitCap || 8) + 3) return; const active = this.units.filter((u) => !u.v.dead && u.v.mode === 'drive').length;
     if (active >= want) return;
     const P = G.player; const tp = P.vehicle ? P.vehicle.pos : P.pos; const cam = G.camera; const cd = cam.getWorldDirection(new THREE.Vector3());
     const pv = P.vehicle; const ahead = pv ? new THREE.Vector3(pv.vel.x, 0, pv.vel.z).normalize() : null;
@@ -239,5 +244,5 @@ export class Police {
     for (const o of this.officers) if (o.alive && o.pos.distanceTo(cam) > 80) { o.dispose(); G.npcs.list.splice(G.npcs.list.indexOf(o), 1); }
     if (this.heli) { this.heli.update(dt); if (this.heli && this.heli.pos.distanceTo(cam) > 300) { this.heli.dispose(); this.heli = null; } }
   }
-  reset() { for (const u of this.units) G.vehicles.remove(u.v); this.units = []; for (const o of this.officers) { o.dispose(); const i = G.npcs.list.indexOf(o); if (i >= 0) G.npcs.list.splice(i, 1); } this.officers = []; if (this.heli) { this.heli.dispose(); this.heli = null; } this.heat = 0; this.stars = 0; this.state = 'none'; this.minStars = 0; this.maxStars = 5; this.locked = false; this.enabled = true; }
+  reset() { this.unitCap = 0; for (const u of this.units) G.vehicles.remove(u.v); this.units = []; for (const o of this.officers) { o.dispose(); const i = G.npcs.list.indexOf(o); if (i >= 0) G.npcs.list.splice(i, 1); } this.officers = []; if (this.heli) { this.heli.dispose(); this.heli = null; } this.heat = 0; this.stars = 0; this.state = 'none'; this.minStars = 0; this.maxStars = 5; this.locked = false; this.enabled = true; }
 }

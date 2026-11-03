@@ -2,6 +2,7 @@
 // skid marks & tire smoke, engine + siren voice pooling.
 import * as THREE from 'three';
 import { G } from '../core/context.js';
+import { inView } from '../core/perf.js';
 import { clamp, SpatialHash, rand, lerp } from '../core/utils.js';
 import { Vehicle } from './vehicle.js';
 import { wheelAssets, RIM_OF } from './models.js';
@@ -184,7 +185,7 @@ export class VehicleManager {
   _wheels(dt) {
     let i = 0; const cam = G.camera ? G.camera.position : _p.set(0, 0, 0); const fx = G.fx; for (const k in this.rimSets) this.rimSets[k].n = 0;
     for (const v of this.list) {
-      const dcam = v.pos.distanceToSquared(cam); const vis = dcam < 320 * 320;
+      const dcam = v.pos.distanceToSquared(cam); const vis = inView(v.pos, v.spec.L * 0.6, 260);
       const ws = v.model.wheels; const sy = Math.sin(v.yaw), cy = Math.cos(v.yaw);
       if (v.model.glow) { const L = v.model.lightU; for (const gl of v.model.glow) gl.m.emissiveIntensity = gl.base * (gl.g === 7 ? 1 : gl.g === 1 ? 0.35 + L[1] * 0.9 : 0.08 + L[gl.g] * 1.2); }
       for (let k = 0; k < ws.length; k++) {

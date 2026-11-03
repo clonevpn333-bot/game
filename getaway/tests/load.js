@@ -1,0 +1,8 @@
+(async () => { const G = __G, g = __game, R = G.renderer; G.player.godMode = true;
+  const s = G.mission.ctx.vars.saetta; G.player.teleport(s.pos.x - 2.2, 0.15, s.pos.z, Math.PI / 2); G.player.enterVehicle(s); window.__fixedDt = 1 / 30; for (let i = 0; i < 60; i++) g.frame(true);
+  let lights = { point: 0, spot: 0, dir: 0, hemi: 0 }; G.scene.traverse((o) => { if (o.isPointLight) lights.point++; if (o.isSpotLight) lights.spot++; if (o.isDirectionalLight) lights.dir++; if (o.isHemisphereLight) lights.hemi++; });
+  R.info.autoReset = false; R.info.reset(); const sm = R.shadowMap.render.bind(R.shadowMap); let sh = null; R.shadowMap.render = (...a) => { const c0 = R.info.render.calls, t0 = R.info.render.triangles; sm(...a); sh = { calls: R.info.render.calls - c0, tris: R.info.render.triangles - t0 }; };
+  R.shadowMap.needsUpdate = true; g.frame(false); const tot = { calls: R.info.render.calls, tris: R.info.render.triangles };
+  let nc = 0, big = []; G.scene.traverse((o) => { if ((o.isMesh || o.isInstancedMesh) && o.visible && o.frustumCulled === false) { const t = o.geometry.index ? o.geometry.index.count / 3 : o.geometry.attributes.position.count / 3; const tt = t * (o.isInstancedMesh ? o.count : 1); nc++; if (tt > 20000) big.push(`${o.name || o.parent?.name || '?'}:${(tt / 1000).toFixed(0)}k${o.isInstancedMesh ? ' inst' + o.count : ''}`); } });
+  const sz = new (G.camera.position.constructor)(); R.getDrawingBufferSize(sz);
+  return JSON.stringify({ lights, pr: R.getPixelRatio(), buf: [sz.x, sz.y], shadowMap: G.sky.sun.shadow.mapSize.x, autoShadow: R.shadowMap.autoUpdate, total: tot, shadow: sh, noCull: nc, bigNoCull: big.slice(0, 30) }); })()

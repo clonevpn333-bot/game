@@ -34,13 +34,13 @@ const GradeShader = {
 };
 
 export function createRenderer(container, settings) {
-  const renderer = new THREE.WebGLRenderer({ antialias: settings.quality !== 'low', powerPreference: 'high-performance', stencil: false });
-  const pr = settings.quality === 'ultra' ? Math.min(2, devicePixelRatio) : settings.quality === 'high' ? Math.min(1.5, devicePixelRatio) : settings.quality === 'medium' ? 1 : 0.75;
+  const renderer = new THREE.WebGLRenderer({ antialias: false, /* the composer renders off-screen; canvas MSAA only cost memory */ powerPreference: 'high-performance', stencil: false });
+  const pr = settings.quality === 'ultra' ? Math.min(2, devicePixelRatio) : settings.quality === 'high' ? Math.min(1.25, devicePixelRatio) : settings.quality === 'medium' ? 1 : 0.75;
   renderer.setPixelRatio(pr);
   renderer.setSize(innerWidth, innerHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.0;
-  renderer.shadowMap.enabled = settings.shadows && settings.quality !== 'low'; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.enabled = settings.shadows && settings.quality !== 'low'; renderer.shadowMap.type = THREE.PCFShadowMap;
   container.appendChild(renderer.domElement);
   return renderer;
 }

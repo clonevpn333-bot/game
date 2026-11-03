@@ -76,7 +76,7 @@ function highway(ctx) {
   };
   for (let x = HWY.x0; x < HWY.x1; x += 200) deck(x, Math.min(HWY.x1, x + 200));
   // jersey barriers with gaps for mid ramps
-  const barrier = (xa, xb, zc) => { if (xb - xa < 1) return; S.addBox(xa, y, zc - 0.35, xb, y + 1.05, zc + 0.35, { mat: 'concrete' }); B.box('concrete', xa, y, zc - 0.35, xb, y + 1.05, zc + 0.35, { tw: 4 }); };
+  const barrier = (xa, xb, zc) => { if (xb - xa < 1) return; S.addBox(xa, y, zc - 0.35, xb, y + 1.05, zc + 0.35, { mat: 'concrete' }); S.addBox(xa, y + 1.05, zc - 0.35, xb, y + 3.4, zc + 0.35, { mat: 'concrete', surface: false, tag: 'fence' }); /* invisible catch fence: crashes can't launch you off the deck */ B.box('concrete', xa, y, zc - 0.35, xb, y + 1.05, zc + 0.35, { tw: 4 }); };
   const mr = MIDRAMP;
   barrier(HWY.x0, mr.s.x0 - 8, z1 - 0.35); barrier(mr.s.x0 + 46, HWY.x1, z1 - 0.35);
   barrier(HWY.x0, mr.n.x1 - 46, z0 + 0.35); barrier(mr.n.x1 + 8, HWY.x1, z0 + 0.35);
@@ -95,8 +95,13 @@ function highway(ctx) {
   rampVisual(ctx, HWY.rampW0, z0, HWY.x0, z1, 'x', 0, y, 'hwy');
   rampVisual(ctx, HWY.x1, z0, HWY.rampE1 - HR, z1, 'x', y, 0, 'hwy');
   // mid ramps (south: off-ramp eastbound descending east; north: on-ramp ascending east)
-  rampVisual(ctx, mr.s.x0, mr.s.z0, mr.s.x1, mr.s.z1, 'x', y, 0, 'road', true);
-  rampVisual(ctx, mr.n.x0, mr.n.z0, mr.n.x1, mr.n.z1, 'x', 0, y, 'road', true);
+  // each mid ramp = a slope + a 40 m merge lane at deck height whose deck side is open (before, the slope only reached
+  // deck height in its last metres behind a wall, so cars flew off its end or got stuck at the seam)
+  const ML = 40;
+  rampVisual(ctx, mr.s.x0 + ML, mr.s.z0, mr.s.x1, mr.s.z1, 'x', y, 0, 'road', true); mergeLane(ctx, mr.s.x0, mr.s.x0 + ML, mr.s.z0, mr.s.z1, y, 'west');
+  rampVisual(ctx, mr.n.x0, mr.n.z0, mr.n.x1 - ML, mr.n.z1, 'x', 0, y, 'road', true); mergeLane(ctx, mr.n.x1 - ML, mr.n.x1, mr.n.z0, mr.n.z1, y, 'east');
+  // jersey barrier closing the dead-end alley between the on-ramp's outer wall and the building beside it
+  S.addBox(mr.n.x0 + 4.5, 0, mr.n.z0 - 6, mr.n.x0 + 5.5, 1.1, mr.n.z0, { mat: 'concrete' }); B.box('concrete', mr.n.x0 + 4.5, 0, mr.n.z0 - 6, mr.n.x0 + 5.5, 1.1, mr.n.z0, { tw: 4 });
   // overhead sign gantries
   for (const gx of [-600, 150]) {
     ctx.vbox(0x6d7378, gx - 0.3, y, z0 - 0.5, gx + 0.3, y + 8, z0 + 0.1, true, { metal: true }); ctx.vbox(0x6d7378, gx - 0.3, y, z1 - 0.1, gx + 0.3, y + 8, z1 + 0.5, true, { metal: true });
@@ -105,18 +110,35 @@ function highway(ctx) {
   }
   ctx.landmarks.highway = { z: HWY.z, y };
 }
+function mergeLane(ctx, x0, x1, za, zb, y, closedEnd) {
+  const { S, B } = ctx; const deckEdgeZ = Math.abs(za - HWY.z) < Math.abs(zb - HWY.z) ? (za < HWY.z ? HWY.z - HWY.half : HWY.z + HWY.half) : (zb < HWY.z ? HWY.z - HWY.half : HWY.z + HWY.half);
+  const outer = Math.abs(za - HWY.z) > Math.abs(zb - HWY.z) ? za : zb; const zmin = Math.min(outer, deckEdgeZ), zmax = Math.max(outer, deckEdgeZ); const inward = outer < deckEdgeZ ? 1 : -1;
+  S.addBox(x0, y - 1.2, zmin, x1, y, zmax, { mat: 'concrete', tag: 'hwy' });
+  B.quad('road', [[x0, y + 0.01, zmax], [x1, y + 0.01, zmax], [x1, y + 0.01, zmin], [x0, y + 0.01, zmin]], [1, 0, 1, (x1 - x0) / 12, 0, (x1 - x0) / 12, 0, 0]);
+  B.box('concrete', x0, y - 1.2, zmin, x1, y - 0.01, zmax, { tw: 6, faces: 'pz nz ny' });
+  // outer wall (+ invisible catch fence) and the closed end; on the travel end the wall steps inward to steer you onto the deck
+  const wall = (xa, xb, z) => { S.addBox(xa, y, z - 0.35, xb, y + 1.05, z + 0.35, { mat: 'concrete' }); S.addBox(xa, y + 1.05, z - 0.35, xb, y + 3.4, z + 0.35, { mat: 'concrete', surface: false, tag: 'fence' }); B.box('concrete', xa, y, z - 0.35, xb, y + 1.05, z + 0.35, { tw: 4 }); };
+  const W = Math.abs(zmax - zmin); const T = 18, steps = 6;
+  if (closedEnd === 'east') { wall(x0, x1 - T, outer); for (let k = 0; k < steps; k++) { const xa = x1 - T + k * T / steps, xb = xa + T / steps; const zz = outer + inward * W * 0.55 * (k + 1) / steps; S.addBox(xa, y, Math.min(outer, zz), xb, y + 1.05, Math.max(outer, zz), { mat: 'concrete' }); B.box('concrete', xa, y, Math.min(outer, zz), xb, y + 1.05, Math.max(outer, zz), { tw: 4 }); } S.addBox(x1 - 0.5, y, zmin, x1 + 0.5, y + 3.4, zmax, { mat: 'concrete', surface: false }); }
+  else { wall(x0 + 0.5, x1, outer); S.addBox(x0 - 0.5, y, zmin, x0 + 0.5, y + 3.4, zmax, { mat: 'concrete', surface: false }); B.box('concrete', x0 - 0.5, y, zmin, x0 + 0.5, y + 1.05, zmax, { tw: 4 }); }
+}
 function rampVisual(ctx, xa, za, xb, zb, axis, h0, h1, mat, rails = false) {
   const { S, B } = ctx; S.addRamp(xa, za, xb, zb, axis, h0, h1, { tag: 'ramp' });
   B.quad(mat === 'hwy' ? 'hwy' : 'road', [[xa, h0 + 0.01, zb], [xb, h1 + 0.01, zb], [xb, h1 + 0.01, za], [xa, h0 + 0.01, za]], mat === 'hwy' ? [1, 0, 1, (xb - xa) / 12, 0, (xb - xa) / 12, 0, 0] : [1, 0, 1, (xb - xa) / 12, 0, (xb - xa) / 12, 0, 0]);
   // underside + side skirts
   B.quad('concrete', [[xa, Math.max(0, h0 - 1.2), za], [xb, Math.max(0, h1 - 1.2), za], [xb, Math.max(0, h1 - 1.2), zb], [xa, Math.max(0, h0 - 1.2), zb]], [0, 0, 4, 0, 4, 1, 0, 1], [0, -1, 0]);
   for (const zz of [za, zb]) { const s = zz === za ? -1 : 1; B.quad('concrete', s < 0 ? [[xb, Math.max(0, h1 - 1.2), zz], [xa, Math.max(0, h0 - 1.2), zz], [xa, h0 + 1.0, zz], [xb, h1 + 1.0, zz]] : [[xa, Math.max(0, h0 - 1.2), zz], [xb, Math.max(0, h1 - 1.2), zz], [xb, h1 + 1.0, zz], [xa, h0 + 1.0, zz]], [0, 0, (xb - xa) / 6, 0, (xb - xa) / 6, 0.5, 0, 0.5], [0, 0, s]); }
+  // low end of the ramp is a solid embankment (under the high end streets pass beneath): close the sides + the cross-section
+  const CLEAR = 4.5; if (h0 !== h1) { const xc = xa + (CLEAR - h0) / (h1 - h0) * (xb - xa); if (xc > xa && xc < xb) {
+    const lo0 = h0 < h1 ? xa : xc, lo1 = h0 < h1 ? xc : xb; S.addBox(xc - 0.4, 0, Math.min(za, zb), xc + 0.4, CLEAR - 0.2, Math.max(za, zb), { mat: 'concrete', surface: false });
+    const hAt = (x) => h0 + (h1 - h0) * ((x - xa) / (xb - xa)); B.quad('concrete', [[xc, 0, za], [xc, 0, zb], [xc, CLEAR - 1.2, zb], [xc, CLEAR - 1.2, za]], [0, 0, 1, 0, 1, 0.5, 0, 0.5], [h0 < h1 ? 1 : -1, 0, 0]);
+    for (const zz of [za, zb]) { const sg = zz === za ? -1 : 1; const q = [[lo0, 0, zz], [lo1, 0, zz], [lo1, Math.max(0, hAt(lo1) - 1.2), zz], [lo0, Math.max(0, hAt(lo0) - 1.2), zz]]; B.quad('concrete', sg < 0 ? [q[1], q[0], q[3], q[2]] : q, [0, 0, (lo1 - lo0) / 6, 0, (lo1 - lo0) / 6, 0.5, 0, 0.5], [0, 0, sg]); } } }
   // stepped collision walls along ramp edges
   const n = Math.ceil((xb - xa) / 5);
   for (let i = 0; i < n; i++) {
     const x0 = xa + i * 5, x1 = Math.min(xb, x0 + 5); const t = (x0 + x1) / 2; const h = h0 + (h1 - h0) * ((t - xa) / (xb - xa));
     if (h < 0.4) continue;
-    for (const zz of [za, zb]) S.addBox(x0, Math.max(0.3, h - 1.6), zz - 0.3, x1, h + 1.0, zz + 0.3, { mat: 'concrete', surface: false });
+    for (const zz of [za, zb]) S.addBox(x0, h < CLEAR ? 0 : Math.max(0.3, h - 1.6), zz - 0.3, x1, h + 1.0, zz + 0.3, { mat: 'concrete', surface: false }); // low end: solid to the ground (cars used to slip under and wedge)
     if (rails && h > 2.2 && i % 4 === 0) ctx.solid('concrete', t - 0.8, 0, (za + zb) / 2 - 0.8, t + 0.8, h - 1.2, (za + zb) / 2 + 0.8, { tw: 4 });
   }
 }

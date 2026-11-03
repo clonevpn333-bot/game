@@ -97,7 +97,7 @@ export class StaticWorld {
     while (tCell < bestT && guard++ < 400) {
       const l = this.grid.get(this._k(ix, iz));
       if (l) for (const b of l) {
-        if (b._s === s) continue; b._s = s; if (b.disabled || (!b.solid && !b.surface)) continue; if (ignoreGlass && b.glass) continue;
+        if (b._s === s) continue; b._s = s; if (b.disabled || (!b.solid && !b.surface)) continue; if (ignoreGlass && b.glass) continue; if (b.tag === 'fence') continue; // invisible vehicle catch fences don't stop bullets, sight lines or the camera
         // slab test
         let t0 = 0, t1 = bestT, nAxis = -1, nSign = 0;
         const sl = (o, d, mn, mx, axis) => {

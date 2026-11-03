@@ -2,6 +2,7 @@
 // reactions (flee, cower, hands up, dive, phone the police), vehicle knockdowns (ragdoll), carjack ejection.
 import * as THREE from 'three';
 import { G } from '../core/context.js';
+import { inView } from '../core/perf.js';
 import { clamp, rand, pick, chance, dampAngle, SpatialHash, lerp } from '../core/utils.js';
 import { Human, randomLook, LOOKS, J } from './humanoid.js';
 import { walkSignal } from '../world/signals.js';
@@ -193,5 +194,5 @@ export class Peds {
     }
   }
   clear() { for (const p of [...this.list]) if (!p.keep) this.remove(p); }
-  draw(R) { const cam = G.camera.position; for (const p of this.list) if (p.human.visible) R.draw(p.human); }
+  draw(R) { for (const p of this.list) if (p.human.visible && inView(p.pos, 1.2, 110)) R.draw(p.human); } // far / off-screen people aren't drawn (was ~1M triangles a frame)
 }

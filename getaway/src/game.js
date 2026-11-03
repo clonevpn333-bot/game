@@ -1,4 +1,5 @@
 // GETAWAY! — game orchestrator: boot, systems, main loop, slow motion, mode transitions.
+import { PerfGovernor, updateView } from './core/perf.js';
 import * as THREE from 'three';
 import { G } from './core/context.js';
 import { clamp, rand } from './core/utils.js';
@@ -44,8 +45,9 @@ export class Game {
     G.player = new Player(); G.combat.addTarget(G.player.target);
     G.cam = new CameraRig(G.camera); G.cam.baseFov = G.settings.fov;
     G.lighting = new Lighting(G.scene); G.lighting.buildLampPools(G.props);
-    G.composer = createComposer(G.renderer, G.scene, G.camera, G.settings);
-    this.interiorLights = G.world.interiorLights.map((l) => { const p = new THREE.PointLight(l.color, l.intensity, l.distance, 1.5); p.userData.i0 = l.intensity; p.position.set(l.x, l.y, l.z); G.scene.add(p); return p; });
+    G.composer = createComposer(G.renderer, G.scene, G.camera, G.settings); G.perf = new PerfGovernor(G.renderer, G.composer, G.settings);
+    // interior lights: 2 real lights reassigned to the nearest fixtures (every light costs every pixel of every lit shader)
+    this.interiorDefs = G.world.interiorLights; this.interiorLights = [0, 1].map(() => { const p = new THREE.PointLight(0xffffff, 0, 40, 1.5); G.scene.add(p); return p; });
     // one shared searchlight for the police helicopter, created up front so no shader ever recompiles mid-game
     G.heliSpot = new THREE.SpotLight(0xf4f8ff, 0, 160, 0.16, 0.5, 1.2); G.heliSpot.castShadow = false; G.scene.add(G.heliSpot); G.scene.add(G.heliSpot.target);
     this.extraUpdaters = [];
@@ -61,11 +63,11 @@ export class Game {
   saveNow() { storeSave(G.save); }
   saveSettings() { storeSettings(G.settings); }
   // never let one bad frame kill the game: schedule the next frame first, contain + log errors (a thrown error used to freeze everything)
-  start() { let errs = 0; const loop = () => { requestAnimationFrame(loop); try { this.frame(); } catch (e) { if (errs++ < 20) console.error('frame error (recovered)', e); } }; requestAnimationFrame(loop); }
+  start() { let errs = 0; const loop = () => { requestAnimationFrame(loop); if (window.__fixedDt) return; /* a test is stepping frames itself */ try { this.frame(); } catch (e) { if (errs++ < 20) console.error('frame error (recovered)', e); } }; requestAnimationFrame(loop); }
   // headless/test helper: advance the simulation without rendering
   simulate(seconds, dt = 1 / 60) { const n = Math.round(seconds / dt); window.__fixedDt = dt; for (let i = 0; i < n; i++) this.frame(true); window.__fixedDt = 0; }
   frame(noRender = false) {
-    const now = performance.now(); let rdt = Math.min(0.05, (now - this.last) / 1000); this.last = now; if (window.__fixedDt) rdt = window.__fixedDt;
+    const now = performance.now(); const rawMs = now - this.last; let rdt = Math.min(0.05, rawMs / 1000); this.last = now; if (window.__fixedDt) rdt = window.__fixedDt;
     this.fpsT += rdt; this.frames++; if (this.fpsT > 0.5) { this.fps = this.frames / this.fpsT; this.fpsT = 0; this.frames = 0; }
     const input = G.input; input.poll(); G.frame++;
     // slow motion
@@ -86,10 +88,11 @@ export class Game {
     if (!G.paused) { G.props.update(dt, G.time, G.sky.night); G.fx.update(dt); }
     const focus = G.mode === 'menu' ? G.cam.look : (G.player.vehicle ? G.player.vehicle.pos : G.player.pos);
     G.sky.update(G.paused ? 0 : dt, focus, G.camera.position, G.audio);
-    G.cam.update(G.paused ? 0 : rdt, input);
+    G.cam.update(G.paused ? 0 : rdt, input); updateView();
     // pier wheel
     if (G.world.landmarks.pier) G.world.landmarks.pier.wheel.rotation.x += dt * 0.06;
-    for (const l of this.interiorLights) l.intensity = l.position.distanceToSquared(G.camera.position) < 120 * 120 ? l.userData.i0 : 0;
+    if ((G.frame & 7) === 0) { const c = G.camera.position; const near = this.interiorDefs.map((d) => [d, (d.x - c.x) ** 2 + (d.y - c.y) ** 2 + (d.z - c.z) ** 2]).filter((e) => e[1] < 120 * 120).sort((a, b) => a[1] - b[1]);
+      this.interiorLights.forEach((l, i) => { const e = near[i]; if (!e) { l.intensity = 0; return; } const d = e[0]; l.position.set(d.x, d.y, d.z); l.color.set(d.color); l.intensity = d.intensity; l.distance = d.distance; }); }
     // characters
     G.humans.begin(); G.peds.draw(G.humans); if (G.player.human.visible) G.humans.draw(G.player.human); if (G.npcs) G.npcs.draw(G.humans); G.humans.end();
     if (G.lighting) G.lighting.update(rdt);
@@ -106,7 +109,7 @@ export class Game {
     gr.damage.value = G.mode === 'play' ? clamp(1 - G.player.health / 55, 0, 1) * 0.8 + (G.time - G.player.lastHit < 0.25 ? 0.4 : 0) : 0;
     gr.slowmo.value = G.slowmo; gr.letterbox.value = G.cam.letterbox; gr.flash.value = G.sky.flash * 0.15 + (this.flash || 0); this.flash = Math.max(0, (this.flash || 0) - rdt * 3);
     gr.underwater.value = G.camera.position.y < -0.85 && G.world.static.waterLevel(G.camera.position.x, G.camera.position.z) > -1 ? 1 : 0;
-    if (!noRender) G.composer.render(rdt);
+    if (!noRender && !G.perf.lost) { G.perf.tick(G.frame); G.composer.render(rdt); if (!window.__fixedDt) G.perf.frame(rawMs); }
     input.endFrame(true);
     window.__frames = (window.__frames || 0) + 1;
   }

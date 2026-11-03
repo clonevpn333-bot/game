@@ -69,13 +69,14 @@ export class MissionRunner {
   start(def, cp = 0) {
     if (this.ctx) this.abort(); this.def = def; this.active = true; this.failed = false; this.done = false; this.cpReached = cp; this.timerLeft = null; this.musicOverride = null;
     if (cp === 0 || !this.stats) { this.vars = cp === 0 ? {} : (this.vars || {}); this.stats = { time: 0, objectives: 0, kills: 0, shots: 0, hits: 0, damage: 0, retries: 0, startScore: 0 }; G.stunts.reset(); if (cp > 0) this.stats.retries++; } else this.stats.retries++;
-    const ctx = this.ctx = new MissionContext(this, def); ctx.vars = this.vars; G.mission = this;
+    if (cp === 0) this.autoRetries = 0; const ctx = this.ctx = new MissionContext(this, def); ctx.vars = this.vars; G.mission = this;
     this._offs = [G.on('playerDied', () => this.fail(def.deathText || 'YOU WENT DOWN')), G.on('busted', () => this.fail('BUSTED')), G.on('npcDied', (n) => { if (n.team !== 'player') this.stats.kills++; }), G.on('playerDamaged', (d) => { this.stats.damage += d; })];
     const run = async () => {
       try {
         for (let i = cp; i < def.checkpoints.length; i++) { this.cpReached = Math.max(this.cpReached, i); const run = def.checkpoints[i](ctx, i === cp && cp > 0, i === cp); warmNew(); await run; }
         this.complete();
-      } catch (e) { if (!(e instanceof Abort)) { console.error('mission error', e); } }
+      } catch (e) { if (!(e instanceof Abort)) { console.error('mission error', e); // never leave the player stuck: restart this checkpoint (a few times)
+          this.autoRetries = (this.autoRetries || 0) + 1; if (this.autoRetries <= 3 && this.active && this.ctx === ctx) { if (G.perf) G.perf.banner('Mission hiccup — restarting checkpoint', 2500); setTimeout(() => { if (this.ctx === ctx) this.retry(); }, 600); } } }
     };
     run();
   }

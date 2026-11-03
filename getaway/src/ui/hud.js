@@ -78,11 +78,23 @@ export class HUD {
     const tgt = this.wpPos(); const P = G.player; if (!tgt || !P.vehicle) { this.route = null; return; }
     this.routeT -= dt; if (this.routeT > 0) return; this.routeT = 0.8;
     const f = P.focus; if (Math.hypot(tgt.x - f.x, tgt.z - f.z) < 40) { this.route = [f.clone(), tgt.clone()]; return; }
-    const g = G.world.graph; const a = nearestNode(g, f.x, f.z), b = nearestNode(g, tgt.x, tgt.z); const path = astar(g, a, b); if (!path) { this.route = null; return; }
+    // the elevated highway and the 2nd Ave on-ramp aren't in the street graph: guide along them explicitly
+    const V = (x, y, z) => new THREE.Vector3(x, y, z); const pre = [V(f.x, f.y, f.z)]; let from = f;
+    const onRamp = f.y > 0.6 && Math.abs(f.z - (HWY.z - 18)) < 6 && f.x > -95 && f.x < 50;
+    const onDeck = Math.abs(f.z - HWY.z) < HWY.half + 2 && ((f.y > 8 && f.x > HWY.x0 - 5 && f.x < HWY.x1 + 5) || (f.y > 1.2 && ((f.x >= HWY.x1 && f.x < HWY.rampE1) || (f.x <= HWY.x0 && f.x > HWY.rampW0)))); // deck or its end ramps
+    if (onRamp) { if (f.x < 8) pre.push(V(14, 12, HWY.z - 17)); pre.push(V(Math.max(f.x + 12, 24), 12, HWY.z - 4)); from = pre[pre.length - 1]; } // up the slope, then straight across the open merge lane onto the deck
+    const tOnDeck = tgt.y > 8 && Math.abs(tgt.z - HWY.z) < HWY.half + 4; let goal = tgt, post = null;
+    if (tOnDeck && !onRamp && !onDeck) { goal = V(-104, 0.15, HWY.z - 18); post = [V(-80, 1, HWY.z - 18), V(40, 11.2, HWY.z - 18), V(56, 12, HWY.z - 9), V(tgt.x, tgt.y, tgt.z)]; } // from street level: back to the 2nd Ave on-ramp
+    if (onRamp || onDeck) {
+      const lz = onDeck ? f.z : HWY.z - 6;
+      if (tOnDeck) { pre.push(V(clamp(tgt.x, HWY.x0, HWY.x1), 12, lz), V(tgt.x, tgt.y, tgt.z)); this.route = pre; return; }
+      const east = from.x >= HWY.x1 ? true : from.x <= HWY.x0 ? false : (HWY.rampE1 - from.x) + Math.hypot(tgt.x - HWY.rampE1, tgt.z - HWY.z) < (from.x - HWY.rampW0) + Math.hypot(tgt.x - HWY.rampW0, tgt.z - HWY.z); /* never a U-turn on an end ramp; else the exit closer to the goal */ const endX = east ? HWY.rampE1 : HWY.rampW0; if (east ? from.x < HWY.x1 : from.x > HWY.x0) pre.push(V(east ? HWY.x1 : HWY.x0, 12, lz)); pre.push(V(endX, 0.2, lz)); from = pre[pre.length - 1];
+    }
+    const g = G.world.graph; const a = nearestNode(g, from.x, from.z), b = nearestNode(g, goal.x, goal.z); const path = astar(g, a, b); if (!path) { this.route = null; return; }
     if (path.length > 1 && Math.hypot(path[1].x - f.x, path[1].z - f.z) < Math.hypot(path[1].x - path[0].x, path[1].z - path[0].z)) path.shift();
-    const pts = [new THREE.Vector3(f.x, f.y, f.z)];
+    const pts = pre;
     for (let i = 0; i < path.length; i++) { const n = path[i]; if (i > 0) { const prev = path[i - 1]; const e = prev.out.map((id) => g.edges[id]).find((e2) => e2.b === n.id); if (e && e.pts.length > 2) for (let k = 1; k < e.pts.length - 1; k++) pts.push(new THREE.Vector3(e.pts[k].x, e.pts[k].y, e.pts[k].z)); } pts.push(new THREE.Vector3(n.x, n.y, n.z)); }
-    pts.push(new THREE.Vector3(tgt.x, tgt.y, tgt.z)); this.route = pts;
+    pts.push(new THREE.Vector3(goal.x, goal.y, goal.z)); if (post) pts.push(...post); this.route = pts;
   }
   updateChevrons() {
     if (!this.chev) { const mk = (w, rot) => { const g = new THREE.BoxGeometry(w, 0.12, 0.55); g.translate(w / 2 - 0.15, 0, 0); g.rotateY(rot); return g; }; const a = mk(1.7, -0.75 + Math.PI / 2), b = mk(1.7, 0.75 + Math.PI / 2); b.scale(-1, 1, 1); const geo = new THREE.BufferGeometry(); const pa = [...a.toNonIndexed().attributes.position.array, ...b.toNonIndexed().attributes.position.array]; geo.setAttribute('position', new THREE.Float32BufferAttribute(pa, 3)); geo.computeVertexNormals();
@@ -122,8 +134,9 @@ export class HUD {
     const d = G.world.district(P.focus.x, P.focus.z); if (d !== this.lastDistrict) { this.lastDistrict = d; this.district.textContent = DISTRICT_NAMES[d] || ''; this.district.classList.remove('in'); void this.district.offsetWidth; this.district.classList.add('in'); }
     // speedo / weapon
     this.speedo.style.display = pv ? '' : 'none'; this.weapon.style.display = pv && !P.driveAim ? 'none' : '';
-    if (pv) this.drawSpeedo(pv);
-    const W = WEAPONS[P.weapon]; const inv = P.inv[P.weapon]; this.wName.textContent = W.name.toUpperCase(); this.wAmmo.innerHTML = W.melee ? '—' : `${inv.mag}<small>/${inv.res}</small>${P.reloading > 0 ? ' <i>RELOADING</i>' : ''}`;
+    this._cv = (this._cv || 0) + dt; const drawCv = this._cv >= 1 / 30; if (drawCv) this._cv = 0; // 2D canvases at 30 Hz: they're the costliest part of the HUD
+    if (pv && drawCv) this.drawSpeedo(pv);
+    const W = WEAPONS[P.weapon]; const inv = P.inv[P.weapon]; this.wName.textContent = W.name.toUpperCase(); { const h = W.melee ? '—' : `${inv.mag}<small>/${inv.res}</small>${P.reloading > 0 ? ' <i>RELOADING</i>' : ''}`; if (h !== this._ammoH) { this._ammoH = h; this.wAmmo.innerHTML = h; } }
     // crosshair
     const aim = (P.aiming || P.driveAim) && P.alive; this.cross.style.opacity = aim ? 1 : (pv ? 0 : 0.35); this.cross.classList.toggle('aim', aim);
     this.hitT -= dt; this.hitm.style.opacity = this.hitT > 0 ? 1 : 0;
@@ -132,7 +145,7 @@ export class HUD {
     else if (pv && pv.isUpsideDown() && pv.speed < 6) this.setPrompt('<kbd>E</kbd> Flip it back over &nbsp; <kbd>F</kbd> Get out'); else this.setPrompt(this.promptOverride || '');
     if (pv && pv.burnT > 0 && !pv.dead) this.setWarn(`VEHICLE ON FIRE — BAIL OUT! <kbd>F</kbd> ${pv.burnT.toFixed(1)}`); else if (pol && pol.bustedT > 1) this.setWarn('MOVE! YOU\'RE BEING BOXED IN'); else if (pol && pol.arrestT > 0.4) this.setWarn('GET AWAY FROM THE OFFICER!'); else this.setWarn(this.warnOverride || '');
     this.updateRoute(dt); this.updateChevrons(); this.updateMarker();
-    this.drawMinimap();
+    if (drawCv) this.drawMinimap();
     if (G.debug) this.fps.textContent = `${G.game ? G.game.fps.toFixed(0) : ''} fps · ${G.vehicles.list.length} veh · ${G.peds.list.length} peds`;
   }
   drawSpeedo(v) {
@@ -162,7 +175,7 @@ export class HUD {
     const dot = (x, z, col, r = 4, shape = 'dot') => { let [bx, bz] = toM(x, z); const lim = (R - 10) / zoom; const l = Math.hypot(bx, bz); let edge = false; if (l > lim) { bx *= lim / l; bz *= lim / l; edge = true; } g.fillStyle = col; g.beginPath(); if (shape === 'sq') g.rect(bx - r / zoom, bz - r / zoom, 2 * r / zoom, 2 * r / zoom); else g.arc(bx, bz, (edge ? r * 0.8 : r) / zoom, 0, Math.PI * 2); g.fill(); g.strokeStyle = '#000'; g.lineWidth = 1.2 / zoom; g.stroke(); };
     if (pol) { const blink = Math.floor(G.time * 4) % 2; for (const u of pol.units) if (!u.v.dead) dot(u.v.pos.x, u.v.pos.z, blink ? '#ff3b3b' : '#3b7bff', 4); if (pol.heli && pol.heli.alive) dot(pol.heli.pos.x, pol.heli.pos.z, blink ? '#ff3b3b' : '#3b7bff', 6, 'sq'); for (const o of pol.officers) if (o.alive) dot(o.pos.x, o.pos.z, '#6b8cff', 2.5); }
     if (G.npcs) for (const n of G.npcs.list) if (n.alive && n.team !== 'police' && !n.calm) dot(n.pos.x, n.pos.z, '#ff4a3a', 3);
-    if (this.route) { g.strokeStyle = '#ffb21e'; g.lineWidth = 6 / zoom; g.lineJoin = 'round'; g.shadowColor = '#ffb21e'; g.shadowBlur = 6; g.beginPath(); this.route.forEach((p, i) => { const [x, z] = toM(p.x, p.z); i ? g.lineTo(x, z) : g.moveTo(x, z); }); g.stroke(); g.shadowBlur = 0; }
+    if (this.route) { g.strokeStyle = '#ffb21e'; g.lineWidth = 6 / zoom; g.lineJoin = 'round';  g.beginPath(); this.route.forEach((p, i) => { const [x, z] = toM(p.x, p.z); i ? g.lineTo(x, z) : g.moveTo(x, z); }); g.stroke(); g.shadowBlur = 0; }
     for (const b of this.blips) { const p = typeof b.pos === 'function' ? b.pos() : b.pos; if (!p) continue; dot(p.x, p.z, b.color || '#ffd36b', b.size || 6, b.shape); }
     g.restore();
     // player arrow (fixed, pointing up = camera dir)

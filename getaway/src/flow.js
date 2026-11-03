@@ -54,7 +54,7 @@ class Flow {
   }
   applySettings() {
     const s = G.settings; G.audio.setVolumes(s.master, s.music, s.sfx); G.music.volume = 1; G.input.sensitivity = s.sensitivity; G.input.invertY = !!s.invertY;
-    G.cam.baseFov = s.fov; G.composer.bloom.enabled = s.bloom && s.quality !== 'low'; G.peds.setDensity(s.pedDensity); G.traffic.density = s.trafficDensity; this.game.saveSettings();
+    G.cam.baseFov = s.fov; G.composer.bloom.enabled = s.bloom && s.quality !== 'low'; G.peds.setDensity(s.pedDensity); G.traffic.density = s.trafficDensity; if (G.perf) G.perf.setQuality(s); this.game.saveSettings();
   }
   toMenu(title = false) {
     this.state = 'menu'; G.mode = 'menu'; G.paused = false; G.hud.show(false); G.cam.mode = 'menu'; G.cam.cine = null; G.input.releaseLock();
@@ -74,11 +74,13 @@ class Flow {
     const c = G.world.landmarks.construction; if (c) c.crane.hook.visible = true;
   }
   startMission(def, cp = 0) {
+    if (G.perf) G.perf.grace = 4;
     if (!def || !def.impl && !def.checkpoints) return; const impl = def.impl || def; this.menus.clear(); this.endGarage(); this.free.stop();
     this.runner.abort(); this.prepareWorld(); this.state = 'play'; G.mode = 'play'; G.paused = false; G.hud.show(true); G.input.requestLock();
     this.runner.start(impl, cp);
   }
   startFreeRoam(car = null, q = null) {
+    if (G.perf) G.perf.grace = 4;
     this.menus.clear(); this.endGarage(); this.runner.abort(); this.prepareWorld(); this.state = 'play'; G.mode = 'play'; G.paused = false; G.hud.show(true); G.input.requestLock();
     this.free.start(car, q);
   }
