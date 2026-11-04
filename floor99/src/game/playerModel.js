@@ -9,7 +9,7 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
 export const LOOKS = {
   suit: ['#e8572a', '#2a6fe8', '#1fbf75', '#d42d6f', '#f2c230', '#222831', '#eeeeee', '#7a3cff'],
-  armor: ['#1c1f26', '#e6e9ee', '#c49a2c', '#3b4250', '#8a1c2b', '#0f5c4a'],
+  armor: ['#3a404c', '#e6e9ee', '#c49a2c', '#23272f', '#8a1c2b', '#0f5c4a'],
   visor: ['#25f4ff', '#ff2d6f', '#ffd400', '#7dff4f', '#b46bff', '#ff8a1f'],
   helmet: ['DOME', 'CREST', 'ANTENNA', 'VISORLESS'],
 };
@@ -34,6 +34,7 @@ export class PlayerModel {
       visor: new THREE.MeshPhysicalMaterial({ color: '#06121a', emissive: '#25f4ff', emissiveIntensity: 1.1, roughness: 0.05, metalness: 0.2, clearcoat: 1, clearcoatRoughness: 0.05 }),
       glow: new THREE.MeshStandardMaterial({ color: '#000000', emissive: '#25f4ff', emissiveIntensity: 2.6 }),
       skin: new THREE.MeshStandardMaterial({ color: '#2a2d33', roughness: 0.75 }),
+      helmet: new THREE.MeshStandardMaterial({ color: '#eef0f4', map: arm.map, normalMap: arm.normalMap, roughnessMap: arm.roughnessMap, roughness: 0.35, metalness: 0.15 }),
     };
     this.numberTex = numberTexture('99', '#ffffff', '#00000000');
     this.mats.number = new THREE.MeshStandardMaterial({ map: this.numberTex, transparent: true, roughness: 0.5, emissive: '#ffffff', emissiveMap: this.numberTex, emissiveIntensity: 0.35 });
@@ -178,7 +179,7 @@ export class PlayerModel {
     const M = this.mats;
     const add = (geo, mat, x, y, z, rx = 0, ry = 0, rz = 0) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.rotation.set(rx, ry, rz); g.add(m); return m; };
     // chunky shell, slightly oversized for a stylized silhouette
-    const shell = add(new THREE.SphereGeometry(0.2, 32, 24), M.armor, 0, 0.12, -0.01);
+    const shell = add(new THREE.SphereGeometry(0.2, 32, 24), M.helmet, 0, 0.12, -0.01);
     shell.scale.set(1.02, 1.04, 1.08);
     // top stripe
     add(rbox(0.05, 0.03, 0.36, 0.015), M.stripe, 0, 0.32, -0.02, -0.1, 0, 0);

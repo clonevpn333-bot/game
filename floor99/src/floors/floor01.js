@@ -154,7 +154,7 @@ function build(g, { checkpoint }) {
   wrTex.wrapS = THREE.RepeatWrapping;
   const wrMat = new THREE.MeshStandardMaterial({ map: wrTex, roughness: 0.5, metalness: 0.2 });
   const wrSide = Mat.panel('#2a2e38');
-  for (const [x, z, ry] of [[-24, 0, 0], [24, 0, 0], [0, -22, Math.PI / 2], [-12, 22, Math.PI / 2]]) {
+  for (const [x, z, ry] of [[-24, 0, 0], [24, 0, 0], [14, -21, Math.PI / 2 + 0.5], [-12, 22, Math.PI / 2]]) {
     const { mesh } = solid(g, { pos: [x, 2.6, z], size: [0.8, 5.2, 9], rot: [0, ry, 0], mat: [wrMat, wrMat, wrSide, wrSide, wrSide, wrSide] });
     mesh.material = [wrSide, wrSide, wrSide, wrSide, wrSide, wrSide];
     for (const s of [-1, 1]) {
@@ -226,7 +226,7 @@ function build(g, { checkpoint }) {
     new Spotlight(g, [-18, 24, -18], '#ff4fa0', { center: [0, 0, 0], radius: 14, speed: 0.35, phase: 0 }),
     new Spotlight(g, [18, 24, -18], '#4fe8ff', { center: [0, 0, 0], radius: 14, speed: 0.3, phase: 2 }),
     new Spotlight(g, [18, 24, 18], '#ffd84f', { center: [0, 0, 0], radius: 16, speed: 0.4, phase: 4 }),
-    new Spotlight(g, [-18, 24, 18], '#ffffff', { center: [0, 0, 0], radius: 10, speed: 0.25, phase: 1, intensity: 700 }),
+    new Spotlight(g, [-18, 24, 18], '#ffffff', { center: [0, 0, 0], radius: 10, speed: 0.25, phase: 1, intensity: 700, cone: 0.035 }),
   ];
 
   // ------------------------------------------------------------ HATCHES

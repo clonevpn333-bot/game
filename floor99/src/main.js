@@ -151,8 +151,10 @@ class App {
     bindHover($('pause'), this.audio);
     $('controlsRef').innerHTML = [['Move', 'W A S D'], ['Sprint', 'SHIFT'], ['Jump / double jump / wall-jump', 'SPACE'], ['Slide (while running)', 'C'], ['Dodge (also in air)', 'Q'], ['Grapple / chain-yank robots', 'E'], ['Melee (blades / hammer)', 'F or V'], ['Fire / Aim', 'LMB / RMB'], ['Reload', 'R'], ['Weapons', '1 2 3 / wheel'], ['Wall-run', 'jump at a wall, hold W'], ['Vault', 'run at a ledge']].map(([a, b]) => `<div><span>${a}</span><b>${b}</b></div>`).join('');
     // canvas click: lock pointer in game
-    this.renderer.renderer.domElement.addEventListener('click', () => {
-      if (this.state === 'game' && !this.input.locked && !$('pause').classList.contains('active') && !$('card').classList.contains('active')) this.input.lock();
+    // any click during gameplay captures the mouse (HUD overlays included; the intro card is passive)
+    window.addEventListener('mousedown', () => {
+      const cardBlocking = $('card').classList.contains('active') && !$('card').classList.contains('passive');
+      if (this.state === 'game' && !this.input.locked && !$('pause').classList.contains('active') && !$('panel').classList.contains('active') && !cardBlocking) this.input.lock();
     });
     $('clickToResume').addEventListener('click', () => this.input.lock());
     window.addEventListener('keydown', (e) => {
