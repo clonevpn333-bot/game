@@ -19,6 +19,7 @@ const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
 const errors = [];
 page.on('console', (m) => { const t = m.text(); if ((m.type() === 'error' || m.type() === 'warning') && !/GL_|WebGL|GPU stall|swiftshader|Automatic fallback/i.test(t)) errors.push(`[${m.type()}] ${t}`); if (m.type() === 'log' && t.startsWith('[bot]')) console.log(t); });
 page.on('pageerror', (e) => errors.push('[pageerror] ' + e.message + '\n' + e.stack));
+if (process.env.GUNS) await page.addInitScript((guns) => { try { const k = 'floor99.save.v1'; const d = JSON.parse(localStorage.getItem(k) || '{}'); d.unlocked = { weapons: ['revolver', ...guns], melee: ['blades'], abilities: ['doubleJump'], cosmetics: { suit: [0], armor: [0], visor: [0], helmet: [0] }, tracks: ['menu'], mods: [], shop: [] }; d.loadout = { guns: guns.slice(0, 3), melee: 'blades', mods: [] }; localStorage.setItem(k, JSON.stringify(d)); } catch (e) {} }, process.env.GUNS.split(','));
 if (process.env.LOWQ !== '0') await page.addInitScript(() => { try { const k = 'floor99.save.v1'; const d = JSON.parse(localStorage.getItem(k) || '{}'); d.settings = { ...(d.settings || {}), quality: 'low', qualityPicked: true, voice: false }; localStorage.setItem(k, JSON.stringify(d)); } catch (e) {} });
 await page.goto(`http://localhost:${port}/?autostart&floor=${floor}&cp=${cp}`);
 await page.waitForFunction(() => window.__floor99 && window.__floor99.game, null, { timeout: 60000 });

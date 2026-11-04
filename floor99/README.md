@@ -69,14 +69,19 @@ Right mouse: a click toggles aim (two-finger click on a trackpad), holding it ai
 | 10 — Act One Finale | **Playable** | The main stage with hologram audience balconies, a spotlight hold, and **The Co-Host**: Halo's body double on speaker-stack legs. Break its speakers, shoot its screen; jump/slide its spotlight beam, jump the stomp shockwave, dodge the confetti mortar. Unlocks the PRIME-TIME SPOTLIGHT beam gun. |
 | 11 — Security | **Playable** | Wall and ceiling turrets to disable, a lockdown laser grid, and the Security Chief. Iris loops the camera feeds and finds Floor 13 is hidden, not skipped. |
 | 12 — Aquarium Apocalypse | **Playable** | Gallery of giant tanks with schools of fish, a glass tunnel the shark swims over, the rigged "SHATTER THE GLASS" vote, a flooding chamber (robots short-circuit, debris and containers float), swimming, the railgun, and **Megamouth-9**, a mechanical shark that leaps out of the water at you. |
-| 23, 38, 51, 76, 90, 99 | Designed, **not built** | Shown as "in production" in Floor Select. |
+| 38, 51, 76, 90, 99 | Designed, **not built** | Shown as "in production" in Floor Select. |
 | 13 — The Machine Level | **Playable** | The floor that doesn't exist: server racks, vote servers to smash, an upload hold, and the reveal that the "audience" is generated here to train something. |
 | 14 — The Greenhouse | **Playable** | Grow-light hydroponics, an acid nutrient vat to cross, a pollination hold and irrigation pumps. Every crate ships to "the Family Suites". |
 | 15 — The House Always Wins | **Playable** | Halo's casino: slot banks, card tables, a plasma high-roller pit, SPIN THE WHEEL, and two Bruisers. One server places every bet. |
 | 16 — Cold Storage | **Playable** | Slippery ice floors, 98 numbered cryo pods (all empty), the ARC CASTER (chain lightning), cryo turrets, and the log line "minds: retained". |
 | 17 — Studio Kitchen | **Playable** | Cooking With Halo: sushi conveyor belts, the tenderizer press hall, and a plating hold judged by Halo. |
 | 18 — Broadcast Control | **Playable** | Walls of Halo monitors, turrets, transmitters, a firewall laser grid, and the edit logs: every winner walks into a white room and the feed cuts. |
-| 19+ | Not built yet | Being built five at a time on the procedural floor system (`src/floors/proc.js`). |
+| 19 — The White Room | **Playable** | An all-white anteroom: scanner beams, comfort lamps that are actually scanners, and a jammed booth that reveals the white room is an upload booth. Theo Vale was the last transfer. |
+| 20 — The Rerun | **Playable** | Act Two finale: **The Rerun**, a hologram of Contestant 98 animated by the real contestant rig. He sprints, circle-strafes, dodges aimed shots, slide-kicks, fires revolver bursts and splits into copies. Splash, chain and beam weapons can't be dodged. |
+| 21 — Training Day | **Playable** | The tower trains against you: press row, acid mile, jump/slide laser rhythm, and sparring Bruisers. |
+| 22 — The Motor Pool | **Playable** | Mechanics, a parts line, bay turrets, and hot-wiring the mech in bay four. |
+| 23 — Mech City | **Playable (signature)** | You *are* the mech (2.3× scale, every step a stomp, double damage): walk through a glowing miniature city, flatten buildings and tiny cars, topple the Halo Towers, then fight **Halo-Tron**, Halo's own mech. |
+| 24+ | Not built yet | Being built five at a time on the procedural floor system (`src/floors/proc.js`). |
 
 The full design for every signature floor, the story and the ending is in [DESIGN.md](DESIGN.md).
 

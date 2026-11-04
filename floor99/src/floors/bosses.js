@@ -287,7 +287,7 @@ function segSeg(p1, q1, p2, q2) {
 export class Rerun extends Enemy {
   constructor(g, pos, o = {}) {
     const clone = !!o.clone;
-    super(g, pos, { type: 'rerun', name: clone ? 'RERUN COPY' : 'THE RERUN', hp: clone ? 70 : 1500, radius: 0.5, height: 1.9, score: clone ? 150 : 6000, spawnTime: clone ? 0.8 : 2.4 });
+    super(g, pos, { type: 'rerun', name: clone ? 'RERUN COPY' : 'THE RERUN', hp: clone ? 60 : 1250, radius: 0.5, height: 1.9, score: clone ? 150 : 6000, spawnTime: clone ? 0.8 : 2.4 });
     this.clone = clone; this.arena = o.arena;
     this.model = new PlayerModel({ suit: 1, armor: 1, visor: 0, helmet: 0 });
     const holo = hologramMaterial(clone ? '#ff6ad0' : '#7ff6ff', clone ? 0.55 : 0.85);
@@ -305,7 +305,7 @@ export class Rerun extends Enemy {
   }
   onBeforeDamage(dmg, info) {
     // dodges a share of aimed shots (not explosions / beams) with a sidestep
-    if (this.dodgeCool <= 0 && info.source === 'player' && info.type !== 'explosion' && info.weapon !== 'beam' && Math.random() < (this.clone ? 0.15 : 0.32)) {
+    if (this.dodgeCool <= 0 && info.source === 'player' && info.type !== 'explosion' && info.weapon !== 'beam' && Math.random() < (this.clone ? 0.12 : 0.24)) {
       this.dodgeCool = this.clone ? 2 : 1.4; this.dodgeT = 0.32;
       const pl = this.game.player.pos, side = V(pl.z - this.pos.z, 0, this.pos.x - pl.x).normalize().multiplyScalar(Math.random() < 0.5 ? 1 : -1);
       this.vel.copy(side.multiplyScalar(16));
@@ -351,13 +351,13 @@ export class Rerun extends Enemy {
     // revolver bursts
     this.fireT -= dt;
     if (this.fireT <= 0 && this.spawnT <= 0 && pl.alive) {
-      this.burst = this.clone ? 1 : 3; this.fireT = this.clone ? 2.4 : 2.1 - (1 - this.hp / this.maxHp) * 0.6; this.burstT = 0;
+      this.burst = this.clone ? 1 : 3; this.fireT = this.clone ? 2.8 : 2.6 - (1 - this.hp / this.maxHp) * 0.5; this.burstT = 0;
     }
     if (this.burst > 0 && (this.burstT = (this.burstT || 0) - dt) <= 0) {
       this.burst--; this.burstT = 0.16; this.recoil = 1;
       const from = this.gun.localToWorld(V(0, 0.02, 0.35)), aim = V(pl.pos.x, pl.pos.y + 1.1, pl.pos.z).addScaledVector(pl.vel, 0.25);
-      const vel = aim.sub(from).normalize().multiplyScalar(30);
-      G.spawnProjectile({ pos: from, vel, damage: this.clone ? 6 : 8, radius: 0.13, owner: this, color: this.clone ? 0xff6ad0 : 0x7ff6ff });
+      const vel = aim.sub(from).normalize().multiplyScalar(24);
+      G.spawnProjectile({ pos: from, vel, damage: this.clone ? 5 : 7, radius: 0.13, owner: this, color: this.clone ? 0xff6ad0 : 0x7ff6ff });
       G.fx.muzzle(from, vel.clone().normalize(), FXColors.cyan, 0.6);
       G.audio.play('enemyShot', { pos: this.pos });
     }
