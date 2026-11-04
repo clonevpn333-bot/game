@@ -5,7 +5,9 @@
 // Attacks: spotlight beam sweep (jump / slide it), stomp shockwave (jump the ring), confetti mortar
 // barrage (move off the warning circles), and calling in backup. Phase two (head exposed) is faster.
 import * as THREE from 'three';
-import { Mat } from '../engine/materials.js';
+import { Mat, hologramMaterial } from '../engine/materials.js';
+import { PlayerModel } from '../game/playerModel.js';
+import { buildWeaponModel } from '../game/weapons.js';
 import { Box } from '../engine/physics.js';
 import { FXColors } from '../engine/fx.js';
 import { Enemy } from '../game/enemies.js';
@@ -279,4 +281,117 @@ function segSeg(p1, q1, p2, q2) {
   return p1.clone().addScaledVector(d1, s).distanceTo(p2.clone().addScaledVector(d2, t));
 }
 
-export const BOSSES = { cohost: CoHost };
+// THE RERUN (Floor 20): a hologram of Contestant 98, rebuilt from his retained mind. He fights the way
+// a contestant fights: sprints, circle-strafes, dodges when you aim at him, fires revolver bursts,
+// slide-kicks, and splits into hologram copies at two-thirds and one-third health.
+export class Rerun extends Enemy {
+  constructor(g, pos, o = {}) {
+    const clone = !!o.clone;
+    super(g, pos, { type: 'rerun', name: clone ? 'RERUN COPY' : 'THE RERUN', hp: clone ? 70 : 1500, radius: 0.5, height: 1.9, score: clone ? 150 : 6000, spawnTime: clone ? 0.8 : 2.4 });
+    this.clone = clone; this.arena = o.arena;
+    this.model = new PlayerModel({ suit: 1, armor: 1, visor: 0, helmet: 0 });
+    const holo = hologramMaterial(clone ? '#ff6ad0' : '#7ff6ff', clone ? 0.55 : 0.85);
+    this.model.root.traverse((m) => { if (m.isMesh) { m.material = holo; m.castShadow = false; } });
+    this.root.add(this.model.root);
+    this.gun = buildWeaponModel('revolver'); this.gun.traverse((m) => { if (m.isMesh) m.material = holo; });
+    this.model.socketR.add(this.gun); this.gun.rotation.set(Math.PI / 2, 0, 0);
+    this.addHit(this.model.j.head, V(0, 0.15, 0), 0.32, 2.2, 'head');
+    this.addHit(this.model.j.chest, V(0, 0.05, 0), 0.5, 1, 'body');
+    this.addHit(this.model.j.hips, V(0, -0.2, 0), 0.45, 1, 'body');
+    this.strafeDir = Math.random() < 0.5 ? 1 : -1; this.fireT = 2; this.dodgeT = 0; this.dodgeCool = 0; this.burst = 0; this.splits = 0;
+    this.vel = new THREE.Vector3(); this.mode = 'run'; this.mt = 0;
+    if (!clone) { this.isBoss = true; this.bossName = 'THE RERUN'; this.chatHint = () => (this.splits ? 'the REAL one has blue light' : 'he dodges when you aim. bait it'); }
+    this.deathScale = clone ? 0.5 : 1.6;
+  }
+  onBeforeDamage(dmg, info) {
+    // dodges a share of aimed shots (not explosions / beams) with a sidestep
+    if (this.dodgeCool <= 0 && info.source === 'player' && info.type !== 'explosion' && info.weapon !== 'beam' && Math.random() < (this.clone ? 0.15 : 0.32)) {
+      this.dodgeCool = this.clone ? 2 : 1.4; this.dodgeT = 0.32;
+      const pl = this.game.player.pos, side = V(pl.z - this.pos.z, 0, this.pos.x - pl.x).normalize().multiplyScalar(Math.random() < 0.5 ? 1 : -1);
+      this.vel.copy(side.multiplyScalar(16));
+      this.game.fx.trail(this.center(_v), FXColors.cyan, 0.5, 0.3);
+      this.game.audio.play('dash', { pos: this.pos });
+      return 0;
+    }
+    return dmg;
+  }
+  onHurt() {
+    if (this.clone) return;
+    const frac = this.hp / this.maxHp, G = this.game;
+    if ((this.splits === 0 && frac < 0.66) || (this.splits === 1 && frac < 0.33)) {
+      this.splits++;
+      for (const s of [-1, 1]) { const c = G.spawnEnemy('rerun', this.pos.clone().add(V(s * 2.5, 0, 0)), { cls: Rerun, clone: true, arena: this.arena }); c.vel.set(s * 10, 0, 0); }
+      G.fx.burst(this.center(_v), 30, FXColors.cyan, FXColors.cyanEnd, 6, 0.4, 0.6);
+      G.say('iris', this.splits === 1 ? 'That\'s Theo\'s dodge. That\'s my brother\'s dodge.' : 'He always split the difference. ...Theo, I\'m sorry.', { priority: 3 });
+    }
+  }
+  update(dt) {
+    const G = this.game, pl = G.player;
+    this.common(dt);
+    this.dodgeCool -= dt; this.dodgeT -= dt; this.mt += dt;
+    const to = V(pl.pos.x - this.pos.x, 0, pl.pos.z - this.pos.z), d = to.length(); to.normalize();
+    // circle-strafe at a preferred range, sprinting
+    if (this.dodgeT <= 0 && this.spawnT <= 0) {
+      const want = this.clone ? 8 : 11, radial = THREE.MathUtils.clamp((d - want) * 0.6, -1, 1);
+      const tang = V(-to.z, 0, to.x).multiplyScalar(this.strafeDir);
+      const dir = tang.multiplyScalar(0.85).addScaledVector(to, radial).normalize();
+      const sp = this.mode === 'slide' ? 15 : this.clone ? 7.5 : 9.5;
+      this.vel.x += (dir.x * sp - this.vel.x) * Math.min(1, dt * 6); this.vel.z += (dir.z * sp - this.vel.z) * Math.min(1, dt * 6);
+      if (Math.random() < dt * 0.35) this.strafeDir *= -1;
+    } else this.vel.multiplyScalar(Math.exp(-dt * 4));
+    this.pos.addScaledVector(this.vel, dt);
+    const A = this.arena; if (A) { this.pos.x = THREE.MathUtils.clamp(this.pos.x, A.minX + 2, A.maxX - 2); this.pos.z = THREE.MathUtils.clamp(this.pos.z, A.minZ + 2, A.maxZ - 2); }
+    this.pos.y = 0;
+    this.yaw = Math.atan2(to.x, to.z);
+    this.root.position.copy(this.pos); this.root.rotation.y = this.yaw;
+    if (!this.clone) G.hud.boss('THE RERUN — CONTESTANT 98', this.hp / this.maxHp);
+    // slide kick when close
+    if (!this.clone && this.mode !== 'slide' && d < 4 && this.mt > 2 && this.spawnT <= 0) { this.mode = 'slide'; this.mt = 0; this.vel.copy(to).multiplyScalar(15); G.audio.play('slide', { pos: this.pos }); }
+    if (this.mode === 'slide') { if (d < 1.4 && !this.kicked && pl.alive) { this.kicked = true; pl.damage(16, { from: this.pos, type: 'melee', knock: to.clone().multiplyScalar(9).setY(6) }); } if (this.mt > 0.6) { this.mode = 'run'; this.kicked = false; this.mt = 0; } }
+    // revolver bursts
+    this.fireT -= dt;
+    if (this.fireT <= 0 && this.spawnT <= 0 && pl.alive) {
+      this.burst = this.clone ? 1 : 3; this.fireT = this.clone ? 2.4 : 2.1 - (1 - this.hp / this.maxHp) * 0.6; this.burstT = 0;
+    }
+    if (this.burst > 0 && (this.burstT = (this.burstT || 0) - dt) <= 0) {
+      this.burst--; this.burstT = 0.16; this.recoil = 1;
+      const from = this.gun.localToWorld(V(0, 0.02, 0.35)), aim = V(pl.pos.x, pl.pos.y + 1.1, pl.pos.z).addScaledVector(pl.vel, 0.25);
+      const vel = aim.sub(from).normalize().multiplyScalar(30);
+      G.spawnProjectile({ pos: from, vel, damage: this.clone ? 6 : 8, radius: 0.13, owner: this, color: this.clone ? 0xff6ad0 : 0x7ff6ff });
+      G.fx.muzzle(from, vel.clone().normalize(), FXColors.cyan, 0.6);
+      G.audio.play('enemyShot', { pos: this.pos });
+    }
+    this.recoil = Math.max(0, (this.recoil || 0) - dt * 6);
+    // animate with the real contestant animator: running, sliding, aiming
+    const local = this.vel.clone().applyAxisAngle(V(0, 1, 0), -this.yaw);
+    const hs = Math.hypot(this.vel.x, this.vel.z);
+    this.model.animate(dt, { speed: hs, grounded: true, vy: 0, mode: this.mode === 'slide' ? 'slide' : this.dodgeT > 0 ? 'dodge' : 'normal', dodgeT: 1 - Math.max(0, this.dodgeT) / 0.32, sprint: hs > 7, strafe: hs > 1 ? local.x / hs : 0, moveBack: local.z < -0.3 * hs, aiming: true, aimPitch: 0, weaponHand: true, recoil: this.recoil, turn: 0 });
+  }
+  die(info) {
+    if (!this.alive) return;
+    if (!this.clone) {
+      this.game.hud.boss(null);
+      for (const e of this.game.enemies) if (e.alive && e.clone) e.die({});
+    }
+    super.die(info);
+  }
+}
+
+// HALO-TRON (Floor 23): the rival mech. The Co-Host's fight scaled up and re-skinned in chrome and
+// pink; same weak-point rules, bigger shockwaves.
+export class Halotron extends CoHost {
+  constructor(g, pos, o = {}) {
+    super(g, pos, o);
+    this.name = 'HALO-TRON'; this.bossName = 'HALO-TRON';
+    this.root.scale.setScalar(1.35);
+    this.M.body.color.set('#c8ccd4'); this.M.body.metalness = 0.9; this.M.body.roughness = 0.25; this.M.trim.color.set('#ff2d6f');
+    this.parts.speakerL.hp = this.parts.speakerL.max = 420; this.parts.speakerR.hp = this.parts.speakerR.max = 420; this.parts.head.hp = this.parts.head.max = 1400;
+    this.torsoC.half.set(3, 5.5, 1.8);
+  }
+  update(dt) {
+    super.update(dt);
+    if (this.alive) this.game.hud.boss('HALO-TRON', this.totalFrac());
+  }
+}
+
+export const BOSSES = { cohost: CoHost, rerun: Rerun, halotron: Halotron };

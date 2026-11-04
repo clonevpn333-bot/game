@@ -134,6 +134,6 @@ export const FLOOR_18 = makeFloor({
   outro: [['iris', 'Two floors to the end of the act. Whatever\'s in that white room, he doesn\'t want you to see it yet.', {}, 4.5]],
   exitLines: [['halo', 'FLOOR EIGHTEEN... COMPLETE! And... we\'re back! Nothing happened! Smile!', { mood: 'nervous' }]],
   elevatorLines: [['halo', 'Floor Eighteen! BROADCAST CONTROL! Smile, you\'re on every camera!', 0.6], ['iris', 'Turrets and transmitters. Then they\'ll send the big ones.', 4]],
-  scoreTarget: 19000, completeLine: 'Floors nineteen and up are being... rehearsed. Stay tuned!',
+  scoreTarget: 19000, completeLine: 'Floor Nineteen: the WINNER\'S ANTEROOM! You\'re so close!',
   votePool: ['barrels', 'lightsout', 'doublebots', 'freeze', 'lasers', 'meteors'],
 });

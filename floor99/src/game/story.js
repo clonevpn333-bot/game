@@ -20,6 +20,11 @@ export const FLOOR_CHAT = {
   16: ['why are the pods empty', 'ice physics go brrr', 'minds retained... chat I am scared'],
   17: ['cooking with halo is my comfort show', 'that press just tenderized a drone', 'gordon would never'],
   18: ['every screen is his face', 'the white room. WHAT IS THE WHITE ROOM', 'the feed cut 98 times...'],
+  19: ['why is everything so WHITE', 'do NOT step in the light', 'upload booth?? UPLOAD BOOTH??'],
+  20: ['is that... contestant 98??', 'THEO', 'iris are you ok', 'he dodges like 99 does. or 99 dodges like him'],
+  21: ['the floor is using his own routes against him', 'gym arc', 'he skipped leg day and still won'],
+  22: ['BAY FOUR', 'iris hot-wiring a mech is peak', 'forklift certification speedrun'],
+  23: ['GODZILLA 99', 'MECH CITY LETS GOOOO', 'the tiny cars!! the tiny cars!!', 'halo-tron vs 99 is the fight of the century'],
   13: ['wait. why am I in the server list', 'chat are we... real?', 'my vote went through before I clicked it', 'floor 13 trending in 0 countries', 'mods are suspiciously quiet'],
 };
 

@@ -1,6 +1,7 @@
 // Floor registry. `status` is honest: only floors marked 'playable' are built and shippable.
 const b1 = (n) => () => import('./floors/batch01.js').then((m) => ({ default: m['FLOOR_' + n] }));
 const b3 = (n) => () => import('./floors/batch03.js').then((m) => ({ default: m['FLOOR_' + n] }));
+const b4 = (n) => () => import('./floors/batch04.js').then((m) => ({ default: m['FLOOR_' + n] }));
 const b2 = (n) => () => import('./floors/batch02.js').then((m) => ({ default: m['FLOOR_' + n] }));
 export const FLOORS = {
   1: { id: 1, name: 'WELCOME TO THE SHOW', status: 'playable', tagline: 'The most entertaining tutorial ever broadcast.', load: () => import('./floors/floor01.js'), next: 2, tier: 0, music: 'f1' },
@@ -20,12 +21,16 @@ export const FLOORS = {
   15: { id: 15, name: 'THE HOUSE ALWAYS WINS', status: 'playable', tagline: 'Place your bets. Every bet is against you.', load: b3(15), next: 16, tier: 2, music: 'f1' },
   16: { id: 16, name: 'COLD STORAGE', status: 'playable', tagline: 'Ninety-eight pods. Ninety-eight winners. Not one body.', load: b3(16), next: 17, tier: 2, music: 'f12' },
   17: { id: 17, name: 'STUDIO KITCHEN', status: 'playable', tagline: 'Halo judges. The robots are the ingredients.', load: b3(17), next: 18, tier: 2, music: 'f1' },
-  18: { id: 18, name: 'BROADCAST CONTROL', status: 'playable', tagline: 'Where the show is edited. And where the feed is cut.', load: b3(18), next: null, tier: 2, music: 'f4' },
+  18: { id: 18, name: 'BROADCAST CONTROL', status: 'playable', tagline: 'Where the show is edited. And where the feed is cut.', load: b3(18), next: 19, tier: 2, music: 'f4' },
+  19: { id: 19, name: 'THE WHITE ROOM', status: 'playable', tagline: 'Where every winner walked in. And the feed was cut.', load: b4(19), next: 20, tier: 2, music: 'f12' },
+  20: { id: 20, name: 'THE RERUN', status: 'playable', tagline: 'Contestant 98 returns. Sort of.', load: b4(20), next: 21, tier: 2, music: 'f12' },
+  21: { id: 21, name: 'TRAINING DAY', status: 'playable', tagline: 'The tower studied you for twenty floors. Now it trains against you.', load: b4(21), next: 22, tier: 3, music: 'f4' },
+  22: { id: 22, name: 'THE MOTOR POOL', status: 'playable', tagline: 'Forklifts, gantries, and something very large in bay four.', load: b4(22), next: 23, tier: 3, music: 'f4' },
+  23: { id: 23, name: 'MECH CITY', status: 'playable', tagline: 'Pilot a giant mech through a miniature city. A rival mech enters.', load: b4(23), next: null, tier: 3, music: 'boss' },
 };
 
 // Signature floors that are designed but NOT built yet (shown as "IN PRODUCTION").
 export const PLANNED = {
-  23: { name: 'MECH CITY', tagline: 'Pilot a giant combat mech through a miniature city. A rival mech enters.' },
   38: { name: "YOU'RE TINY", tagline: 'Shrunk to a few inches tall in an enormous kitchen.' },
   51: { name: 'ZERO GRAVITY', tagline: 'A simulated orbital station loses gravity — and then air.' },
   76: { name: 'THE MACHINE LABYRINTH', tagline: 'A constantly transforming mechanical maze.' },

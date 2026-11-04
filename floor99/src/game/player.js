@@ -110,7 +110,7 @@ export class Player {
     this.model.root.rotation.y = yaw;
   }
 
-  damageMult() { return (this.giant > 0 ? 2 : 1) * (this.mods.glass ? 1.5 : 1) * (this.game.modifiers?.oneHit ? 1.5 : 1); }
+  damageMult() { return (this.giant > 0 || this.mech ? 2 : 1) * (this.mods.glass ? 1.5 : 1) * (this.game.modifiers?.oneHit ? 1.5 : 1); }
 
   addRecoil(pitch, shake) {
     this.recoilPitch = Math.min(0.24, this.recoilPitch + pitch * 0.6);
@@ -252,7 +252,7 @@ export class Player {
       if (c.conveyor) this.pos.addScaledVector(c.conveyor, dt);
     }
 
-    const speedMult = this.speedMult * (this.giant > 0 ? 1.25 : 1) * (this.mods.sprinter ? 1.08 : 1);
+    const speedMult = this.speedMult * (this.giant > 0 || this.mech ? 1.25 : 1) * (this.mods.sprinter ? 1.08 : 1);
     const runSpeed = (sprint && mz > 0 ? 13.5 : 9) * speedMult;
     const ice = G.ice || this.groundCollider?.ice;
     const wade = this.inWater > 0.35 && this.mode !== 'swim' ? clamp(1 - (this.inWater - 0.35) * 0.45, 0.55, 1) : 1;
@@ -495,11 +495,11 @@ export class Player {
       wallSide: this.wallSide, aiming: this.aiming || (combatFacing && this.mode !== 'swim'), aimPitch: this.camPitch,
       weaponHand: !!w && showWeapon, twoHanded: w?.def.twoHanded, recoil: w?.recoil || 0,
       melee: this.arsenal.meleeT, meleeT: this.arsenal.meleeT > 0 ? 1 - this.arsenal.meleeT / this.arsenal.meleeDur : 0,
-      meleeKind: this.arsenal.melee.id, meleeStep: this.arsenal.meleeStep, headYaw: 0, giant: this.giant > 0,
+      meleeKind: this.arsenal.melee.id, meleeStep: this.arsenal.meleeStep, headYaw: 0, giant: this.giant > 0 || this.mech,
     };
     this.model.root.position.copy(this.pos);
     this.model.root.rotation.y = this.yaw;
-    const gs = this.giant > 0 ? Math.min(2.2, 1 + Math.min(1, (12 - this.giant) * 3) * 1.2, 1 + this.giant * 2) : 1;
+    const gs = this.mech ? 2.3 : this.giant > 0 ? Math.min(2.2, 1 + Math.min(1, (12 - this.giant) * 3) * 1.2, 1 + this.giant * 2) : 1;
     this.model.root.scale.setScalar(damp(this.model.root.scale.x, gs, 6, dt));
     this.model.animate(dt, st);
     if (w && showWeapon && this.arsenal.meleeT <= 0) {
@@ -513,7 +513,7 @@ export class Player {
       if (Math.floor(prev / Math.PI) !== Math.floor(this.stepPhase / Math.PI)) {
         G.audio.play('step', { pos: this.pos, metal: true, wet: this.inWater > 0.1, vol: sprint ? 1.2 : 0.9 });
         if (this.inWater > 0.1) G.fx.splash(_v2.copy(this.pos).setY(wl), 4, 0.4);
-        if (this.giant > 0) { G.audio.play('stomp', { pos: this.pos }); this.shake(0.15); G.stompDamage(this.pos, 3.2, 30); }
+        if (this.giant > 0 || this.mech) { G.audio.play('stomp', { pos: this.pos }); this.shake(0.15); G.stompDamage(this.pos, 3.2, 30); }
       }
     }
     G.audio.loop('slide', this.alive && this.mode === 'slide' && this.grounded ? clamp(Math.hypot(this.vel.x, this.vel.z) / 18, 0, 0.45) : 0, { tc: 0.025 });
@@ -636,7 +636,7 @@ export class Player {
   }
 
   _jump(v, fromSlide) {
-    this.vel.y = v * (this.game.gravityScalePlayer < 1 ? 1.1 : 1) * (this.giant > 0 ? 1.15 : 1);
+    this.vel.y = v * (this.game.gravityScalePlayer < 1 ? 1.1 : 1) * (this.giant > 0 || this.mech ? 1.15 : 1);
     this.grounded = false;
     this.coyote = 0;
     this.jumpBuffer = 0;
@@ -671,7 +671,7 @@ export class Player {
       this.game.audio.play(fall > 1.2 ? 'bigLand' : 'land', { pos: this.pos });
       this.game.fx.dust(this.pos, fall > 1 ? 10 : 4, 0.8);
       if (fall > 1.2) { this.shake(0.3); this.game.fx.ring(_v.copy(this.pos).setY(this.pos.y + 0.05), 0.3, 4, 0.4, 0xffffff); }
-      if (this.giant > 0) { this.game.stompDamage(this.pos, 6, 60); this.shake(0.5); }
+      if (this.giant > 0 || this.mech) { this.game.stompDamage(this.pos, 6, 60); this.shake(0.5); }
     }
     if (this.inWater > 0.2 && fall > 0.3) { this.game.fx.splash(_v.copy(this.pos).setY(this.pos.y + this.inWater), 16, 1); this.game.audio.play('splash', { pos: this.pos }); }
     if (this._groundPound) {

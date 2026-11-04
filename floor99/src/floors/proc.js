@@ -23,6 +23,26 @@ const texMat = (maps, rep, o = {}) => {
 };
 const glowMat = (color, i = 3) => new THREE.MeshStandardMaterial({ color: '#000', emissive: color, emissiveIntensity: i });
 
+let _winTex = null;
+function windowTexture() {
+  if (_winTex) return _winTex;
+  const cv = document.createElement('canvas'); cv.width = 128; cv.height = 256; const x = cv.getContext('2d');
+  x.fillStyle = '#0c0e14'; x.fillRect(0, 0, 128, 256);
+  for (let r = 0; r < 16; r++) for (let c = 0; c < 6; c++) { const on = Math.random() < 0.55; x.fillStyle = on ? ['#ffd890', '#a0e0ff', '#ff9ad0'][(Math.random() * 3) | 0] : '#1a1e28'; x.fillRect(8 + c * 20, 6 + r * 15.5, 12, 9); }
+  _winTex = new THREE.CanvasTexture(cv); _winTex.colorSpace = THREE.SRGBColorSpace; _winTex.wrapS = _winTex.wrapT = THREE.RepeatWrapping;
+  return _winTex;
+}
+let _roadTex = null;
+function roadTexture() {
+  if (_roadTex) return _roadTex;
+  const cv = document.createElement('canvas'); cv.width = 256; cv.height = 256; const x = cv.getContext('2d');
+  x.fillStyle = '#2a2c32'; x.fillRect(0, 0, 256, 256);
+  for (let i = 0; i < 3000; i++) { x.fillStyle = `rgba(255,255,255,${Math.random() * 0.04})`; x.fillRect(Math.random() * 256, Math.random() * 256, 2, 2); }
+  x.fillStyle = '#8a8c92'; x.fillRect(0, 0, 256, 40); x.fillRect(0, 0, 40, 256); // sidewalks
+  x.fillStyle = '#f2c230'; for (let i = 60; i < 256; i += 40) { x.fillRect(146, i, 4, 20); x.fillRect(i, 146, 20, 4); }
+  _roadTex = new THREE.CanvasTexture(cv); _roadTex.colorSpace = THREE.SRGBColorSpace; _roadTex.wrapS = _roadTex.wrapT = THREE.RepeatWrapping;
+  return _roadTex;
+}
 function beltTexture() {
   const cv = document.createElement('canvas'); cv.width = 128; cv.height = 128; const x = cv.getContext('2d');
   x.fillStyle = '#16171b'; x.fillRect(0, 0, 128, 128);
@@ -220,6 +240,62 @@ export const THEMES = {
       for (let z = z0 + 6; z < z1 - 4; z += 10) solid(g, { pos: [0, 0.55, z], size: [6, 1.1, 1.2], mat: [Mat.metal('#1a2028'), Mat.metal('#1a2028'), new THREE.MeshStandardMaterial({ map: rackTexture('#25f4ff'), emissive: '#ffffff', emissiveMap: rackTexture('#25f4ff'), emissiveIntensity: 0.4 }), Mat.metal('#1a2028'), Mat.metal('#1a2028'), Mat.metal('#1a2028')] });
     },
     cover: 'racks',
+  },
+  whiteroom: {
+    floor: () => Mat.tile('#e8ecf0', '#c8ccd2', 4, 6, 0.15), wall: () => Mat.panel('#e2e6ea', 1), trim: '#ffffff', glow: '#9fe8ff',
+    bg: '#dfe6ec', fog: ['#c8d4dc', 0.016], light: { sky: '#ffffff', ground: '#c0c8d0', hemi: 0.75, key: '#ffffff', keyI: 1.2 },
+    style: { rim: '#ffffff', rimStrength: 0.5, sky: '#e0f0ff', ground: '#c0c8d0' }, practical: '#ffffff', music: 'f12',
+    dress(c, z0, z1) {
+      const { g, HW, CH } = c;
+      for (let z = z0 + 4; z < z1; z += 8) { const p = new THREE.Mesh(new THREE.BoxGeometry(2 * HW - 2, 0.05, 2.4), glowMat('#ffffff', 1.2)); p.position.set(0, CH - 0.05, z); g.scene.add(p); }
+      for (let z = z0 + 6; z < z1 - 4; z += 12) for (const s of [-1, 1]) { const ring = new THREE.Mesh(new THREE.TorusGeometry(1.6, 0.08, 8, 40), glowMat('#9fe8ff', 2)); ring.position.set(s * (HW - 0.2), 4, z); ring.rotation.y = Math.PI / 2; g.scene.add(ring); }
+    },
+    cover: 'walls',
+  },
+  gym: {
+    floor: () => Mat.rubber('#3a2a2a'), wall: () => texMat(brickTextures('#6a5a50', '#2a2420'), [6, 2], { roughness: 0.8 }), trim: '#ff6a1a', glow: '#ff6a1a',
+    bg: '#0a0806', fog: ['#1a1410', 0.011], light: { sky: '#fff0d8', ground: '#3a2a1a', hemi: 0.6, key: '#fff4e0', keyI: 1.9 },
+    style: { rim: '#ffc080', rimStrength: 0.75, sky: '#ffd0a0', ground: '#804020' }, practical: '#fff0d0', music: 'f4', liquid: 'acid',
+    dress(c, z0, z1) {
+      const { g, HW, CH, r } = c;
+      for (let z = z0 + 4; z < z1 - 3; z += 8) for (const s of [-1, 1]) {
+        // punching bags and weight racks
+        const bag = new THREE.Mesh(new THREE.CapsuleGeometry(0.45, 1.3, 4, 12), Mat.paint(r() < 0.5 ? '#c42040' : '#202024', 0.6, 0.1)); bag.position.set(s * (HW - 2), CH * 0.45, z); g.scene.add(bag);
+        const chain = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, CH * 0.55 - 1, 6), Mat.metal('#888')); chain.position.set(s * (HW - 2), CH * 0.45 + (CH * 0.55 - 1) / 2 + 1, z); g.scene.add(chain);
+        solid(g, { pos: [s * (HW - 0.7), 0.9, z + 3], size: [1, 1.8, 2.4], mat: Mat.metal('#3a3e46', 0.5, 0.8) });
+      }
+      sign(g, ['NO PAIN', 'NO RATINGS'], [0, CH - 2.5, z0 + 0.6], 10, 3, 0, { glow: '#ff6a1a' });
+    },
+    cover: 'crates',
+  },
+  garage: {
+    floor: () => Mat.concrete('#3a3c42', 6), wall: () => Mat.panel('#2c3036', 1), trim: '#f2c230', glow: '#f2c230',
+    bg: '#06070a', fog: ['#101216', 0.013], light: { sky: '#90a0b8', ground: '#202428', hemi: 0.5, key: '#e0e8ff', keyI: 1.6 },
+    style: { rim: '#ffd890', rimStrength: 0.8, sky: '#8090b0', ground: '#605030' }, practical: '#e0f0ff', music: 'f4',
+    dress(c, z0, z1) {
+      const { g, HW, CH } = c;
+      // parking bay stripes and mech gantries along the walls
+      for (let z = z0 + 2; z < z1; z += 4) for (const s of [-1, 1]) { const st = new THREE.Mesh(new THREE.PlaneGeometry(0.15, 5), new THREE.MeshBasicMaterial({ color: '#f2c230' })); st.rotation.x = -Math.PI / 2; st.rotation.z = Math.PI / 2; st.position.set(s * (HW - 3), 0.02, z); g.scene.add(st); }
+      for (let z = z0 + 8; z < z1 - 4; z += 16) for (const s of [-1, 1]) {
+        for (const dz of [-2.2, 2.2]) solid(g, { pos: [s * (HW - 2), CH / 2, z + dz], size: [0.6, CH, 0.6], mat: Mat.paint('#f2c230', 0.5, 0.4) });
+        solid(g, { pos: [s * (HW - 2), CH - 2, z], size: [0.8, 0.8, 5], mat: Mat.paint('#f2c230', 0.5, 0.4) });
+        const frame = new THREE.Mesh(new THREE.BoxGeometry(2.2, 5, 1.6), Mat.metal('#5a606a', 0.4, 0.8)); frame.position.set(s * (HW - 2), 4.5, z); g.scene.add(frame);
+        const visor = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.4, 0.1), glowMat('#ff2d6f', 2.5)); visor.position.set(s * (HW - 2) - s * 1.12, 6.2, z); visor.rotation.y = Math.PI / 2; g.scene.add(visor);
+      }
+    },
+    cover: 'cars',
+  },
+  city: {
+    floor: () => new THREE.MeshStandardMaterial({ map: (() => { const t = roadTexture().clone(); t.needsUpdate = true; t.repeat.set(10, 10); return t; })(), roughness: 0.85 }), wall: () => Mat.panel('#0a0c14', 1), trim: '#ff2d6f', glow: '#ff2d6f',
+    bg: '#04050c', fog: ['#0c1024', 0.009], light: { sky: '#6070c0', ground: '#100818', hemi: 0.55, key: '#c0c8ff', keyI: 1.3 },
+    style: { rim: '#ff6ab8', rimStrength: 0.95, sky: '#6050e0', ground: '#ff3080' }, practical: '#a0b0ff', music: 'boss',
+    dress(c, z0, z1) {
+      const { g, HW, CH } = c;
+      // a painted skyline on the walls and a starfield ceiling: it's a set, but a convincing one
+      for (const s of [-1, 1]) for (let z = z0; z < z1; z += 6) { const h = 6 + Math.random() * 14; const b = new THREE.Mesh(new THREE.PlaneGeometry(5.6, h), new THREE.MeshStandardMaterial({ map: windowTexture(), emissive: '#ffffff', emissiveMap: windowTexture(), emissiveIntensity: 0.55 })); b.position.set(s * (HW - 0.1), h / 2, z + 3); b.rotation.y = -s * Math.PI / 2; g.scene.add(b); }
+      for (let i = 0; i < 40; i++) { const st = new THREE.Mesh(new THREE.SphereGeometry(0.06, 4, 3), glowMat('#ffffff', 4)); st.position.set((Math.random() * 2 - 1) * HW, CH - 0.3, z0 + Math.random() * (z1 - z0)); g.scene.add(st); }
+    },
+    cover: 'cars',
   },
   vents: {
     floor: () => Mat.grate(4), wall: () => Mat.panel('#3a3e44', 1), trim: '#f2c230', glow: '#ff9a3a',
@@ -487,6 +563,65 @@ class Turret {
 }
 
 export const ROOMS = {
+  // ---- MECH CITY: a miniature city block. Low buildings and tiny cars crumble when you walk through
+  // them; the broadcast towers must be shot down. Robots look like toys from up here.
+  city(c, room, z0) {
+    const len = room.len || 60, { g, HW, r } = c, blk = 9;
+    room.small = [];
+    const winMat = () => new THREE.MeshStandardMaterial({ map: windowTexture(), emissive: '#ffffff', emissiveMap: windowTexture(), emissiveIntensity: 0.6, roughness: 0.6 });
+    for (let bx = -HW + 4; bx < HW - 4; bx += blk) for (let bz = z0 + 6; bz < z0 + len - 6; bz += blk) {
+      if (Math.abs(bx + blk / 2) < 5 && r() < 0.6) continue; // keep a main avenue open
+      const n = 2 + ((r() * 3) | 0);
+      for (let i = 0; i < n; i++) {
+        const w = 1.2 + r() * 1.8, d = 1.2 + r() * 1.8, h = 0.8 + r() * 2.2, x = bx + 1 + r() * (blk - 4), z = bz + 1 + r() * (blk - 4);
+        const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), [winMat(), winMat(), Mat.paint('#1a1e28'), Mat.paint('#1a1e28'), winMat(), winMat()]);
+        m.position.set(x, h / 2, z); m.castShadow = true; g.scene.add(m);
+        room.small.push({ m, w, d, h, alive: true });
+      }
+      for (let i = 0; i < 2; i++) {
+        const car = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.22, 0.7), Mat.paint(['#c42040', '#2060c0', '#e0b020'][(r() * 3) | 0], 0.3, 0.6));
+        car.position.set(bx + r() * blk, 0.11, bz - 1); g.scene.add(car); room.small.push({ m: car, w: 0.4, d: 0.8, h: 0.3, alive: true, car: true });
+      }
+    }
+    room.hatches = hatchesFor(c, z0, len, 4);
+    room.label = room.label || 'HALO TOWER';
+    room.targets = [];
+    const n = room.count || 3;
+    for (let i = 0; i < n; i++) room.targets.push(new Target(g, [(i - (n - 1) / 2) * (HW * 0.6), 0, z0 + len * (0.35 + 0.2 * (i % 2))], room.label, { color: '#ff2d6f', hp: 520, onDestroy: () => { room.down = (room.down || 0) + 1; } }));
+    return {
+      len,
+      update(dt) {
+        const pl = g.player;
+        for (const b of room.small) {
+          if (!b.alive) continue;
+          if (Math.abs(pl.pos.x - b.m.position.x) < b.w / 2 + 0.9 && Math.abs(pl.pos.z - b.m.position.z) < b.d / 2 + 0.9 && pl.pos.y < b.h + 0.5) {
+            b.alive = false; g.scene.remove(b.m);
+            g.fx.explosion(b.m.position.clone().setY(b.h * 0.5), b.car ? 0.35 : 0.6, { debris: true });
+            g.fx.dust(b.m.position.clone(), 10, 1.4);
+            g.audio.play(b.car ? 'clank' : 'explosion', { pos: b.m.position, big: 0.5 });
+            pl.shake(0.12); g.addHype(0.01);
+            room.smashed = (room.smashed || 0) + 1;
+            if (room.smashed % 8 === 0) g.app.chat?.add(['PROPERTY DAMAGE SPEEDRUN', 'the city council is crying', 'insurance has left the chat', 'he is literally Godzilla'][(Math.random() * 4) | 0]);
+          }
+        }
+      },
+      *run(g) {
+        room.down = room.down || 0;
+        const total = room.targets.length;
+        if (room.vote) g.audience.setAuto(true, 20);
+        spawnGroup(c, room, room.first || [['clanker', 4], ['drone', 2]]);
+        let t = 0;
+        while (room.down < total) {
+          g.setObjective(room.objective || 'TOPPLE THE HALO TOWERS', `${room.down} / ${total} down · ${room.smashed || 0} buildings flattened`);
+          yield 0.3; t += 0.3;
+          if (t > 8 && g.aliveEnemies() < 6) { t = 0; spawnGroup(c, room, [[c.r() < 0.4 ? 'drone' : 'clanker', 3]]); }
+        }
+        g.audience.setAuto(false);
+        g.setObjective('MOP UP', ''); yield () => g.aliveEnemies() === 0;
+      },
+      skip() { for (const t of room.targets) if (t.alive) t.destroy(true); },
+    };
+  },
   // ---- boss arena (the boss class comes from bosses.js)
   boss(c, room, z0) {
     const len = room.len || 50, { g, HW } = c;
@@ -876,6 +1011,7 @@ export function makeFloor(R) {
     const say = (who, t, o = {}) => g.say(who, t, { priority: 2, ...o });
     const lines = function* (list) { for (const [who, text, o, wait] of list || []) { say(who, text, o); yield wait ?? Math.max(2.5, text.length * 0.055); } };
     for (let i = 0; i < cp; i++) { F.rooms[i].built.skip?.(); F.openGate(F.rooms[i].gate, true); }
+    if (R.onPlay) R.onPlay(g, F);
     g.music.setState('explore'); g.musicState = 'explore';
     if (cp === 0) {
       g.setObjective(R.introObjective || 'GET MOVING', R.tagline || '');

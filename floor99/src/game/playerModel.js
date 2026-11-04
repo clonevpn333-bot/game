@@ -282,5 +282,24 @@ export class PlayerModel {
     if (this.antTip) this.antTip.material.emissiveIntensity = Math.sin(this.time * 6) > 0.6 ? 4 : 0.6;
   }
   _meleePose(T, s) { meleePose(T, s); }
+  // Mech frame for Mech City: chunky shoulder armour with missile pods, back thrusters, a canopy ring
+  setMech(on) {
+    if (on && !this.mechParts) {
+      const M = this.mats, plate = new THREE.MeshStandardMaterial({ color: '#d8dce4', metalness: 0.7, roughness: 0.3 }), pink = new THREE.MeshStandardMaterial({ color: '#000', emissive: '#ff2d6f', emissiveIntensity: 3 });
+      const g = this.mechParts = new THREE.Group();
+      for (const side of [1, -1]) {
+        const sh = this.j['shoulder' + (side === 1 ? 'L' : 'R')];
+        const pad = new THREE.Mesh(rbox(0.36, 0.22, 0.42, 0.06), plate); pad.position.set(0.04 * side, 0.12, 0); sh.add(pad);
+        const pod = new THREE.Mesh(rbox(0.18, 0.16, 0.3, 0.04), M.armor); pod.position.set(0.08 * side, 0.3, -0.02); sh.add(pod);
+        for (let i = 0; i < 2; i++) { const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.04, 8), pink); tube.rotation.x = Math.PI / 2; tube.position.set(0.08 * side + (i - 0.5) * 0.07, 0.3, 0.14); sh.add(tube); }
+        const thr = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.1, 0.32, 10), plate); thr.position.set(0.12 * side, 0.05, -0.28); this.j.chest.add(thr);
+        const fl = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.02, 0.18, 8), pink); fl.position.set(0.12 * side, -0.15, -0.28); this.j.chest.add(fl);
+        g.userData[side] = [pad, pod, thr, fl];
+      }
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.035, 8, 24), plate); ring.rotation.x = Math.PI / 2; ring.position.y = 0.05; this.j.head.add(ring);
+      g.userData.ring = ring;
+    }
+    if (this.mechParts) { for (const side of [1, -1]) for (const m of this.mechParts.userData[side]) m.visible = on; this.mechParts.userData.ring.visible = on; }
+  }
 
 }
