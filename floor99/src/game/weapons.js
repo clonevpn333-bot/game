@@ -60,6 +60,12 @@ export const WEAPONS = {
     recoilPitch: 0.003, kick: 0.02, shake: 0.015, sound: 'beam', tracer: 0x7ff6ff, tracerWidth: 0.05, twoHanded: true, flash: 0.35,
     blurb: 'A stage spotlight tuned to "melt". Hold it on target; it never misses its mark.',
   },
+  arc: {
+    id: 'arc', name: 'ARC CASTER', short: 'ARC', kind: 'gun', mag: 12, reserve: 96, interval: 0.34, auto: false,
+    damage: 30, head: 1.5, spread: 0.002, bloomAdd: 0.004, bloomMax: 0.012, pellets: 1, range: 70, knock: 4, reload: 1.6, chain: 3,
+    recoilPitch: 0.05, kick: 0.16, shake: 0.18, sound: 'arc', tracer: 0x9fd8ff, tracerWidth: 0.05, twoHanded: true, flash: 0.9,
+    blurb: 'A tesla coil with a trigger. Every bolt jumps to the next three robots. Crowds hate it.',
+  },
   gravity: {
     id: 'gravity', name: 'APPLAUSE GRAV-CANNON', short: 'GRAVITY', kind: 'gravity', mag: 100, reserve: Infinity, interval: 0.55, auto: false,
     damage: 25, range: 22, knock: 30, energy: true, regen: 14, cost: 28, grabCost: 34, twoHanded: true, recoilPitch: 0.08, kick: 0.3, shake: 0.35, sound: 'gravity',
@@ -426,12 +432,12 @@ export class Arsenal {
         tracer: d.tracer, tracerWidth: d.tracerWidth || (d.id === 'rail' ? 0.09 : d.id === 'shotgun' ? 0.018 : 0.025), falloff: d.falloff, source: 'player',
         quietImpact: d.pellets > 1 && i > 2,
       });
-      if (res && res.enemy) anyHit = true;
+      if (res && res.enemy) { anyHit = true; if (d.chain && res.enemy) G.chainArc(res.enemy, d.damage * dmgMult * 0.7, d.chain); }
     }
     G.audio.play(d.sound, { vol: d.id === 'rifle' ? 0.9 : 1 });
     G.fx.muzzle(muzzle, dirMain, d.id === 'rail' ? FXColors.cyan : FXColors.fire, d.flash);
     G.fx.flashLight(muzzle, d.id === 'rail' ? 0x55f0ff : 0xffb060, 42 * d.flash, 0.085, 8);
-    if (d.id !== 'rail' && d.id !== 'revolver' && d.id !== 'beam') G.fx.ejectShell(w.model.userData.eject.getWorldPosition(_v), P.rightVec, d.id === 'shotgun');
+    if (d.id !== 'rail' && d.id !== 'revolver' && d.id !== 'beam' && d.id !== 'arc') G.fx.ejectShell(w.model.userData.eject.getWorldPosition(_v), P.rightVec, d.id === 'shotgun');
     if (d.id === 'shotgun') setTimeout(() => G.audio.play('pump', { pos: P.pos }), 260);
     if (d.id === 'rail') { G.fx.ring(muzzle, 0.1, 1.2, 0.3, 0x55f0ff, dirMain); G.renderer.kick(0.6); }
     P.addRecoil(d.recoilPitch, d.shake);

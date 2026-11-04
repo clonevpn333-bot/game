@@ -137,6 +137,90 @@ export const THEMES = {
     },
     cover: 'racks',
   },
+  garden: {
+    floor: () => texMat(woodFloorTextures('#3a2a1a'), [6, 6], { roughness: 0.75 }), wall: () => Mat.panel('#1e2a22', 1), trim: '#7dff4f', glow: '#d060ff',
+    bg: '#040806', fog: ['#0c1a12', 0.014], light: { sky: '#c080ff', ground: '#1a3a14', hemi: 0.55, key: '#ffe0ff', keyI: 1.6 },
+    style: { rim: '#e080ff', rimStrength: 0.85, sky: '#a060ff', ground: '#40a030' }, practical: '#e090ff', music: 'f12', liquid: 'acid',
+    dress(c, z0, z1) {
+      const { g, HW, CH, r } = c;
+      const leaf = Mat.paint('#2f8a3a', 0.6, 0.05), stem = Mat.paint('#1f5a24', 0.7, 0.05);
+      for (let z = z0 + 3; z < z1 - 2; z += 4) for (const s of [-1, 1]) {
+        // planter beds with stylised plants along the walls
+        solid(g, { pos: [s * (HW - 1.2), 0.45, z], size: [2, 0.9, 3.4], mat: Mat.panel('#2a2e28', 1) });
+        for (let i = 0; i < 3; i++) {
+          const h = 1 + r() * 2.2, x = s * (HW - 0.6 - r() * 1.3), zz = z - 1.2 + r() * 2.4;
+          const st = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.08, h, 6), stem); st.position.set(x, 0.9 + h / 2, zz); g.scene.add(st);
+          const top = new THREE.Mesh(new THREE.IcosahedronGeometry(0.35 + r() * 0.45, 0), r() < 0.25 ? Mat.paint('#e050c0', 0.5, 0.05) : leaf); top.position.set(x, 0.9 + h, zz); top.scale.y = 0.7; g.scene.add(top);
+        }
+      }
+      // pink grow-light bars
+      for (let z = z0 + 3; z < z1; z += 6) for (const x of [-HW * 0.5, 0, HW * 0.5]) { const b = new THREE.Mesh(new THREE.BoxGeometry(3, 0.12, 0.4), glowMat('#e060ff', 2.4)); b.position.set(x, CH - 1, z); g.scene.add(b); }
+    },
+    cover: 'planters',
+  },
+  casino: {
+    floor: () => texMat({ map: carpetTexture('#5a0a18', '#2a040c', '#d4a53a') }, [12, 12], { roughness: 0.95 }), wall: () => Mat.panel('#2a0a12', 1), trim: '#ffd400', glow: '#ffd400',
+    bg: '#060203', fog: ['#1a0608', 0.011], light: { sky: '#ffb070', ground: '#3a0810', hemi: 0.5, key: '#fff0d0', keyI: 1.8 },
+    style: { rim: '#ffcf6a', rimStrength: 0.85, sky: '#ffa060', ground: '#a01030' }, practical: '#ffd8a0', music: 'f1', liquid: 'plasma',
+    dress(c, z0, z1) {
+      const { g, HW, CH, r } = c;
+      for (const s of [-1, 1]) marquee(g, [s * (HW - 0.05), CH - 2.5, (z0 + z1) / 2], z1 - z0 - 4, s * -Math.PI / 2, Math.floor((z1 - z0) / 1.4), '#ffd400');
+      // slot machine banks along the walls
+      for (let z = z0 + 3; z < z1 - 2; z += 2.2) for (const s of [-1, 1]) {
+        const sm = new THREE.Group(); sm.position.set(s * (HW - 0.8), 0, z); sm.rotation.y = -s * Math.PI / 2; g.scene.add(sm);
+        const cab = new THREE.Mesh(new THREE.BoxGeometry(1.4, 2.2, 1.1), Mat.paint(['#c42040', '#d4a53a', '#7a20c0'][(r() * 3) | 0], 0.35, 0.5)); cab.position.y = 1.1; sm.add(cab);
+        const sc = new THREE.Mesh(new THREE.PlaneGeometry(1, 0.6), new THREE.MeshBasicMaterial({ map: billboardTexture('7 7 7', '', { color: '#ffd400', bg: '#1a0408', size: 120 }), toneMapped: false })); sc.position.set(0, 1.5, 0.56); sm.add(sc);
+      }
+      for (let z = z0 + 8; z < z1; z += 16) { const ch = new THREE.Group(); ch.position.set(0, CH - 2.2, z); g.scene.add(ch); for (let i = 0; i < 10; i++) { const b = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 6), glowMat('#ffe0a0', 3)); const a = i / 10 * Math.PI * 2; b.position.set(Math.cos(a) * 1.4, -0.3 * (i % 2), Math.sin(a) * 1.4); ch.add(b); } c.spin.push(ch); }
+    },
+    cover: 'tables',
+  },
+  freezer: {
+    floor: () => Mat.tile('#8fb6c6', '#3a5a6a', 8, 6, 0.2), wall: () => Mat.panel('#9ab8c8', 1), trim: '#7ae0ff', glow: '#7ae0ff', ice: true,
+    bg: '#04080c', fog: ['#a8d0e0', 0.016], light: { sky: '#d0f0ff', ground: '#305060', hemi: 0.75, key: '#e8f8ff', keyI: 1.6 },
+    style: { rim: '#c0f0ff', rimStrength: 0.9, sky: '#a0d8f0', ground: '#507890' }, practical: '#d8f6ff', music: 'f12',
+    dress(c, z0, z1) {
+      const { g, HW, CH, r } = c;
+      // cryo pods along the walls, frosted, numbered
+      for (let z = z0 + 3; z < z1 - 2; z += 3.4) for (const s of [-1, 1]) {
+        const pod = new THREE.Group(); pod.position.set(s * (HW - 1), 0, z); pod.rotation.y = -s * Math.PI / 2; g.scene.add(pod);
+        const shell = new THREE.Mesh(new THREE.CapsuleGeometry(0.75, 1.6, 4, 12), Mat.metal('#c8d8e0', 0.3, 0.8)); shell.position.y = 1.55; pod.add(shell);
+        const glass = new THREE.Mesh(new THREE.CapsuleGeometry(0.62, 1.3, 4, 12, ), Mat.glass('#bff0ff', 0.45)); glass.position.set(0, 1.55, 0.25); pod.add(glass);
+        const lbl = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.22), new THREE.MeshBasicMaterial({ map: billboardTexture(String([12, 27, 41, 56, 63, 77, 85, 98][(r() * 8) | 0]), '', { color: '#7ae0ff', bg: '#04121a', size: 150 }), toneMapped: false })); lbl.position.set(0, 2.75, 0.7); pod.add(lbl);
+      }
+      for (let z = z0 + 2; z < z1; z += 5) { const ic = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.8 + r() * 0.8, 5), Mat.glass('#e0f8ff', 0.6)); ic.rotation.x = Math.PI; ic.position.set((r() * 2 - 1) * HW * 0.8, CH - 0.5, z); g.scene.add(ic); }
+      c.steam = (c.steam || []).concat([V(-HW + 3, 0.2, (z0 + z1) / 2), V(HW - 3, 0.2, z0 + 4)]);
+    },
+    cover: 'crates',
+  },
+  kitchen: {
+    floor: () => texMat(checkerTextures('#d8d4cc', '#24262c', 10), [4, 4], { metalness: 0.1, roughness: 0.35 }), wall: () => Mat.tile('#e8e4dc', '#9a968e', 12, 3, 0.2), trim: '#ff6a1a', glow: '#ff6a1a',
+    bg: '#0a0806', fog: ['#1a1410', 0.01], light: { sky: '#fff0d8', ground: '#3a2a1a', hemi: 0.65, key: '#fff8e8', keyI: 2.0 },
+    style: { rim: '#ffd090', rimStrength: 0.7, sky: '#ffe0b0', ground: '#806040' }, practical: '#fff0d0', music: 'f1',
+    dress(c, z0, z1) {
+      const { g, HW, CH } = c;
+      const steel = Mat.metal('#c8ccd2', 0.25, 0.9);
+      for (let z = z0 + 3; z < z1 - 2; z += 4) for (const s of [-1, 1]) {
+        solid(g, { pos: [s * (HW - 1), 0.5, z], size: [1.8, 1, 3.6], mat: steel });
+        const hob = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.05, 6, 20), glowMat('#ff4a1a', 2)); hob.rotation.x = Math.PI / 2; hob.position.set(s * (HW - 1), 1.02, z); g.scene.add(hob);
+      }
+      for (let z = z0 + 6; z < z1; z += 12) { const hood = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 2.2, 1.4, 4), steel); hood.rotation.y = Math.PI / 4; hood.position.set(0, CH - 1, z); g.scene.add(hood); }
+      c.steam = (c.steam || []).concat([V(-HW + 1, 1.2, z0 + 5), V(HW - 1, 1.2, z1 - 5)]);
+    },
+    cover: 'counters',
+  },
+  control: {
+    floor: () => Mat.panel('#14181e', 6), wall: () => Mat.panel('#1a2028', 1), trim: '#25f4ff', glow: '#25f4ff',
+    bg: '#020306', fog: ['#060a10', 0.013], light: { sky: '#6090c0', ground: '#0a0e14', hemi: 0.4, key: '#c0e0ff', keyI: 1.3 },
+    style: { rim: '#60d0ff', rimStrength: 0.95, sky: '#4080c0', ground: '#102030' }, practical: '#a0d8ff', music: 'f4',
+    dress(c, z0, z1) {
+      const { g, HW, CH } = c;
+      // walls of monitors: Halo's face on every screen
+      for (let z = z0 + 3; z < z1 - 2; z += 6) for (const s of [-1, 1]) for (const y of [3.5, 7].filter((y) => y < CH - 1.5)) screen(g, g.host, [s * (HW - 0.35), y, z], 2.2, -s * Math.PI / 2, { color: '#25f4ff' });
+      for (let z = z0 + 6; z < z1 - 4; z += 10) solid(g, { pos: [0, 0.55, z], size: [6, 1.1, 1.2], mat: [Mat.metal('#1a2028'), Mat.metal('#1a2028'), new THREE.MeshStandardMaterial({ map: rackTexture('#25f4ff'), emissive: '#ffffff', emissiveMap: rackTexture('#25f4ff'), emissiveIntensity: 0.4 }), Mat.metal('#1a2028'), Mat.metal('#1a2028'), Mat.metal('#1a2028')] });
+    },
+    cover: 'racks',
+  },
   vents: {
     floor: () => Mat.grate(4), wall: () => Mat.panel('#3a3e44', 1), trim: '#f2c230', glow: '#ff9a3a',
     bg: '#030304', fog: ['#0a0c0e', 0.022], light: { sky: '#607080', ground: '#101418', hemi: 0.3, key: '#c0d0e0', keyI: 1.0 },
@@ -193,6 +277,11 @@ export const THEMES = {
     cover: 'walls',
   },
 };
+function iceMat() {
+  const m = Mat.tile('#bfe6f2', '#7ab0c8', 6, 6, 0.08).clone();
+  m.metalness = 0.1; m.roughness = 0.06; m.envMapIntensity = 1.4; m.color = new THREE.Color('#d8f2ff');
+  return m;
+}
 let _wood, _shelf;
 function woodMat() { return _wood || (_wood = texMat(woodFloorTextures('#7a5030'), [1, 1], { roughness: 0.55 })); }
 function shelfMat() { return _shelf || (_shelf = new THREE.MeshStandardMaterial({ map: shelfTexture(), roughness: 0.85 })); }
@@ -207,6 +296,9 @@ const COVER = {
   tanks(c, x, z) { const { g } = c; const t = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.1, 2.4, 16), Mat.metal('#7a5a3a', 0.45, 0.85)); t.position.set(x, 1.2, z); g.scene.add(t); g.physics.add(new Box({ pos: V(x, 1.2, z), size: [2, 2.4, 2] })); },
   racks(c, x, z) { const { g } = c; const m = new THREE.MeshStandardMaterial({ map: rackTexture('#3dff9a'), emissive: '#ffffff', emissiveMap: rackTexture('#3dff9a'), emissiveIntensity: 0.3, metalness: 0.5, roughness: 0.4 }); solid(g, { pos: [x, 1.6, z], size: [1.4, 3.2, 3.6], mat: [Mat.metal('#1a1e26'), Mat.metal('#1a1e26'), Mat.metal('#1a1e26'), Mat.metal('#1a1e26'), m, m] }); },
   walls(c, x, z) { const { g, r } = c; const along = r() < 0.5; solid(g, { pos: [x, 0.8, z], size: along ? [0.6, 1.6, 4] : [4, 1.6, 0.6], mat: Mat.panel('#8a929c', 1), round: 0.05 }); const t = new THREE.Mesh(new THREE.BoxGeometry(along ? 0.62 : 4.02, 0.08, along ? 4.02 : 0.62), glowMat('#ff2d2d', 1.4)); t.position.set(x, 1.6, z); g.scene.add(t); },
+  planters(c, x, z) { const { g, r } = c; solid(g, { pos: [x, 0.6, z], size: [3, 1.2, 1.6], mat: Mat.panel('#2a2e28', 1), round: 0.06 }); for (let i = 0; i < 3; i++) { const t = new THREE.Mesh(new THREE.IcosahedronGeometry(0.45 + r() * 0.3, 0), Mat.paint(r() < 0.3 ? '#e050c0' : '#2f8a3a', 0.6, 0.05)); t.position.set(x - 1 + i, 1.5 + r() * 0.4, z); g.scene.add(t); } },
+  tables(c, x, z) { const { g } = c; solid(g, { pos: [x, 0.5, z], size: [3.2, 1, 1.8], mat: [Mat.paint('#3a1a0a'), Mat.paint('#3a1a0a'), Mat.paint('#0e5a2a', 0.9, 0), Mat.paint('#3a1a0a'), Mat.paint('#3a1a0a'), Mat.paint('#3a1a0a')], round: 0.1 }); const chips = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.3, 12), Mat.paint('#c42040', 0.4, 0.2)); chips.position.set(x + 0.6, 1.15, z); g.scene.add(chips); },
+  counters(c, x, z) { const { g } = c; solid(g, { pos: [x, 0.55, z], size: [3.6, 1.1, 1.4], mat: Mat.metal('#c8ccd2', 0.25, 0.9) }); const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.3, 0.5, 14), Mat.metal('#8a8e94', 0.3, 0.9)); pot.position.set(x - 0.8, 1.35, z); g.scene.add(pot); },
   pillars(c, x, z) { solid(c.g, { pos: [x, c.CH / 2, z], size: [1.6, c.CH, 1.6], mat: c.wallMat }); },
 };
 
@@ -584,14 +676,15 @@ export const ROOMS = {
   lava(c, room, z0) {
     const len = room.len || 40, { g, HW, r } = c;
     room.noFloor = true;
-    const molten = moltenMaterial({ scale: 0.25 });
+    const LIQ = { lava: {}, acid: { hot: '#e8ff7a', mid: '#3dff6a', crust: '#062a0c', light: '#5aff6a', type: 'acid' }, plasma: { hot: '#ffffff', mid: '#b060ff', crust: '#12041e', light: '#a050ff', type: 'plasma' } }[room.liquid || c.T.liquid || 'lava'];
+    const molten = moltenMaterial({ scale: 0.25, hot: LIQ.hot, mid: LIQ.mid, crust: LIQ.crust });
     const pit = new THREE.Mesh(new THREE.BoxGeometry(2 * HW, 0.4, len - 6), molten); pit.position.set(0, -1.6, z0 + len / 2); g.scene.add(pit);
-    const hz = g.physics.addBox({ pos: V(0, -1.7, z0 + len / 2), size: [2 * HW, 0.4, len - 6], hazard: { dps: 40, type: 'molten' } }); hz.noSafe = true;
+    const hz = g.physics.addBox({ pos: V(0, -1.7, z0 + len / 2), size: [2 * HW, 0.4, len - 6], hazard: { dps: 40, type: LIQ.type || 'molten' } }); hz.noSafe = true;
     // landings at both ends
     solid(g, { pos: [0, -0.5, z0 + 1.5], size: [2 * HW, 1, 3], mat: c.floorMat, cast: false });
     solid(g, { pos: [0, -0.5, z0 + len - 1.5], size: [2 * HW, 1, 3], mat: c.floorMat, cast: false });
     for (const s of [-1, 1]) { const lip = new THREE.Mesh(new THREE.BoxGeometry(2 * HW, 0.25, 0.3), Mat.paint(c.T.trim, 0.5, 0.4)); lip.position.set(0, 0.02, z0 + (s < 0 ? 3 : len - 3)); g.scene.add(lip); }
-    for (const lx of [-HW * 0.6, HW * 0.6]) for (let z = z0 + 8; z < z0 + len - 4; z += 12) { const l = new THREE.PointLight('#ff6a1a', 40, 18, 1.4); l.position.set(lx, 0, z); g.scene.add(l); }
+    for (const lx of [-HW * 0.6, HW * 0.6]) for (let z = z0 + 8; z < z0 + len - 4; z += 12) { const l = new THREE.PointLight(LIQ.light || '#ff6a1a', 40, 18, 1.4); l.position.set(lx, 0, z); g.scene.add(l); }
     embers(g, { minX: -HW + 1, maxX: HW - 1, minZ: z0 + 3, maxZ: z0 + len - 3, y: -1.3 }, 18);
     // stepping stones: two weaving paths + a high route on movers
     const stoneMat = Mat.panel('#3a3530', 1);
@@ -716,7 +809,10 @@ export function makeFloor(R) {
       const built = ROOMS[room.type](c, room, z);
       room.len = built.len;
       room.built = built;
-      if (!room.noFloor) solid(g, { pos: [0, -0.5, z + built.len / 2], size: [W, 1, built.len], mat: c.floorMat, cast: false });
+      if (!room.noFloor) {
+        const fl = solid(g, { pos: [0, -0.5, z + built.len / 2], size: [W, 1, built.len], mat: room.ice || T.ice ? c.iceMat || (c.iceMat = iceMat()) : c.floorMat, cast: false });
+        if (room.ice || T.ice) fl.collider.ice = true;
+      }
       F.checkpoints[i] = { pos: [0, 0.2, z + 1.5], yaw: 0 };
       // gate at the end of each room (opens when the room is done)
       room.gate = solid(g, { pos: [0, CH / 2, z + built.len + 0.5], size: [W, CH, 1], mat: Mat.hazard(6), dynamic: true });

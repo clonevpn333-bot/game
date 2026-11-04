@@ -169,6 +169,21 @@ export const GUN_BUILDERS = {
     for (const z of [0.05, 0.19]) k.box(root, [0.025, 0.04, 0.02], [0, 0.1, z], m.dark, 0.005);
     return { muzzle: [0, 0.03, 0.34], eject: [0.06, 0.03, 0.05], rightGrip, leftGrip: k.marker('support-grip', root, [0.05, -0.05, 0.16]) };
   },
+  // ARC CASTER: copper coil stack, three tesla prongs and a crackling glass capacitor
+  arc(k) {
+    const { m, root, parts } = k;
+    const rightGrip = k.receiver(m.dark, { len: 0.22 });
+    const copper = m.brass;
+    parts.coils = [];
+    for (let n = 0; n < 5; n++) parts.coils.push(k.ring(root, 0.05, 0.016, [0, 0.03, 0.1 + n * 0.035], copper));
+    k.barrel(root, 0.03, 0.2, [0, 0.03, 0.17], m.steel);
+    for (let n = 0; n < 3; n++) { const a = n / 3 * Math.PI * 2 + Math.PI / 2; const prong = k.box(root, [0.012, 0.012, 0.12], [Math.cos(a) * 0.05, 0.03 + Math.sin(a) * 0.05, 0.31], copper, 0.004); prong.rotation.set(Math.sin(a) * 0.25, -Math.cos(a) * 0.25, 0); }
+    parts.core = new THREE.Mesh(new THREE.SphereGeometry(0.035, 12, 10), m.glowCyan); parts.core.position.set(0, 0.03, 0.35); root.add(parts.core);
+    const cap = k.barrel(root, 0.03, 0.09, [0, 0.105, 0.02], new THREE.MeshStandardMaterial({ color: '#9fd8ff', transparent: true, opacity: 0.5, roughness: 0.1, metalness: 0 }));
+    cap.rotation.z = 0;
+    k.box(root, [0.02, 0.02, 0.1], [0, 0.105, 0.02], m.glowCyan, 0.004);
+    return { muzzle: [0, 0.03, 0.37], eject: [0.06, 0.03, 0.05], rightGrip, leftGrip: k.marker('support-grip', root, [0.04, -0.05, 0.15]) };
+  },
 };
 
 // Build a gun from its builder, apply the readability size profile, and publish the contract.

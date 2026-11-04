@@ -693,6 +693,32 @@ export class Game {
       if (to.length() < range * 0.6 && to.normalize().dot(fwd) > 0.5) { pr.owner = 'player'; pr.vel.copy(fwd).multiplyScalar(30); pr.damage *= 3; }
     }
   }
+  // chain lightning: jumps from the struck robot to the nearest others, drawing a jagged arc each hop
+  chainArc(first, damage, hops = 3, range = 8) {
+    const hit = new Set([first]);
+    let from = first;
+    for (let h = 0; h < hops; h++) {
+      const a = from.center(new THREE.Vector3());
+      let best = null, bd = range;
+      for (const e of this.enemies) { if (!e.alive || hit.has(e)) continue; const d = e.center(_v).distanceTo(a); if (d < bd) { bd = d; best = e; } }
+      if (!best) break;
+      hit.add(best);
+      const b = best.center(new THREE.Vector3());
+      let p0 = a.clone();
+      for (let i = 1; i <= 4; i++) {
+        const p1 = a.clone().lerp(b, i / 4);
+        if (i < 4) p1.add(new THREE.Vector3(rand(-0.4, 0.4), rand(-0.4, 0.4), rand(-0.4, 0.4)));
+        this.fx.tracer(p0, p1, 0x9fd8ff, 0.035, 0.14); p0 = p1;
+      }
+      const wasAlive = best.alive;
+      best.takeDamage(damage * Math.pow(0.8, h), { dir: b.clone().sub(a).normalize(), knock: 3, weapon: 'arc', source: 'player', stagger: true, point: b });
+      if (!best.alive && wasAlive) best._killInfo = { weapon: 'arc' };
+      this.fx.electric(b, 10, 0.6);
+      this.audio.play('zap', { pos: b });
+      from = best;
+    }
+    return hit.size - 1;
+  }
   yankEnemy(e, player) {
     const to = _v.subVectors(player.pos, e.pos);
     const d = to.length();

@@ -397,6 +397,12 @@ export const SFX = {
     A.tone(out, t, 0.05, { type: 'sawtooth', f0: 880 + Math.random() * 60, f1: 760, vol: 0.25 });
     A.noise(out, t, 0.04, { filter: 'bandpass', f0: 5200, q: 3, vol: 0.3 });
   },
+  arc(A, t, o) {
+    const out = A._out({ ...o, verb: 0.25 });
+    A.noise(out, t, 0.22, { filter: 'bandpass', f0: 4200, f1: 1200, q: 1.5, vol: 1.0 });
+    A.tone(out, t, 0.18, { type: 'sawtooth', f0: 140, f1: 60, vol: 0.6 });
+    for (let i = 0; i < 4; i++) A.noise(out, t + 0.03 + i * 0.035, 0.02, { filter: 'highpass', f0: 6000, vol: 0.5 });
+  },
   launcher(A, t, o) {
     const out = A._out({ ...o, verb: 0.3 });
     A.tone(out, t, 0.22, { type: 'sine', f0: 180, f1: 55, vol: 1.6 });
