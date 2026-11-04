@@ -12,6 +12,12 @@ generated procedurally in your browser. There are no asset downloads and no buil
 
 ## Run it
 
+**Easiest:** open `dist/floor99.html` in Chrome, Edge or Firefox. It is the whole game in one
+self-contained file (three.js, code, styles and fonts inlined), so it needs no server and no install.
+To rebuild it after changing the source: `npm i -D esbuild && node tools/build-single.mjs`.
+
+**From source:**
+
 You need Node 18+ (only to serve files; the game has no npm dependencies):
 
 ```bash
