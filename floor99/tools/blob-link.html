@@ -1,0 +1,43 @@
+<!-- FLOOR 99 · blob-link button (injected into single-file builds only) -->
+<style>
+#f99Blob{position:fixed;right:16px;top:16px;z-index:9999;font:700 12px/1 'Chakra Petch',system-ui,sans-serif;letter-spacing:1.5px}
+#f99Blob.hide{display:none}
+#f99Blob>button{cursor:pointer;border:1px solid #ff4fa0;background:linear-gradient(180deg,#2a0c26ee,#12061aee);color:#ffd1ea;padding:10px 14px;border-radius:999px;box-shadow:0 0 18px #ff2f8a55;font:inherit;letter-spacing:inherit}
+#f99Blob>button:hover{background:#ff2f8a;color:#fff}
+#f99BlobPop{position:absolute;right:0;top:46px;width:min(380px,calc(100vw - 32px));background:#0c0814f2;border:1px solid #ff4fa066;border-radius:12px;padding:14px;color:#e6dff0;box-shadow:0 12px 40px #000a;display:none}
+#f99BlobPop.open{display:block}
+#f99BlobPop .t{color:#ff7ab8;margin-bottom:8px}
+#f99BlobPop .u{font:11px/1.35 ui-monospace,monospace;letter-spacing:0;word-break:break-all;background:#000;border-radius:6px;padding:8px;color:#9fe8ff;margin-bottom:10px;user-select:all}
+#f99BlobPop .r{display:flex;gap:8px;flex-wrap:wrap}
+#f99BlobPop .r a,#f99BlobPop .r button{flex:1;text-align:center;cursor:pointer;text-decoration:none;border:1px solid #ffffff33;background:#1c1428;color:#fff;padding:9px 8px;border-radius:8px;font:inherit;font-size:11px;letter-spacing:1px}
+#f99BlobPop .r a:hover,#f99BlobPop .r button:hover{border-color:#ff4fa0;background:#2e1534}
+#f99BlobPop .n{margin-top:8px;font-weight:400;letter-spacing:0;font-size:11px;color:#a99cb8;line-height:1.4}
+</style>
+<div id="f99Blob"><div id="f99BlobPop"><div class="t">BLOB LINK READY</div><div class="u" id="f99BlobUrl"></div><div class="r"><a id="f99BlobOpen" target="_blank" rel="noopener">OPEN ▶</a><button id="f99BlobCopy">COPY</button><a id="f99BlobDl" download="floor99.html">SAVE .HTML</a></div><div class="n">A blob: link only exists while this tab stays open. Use SAVE .HTML to keep a copy.</div></div><button id="f99BlobBtn" title="Open this game as a blob: URL">⧉ BLOB LINK</button></div>
+<script>
+(function(){
+  // Snapshot the page source now: this runs while the page is being parsed, before the game script touches the DOM.
+  var html='<!doctype html>\n'+document.documentElement.outerHTML;
+  var url=null,root=document.getElementById('f99Blob'),pop=document.getElementById('f99BlobPop');
+  function make(){if(!url)url=URL.createObjectURL(new Blob([html],{type:'text/html'}));return url}
+  document.getElementById('f99BlobBtn').addEventListener('click',function(e){
+    e.stopPropagation();var u=make();
+    document.getElementById('f99BlobUrl').textContent=u;
+    document.getElementById('f99BlobOpen').href=u;document.getElementById('f99BlobDl').href=u;
+    var open=!pop.classList.contains('open');pop.classList.toggle('open',open);
+    if(open){try{window.open(u,'_blank')}catch(_){}}
+  });
+  document.getElementById('f99BlobCopy').addEventListener('click',function(e){
+    e.stopPropagation();var b=this;
+    var done=function(){b.textContent='COPIED';setTimeout(function(){b.textContent='COPY'},1200)};
+    if(navigator.clipboard)navigator.clipboard.writeText(make()).then(done,function(){prompt('Copy this blob link:',make())});else prompt('Copy this blob link:',make());
+  });
+  root.addEventListener('mousedown',function(e){e.stopPropagation()});
+  // Only show on the boot and menu screens. Hide in-game so it never covers the action.
+  setInterval(function(){
+    var b=document.getElementById('boot'),m=document.getElementById('menu');
+    var show=(b&&b.classList.contains('active'))||(m&&m.classList.contains('active'));
+    root.classList.toggle('hide',!show);if(!show)pop.classList.remove('open');
+  },300);
+})();
+</script>
