@@ -54,7 +54,12 @@ class App {
     this.input.invertY = s.invertY;
     this.audio.vol = { master: s.master, music: s.music, sfx: s.sfx, voice: s.voiceVol };
     this.audio.applyVolumes();
-    if (changed === 'quality' && this.renderer.qualityName !== s.quality) this.renderer.setQuality(s.quality);
+    if (changed === 'quality' && this.renderer.qualityName !== s.quality) {
+      this.renderer.setQuality(s.quality);
+      // shadow/AA changes need shader rebuilds
+      for (const sc of [this.game?.scene, this.menuScene?.scene, this.lounge?.scene, this.elevator?.scene]) sc?.traverse((o) => { if (o.material) for (const m of [].concat(o.material)) m.needsUpdate = true; });
+      if (this.game?.keyLight) this.game.keyLight.castShadow = this.renderer.q.shadows;
+    }
     if (!s.voice) this.host.stopVoice();
   }
 

@@ -154,7 +154,7 @@ class Foreman extends Enemy {
   constructor(g, pos, F) {
     super(g, pos, { type: 'foreman', name: 'THE FOREMAN', hp: 1, radius: 3, height: 6, flying: true, heavy: true, score: 5000, spawnTime: 2.5 });
     this.F = F;
-    this.parts = { armL: { hp: 280, max: 280, alive: true }, armR: { hp: 280, max: 280, alive: true }, core: { hp: 650, max: 650, alive: true } };
+    this.parts = { armL: { hp: 340, max: 340, alive: true }, armR: { hp: 340, max: 340, alive: true }, core: { hp: 900, max: 900, alive: true } };
     const M = this.M = { paint: Mat.paint('#f2a51c', 0.4, 0.5).clone(), dark: Mat.metal('#23262e', 0.4, 0.9), steel: Mat.metal('#b0b8c0', 0.25, 1), eye: new THREE.MeshStandardMaterial({ color: '#000', emissive: '#ff3010', emissiveIntensity: 4 }), weak: new THREE.MeshStandardMaterial({ color: '#000', emissive: '#25f4ff', emissiveIntensity: 3 }) };
     M.paint.emissive = new THREE.Color(0); this.flashMats.push(M.paint);
     const r = this.root;
@@ -627,7 +627,7 @@ function build(g, { checkpoint }) {
   F.openGate = (gate) => {
     g.audio.play('hydraulic', { pos: gate.mesh.position });
     let t = 0;
-    g.addHazard({ update(dt) { t += dt; gate.mesh.position.y = 5 + Math.min(1, t / 2.5) * 11; if (t > 2.5) this.dead = true; } });
+    g.addHazard({ update(dt) { t += dt; gate.mesh.position.y = 5 + Math.min(1, t / 2.5) * 19; if (t > 2.5) this.dead = true; } });
   };
   F.wave = (list) => {
     list.forEach(([type, where, delay, opts], i) => g.later(delay ?? i * 0.5, () => {

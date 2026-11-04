@@ -129,9 +129,9 @@ button { font-family: inherit; color: inherit; background: none; border: 0; curs
 .lounge-head { position: absolute; left: 4vw; top: 5vh; }
 .lounge-title { font-family: var(--head); font-size: 64px; letter-spacing: 3px; color: var(--yellow); text-shadow: 0 0 30px rgba(255,212,0,.35); }
 .lounge-sub { color: #d9c7d4; letter-spacing: 2px; font-size: 14px; margin-top: 4px; }
-.lounge-tabs { position: absolute; left: 4vw; top: calc(5vh + 108px); padding: 0; flex-wrap: wrap; max-width: 62vw; }
+.lounge-tabs { position: absolute; left: 4vw; top: calc(5vh + 122px); padding: 0; flex-wrap: wrap; max-width: 62vw; }
 .lounge-tabs .tab { font-size: 15px; padding: 7px 11px; }
-.lounge-body { position: absolute; left: 4vw; top: calc(5vh + 152px); bottom: 6vh; width: min(640px, 50vw); overflow: auto; background: rgba(8,4,12,.72); border: 1px solid rgba(255,255,255,.08); padding: 18px; }
+.lounge-body { position: absolute; left: 4vw; top: calc(5vh + 166px); bottom: 6vh; width: min(640px, 50vw); overflow: auto; background: rgba(8,4,12,.72); border: 1px solid rgba(255,255,255,.08); padding: 18px; }
 .lounge-fans { position: absolute; right: 4vw; top: 5vh; text-align: right; font-family: var(--head); font-size: 32px; letter-spacing: 2px; }
 .lounge-fans small { display: block; font-family: var(--ui); font-size: 12px; color: #c9b; letter-spacing: 2px; }
 .lounge-go { position: absolute; right: 4vw; bottom: 6vh; font-family: var(--head); font-size: 34px; letter-spacing: 3px; padding: 14px 34px; background: var(--pink); color: #fff; clip-path: polygon(14px 0, 100% 0, calc(100% - 14px) 100%, 0 100%); animation: pulse 1.6s infinite; }
@@ -148,7 +148,7 @@ button { font-family: inherit; color: inherit; background: none; border: 0; curs
 .stars { color: var(--yellow); letter-spacing: 2px; }
 
 /* ---------------- HUD ---------------- */
-#hud { z-index: 5; font-family: var(--ui); }
+#hud { z-index: 5; font-family: var(--ui); text-shadow: 0 1px 3px rgba(0,0,0,.85), 0 0 8px rgba(0,0,0,.5); }
 .hud-bug { position: absolute; left: 24px; top: 20px; display: grid; grid-template-columns: auto auto; gap: 0 10px; align-items: center; }
 .bug-live { grid-row: span 2; background: #ff1a3a; padding: 6px 10px; font-weight: 700; letter-spacing: 2px; font-size: 14px; display: flex; align-items: center; gap: 6px; }
 .bug-live .dot { width: 8px; height: 8px; border-radius: 50%; background: #fff; animation: blink 1s infinite; }

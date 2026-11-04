@@ -666,6 +666,12 @@ export class Game {
       p.body.spin.set(rand(-12, 12), rand(-12, 12), rand(-12, 12));
       p.body.sleep = 0; p.thrown = true; p.thrownT = 2;
     }
+    for (const d of this.destructibles) {
+      if (!d.alive) continue;
+      const to = _v.subVectors(d.pos, origin);
+      const dist = to.length();
+      if (dist < range && to.normalize().dot(fwd) > 0.6) d.onShot(dmg * 2.5, { point: d.pos.clone(), weapon: 'gravity' });
+    }
     for (const pr of this.projectiles) {
       if (pr.owner === 'player') continue;
       const to = _v.subVectors(pr.pos, origin);

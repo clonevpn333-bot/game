@@ -252,7 +252,7 @@ function build(g, { checkpoint }) {
   g.scene.fog = new THREE.FogExp2('#03202c', F.fogDensity);
   stageLights(g, { sky: '#4ac0e8', ground: '#02141c', hemi: 0.85, key: '#c8f0ff', keyI: 1.6, dir: [0.2, 1, -0.3] });
   const host = g.host;
-  const tile = Mat.tile('#d6e6ea', '#6a8a94', 6, 8, 0.15);
+  const tile = Mat.tile('#9fbcc6', '#4a6a74', 6, 8, 0.15);
   const darkTile = Mat.tile('#22343c', '#0e1a20', 4, 6, 0.3);
   const glass = Mat.glass('#9fe6ff', 0.14);
   const waterVol = new THREE.MeshStandardMaterial({ color: '#0a6a8a', transparent: true, opacity: 0.38, roughness: 0.1, metalness: 0, depthWrite: false, emissive: '#04364a', emissiveIntensity: 0.6 });

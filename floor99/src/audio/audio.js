@@ -68,7 +68,7 @@ export class AudioEngine {
     if (!this.ctx) return;
     const t = this.ctx.currentTime;
     this.master.gain.setTargetAtTime(this.vol.master, t, 0.05);
-    this.musicBus.gain.setTargetAtTime(this.vol.music * 0.8, t, 0.05);
+    this.musicBus.gain.setTargetAtTime(this.vol.music * 0.6, t, 0.05);
     this.sfxBus.gain.setTargetAtTime(this.vol.sfx, t, 0.05);
     this.voiceBus.gain.setTargetAtTime(this.vol.voice, t, 0.05);
     this.crowdBus.gain.setTargetAtTime(this.vol.sfx * 0.9, t, 0.05);
@@ -341,7 +341,7 @@ export class AudioEngine {
       L.wob += dt * (0.6 + e);
       const mod = 0.75 + 0.25 * Math.sin(L.wob * 1.3) * Math.sin(L.wob * 0.71);
       const bright = L.f > 1000 ? e * e : 1;
-      const v = this.crowdOn * L.base * (0.12 + e * 0.5) * mod * bright;
+      const v = this.crowdOn * L.base * (0.3 + e * 1.1) * mod * bright;
       L.g.gain.setTargetAtTime(v, t, 0.15);
     }
   }
