@@ -52,7 +52,7 @@ export const Mat = {
   },
   stage(rep = 1) {
     const t = stageFloorTextures();
-    return std('stage' + rep, { map: cloneRepeat(t.map, rep), normalMap: cloneRepeat(t.normalMap, rep), emissiveMap: cloneRepeat(t.emissiveMap, rep), emissive: '#ffffff', emissiveIntensity: 0.6, metalness: 0.5, roughness: 0.22 });
+    return std('stage' + rep, { map: cloneRepeat(t.map, rep), normalMap: cloneRepeat(t.normalMap, rep), emissiveMap: cloneRepeat(t.emissiveMap, rep), emissive: '#ffffff', emissiveIntensity: 0.35, metalness: 0.5, roughness: 0.22 });
   },
   concrete(color = '#5a5c60', rep = 1) {
     const t = concreteTextures(color);
@@ -97,18 +97,48 @@ export function moltenMaterial(opts = {}) {
       uniform vec3 uHot, uMid, uCrust;
       varying vec3 vWorld;
       ${fogPars}
+      vec2 hash2(vec2 p){ p = vec2(dot(p, vec2(127.1,311.7)), dot(p, vec2(269.5,183.3))); return fract(sin(p) * 43758.5453); }
       float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453); }
       float noise(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f);
         return mix(mix(hash(i),hash(i+vec2(1,0)),f.x), mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x), f.y); }
-      float fbm(vec2 p){ float v=0.0, a=0.5; for(int i=0;i<5;i++){ v+=a*noise(p); p*=2.03; a*=0.5; } return v; }
+      float fbm(vec2 p){ float v=0.0, a=0.5; for(int i=0;i<4;i++){ v+=a*noise(p); p*=2.03; a*=0.5; } return v; }
+      // voronoi: returns (distance to nearest cell edge, cell id)
+      vec2 voronoi(vec2 x){
+        vec2 n = floor(x), f = fract(x);
+        vec2 mg, mr; float md = 8.0; float id = 0.0;
+        for (int j=-1;j<=1;j++) for (int i=-1;i<=1;i++) {
+          vec2 g = vec2(float(i), float(j));
+          vec2 o = hash2(n + g);
+          o = 0.5 + 0.45 * sin(uTime * 0.35 + 6.2831 * o);
+          vec2 r = g + o - f;
+          float d = dot(r, r);
+          if (d < md) { md = d; mr = r; mg = g; id = hash(n + g); }
+        }
+        md = 8.0;
+        for (int j=-2;j<=2;j++) for (int i=-2;i<=2;i++) {
+          vec2 g = mg + vec2(float(i), float(j));
+          vec2 o = hash2(n + g);
+          o = 0.5 + 0.45 * sin(uTime * 0.35 + 6.2831 * o);
+          vec2 r = g + o - f;
+          if (dot(mr - r, mr - r) > 0.00001) md = min(md, dot(0.5 * (mr + r), normalize(r - mr)));
+        }
+        return vec2(md, id);
+      }
       void main(){
-        vec2 p = vWorld.xz * uScale + uFlow * uTime;
-        float n = fbm(p + fbm(p * 1.7 - uTime * 0.12) * 1.6);
-        float cells = smoothstep(0.35, 0.75, n);
-        vec3 col = mix(uCrust, uMid, cells);
-        col = mix(col, uHot, smoothstep(0.62, 0.9, n));
-        float pulse = 0.85 + 0.15 * sin(uTime * 2.0 + n * 6.0);
-        gl_FragColor = vec4(col * uIntensity * pulse, 1.0);
+        vec2 p = vWorld.xz * uScale * 2.6 + uFlow * uTime;
+        p += vec2(fbm(p * 0.6 + uTime * 0.05), fbm(p * 0.6 - uTime * 0.04)) * 0.9;
+        vec2 v = voronoi(p);
+        float edge = v.x;
+        float crack = 1.0 - smoothstep(0.0, 0.05, edge);       // white-hot seams
+        float glow = 1.0 - smoothstep(0.0, 0.2, edge);        // orange halo around seams
+        float n = fbm(p * 2.5 + v.y * 10.0);
+        // cooled crust plates: dark red-brown with mottling, some plates hotter than others
+        float heat = 0.25 + 0.75 * smoothstep(0.2, 1.0, v.y + n * 0.4);
+        vec3 col = uCrust * (0.5 + n * 0.9) + uMid * 0.18 * heat * (0.5 + n);
+        col = mix(col, uMid * 1.25, glow * glow * 0.9);
+        col = mix(col, uHot * 2.2, crack);
+        float pulse = 0.88 + 0.12 * sin(uTime * 2.3 + v.y * 20.0);
+        gl_FragColor = vec4(col * uIntensity * 0.5 * pulse, 1.0);
         #include <fog_fragment>
       }
     `,
@@ -184,22 +214,25 @@ export function lightConeMaterial(color = '#ffffff', intensity = 0.35) {
   return new THREE.ShaderMaterial({
     uniforms: { uColor: { value: new THREE.Color(color) }, uIntensity: { value: intensity }, uTime: shaderClock },
     vertexShader: /* glsl */`
-      varying float vY; varying vec3 vN; varying vec3 vV;
+      varying float vY; varying vec3 vN; varying vec3 vV; varying float vDist;
       void main(){
         vY = uv.y;
         vec4 wp = modelMatrix * vec4(position,1.0);
         vN = normalize(mat3(modelMatrix) * normal);
         vV = normalize(cameraPosition - wp.xyz);
+        vDist = distance(cameraPosition, wp.xyz);
         gl_Position = projectionMatrix * viewMatrix * wp;
       }
     `,
     fragmentShader: /* glsl */`
       uniform vec3 uColor; uniform float uIntensity, uTime;
-      varying float vY; varying vec3 vN; varying vec3 vV;
+      varying float vY; varying vec3 vN; varying vec3 vV; varying float vDist;
       void main(){
         float edge = pow(abs(dot(vN, vV)), 1.6);
         float fall = pow(vY, 1.4);
-        float a = edge * fall * uIntensity;
+        // never veil the screen: beams fade out as the camera gets close to / inside them
+        float nearFade = smoothstep(4.0, 18.0, vDist);
+        float a = edge * fall * uIntensity * nearFade;
         gl_FragColor = vec4(uColor * a, a);
       }
     `,

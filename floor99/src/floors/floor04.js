@@ -9,6 +9,8 @@ import { textTexture } from '../engine/textures.js';
 import { Box } from '../engine/physics.js';
 import { FXColors } from '../engine/fx.js';
 import { Enemy } from '../game/enemies.js';
+import { setStyle } from '../engine/stylize.js';
+import { pipeRun, embers } from './kit.js';
 import { solid, wall, Press, Hatch, dropDrone, Mover, screen, sign, Spotlight, confetti, pyro, marquee, Elevator, stageLights } from './kit.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
@@ -400,17 +402,18 @@ function build(g, { checkpoint }) {
     bossZ0: 128, bossZ1: 156,
   };
   F.center = [0, 0, 0];
+  setStyle({ rim: '#ff9a4a', rimStrength: 0.8, sky: '#5a8cff', ground: '#a04a1a' });
   g.scene.background = new THREE.Color('#0b0806');
-  g.scene.fog = new THREE.FogExp2('#1a1008', F.fogDensity);
-  stageLights(g, { sky: '#ffcf9a', ground: '#2a1408', hemi: 0.6, key: '#ffd7a8', keyI: 2.0, dir: [-0.3, 1, 0.2] });
+  g.scene.fog = new THREE.FogExp2('#12141c', F.fogDensity);
+  stageLights(g, { sky: '#5a78b8', ground: '#2a1a14', hemi: 0.42, key: '#c8dcff', keyI: 1.8, dir: [-0.35, 1, 0.25] });
   const host = g.host;
 
   // ------------------------------------------------------------ SHELL: floor, walls, roof
-  const floorMat = Mat.concrete('#4a4740', 8);
+  const floorMat = Mat.concrete('#34312c', 8);
   // floor split into segments around the molten channels (z 60, 72, 84)
   const floorSegs = [[-8, 60], [63, 72], [75, 84], [87, LEN + 4]];
   for (const [z0, z1] of floorSegs) solid(g, { pos: [0, -0.5, (z0 + z1) / 2], size: [2 * HW, 1, z1 - z0], mat: floorMat, cast: false });
-  const wallM = Mat.panel('#3a3530', 1);
+  const wallM = Mat.panel('#2a2826', 1);
   for (const s of [-1, 1]) {
     solid(g, { pos: [s * (HW + 0.5), 12, LEN / 2 - 2], size: [1, 24, LEN + 12], mat: wallM, uv: 6 });
     // window strips (emissive)
@@ -426,10 +429,19 @@ function build(g, { checkpoint }) {
     if (z % 16 === 0) { const lamp = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.6, 0.6, 12, 1, true), Mat.metal('#222', 0.5, 0.8)); lamp.position.set(0, 20.5, z); g.scene.add(lamp); const bulb = new THREE.Mesh(new THREE.CircleGeometry(1.1, 16), new THREE.MeshStandardMaterial({ color: '#000', emissive: '#ffe0b0', emissiveIntensity: 3 })); bulb.rotation.x = Math.PI / 2; bulb.position.set(0, 20.2, z); g.scene.add(bulb); }
   }
   // practical lights down the hall (dimmable)
-  for (const z of [10, 40, 75, 110, 142]) { const l = new THREE.PointLight('#ffb070', 120, 40, 1.4); l.position.set(0, 18, z); g.scene.add(l); g.dim(l); }
+  for (const z of [10, 40, 75, 110, 142]) { const l = new THREE.PointLight('#bcd4ff', 45, 38, 1.4); l.position.set(0, 18, z); g.scene.add(l); g.dim(l); }
 
+  // ------------------------------------------------------------ INDUSTRIAL DRESSING: pipe runs along both walls
+  for (const s2 of [-1, 1]) {
+    const x = s2 * (HW - 0.7);
+    pipeRun(g, [[x, 2.2, -6], [x, 2.2, LEN + 2]], { r: 0.55, stripes: 'red', flangeEvery: 6 });
+    pipeRun(g, [[x + -s2 * 0.4, 7.5, -6], [x + -s2 * 0.4, 7.5, 40], [x + -s2 * 0.4, 11, 44], [x + -s2 * 0.4, 11, LEN + 2]], { r: 0.38, copper: true, flangeEvery: 5, valve: 0 });
+    for (let z = 8; z < LEN; z += 26) pipeRun(g, [[x, 0, z], [x, 13, z], [x - s2 * 4, 16, z], [x - s2 * 4, 22, z]], { r: 0.5, stripes: 'yellow', valve: 0 });
+  }
+  pipeRun(g, [[-HW, 18, 58], [HW, 18, 58]], { r: 0.6, stripes: 'red', flangeEvery: 5 });
+  pipeRun(g, [[-HW, 16.5, 98], [HW, 16.5, 98]], { r: 0.5, copper: true, valve: 0 });
   // ------------------------------------------------------------ ARRIVAL ELEVATOR + DOCK
-  F.arrive = new Elevator(g, { pos: [0, 0, -7.6], rotY: Math.PI, open: true });
+  F.arrive = new Elevator(g, { pos: [0, 0, -7.6], rotY: Math.PI, open: false });
   F.arrive.entered = true;
   sign(g, ['ASSEMBLY HALL 4'], [0, 14, -7.9], 18, 3.2, 0, { glow: '#ff9a3a', color: '#ffe6c8', size: 150 });
   screen(g, host, [-12, 9, -7.7], 5, 0);
@@ -477,8 +489,9 @@ function build(g, { checkpoint }) {
     const c = g.physics.addBox({ pos: V(0, -0.7, z), size: [2 * HW, 0.2, 3], hazard: { dps: 45, type: 'molten' } });
     c.noSafe = true;
     for (const s of [-1, 1]) { const lip = new THREE.Mesh(new THREE.BoxGeometry(2 * HW, 0.25, 0.3), Mat.paint('#f2c230', 0.5, 0.4)); lip.position.set(0, 0.02, z + s * 1.6); g.scene.add(lip); }
-    const l = new THREE.PointLight('#ff6020', 40, 14, 1.5); l.position.set(0, 1, z); g.scene.add(l);
+    for (const lx of [-12, 12]) { const l = new THREE.PointLight('#ff6a1a', 45, 16, 1.4); l.position.set(lx, 1.2, z); g.scene.add(l); }
     F.channels.push({ z, m });
+    embers(g, { minX: -HW + 1, maxX: HW - 1, minZ: z - 1.4, maxZ: z + 1.4, y: -0.3 }, 14);
   }
   // narrow bridges over channels
   for (const z of [61.5, 73.5, 85.5]) for (const x of [-14, 0, 14]) solid(g, { pos: [x, 0.05, z], size: [2.2, 0.3, 3.6], mat: Mat.grate(1) });

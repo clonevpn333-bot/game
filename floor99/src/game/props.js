@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from '../../vendor/three/addons/geometries/RoundedBoxGeometry.js';
 import { Body } from '../engine/physics.js';
-import { hazardTexture, textTexture } from '../engine/textures.js';
+import { hazardTexture, textTexture, armorTextures } from '../engine/textures.js';
 import { FXColors } from '../engine/fx.js';
 
 const rbox = (w, h, d, r = 0.03) => new RoundedBoxGeometry(w, h, d, 2, Math.min(r, w / 2 - 1e-3, h / 2 - 1e-3, d / 2 - 1e-3));
@@ -13,12 +13,13 @@ const PM = {};
 function pm() {
   if (PM.ready) return PM;
   PM.ready = true;
-  PM.barrel = new THREE.MeshStandardMaterial({ color: '#c8202a', metalness: 0.5, roughness: 0.4 });
+  const A = armorTextures();
+  PM.barrel = new THREE.MeshStandardMaterial({ color: '#c8202a', map: A.map, normalMap: A.normalMap, roughnessMap: A.roughnessMap, metalness: 0.5, roughness: 0.5 });
   const ht = hazardTexture('#f5b400', '#111');
   PM.barrelBand = new THREE.MeshStandardMaterial({ map: ht, metalness: 0.4, roughness: 0.5 });
   PM.barrelTop = new THREE.MeshStandardMaterial({ color: '#2a2a2e', metalness: 0.8, roughness: 0.4 });
   PM.glowRed = new THREE.MeshStandardMaterial({ color: '#000', emissive: '#ff3a1a', emissiveIntensity: 2.5 });
-  PM.crate = new THREE.MeshStandardMaterial({ color: '#9a6a3a', metalness: 0.05, roughness: 0.75 });
+  PM.crate = new THREE.MeshStandardMaterial({ ...woodTextures(), metalness: 0.0, roughness: 0.8 });
   PM.crateEdge = new THREE.MeshStandardMaterial({ color: '#2f3238', metalness: 0.8, roughness: 0.4 });
   const label = textTexture(['HALO', 'BRAND'], { w: 256, h: 256, color: '#ffd400', bg: 'rgba(0,0,0,0)', size: 70 });
   PM.crateLabel = new THREE.MeshStandardMaterial({ map: label, transparent: true, roughness: 0.6 });
@@ -168,4 +169,39 @@ export class Pickup {
     this.remove();
   }
   remove() { this.alive = false; this.game.scene.remove(this.mesh); }
+}
+
+function woodTextures() {
+  const S = 256, c = document.createElement('canvas'), h = document.createElement('canvas');
+  c.width = c.height = h.width = h.height = S;
+  const x = c.getContext('2d'), y = h.getContext('2d');
+  y.fillStyle = '#808080'; y.fillRect(0, 0, S, S);
+  const planks = 4, P = S / planks;
+  for (let i = 0; i < planks; i++) {
+    const base = 110 + Math.random() * 40;
+    x.fillStyle = `rgb(${base + 40},${base * 0.62},${base * 0.32})`; x.fillRect(0, i * P, S, P);
+    for (let k = 0; k < 40; k++) { // grain
+      x.strokeStyle = `rgba(60,30,10,${0.08 + Math.random() * 0.15})`; x.lineWidth = 1 + Math.random() * 1.5;
+      const yy = i * P + Math.random() * P; x.beginPath(); x.moveTo(0, yy);
+      for (let xx = 0; xx <= S; xx += 32) x.lineTo(xx, yy + Math.sin(xx * 0.05 + k) * 2);
+      x.stroke();
+    }
+    x.fillStyle = 'rgba(20,10,0,0.7)'; x.fillRect(0, i * P, S, 3);
+    y.fillStyle = '#202020'; y.fillRect(0, i * P, S, 4);
+    for (const nx of [14, S - 14]) { x.fillStyle = '#2a2a2a'; x.beginPath(); x.arc(nx, i * P + P / 2, 4, 0, 7); x.fill(); y.fillStyle = '#ffffff'; y.beginPath(); y.arc(nx, i * P + P / 2, 4, 0, 7); y.fill(); }
+  }
+  // edge frame
+  x.strokeStyle = 'rgba(40,20,5,0.8)'; x.lineWidth = 14; x.strokeRect(0, 0, S, S);
+  y.strokeStyle = '#e0e0e0'; y.lineWidth = 14; y.strokeRect(0, 0, S, S);
+  const map = new THREE.CanvasTexture(c); map.colorSpace = THREE.SRGBColorSpace;
+  // normal from height
+  const src = y.getImageData(0, 0, S, S).data, n = document.createElement('canvas'); n.width = n.height = S;
+  const nx2 = n.getContext('2d'), img = nx2.createImageData(S, S);
+  const H = (i, j) => src[(((j + S) % S) * S + ((i + S) % S)) * 4] / 255;
+  for (let j = 0; j < S; j++) for (let i = 0; i < S; i++) {
+    const dx = (H(i + 1, j) - H(i - 1, j)) * 3, dy = (H(i, j + 1) - H(i, j - 1)) * 3, l = Math.hypot(dx, dy, 1), k = (j * S + i) * 4;
+    img.data[k] = (-dx / l * 0.5 + 0.5) * 255; img.data[k + 1] = (dy / l * 0.5 + 0.5) * 255; img.data[k + 2] = (1 / l * 0.5 + 0.5) * 255; img.data[k + 3] = 255;
+  }
+  nx2.putImageData(img, 0, 0);
+  return { map, normalMap: new THREE.CanvasTexture(n) };
 }

@@ -338,3 +338,74 @@ export function velvetTextures(base = '#5a0f2a') {
   cache.set(k, out);
   return out;
 }
+
+// Quilted suit fabric: tinted by material.color (map is near-white), stitched seams in the normal map.
+export function fabricTextures() {
+  if (cache.has('fabric')) return cache.get('fabric');
+  const S = 256;
+  const c = canvas(S, S), hc = canvas(S, S);
+  const x = c.getContext('2d'), h = hc.getContext('2d');
+  x.fillStyle = '#f2f2f2'; x.fillRect(0, 0, S, S);
+  h.fillStyle = '#909090'; h.fillRect(0, 0, S, S);
+  // weave
+  for (let i = 0; i < S; i += 2) { x.fillStyle = `rgba(0,0,0,${0.02 + rnd() * 0.03})`; x.fillRect(0, i, S, 1); x.fillRect(i, 0, 1, S); }
+  // quilt pads: soft pillows between seams
+  const P = 64;
+  for (let yy = 0; yy < S; yy += P) for (let xx = 0; xx < S; xx += P) {
+    const gr = h.createRadialGradient(xx + P / 2, yy + P / 2, 2, xx + P / 2, yy + P / 2, P * 0.7);
+    gr.addColorStop(0, '#d0d0d0'); gr.addColorStop(1, '#707070');
+    h.fillStyle = gr; h.fillRect(xx, yy, P, P);
+    const sh = x.createRadialGradient(xx + P / 2, yy + P / 2, 2, xx + P / 2, yy + P / 2, P * 0.75);
+    sh.addColorStop(0, 'rgba(255,255,255,0.08)'); sh.addColorStop(1, 'rgba(0,0,0,0.22)');
+    x.fillStyle = sh; x.fillRect(xx, yy, P, P);
+  }
+  // stitched seams
+  for (let i = 0; i <= S; i += P) {
+    h.fillStyle = '#303030'; h.fillRect(i - 2, 0, 4, S); h.fillRect(0, i - 2, S, 4);
+    for (let k = 0; k < S; k += 8) { x.fillStyle = 'rgba(0,0,0,0.35)'; x.fillRect(i - 1, k, 2, 5); x.fillRect(k, i - 1, 5, 2); }
+  }
+  noiseFill(x, S, S, 2500, 0.06);
+  const out = { map: tex(c, 5), normalMap: normalFromHeight(hc, 3.5) };
+  out.normalMap.repeat.set(5, 5);
+  cache.set('fabric', out);
+  return out;
+}
+
+// Worn armor plating: painted base (tinted by material.color) with chipped edges, scratches, rivets.
+export function armorTextures() {
+  if (cache.has('armor')) return cache.get('armor');
+  const S = 256;
+  const c = canvas(S, S), hc = canvas(S, S), rc = canvas(S, S);
+  const x = c.getContext('2d'), h = hc.getContext('2d'), r = rc.getContext('2d');
+  x.fillStyle = '#e8e8e8'; x.fillRect(0, 0, S, S);
+  h.fillStyle = '#808080'; h.fillRect(0, 0, S, S);
+  r.fillStyle = '#707070'; r.fillRect(0, 0, S, S); // roughness (G channel used)
+  // panel border bevel + chipped bare-metal edges
+  h.strokeStyle = '#e0e0e0'; h.lineWidth = 10; h.strokeRect(5, 5, S - 10, S - 10);
+  h.strokeStyle = '#404040'; h.lineWidth = 3; h.strokeRect(13, 13, S - 26, S - 26);
+  for (let i = 0; i < 70; i++) {
+    const side = (rnd() * 4) | 0, t = rnd() * S, w = 3 + rnd() * 14;
+    const px = side === 0 ? t : side === 1 ? t : side === 2 ? rnd() * 10 : S - rnd() * 10;
+    const py = side === 0 ? rnd() * 10 : side === 1 ? S - rnd() * 10 : t;
+    x.fillStyle = `rgba(${200 + rnd() * 40},${200 + rnd() * 40},${210 + rnd() * 40},0.9)`; // bare metal shows through
+    x.beginPath(); x.ellipse(px, py, w, w * 0.45, rnd() * 3, 0, 7); x.fill();
+    r.fillStyle = '#303030'; r.beginPath(); r.ellipse(px, py, w, w * 0.45, 0, 0, 7); r.fill();
+  }
+  // scratches
+  for (let i = 0; i < 40; i++) {
+    const sx = rnd() * S, sy = rnd() * S, l = 10 + rnd() * 50, a = rnd() * 6.28;
+    x.strokeStyle = `rgba(255,255,255,${0.15 + rnd() * 0.25})`; x.lineWidth = 0.6 + rnd();
+    x.beginPath(); x.moveTo(sx, sy); x.lineTo(sx + Math.cos(a) * l, sy + Math.sin(a) * l); x.stroke();
+    h.strokeStyle = '#606060'; h.lineWidth = 1; h.beginPath(); h.moveTo(sx, sy); h.lineTo(sx + Math.cos(a) * l, sy + Math.sin(a) * l); h.stroke();
+  }
+  // rivets in the corners
+  for (const [px, py] of [[22, 22], [S - 22, 22], [22, S - 22], [S - 22, S - 22]]) {
+    const gr = h.createRadialGradient(px, py, 0, px, py, 6); gr.addColorStop(0, '#ffffff'); gr.addColorStop(1, '#808080');
+    h.fillStyle = gr; h.beginPath(); h.arc(px, py, 6, 0, 7); h.fill();
+    x.fillStyle = 'rgba(40,40,40,0.5)'; x.beginPath(); x.arc(px + 1, py + 1, 5, 0, 7); x.fill();
+  }
+  grime(x, S, S, 18);
+  const out = { map: tex(c), normalMap: normalFromHeight(hc, 2.5), roughnessMap: tex(rc, 1, false) };
+  cache.set('armor', out);
+  return out;
+}

@@ -7,6 +7,7 @@ import { Mat, moltenMaterial } from '../engine/materials.js';
 import { logoTexture, textTexture } from '../engine/textures.js';
 import { Box } from '../engine/physics.js';
 import { FXColors } from '../engine/fx.js';
+import { setStyle } from '../engine/stylize.js';
 import { solid, wall, Press, Hatch, dropDrone, Mover, screen, sign, Spotlight, Crowd, confetti, pyro, marquee, Elevator, stageLights, LedRing, ledBlock } from './kit.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
@@ -30,10 +31,11 @@ function build(g, { checkpoint }) {
     fogDensity: 0.009,
     events: {},
   };
+  setStyle({ rim: '#9fd8ff', rimStrength: 0.75, sky: '#6a7cff', ground: '#8a5a70' });
   g.scene.background = new THREE.Color('#07040f');
   g.scene.fog = new THREE.FogExp2('#0b0716', F.fogDensity);
   const host = g.host;
-  stageLights(g, { sky: '#6a5ab0', ground: '#1a0c20', hemi: 0.75, key: '#ffeedd', keyI: 2.2, dir: [0.3, 1, 0.45] });
+  stageLights(g, { sky: '#7a80c0', ground: '#1a1420', hemi: 0.42, key: '#fff4e6', keyI: 2.2, dir: [0.3, 1, 0.45] });
 
   // ------------------------------------------------------------ ARENA FLOOR (rows that can collapse)
   const stageMat = Mat.stage(6);
@@ -136,7 +138,7 @@ function build(g, { checkpoint }) {
   g.addHazard({ update(dt) { F.ttSpeed += (F.ttTarget - F.ttSpeed) * Math.min(1, dt * 0.8); tt.rotation.y += F.ttSpeed * dt; } });
 
   // ------------------------------------------------------------ CONTESTANT PODIUMS (cover)
-  const podMat = Mat.paint('#e8e6f0', 0.35, 0.2);
+  const podMat = Mat.paint('#bebcc8', 0.4, 0.2);
   for (let i = 0; i < 6; i++) {
     const a = i / 6 * Math.PI * 2 + Math.PI / 6;
     const x = Math.sin(a) * 17, z = Math.cos(a) * 17;

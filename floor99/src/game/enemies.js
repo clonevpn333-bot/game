@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from '../../vendor/three/addons/geometries/RoundedBoxGeometry.js';
 import { FXColors } from '../engine/fx.js';
+import { armorTextures } from '../engine/textures.js';
 
 const rbox = (w, h, d, r = 0.03) => new RoundedBoxGeometry(w, h, d, 2, Math.min(r, w / 2 - 1e-3, h / 2 - 1e-3, d / 2 - 1e-3));
 const _v = new THREE.Vector3();
@@ -15,14 +16,18 @@ const damp = (a, b, k, dt) => a + (b - a) * (1 - Math.exp(-k * dt));
 const angDiff = (a, b) => { let d = b - a; while (d > Math.PI) d -= Math.PI * 2; while (d < -Math.PI) d += Math.PI * 2; return d; };
 
 function baseMats(paint, accent, eye) {
+  const A = armorTextures();
+  const worn = (color, rough, metal) => new THREE.MeshStandardMaterial({ color, map: A.map, normalMap: A.normalMap, roughnessMap: A.roughnessMap, roughness: rough, metalness: metal });
   return {
-    paint: new THREE.MeshStandardMaterial({ color: paint, metalness: 0.45, roughness: 0.42 }),
-    accent: new THREE.MeshStandardMaterial({ color: accent, metalness: 0.5, roughness: 0.4 }),
-    dark: new THREE.MeshStandardMaterial({ color: '#16181d', metalness: 0.7, roughness: 0.45 }),
-    steel: new THREE.MeshStandardMaterial({ color: '#9aa3ad', metalness: 1, roughness: 0.25 }),
+    paint: worn(paint, 0.55, 0.45),
+    accent: worn(accent, 0.5, 0.4),
+    dark: new THREE.MeshStandardMaterial({ color: '#1b1d22', map: A.map, normalMap: A.normalMap, metalness: 0.75, roughness: 0.45 }),
+    steel: new THREE.MeshStandardMaterial({ color: '#a8b0ba', metalness: 1, roughness: 0.25 }),
     eye: new THREE.MeshStandardMaterial({ color: '#000', emissive: eye, emissiveIntensity: 3.5 }),
   };
 }
+// small detail helpers: bolt rings & hazard stripes on robot parts
+function bolts(parent, mat, pts, r = 0.025) { for (const [x, y, z] of pts) { const b = new THREE.Mesh(new THREE.SphereGeometry(r, 8, 6), mat); b.position.set(x, y, z); parent.add(b); } }
 function mk(parent, geo, mat, x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0) {
   const m = new THREE.Mesh(geo, mat);
   m.position.set(x, y, z); m.rotation.set(rx, ry, rz);
@@ -272,6 +277,18 @@ export class Enemy {
     if (this.stunned > 0) this.stunned -= dt;
     this.perceive(dt);
     this.updateFlash(dt);
+    // ground units stranded somewhere unreachable re-enter the arena (prevents soft-locks)
+    if (!this.flying && !this.swimmer && this.type !== 'foreman') {
+      this.strandT = this.hasLOS || this.distToPlayer < 25 ? 0 : (this.strandT || 0) + dt;
+      const pts = this.game.floor?.spawnPoints;
+      if (this.strandT > 25 && pts?.length) {
+        const pl = this.game.player.pos;
+        let best = pts[0], bd = 1e9;
+        for (const p of pts) { const d = Math.hypot(p[0] - pl.x, p[2] - pl.z); if (d < bd && d > 8) { bd = d; best = p; } }
+        this.pos.set(best[0], best[1] + 0.2, best[2]); this.vel.set(0, 0, 0); this.knock.set(0, 0, 0); this.strandT = 0;
+        this.game.fx.ring(this.pos.clone().setY(this.pos.y + 0.1), 0.2, 2.2, 0.5, 0xff2d6f);
+      }
+    }
   }
   update(dt) { }
   syncRoot() { this.root.position.copy(this.pos); this.root.rotation.y = this.yaw; }
@@ -281,7 +298,7 @@ export class Enemy {
 export class Clanker extends Enemy {
   constructor(game, pos, o = {}) {
     super(game, pos, { type: 'clanker', name: 'CLANKER', hp: 45, radius: 0.45, height: 1.35, speed: 9.2, score: 100, ...o });
-    const M = this.M = baseMats(o.paint || '#e2e5ea', o.accent || '#e8572a', '#ff2d2d');
+    const M = this.M = baseMats(o.paint || '#aeb4bd', o.accent || '#e8572a', '#ff2d2d');
     this.flashMats.push(M.paint, M.accent);
     M.paint.emissive = new THREE.Color(0); M.accent.emissive = new THREE.Color(0);
     const r = this.root;
@@ -289,6 +306,10 @@ export class Clanker extends Enemy {
     const torso = mk(this.body, rbox(0.62, 0.48, 0.55, 0.12), M.paint, 0, 0.15, 0);
     mk(this.body, rbox(0.66, 0.12, 0.5, 0.04), M.accent, 0, 0.36, -0.02);
     mk(this.body, rbox(0.3, 0.2, 0.1, 0.03), M.dark, 0, 0.12, -0.3); // back vent
+    mk(this.body, rbox(0.22, 0.14, 0.05, 0.03), M.dark, 0, 0.08, 0.28); // chest port
+    mk(this.body, new THREE.CylinderGeometry(0.045, 0.045, 0.03, 14), M.eye, 0, 0.08, 0.31, Math.PI / 2);
+    bolts(this.body, M.steel, [[-0.25, 0.32, 0.25], [0.25, 0.32, 0.25], [-0.25, -0.02, 0.25], [0.25, -0.02, 0.25], [-0.32, 0.15, 0], [0.32, 0.15, 0]]);
+    for (const sx of [-1, 1]) mk(this.body, rbox(0.04, 0.42, 0.02, 0.01), M.accent, 0.18 * sx, 0.15, 0.285);
     for (let i = 0; i < 3; i++) mk(this.body, rbox(0.32, 0.02, 0.02, 0.005), M.eye, 0, 0.06 + i * 0.05, -0.355);
     // head with single eye
     this.head = joint(this.body, 0, 0.42, 0.18);
@@ -442,6 +463,11 @@ export class Drone extends Enemy {
     this.lens = mk(this.body, new THREE.CircleGeometry(0.13, 20), M.eye, 0, -0.02, 0.51);
     this.lensRing = mk(this.body, new THREE.TorusGeometry(0.17, 0.015, 6, 20), M.eye, 0, -0.02, 0.505);
     mk(this.body, new THREE.BoxGeometry(0.12, 0.06, 0.04), M.eye, 0.25, 0.08, 0.3); // tally light ("ON AIR")
+    bolts(this.body, M.steel, [[-0.3, 0.12, 0.28], [0.3, 0.12, 0.28], [-0.3, 0.12, -0.28], [0.3, 0.12, -0.28]], 0.022);
+    mk(this.body, rbox(0.4, 0.12, 0.3, 0.04), M.dark, 0, -0.24, -0.05); // battery pack
+    for (let i = 0; i < 4; i++) mk(this.body, rbox(0.06, 0.02, 0.28, 0.005), M.eye, -0.15 + i * 0.1, -0.31, -0.05);
+    const ant = mk(this.body, new THREE.CylinderGeometry(0.008, 0.008, 0.3, 5), M.steel, -0.2, 0.33, -0.15);
+    mk(ant, new THREE.SphereGeometry(0.025, 8, 6), M.eye, 0, 0.16, 0);
     this.rotors = [];
     for (const [x, z] of [[0.55, 0.4], [-0.55, 0.4], [0.55, -0.4], [-0.55, -0.4]]) {
       const arm = mk(this.body, rbox(0.5, 0.05, 0.08, 0.02), M.dark, x * 0.6, 0.05, z * 0.6, 0, Math.atan2(z, x), 0);
@@ -519,6 +545,16 @@ export class Drone extends Enemy {
       }
     }
     if (this.gravityPull) this.vel.y += this.gravityPull * dt;
+    // safety net: a flyer stuck out of reach (behind glass, inside set dressing) re-enters the arena
+    this.lostT = this.hasLOS || this.state === 'spawn' ? 0 : (this.lostT || 0) + dt;
+    if (this.lostT > 12 && G.floor?.spawnPoints?.length) {
+      const pts = G.floor.spawnPoints;
+      let best = pts[0], bd = 1e9;
+      for (const p of pts) { const d = Math.hypot(p[0] - pl.pos.x, p[2] - pl.pos.z); if (d < bd && d > 6) { bd = d; best = p; } }
+      this.pos.set(best[0], Math.max(best[1], pl.pos.y) + 5, best[2]);
+      this.vel.set(0, 0, 0); this.lostT = 0;
+      G.fx.ring(this.pos.clone(), 0.3, 2.5, 0.5, 0xff2d6f);
+    }
     this.physicsStep(dt);
     this.separate(dt);
     // face player

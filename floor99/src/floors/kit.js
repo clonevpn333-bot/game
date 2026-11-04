@@ -291,14 +291,14 @@ export class Spotlight {
   constructor(g, pos, color, o = {}) {
     this.g = g;
     this.base = new THREE.Vector3(...pos);
-    this.light = new THREE.SpotLight(color, (o.intensity ?? 900) * 0.3, o.range ?? 70, o.angle ?? 0.22, 0.5, 1.5);
+    this.light = new THREE.SpotLight(color, (o.intensity ?? 900) * 0.13, o.range ?? 70, o.angle ?? 0.22, 0.5, 1.5);
     this.light.position.copy(this.base);
     g.scene.add(this.light, this.light.target);
     g.dim(this.light, 0.85);
     const len = o.len ?? 30;
     const geo = new THREE.CylinderGeometry(0.3, Math.tan(o.angle ?? 0.22) * len, len, 20, 1, true);
     geo.translate(0, -len / 2, 0);
-    this.cone = new THREE.Mesh(geo, lightConeMaterial(color, o.cone ?? 0.18));
+    this.cone = new THREE.Mesh(geo, lightConeMaterial(color, o.cone ?? 0.09));
     this.cone.position.copy(this.base);
     g.scene.add(this.cone);
     const housing = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.7, 1.2, 12), Mat.metal('#222', 0.4, 0.9));
@@ -542,4 +542,80 @@ export function ledBlock(g, o) {
   const side = Mat.panel('#23202c');
   const mats = [side, side, Mat.metal('#3a3540', 0.4, 0.8), side, ledBlock.face, ledBlock.face];
   return mats;
+}
+
+// ---------------------------------------------------------------- industrial pipe runs
+// pts: polyline [[x,y,z]...]; builds pipes, ball elbows, bolted flanges, optional valve wheels.
+const PIPE = {};
+function pipeMats() {
+  if (PIPE.ready) return PIPE;
+  PIPE.ready = true;
+  PIPE.metal = Mat.panel('#4a4e58', 1);
+  PIPE.dark = Mat.metal('#23262d', 0.45, 0.85);
+  PIPE.bolt = Mat.metal('#b8bec6', 0.25, 1);
+  PIPE.red = Mat.paint('#c8202a', 0.35, 0.45);
+  PIPE.yellow = Mat.paint('#f2b21c', 0.4, 0.35);
+  PIPE.copper = Mat.metal('#c07a3a', 0.3, 1);
+  return PIPE;
+}
+export function pipeRun(g, pts, o = {}) {
+  const M = pipeMats();
+  const r = o.r || 0.45;
+  const mat = o.mat || (o.copper ? M.copper : M.metal);
+  const grp = new THREE.Group();
+  const up = new THREE.Vector3(0, 1, 0);
+  for (let i = 0; i < pts.length - 1; i++) {
+    const a = new THREE.Vector3(...pts[i]), b = new THREE.Vector3(...pts[i + 1]);
+    const d = b.clone().sub(a); const len = d.length(); d.normalize();
+    const q = new THREE.Quaternion().setFromUnitVectors(up, d);
+    const tube = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, 20, 1, true), mat);
+    tube.position.copy(a).addScaledVector(d, len / 2); tube.quaternion.copy(q); grp.add(tube);
+    // flanges with bolt rings every ~4m
+    const n = Math.max(1, Math.floor(len / (o.flangeEvery || 4)));
+    for (let k = 1; k <= n; k++) {
+      const t = k / (n + 1);
+      const fl = new THREE.Mesh(new THREE.CylinderGeometry(r * 1.32, r * 1.32, r * 0.42, 20), M.dark);
+      fl.position.copy(a).addScaledVector(d, len * t); fl.quaternion.copy(q); grp.add(fl);
+      for (let bI = 0; bI < 8; bI++) {
+        const ang = bI / 8 * Math.PI * 2;
+        const bolt = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.09, r * 0.09, r * 0.6, 6), M.bolt);
+        bolt.position.set(Math.cos(ang) * r * 1.15, 0, Math.sin(ang) * r * 1.15).applyQuaternion(q).add(fl.position);
+        bolt.quaternion.copy(q); grp.add(bolt);
+      }
+      if (o.stripes && k % 2) { const st = new THREE.Mesh(new THREE.CylinderGeometry(r * 1.02, r * 1.02, r * 0.5, 20, 1, true), o.stripes === 'yellow' ? M.yellow : M.red); st.position.copy(a).addScaledVector(d, len * (t + 0.5 / (n + 1)) ); st.quaternion.copy(q); grp.add(st); }
+    }
+    if (i > 0) { const el = new THREE.Mesh(new THREE.SphereGeometry(r * 1.18, 20, 14), M.dark); el.position.copy(a); grp.add(el); }
+  }
+  if (o.valve !== undefined) {
+    const i = Math.min(o.valve, pts.length - 2);
+    const a = new THREE.Vector3(...pts[i]), b = new THREE.Vector3(...pts[i + 1]);
+    const mid = a.clone().lerp(b, 0.5); const d = b.clone().sub(a).normalize();
+    const side = Math.abs(d.y) > 0.9 ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(0, 1, 0);
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.18, r * 0.18, r * 1.6, 8), M.bolt);
+    stem.position.copy(mid).addScaledVector(side, r * 1.1); stem.quaternion.setFromUnitVectors(up, side); grp.add(stem);
+    const body = new THREE.Mesh(new THREE.BoxGeometry(r * 1.6, r * 1.6, r * 1.6), M.dark); body.position.copy(mid); body.quaternion.setFromUnitVectors(up, d); grp.add(body);
+    const wheel = new THREE.Group(); wheel.position.copy(mid).addScaledVector(side, r * 1.9); wheel.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), side); grp.add(wheel);
+    wheel.add(new THREE.Mesh(new THREE.TorusGeometry(r * 1.2, r * 0.13, 10, 28), M.red));
+    for (let k = 0; k < 4; k++) { const sp = new THREE.Mesh(new THREE.BoxGeometry(r * 2.3, r * 0.12, r * 0.12), M.red); sp.rotation.z = k * Math.PI / 4; wheel.add(sp); }
+  }
+  grp.traverse((m) => { if (m.isMesh) { m.castShadow = true; m.receiveShadow = true; } });
+  g.scene.add(grp);
+  if (o.collide) for (let i = 0; i < pts.length - 1; i++) {
+    const a = new THREE.Vector3(...pts[i]), b = new THREE.Vector3(...pts[i + 1]);
+    const mid = a.clone().lerp(b, 0.5), d = b.clone().sub(a); const len = d.length();
+    const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(1, 0, 0), d.normalize());
+    g.physics.add(new Box({ pos: mid, size: [len, r * 2, r * 2], quat: q }));
+  }
+  return grp;
+}
+
+// Glowing ember particles rising from hot surfaces
+export function embers(g, area, rate = 20, color = [2, 0.8, 0.2, 1]) {
+  g.addHazard({ update(dt) {
+    const n = rate * dt + Math.random();
+    for (let i = 0; i < n; i++) {
+      const x = area.minX + Math.random() * (area.maxX - area.minX), z = area.minZ + Math.random() * (area.maxZ - area.minZ);
+      g.fx.glow.emit(x, area.y, z, (Math.random() - 0.5) * 0.6, 1 + Math.random() * 2.5, (Math.random() - 0.5) * 0.6, 1.5 + Math.random() * 2, 0.06 + Math.random() * 0.06, 0.02, color, [color[0], color[1] * 0.3, 0, 0], 0.2, 0.3);
+    }
+  } });
 }

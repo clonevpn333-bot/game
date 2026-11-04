@@ -35,6 +35,7 @@ export class Game {
 
     this.scene = new THREE.Scene();
     this.scene.environment = this.renderer.envMap;
+    this.scene.environmentIntensity = 0.55; // keep IBL for metal reflections without washing out colour
     this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.05, 700);
     this.physics = new Physics();
     this.physics.waterLevelAt = (x, z) => this.waterLevelAt(x, z);
@@ -97,6 +98,12 @@ export class Game {
     const sp = this.floor.checkpoints?.[this.checkpointId] || this.floor.spawn;
     this.player.spawn(new THREE.Vector3(...sp.pos), sp.yaw || 0);
     this.player.updateCamera(1 / 60);
+
+    // camera-relative fill: the third-person camera mostly sees the contestant's back, so a soft
+    // light from over the camera's shoulder keeps the visible side of every model lit and readable
+    this.camFill = new THREE.DirectionalLight(this.floor.camFill?.color || '#fff1e0', this.floor.camFill?.intensity ?? 1.1);
+    this.scene.add(this.camFill, this.camFill.target);
+    this.dim(this.camFill, 0.8);
 
     // nav
     if (this.floor.nav) this.nav = new NavGrid(this.physics, this.floor.nav);
@@ -913,6 +920,7 @@ export class Game {
     // camera
     if (this.camOverride) this._updateCamOverride(rawDt);
     else this.player.updateCamera(rawDt);
+    { const c = this.camera; _v.set(1.6, 2.4, 0.5).applyQuaternion(c.quaternion); this.camFill.position.copy(c.position).add(_v); _v.set(0, 0, -6).applyQuaternion(c.quaternion); this.camFill.target.position.copy(c.position).add(_v); }
     // post fx
     const R = this.renderer.fx;
     const hpk = 1 - this.player.hp / this.player.maxHp;

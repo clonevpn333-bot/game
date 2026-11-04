@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from '../../vendor/three/addons/geometries/RoundedBoxGeometry.js';
 import { FXColors } from '../engine/fx.js';
+import { armorTextures } from '../engine/textures.js';
 
 const rbox = (w, h, d, r = 0.01) => new RoundedBoxGeometry(w, h, d, 2, Math.min(r, w / 2 - 1e-3, h / 2 - 1e-3, d / 2 - 1e-3));
 const cyl = (r1, r2, h, s = 12) => { const g = new THREE.CylinderGeometry(r1, r2, h, s); g.rotateX(Math.PI / 2); return g; };
@@ -55,15 +56,17 @@ export const WEAPONS = {
 // ---------------------------------------------------------------- models
 function mats() {
   if (mats.c) return mats.c;
+  const A = armorTextures();
+  const W = (o) => new THREE.MeshStandardMaterial({ map: A.map, normalMap: A.normalMap, roughnessMap: A.roughnessMap, ...o });
   mats.c = {
-    gun: new THREE.MeshStandardMaterial({ color: '#2a2e36', metalness: 0.85, roughness: 0.32 }),
-    dark: new THREE.MeshStandardMaterial({ color: '#121418', metalness: 0.6, roughness: 0.5 }),
+    gun: W({ color: '#2a2e36', metalness: 0.85, roughness: 0.4 }),
+    dark: W({ color: '#121418', metalness: 0.6, roughness: 0.55 }),
     steel: new THREE.MeshStandardMaterial({ color: '#b8c0c8', metalness: 1, roughness: 0.22 }),
     brass: new THREE.MeshStandardMaterial({ color: '#c9a03a', metalness: 1, roughness: 0.3 }),
     grip: new THREE.MeshStandardMaterial({ color: '#5b2e1a', metalness: 0.1, roughness: 0.6 }),
-    red: new THREE.MeshStandardMaterial({ color: '#d4233b', metalness: 0.4, roughness: 0.4 }),
-    yellow: new THREE.MeshStandardMaterial({ color: '#f2c230', metalness: 0.3, roughness: 0.45 }),
-    white: new THREE.MeshStandardMaterial({ color: '#e8ebee', metalness: 0.2, roughness: 0.4 }),
+    red: W({ color: '#d4233b', metalness: 0.4, roughness: 0.45 }),
+    yellow: W({ color: '#f2c230', metalness: 0.3, roughness: 0.5 }),
+    white: W({ color: '#e8ebee', metalness: 0.2, roughness: 0.45 }),
     glowPink: new THREE.MeshStandardMaterial({ color: '#000', emissive: '#ff2d6f', emissiveIntensity: 3 }),
     glowCyan: new THREE.MeshStandardMaterial({ color: '#000', emissive: '#25f4ff', emissiveIntensity: 3 }),
     glowYellow: new THREE.MeshStandardMaterial({ color: '#000', emissive: '#ffd400', emissiveIntensity: 3 }),

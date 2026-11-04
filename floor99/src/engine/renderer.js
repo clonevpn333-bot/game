@@ -6,6 +6,9 @@ import { UnrealBloomPass } from '../../vendor/three/addons/postprocessing/Unreal
 import { OutputPass } from '../../vendor/three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from '../../vendor/three/addons/postprocessing/ShaderPass.js';
 import { RoomEnvironment } from '../../vendor/three/addons/environments/RoomEnvironment.js';
+import { GTAOPass } from '../../vendor/three/addons/postprocessing/GTAOPass.js';
+import { installStylizedShading } from './stylize.js';
+installStylizedShading();
 
 const FinalShader = {
   uniforms: {
@@ -58,7 +61,13 @@ const FinalShader = {
       col.b = texture2D(tDiffuse, uv - c * ab).b;
       // saturation
       float l = dot(col, vec3(0.299, 0.587, 0.114));
-      col = mix(vec3(l), col, uSat);
+      col = mix(vec3(l), col, uSat * 1.12);
+      // cinematic grade: gentle S-curve + split toning (cool shadows, warm highlights)
+      col = clamp(col, 0.0, 1.0);
+      col = col * col * (3.0 - 2.0 * col) * 0.35 + col * 0.65;
+      float lum = dot(col, vec3(0.299, 0.587, 0.114));
+      col += vec3(-0.012, 0.004, 0.03) * (1.0 - smoothstep(0.0, 0.45, lum));
+      col += vec3(0.035, 0.012, -0.022) * smoothstep(0.5, 1.0, lum);
       // underwater grade
       col = mix(col, col * vec3(0.35, 0.75, 1.0) + vec3(0.0, 0.05, 0.09), uUnderwater * 0.8);
       // vignette
@@ -84,10 +93,10 @@ const FinalShader = {
 };
 
 export const QUALITY = {
-  low: { pixelRatio: 0.75, shadows: false, shadowSize: 512, bloom: false, particles: 0.5, antialias: false },
-  medium: { pixelRatio: 1.0, shadows: true, shadowSize: 1024, bloom: true, particles: 0.75, antialias: false },
-  high: { pixelRatio: 1.5, shadows: true, shadowSize: 2048, bloom: true, particles: 1, antialias: true },
-  ultra: { pixelRatio: 2.0, shadows: true, shadowSize: 4096, bloom: true, particles: 1, antialias: true },
+  low: { pixelRatio: 0.75, shadows: false, shadowSize: 512, bloom: false, particles: 0.5, antialias: false, ao: false },
+  medium: { pixelRatio: 1.0, shadows: true, shadowSize: 1024, bloom: true, particles: 0.75, antialias: false, ao: false },
+  high: { pixelRatio: 1.5, shadows: true, shadowSize: 2048, bloom: true, particles: 1, antialias: true, ao: true },
+  ultra: { pixelRatio: 2.0, shadows: true, shadowSize: 4096, bloom: true, particles: 1, antialias: true, ao: true },
 };
 
 export class Renderer {
@@ -129,7 +138,19 @@ export class Renderer {
     this.composer = new EffectComposer(r, target);
     this.renderPass = new RenderPass(null, null);
     this.composer.addPass(this.renderPass);
-    this.bloom = new UnrealBloomPass(new THREE.Vector2(w / 2, h / 2), 0.42, 0.5, 0.92);
+    // ambient occlusion: grounds every model in its environment (the biggest single step up in depth)
+    this.ao = null;
+    if (this.q.ao) {
+      const pr = r.getPixelRatio();
+      this.ao = new GTAOPass(new THREE.Scene(), new THREE.PerspectiveCamera(),  Math.round(w * pr * 0.5), Math.round(h * pr * 0.5));
+      this.ao.updateGtaoMaterial({ radius: 0.85, distanceExponent: 1.4, thickness: 1.2, scale: 1.25, samples: 12, screenSpaceRadius: false });
+      this.ao.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 6, rings: 2, samples: 12 });
+      this.ao.blendIntensity = 1.0;
+      const setAO = this.ao.setSize.bind(this.ao);
+      this.ao.setSize = (w2, h2) => setAO(Math.round(w2 * 0.5), Math.round(h2 * 0.5)); // half-res AO
+      this.composer.addPass(this.ao);
+    }
+    this.bloom = new UnrealBloomPass(new THREE.Vector2(w / 2, h / 2), 0.36, 0.28, 1.0);
     this.bloom.enabled = this.q.bloom;
     this.composer.addPass(this.bloom);
     this.composer.addPass(new OutputPass());
@@ -170,6 +191,7 @@ export class Renderer {
     }
     this.renderPass.scene = scene;
     this.renderPass.camera = camera;
+    if (this.ao) { this.ao.scene = scene; this.ao.camera = camera; }
     this.fx.uTime.value = time;
     this.fx.uFlash.value = Math.max(0, this.fx.uFlash.value - dt * this.flashDecay);
     this.fx.uAberration.value = Math.max(0, this.fx.uAberration.value - dt * 2.5);

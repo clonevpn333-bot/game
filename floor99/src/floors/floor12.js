@@ -11,6 +11,7 @@ import { Box } from '../engine/physics.js';
 import { FXColors } from '../engine/fx.js';
 import { EVENTS } from '../game/events.js';
 import { Enemy } from '../game/enemies.js';
+import { setStyle } from '../engine/stylize.js';
 import { solid, wall, Hatch, dropDrone, screen, sign, Spotlight, lightCone, marquee, Elevator, stageLights } from './kit.js';
 import { shaderClock } from '../engine/materials.js';
 
@@ -248,6 +249,7 @@ function build(g, { checkpoint }) {
     events: {},
     spouts: [],
   };
+  setStyle({ rim: '#7ae6ff', rimStrength: 0.75, sky: '#4ac0ff', ground: '#3a6a78' });
   g.scene.background = new THREE.Color('#021018');
   g.scene.fog = new THREE.FogExp2('#03202c', F.fogDensity);
   stageLights(g, { sky: '#4ac0e8', ground: '#02141c', hemi: 0.85, key: '#c8f0ff', keyI: 1.6, dir: [0.2, 1, -0.3] });
@@ -263,7 +265,7 @@ function build(g, { checkpoint }) {
   solid(g, { pos: [0, 7, -6.5], size: [40, 14, 1], mat: Mat.panel('#1a2a32', 1) });
   for (const s of [-1, 1]) {
     // glass wall + tank volume behind
-    solid(g, { pos: [s * 14, 6, 17], size: [0.3, 12, 46], mat: glass, surface: 'glass', cast: false });
+    solid(g, { pos: [s * 14, 7.25, 17], size: [0.3, 14.5, 46], mat: glass, surface: 'glass', cast: false });
     const vol = new THREE.Mesh(new THREE.BoxGeometry(8, 12, 46), waterVol); vol.position.set(s * 18.2, 6, 17); g.scene.add(vol);
     solid(g, { pos: [s * 22.5, 7, 17], size: [1, 14, 48], mat: Mat.panel('#10202a', 1) });
     const sand = new THREE.Mesh(new THREE.BoxGeometry(8, 0.6, 46), Mat.concrete('#c8b890', 4)); sand.position.set(s * 18.2, 0.3, 17); g.scene.add(sand);
@@ -295,7 +297,7 @@ function build(g, { checkpoint }) {
   const cfloor = new THREE.Mesh(new THREE.PlaneGeometry(28, 46), caust); cfloor.rotation.x = -Math.PI / 2; cfloor.position.set(0, 0.02, 17); g.scene.add(cfloor);
   for (const [x, z] of [[-9, 26], [9, 12], [-10, 36], [10, 38]]) g.addProp(Math.random() < 0.5 ? 'crate' : 'barrel', [x, 0.7, z]);
   for (const z of [6, 24]) { const l = new THREE.PointLight('#5ad8ff', 50, 30, 1.4); l.position.set(0, 12, z); g.scene.add(l); g.dim(l); }
-  F.arrive = new Elevator(g, { pos: [0, 0, -6.4], rotY: Math.PI, open: true }); F.arrive.entered = true;
+  F.arrive = new Elevator(g, { pos: [0, 0, -6.4], rotY: Math.PI, open: false }); F.arrive.entered = true;
 
   // ------------------------------------------------------------ TUNNEL (z 40..70)
   solid(g, { pos: [0, -0.5, 55], size: [7, 1, 30], mat: darkTile, cast: false });
@@ -327,7 +329,11 @@ function build(g, { checkpoint }) {
   for (const s of [-1, 1]) solid(g, { pos: [s * 26.5, 11, 93], size: [1, 22, 46], mat: Mat.panel('#10202a', 1), uv: 4 });
   for (const s of [-1, 1]) solid(g, { pos: [s * 15.25, 11, 69.5], size: [21.5, 22, 1], mat: Mat.panel('#10202a', 1) });
   solid(g, { pos: [0, 15, 69.5], size: [9, 14, 1], mat: Mat.panel('#10202a', 1) });
-  solid(g, { pos: [0, 11, 116.5], size: [54, 22, 1], mat: Mat.panel('#10202a', 1) });
+  // south wall with a doorway onto the top-deck exit elevator (x -3.5..3.5, y 12..17)
+  solid(g, { pos: [-15.25, 11, 116.5], size: [23.5, 22, 1], mat: Mat.panel('#10202a', 1) });
+  solid(g, { pos: [15.25, 11, 116.5], size: [23.5, 22, 1], mat: Mat.panel('#10202a', 1) });
+  solid(g, { pos: [0, 6, 116.5], size: [7, 12, 1], mat: Mat.panel('#10202a', 1) });
+  solid(g, { pos: [0, 19.5, 116.5], size: [7, 5, 1], mat: Mat.panel('#10202a', 1) });
   // blast door at the chamber entrance (closes during the flood)
   F.blast = solid(g, { pos: [0, 12, 70], size: [8.5, 8, 0.8], mat: Mat.hazard(3), dynamic: true });
   // mezzanines (y=6) on west/east, upper deck (y=12) south
@@ -510,7 +516,7 @@ function* script(g, cp) {
     glitch(0.4);
     say('iris', 'Watch the viewer counter on your HUD. It never changes when the cameras cut. It isn\'t counting anything.', { priority: 3 });
     yield 1; glitch(0);
-    yield allDead;
+    yield () => allDead() || g.player.pos.z > 44;
     g.music.setState('calm'); g.musicState = 'calm';
     yield () => g.player.pos.z > 44;
     say('halo', 'Our star attraction lives just ahead! MEGAMOUTH-NINE! She is a sweetheart. She has only eaten eleven contestants.', { mood: 'gleeful' });
@@ -578,7 +584,7 @@ function* script(g, cp) {
     say('halo', 'Every winner stays with the Halo family FOREVER! Isn\'t that nice? Isn\'t that NICE?', { mood: 'furious', priority: 3 });
     yield 2; glitch(0);
     F.wave([['drone', [-8, 20, 100]], ['drone', [8, 20, 104], 1], ['clanker', [-16, DECK_Y + 0.5, 112], 2], ['clanker', [16, DECK_Y + 0.5, 112], 2.5]]);
-    yield () => g.water.level > 6.5 || g.player.pos.y > DECK_Y - 1;
+    yield () => (g.water.level > 6.5 || g.player.pos.y > DECK_Y - 1) && g.water.level > 5;
     g.checkpoint(3);
   }
   // ----------------------------------------------- MEGAMOUTH-9
