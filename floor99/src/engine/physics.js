@@ -331,7 +331,8 @@ export class Physics {
     return !r.hit;
   }
   addBody(b) { this.bodies.push(b); return b; }
-  removeBody(b) { const i = this.bodies.indexOf(b); if (i >= 0) this.bodies.splice(i, 1); b.alive = false; }
+  // deferred: bodies are spliced out at the start of the next step (safe during callbacks)
+  removeBody(b) { b.alive = false; }
 
   syncDynamic() {
     for (const c of this.dynamicColliders) {
@@ -410,10 +411,10 @@ export class Physics {
     const n = bodies.length;
     for (let i = 0; i < n; i++) {
       const a = bodies[i];
-      if (!a.collideBodies || a.grabbed) continue;
+      if (!a || !a.alive || !a.collideBodies || a.grabbed) continue;
       for (let j = i + 1; j < n; j++) {
         const b = bodies[j];
-        if (!b.collideBodies || b.grabbed) continue;
+        if (!b || !b.alive || !b.collideBodies || b.grabbed) continue;
         const dx = b.pos.x - a.pos.x, dy = b.pos.y - a.pos.y, dz = b.pos.z - a.pos.z;
         const rr = a.r + b.r;
         const d2 = dx * dx + dy * dy + dz * dz;
@@ -440,7 +441,7 @@ export class Physics {
     // sync meshes
     for (let i = 0; i < bodies.length; i++) {
       const b = bodies[i];
-      if (!b.mesh) continue;
+      if (!b.alive || !b.mesh) continue;
       b.mesh.position.copy(b.pos);
       if (b.box && b.onGround && b.spin.lengthSq() < 4) {
         // settle to nearest flat orientation

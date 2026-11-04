@@ -695,7 +695,8 @@ export class Game {
   // -------------------------------------------------------------- projectiles
   spawnProjectile(o) {
     const geo = this._projGeo || (this._projGeo = new THREE.SphereGeometry(1, 10, 8));
-    const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: o.color || 0xff2d6f }));
+    this._projMats = this._projMats || {};
+    const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: o.color || 0xff2d6f })); // per-bolt (reflections recolor it)
     mesh.scale.setScalar(o.radius || 0.2);
     const halo = new THREE.Sprite(this._projHalo || (this._projHalo = new THREE.SpriteMaterial({ color: 0xffffff, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, map: this.fx.glow.mat.uniforms.uTex.value })));
     halo.scale.setScalar(4);

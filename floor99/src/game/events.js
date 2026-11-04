@@ -34,7 +34,7 @@ function warnMarker(g, pos, r, life, color = 0xff2020) {
   fill.position.z = 0.001;
   g.scene.add(m);
   let t = 0;
-  g.addHazard({ update(dt) { t += dt; fill.scale.setScalar(Math.min(1, t / life)); m.material.opacity = 0.5 + 0.4 * Math.sin(t * 20); if (t >= life) { g.scene.remove(m); this.dead = true; } } });
+  g.addHazard({ update(dt) { t += dt; fill.scale.setScalar(Math.min(1, t / life)); m.material.opacity = 0.5 + 0.4 * Math.sin(t * 20); if (t >= life) { g.scene.remove(m); m.geometry.dispose(); m.material.dispose(); fill.geometry.dispose(); fill.material.dispose(); this.dead = true; } } });
   return m;
 }
 
@@ -248,7 +248,7 @@ export const EVENTS = {
         for (const e of g.enemies) if (e.alive && !e.flying && Math.abs((B.alongX ? e.pos.x : e.pos.z) - coord) < 0.4 && Math.random() < 0.3) e.takeDamage(30, { type: 'laser', env: true });
         if (Math.random() < 0.6) g.fx.sparks(B.m.position.clone().setY(base + 0.05).add(B.alongX ? _v.set(0, 0, rand(-20, 20)) : _v.set(rand(-20, 20), 0, 0)), 1, null, 3, FXColors.pink, FXColors.pinkEnd);
         const lim = B.alongX ? [b.minX - 1, b.maxX + 1] : [b.minZ - 1, b.maxZ + 1];
-        if (coord < lim[0] || coord > lim[1]) { g.scene.remove(B.m); s.beams.splice(i, 1); }
+        if (coord < lim[0] || coord > lim[1]) { g.scene.remove(B.m); B.m.geometry.dispose(); B.m.children[0].geometry.dispose(); B.m.children[0].material.dispose(); s.beams.splice(i, 1); }
       }
     },
     end(g, s) { for (const B of s.beams) g.scene.remove(B.m); },

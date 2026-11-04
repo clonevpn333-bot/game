@@ -14,6 +14,8 @@ export class AudioEngine {
     this.crowdExcite = 0.3;
     this.crowdTarget = 0.3;
     this.muffle = 0;
+    this.voices = 0;
+    this.muteSfx = false;
   }
   init() {
     if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return; }
@@ -215,9 +217,15 @@ export class AudioEngine {
 
   // --- public SFX API ---
   play(name, opts = {}) {
-    if (!this.ready) return;
+    if (!this.ready || this.muteSfx) return;
     const fn = SFX[name];
     if (!fn) return;
+    // voice limiter: never let simultaneous one-shots pile up (barrel rain + chain explosions)
+    const heavy = HEAVY.has(name);
+    const cost = heavy ? 3 : 1;
+    if (this.voices + cost > (heavy ? 60 : 48) && !PRIORITY.has(name)) return;
+    this.voices = (this.voices || 0) + cost;
+    setTimeout(() => { this.voices -= cost; }, heavy ? 2500 : 900);
     try { fn(this, this.ctx.currentTime + (opts.delay || 0), opts); } catch (e) { /* never crash on audio */ }
   }
 
@@ -349,6 +357,8 @@ export class AudioEngine {
 
 // ---------------------------------------------------------------------------
 // SFX library
+const HEAVY = new Set(['cheer', 'boo', 'ooh', 'chant', 'explosion', 'glassShatter', 'waterBurst', 'confetti', 'drumroll', 'airhorn', 'sting']);
+const PRIORITY = new Set(['voteStart', 'voteResult', 'hurt', 'jingle', 'uiClick', 'uiBack', 'tvOff', 'elevatorDing', 'doors']);
 // ---------------------------------------------------------------------------
 export const SFX = {
   revolver(A, t, o) {

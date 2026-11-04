@@ -374,6 +374,7 @@ class App {
     const g = this.game;
     if (!g) return null;
     const steps = Math.round(seconds * 60);
+    this.audio.muteSfx = true; // fast-forward: don't stack minutes of audio into seconds
     for (let i = 0; i < steps; i++) {
       if (bot) bot(g, this.input);
       this.host.update(1 / 60);
@@ -381,6 +382,7 @@ class App {
       g.update(1 / 60);
       this.input.endFrame();
     }
+    this.audio.muteSfx = false;
     return { t: g.time, hp: g.player.hp, obj: g.objective.text, enemies: g.aliveEnemies(), state: this.state };
   }
   debugRender() {
