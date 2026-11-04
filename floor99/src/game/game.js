@@ -8,6 +8,7 @@ import { Player } from './player.js';
 import { ENEMY_TYPES } from './enemies.js';
 import { NavGrid } from './nav.js';
 import { makeProp, Pickup } from './props.js';
+import { UnderwaterAtmosphere } from './underwater.js';
 import { Audience } from './audience.js';
 
 const _v = new THREE.Vector3();
@@ -122,6 +123,7 @@ export class Game {
     if (L) for (const fn of L) fn(data);
     this.host.onEvent(name, data);
     this.audience.onEvent(name, data);
+    this.app.chat?.onEvent(name, data, this);
   }
   later(t, fn) { this.timers.push({ t, fn }); }
   runScript(gen) { if (gen) this.scripts.push({ gen, wait: 0, until: null }); }
@@ -316,7 +318,7 @@ export class Game {
       if (ow && ow.onShot) ow.onShot(o.damage, { point: wr.point, dir, weapon: o.weapon, normal: wr.normal });
     }
     if (o.tracer !== undefined && o.tracer !== null) {
-      this.fx.tracer(origin, end, o.tracer, o.tracerWidth || 0.025, o.weapon === 'rail' ? 0.35 : 0.06);
+      this.fx.tracer(origin, end, o.tracer, o.tracerWidth || 0.025, o.weapon === 'rail' ? 0.35 : 0.09);
       if (o.weapon === 'rail') {
         for (let i = 0; i < endDist; i += 0.8) this.fx.trail(_v.copy(origin).addScaledVector(dir, i), FXColors.cyan, 0.35, 0.5);
       }
@@ -329,11 +331,12 @@ export class Game {
     const head = sphere.tag === 'head' || sphere.tag === 'weak';
     const mult = sphere.tag === 'head' ? Math.max(sphere.mult, o.head || 1) : sphere.mult;
     const wasAlive = e.alive;
-    const dealt = e.takeDamage(dmg, { dir, point, knock: o.knock, weapon: o.weapon, tag: sphere.tag, mult, source: o.source, dist });
+    const hpBefore = e.hp;
+    const dealt = e.takeDamage(dmg, { dir, point, knock: o.knock, stagger: o.weapon === 'revolver' || o.weapon === 'rail' || (o.weapon === 'shotgun' && !o.quietImpact), weapon: o.weapon, tag: sphere.tag, mult, source: o.source, dist });
     if (dealt > 0) {
       this.stats.hits++;
-      this.fx.sparks(point, 8, dir.clone().negate(), 8);
-      this.fx.electric(point, 2, 0.15);
+      this.fx.sparks(point, o.weapon === 'shotgun' ? 7 : 12, dir.clone().negate(), 10);
+      this.fx.electric(point, 3, 0.2);
       this.audio.play('robotHit', { pos: point });
       if (o.source === 'player') {
         this.hud.hitmarker(head, !e.alive && wasAlive);
@@ -343,6 +346,11 @@ export class Game {
       }
     } else if (e.alive && o.source === 'player') this.hud.hitmarker(false, false, true);
     if (!e.alive && wasAlive) { e._killInfo = { head, weapon: o.weapon, dist }; }
+    // impact ring: a crisp read of every landed shot (rate-limited for shotgun pellets)
+    if (e.hp < hpBefore && o.source === 'player' && !o.quietImpact && this.time - (this.lastImpactVisual ?? -1) > 0.025) {
+      this.lastImpactVisual = this.time;
+      this.fx.ring(point, 0.045, 0.28, 0.13, sphere.tag === 'head' ? 0xffe000 : 0x8ff4ff, dir);
+    }
   }
   _hitProp(p, point, dir, o) {
     p.body.vel.addScaledVector(dir, (o.knock || 4) * 0.6 / p.body.mass);
@@ -512,7 +520,7 @@ export class Game {
       const wasAlive = e.alive;
       e.takeDamage(o.damage, { dir, knock: o.weapon === 'hammer' ? 18 : 9, weapon: o.weapon, type: 'melee', source: 'player', stagger: true, point: e.center(new THREE.Vector3()) });
       if (!e.alive && wasAlive) e._killInfo = { weapon: o.weapon, melee: true };
-      this.fx.sparks(e.center(_v2), 16, dir, 10, o.weapon === 'blades' ? FXColors.pink : FXColors.spark, o.weapon === 'blades' ? FXColors.pinkEnd : FXColors.sparkEnd);
+      this.fx.sparks(e.center(_v2), 22, dir, 12, o.weapon === 'blades' ? FXColors.pink : FXColors.spark, o.weapon === 'blades' ? FXColors.pinkEnd : FXColors.sparkEnd);
       hits++;
     }
     for (const p of this.props) {
@@ -556,8 +564,8 @@ export class Game {
     if (wr.hit) { wr.collider.owner.onShot(o.damage * 1.5, { point: wr.point, dir: fwd.clone(), weapon: o.weapon, melee: true }); hits++; }
     if (hits) {
       this.audio.play(o.weapon === 'hammer' ? 'hammer' : 'bladeHit', { pos: player.pos });
-      this.hitStop(o.weapon === 'hammer' ? 0.09 : 0.05);
-      player.shake(o.weapon === 'hammer' ? 0.35 : 0.15);
+      this.hitStop(o.weapon === 'hammer' ? 0.075 : 0.04);
+      player.shake(o.weapon === 'hammer' ? 0.38 : 0.2);
       this.hud.hitmarker(false, false);
     }
     return hits;
@@ -710,7 +718,7 @@ export class Game {
     mesh.add(halo);
     mesh.position.copy(o.pos);
     this.scene.add(mesh);
-    const p = { pos: new THREE.Vector3().copy(o.pos), vel: new THREE.Vector3().copy(o.vel), damage: o.damage, r: o.radius || 0.2, owner: o.owner, life: 4, mesh, color: o.color };
+    const p = { pos: new THREE.Vector3().copy(o.pos), vel: new THREE.Vector3().copy(o.vel), damage: o.damage, r: o.radius || 0.2, owner: o.owner, life: o.life || 4, mesh, color: o.color, gravity: o.gravity || 0, explode: o.explode, weapon: o.weapon };
     this.projectiles.push(p);
     return p;
   }
@@ -736,19 +744,25 @@ export class Game {
         const er = this.raycastEnemies(p.pos, dir, step + p.r);
         if (er) {
           const wasAlive = er.enemy.alive;
-          er.enemy.takeDamage(p.damage, { dir: dir.clone(), knock: 8, weapon: 'reflect', source: 'player', point: er.point });
-          if (!er.enemy.alive && wasAlive) er.enemy._killInfo = { weapon: 'reflect' };
+          if (!p.explode) er.enemy.takeDamage(p.damage, { dir: dir.clone(), knock: 8, weapon: p.weapon || 'reflect', source: 'player', point: er.point });
+          if (!er.enemy.alive && wasAlive) er.enemy._killInfo = { weapon: p.weapon || 'reflect' };
           this.hud.hitmarker(false, !er.enemy.alive);
           dead = true;
         }
       }
       if (!dead && wr.hit) { dead = true; this.fx.sparks(wr.point, 10, wr.normal, 6, p.owner === 'player' ? FXColors.cyan : FXColors.pink, FXColors.pinkEnd); this.fx.decal(wr.point, wr.normal, 0.35); }
       if (dead) {
+        if (p.explode) {
+          // party bomb: real explosion + a confetti shower
+          this.explode(p.pos.clone(), p.explode.scale, p.explode.damage, { source: 'player', weapon: p.weapon });
+          if (p.explode.confetti) for (const col of [FXColors.pink, FXColors.cyan, [2, 1.7, 0.2, 1]]) this.fx.burst(p.pos, 14, col, [col[0] * 0.4, col[1] * 0.4, col[2] * 0.4, 0], 9, 0.25, 1.1);
+        }
         this.fx.burst(p.pos, 8, FXColors.pink, FXColors.pinkEnd, 3, 0.3, 0.3);
         this.scene.remove(p.mesh);
         this.projectiles.splice(i, 1);
         continue;
       }
+      if (p.gravity) p.vel.y -= p.gravity * dt;
       p.pos.addScaledVector(p.vel, dt);
       p.mesh.position.copy(p.pos);
       if (Math.random() < 0.8) this.fx.trail(p.pos, p.owner === 'player' ? FXColors.cyan : FXColors.pink, p.r * 1.6, 0.18);
@@ -840,6 +854,7 @@ export class Game {
   update(rawDt) {
     let dt = Math.min(rawDt, 1 / 20);
     if (this.paused) return;
+    this.frameDt = rawDt;
     if (this.hitStopT > 0) { this.hitStopT -= dt; dt *= 0.06; }
     if (this.slowT > 0) { this.slowT -= rawDt; if (this.slowT <= 0) this.timeScale = 1; }
     const tsTarget = this.slowT > 0 ? this.timeScale : 1;
@@ -918,8 +933,7 @@ export class Game {
     this.audience.update(dt);
     this.fx.update(dt);
     // camera
-    if (this.camOverride) this._updateCamOverride(rawDt);
-    else this.player.updateCamera(rawDt);
+    if (this.camOverride) this._updateCamOverride(rawDt); // otherwise the player updates the camera mid-update (see Player.update)
     { const c = this.camera; _v.set(1.6, 2.4, 0.5).applyQuaternion(c.quaternion); this.camFill.position.copy(c.position).add(_v); _v.set(0, 0, -6).applyQuaternion(c.quaternion); this.camFill.target.position.copy(c.position).add(_v); }
     // post fx
     const R = this.renderer.fx;
@@ -927,10 +941,15 @@ export class Game {
     R.uDamage.value = Math.max(this.player.damageFlash * 0.8, hpk > 0.55 ? (hpk - 0.55) * 1.6 * (0.75 + 0.25 * Math.sin(this.time * 6)) : 0);
     R.uHeal.value = Math.max(0, R.uHeal.value - rawDt * 2);
     R.uUnderwater.value += ((this.player.underwater ? 1 : 0) - R.uUnderwater.value) * Math.min(1, rawDt * 8);
+    { const pl = this.player, hs = Math.hypot(pl.vel.x, pl.vel.z), fast = pl.mode === 'grapple' || pl.mode === 'slide' || pl.mode === 'dodge' ? 1 : 0;
+      R.uSpeed.value += (Math.min(1, Math.max(0, (hs - 11.5) / 9) + fast * 0.35) * (this.settings.motionBlur === false ? 0 : 1) - R.uSpeed.value) * Math.min(1, rawDt * 6); }
     R.uSat.value = 1 + this.hype * 0.15 - (this.player.alive ? 0 : 0.8) - (this.lightsOut * 0.2);
     this.audio.setMuffle(this.player.underwater ? 1 : 0);
     this.audio.loop('heartbeat', this.player.alive && this.player.hp < 30 ? 0.35 : 0);
-    if (this.player.underwater) this.scene.fog.density = 0.06; else this.scene.fog.density = this.floor.fogDensity ?? 0.012;
+    if (this.waterAtmosphere || this.water || this.player.inWater > 0.1) {
+      this.waterAtmosphere ??= new UnderwaterAtmosphere(this);
+      this.waterAtmosphere.update(Math.min(rawDt, 0.05));
+    }
     this.hud.update(this, rawDt);
   }
   _updateThrown(dt) {
@@ -1001,7 +1020,10 @@ export class Game {
     this.audio.stopLoops();
     this.audience.cancel();
     this.host.detach();
+    this.waterAtmosphere?.dispose();
     this.scene.traverse((o) => { if (o.geometry && !o.geometry.userData?.shared) o.geometry.dispose?.(); });
+    this.fx.dispose();
+    this.keyLight?.shadow?.dispose();
   }
 }
 

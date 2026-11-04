@@ -2,12 +2,12 @@
 import * as THREE from 'three';
 import { EffectComposer } from '../../vendor/three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from '../../vendor/three/addons/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from '../../vendor/three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from '../../vendor/three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from '../../vendor/three/addons/postprocessing/ShaderPass.js';
 import { RoomEnvironment } from '../../vendor/three/addons/environments/RoomEnvironment.js';
 import { GTAOPass } from '../../vendor/three/addons/postprocessing/GTAOPass.js';
 import { installStylizedShading } from './stylize.js';
+import { BUILD } from '../build.js';
 installStylizedShading();
 
 const FinalShader = {
@@ -27,6 +27,7 @@ const FinalShader = {
     uScan: { value: 0.0 },
     uLetterbox: { value: 0.0 },
     uHeal: { value: 0.0 },
+    uSpeed: { value: 0.0 },
   },
   vertexShader: /* glsl */`
     varying vec2 vUv;
@@ -34,7 +35,7 @@ const FinalShader = {
   `,
   fragmentShader: /* glsl */`
     uniform sampler2D tDiffuse;
-    uniform float uTime, uVignette, uAberration, uDamage, uUnderwater, uGlitch, uFlash, uSat, uGrain, uScan, uLetterbox, uHeal;
+    uniform float uTime, uVignette, uAberration, uDamage, uUnderwater, uGlitch, uFlash, uSat, uGrain, uScan, uLetterbox, uHeal, uSpeed;
     uniform vec3 uFlashColor;
     uniform vec2 uRes;
     varying vec2 vUv;
@@ -43,8 +44,8 @@ const FinalShader = {
       vec2 uv = vUv;
       // underwater wobble
       if (uUnderwater > 0.0) {
-        uv.x += sin(uv.y * 18.0 + uTime * 2.2) * 0.0035 * uUnderwater;
-        uv.y += cos(uv.x * 14.0 + uTime * 1.7) * 0.0030 * uUnderwater;
+        uv.x += sin(uv.y * 18.0 + uTime * 2.2) * 0.0014 * uUnderwater;
+        uv.y += cos(uv.x * 14.0 + uTime * 1.7) * 0.0012 * uUnderwater;
       }
       // glitch: blocky horizontal tears
       if (uGlitch > 0.0) {
@@ -59,6 +60,13 @@ const FinalShader = {
       col.r = texture2D(tDiffuse, uv + c * ab).r;
       col.g = texture2D(tDiffuse, uv).g;
       col.b = texture2D(tDiffuse, uv - c * ab).b;
+      // speed: radial streak blur toward the screen edges while sprinting / grappling / sliding fast
+      if (uSpeed > 0.01) {
+        float k = uSpeed * smoothstep(0.18, 0.75, dist) * 0.035;
+        vec3 acc = col;
+        for (int i = 1; i <= 4; i++) acc += texture2D(tDiffuse, uv - c * k * float(i)).rgb;
+        col = acc / 5.0;
+      }
       // saturation
       float l = dot(col, vec3(0.299, 0.587, 0.114));
       col = mix(vec3(l), col, uSat * 1.12);
@@ -69,7 +77,11 @@ const FinalShader = {
       col += vec3(-0.012, 0.004, 0.03) * (1.0 - smoothstep(0.0, 0.45, lum));
       col += vec3(0.035, 0.012, -0.022) * smoothstep(0.5, 1.0, lum);
       // underwater grade
-      col = mix(col, col * vec3(0.35, 0.75, 1.0) + vec3(0.0, 0.05, 0.09), uUnderwater * 0.8);
+      vec3 waterGrade = col * vec3(0.64, 0.88, 0.98) + vec3(0.005, 0.025, 0.035);
+      float caustic = pow(max(0.0, sin(uv.x * 21.0 + uTime * 0.7 + sin(uv.y * 13.0)) * sin(uv.y * 18.0 - uTime * 0.5)), 5.0);
+      float ray = pow(max(0.0, sin(uv.x * 17.0 + uv.y * 4.0 + uTime * 0.18)), 12.0) * (1.0 - uv.y);
+      waterGrade += vec3(0.01, 0.035, 0.045) * caustic + vec3(0.018, 0.035, 0.04) * ray;
+      col = mix(col, waterGrade, clamp(uUnderwater, 0.0, 1.0) * 0.78);
       // vignette
       float v = smoothstep(0.85, 0.2, dist);
       col *= mix(1.0, v, uVignette);
@@ -92,11 +104,32 @@ const FinalShader = {
   `,
 };
 
-export const QUALITY = {
-  low: { pixelRatio: 0.75, shadows: false, shadowSize: 512, bloom: false, particles: 0.5, antialias: false, ao: false },
-  medium: { pixelRatio: 1.0, shadows: true, shadowSize: 1024, bloom: true, particles: 0.75, antialias: false, ao: false },
-  high: { pixelRatio: 1.5, shadows: true, shadowSize: 2048, bloom: true, particles: 1, antialias: true, ao: true },
-  ultra: { pixelRatio: 2.0, shadows: true, shadowSize: 4096, bloom: true, particles: 1, antialias: true, ao: true },
+// Two build profiles (see build.js). Performance trades shadows/bloom for frame rate; Cinematic keeps them.
+export const QUALITY = {};
+['low', 'medium', 'high', 'ultra'].forEach((name, level) => {
+  QUALITY[name] = BUILD.fast
+    ? { pixelRatio: [0.65, 0.75, 0.85, 1][level], shadows: false, shadowSize: 512, particles: [0.25, 0.32, 0.4, 0.5][level], antialias: false, ao: false, bloom: false }
+    : { pixelRatio: [0.75, 0.9, 1.15, 1.35][level], shadows: level > 0, shadowSize: level > 1 ? 1536 : 1024, particles: [0.45, 0.65, 0.85, 1][level], antialias: level > 0, ao: false, bloom: level > 0 };
+});
+
+// Single-pass "safe" bloom: bright-pass taps around each pixel, NaN/overrange guarded (half-float
+// render targets can carry inf from emissive spikes, which a mip-chain bloom smears into black blocks).
+const SafeBloomShader = {
+  uniforms: { tDiffuse: { value: null }, uRes: { value: null }, uStrength: { value: 0.42 } },
+  vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+  fragmentShader: /* glsl */`
+    uniform sampler2D tDiffuse; uniform vec2 uRes; uniform float uStrength; varying vec2 vUv;
+    vec3 lightAt(vec2 uv){ vec3 c = texture2D(tDiffuse, clamp(uv, 0.0, 1.0)).rgb;
+      if (!(c.r >= 0.0 && c.r <= 1.0 && c.g >= 0.0 && c.g <= 1.0 && c.b >= 0.0 && c.b <= 1.0)) return vec3(0.0);
+      float b = max(max(c.r, c.g), c.b); return c * smoothstep(0.68, 0.98, b); }
+    void main(){
+      vec4 base = texture2D(tDiffuse, vUv); vec2 p = vec2(4.0) / max(uRes, vec2(1.0));
+      vec3 glow = lightAt(vUv) * 0.16;
+      glow += (lightAt(vUv + vec2(p.x, 0.0)) + lightAt(vUv - vec2(p.x, 0.0)) + lightAt(vUv + vec2(0.0, p.y)) + lightAt(vUv - vec2(0.0, p.y))) * 0.10;
+      glow += (lightAt(vUv + p) + lightAt(vUv - p) + lightAt(vUv + vec2(p.x, -p.y)) + lightAt(vUv + vec2(-p.x, p.y))) * 0.07;
+      glow += (lightAt(vUv + vec2(2.0 * p.x, 0.0)) + lightAt(vUv - vec2(2.0 * p.x, 0.0)) + lightAt(vUv + vec2(0.0, 2.0 * p.y)) + lightAt(vUv - vec2(0.0, 2.0 * p.y))) * 0.04;
+      gl_FragColor = vec4(min(base.rgb + glow * uStrength, vec3(1.0)), base.a);
+    }`,
 };
 
 export class Renderer {
@@ -132,8 +165,8 @@ export class Renderer {
     const w = window.innerWidth, h = window.innerHeight;
     const pr = r.getPixelRatio();
     const target = new THREE.WebGLRenderTarget(w * pr, h * pr, {
-      type: THREE.HalfFloatType,
-      samples: this.q.antialias ? 4 : 0,
+      type: BUILD.fast ? THREE.UnsignedByteType : THREE.HalfFloatType,
+      samples: this.q.antialias ? 2 : 0,
     });
     this.composer = new EffectComposer(r, target);
     this.renderPass = new RenderPass(null, null);
@@ -150,11 +183,12 @@ export class Renderer {
       this.ao.setSize = (w2, h2) => setAO(Math.round(w2 * 0.5), Math.round(h2 * 0.5)); // half-res AO
       this.composer.addPass(this.ao);
     }
-    this.bloom = new UnrealBloomPass(new THREE.Vector2(w / 2, h / 2), 0.36, 0.28, 1.0);
-    this.bloom.enabled = this.q.bloom;
-    this.composer.addPass(this.bloom);
     this.composer.addPass(new OutputPass());
-    this.finalPass = new ShaderPass({ ...FinalShader, uniforms: this.fx });
+    this.bloom = new ShaderPass(new THREE.ShaderMaterial({ ...SafeBloomShader, uniforms: { tDiffuse: { value: null }, uRes: this.fx.uRes, uStrength: { value: this._bloomStrength ?? 0.42 } } }));
+    this.bloom.enabled = this.q.bloom;
+    if (this.q.bloom) this.composer.addPass(this.bloom);
+    // pass a ShaderMaterial so the pass shares this.fx (a plain shader object would get cloned uniforms)
+    this.finalPass = new ShaderPass(new THREE.ShaderMaterial({ ...FinalShader, uniforms: this.fx }));
     this.composer.addPass(this.finalPass);
     this.resize();
   }
@@ -164,15 +198,13 @@ export class Renderer {
     this.q = QUALITY[name];
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, this.q.pixelRatio));
     this.renderer.shadowMap.enabled = this.q.shadows;
+    this.composer.passes.forEach((p) => p.dispose?.());
     this.composer.dispose?.();
     this._buildComposer();
     this.needsMaterialUpdate = true;
   }
-  setBloom(strength, radius, threshold) {
-    this.bloom.strength = strength;
-    if (radius !== undefined) this.bloom.radius = radius;
-    if (threshold !== undefined) this.bloom.threshold = threshold;
-  }
+  // Floors tune bloom with the old (strength, radius, threshold) signature; only strength maps onto the safe bloom.
+  setBloom(strength) { this._bloomStrength = Math.min(0.9, 0.42 * (strength / 0.36)); this.bloom.uniforms.uStrength.value = this._bloomStrength; }
   resize() {
     const w = window.innerWidth, h = window.innerHeight;
     this.renderer.setSize(w, h);

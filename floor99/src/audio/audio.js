@@ -349,7 +349,7 @@ export class AudioEngine {
       L.wob += dt * (0.6 + e);
       const mod = 0.75 + 0.25 * Math.sin(L.wob * 1.3) * Math.sin(L.wob * 0.71);
       const bright = L.f > 1000 ? e * e : 1;
-      const v = this.crowdOn * L.base * (0.3 + e * 1.1) * mod * bright;
+      const v = this.crowdOn * L.base * (0.3 + e * 1.1) * mod * bright * (this.voiceActive ? 0.18 : 1);
       L.g.gain.setTargetAtTime(v, t, 0.15);
     }
   }
@@ -367,14 +367,16 @@ export const SFX = {
     A.noise(d, t, 0.35, { filter: 'lowpass', f0: 6000, f1: 300, vol: 1.2, q: 0.7 });
     A.tone(d, t, 0.25, { type: 'sine', f0: 140, f1: 38, vol: 1.4 });
     A.noise(out, t, 0.04, { filter: 'highpass', f0: 3000, vol: 0.6 });
-    A.noise(out, t + 0.02, 0.9, { filter: 'lowpass', type: 'brown', f0: 600, f1: 80, vol: 0.5, a: 0.02 });
+    A.noise(out, t + 0.015, 0.32, { filter: 'lowpass', type: 'brown', f0: 700, f1: 90, vol: 0.42, a: 0.008 });
+    A.noise(out, t, 0.018, { filter: 'highpass', f0: 4500, vol: 0.8 });
   },
   shotgun(A, t, o) {
     const out = A._out({ ...o, verb: 0.35 });
     const d = A.shaper(out, A.hardDrive);
     A.noise(d, t, 0.55, { filter: 'lowpass', f0: 4500, f1: 200, vol: 1.6, q: 0.5 });
     A.tone(d, t, 0.35, { type: 'sine', f0: 110, f1: 30, vol: 1.8 });
-    A.noise(out, t, 1.2, { type: 'brown', filter: 'lowpass', f0: 500, f1: 60, vol: 0.8, a: 0.01 });
+    A.noise(out, t, 0.58, { type: 'brown', filter: 'lowpass', f0: 600, f1: 60, vol: 0.65, a: 0.005 });
+    A.noise(out, t, 0.025, { filter: 'highpass', f0: 3500, vol: 1.0 });
   },
   rifle(A, t, o) {
     const out = A._out({ ...o, verb: 0.15 });
@@ -382,6 +384,20 @@ export const SFX = {
     A.noise(d, t, 0.14, { filter: 'bandpass', f0: 2200, f1: 500, q: 0.8, vol: 1.1 });
     A.tone(d, t, 0.1, { type: 'triangle', f0: 220, f1: 60, vol: 0.9 });
     A.noise(out, t + 0.01, 0.25, { type: 'pink', filter: 'lowpass', f0: 1200, f1: 200, vol: 0.25 });
+  },
+  smg(A, t, o) {
+    const out = A._out({ ...o, vol: (o.vol ?? 1) * 0.75, verb: 0.12 });
+    const d = A.shaper(out, A.drive);
+    A.noise(d, t, 0.08, { filter: 'bandpass', f0: 3200, f1: 900, q: 0.9, vol: 1.0 });
+    A.tone(d, t, 0.06, { type: 'square', f0: 330, f1: 90, vol: 0.45 });
+    A.noise(out, t, 0.012, { filter: 'highpass', f0: 5000, vol: 0.5 });
+  },
+  launcher(A, t, o) {
+    const out = A._out({ ...o, verb: 0.3 });
+    A.tone(out, t, 0.22, { type: 'sine', f0: 180, f1: 55, vol: 1.6 });
+    A.noise(out, t, 0.18, { type: 'brown', filter: 'lowpass', f0: 900, f1: 150, vol: 0.9 });
+    A.noise(out, t + 0.02, 0.06, { filter: 'bandpass', f0: 2600, q: 2, vol: 0.4 });
+    A.tone(out, t + 0.03, 0.12, { type: 'triangle', f0: 1200, f1: 2400, vol: 0.15 });
   },
   enemyShot(A, t, o) {
     const out = A._out({ ...o, vol: (o.vol ?? 1) * 0.6, verb: 0.2 });

@@ -1,6 +1,6 @@
 // Shared materials + special shaders (molten metal, water, light cones, holograms).
 import * as THREE from 'three';
-import { panelTextures, hazardTexture, gratingTextures, stageFloorTextures, concreteTextures, tileTextures } from './textures.js';
+import { panelTextures, hazardTexture, gratingTextures, stageFloorTextures, concreteTextures, tileTextures, detailedSurface } from './textures.js';
 
 const cache = new Map();
 export const shaderClock = { value: 0 };
@@ -14,23 +14,25 @@ function std(key, params) {
   cache.set(key, m);
   return m;
 }
+// shared PBR detail maps for simple tinted materials (see textures.detailedSurface)
+function surf(kind, n) { const s = detailedSurface(kind); return { map: s.map, normalMap: s.normalMap, normalScale: new THREE.Vector2(n, n), roughnessMap: s.roughnessMap }; }
 function cloneRepeat(t, r) { if (!t) return t; const c = t.clone(); c.repeat.set(r, r); c.needsUpdate = true; return c; }
 
 export const Mat = {
   panel(color = '#2b3038', rep = 1) {
     const t = panelTextures(color);
-    return std('panel' + color + rep, { map: cloneRepeat(t.map, rep), normalMap: cloneRepeat(t.normalMap, rep), normalScale: new THREE.Vector2(0.8, 0.8), metalness: 0.65, roughness: 0.45 });
+    return std('panel' + color + rep, { map: cloneRepeat(t.map, rep), normalMap: cloneRepeat(t.normalMap, rep), roughnessMap: cloneRepeat(t.roughnessMap, rep), normalScale: new THREE.Vector2(0.8, 0.8), metalness: 0.5, roughness: 0.62 });
   },
   metal(color = '#8a929c', rough = 0.35, metal = 0.9) {
-    return std('metal' + color + rough + metal, { color, metalness: metal, roughness: rough });
+    return std('metal' + color + rough + metal, { color, metalness: metal, roughness: rough, ...surf('metal', 0.14) });
   },
   paint(color = '#d43b3b', rough = 0.45, metal = 0.25) {
-    return std('paint' + color + rough + metal, { color, metalness: metal, roughness: rough });
+    return std('paint' + color + rough + metal, { color, metalness: metal, roughness: rough, ...surf('paint', 0.22) });
   },
   plastic(color = '#eeeeee', rough = 0.5) {
-    return std('plastic' + color + rough, { color, metalness: 0.0, roughness: rough });
+    return std('plastic' + color + rough, { color, metalness: 0.0, roughness: rough, ...surf('paint', 0.08) });
   },
-  rubber(color = '#1a1a1e') { return std('rubber' + color, { color, metalness: 0, roughness: 0.9 }); },
+  rubber(color = '#1a1a1e') { return std('rubber' + color, { color, metalness: 0, roughness: 0.9, ...surf('rubber', 0.28) }); },
   glow(color = '#ff2d6f', intensity = 3) {
     return std('glow' + color + intensity, { color: '#000000', emissive: color, emissiveIntensity: intensity, metalness: 0, roughness: 1, envMapIntensity: 0 });
   },
@@ -52,11 +54,11 @@ export const Mat = {
   },
   stage(rep = 1) {
     const t = stageFloorTextures();
-    return std('stage' + rep, { map: cloneRepeat(t.map, rep), normalMap: cloneRepeat(t.normalMap, rep), emissiveMap: cloneRepeat(t.emissiveMap, rep), emissive: '#ffffff', emissiveIntensity: 0.35, metalness: 0.5, roughness: 0.22 });
+    return std('stage' + rep, { map: cloneRepeat(t.map, rep), normalMap: cloneRepeat(t.normalMap, rep), emissiveMap: cloneRepeat(t.emissiveMap, rep), emissive: '#ffffff', emissiveIntensity: 0.35, metalness: 0.3, roughness: 0.4, roughnessMap: detailedSurface('metal').roughnessMap });
   },
   concrete(color = '#5a5c60', rep = 1) {
     const t = concreteTextures(color);
-    return std('concrete' + color + rep, { map: cloneRepeat(t.map, rep), normalMap: cloneRepeat(t.normalMap, rep), metalness: 0.05, roughness: 0.9 });
+    return std('concrete' + color + rep, { map: cloneRepeat(t.map, rep), normalMap: cloneRepeat(t.normalMap, rep), normalScale: new THREE.Vector2(0.35, 0.35), roughnessMap: detailedSurface('concrete').roughnessMap, metalness: 0.05, roughness: 0.9 });
   },
   tile(base, grout, tiles = 8, rep = 1, rough = 0.25) {
     const t = tileTextures(base, grout, tiles);

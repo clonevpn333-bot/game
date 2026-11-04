@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from '../../vendor/three/addons/geometries/RoundedBoxGeometry.js';
 import { numberTexture, fabricTextures, armorTextures } from '../engine/textures.js';
+import { CharacterAnimator, meleePose } from './animator.js';
 
 const lerp = (a, b, t) => a + (b - a) * t;
 const damp = (a, b, k, dt) => a + (b - a) * (1 - Math.exp(-k * dt));
@@ -16,6 +17,8 @@ export const LOOKS = {
 
 function rbox(w, h, d, r = 0.04, s = 3) { return new RoundedBoxGeometry(w, h, d, s, Math.min(r, w / 2 - 0.001, h / 2 - 0.001, d / 2 - 0.001)); }
 function cap(r, len, seg = 10) { return new THREE.CapsuleGeometry(r, len, 4, seg); }
+const FINGER_A = new THREE.CylinderGeometry(0.013, 0.015, 0.042, 8), FINGER_B = new THREE.CylinderGeometry(0.012, 0.013, 0.033, 8);
+FINGER_A.userData.shared = FINGER_B.userData.shared = true;
 
 export class PlayerModel {
   constructor(look = {}) {
@@ -172,6 +175,25 @@ export class PlayerModel {
     this.grappleOrigin = new THREE.Object3D();
     this.grappleOrigin.position.set(0, -0.16, 0.08);
     this.j.elbowL.add(this.grappleOrigin);
+    // guns ride a chest-space mount and the hands are IK'd onto their grip points
+    this.weaponMount = new THREE.Group(); this.weaponMount.name = 'weapon-mount';
+    this.j.chest.add(this.weaponMount);
+    // articulated fingers (two segments each) replace the static glove fingers so hands can wrap grips
+    this.fingers = { R: [], L: [] };
+    for (const side of ['R', 'L']) {
+      const hand = this.j['hand' + side];
+      for (const child of hand.children.slice(2, 6)) child.visible = false;
+      for (let i = 0; i < 5; i++) {
+        const finger = new THREE.Group();
+        finger.position.set(i === 4 ? (side === 'R' ? 0.065 : -0.065) : -0.045 + i * 0.03, i === 4 ? -0.025 : -0.065, 0.045);
+        if (i === 4) finger.rotation.z = side === 'R' ? -0.65 : 0.65;
+        hand.add(finger);
+        let seg = new THREE.Mesh(FINGER_A, this.mats.rubber); seg.position.y = -0.02; seg.castShadow = true; finger.add(seg);
+        const knuckle = new THREE.Group(); knuckle.position.y = -0.04; finger.add(knuckle);
+        seg = new THREE.Mesh(FINGER_B, this.mats.rubber); seg.position.y = -0.015; knuckle.add(seg);
+        this.fingers[side].push(finger);
+      }
+    }
   }
   buildHelmet(style) {
     const g = this.helmetGroup;
@@ -228,170 +250,19 @@ export class PlayerModel {
     this.root.visible = o > 0.05;
   }
   animate(dt, s0) {
-    const s = { speed: 0, grounded: true, vy: 0, mode: 'normal', strafe: 0, headYaw: 0, land: 0, flip: 0, recoil: 0, melee: 0, meleeT: 0, meleeStep: 0, aimPitch: 0, dodgeT: 0, wallSide: 0, ...s0 };
-    this.time += dt;
-    const j = this.j;
-    const P = this.pose;
-    const k = 18;
-    const speed = s.speed;
-    // run cycle phase
-    const cadence = s.mode === 'wallrun' ? 2.1 : s.sprint ? 1.55 : 1.75;
-    if (s.grounded || s.mode === 'wallrun') this.phase += dt * Math.min(speed, 16) * cadence / 1.0;
-    const ph = this.phase;
-    const run = clamp(speed / 7, 0, 1) * ((s.grounded || s.mode === 'wallrun') ? 1 : 0);
-    const dir = s.moveBack ? -1 : 1;
-
-    // target pose
-    const T = {
-      bodyRX: 0, bodyRZ: 0, bodyY: 0,
-      hipsY: 0.98, hipsRX: 0, hipsRY: 0, hipsRZ: 0,
-      spineRX: 0, chestRX: 0, chestRY: 0, chestRZ: 0, headRX: 0, headRY: 0,
-      hipLX: 0, hipRX: 0, hipLZ: 0.04, hipRZ: -0.04, kneeL: 0, kneeR: 0, footL: 0, footR: 0,
-      shLX: 0, shRX: 0, shLZ: 0.15, shRZ: -0.15, shLY: 0, shRY: 0, elL: -0.2, elR: -0.2,
-    };
-    // idle breathing
-    const br = Math.sin(this.time * 2.2) * 0.02;
-    T.chestRX = br; T.shLZ += br; T.shRZ -= br;
-
-    if (s.mode === 'dead') {
-      T.bodyRX = -1.45; T.hipsY = 0.3; T.shLX = -2.5; T.shRX = -2.6; T.kneeL = 0.3; T.kneeR = 0.6;
-    } else if (s.mode === 'slide') {
-      T.hipsY = 0.48; T.bodyRX = -0.35; T.hipsRX = 0;
-      T.hipRX = -1.35; T.kneeR = 0.15; T.footR = -0.4;
-      T.hipLX = -0.3; T.kneeL = 1.9; T.hipLZ = 0.3;
-      T.spineRX = 0.25; T.chestRX = 0.2;
-      T.shLX = -0.4; T.shLZ = 0.9; T.elL = -0.5;
-    } else if (s.mode === 'dodge') {
-      const t = s.dodgeT; // 0..1
-      T.bodyRX = t * Math.PI * 2 * (s.dodgeBack ? -1 : 1);
-      T.hipsY = 0.75;
-      T.hipLX = -1.6; T.hipRX = -1.6; T.kneeL = 2.2; T.kneeR = 2.2;
-      T.spineRX = 0.5; T.chestRX = 0.4; T.shLX = -1.0; T.shRX = -1.0; T.elL = -1.8; T.elR = -1.8;
-    } else if (s.mode === 'swim') {
-      T.bodyRX = 1.25; T.hipsY = 0.9;
-      const kk = Math.sin(this.time * 8) * 0.4;
-      T.hipLX = kk; T.hipRX = -kk; T.kneeL = 0.3; T.kneeR = 0.3;
-      T.shLX = -2.6 + Math.sin(this.time * 3) * 0.6; T.shRX = -2.6 - Math.sin(this.time * 3) * 0.6;
-      T.headRX = -0.9;
-    } else if (s.mode === 'vault') {
-      T.hipsY = 0.9; T.hipLX = -1.4; T.hipRX = -0.9; T.kneeL = 1.6; T.kneeR = 0.7; T.hipRZ = -0.5; T.hipLZ = 0.3;
-      T.shLX = -1.3; T.shLZ = 0.4; T.elL = -0.1; T.bodyRZ = -0.25;
-    } else if (!s.grounded && s.mode !== 'wallrun') {
-      // airborne
-      if (s.vy > 0) {
-        T.hipLX = -1.1; T.kneeL = 1.5; T.hipRX = 0.3; T.kneeR = 0.6; T.footR = 0.3;
-        T.shLX = -0.4; T.shLZ = 0.5; T.shRZ = -0.5;
-        if (s.flip > 0) { T.bodyRX = (1 - s.flip) * Math.PI * 2; T.hipLX = -1.7; T.hipRX = -1.7; T.kneeL = 2.3; T.kneeR = 2.3; T.hipsY = 0.85; }
-      } else {
-        T.hipLX = -0.5; T.kneeL = 0.7; T.hipRX = -0.1; T.kneeR = 0.4;
-        T.shLX = -0.3; T.shLZ = 0.9; T.shRZ = -0.9; T.elL = -0.6; T.elR = -0.6;
-        T.spineRX = -0.1;
-      }
-      if (s.mode === 'grapple') { T.shLX = -2.8; T.shLZ = 0.2; T.elL = 0; T.hipLX = -0.6; T.kneeL = 1.2; T.hipRX = -0.2; T.kneeR = 0.9; }
-    } else {
-      // grounded locomotion — weighty, exaggerated stylized cycle
-      const amp = 1.05 * run;
-      const sw = Math.sin(ph) * dir;
-      const sw2 = Math.sin(ph + Math.PI) * dir;
-      T.hipRX = -sw * amp;
-      T.hipLX = -sw2 * amp;
-      // high knee lift on the forward swing, extension at plant
-      T.kneeR = (Math.max(0, Math.sin(ph - 0.7)) * 1.9 + 0.12) * run;
-      T.kneeL = (Math.max(0, Math.sin(ph + Math.PI - 0.7)) * 1.9 + 0.12) * run;
-      T.footR = (-0.35 * Math.cos(ph) + 0.15) * run;
-      T.footL = (-0.35 * Math.cos(ph + Math.PI) + 0.15) * run;
-      // bounce: drop on contact, rise at passing pose
-      T.hipsY = 0.98 - (0.5 - 0.5 * Math.cos(ph * 2)) * 0.09 * run + 0.02 * run - (s.crouch ? 0.25 : 0);
-      T.hipsRY = Math.sin(ph) * 0.16 * run;
-      T.hipsRZ = Math.sin(ph) * 0.07 * run;                 // hip tilt over the planted leg
-      T.chestRY = -Math.sin(ph) * 0.24 * run;               // counter-twist
-      T.chestRZ = -Math.sin(ph) * 0.05 * run;
-      T.spineRX = 0.22 * run + (s.sprint ? 0.2 : 0);        // lean into the run
-      T.headRX = -T.spineRX * 0.7;                           // keep eyes level
-      T.shRX = sw * 1.0 * run; T.shLX = -sw * 1.0 * run;
-      T.shRZ = -0.15 - 0.12 * run; T.shLZ = 0.15 + 0.12 * run;
-      T.elR = -0.45 - 0.9 * run - 0.35 * Math.max(0, sw) * run;   // pumping forearms
-      T.elL = -0.45 - 0.9 * run - 0.35 * Math.max(0, -sw) * run;
-      // idle: slow weight shift & glances
-      const idle = 1 - run;
-      T.hipsRZ += Math.sin(this.time * 0.9) * 0.03 * idle;
-      T.chestRZ += -Math.sin(this.time * 0.9) * 0.035 * idle;
-      T.hipLZ += Math.max(0, Math.sin(this.time * 0.9)) * 0.06 * idle;
-      T.kneeL += Math.max(0, Math.sin(this.time * 0.9)) * 0.12 * idle;
-      T.headRY = Math.sin(this.time * 0.37) * 0.25 * idle;
-      // strafe: twist hips toward move direction
-      T.hipsRY += clamp(s.strafe, -1, 1) * 0.6;
-      if (s.crouch) { T.kneeL += 0.9; T.kneeR += 0.9; T.hipLX -= 0.6; T.hipRX -= 0.6; }
-      // landing squash
-      if (s.land > 0) { T.hipsY -= s.land * 0.25; T.kneeL += s.land * 1.0; T.kneeR += s.land * 1.0; T.hipLX -= s.land * 0.5; T.hipRX -= s.land * 0.5; }
-    }
-    if (s.mode === 'wallrun') {
-      T.bodyRZ = -0.45 * s.wallSide;
-      const amp = 1.1;
-      T.hipRX = -Math.sin(ph) * amp; T.hipLX = Math.sin(ph) * amp;
-      T.kneeR = Math.max(0, Math.sin(ph - 1.2)) * 1.6 + 0.2; T.kneeL = Math.max(0, Math.sin(ph + Math.PI - 1.2)) * 1.6 + 0.2;
-      // wall-side arm reaches toward wall
-      if (s.wallSide > 0) { T.shRZ = -1.4; T.elR = -0.2; } else { T.shLZ = 1.4; T.elL = -0.2; }
-    }
-    if (s.giant) T.hipsY *= 1;
-
-    // upper body: aiming overrides arms
-    const aimPitch = s.aimPitch || 0;
-    if (s.mode !== 'dead' && s.mode !== 'dodge' && s.mode !== 'swim') {
-      if (s.melee > 0) {
-        this._meleePose(T, s);
-      } else if (s.aiming || s.weaponHand) {
-        T.chestRX = -aimPitch * 0.45;
-        T.headRX = -aimPitch * 0.4;
-        T.chestRY = (T.chestRY || 0) * 0.3;
-        const recoil = s.recoil || 0;
-        const ready = s.aiming ? 1 : 0.85;
-        T.shRX = (-Math.PI / 2 - aimPitch * 0.55) * ready - recoil * 0.4;
-        T.shRY = 0.0; T.shRZ = -0.05;
-        T.elR = -0.12 - recoil * 0.5;
-        if (s.twoHanded) {
-          T.shLX = -Math.PI / 2 - aimPitch * 0.55 - 0.05; T.shLZ = 0.35; T.shLY = -0.75; T.elL = -0.55;
-        } else if (s.mode !== 'grapple' && s.mode !== 'slide' && s.mode !== 'wallrun') {
-          // free hand swings slightly
-        }
-      }
-      if (s.mode === 'grapple') { T.shLX = -2.8 - aimPitch * 0.3; T.shLZ = 0.2; T.elL = 0; }
-    }
-    // head look (keep upright)
-    T.headRY = clamp((T.headRY || 0) + (s.headYaw || 0), -0.7, 0.7);
-
-    // damp toward targets
-    const d = (key, t, kk = k) => { P[key] = damp(P[key] ?? t, t, kk, dt); return P[key]; };
-    const fast = s.mode === 'dodge' || (s.melee > 0) ? 40 : k;
-    j.body.rotation.x = s.mode === 'dodge' ? T.bodyRX : d('bodyRX', T.bodyRX, s.flip > 0 ? 60 : 10);
-    if (s.mode === 'dodge') P.bodyRX = 0;
-    j.body.rotation.z = d('bodyRZ', T.bodyRZ, 10);
-    j.hips.position.y = d('hipsY', T.hipsY, 16);
-    j.hips.rotation.x = d('hipsRX', T.hipsRX);
-    j.hips.rotation.y = d('hipsRY', T.hipsRY, 12);
-    j.spine.rotation.x = d('spineRX', T.spineRX);
-    j.chest.rotation.x = d('chestRX', T.chestRX, 22);
-    j.chest.rotation.y = d('chestRY', T.chestRY - T.hipsRY, 14);
-    j.chest.rotation.z = d('chestRZ', T.chestRZ || 0, 14);
-    j.head.rotation.x = d('headRX', T.headRX);
-    j.head.rotation.y = d('headRY', T.headRY);
-    j.hipL.rotation.x = d('hipLX', T.hipLX, fast); j.hipR.rotation.x = d('hipRX', T.hipRX, fast);
-    j.hipL.rotation.z = d('hipLZ', T.hipLZ); j.hipR.rotation.z = d('hipRZ', T.hipRZ);
-    j.kneeL.rotation.x = d('kneeL', T.kneeL, fast); j.kneeR.rotation.x = d('kneeR', T.kneeR, fast);
-    j.footL.rotation.x = d('footL', T.footL); j.footR.rotation.x = d('footR', T.footR);
-    j.shoulderL.rotation.x = d('shLX', T.shLX, fast); j.shoulderR.rotation.x = d('shRX', T.shRX, fast + 8);
-    j.shoulderL.rotation.y = d('shLY', T.shLY, fast); j.shoulderR.rotation.y = d('shRY', T.shRY, fast);
-    j.shoulderL.rotation.z = d('shLZ', T.shLZ, fast); j.shoulderR.rotation.z = d('shRZ', T.shRZ, fast);
-    j.elbowL.rotation.x = d('elL', T.elL, fast); j.elbowR.rotation.x = d('elR', T.elR, fast + 8);
-    j.hips.rotation.z = d('hipsRZ', T.hipsRZ || 0, 12);
-    // squash & stretch: stretch on take-off, squash on landing
+    this.animator ??= new CharacterAnimator(this);
+    this.animator.update(dt, s0);
+    const s = this.animator.state, j = this.j;
+    this.time = this.animator.time;
+    // squash & stretch: stretch on take-off, squash on landing / slide
     let sy = 1;
-    if (!s.grounded && s.vy > 4 && s.mode !== 'grapple') sy = 1.07;
-    if (s.land > 0) sy = 1 - s.land * 0.12;
+    if (!s.grounded && s.vy > 4 && s.mode !== 'grapple' && s.mode !== 'swim') sy = 1.06;
+    if (this.animator.clip === 'landing') sy = 1 - 0.1 * s.landingSeverity * Math.max(0, 1 - s.landingAge / 0.2);
     if (s.mode === 'slide') sy = 0.96;
-    const sq = d('squash', sy, 16);
-    j.body.scale.set(1 / Math.sqrt(sq), sq, 1 / Math.sqrt(sq));
+    this._sq = damp(this._sq ?? 1, sy, 16, dt);
+    j.body.scale.set(1 / Math.sqrt(this._sq), this._sq, 1 / Math.sqrt(this._sq));
     // secondary motion: antenna + backpack spring from root acceleration
+    const run = clamp(s.speed / 7, 0, 1) * (s.grounded || s.mode === 'wallrun' ? 1 : 0), ph = this.phase;
     const wp = this.root.position;
     const prev = this._prevPos || wp.clone();
     const vel = this._v || (this._v = new THREE.Vector3());
@@ -410,33 +281,6 @@ export class PlayerModel {
     if (j.pack) j.pack.position.y = 0.12 + clamp(sp.ay.x * 0.05, -0.02, 0.02) - Math.abs(Math.sin(ph)) * 0.01 * run;
     if (this.antTip) this.antTip.material.emissiveIntensity = Math.sin(this.time * 6) > 0.6 ? 4 : 0.6;
   }
-  _meleePose(T, s) {
-    const t = s.meleeT; // 0..1 progress of the swing
-    const kind = s.meleeKind;
-    const e = t < 0.25 ? t / 0.25 : 1; // windup -> strike
-    if (kind === 'hammer') {
-      // overhead slam
-      const up = t < 0.35 ? t / 0.35 : Math.max(0, 1 - (t - 0.35) / 0.2);
-      T.shRX = lerp(-0.6, -3.0, up); T.shLX = lerp(-0.6, -3.0, up);
-      T.shRZ = -0.1; T.shLZ = 0.1; T.shLY = -0.6; T.elR = -0.3; T.elL = -0.6;
-      T.spineRX = lerp(0.6, -0.3, up); T.chestRX = lerp(0.4, -0.2, up);
-      T.hipsY -= (1 - up) * 0.15 * (t > 0.4 ? 1 : 0);
-    } else {
-      // blade combo: 0 = right slash, 1 = left slash, 2 = spin
-      const step = s.meleeStep % 3;
-      const sw = t < 0.2 ? -1 + t / 0.2 * 0.2 : -0.8 + Math.min(1, (t - 0.2) / 0.25) * 1.8;
-      if (step === 0) {
-        T.shRX = -1.5; T.shRY = -sw * 1.2; T.shRZ = -0.3 - 0.3 * e; T.elR = -0.3;
-        T.chestRY = -sw * 0.6; T.shLX = -0.6; T.shLZ = 0.5;
-      } else if (step === 1) {
-        T.shLX = -1.5; T.shLY = sw * 1.2; T.shLZ = 0.3 + 0.3 * e; T.elL = -0.3;
-        T.chestRY = sw * 0.6; T.shRX = -0.6; T.shRZ = -0.5;
-      } else {
-        T.shRX = -1.4; T.shLX = -1.4; T.shRZ = -1.2; T.shLZ = 1.2; T.elR = -0.1; T.elL = -0.1;
-        T.chestRY = sw * 0.3;
-      }
-      T.spineRX = 0.25;
-      T.hipLX = -0.5; T.kneeL = 0.6; T.hipRX = 0.35; T.kneeR = 0.4;
-    }
-  }
+  _meleePose(T, s) { meleePose(T, s); }
+
 }

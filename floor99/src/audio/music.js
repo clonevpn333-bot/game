@@ -280,8 +280,12 @@ export class Music {
     this.out = c.createGain();
     this.out.gain.value = 1;
     this.duck = c.createGain();
-    this.out.connect(this.duck).connect(A.musicBus);
-    this.verb = c.createGain(); this.verb.gain.value = 0.55; this.verb.connect(A.reverbSend);
+    // voiceGain: music (and its reverb + stingers) yields to Mr. Halo / Iris while a voice clip plays
+    this.voiceGain = c.createGain();
+    this.out.connect(this.duck).connect(this.voiceGain).connect(A.musicBus);
+    this.voiceVerb = c.createGain();
+    this.verb = c.createGain(); this.verb.gain.value = 0.32; this.verb.connect(this.voiceVerb).connect(A.reverbSend);
+    this.stingOut = c.createGain(); this.stingOut.connect(A.musicBus);
     this.delayNode = c.createDelay(2);
     this.delayFb = c.createGain(); this.delayFb.gain.value = 0.38;
     this.delayLp = c.createBiquadFilter(); this.delayLp.type = 'lowpass'; this.delayLp.frequency.value = 3000;
@@ -294,14 +298,30 @@ export class Music {
       this.layers[L] = g;
     }
     this.inst = new Inst(A, this.delayIn);
+    this.setVoiceActive(!!this.voiceActive, true);
+  }
+  setVoiceActive(active, force = false) {
+    if (this.voiceActive === active && !force) return;
+    this.voiceActive = active; this.A.voiceActive = active;
+    const c = this.A.ctx; if (!c || !this.voiceGain) return;
+    const now = c.currentTime, target = active ? 0.085 : 1, tc = active ? 0.025 : 0.5;
+    for (const g of [this.voiceGain, this.stingOut]) { g.gain.cancelScheduledValues(now); g.gain.setTargetAtTime(target, now, tc); }
+    this.voiceVerb.gain.cancelScheduledValues(now); this.voiceVerb.gain.setTargetAtTime(target * (this.contextDuck ?? 1), now, tc);
+    this.A.sfxBus.gain.setTargetAtTime(this.A.vol.sfx * (active ? 0.55 : 1), now, tc);
   }
   play(id, state) {
     if (!this.A.ready) { this._pending = [id, state]; return; }
+    this.duckEpoch = (this.duckEpoch || 0) + 1; // cancels pending stinger un-ducks
+    if (this.A.ctx?.state === 'suspended') this.A.ctx.resume().catch(() => {});
     this._setup();
     const tr = TRACKS[id];
     if (!tr) return;
     if (state) this.state = state;
-    if (this.track && this.track.id === id && this.playing) { this.setState(this.state, 0.6); return; }
+    this.setDuck(1, 0.12);
+    if (this.track && this.track.id === id && this.playing) {
+      const c = this.A.ctx; this.out.gain.cancelScheduledValues(c.currentTime); this.out.gain.setTargetAtTime(1, c.currentTime, 0.1);
+      this.setState(this.state, 0.6); return;
+    }
     const c = this.A.ctx;
     // fade out current
     const wasPlaying = this.playing;
@@ -341,7 +361,12 @@ export class Music {
       this.layers[L].gain.setTargetAtTime(v, c.currentTime, fade / 3);
     }
   }
-  setDuck(v, tc = 0.1) { if (this.duck) this.duck.gain.setTargetAtTime(v, this.A.ctx.currentTime, tc); }
+  setDuck(v, tc = 0.1) {
+    this.contextDuck = v;
+    const c = this.A.ctx; if (!c || !this.duck) return;
+    this.duck.gain.cancelScheduledValues(c.currentTime); this.duck.gain.setTargetAtTime(v, c.currentTime, tc);
+    this.voiceVerb?.gain.setTargetAtTime(v * (this.voiceActive ? 0.085 : 1), c.currentTime, tc);
+  }
   _compile(tr) {
     const chords = tr.chords ? parseChords(tr.chords) : null;
     const parts = tr.parts.map((p) => {
@@ -379,10 +404,15 @@ export class Music {
     return ch[Math.floor(bar / per) % ch.length];
   }
   _schedule() {
-    if (!this.playing || !this.track) return;
-    const c = this.A.ctx;
-    const ahead = c.currentTime + 0.14;
-    while (this.nextTime < ahead) {
+    if (!this.playing || !this.track || this.A.ctx.state === 'suspended') return;
+    const now = this.A.ctx.currentTime;
+    // after a stall (tab hidden, long frame), skip ahead instead of firing a burst of stale notes
+    if (this.nextTime < now - 0.1) {
+      this.step += Math.max(0, Math.floor((now - this.nextTime) / this.track.stepDur));
+      this.nextTime = now + 0.025; this.barCount = Math.floor(this.step / 16);
+    }
+    const ahead = now + 0.2;
+    for (let n = 0; this.nextTime < ahead && n < 24; n++) {
       this._playStep(this.step, this.nextTime);
       let d = this.track.stepDur;
       // swing: lengthen even 16ths, shorten odd
@@ -494,11 +524,11 @@ export class Music {
     if (!this.A.ready) return;
     this._setup();
     const c = this.A.ctx, I = this.inst, t = c.currentTime + 0.03;
-    const out = this.A.musicBus;
-    const verb = this.verb;
+    const out = this.stingOut || this.A.musicBus;
+    const verb = this.verb, epoch = this.duckEpoch;
     if (kind === 'victory') {
       this.setDuck(0.15, 0.05);
-      setTimeout(() => this.setDuck(1, 0.8), 3600);
+      setTimeout(() => { if (epoch === this.duckEpoch) this.setDuck(1, 0.8); }, 3600);
       const seq = [[62, 0], [66, 0.12], [69, 0.24], [74, 0.36]];
       for (const [n, d] of seq) I.brass(out, t + d, [n, n + 12], 0.2, 1, verb);
       I.brass(out, t + 0.5, [62, 66, 69, 74, 78], 2.4, 1.1, verb);
@@ -511,7 +541,7 @@ export class Music {
       for (let i = 0; i < 6; i++) I.bell(out, t + 0.5 + i * 0.09, 86 + [0, 4, 7, 12, 7, 12][i], 0.4, 0.8, verb);
     } else if (kind === 'death') {
       this.setDuck(0.0, 0.05);
-      setTimeout(() => this.setDuck(1, 1.5), 3500);
+      setTimeout(() => { if (epoch === this.duckEpoch) this.setDuck(1, 1.5); }, 3500);
       const seq = [[67, 0], [66, 0.35], [65, 0.7], [64, 1.05]];
       for (const [n, d] of seq) I.brass(out, t + d, [n - 12, n], d === 1.05 ? 1.4 : 0.32, 0.9, verb);
       I.taiko(out, t + 1.05, 1.2, verb);

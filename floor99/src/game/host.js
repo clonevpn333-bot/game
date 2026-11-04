@@ -2,6 +2,7 @@
 // Renders Halo's animated face to a canvas used both in the HUD and on in-world screens,
 // manages a priority dialogue queue, contextual commentary with no-repeat bags, and voice.
 import * as THREE from 'three';
+import { BUILD } from '../build.js';
 import { HALO, IRIS_TIPS } from './dialogue.js';
 
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -48,14 +49,11 @@ export class Host {
     this.irisCanvas = document.createElement('canvas');
     this.irisCanvas.width = 256; this.irisCanvas.height = 256;
     this.irisCtx = this.irisCanvas.getContext('2d');
-    this.voices = [];
     this.lastKillLine = 0;
     this.stats = { lines: 0 };
-    if ('speechSynthesis' in window) {
-      const load = () => { this.voices = speechSynthesis.getVoices() || []; };
-      load();
-      speechSynthesis.onvoiceschanged = load;
-    }
+    // recorded voice clips load lazily (they are large); until then lines play with blips
+    this.clips = null;
+    import('../../assets/voice/clips.js').then((m) => { this.clips = m.default; }).catch(() => {});
     this._draw();
   }
   attach(game) {
@@ -157,27 +155,35 @@ export class Host {
 
   // ------------------------------------------------------------ voice
   speak(line) {
-    const s = this.app.settings;
-    if (!s.voice || !('speechSynthesis' in window)) return false;
-    try {
-      speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(line.text.replace(/—/g, ', '));
-      const en = this.voices.filter((v) => /^en/i.test(v.lang));
-      if (line.who === 'halo') {
-        u.voice = en.find((v) => /daniel|alex|fred|male|david|guy|google us/i.test(v.name)) || en[0] || null;
-        u.pitch = line.mood === 'furious' ? 0.8 : 1.25; u.rate = 1.12;
-      } else {
-        u.voice = en.find((v) => /samantha|karen|zira|female|serena|moira|tessa|google uk english female/i.test(v.name)) || en[1] || en[0] || null;
-        u.pitch = 0.95; u.rate = 1.03;
-      }
-      u.volume = this.app.audio.vol.voice * this.app.audio.vol.master;
-      speechSynthesis.speak(u);
-      return true;
-    } catch (e) { return false; }
+    if (!this.app.settings.voice || !this.clips) return false;
+    const clip = this.clips[line.who + '|' + line.text];
+    if (!clip) return false;
+    this.stopVoice();
+    const a = this.recordedVoice = new Audio(clip);
+    a.preload = 'auto';
+    a.volume = Math.min(1, this.app.audio.vol.voice * 1.25) * this.app.audio.vol.master;
+    line.audioEnded = false;
+    const done = () => { line.audioEnded = true; line.dur = line.t || 0; if (this.recordedVoice === a) { this.recordedVoice = null; this.app.music.setVoiceActive(false); } };
+    a.onloadedmetadata = () => { if (Number.isFinite(a.duration)) line.dur = a.duration + 0.15; };
+    a.onplay = () => { if (this.recordedVoice === a) this.app.music.setVoiceActive(true); };
+    a.onpause = () => { if (this.recordedVoice === a) this.app.music.setVoiceActive(false); };
+    a.onended = done; a.onerror = done;
+    a.play().catch(done);
+    this.app.music.setVoiceActive(true, true);
+    return true;
   }
-  stopVoice() { try { if ('speechSynthesis' in window) speechSynthesis.cancel(); } catch (e) { } }
+  stopVoice() {
+    const a = this.recordedVoice;
+    if (a) { a.onended = a.onerror = a.onloadedmetadata = a.onpause = a.onplay = null; a.pause(); a.removeAttribute('src'); a.load(); this.recordedVoice = null; }
+    if (this.current) this.current.audioEnded = true;
+    this.app.music.setVoiceActive(false);
+  }
+  pauseVoice() { this.recordedVoice?.pause(); }
+  resumeVoice() { this.recordedVoice?.play().catch(() => { if (this.current) this.current.audioEnded = true; }); }
 
   update(dt) {
+    if (this.app.game?.paused) return;
+    if (this.recordedVoice) this.recordedVoice.volume = Math.min(1, this.app.audio.vol.voice * 1.25) * this.app.audio.vol.master;
     this.time += dt;
     this.cool = Math.max(0, this.cool - dt);
     if (this.game && this.game.player?.alive && !this.game.cinematic) {
@@ -193,7 +199,7 @@ export class Host {
         L.blipT = (L.blipT || 0) - dt;
         if (L.blipT <= 0) { L.blipT = rand(0.07, 0.11); this.app.audio.play(L.who === 'halo' ? 'haloBlip' : 'irisBlip', { pitch: L.mood === 'furious' ? 120 : 190 }); if (L.who === 'iris') L.blipT = 0.2; }
       }
-      if (L.t >= L.dur) {
+      if (L.t >= L.dur && (!L.voiced || L.audioEnded)) {
         if (L.onDone) L.onDone();
         this.current = null;
         this.app.hud.subtitle(null);
@@ -203,7 +209,6 @@ export class Host {
       const L = this.queue.shift();
       L.t = 0;
       L.voiced = this.speak(L);
-      if (L.voiced) L.dur = Math.max(L.dur, L.text.length * 0.068 + 0.8);
       this.current = L;
       this.mood = L.who === 'halo' ? (L.mood || 'happy') : this.mood;
       if (L.who === 'iris') this.app.audio.play('static', { dur: 0.3, vol: 0.25 });
@@ -214,7 +219,12 @@ export class Host {
     if (this.blink < -0.12) this.blink = rand(2, 5);
     this.glitch = Math.max(0, this.glitch - dt);
     this._drawT = (this._drawT || 0) - dt;
-    if (this._drawT <= 0) { this._drawT = 1 / 24; this._draw(); this._drawIris(); this.texture.needsUpdate = true; }
+    if (this._drawT <= 0) {
+      this._drawT = BUILD.fast ? 1 / 12 : 1 / 24;
+      this._draw();
+      if (this.current?.who === 'iris' || !this._irisDrawn) { this._drawIris(); this._irisDrawn = true; }
+      this.texture.needsUpdate = true;
+    }
   }
 
   // ------------------------------------------------------------ portrait rendering

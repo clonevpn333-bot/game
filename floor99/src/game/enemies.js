@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from '../../vendor/three/addons/geometries/RoundedBoxGeometry.js';
 import { FXColors } from '../engine/fx.js';
+import { enhanceBruiser } from './bossDetail.js';
 import { armorTextures } from '../engine/textures.js';
 
 const rbox = (w, h, d, r = 0.03) => new RoundedBoxGeometry(w, h, d, 2, Math.min(r, w / 2 - 1e-3, h / 2 - 1e-3, d / 2 - 1e-3));
@@ -667,6 +668,9 @@ export class Bruiser extends Enemy {
     this.addHit(this.root, new THREE.Vector3(0, 0.6, 0), 0.6, 0.8, 'legs');
     this.deathScale = 1.4;
     this.attackCool = 2;
+    this.isBoss = true; this.bossName = 'BRUISER';
+    this.chatHint = () => 'get behind the bruiser. the back core.';
+    enhanceBruiser(this);
   }
   onBeforeDamage(dmg, info) {
     if (info.armored) { this.game.fx.sparks(info.point || this.center(_v), 6, info.dir ? info.dir.clone().negate() : null, 8); this.game.audio.play('impactMetal', { pos: this.pos }); this.game.hud.armorPing(); }

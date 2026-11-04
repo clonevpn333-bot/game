@@ -91,7 +91,7 @@ export class HUD {
       });
       // crosshair spread
       const spread = (w.def.spread || 0) + (w.bloom || 0) + (pl.aiming ? 0 : 0.01) + Math.min(0.03, Math.hypot(pl.vel.x, pl.vel.z) * 0.001);
-      const px = Math.round(6 + spread * 600 * (w.def.pellets > 1 ? 0.6 : 1));
+      const px = Math.round(6 + spread * 600 * (w.def.pellets > 1 ? 0.6 : 1) + (w.recoil || 0) * (w.def.auto ? 5 : 12));
       set('xs', px, (v) => $('crosshair').style.setProperty('--s', v + 'px'));
     }
     set('xenemy', !!pl.aimEnemy, (v) => $('crosshair').classList.toggle('enemy', v));

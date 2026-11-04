@@ -468,7 +468,7 @@ function* script(g, cp) {
     F.spotFollow = false;
     g.setObjective('SURVIVE THE OPENING ACT', 'Destroy the Clankers');
     F.wave([['clanker', 0], ['clanker', 1], ['clanker', 4]]);
-    hint(`${K('LMB')} FIRE · ${K('RMB')} AIM · ${K('R')} RELOAD`, 'fire', 6);
+    hint(`${K('LMB')} FIRE · ${K('2-FINGER CLICK')} TOGGLE AIM · ${K('R')} RELOAD`, 'fire', 6);
     yield 5;
     hint(`${K('F')} MELEE — robots drop repair cells when sliced`, 'melee', 5);
     yield () => g.aliveEnemies() <= 1;
@@ -625,5 +625,5 @@ export default {
   script,
   scoreTarget: 9000,
   rewards: [{ type: 'weapon', id: 'rifle', label: 'RATINGS RIFLE' }, { type: 'track', id: 'f1' }],
-  completeLine: 'The Ratings Rifle is yours! Floor Four awaits — mind the machinery!',
+  completeLine: 'The Ratings Rifle is yours! Floor Two awaits — the cleanup crew is expecting you!',
 };

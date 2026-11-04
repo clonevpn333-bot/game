@@ -249,21 +249,26 @@ export class ElevatorScene {
     for (const x of [-1.9, 1.9]) { const r = rail.clone(); r.position.set(x, 1.0, 0); s.add(r); }
     this.floorFrom = 0; this.floorTo = 1; this.progress = 0; this.open = 0;
   }
-  setRide(from, to) { this.floorFrom = from; this.floorTo = to; this.progress = 0; this.open = 0; this.t = 0; }
+  setRide(from, to) { this.floorFrom = from; this.floorTo = to; this.progress = 0; this.open = 0; this.t = 0; this.lastFloor = -1; this.lastBucket = -1; }
   update(dt) {
     this.t += dt;
-    const shake = this.progress < 1 ? 0.012 : 0;
-    this.camera.position.set(0.9 + Math.sin(this.t * 31) * shake, 1.65 + Math.sin(this.t * 23) * shake, 1.4);
-    this.camera.lookAt(-0.2, 1.5, -2);
-    this.light.intensity = 26 + (Math.random() < 0.03 ? -18 : 0);
-    const f = Math.round(this.floorFrom + (this.floorTo - this.floorFrom) * Math.min(1, this.progress));
+    // smooth ride: gentle sway that peaks mid-ride, eased doors, and an indicator redrawn only when it changes
+    const p = Math.max(0, Math.min(1, this.progress)), motion = Math.sin(Math.PI * p), open = Math.max(0, Math.min(1, this.open)), ease = open * open * (3 - 2 * open);
+    this.camera.position.set(0.36 + Math.sin(this.t * 1.4) * 0.015 * motion, 1.62 + Math.sin(this.t * 10) * 0.009 * motion + motion * 0.035, 1.5 - motion * 0.07);
+    this.camera.lookAt(-0.1, 1.55, -2);
+    this.doorL.position.x = -0.5 - ease * 0.98; this.doorR.position.x = 0.5 + ease * 0.98;
+    this.light.intensity = 25 + Math.sin(this.t * 2) * 0.8;
+    const floor = Math.round(this.floorFrom + (this.floorTo - this.floorFrom) * (p * p * (3 - 2 * p)));
+    const bucket = Math.floor(p * 32);
+    if (this.lastFloor === floor && this.lastBucket === bucket) return;
+    this.lastFloor = floor; this.lastBucket = bucket;
     const c = this.indC.getContext('2d');
-    c.fillStyle = '#100'; c.fillRect(0, 0, 256, 96);
-    c.font = '72px Anton, Impact, sans-serif'; c.fillStyle = '#ff3a3a'; c.textAlign = 'center'; c.textBaseline = 'middle';
-    c.shadowColor = '#ff0000'; c.shadowBlur = 16;
-    c.fillText('▲ ' + String(f).padStart(2, '0'), 128, 52);
+    c.clearRect(0, 0, 256, 96); c.fillStyle = '#06141b'; c.fillRect(0, 0, 256, 96);
+    c.fillStyle = '#79f1ff'; c.font = 'bold 46px Anton, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText(String(floor).padStart(2, '0'), 128, 35);
+    c.font = '10px sans-serif'; c.fillStyle = '#d5e5ec';
+    c.fillText(p > 0.96 ? 'ARRIVING · MIND THE DOORS' : 'ASCENDING / FLOOR ' + String(this.floorTo).padStart(2, '0'), 128, 70);
+    c.fillStyle = '#203746'; c.fillRect(22, 83, 212, 3); c.fillStyle = '#78eeff'; c.fillRect(22, 83, 212 * p, 3);
     this.indT.needsUpdate = true;
-    this.doorL.position.x = -0.5 - this.open * 0.95;
-    this.doorR.position.x = 0.5 + this.open * 0.95;
   }
 }

@@ -1,5 +1,5 @@
 // Panels: floor select, loadout, settings, soundtrack, credits, and the lounge tabs.
-import { FLOORS, PLANNED, SHOP, CHALLENGES } from '../config.js';
+import { FLOORS, PLANNED, SHOP, CHALLENGES, PLAYABLE_ORDER } from '../config.js';
 import { WEAPONS } from '../game/weapons.js';
 import { LOOKS } from '../game/playerModel.js';
 import { TRACKS, SOUNDTRACK } from '../audio/tracks.js';
@@ -32,7 +32,7 @@ export function floorSelect(app, el) {
   }
   html += '</div>';
   html += `<div class="fl-legend"><span><i style="background:#ff2d6f"></i>PLAYABLE</span><span><i style="background:#3dff9a"></i>COMPLETED</span><span><i style="background:#8a6"></i>SIGNATURE FLOOR — DESIGNED, NOT YET BUILT</span><span><i style="background:#333"></i>NOT YET BUILT</span></div>`;
-  html += `<div class="fl-detail" id="flDetail">Hover a floor. This build contains <b>${Object.keys(FLOORS).length}</b> complete, playable floors (1, 4 and 12). Every other floor is honestly marked as not yet built.</div>`;
+  html += `<div class="fl-detail" id="flDetail">Hover a floor. This build contains <b>${Object.keys(FLOORS).length}</b> complete, playable floors (${Object.keys(FLOORS).join(', ')}). Every other floor is honestly marked as not yet built.</div>`;
   if (CHALLENGES.length) {
     html += '<h3 class="section-h">CHALLENGE VARIATIONS</h3><div class="opt-row" id="chal">';
     const total = app.save.totalStars();
@@ -64,15 +64,16 @@ export function floorSelect(app, el) {
 }
 export function isUnlocked(app, f) {
   if (f === 1) return true;
-  const order = [1, 4, 12];
-  const i = order.indexOf(f);
-  return i > 0 && !!app.save.data.progress.completed[order[i - 1]];
+  const done = app.save.data.progress.completed;
+  if (done[f]) return true;
+  const i = PLAYABLE_ORDER.indexOf(f);
+  return i > 0 && !!done[PLAYABLE_ORDER[i - 1]];
 }
 
 // ------------------------------------------------------------------ LOADOUT
 export function loadout(app, el) {
   const S = app.save.data;
-  const guns = ['revolver', 'shotgun', 'rifle', 'rail', 'gravity'];
+  const guns = Object.keys(WEAPONS).filter((id) => WEAPONS[id].kind === 'gun' || WEAPONS[id].kind === 'gravity');
   let html = '<h3 class="section-h">GUNS — PICK UP TO THREE (keys 1 · 2 · 3)</h3><div class="cards">';
   for (const id of guns) {
     const d = WEAPONS[id];

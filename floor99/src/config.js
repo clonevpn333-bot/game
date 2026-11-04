@@ -1,7 +1,13 @@
 // Floor registry. `status` is honest: only floors marked 'playable' are built and shippable.
+const b1 = (n) => () => import('./floors/batch01.js').then((m) => ({ default: m['FLOOR_' + n] }));
 export const FLOORS = {
-  1: { id: 1, name: 'WELCOME TO THE SHOW', status: 'playable', tagline: 'The most entertaining tutorial ever broadcast.', load: () => import('./floors/floor01.js'), next: 4, tier: 0, music: 'f1' },
-  4: { id: 4, name: 'THE FACTORY', status: 'playable', tagline: 'Assembly lines. Hydraulic presses. Molten metal. Overtime.', load: () => import('./floors/floor04.js'), next: 12, tier: 0, music: 'f4' },
+  1: { id: 1, name: 'WELCOME TO THE SHOW', status: 'playable', tagline: 'The most entertaining tutorial ever broadcast.', load: () => import('./floors/floor01.js'), next: 2, tier: 0, music: 'f1' },
+  2: { id: 2, name: 'THE CLEANUP CREW', status: 'playable', tagline: 'Closed for cleaning. Reopened for violence.', load: b1(2), next: 3, tier: 0, music: 'f1' },
+  3: { id: 3, name: 'THE LOCKER ROOM', status: 'playable', tagline: 'Every contestant gets a locker. Nobody gets it back.', load: b1(3), next: 4, tier: 0, music: 'f1' },
+  4: { id: 4, name: 'THE FACTORY', status: 'playable', tagline: 'Assembly lines. Hydraulic presses. Molten metal. Overtime.', load: () => import('./floors/floor04.js'), next: 5, tier: 0, music: 'f4' },
+  5: { id: 5, name: 'THE FLOOR IS LAVA', status: 'playable', tagline: 'A game-show classic. The lava is real.', load: b1(5), next: 6, tier: 0, music: 'f1' },
+  6: { id: 6, name: 'NEON DISTRICT', status: 'playable', tagline: 'Sponsors, billboards, and a lot of very loud robots.', load: b1(6), next: 7, tier: 1, music: 'f4' },
+  7: { id: 7, name: 'THE ARCHIVE', status: 'playable', tagline: 'Every contestant has a file. Every file says the same thing.', load: b1(7), next: 12, tier: 1, music: 'f12' },
   12: { id: 12, name: 'AQUARIUM APOCALYPSE', status: 'playable', tagline: 'Ten thousand tonnes of water and a very large mechanical fish.', load: () => import('./floors/floor12.js'), next: null, tier: 1, music: 'f12' },
 };
 
@@ -15,7 +21,7 @@ export const PLANNED = {
   99: { name: 'THE TOWER ITSELF', tagline: 'The entire skyscraper becomes the boss.' },
 };
 
-export const PLAYABLE_ORDER = [1, 4, 12];
+export const PLAYABLE_ORDER = Object.keys(FLOORS).map(Number).sort((a, b) => a - b);
 
 export const SHOP = [
   { id: 'mod_fastHands', type: 'mod', key: 'fastHands', name: 'FAST HANDS', price: 300, desc: 'Reloads 30% faster.' },

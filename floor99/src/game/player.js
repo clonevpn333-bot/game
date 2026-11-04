@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { PlayerModel } from './playerModel.js';
 import { Arsenal } from './weapons.js';
+import { BUILD } from '../build.js';
 import { FXColors } from '../engine/fx.js';
 
 const UP = new THREE.Vector3(0, 1, 0);
@@ -112,8 +113,14 @@ export class Player {
   damageMult() { return (this.giant > 0 ? 2 : 1) * (this.mods.glass ? 1.5 : 1) * (this.game.modifiers?.oneHit ? 1.5 : 1); }
 
   addRecoil(pitch, shake) {
-    this.recoilPitch += pitch;
-    this.trauma = Math.min(1, this.trauma + shake * 0.5);
+    this.recoilPitch = Math.min(0.24, this.recoilPitch + pitch * 0.6);
+    // gun kick: an immediate camera snap that springs back (feel), on top of the slower recoil climb
+    const prev = this.gunKick || 0;
+    this.gunKick = Math.min(0.22, prev + pitch * 1.45);
+    const impulse = (this.gunKick - prev) * (this.game.settings?.shake ?? 1);
+    if (this.game.camera) { this.game.camera.rotation.x += impulse; this.game.camera.rotation.z += impulse * 0.15; }
+    this.fovKick = Math.min(5, this.fovKick + shake * 5);
+    this.trauma = Math.min(1, this.trauma + shake * 0.55);
     this.lastShotT = 0;
   }
   shake(a) { this.trauma = Math.min(1, this.trauma + a); }
@@ -204,7 +211,7 @@ export class Player {
     const hasInput = wish.lengthSq() > 0.01;
     if (hasInput) wish.normalize();
     const sprint = allowControl && (input.down('ShiftLeft') || input.down('ShiftRight'));
-    this.aiming = allowControl && input.mouse.right && this.mode !== 'swim';
+    this.aiming = allowControl && (input.wantsAim ? input.wantsAim() : input.mouse.right) && this.mode !== 'swim';
     const fire = allowControl && input.mouse.left;
     const firePressed = allowControl && input.mouse.leftPressed;
     const fireReleased = input.mouse.leftReleased || (!input.mouse.left && this.fireHold > 0);
@@ -246,7 +253,7 @@ export class Player {
     }
 
     const speedMult = this.speedMult * (this.giant > 0 ? 1.25 : 1) * (this.mods.sprinter ? 1.08 : 1);
-    const runSpeed = (sprint && mz > 0 ? 12.2 : 8.2) * speedMult;
+    const runSpeed = (sprint && mz > 0 ? 13.5 : 9) * speedMult;
     const ice = G.ice || this.groundCollider?.ice;
     const wade = this.inWater > 0.35 && this.mode !== 'swim' ? clamp(1 - (this.inWater - 0.35) * 0.45, 0.55, 1) : 1;
     const gMul = G.gravityScalePlayer ?? 1;
@@ -290,8 +297,7 @@ export class Player {
         if ((sp < 4.2 || wantUp) && !ceiling) { this.mode = 'normal'; this.slideCool = 0.15; G.audio.loop('slide', 0); }
         if (sp < 3 && ceiling) { hv.setLength(3); this.vel.x = hv.x; this.vel.z = hv.z; }
         if (this.jumpBuffer > 0 && !ceiling && (this.grounded || this.coyote > 0)) { this.mode = 'normal'; G.audio.loop('slide', 0); this._jump(9.2, true); }
-        G.audio.loop('slide', this.grounded ? clamp(sp / 18, 0, 0.5) : 0);
-        if (this.grounded && Math.random() < 0.6) G.fx.sparks(_v3.copy(this.pos).add(_v2.set(0, 0.1, 0)), 1, null, 3);
+        if (this.grounded && Math.random() < dt * (BUILD.fast ? 10 : 22)) G.fx.sparks(_v3.copy(this.pos).add(_v2.set(0, 0.1, 0)), 1, null, 3);
         this._move(dt, CROUCH);
         break;
       }
@@ -374,7 +380,7 @@ export class Player {
       default: {
         // normal locomotion
         const target = _v3.copy(wish).multiplyScalar(runSpeed * wade * (this.aiming ? 0.72 : 1));
-        const accel = this.grounded ? (ice ? 6 : 70) : (hasInput ? 26 : 2);
+        const accel = this.grounded ? (ice ? 6 : 78) : (hasInput ? 32 : 2);
         const hv = new THREE.Vector3(this.vel.x, 0, this.vel.z);
         if (this.grounded) {
           if (hasInput) {
@@ -441,7 +447,7 @@ export class Player {
     if (!this.grounded) { this.airTime += dt; this.coyote = Math.max(0, this.coyote - dt); }
     else { this.airTime = 0; this.coyote = 0.1; this.jumps = 0; this.airDashes = this.abilities.airDashes; this.lastWallN.set(0, 0, 0); }
     this.wasGrounded = this.grounded;
-    if (this.flip > 0) this.flip = Math.max(0, this.flip - dt * 2.2);
+    if (this.flip > 0) this.flip = Math.max(0, this.flip - dt * 2.8);
 
     // safe spot tracking
     this.safeTimer += dt;
@@ -464,6 +470,8 @@ export class Player {
     else if (combatFacing && this.mode !== 'swim') targetYaw = this.camYaw + Math.PI;
     else if (hspd > 0.5 && this.mode !== 'dead') targetYaw = Math.atan2(this.vel.x, this.vel.z);
     this.yaw += angDiff(this.yaw, targetYaw) * (1 - Math.exp(-(combatFacing ? 22 : 12) * dt));
+    // camera before aim: the shot ray and the weapon pose use this frame's camera, not last frame's
+    if (!G.camOverride) this.updateCamera(G.frameDt || dt);
 
     // ----- weapons
     this._computeAim();
@@ -479,6 +487,8 @@ export class Player {
     const showWeapon = this.mode !== 'swim' && this.mode !== 'dodge' && this.mode !== 'dead';
     if (w) w.model.visible = showWeapon && this.arsenal.meleeT <= 0;
     const st = {
+      turn: clamp(angDiff(this.yaw, targetYaw) * 2, -1, 1), vaultProgress: this.vault ? this.vault.t / this.vault.dur : 0,
+      reloading: w?.reloading || 0, underwater: this.underwater, inWater: this.inWater,
       speed: hspd, grounded: this.grounded, vy: this.vel.y, mode: this.mode, sprint: sprint && hspd > 9,
       moveBack, strafe: moveBack ? -strafe : strafe, crouch: this.crouch, land: this.landT, flip: this.flip,
       dodgeT: clamp(this.dodgeT / 0.32, 0, 1), dodgeBack: this.dodgeBack,
@@ -492,7 +502,7 @@ export class Player {
     const gs = this.giant > 0 ? Math.min(2.2, 1 + Math.min(1, (12 - this.giant) * 3) * 1.2, 1 + this.giant * 2) : 1;
     this.model.root.scale.setScalar(damp(this.model.root.scale.x, gs, 6, dt));
     this.model.animate(dt, st);
-    if (st.aiming && w && showWeapon) {
+    if (w && showWeapon && this.arsenal.meleeT <= 0) {
       this.model.root.updateMatrixWorld(true);
       this.arsenal.orientToTarget(this.aimTarget, 1);
     }
@@ -504,6 +514,17 @@ export class Player {
         G.audio.play('step', { pos: this.pos, metal: true, wet: this.inWater > 0.1, vol: sprint ? 1.2 : 0.9 });
         if (this.inWater > 0.1) G.fx.splash(_v2.copy(this.pos).setY(wl), 4, 0.4);
         if (this.giant > 0) { G.audio.play('stomp', { pos: this.pos }); this.shake(0.15); G.stompDamage(this.pos, 3.2, 30); }
+      }
+    }
+    G.audio.loop('slide', this.alive && this.mode === 'slide' && this.grounded ? clamp(Math.hypot(this.vel.x, this.vel.z) / 18, 0, 0.45) : 0, { tc: 0.025 });
+    // speed trails off both boots while sliding / dodging, plus a dust kick on the ground
+    if (this.alive && (this.mode === 'slide' || this.mode === 'dodge') && hspd > 4) {
+      this.effectTime = (this.effectTime || 0) - dt;
+      if (this.effectTime <= 0) {
+        this.effectTime = BUILD.fast ? 0.075 : 0.04;
+        const off = _v.copy(this.rightVec).multiplyScalar(0.24), base = _v2.copy(this.pos).setY(this.pos.y + 0.1), col = this.mode === 'dodge' ? FXColors.cyan : FXColors.pink;
+        G.fx.trail(_v3.copy(base).add(off), col, 0.2, 0.13); G.fx.trail(_v3.copy(base).sub(off), col, 0.2, 0.13);
+        if (this.grounded) { this.dustTime = (this.dustTime || 0) - this.effectTime; if (this.dustTime <= 0) { this.dustTime = BUILD.fast ? 0.22 : 0.13; G.fx.dust(base, 2, 0.42); } }
       }
     }
 
@@ -628,13 +649,15 @@ export class Player {
     this.game.fx.dust(_v.copy(this.pos), 3, 0.5);
   }
   _doubleJump() {
-    this.vel.y = 9.2;
+    this.vel.y = 10;
     this.jumps = 2;
     this.jumpBuffer = 0;
     this.jumpHeld = true;
     this.flip = 1;
-    // allow redirect
+    this.fovKick = Math.min(4, this.fovKick + 1.5);
+    // a little extra carry so the second jump feels like a boost, not a stall
     const hv = _v.set(this.vel.x, 0, this.vel.z);
+    if (hv.lengthSq() > 0.25) { hv.multiplyScalar(1.12); this.vel.x = hv.x; this.vel.z = hv.z; }
     this.game.audio.play('doubleJump', { pos: this.pos });
     this.game.fx.ring(_v2.copy(this.pos).add(_v3.set(0, 0.1, 0)), 0.2, 1.6, 0.3, 0x8ff6ff);
     this.game.fx.burst(this.pos, 10, FXColors.cyan, FXColors.cyanEnd, 3, 0.25, 0.4);
@@ -875,6 +898,9 @@ export class Player {
     const roll = this.mode === 'wallrun' ? -this.wallSide * 0.12 : 0;
     this._roll = damp(this._roll ?? 0, roll, 6, dt);
     cam.rotation.z = this._roll;
+    this.gunKick = (this.gunKick || 0) * Math.exp(-dt * 12);
+    cam.rotation.x += this.gunKick * (G.settings?.shake ?? 1);
+    cam.rotation.z += this.gunKick * 0.15 * (G.settings?.shake ?? 1);
     // shake (trauma^2)
     this.trauma = Math.max(0, this.trauma - dt * 1.6);
     const sh = this.trauma * this.trauma * (G.settings?.shake ?? 1);
@@ -889,6 +915,8 @@ export class Player {
     const baseFov = G.settings?.fov ?? 75;
     let fov = baseFov + clamp((hsp - 8) * 0.9, 0, 14) + (this.mode === 'grapple' ? 6 : 0);
     if (aim) fov = baseFov - 20;
+    this.fovKick = Math.max(0, this.fovKick - dt * 8);
+    fov += this.fovKick;
     cam.fov = damp(cam.fov, fov, 8, dt);
     cam.updateProjectionMatrix();
     this.camPos.copy(cam.position);

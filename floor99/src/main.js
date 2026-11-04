@@ -11,6 +11,9 @@ import { FLOORS, PLAYABLE_ORDER } from './config.js';
 import { MenuScene, LoungeScene, ElevatorScene } from './ui/scenes.js';
 import { floorSelect, loadout, settings, soundtrack, credits, loungeTab, bindHover, isUnlocked } from './ui/menus.js';
 import { Game } from './game/game.js';
+import { BUILD } from './build.js';
+import { StudioChat } from './ui/chat.js';
+import { AnimationStudio } from './ui/studio.js';
 
 const $ = (id) => document.getElementById(id);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -30,12 +33,16 @@ class App {
   constructor() {
     this.save = new Save();
     this.settings = this.save.data.settings;
+    // each build has its own tuned quality ladder; start on that build's default rung
+    if (!this.settings.qualityPicked) this.settings.quality = BUILD.fast ? 'medium' : 'high';
+    document.title = `FLOOR 99 — ${BUILD.name}`;
     this.renderer = new Renderer($('app'), this.settings.quality);
     this.input = new Input(this.renderer.renderer.domElement);
     this.audio = new AudioEngine();
     this.music = new Music(this.audio);
     this.host = new Host(this);
     this.hud = new HUD(this);
+    this.chat = new StudioChat(this);
     this.state = 'boot';
     this.game = null;
     this.clock = new THREE.Clock();
@@ -45,10 +52,26 @@ class App {
     window.__floor99 = this; // handy for debugging & automated tests
     this._bindUI();
     this._boot();
+    this._initStudio();
     this.renderer.renderer.setAnimationLoop(() => this._frame());
   }
 
+  _initStudio() {
+    const btn = document.createElement('button');
+    btn.id = 'animationStudioLaunch'; btn.textContent = 'ANIMATION STUDIO · F8';
+    $('app').appendChild(btn); this.studioButton = btn;
+    const open = () => { this.animationStudio ??= new AnimationStudio(this); this.animationStudio.open(); };
+    btn.onclick = open;
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'F8' && !e.repeat) {
+        e.preventDefault();
+        if (this._starting || ['boot', 'elevator'].includes(this.state)) return;
+        if (this.animationStudio?.active) this.animationStudio.close(); else open();
+      } else if (e.code === 'Escape' && this.animationStudio?.active) { e.preventDefault(); this.animationStudio.close(); }
+    });
+  }
   applySettings(changed) {
+    if (changed === 'quality') this.settings.qualityPicked = true;
     const s = this.settings;
     this.input.sensitivity = s.sensitivity;
     this.input.invertY = s.invertY;
@@ -100,7 +123,7 @@ class App {
     this.audio.setCrowd(true, 0.25);
     const started = this.save.data.progress.started;
     document.querySelector('[data-act=continue]').classList.toggle('disabled', !started);
-    $('menuFoot').innerHTML = `${Object.keys(this.save.data.progress.completed).length} / 3 BUILT FLOORS CLEARED · ${this.save.totalStars()}★ · ${this.save.data.fans} FANS<br>WASD move · SHIFT sprint · SPACE jump · C slide · Q dodge · E grapple · F melee · RMB aim · LMB fire`;
+    $('menuFoot').innerHTML = `${Object.keys(this.save.data.progress.completed).length} / ${PLAYABLE_ORDER.length} BUILT FLOORS CLEARED · ${this.save.totalStars()}★ · ${this.save.data.fans} FANS<br>Two-finger click toggles aim · WASD move · SHIFT sprint · SPACE jump · C slide · Q dodge · E grapple · F melee · RMB aim · LMB fire`;
     $('ticker').innerHTML = TICKER.concat(TICKER).map(([a, b]) => `<span><b>${a}</b>${b}</span>`).join('');
     bindHover($('menu'), this.audio);
     if (!this._menuGreeted) { this._menuGreeted = true; setTimeout(() => this.host.say('halo', 'Welcome, welcome, WELCOME to FLOOR NINETY-NINE! The show where the audience decides and the building wants you dead!', { mood: 'gleeful' }), 800); }
@@ -173,12 +196,13 @@ class App {
   }
   pause() {
     if (!this.game || this.game.ended) return;
+    this.input?.clearAim?.();
     this.game.paused = true;
     $('pause').classList.add('active');
     $('clickToResume').classList.remove('on');
     this.music.setDuck(0.35, 0.2);
-    this.host.stopVoice();
-    if ('speechSynthesis' in window) try { speechSynthesis.pause(); } catch (e) { }
+    for (const l of ['slide', 'rail', 'grapple']) this.audio.loop(l, 0, { tc: 0.015 });
+    this.host.pauseVoice();
   }
   resume() {
     $('pause').classList.remove('active');
@@ -186,6 +210,7 @@ class App {
     this.input.lock();
     if (this.game) this.game.paused = false;
     this.music.setDuck(1, 0.2);
+    this.host.resumeVoice();
   }
 
   // ------------------------------------------------------------------ lounge
@@ -285,13 +310,14 @@ class App {
     this._introT = setTimeout(() => { if ($('cardInner').classList.contains('floor-intro')) c.classList.remove('active', 'passive'); }, 3400);
   }
   endGame() {
+    this.chat?.clear();
     if (this.game) { this.game.dispose(); this.game = null; }
     this.host.detach();
     this.hud.show(false);
     $('card').classList.remove('active', 'passive');
     $('pause').classList.remove('active');
     $('clickToResume').classList.remove('on');
-    this.renderer.fx.uLetterbox.value = 0; this.renderer.fx.uUnderwater.value = 0; this.renderer.fx.uDamage.value = 0; this.renderer.fx.uGlitch.value = 0; this.renderer.fx.uSat.value = 1;
+    this.renderer.fx.uLetterbox.value = 0; this.renderer.fx.uUnderwater.value = 0; this.renderer.fx.uDamage.value = 0; this.renderer.fx.uGlitch.value = 0; this.renderer.fx.uSat.value = 1; this.renderer.fx.uSpeed.value = 0;
     this.audio.setMuffle(0);
     this.audio.stopLoops();
   }
@@ -395,6 +421,13 @@ class App {
   // ------------------------------------------------------------------ frame
   _frame() {
     if (this.frozen) return;
+    if (this.state === 'animationStudio') {
+      const dt = Math.min(0.05, this.clock.getDelta());
+      this.animationStudio.update(dt);
+      this.renderer.render(this.animationStudio.scene, this.animationStudio.camera, dt, this.clock.elapsedTime);
+      this.input.endFrame(); this.studioButton.style.display = 'none';
+      return;
+    }
     const dt = Math.min(this.clock.getDelta(), 0.1);
     const t = this.clock.elapsedTime;
     this.audio.update(dt);
@@ -412,6 +445,8 @@ class App {
     if (scene) this.renderer.render(scene, camera, dt, t);
     this.input.endFrame();
     if (this.music._pending && this.audio.ready) this.music.resumePending();
+    this.chat.update(Math.min(dt, 0.05), this.state, !!this.game?.paused);
+    this.studioButton.style.display = this.state === 'menu' || $('pause').classList.contains('active') ? '' : 'none';
   }
 }
 

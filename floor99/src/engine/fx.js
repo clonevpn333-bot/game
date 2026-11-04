@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { glowTexture, softTexture } from './textures.js';
 import { Body } from './physics.js';
 import { Mat } from './materials.js';
+import { BUILD } from '../build.js';
 
 const _v = new THREE.Vector3();
 const _v2 = new THREE.Vector3();
@@ -42,7 +43,7 @@ class ParticleSystem {
       vertexShader: /* glsl */`
         attribute float size; attribute vec4 color; varying vec4 vColor; uniform float uScale;
         void main(){ vColor = color; vec4 mv = modelViewMatrix * vec4(position,1.0);
-          gl_PointSize = size * uScale / max(0.1, -mv.z); gl_Position = projectionMatrix * mv; }
+          gl_PointSize = min(size * uScale / max(1.0, -mv.z), 160.0); gl_Position = projectionMatrix * mv; }
       `,
       fragmentShader: /* glsl */`
         uniform sampler2D uTex; varying vec4 vColor;
@@ -127,9 +128,16 @@ export class FX {
     this.smoke = new ParticleSystem(Math.floor(1600 * quality) + 300, false, softTexture());
     scene.add(this.glow.points, this.smoke.points);
 
+    // billboard muzzle-flash stars (a few pooled sprites; far cheaper than more particles)
+    this.muzzleIndex = 0; this.muzzleSprites = [];
+    for (let i = 0; i < (BUILD.fast ? 4 : 8); i++) {
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: muzzleTexture(), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0, toneMapped: false }));
+      sp.visible = false; sp.renderOrder = 11; scene.add(sp); this.muzzleSprites.push(sp);
+    }
+
     // pooled flash lights (fixed count to avoid shader recompiles)
     this.lights = [];
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < (BUILD.fast ? 2 : 4); i++) {
       const l = new THREE.PointLight(0xffaa55, 0, 14, 2);
       l.userData.t = 0;
       scene.add(l);
@@ -141,7 +149,7 @@ export class FX {
     this.tracers = [];
     const tg = new THREE.CylinderGeometry(1, 1, 1, 6, 1, true);
     tg.rotateX(Math.PI / 2); tg.translate(0, 0, 0.5);
-    for (let i = 0; i < 48; i++) {
+    for (let i = 0; i < (BUILD.fast ? 24 : 40); i++) {
       const m = new THREE.Mesh(tg, new THREE.MeshBasicMaterial({ color: 0xffd38a, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
       m.visible = false; m.frustumCulled = false;
       m.userData = { t: 0, life: 0.06 };
@@ -154,7 +162,7 @@ export class FX {
     this.rings = [];
     const rg = new THREE.RingGeometry(0.85, 1, 48);
     rg.rotateX(-Math.PI / 2);
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < (BUILD.fast ? 5 : 8); i++) {
       const m = new THREE.Mesh(rg, new THREE.MeshBasicMaterial({ color: 0xffc070, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
       m.visible = false;
       m.userData = { t: 0, life: 0.5, r0: 1, r1: 8 };
@@ -166,7 +174,7 @@ export class FX {
     // fireball spheres (for big explosions)
     this.balls = [];
     const bg = new THREE.IcosahedronGeometry(1, 2);
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < (BUILD.fast ? 4 : 6); i++) {
       const m = new THREE.Mesh(bg, new THREE.MeshBasicMaterial({ color: 0xffa040, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
       m.visible = false;
       m.userData = { t: 0, life: 0.4, r: 3 };
@@ -183,7 +191,7 @@ export class FX {
     gr.addColorStop(0, 'rgba(0,0,0,1)'); gr.addColorStop(0.3, 'rgba(10,8,6,0.9)'); gr.addColorStop(0.6, 'rgba(30,20,10,0.4)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
     dctx.fillStyle = gr; dctx.fillRect(0, 0, 64, 64);
     const dtex = new THREE.CanvasTexture(dc);
-    this.decalMax = 220;
+    this.decalMax = BUILD.fast ? 80 : 160;
     this.decals = new THREE.InstancedMesh(dg, new THREE.MeshBasicMaterial({ map: dtex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 }), this.decalMax);
     this.decals.count = 0;
     this.decals.frustumCulled = false;
@@ -195,7 +203,7 @@ export class FX {
     this.debris = [];
     const dgeos = [new THREE.BoxGeometry(0.22, 0.12, 0.3), new THREE.BoxGeometry(0.15, 0.15, 0.15), new THREE.CylinderGeometry(0.06, 0.06, 0.35, 6), new THREE.TetrahedronGeometry(0.16)];
     const dmats = [Mat.metal('#5a6070', 0.5), Mat.metal('#3a3f4a', 0.6), Mat.paint('#c9a227', 0.5), Mat.metal('#888f99', 0.3)];
-    for (let i = 0; i < 90; i++) {
+    for (let i = 0; i < (BUILD.fast ? 30 : 60); i++) {
       const m = new THREE.Mesh(dgeos[i % 4], dmats[(i * 7) % 4]);
       m.visible = false; m.castShadow = false;
       scene.add(m);
@@ -210,7 +218,7 @@ export class FX {
     const smat = new THREE.MeshStandardMaterial({ color: '#d4a640', metalness: 1, roughness: 0.25 });
     const sgShot = new THREE.CylinderGeometry(0.03, 0.03, 0.09, 8); sgShot.rotateZ(Math.PI / 2);
     const smatShot = new THREE.MeshStandardMaterial({ color: '#c42020', metalness: 0.3, roughness: 0.4 });
-    for (let i = 0; i < 40; i++) {
+    for (let i = 0; i < (BUILD.fast ? 16 : 28); i++) {
       const shot = i % 4 === 0;
       const m = new THREE.Mesh(shot ? sgShot : sg, shot ? smatShot : smat);
       m.visible = false;
@@ -265,6 +273,11 @@ export class FX {
       this.glow.emit(p.x, p.y, p.z, _v.x, _v.y, _v.z, rand(0.04, 0.09), rand(0.15, 0.3) * big, 0.05, color, C.fireEnd, 0, 4);
     }
     this.smoke.emit(p.x, p.y, p.z, dir.x, dir.y + 0.4, dir.z, 0.6, 0.15 * big, 0.6 * big, [0.6, 0.6, 0.6, 0.25], [0.5, 0.5, 0.5, 0], 0.5, 2);
+    const sp = this.muzzleSprites[this.muzzleIndex++ % this.muzzleSprites.length];
+    sp.position.copy(p).addScaledVector(dir, 0.06);
+    sp.material.color.setRGB(1, 0.9, 0.72); sp.material.rotation = Math.random() * Math.PI;
+    const size = 0.45 * Math.sqrt(big);
+    sp.scale.setScalar(size); sp.userData.life = 0.07; sp.userData.size = size; sp.visible = true; sp.material.opacity = 1;
   }
   trail(p, color = C.cyan, size = 0.25, life = 0.25) {
     this.glow.emit(p.x, p.y, p.z, 0, 0, 0, life, size, 0.02, color, [color[0] * 0.3, color[1] * 0.3, color[2] * 0.3, 0], 0, 0);
@@ -400,6 +413,13 @@ export class FX {
   update(dt) {
     this.glow.update(dt);
     this.smoke.update(dt);
+    for (const sp of this.muzzleSprites) {
+      if (!sp.visible) continue;
+      sp.userData.life -= dt;
+      if (sp.userData.life <= 0) { sp.visible = false; continue; }
+      const fade = sp.userData.life / 0.07;
+      sp.material.opacity = fade; sp.scale.setScalar(sp.userData.size * (1.3 - 0.3 * fade));
+    }
     for (const l of this.lights) {
       if (l.userData.t > 0) {
         l.userData.t -= dt;
@@ -443,5 +463,25 @@ export class FX {
     for (const s of this.shells) { s.mesh.visible = false; s.body = null; }
     this.decals.count = 0; this.decalIdx = 0;
     for (const l of this.lights) { l.intensity = 0; l.userData.t = 0; }
+    for (const sp of this.muzzleSprites) sp.visible = false;
   }
+  dispose() {
+    for (const sys of [this.glow, this.smoke]) sys.mat.dispose();
+    this.decals.material.dispose();
+    for (const m of [...this.tracers, ...this.rings, ...this.balls, ...this.muzzleSprites]) m.material.dispose();
+  }
+}
+
+let _muzzleTex = null;
+function muzzleTexture() {
+  if (_muzzleTex) return _muzzleTex;
+  const cv = document.createElement('canvas'); cv.width = cv.height = 128; const c = cv.getContext('2d');
+  const g = c.createRadialGradient(64, 64, 1, 64, 64, 62);
+  g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.16, 'rgba(255,244,205,.95)'); g.addColorStop(0.5, 'rgba(255,170,55,.45)'); g.addColorStop(1, 'rgba(255,130,20,0)');
+  c.fillStyle = g; c.fillRect(0, 0, 128, 128);
+  c.fillStyle = 'rgba(255,245,220,.9)'; c.beginPath();
+  for (let n = 0; n < 16; n++) { const a = n / 16 * Math.PI * 2, r = n % 2 ? 9 : n % 4 ? 38 : 59; c.lineTo(64 + Math.cos(a) * r, 64 + Math.sin(a) * r); }
+  c.closePath(); c.fill();
+  _muzzleTex = new THREE.CanvasTexture(cv); _muzzleTex.colorSpace = THREE.SRGBColorSpace;
+  return _muzzleTex;
 }

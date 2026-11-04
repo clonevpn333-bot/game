@@ -11,6 +11,8 @@ import { FXColors } from '../engine/fx.js';
 import { Enemy } from '../game/enemies.js';
 import { setStyle } from '../engine/stylize.js';
 import { pipeRun, embers } from './kit.js';
+import { enhanceForeman, updateBossDetail } from '../game/bossDetail.js';
+import { BUILD } from '../build.js';
 import { solid, wall, Press, Hatch, dropDrone, Mover, screen, sign, Spotlight, confetti, pyro, marquee, Elevator, stageLights } from './kit.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
@@ -164,7 +166,7 @@ class Foreman extends Enemy {
     this.trolley = new THREE.Mesh(new THREE.BoxGeometry(6, 1.5, 4), M.dark); this.trolley.position.y = 6.5; r.add(this.trolley);
     for (const s of [-1, 1]) { const w = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 0.5, 12), M.steel); w.rotation.x = Math.PI / 2; w.position.set(s * 2, 7.2, 0); r.add(w); }
     this.body = new THREE.Group(); r.add(this.body);
-    const torso = new THREE.Mesh(new THREE.CylinderGeometry(2.6, 2, 4, 8), M.paint); torso.position.y = 3.5; this.body.add(torso);
+    const torso = new THREE.Mesh(new THREE.CylinderGeometry(2.6, 2, 4, BUILD.fast ? 16 : 32), M.paint); torso.position.y = 3.5; this.body.add(torso);
     const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 2, 10), M.steel); neck.position.y = 5.8; this.body.add(neck);
     for (let i = 0; i < 4; i++) { const plate = new THREE.Mesh(new THREE.BoxGeometry(1.6, 3, 0.4), M.dark); const a = i / 4 * Math.PI * 2 + Math.PI / 4; plate.position.set(Math.sin(a) * 2.4, 3.4, Math.cos(a) * 2.4); plate.rotation.y = a; this.body.add(plate); }
     // the eye / core
@@ -202,6 +204,9 @@ class Foreman extends Enemy {
     this.attackT = 3; this.mode = 'idle'; this.mt = 0;
     this.deathScale = 3;
     this.laser = null;
+    this.isBoss = true; this.bossName = 'THE FOREMAN';
+    this.chatHint = (mode) => (mode === 'slam' ? 'arm is winding up, MOVE' : 'shoot the JOINTS chat');
+    enhanceForeman(this);
   }
   totalFrac() { const P = this.parts; return (Math.max(0, P.armL.hp) + Math.max(0, P.armR.hp) + Math.max(0, P.core.hp)) / (P.armL.max + P.armR.max + P.core.max); }
   coreExposed() { return !this.parts.armL.alive && !this.parts.armR.alive; }
@@ -365,6 +370,7 @@ class Foreman extends Enemy {
     this.shutter[0].rotation.y = open * 0.9; this.shutter[1].rotation.y = -open * 0.9;
     this.M.eye.emissiveIntensity = 3 + Math.sin(G.time * 8) * 1 + (this.mode === 'laser' ? 4 : 0);
     if (!this.parts.armL.alive || !this.parts.armR.alive) if (Math.random() < dt * 8) G.fx.sparks(this.pos.clone().setY(this.pos.y + 4), 3, null, 6);
+    updateBossDetail(this, dt);
   }
   _warn(pos, r, life) {
     const G = this.game;
@@ -785,9 +791,9 @@ export default {
   scoreTarget: 14000,
   elevatorLines: [
     ['halo', 'Next stop: Floor Four — THE FACTORY! Where the magic happens. And by magic, I mean robots.', 0.6],
-    ['iris', 'They\'re skipping floors two and three. Cleanup crews. Don\'t ask what they\'re cleaning.', 4.6],
+    ['iris', 'The factory builds everything that\'s been shooting at you. Break the lines and the robots stop coming.', 4.6],
   ],
   elevatorDur: 9,
   rewards: [{ type: 'melee', id: 'hammer', label: 'SHOCK HAMMER' }, { type: 'track', id: 'f4' }, { type: 'track', id: 'boss' }],
-  completeLine: 'The SHOCK HAMMER is yours! Next: Floor Twelve. Pack a towel.',
+  completeLine: 'The SHOCK HAMMER is yours! Next: Floor Five. Do NOT touch the floor.',
 };

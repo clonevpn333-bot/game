@@ -13,6 +13,7 @@ import { EVENTS } from '../game/events.js';
 import { Enemy } from '../game/enemies.js';
 import { setStyle } from '../engine/stylize.js';
 import { solid, wall, Hatch, dropDrone, screen, sign, Spotlight, lightCone, marquee, Elevator, stageLights } from './kit.js';
+import { enhanceShark, updateBossDetail } from '../game/bossDetail.js';
 import { shaderClock } from '../engine/materials.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
@@ -131,6 +132,9 @@ class Shark extends Enemy {
     this.ang = 0; this.mode = 'circle'; this.mt = 0; this.attackT = 5;
     this.deathScale = 2.5;
     this.target = new THREE.Vector3();
+    this.isBoss = true; this.bossName = 'MEGAMOUTH-9';
+    this.chatHint = (mode) => (mode === 'windup' || mode === 'leap' ? 'MEGAMOUTH IS COMING UP' : 'blue gills. not the armor.');
+    enhanceShark(this);
   }
   update(dt) {
     const G = this.game, pl = G.player, F = G.floor;
@@ -217,6 +221,7 @@ class Shark extends Enemy {
     for (const gl of this.gills) gl.material.emissiveIntensity = 2 + Math.sin(G.time * 5) * 1;
     // fin wake at the surface
     if (this.pos.y > wl - 2.5 && this.mode !== 'leap' && Math.random() < 0.6) G.fx.splash(V(this.pos.x, wl, this.pos.z), 2, 0.4);
+    updateBossDetail(this, dt);
   }
   _ring(pos) {
     const G = this.game;

@@ -19,7 +19,7 @@ const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
 const errors = [];
 page.on('console', (m) => { const t = m.text(); if ((m.type() === 'error' || m.type() === 'warning') && !/GL_|WebGL|GPU stall|swiftshader|Automatic fallback/i.test(t)) errors.push(`[${m.type()}] ${t}`); if (m.type() === 'log' && t.startsWith('[bot]')) console.log(t); });
 page.on('pageerror', (e) => errors.push('[pageerror] ' + e.message + '\n' + e.stack));
-if (process.env.LOWQ !== '0') await page.addInitScript(() => { try { const k = 'floor99.save.v1'; const d = JSON.parse(localStorage.getItem(k) || '{}'); d.settings = { ...(d.settings || {}), quality: 'low', voice: false }; localStorage.setItem(k, JSON.stringify(d)); } catch (e) {} });
+if (process.env.LOWQ !== '0') await page.addInitScript(() => { try { const k = 'floor99.save.v1'; const d = JSON.parse(localStorage.getItem(k) || '{}'); d.settings = { ...(d.settings || {}), quality: 'low', qualityPicked: true, voice: false }; localStorage.setItem(k, JSON.stringify(d)); } catch (e) {} });
 await page.goto(`http://localhost:${port}/?autostart&floor=${floor}&cp=${cp}`);
 await page.waitForFunction(() => window.__floor99 && window.__floor99.game, null, { timeout: 60000 });
 await page.evaluate(() => { window.__floor99.frozen = true; });
@@ -82,6 +82,13 @@ await page.evaluate(() => {
       if (fid === 1 && i === 1 && pl.pos.z > 40 && pl.pos.z < 47 && g.floor.pressA.state !== 'rise' && g.floor.pressA.state !== 'up') goal = { x: 0, y: 0, z: 40.5, route: true };
       if (fid === 1 && pl.pos.z > 48 && pl.pos.z < 50 && g.floor.pressB.bottom() < 2 && pl.mode === 'normal') input.pressed.add('KeyC');
       break;
+    }
+    if (!goal && g.floor.rooms) {
+      // procedural floors: cross hazard rooms, stand in hold zones, head for the exit
+      const F = g.floor, z = pl.pos.z, room = F.rooms.find((r) => z < r.z0 + r.len + 0.5);
+      if (/ELEVATOR/.test(g.objective.text)) goal = { x: 0, y: 0, z: F.zEnd - 4, route: true };
+      else if (room && /HOLD|WARDROBE|BOW|DOWNLOAD/.test(g.objective.text)) { goal = { x: 0, y: 0, z: room.z0 + room.len / 2, route: true }; if (Math.hypot(pl.pos.x, z - goal.z) < 2) goal = null; }
+      else if (room && ['presses', 'lasers', 'lava'].includes(room.type)) goal = { x: 0, y: 0, z: room.z0 + room.len + 1, route: true };
     }
     if (goal) { /* route */ }
     else if (window.__goal) goal = window.__goal(g);

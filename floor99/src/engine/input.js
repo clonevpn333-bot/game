@@ -1,5 +1,5 @@
 // Keyboard + mouse input with pointer lock. Works with MacBook trackpads
-// (pointer-lock deltas, two-finger click = aim, scroll = weapon switch).
+// (pointer-lock deltas, two-finger click toggles aim, holding RMB aims while held, scroll = weapon switch).
 export class Input {
   constructor(canvas) {
     this.canvas = canvas;
@@ -11,6 +11,7 @@ export class Input {
     this.enabled = true;
     this.sensitivity = 1;
     this.invertY = false;
+    this.aimLatched = false; this._aimDownAt = 0;
     this.onLockChange = null;
     this.wantLock = false;
 
@@ -24,7 +25,7 @@ export class Input {
       this.keys.delete(e.code);
       this.released.add(e.code);
     });
-    window.addEventListener('blur', () => { this.keys.clear(); this.mouse.left = this.mouse.right = false; });
+    window.addEventListener('blur', () => { this.keys.clear(); this.aimLatched = false; this.mouse.left = this.mouse.right = false; });
     window.addEventListener('mousemove', (e) => {
       if (!this.locked) return;
       // clamp absurd spikes some browsers produce on lock
@@ -36,14 +37,18 @@ export class Input {
     window.addEventListener('mousedown', (e) => {
       if (!this.locked) return;
       if (e.button === 0) { this.mouse.left = true; this.mouse.leftPressed = true; }
-      if (e.button === 2) { this.mouse.right = true; this.mouse.rightPressed = true; }
+      if (e.button === 2) {
+        // a click toggles aim (trackpad two-finger click); a long hold aims only while held
+        if (!this.mouse.right) { this.aimLatched = !this.aimLatched; this._aimDownAt = performance.now(); }
+        this.mouse.right = true; this.mouse.rightPressed = true;
+      }
       if (e.button === 1) { this.pressed.add('Mouse3'); }
       if (e.button === 3) { this.pressed.add('Mouse4'); }
       if (e.button === 4) { this.pressed.add('Mouse5'); }
     });
     window.addEventListener('mouseup', (e) => {
       if (e.button === 0) { this.mouse.left = false; this.mouse.leftReleased = true; }
-      if (e.button === 2) this.mouse.right = false;
+      if (e.button === 2) { if (this.mouse.right && performance.now() - this._aimDownAt > 350) this.aimLatched = false; this.mouse.right = false; }
     });
     window.addEventListener('contextmenu', (e) => e.preventDefault());
     window.addEventListener('wheel', (e) => {
@@ -52,11 +57,13 @@ export class Input {
     }, { passive: true });
     document.addEventListener('pointerlockchange', () => {
       this.locked = document.pointerLockElement === this.canvas;
-      if (!this.locked) { this.mouse.left = false; this.mouse.right = false; }
+      if (!this.locked) { this.aimLatched = false; this.mouse.left = false; this.mouse.right = false; }
       if (this.onLockChange) this.onLockChange(this.locked);
     });
-    document.addEventListener('pointerlockerror', () => { this.locked = false; });
+    document.addEventListener('pointerlockerror', () => { this.locked = false; this.clearAim(); });
   }
+  clearAim() { this.aimLatched = false; this.mouse.right = false; this.mouse.rightPressed = false; }
+  wantsAim() { return this.enabled && this.locked && this.aimLatched; }
   _isGameKey(code) {
     return ['Space', 'Tab', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyQ', 'KeyE', 'KeyC', 'KeyF', 'KeyR', 'KeyV'].includes(code) && this.locked;
   }
@@ -66,7 +73,7 @@ export class Input {
       if (p && p.catch) p.catch(() => {});
     } catch (e) { /* ignore */ }
   }
-  unlock() { if (document.pointerLockElement) document.exitPointerLock(); }
+  unlock() { this.clearAim(); if (document.pointerLockElement) document.exitPointerLock(); }
   down(code) { return this.enabled && this.keys.has(code); }
   hit(code) { return this.enabled && this.pressed.has(code); }
   up(code) { return this.released.has(code); }

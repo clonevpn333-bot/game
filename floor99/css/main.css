@@ -329,3 +329,27 @@ button { font-family: inherit; color: inherit; background: none; border: 0; curs
 }
 
 @media (max-width: 1100px) { .sub { max-width: 92vw; bottom: 150px; } }
+
+/* ---------------------------------------------------------------- studio chat (simulated audience) */
+#studioChat{position:absolute;right:20px;top:24%;width:276px;max-height:45vh;font:12px/1.45 'Chakra Petch',sans-serif;color:#d7e2eb;z-index:12;pointer-events:none;text-shadow:0 1px 3px #000;background:linear-gradient(90deg,rgba(5,12,22,.28),rgba(5,12,22,.72));border-right:2px solid #45d8e0;padding:12px 10px;border-radius:7px 0 0 7px}
+.sc-head{display:flex;justify-content:space-between;font-weight:700;letter-spacing:1.6px;font-size:10px;color:#69eeff;padding-bottom:7px;border-bottom:1px solid #8ddff22e}
+.sc-head small{font-size:8px;letter-spacing:1px;color:#92a2b4}
+.sc-feed{max-height:35vh;overflow:hidden;display:flex;flex-direction:column;gap:6px;padding-top:8px}
+.sc-row{animation:sc-in .2s ease-out;overflow-wrap:anywhere}
+.sc-row b{margin-right:7px;font-size:10px}
+.sc-row span{display:inline}
+.sc-row.donation{background:#8a651a3d;border:1px solid #ffcc6680;padding:7px;border-radius:5px}
+.sc-row.donation span{display:block}
+.sc-row.story{background:#0e3b2a55;border-left:2px solid #7dffb0;padding:5px 7px;border-radius:4px;color:#d9ffe9}
+.sc-credit{font-weight:bold;color:#ffda8c;font-size:10px;margin-bottom:3px}
+.sc-row.mod{color:#c5b3ff}
+.sc-foot{font-size:8px;color:#94a7ba;letter-spacing:.5px;margin-top:8px}
+.sc-hidden .sc-feed,.sc-hidden .sc-foot{display:none}
+@keyframes sc-in{from{opacity:0;transform:translateX(7px)}to{opacity:1;transform:none}}
+@media(max-width:1050px){#studioChat{width:206px;font-size:10px;right:12px;top:23%;padding:8px}.sc-feed{max-height:27vh}.sc-row:nth-last-child(n+6){display:none}}
+@media(max-width:720px){#studioChat{width:160px;top:24%;font-size:9px}.sc-head{font-size:8px}.sc-feed{max-height:22vh}.sc-row:nth-last-child(n+4){display:none}.sc-foot{font-size:7px}}
+
+/* water on the lens after surfacing */
+#waterLens{position:absolute;inset:0;pointer-events:none;z-index:6;opacity:0;background:radial-gradient(ellipse 9px 18px at 12% 17%,#bdf5ff44 45%,#d1faff88 50%,transparent 65%),radial-gradient(ellipse 5px 11px at 84% 25%,#bdf5ff33 45%,#e1faff88 50%,transparent 65%),radial-gradient(ellipse 8px 16px at 91% 63%,#bdf5ff22 45%,#e1faff66 50%,transparent 65%),radial-gradient(ellipse 5px 10px at 22% 80%,#bdf5ff22 45%,#e1faff66 50%,transparent 65%)}
+.sub-line{font-size:16px!important;line-height:1.45!important}
+.sub-who{font-weight:700!important}
