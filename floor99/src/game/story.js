@@ -15,6 +15,11 @@ export const FLOOR_CHAT = {
   10: ['FLOOR TEN FINALE LETS GOOO', 'act one boss incoming', 'the crowd noise is fake isn\'t it', 'the co-host has HALO\'S FACE', 'jump the beam. JUMP THE BEAM'],
   11: ['security floor, the turrets have eyes', 'laser grid economy', 'iris looping the cams is so hot', 'the security chief has a BADGE'],
   12: ['viewer count frozen at 1.2B for an hour...', 'that shark has a WARRANTY', 'iris found the records??'],
+  14: ['who is eating all these vegetables', 'the acid vat is giving soup', 'pink grow lights = instant aesthetic'],
+  15: ['I bet on 99 and the bet got refunded??', 'the house is literally one guy', 'odds just changed to 999,999 to 1'],
+  16: ['why are the pods empty', 'ice physics go brrr', 'minds retained... chat I am scared'],
+  17: ['cooking with halo is my comfort show', 'that press just tenderized a drone', 'gordon would never'],
+  18: ['every screen is his face', 'the white room. WHAT IS THE WHITE ROOM', 'the feed cut 98 times...'],
   13: ['wait. why am I in the server list', 'chat are we... real?', 'my vote went through before I clicked it', 'floor 13 trending in 0 countries', 'mods are suspiciously quiet'],
 };
 

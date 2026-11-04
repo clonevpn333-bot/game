@@ -1,5 +1,6 @@
 // Floor registry. `status` is honest: only floors marked 'playable' are built and shippable.
 const b1 = (n) => () => import('./floors/batch01.js').then((m) => ({ default: m['FLOOR_' + n] }));
+const b3 = (n) => () => import('./floors/batch03.js').then((m) => ({ default: m['FLOOR_' + n] }));
 const b2 = (n) => () => import('./floors/batch02.js').then((m) => ({ default: m['FLOOR_' + n] }));
 export const FLOORS = {
   1: { id: 1, name: 'WELCOME TO THE SHOW', status: 'playable', tagline: 'The most entertaining tutorial ever broadcast.', load: () => import('./floors/floor01.js'), next: 2, tier: 0, music: 'f1' },
@@ -14,7 +15,12 @@ export const FLOORS = {
   10: { id: 10, name: 'ACT ONE FINALE', status: 'playable', tagline: 'Halo\'s body double takes the stage.', load: b2(10), next: 11, tier: 1, music: 'f1' },
   11: { id: 11, name: 'SECURITY', status: 'playable', tagline: 'Every camera in the tower routes through here.', load: b2(11), next: 12, tier: 1, music: 'f4' },
   12: { id: 12, name: 'AQUARIUM APOCALYPSE', status: 'playable', tagline: 'Ten thousand tonnes of water and a very large mechanical fish.', load: () => import('./floors/floor12.js'), next: 13, tier: 1, music: 'f12' },
-  13: { id: 13, name: 'THE MACHINE LEVEL', status: 'playable', tagline: 'Billions of viewers. All of them on these racks.', load: b2(13), next: null, tier: 2, music: 'f12' },
+  13: { id: 13, name: 'THE MACHINE LEVEL', status: 'playable', tagline: 'Billions of viewers. All of them on these racks.', load: b2(13), next: 14, tier: 2, music: 'f12' },
+  14: { id: 14, name: 'THE GREENHOUSE', status: 'playable', tagline: 'Fresh food grown for a crew that doesn\'t exist.', load: b3(14), next: 15, tier: 2, music: 'f12' },
+  15: { id: 15, name: 'THE HOUSE ALWAYS WINS', status: 'playable', tagline: 'Place your bets. Every bet is against you.', load: b3(15), next: 16, tier: 2, music: 'f1' },
+  16: { id: 16, name: 'COLD STORAGE', status: 'playable', tagline: 'Ninety-eight pods. Ninety-eight winners. Not one body.', load: b3(16), next: 17, tier: 2, music: 'f12' },
+  17: { id: 17, name: 'STUDIO KITCHEN', status: 'playable', tagline: 'Halo judges. The robots are the ingredients.', load: b3(17), next: 18, tier: 2, music: 'f1' },
+  18: { id: 18, name: 'BROADCAST CONTROL', status: 'playable', tagline: 'Where the show is edited. And where the feed is cut.', load: b3(18), next: null, tier: 2, music: 'f4' },
 };
 
 // Signature floors that are designed but NOT built yet (shown as "IN PRODUCTION").

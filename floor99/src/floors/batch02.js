@@ -133,6 +133,6 @@ export const FLOOR_13 = makeFloor({
   exitLines: [['iris', 'Whatever they\'re training, it\'s upstairs. Every floor from here gets closer to it.', {}], ['halo', 'FLOOR... THIRTEEN... never happened. Smile for the camera!', { mood: 'nervous' }]],
   elevatorLines: [['halo', 'Floor... Thirteen? We don\'t have a Floor Thirteen. Why is the button lit?', 0.6], ['iris', 'Because I lit it.', 3.6]],
   elevatorDur: 8, scoreTarget: 17000,
-  completeLine: 'Floors fourteen and up are still being... decorated. Stay tuned!',
+  completeLine: 'Floor Fourteen: the GREENHOUSE! Stop and smell the robots!',
   votePool: ['barrels', 'lightsout', 'doublebots', 'freeze', 'lasers', 'meteors', 'lowgrav'],
 });

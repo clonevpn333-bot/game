@@ -71,7 +71,12 @@ Right mouse: a click toggles aim (two-finger click on a trackpad), holding it ai
 | 12 — Aquarium Apocalypse | **Playable** | Gallery of giant tanks with schools of fish, a glass tunnel the shark swims over, the rigged "SHATTER THE GLASS" vote, a flooding chamber (robots short-circuit, debris and containers float), swimming, the railgun, and **Megamouth-9**, a mechanical shark that leaps out of the water at you. |
 | 23, 38, 51, 76, 90, 99 | Designed, **not built** | Shown as "in production" in Floor Select. |
 | 13 — The Machine Level | **Playable** | The floor that doesn't exist: server racks, vote servers to smash, an upload hold, and the reveal that the "audience" is generated here to train something. |
-| 14+ | Not built yet | Being built five at a time on the procedural floor system (`src/floors/proc.js`). |
+| 14 — The Greenhouse | **Playable** | Grow-light hydroponics, an acid nutrient vat to cross, a pollination hold and irrigation pumps. Every crate ships to "the Family Suites". |
+| 15 — The House Always Wins | **Playable** | Halo's casino: slot banks, card tables, a plasma high-roller pit, SPIN THE WHEEL, and two Bruisers. One server places every bet. |
+| 16 — Cold Storage | **Playable** | Slippery ice floors, 98 numbered cryo pods (all empty), the ARC CASTER (chain lightning), cryo turrets, and the log line "minds: retained". |
+| 17 — Studio Kitchen | **Playable** | Cooking With Halo: sushi conveyor belts, the tenderizer press hall, and a plating hold judged by Halo. |
+| 18 — Broadcast Control | **Playable** | Walls of Halo monitors, turrets, transmitters, a firewall laser grid, and the edit logs: every winner walks into a white room and the feed cuts. |
+| 19+ | Not built yet | Being built five at a time on the procedural floor system (`src/floors/proc.js`). |
 
 The full design for every signature floor, the story and the ending is in [DESIGN.md](DESIGN.md).
 

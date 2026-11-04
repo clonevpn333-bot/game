@@ -177,7 +177,7 @@ export const THEMES = {
   },
   freezer: {
     floor: () => Mat.tile('#8fb6c6', '#3a5a6a', 8, 6, 0.2), wall: () => Mat.panel('#9ab8c8', 1), trim: '#7ae0ff', glow: '#7ae0ff', ice: true,
-    bg: '#04080c', fog: ['#a8d0e0', 0.016], light: { sky: '#d0f0ff', ground: '#305060', hemi: 0.75, key: '#e8f8ff', keyI: 1.6 },
+    bg: '#04080c', fog: ['#4a6e7e', 0.014], light: { sky: '#c0e8f8', ground: '#203848', hemi: 0.55, key: '#e8f8ff', keyI: 1.4 },
     style: { rim: '#c0f0ff', rimStrength: 0.9, sky: '#a0d8f0', ground: '#507890' }, practical: '#d8f6ff', music: 'f12',
     dress(c, z0, z1) {
       const { g, HW, CH, r } = c;
