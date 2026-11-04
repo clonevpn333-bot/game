@@ -254,7 +254,7 @@ function build(g, { checkpoint }) {
   g.scene.fog = new THREE.FogExp2('#03202c', F.fogDensity);
   stageLights(g, { sky: '#4ac0e8', ground: '#02141c', hemi: 0.85, key: '#c8f0ff', keyI: 1.6, dir: [0.2, 1, -0.3] });
   const host = g.host;
-  const tile = Mat.tile('#9fbcc6', '#4a6a74', 6, 8, 0.15);
+  const tile = Mat.tile('#6f8f9a', '#34505a', 6, 8, 0.2);
   const darkTile = Mat.tile('#22343c', '#0e1a20', 4, 6, 0.3);
   const glass = Mat.glass('#9fe6ff', 0.14);
   const waterVol = new THREE.MeshStandardMaterial({ color: '#0a6a8a', transparent: true, opacity: 0.38, roughness: 0.1, metalness: 0, depthWrite: false, emissive: '#04364a', emissiveIntensity: 0.6 });
@@ -293,7 +293,7 @@ function build(g, { checkpoint }) {
   sign(g, ['WELCOME TO THE', 'HALO AQUARIUM'], [0, 10.5, -5.9], 16, 4, 0, { glow: '#3ae8ff', size: 110 });
   screen(g, host, [-9, 8, -5.9], 4.5, 0, { color: '#3ae8ff' });
   screen(g, host, [9, 8, -5.9], 4.5, 0, { color: '#3ae8ff' });
-  const caust = causticMaterial('#7fe8ff', 0.55);
+  const caust = causticMaterial('#7fe8ff', 0.9);
   const cfloor = new THREE.Mesh(new THREE.PlaneGeometry(28, 46), caust); cfloor.rotation.x = -Math.PI / 2; cfloor.position.set(0, 0.02, 17); g.scene.add(cfloor);
   for (const [x, z] of [[-9, 26], [9, 12], [-10, 36], [10, 38]]) g.addProp(Math.random() < 0.5 ? 'crate' : 'barrel', [x, 0.7, z]);
   for (const z of [6, 24]) { const l = new THREE.PointLight('#5ad8ff', 50, 30, 1.4); l.position.set(0, 12, z); g.scene.add(l); g.dim(l); }
