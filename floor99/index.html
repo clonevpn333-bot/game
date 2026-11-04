@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FLOOR 99</title>
+<meta name="description" content="FLOOR 99 — a cinematic third-person action game show. The audience wants a show.">
+<link rel="stylesheet" href="css/main.css">
+<script type="importmap">
+{ "imports": { "three": "./vendor/three/three.module.min.js" } }
+</script>
+</head>
+<body>
+<div id="app">
+  <!-- WebGL canvas is inserted here -->
+
+  <!-- BOOT -->
+  <div id="boot" class="screen active">
+    <div class="boot-inner">
+      <div class="boot-logo"><span class="b-floor">FLOOR</span><span class="b-99">99</span></div>
+      <div class="boot-tag">THE AUDIENCE WANTS A SHOW.</div>
+      <div id="bootStatus" class="boot-status">WARMING UP THE STUDIO…</div>
+      <button id="bootBtn" class="boot-btn" disabled>CLICK TO GO LIVE</button>
+      <div class="boot-note">Best with headphones · Keyboard + mouse or trackpad</div>
+    </div>
+  </div>
+
+  <!-- MAIN MENU -->
+  <div id="menu" class="screen">
+    <div class="menu-left">
+      <div class="logo">
+        <div class="logo-floor">FLOOR</div>
+        <div class="logo-99">99</div>
+        <div class="logo-tag">THE AUDIENCE WANTS A SHOW.</div>
+      </div>
+      <nav class="menu-items" id="menuItems">
+        <button data-act="play">PLAY</button>
+        <button data-act="continue">CONTINUE</button>
+        <button data-act="floors">FLOOR SELECT</button>
+        <button data-act="loadout">LOADOUT</button>
+        <button data-act="settings">SETTINGS</button>
+        <button data-act="soundtrack">SOUNDTRACK</button>
+        <button data-act="credits">CREDITS</button>
+      </nav>
+      <div class="menu-foot" id="menuFoot"></div>
+    </div>
+    <div class="menu-ticker"><div class="ticker-track" id="ticker"></div></div>
+  </div>
+
+  <!-- PANEL (floor select / loadout / settings / soundtrack / credits / lounge tabs) -->
+  <div id="panel" class="screen">
+    <div class="panel-frame">
+      <div class="panel-head"><div class="panel-title" id="panelTitle">PANEL</div><button class="panel-close" id="panelClose">BACK ⟵</button></div>
+      <div class="panel-tabs" id="panelTabs"></div>
+      <div class="panel-body" id="panelBody"></div>
+    </div>
+  </div>
+
+  <!-- LOUNGE -->
+  <div id="lounge" class="screen">
+    <div class="lounge-head">
+      <div class="lounge-title">CONTESTANT LOUNGE</div>
+      <div class="lounge-sub" id="loungeSub">Complimentary towels. Mandatory smiling.</div>
+    </div>
+    <div class="lounge-tabs" id="loungeTabs"></div>
+    <div class="lounge-body" id="loungeBody"></div>
+    <div class="lounge-fans" id="loungeFans"></div>
+    <button class="lounge-go" id="loungeGo">ENTER ELEVATOR ▶</button>
+  </div>
+
+  <!-- HUD -->
+  <div id="hud" class="screen">
+    <div class="hud-bug">
+      <div class="bug-live"><span class="dot"></span>LIVE</div>
+      <div class="bug-floor" id="hudFloor">FLOOR 01</div>
+      <div class="bug-name" id="hudFloorName">WELCOME TO THE SHOW</div>
+      <div class="bug-meta"><span id="hudClock">00:00:00</span> · <span id="hudViewers">1.2B</span> WATCHING</div>
+    </div>
+    <div class="hud-objective" id="hudObjective"><div class="obj-main" id="objMain"></div><div class="obj-sub" id="objSub"></div></div>
+    <div class="hud-boss" id="hudBoss"><div class="boss-name" id="bossName"></div><div class="boss-bar"><div class="boss-fill" id="bossFill"></div></div></div>
+    <div class="hud-ratings">
+      <div class="rt-label">RATINGS</div>
+      <div class="rt-bar"><div class="rt-fill" id="rtFill"></div><div class="rt-pct" id="rtPct">45%</div></div>
+      <div class="rt-score"><span id="hudScore">0</span><span class="rt-mult" id="hudMult"></span></div>
+      <div class="rt-combo" id="hudCombo"></div>
+    </div>
+    <div class="killfeed" id="killfeed"></div>
+    <div class="hud-health">
+      <div class="hp-label">CONTESTANT 99</div>
+      <div class="hp-bar"><div class="hp-ghost" id="hpGhost"></div><div class="hp-fill" id="hpFill"></div><div class="hp-segs"></div></div>
+      <div class="hp-num" id="hpNum">100</div>
+      <div class="o2" id="o2"><span>O₂</span><div class="o2-bar"><div class="o2-fill" id="o2Fill"></div></div></div>
+      <div class="pips">
+        <div class="pip" id="pipDodge"><b>Q</b>DODGE</div>
+        <div class="pip" id="pipGrapple"><b>E</b>GRAPPLE</div>
+        <div class="pip" id="pipJump"><b>⎵⎵</b>DOUBLE</div>
+      </div>
+    </div>
+    <div class="hud-weapon">
+      <div class="wp-name" id="wpName">PEACEMAKER .99</div>
+      <div class="wp-ammo"><span id="wpAmmo">6</span><span class="wp-res" id="wpRes">/ ∞</span></div>
+      <div class="wp-reload" id="wpReload">RELOADING</div>
+      <div class="wp-slots" id="wpSlots"></div>
+    </div>
+    <div class="crosshair" id="crosshair"><i></i><i></i><i></i><i></i><b class="hm" id="hitmarker"></b></div>
+    <div class="grapple-hint" id="grappleHint">E</div>
+    <div class="dmg-ring" id="dmgRing"></div>
+    <div class="dmgnums" id="dmgnums"></div>
+    <div class="banners" id="banners"></div>
+    <div class="toasts" id="toasts"></div>
+    <div class="hint" id="hint"></div>
+    <div class="vote" id="vote">
+      <div class="vote-top"><span class="vote-live">● VOTING LIVE</span><span class="vote-timer" id="voteTimer">8</span></div>
+      <div class="vote-title" id="voteTitle">THE AUDIENCE HAS SPOKEN!</div>
+      <div class="vote-opts" id="voteOpts"></div>
+      <div class="vote-foot" id="voteFoot">Simulated studio audience · open spectator.html in another tab to cast real votes</div>
+    </div>
+    <div class="sub" id="sub">
+      <div class="sub-portrait" id="subPortrait"></div>
+      <div class="sub-text"><div class="sub-who" id="subWho">MR. HALO</div><div class="sub-line" id="subLine"></div></div>
+    </div>
+  </div>
+
+  <!-- CARDS: floor intro, complete, death, pause -->
+  <div id="card" class="screen">
+    <div class="card-inner" id="cardInner"></div>
+  </div>
+  <div id="pause" class="screen">
+    <div class="pause-inner">
+      <div class="pause-title">COMMERCIAL BREAK</div>
+      <div class="pause-sub">The show will resume shortly.</div>
+      <nav class="pause-items">
+        <button data-act="resume">RESUME</button>
+        <button data-act="restart">RESTART FROM CHECKPOINT</button>
+        <button data-act="restartFloor">RESTART FLOOR</button>
+        <button data-act="settings">SETTINGS</button>
+        <button data-act="lounge">QUIT TO LOUNGE</button>
+        <button data-act="menu">QUIT TO MAIN MENU</button>
+      </nav>
+      <div class="controls-ref" id="controlsRef"></div>
+    </div>
+  </div>
+  <div id="fade"></div>
+  <div id="clickToResume">CLICK TO RESUME</div>
+</div>
+<script type="module" src="src/main.js"></script>
+</body>
+</html>

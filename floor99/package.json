@@ -1,0 +1,11 @@
+{
+  "name": "floor99",
+  "version": "0.1.0",
+  "private": true,
+  "description": "FLOOR 99 — a cinematic third-person action game show. The audience wants a show.",
+  "type": "module",
+  "scripts": {
+    "start": "node tools/serve.mjs",
+    "test": "node tools/smoke.mjs"
+  }
+}
