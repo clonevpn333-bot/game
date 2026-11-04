@@ -135,10 +135,10 @@ export const FLOOR_7 = makeFloor({
       enter: [['halo', 'You want to read the files? Then you can JOIN them!', { mood: 'furious' }]] },
   ],
   outro: [['iris', 'Retained. Not released. Not deceased. Retained. ...What does a game show retain?', {}, 4.5]],
-  exitLines: [['halo', 'FLOOR SEVEN... complete. Let us all agree that we did NOT see anything in there.', { mood: 'nervous' }], ['iris', 'I saw it. Floors eight to eleven are locked — I\'m sending you straight to the aquarium.', {}]],
+  exitLines: [['halo', 'FLOOR SEVEN... complete. Let us all agree that we did NOT see anything in there.', { mood: 'nervous' }], ['iris', 'I saw it. Keep climbing — the answers are above us, not in the files.', {}]],
   elevatorLines: [['halo', 'Floor Seven? That floor is closed! Who pressed seven?!', 0.6], ['iris', 'I did. Don\'t tell him.', 3.4]],
   scoreTarget: 13000,
-  completeLine: 'Next stop: Floor Twelve. The aquarium! Pack a towel!',
+  completeLine: 'Floor Eight: the BOILER ROOM! Dress light!',
   votePool: ['barrels', 'lightsout', 'doublebots', 'freeze', 'meteors', 'lowgrav'],
 });
 

@@ -10,7 +10,9 @@ import { setStyle } from '../engine/stylize.js';
 import {
   brickTextures, carpetTexture, lockerTexture, shelfTexture, woodFloorTextures, checkerTextures, billboardTexture, rackTexture, detailedSurface,
 } from '../engine/textures.js';
-import { solid, wall, Press, Hatch, dropDrone, Mover, screen, sign, Spotlight, marquee, Elevator, stageLights, pipeRun, embers, confetti, pyro } from './kit.js';
+import { solid, wall, Press, Hatch, dropDrone, Mover, screen, sign, Spotlight, marquee, Elevator, stageLights, pipeRun, embers, confetti, pyro, LedRing, Crowd } from './kit.js';
+import { BOSSES } from './bosses.js';
+import { BUILD } from '../build.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const K = (k) => `<span class="key">${k}</span>`;
@@ -20,6 +22,15 @@ const texMat = (maps, rep, o = {}) => {
   return new THREE.MeshStandardMaterial({ map: c(maps.map), normalMap: c(maps.normalMap), roughnessMap: c(maps.roughnessMap), ...o });
 };
 const glowMat = (color, i = 3) => new THREE.MeshStandardMaterial({ color: '#000', emissive: color, emissiveIntensity: i });
+
+function beltTexture() {
+  const cv = document.createElement('canvas'); cv.width = 128; cv.height = 128; const x = cv.getContext('2d');
+  x.fillStyle = '#16171b'; x.fillRect(0, 0, 128, 128);
+  for (let i = 0; i < 128; i += 16) { x.fillStyle = '#26282e'; x.fillRect(0, i, 128, 3); }
+  x.fillStyle = '#f2c230'; x.beginPath(); x.moveTo(44, 38); x.lineTo(64, 68); x.lineTo(84, 38); x.lineTo(74, 38); x.lineTo(64, 53); x.lineTo(54, 38); x.fill();
+  const t = new THREE.CanvasTexture(cv); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
 
 // ================================================================== THEMES
 // floor / wall / trim materials, palette, fog, lights, music, and per-room dressing
@@ -126,6 +137,61 @@ export const THEMES = {
     },
     cover: 'racks',
   },
+  vents: {
+    floor: () => Mat.grate(4), wall: () => Mat.panel('#3a3e44', 1), trim: '#f2c230', glow: '#ff9a3a',
+    bg: '#030304', fog: ['#0a0c0e', 0.022], light: { sky: '#607080', ground: '#101418', hemi: 0.3, key: '#c0d0e0', keyI: 1.0 },
+    style: { rim: '#a0c0e0', rimStrength: 0.8, sky: '#506070', ground: '#202830' }, practical: '#ffb070', music: 'f12',
+    dress(c, z0, z1) {
+      const { g, HW, CH, r } = c;
+      // giant extractor fans in the walls, ribbed duct segments
+      for (let z = z0 + 6; z < z1 - 4; z += 12) {
+        const s = r() < 0.5 ? -1 : 1, fan = new THREE.Group(); fan.position.set(s * (HW - 0.2), CH * 0.5, z); fan.rotation.y = -s * Math.PI / 2; g.scene.add(fan);
+        const ring = new THREE.Mesh(new THREE.TorusGeometry(2.6, 0.3, 8, 32), Mat.metal('#2a2e34', 0.4, 0.9)); fan.add(ring);
+        const blades = new THREE.Group(); fan.add(blades);
+        for (let i = 0; i < 5; i++) { const b = new THREE.Mesh(new THREE.BoxGeometry(0.5, 2.3, 0.08), Mat.metal('#4a4e54', 0.5, 0.8)); b.position.y = 1.1; const piv = new THREE.Group(); piv.rotation.z = i / 5 * Math.PI * 2; piv.add(b); b.rotation.y = 0.4; blades.add(piv); }
+        const lamp = new THREE.PointLight('#ff9a3a', 10, 9, 1.6); lamp.position.set(s * (HW - 1.5), CH * 0.5, z); g.scene.add(lamp); g.dim(lamp);
+        c.spin.push(blades);
+      }
+      for (let z = z0; z < z1; z += 3) { const rib = new THREE.Mesh(new THREE.BoxGeometry(2 * HW, 0.3, 0.3), Mat.metal('#2a2e34', 0.5, 0.8)); rib.position.set(0, CH - 0.3, z); g.scene.add(rib); }
+      c.steam = (c.steam || []).concat([V((r() * 2 - 1) * HW * 0.6, 0.2, (z0 + z1) / 2)]);
+    },
+    cover: 'crates',
+  },
+  finale: {
+    floor: () => Mat.stage(6), wall: () => Mat.panel('#1a1024', 1), trim: '#ffd400', glow: '#ff2d6f',
+    bg: '#05020a', fog: ['#120620', 0.008], light: { sky: '#8a60ff', ground: '#300818', hemi: 0.55, key: '#ffe8f0', keyI: 2.2 },
+    style: { rim: '#ff7ad0', rimStrength: 0.9, sky: '#9060ff', ground: '#a02050' }, practical: '#ffc0e8', music: 'f1',
+    dress(c, z0, z1) {
+      const { g, HW, CH } = c;
+      for (const s of [-1, 1]) marquee(g, [s * (HW - 0.05), CH - 1.5, (z0 + z1) / 2], z1 - z0 - 4, s * -Math.PI / 2, Math.floor((z1 - z0) / 1.2), '#ffd400');
+      for (let z = z0 + 6; z < z1; z += 12) for (const s of [-1, 1]) c.spots.push(new Spotlight(g, [s * (HW - 2), CH - 1, z], s > 0 ? '#ff2d6f' : '#25f4ff', { center: [0, 0, z + 4], radius: 9, intensity: 520 }));
+      // hologram audience on balconies along both walls
+      const span = (z1 - z0) / 2 / 31, cz = (z0 + z1) / 2;
+      for (const s of [-1, 1]) {
+        solid(g, { pos: [s * (HW - 2.4), 2.9, cz], size: [4.8, 0.4, z1 - z0 - 2], mat: Mat.panel('#1a1024', 1) });
+        const rail = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, z1 - z0 - 2), glowMat(s < 0 ? '#38e8ff' : '#ff6ad0', 3)); rail.position.set(s * (HW - 4.8), 4, cz); g.scene.add(rail);
+        new Crowd(g, { count: BUILD.fast ? 50 : 110, color: s < 0 ? '#38e8ff' : '#ff6ad0', cx: s * (HW + 30), cz, r0: 31, tiers: 3, tierDepth: 1.3, tierHeight: 0.5, y0: 3.1, a0: (s < 0 ? 0 : Math.PI) - span, a1: (s < 0 ? 0 : Math.PI) + span });
+      }
+    },
+    cover: 'podiums',
+  },
+  security: {
+    floor: () => Mat.tile('#9aa4ac', '#3a4048', 6, 6, 0.28), wall: () => Mat.panel('#c8ccd2', 1), trim: '#ff2d2d', glow: '#ff2d2d',
+    bg: '#06070a', fog: ['#101418', 0.01], light: { sky: '#c0d0e0', ground: '#202428', hemi: 0.55, key: '#ffffff', keyI: 2.0 },
+    style: { rim: '#ff6060', rimStrength: 0.7, sky: '#a0b0c0', ground: '#404850' }, practical: '#f0f4ff', music: 'f4',
+    dress(c, z0, z1) {
+      const { g, HW, CH } = c;
+      for (let z = z0 + 4; z < z1; z += 10) for (const s of [-1, 1]) {
+        // security camera on a bracket + rotating red alarm beacon
+        const cam = new THREE.Group(); cam.position.set(s * (HW - 0.6), CH - 2, z); g.scene.add(cam);
+        const body = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.4, 0.9), Mat.paint('#e8ecf0', 0.4, 0.3)); body.position.x = -s * 0.4; cam.add(body);
+        const lens = new THREE.Mesh(new THREE.CircleGeometry(0.14, 12), glowMat('#ff2020', 3)); lens.position.set(-s * 0.4, 0, 0.46); cam.add(lens);
+        c.cams.push(cam);
+      }
+      for (let z = z0 + 8; z < z1; z += 16) { const b = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.4, 12), glowMat('#ff2020', 2.5)); b.position.set(0, CH - 0.4, z); g.scene.add(b); const l = new THREE.SpotLight('#ff2020', 30, 22, 0.5, 0.6, 1.5); l.position.copy(b.position); l.target.position.set(4, 0, z); g.scene.add(l, l.target); c.beacons.push(l); }
+    },
+    cover: 'walls',
+  },
 };
 let _wood, _shelf;
 function woodMat() { return _wood || (_wood = texMat(woodFloorTextures('#7a5030'), [1, 1], { roughness: 0.55 })); }
@@ -140,6 +206,7 @@ const COVER = {
   shelves(c, x, z) { const { g, r } = c; const along = r() < 0.6; solid(g, { pos: [x, 2, z], size: along ? [1, 4, 5] : [5, 4, 1], mat: [Mat.paint('#2a1a10'), Mat.paint('#2a1a10'), Mat.paint('#2a1a10'), Mat.paint('#2a1a10'), shelfMat(), shelfMat()] }); },
   tanks(c, x, z) { const { g } = c; const t = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.1, 2.4, 16), Mat.metal('#7a5a3a', 0.45, 0.85)); t.position.set(x, 1.2, z); g.scene.add(t); g.physics.add(new Box({ pos: V(x, 1.2, z), size: [2, 2.4, 2] })); },
   racks(c, x, z) { const { g } = c; const m = new THREE.MeshStandardMaterial({ map: rackTexture('#3dff9a'), emissive: '#ffffff', emissiveMap: rackTexture('#3dff9a'), emissiveIntensity: 0.3, metalness: 0.5, roughness: 0.4 }); solid(g, { pos: [x, 1.6, z], size: [1.4, 3.2, 3.6], mat: [Mat.metal('#1a1e26'), Mat.metal('#1a1e26'), Mat.metal('#1a1e26'), Mat.metal('#1a1e26'), m, m] }); },
+  walls(c, x, z) { const { g, r } = c; const along = r() < 0.5; solid(g, { pos: [x, 0.8, z], size: along ? [0.6, 1.6, 4] : [4, 1.6, 0.6], mat: Mat.panel('#8a929c', 1), round: 0.05 }); const t = new THREE.Mesh(new THREE.BoxGeometry(along ? 0.62 : 4.02, 0.08, along ? 4.02 : 0.62), glowMat('#ff2d2d', 1.4)); t.position.set(x, 1.6, z); g.scene.add(t); },
   pillars(c, x, z) { solid(c.g, { pos: [x, c.CH / 2, z], size: [1.6, c.CH, 1.6], mat: c.wallMat }); },
 };
 
@@ -276,7 +343,169 @@ function spawnGroup(c, room, list) {
   return n;
 }
 
+// Wall/ceiling turret: tracks the player with line of sight and fires bolts. Destructible.
+class Turret {
+  constructor(g, pos, o = {}) {
+    this.g = g; this.alive = true; this.radius = 0.9; this.hp = o.hp || 160; this.onDestroy = o.onDestroy;
+    this.pos = V(...pos); this.cool = 1 + Math.random() * 1.5; this.active = false;
+    const grp = this.grp = new THREE.Group(); grp.position.copy(this.pos); g.scene.add(grp);
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.8, 0.5, 12), Mat.metal('#2a2e36', 0.4, 0.9)); base.position.y = -0.5; grp.add(base);
+    this.head = new THREE.Group(); grp.add(this.head);
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(0.7, 16, 12), Mat.paint('#e8ecf0', 0.35, 0.4)); this.head.add(dome);
+    for (const sx of [-0.25, 0.25]) { const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 1.1, 8), Mat.metal('#222', 0.4, 0.9)); barrel.rotation.x = Math.PI / 2; barrel.position.set(sx, 0, 0.7); this.head.add(barrel); }
+    this.eyeMat = glowMat('#ff2020', 3); const eye = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 8), this.eyeMat); eye.position.set(0, 0.25, 0.6); this.head.add(eye);
+    const c = new Box({ pos: this.pos.clone(), size: [1.4, 1.4, 1.4] }); c.owner = this; g.physics.add(c); this.collider = c;
+    g.destructibles.push(this); g.addHazard(this);
+    this.flash = 0;
+  }
+  onShot(dmg, info) {
+    if (!this.alive) return;
+    this.hp -= dmg; this.flash = 1;
+    this.g.fx.sparks(info.point || this.pos, 5, null, 6); this.g.audio.play('impactMetal', { pos: this.pos }); this.g.hud.hitmarker(false, this.hp <= 0);
+    if (this.hp <= 0) this.destroy();
+  }
+  destroy(silent) {
+    if (!this.alive) return;
+    this.alive = false; this.collider.enabled = false;
+    if (!silent) { this.g.explode(this.pos, 0.9, 0, { source: 'playerSafe' }); this.g.addHype(0.06); this.g.audio.play('cheer', { big: 0.8 }); }
+    this.g.fx.detach(this.head, V(Math.random() * 4 - 2, 6, Math.random() * 4 - 2), 8, 0.5);
+    if (this.onDestroy) this.onDestroy(silent);
+  }
+  update(dt) {
+    if (!this.alive || !this.active) return;
+    const g = this.g, pl = g.player;
+    this.flash = Math.max(0, this.flash - dt * 5);
+    const to = V(pl.pos.x, pl.pos.y + 1.2, pl.pos.z).sub(this.pos), d = to.length();
+    if (d > 30 || !pl.alive) return;
+    const yaw = Math.atan2(to.x, to.z), pitch = -Math.atan2(to.y, Math.hypot(to.x, to.z));
+    this.head.rotation.y += (yaw - this.head.rotation.y) * Math.min(1, dt * 4);
+    this.head.rotation.x += (pitch - this.head.rotation.x) * Math.min(1, dt * 4);
+    this.cool -= dt;
+    this.eyeMat.emissiveIntensity = this.cool < 0.5 ? 6 + Math.sin(g.time * 40) * 3 : 3;
+    if (this.cool <= 0) {
+      this.cool = 1.9 + Math.random() * 0.6;
+      const dir = to.normalize();
+      const hit = g.physics.raycast(this.pos.clone().addScaledVector(dir, 1.2), dir, d - 1.5, {}, (c) => c.blocksBullets !== false && c !== this.collider && c.tag !== 'trigger');
+      if (hit && hit.hit) return;
+      const from = this.head.localToWorld(V(0, 0, 1.3));
+      g.spawnProjectile({ pos: from, vel: dir.clone().multiplyScalar(24), damage: 7, radius: 0.16, owner: this, color: 0xff3030 });
+      g.audio.play('enemyShot', { pos: this.pos });
+    }
+  }
+}
+
 export const ROOMS = {
+  // ---- boss arena (the boss class comes from bosses.js)
+  boss(c, room, z0) {
+    const len = room.len || 50, { g, HW } = c;
+    coverField(c, z0, len, room.cover ?? 0.4, 'pillars');
+    room.hatches = hatchesFor(c, z0, len, 4);
+    for (let i = 0; i < 4; i++) g.addProp('barrel', [(i % 2 ? 1 : -1) * (HW - 5), 0.6, z0 + 10 + i * 8]);
+    for (const [x, z] of [[-HW + 3, z0 + len * 0.3], [HW - 3, z0 + len * 0.7]]) g.addPickup('health', V(x, 0.6, z), { amount: 30, respawn: 25 });
+    c.F.spawnPoints.push([-HW + 5, 0, z0 + len / 2], [HW - 5, 0, z0 + len / 2]);
+    return {
+      len,
+      *run(g) {
+        g.music.play('boss', 'boss'); g.musicState = 'boss';
+        g.setObjective(room.objective || 'DEFEAT THE BOSS', room.sub || '');
+        yield 1.2;
+        const Cls = BOSSES[room.boss];
+        const boss = g.spawnEnemy(room.boss, V(0, 0, z0 + len * 0.62), { cls: Cls, silent: true, arena: { minX: -HW, maxX: HW, minZ: z0, maxZ: z0 + len } });
+        g.audio.play('sting', { chord: [65.4, 98, 130.8, 155.6] }); g.player.shake(0.6);
+        if (room.hint) { yield 3.5; g.hud.hint(room.hint, 6, 'boss' + room.boss); }
+        yield () => !boss.alive;
+        g.addHype(0.35); g.audio.play('cheer', { big: 2 }); confetti(g, V(0, 8, z0 + len * 0.6), 220, 16);
+        yield 2;
+        g.music.play(g.floorDef.music || 'f1', 'full');
+        g.setObjective('MOP UP', ''); yield () => g.aliveEnemies() === 0;
+      },
+    };
+  },
+  // ---- conveyor hall: belts run against you, presses over some belts, steam jets burst from the floor
+  conveyor(c, room, z0) {
+    const len = room.len || 36, { g, HW, r } = c, lanes = room.lanes || 3, lw = (2 * HW) / lanes;
+    const beltTex = beltTexture();
+    room.noFloor = true;
+    solid(g, { pos: [0, -0.5, z0 + 2], size: [2 * HW, 1, 4], mat: c.floorMat, cast: false });
+    solid(g, { pos: [0, -0.5, z0 + len - 2], size: [2 * HW, 1, 4], mat: c.floorMat, cast: false });
+    for (let i = 0; i < lanes; i++) {
+      const x = -HW + (i + 0.5) * lw, speed = (room.speed || 3.4) * (0.8 + r() * 0.5) * (i % 2 ? 1.25 : 1);
+      const t = beltTex.clone(); t.needsUpdate = true; t.repeat.set(1, (len - 8) / 3);
+      const top = new THREE.MeshStandardMaterial({ map: t, roughness: 0.8 });
+      const side = Mat.metal('#2a2e36');
+      const { collider } = solid(g, { pos: [x, -0.5, z0 + len / 2], size: [lw - 0.3, 1, len - 8], mat: [side, side, top, side, side, side] });
+      collider.conveyor = V(0, 0, -speed);
+      c.belts.push({ t, speed });
+      const rail = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.3, len - 8), Mat.paint(c.T.trim, 0.4, 0.4)); rail.position.set(x + lw / 2, 0.15, z0 + len / 2); g.scene.add(rail);
+      if (i % 2 === 0) for (let z = z0 + 9; z < z0 + len - 7; z += 10) g.addHazard(new Press(g, { pos: [x, 0, z], size: [lw - 1.2, 2.2, 3.5], lowY: 0.2, highY: 7, cycle: { up: 1.7 + r(), warn: 0.6, down: 0.18, hold: 0.45, rise: 0.9 }, offset: r() * 3 }));
+    }
+    for (let z = z0 + 7; z < z0 + len - 5; z += 9) c.jets.push({ pos: V((r() * 2 - 1) * (HW - 3), 0, z), t: r() * 4, period: 3.2 + r() });
+    room.hatches = hatchesFor(c, z0, len, 2);
+    return {
+      len,
+      *run(g) {
+        g.setObjective(room.objective || 'RIDE AGAINST THE LINE', 'the belts push back · presses and steam jets on a timer');
+        if (room.waves) spawnGroup(c, room, room.waves[0]);
+        yield () => g.player.pos.z > z0 + len - 3;
+      },
+    };
+  },
+  // ---- lights-out maze: flashlight only, glowing arrows, stalkers in the dark
+  dark(c, room, z0) {
+    const len = room.len || 40, { g, HW, r } = c;
+    // maze-ish partition walls with gaps
+    for (let z = z0 + 7; z < z0 + len - 5; z += 7) {
+      const gap = (r() * 2 - 1) * (HW - 5), gw = 4.5;
+      if (gap - gw / 2 > -HW + 0.5) solid(g, { pos: [(-HW + gap - gw / 2) / 2, 2, z], size: [gap - gw / 2 + HW, 4, 0.6], mat: c.wallMat });
+      if (gap + gw / 2 < HW - 0.5) solid(g, { pos: [(gap + gw / 2 + HW) / 2, 2, z], size: [HW - gap - gw / 2, 4, 0.6], mat: c.wallMat });
+      const arrow = new THREE.Mesh(new THREE.ConeGeometry(0.5, 1, 3), glowMat(c.T.glow, 3)); arrow.rotation.x = Math.PI / 2; arrow.position.set(gap, 0.08, z - 1.5); g.scene.add(arrow);
+      const al = new THREE.PointLight(c.T.glow, 6, 6, 1.6); al.position.set(gap, 0.5, z - 1.2); g.scene.add(al);
+    }
+    room.hatches = hatchesFor(c, z0, len, 3);
+    return {
+      len,
+      *run(g) {
+        g.lightsOutTarget = 1;
+        g.hud.banner('LIGHTS OUT', 'disaster', 2.5);
+        g.setObjective(room.objective || 'FIND THE WAY THROUGH', 'follow the glowing arrows');
+        if (room.waves) spawnGroup(c, room, room.waves[0]);
+        yield () => g.player.pos.z > z0 + len - 3;
+        g.lightsOutTarget = 0;
+      },
+      skip() { g.lightsOutTarget = 0; },
+    };
+  },
+  // ---- turret gallery: disable the turrets while robots pour in
+  turrets(c, room, z0) {
+    const len = room.len || 38, { g, HW, CH } = c, n = room.count || 4;
+    coverField(c, z0, len, room.cover ?? 1.1, room.coverKind);
+    room.hatches = hatchesFor(c, z0, len, 3);
+    room.turrets = [];
+    for (let i = 0; i < n; i++) {
+      const s = i % 2 ? 1 : -1, z = z0 + 8 + (i / Math.max(1, n - 1)) * (len - 16);
+      const pos = room.ceiling ? [s * (HW * 0.4), CH - 1.2, z] : [s * (HW - 1.2), 3.2, z];
+      room.turrets.push(new Turret(g, pos, { onDestroy: () => { room.down = (room.down || 0) + 1; } }));
+    }
+    return {
+      len,
+      *run(g) {
+        room.down = room.down || 0;
+        const total = room.turrets.length;
+        for (const t of room.turrets) t.active = true;
+        if (room.vote) g.audience.setAuto(true, 20);
+        spawnGroup(c, room, room.first || [['clanker', 2]]);
+        let t = 0;
+        while (room.down < total) {
+          g.setObjective(room.objective || 'DISABLE THE TURRETS', `${room.down} / ${total} turrets down`);
+          yield 0.3; t += 0.3;
+          if (t > (room.every || 10) && g.aliveEnemies() < 4) { t = 0; spawnGroup(c, room, [['clanker', 2]]); }
+        }
+        g.audience.setAuto(false);
+        g.setObjective('MOP UP', ''); yield () => g.aliveEnemies() === 0;
+      },
+      skip() { for (const t of room.turrets) t.destroy(true); },
+    };
+  },
   // ---- open combat room with cover; waves of robots from floor hatches / ceiling ports
   arena(c, room, z0) {
     const len = room.len || 36;
@@ -467,7 +696,7 @@ export function makeFloor(R) {
       votePool: R.votePool || ['barrels', 'lightsout', 'doublebots', 'freeze', 'lasers', 'lowgrav', 'meteors', 'firestorm'],
       fogDensity: T.fog[1], floodable: false, events: {}, center: [0, 0, 20],
     };
-    const c = { g, F, T, HW, CH, r, spots: [], steam: [] };
+    const c = { g, F, T, HW, CH, r, spots: [], steam: [], spin: [], cams: [], beacons: [], belts: [], jets: [], crowds: [] };
     setStyle(T.style);
     g.scene.background = new THREE.Color(T.bg);
     g.scene.fog = new THREE.FogExp2(T.fog[0], T.fog[1]);
@@ -519,6 +748,20 @@ export function makeFloor(R) {
       for (const s of c.spots) s.update?.(dt);
       for (const room of F.rooms) room.built.update?.(dt);
       for (const p of c.steam) if (Math.random() < dt * 3) g.fx.smokePuff(p, 1, 1.4, 1.2);
+      for (const b of c.spin) b.rotation.z += dt * 4;
+      for (const cam of c.cams) cam.rotation.y = Math.sin(g.time * 0.6 + cam.position.z) * 0.6;
+      for (const b of c.beacons) b.target.position.set(b.position.x + Math.cos(g.time * 3) * 6, 0, b.position.z + Math.sin(g.time * 3) * 6);
+      for (const b of c.belts) b.t.offset.y -= dt * b.speed / 3;
+      for (const cr of c.crowds) cr.update?.(dt);
+      const pl = g.player;
+      for (const j of c.jets) {
+        j.t += dt; const ph = j.t % j.period, on = ph > j.period - 1.1, warn = ph > j.period - 1.8 && !on;
+        if (warn && Math.random() < dt * 12) g.fx.smokePuff(j.pos, 1, 0.5, 0.6);
+        if (on) {
+          if (Math.random() < dt * 30) g.fx.smokePuff(j.pos.clone().setY(0.3), 2, 1.6, 2.5, [0.9, 0.9, 0.95, 0.5]);
+          if (pl.alive && Math.hypot(pl.pos.x - j.pos.x, pl.pos.z - j.pos.z) < 1.4 && pl.pos.y < 3.5 && (j.cool = (j.cool || 0) - dt) <= 0) { j.cool = 0.5; pl.damage(10, { type: 'steam', knock: V(0, 10, 0) }); }
+        }
+      }
     };
     g.addHazard({ update: (dt) => F.update(dt) });
     F.openGate = (gate, instant) => {

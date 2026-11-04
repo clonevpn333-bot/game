@@ -156,6 +156,19 @@ export const GUN_BUILDERS = {
     handle.userData.handle = true;
     return { muzzle: [0, 0.03, 0.43], eject: [0.06, 0.03, 0.05], rightGrip, leftGrip: k.marker('support-grip', root, [0.04, -0.06, 0.22]) };
   },
+  // PRIME-TIME SPOTLIGHT: a theatre spotlight with cooling fins, barn doors and a hot cyan lens
+  beam(k) {
+    const { m, root, parts } = k;
+    const rightGrip = k.receiver(m.white, { len: 0.2 });
+    k.barrel(root, 0.075, 0.24, [0, 0.03, 0.17], m.gun);
+    for (let n = 0; n < 7; n++) k.ring(root, 0.08, 0.012, [0, 0.03, 0.07 + n * 0.03], m.dark);
+    k.barrel(root, 0.09, 0.03, [0, 0.03, 0.3], m.steel);
+    parts.lens = new THREE.Mesh(new THREE.CircleGeometry(0.07, 20), m.glowCyan); parts.lens.position.set(0, 0.03, 0.316); root.add(parts.lens);
+    for (let n = 0; n < 4; n++) { const door = new THREE.Group(); door.position.set(0, 0.03, 0.315); door.rotation.z = n * Math.PI / 2; root.add(door); const flap = k.box(door, [0.12, 0.006, 0.07], [0, 0.095, 0.03], m.dark, 0.002); flap.rotation.x = -0.5; }
+    k.box(root, [0.03, 0.03, 0.18], [0, 0.125, 0.12], m.steel, 0.006);
+    for (const z of [0.05, 0.19]) k.box(root, [0.025, 0.04, 0.02], [0, 0.1, z], m.dark, 0.005);
+    return { muzzle: [0, 0.03, 0.34], eject: [0.06, 0.03, 0.05], rightGrip, leftGrip: k.marker('support-grip', root, [0.05, -0.05, 0.16]) };
+  },
 };
 
 // Build a gun from its builder, apply the readability size profile, and publish the contract.

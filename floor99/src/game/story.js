@@ -12,9 +12,10 @@ export const FLOOR_CHAT = {
   7: ['the archive has HIS file in it', 'contestant records are public now?', 'why are half the photos blurred'],
   8: ['heat warning on the HUD, stay out of the steam', 'boiler room OST when'],
   9: ['the vents are talking', 'quiet floor = trap floor', 'something big is pacing up there'],
-  10: ['FLOOR TEN FINALE LETS GOOO', 'act one boss incoming', 'the crowd noise is fake isn\'t it'],
-  11: ['security floor, the turrets have eyes', 'laser grid economy'],
+  10: ['FLOOR TEN FINALE LETS GOOO', 'act one boss incoming', 'the crowd noise is fake isn\'t it', 'the co-host has HALO\'S FACE', 'jump the beam. JUMP THE BEAM'],
+  11: ['security floor, the turrets have eyes', 'laser grid economy', 'iris looping the cams is so hot', 'the security chief has a BADGE'],
   12: ['viewer count frozen at 1.2B for an hour...', 'that shark has a WARRANTY', 'iris found the records??'],
+  13: ['wait. why am I in the server list', 'chat are we... real?', 'my vote went through before I clicked it', 'floor 13 trending in 0 countries', 'mods are suspiciously quiet'],
 };
 
 // Lore drops: [username, text]. Recurring viewers piece the truth together over the run.

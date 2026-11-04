@@ -640,5 +640,5 @@ export default {
   ],
   elevatorDur: 9,
   rewards: [{ type: 'track', id: 'f12' }],
-  completeLine: 'Floors thirteen and up are still being... decorated. Stay tuned!',
+  completeLine: 'Floor Thirteen does not exist. Please ignore the elevator button.',
 };

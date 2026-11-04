@@ -64,9 +64,14 @@ Right mouse: a click toggles aim (two-finger click on a trackpad), holding it ai
 | 5 — The Floor Is Lava | **Playable** | A checkerboard game-show set over real lava: stepping stones, moving platforms, grapple rings, drones, the CONFETTI CANNON (arcing party bombs), and a winner's-spot hold. |
 | 6 — Neon District | **Playable** | Billboards, neon and parked cars; smash three AD TOWER relays (Iris learns every "viewer" comes from one server), a spinning laser show, then a Bruiser street fight. |
 | 7 — The Archive | **Playable** | Dark shelves and banker lamps, Stalkers, data vaults, a 25-second download hold, and the discovery that every contestant file reads RETAINED. |
+| 8 — The Boiler Room | **Playable** | Conveyor belts that push you back under presses, timed steam jets, the furnace crew, and three pressure valves to blow (the studio lights flicker; there's a door marked RETENTION). |
+| 9 — The Vents | **Playable** | No cameras: lights-out duct mazes with a flashlight and glowing arrows, Stalkers, a drone nest, an exit laser grid, and Iris finally talks about her brother. |
+| 10 — Act One Finale | **Playable** | The main stage with hologram audience balconies, a spotlight hold, and **The Co-Host**: Halo's body double on speaker-stack legs. Break its speakers, shoot its screen; jump/slide its spotlight beam, jump the stomp shockwave, dodge the confetti mortar. Unlocks the PRIME-TIME SPOTLIGHT beam gun. |
+| 11 — Security | **Playable** | Wall and ceiling turrets to disable, a lockdown laser grid, and the Security Chief. Iris loops the camera feeds and finds Floor 13 is hidden, not skipped. |
 | 12 — Aquarium Apocalypse | **Playable** | Gallery of giant tanks with schools of fish, a glass tunnel the shark swims over, the rigged "SHATTER THE GLASS" vote, a flooding chamber (robots short-circuit, debris and containers float), swimming, the railgun, and **Megamouth-9**, a mechanical shark that leaps out of the water at you. |
 | 23, 38, 51, 76, 90, 99 | Designed, **not built** | Shown as "in production" in Floor Select. |
-| 8–11, 13+ | Not built yet | Being built five at a time on the procedural floor system (`src/floors/proc.js`). |
+| 13 — The Machine Level | **Playable** | The floor that doesn't exist: server racks, vote servers to smash, an upload hold, and the reveal that the "audience" is generated here to train something. |
+| 14+ | Not built yet | Being built five at a time on the procedural floor system (`src/floors/proc.js`). |
 
 The full design for every signature floor, the story and the ending is in [DESIGN.md](DESIGN.md).
 

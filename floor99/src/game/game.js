@@ -754,7 +754,7 @@ export class Game {
       if (dead) {
         if (p.explode) {
           // party bomb: real explosion + a confetti shower
-          this.explode(p.pos.clone(), p.explode.scale, p.explode.damage, { source: 'player', weapon: p.weapon });
+          this.explode(p.pos.clone(), p.explode.scale, p.explode.damage, { source: p.owner === 'player' ? 'player' : 'enemy', weapon: p.weapon });
           if (p.explode.confetti) for (const col of [FXColors.pink, FXColors.cyan, [2, 1.7, 0.2, 1]]) this.fx.burst(p.pos, 14, col, [col[0] * 0.4, col[1] * 0.4, col[2] * 0.4, 0], 9, 0.25, 1.1);
         }
         this.fx.burst(p.pos, 8, FXColors.pink, FXColors.pinkEnd, 3, 0.3, 0.3);

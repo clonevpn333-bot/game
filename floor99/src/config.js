@@ -1,5 +1,6 @@
 // Floor registry. `status` is honest: only floors marked 'playable' are built and shippable.
 const b1 = (n) => () => import('./floors/batch01.js').then((m) => ({ default: m['FLOOR_' + n] }));
+const b2 = (n) => () => import('./floors/batch02.js').then((m) => ({ default: m['FLOOR_' + n] }));
 export const FLOORS = {
   1: { id: 1, name: 'WELCOME TO THE SHOW', status: 'playable', tagline: 'The most entertaining tutorial ever broadcast.', load: () => import('./floors/floor01.js'), next: 2, tier: 0, music: 'f1' },
   2: { id: 2, name: 'THE CLEANUP CREW', status: 'playable', tagline: 'Closed for cleaning. Reopened for violence.', load: b1(2), next: 3, tier: 0, music: 'f1' },
@@ -7,8 +8,13 @@ export const FLOORS = {
   4: { id: 4, name: 'THE FACTORY', status: 'playable', tagline: 'Assembly lines. Hydraulic presses. Molten metal. Overtime.', load: () => import('./floors/floor04.js'), next: 5, tier: 0, music: 'f4' },
   5: { id: 5, name: 'THE FLOOR IS LAVA', status: 'playable', tagline: 'A game-show classic. The lava is real.', load: b1(5), next: 6, tier: 0, music: 'f1' },
   6: { id: 6, name: 'NEON DISTRICT', status: 'playable', tagline: 'Sponsors, billboards, and a lot of very loud robots.', load: b1(6), next: 7, tier: 1, music: 'f4' },
-  7: { id: 7, name: 'THE ARCHIVE', status: 'playable', tagline: 'Every contestant has a file. Every file says the same thing.', load: b1(7), next: 12, tier: 1, music: 'f12' },
-  12: { id: 12, name: 'AQUARIUM APOCALYPSE', status: 'playable', tagline: 'Ten thousand tonnes of water and a very large mechanical fish.', load: () => import('./floors/floor12.js'), next: null, tier: 1, music: 'f12' },
+  7: { id: 7, name: 'THE ARCHIVE', status: 'playable', tagline: 'Every contestant has a file. Every file says the same thing.', load: b1(7), next: 8, tier: 1, music: 'f12' },
+  8: { id: 8, name: 'THE BOILER ROOM', status: 'playable', tagline: 'Everything that lights the show burns down here.', load: b2(8), next: 9, tier: 1, music: 'f4' },
+  9: { id: 9, name: 'THE VENTS', status: 'playable', tagline: 'No cameras. No audience. No rules.', load: b2(9), next: 10, tier: 1, music: 'f12' },
+  10: { id: 10, name: 'ACT ONE FINALE', status: 'playable', tagline: 'Halo\'s body double takes the stage.', load: b2(10), next: 11, tier: 1, music: 'f1' },
+  11: { id: 11, name: 'SECURITY', status: 'playable', tagline: 'Every camera in the tower routes through here.', load: b2(11), next: 12, tier: 1, music: 'f4' },
+  12: { id: 12, name: 'AQUARIUM APOCALYPSE', status: 'playable', tagline: 'Ten thousand tonnes of water and a very large mechanical fish.', load: () => import('./floors/floor12.js'), next: 13, tier: 1, music: 'f12' },
+  13: { id: 13, name: 'THE MACHINE LEVEL', status: 'playable', tagline: 'Billions of viewers. All of them on these racks.', load: b2(13), next: null, tier: 2, music: 'f12' },
 };
 
 // Signature floors that are designed but NOT built yet (shown as "IN PRODUCTION").
