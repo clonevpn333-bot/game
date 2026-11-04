@@ -12,9 +12,13 @@ generated procedurally in your browser. There are no asset downloads and no buil
 
 ## Run it
 
-**Easiest:** open `dist/floor99.html` in Chrome, Edge or Firefox. It is the whole game in one
-self-contained file (three.js, code, styles and fonts inlined), so it needs no server and no install.
-To rebuild it after changing the source: `npm i -D esbuild && node tools/build-single.mjs`.
+**Easiest:** open `dist/floor99-performance.html` (fast, no shadows/bloom) or
+`dist/floor99-cinematic.html` (shadows, bloom, higher resolution) in Chrome, Edge or Firefox. Each is
+the whole game in one self-contained file (three.js, code, styles, fonts and the recorded voice clips
+inlined), so it needs no server and no install. The **⧉ BLOB LINK** button (top-right on the boot and
+menu screens) re-opens the game from a `blob:` URL and can save a copy.
+To rebuild after changing the source: `npm i -D esbuild && node tools/build-single.mjs`.
+From source, add `?fast` to the URL for the performance profile.
 
 **From source:**
 
@@ -46,17 +50,23 @@ Use Chrome, Edge or Firefox on a desktop. Headphones are recommended.
 | Pause | `Esc` |
 
 Wall-run by jumping at a wall while holding `W`. Running at a ledge vaults over it automatically.
-On a MacBook trackpad, a two-finger click aims. Sensitivity is in Settings.
+Right mouse: a click toggles aim (two-finger click on a trackpad), holding it aims while held.
+`B` hides the studio chat. `F8` opens the Animation Studio (inspect every clip, grip and IK target).
 
 ## What's in this build
 
 | Floor | Status | Highlights |
 | --- | --- | --- |
 | 1 — Welcome To The Show | **Playable** | Holding cell → arena drop, tutorial-through-action, sponsor drops (shotgun, double jump), SkyCams, the first audience vote (hydraulic pistons or a spinning stage with sweeper arms), the Bruiser, Iris's first transmission, then the studio is demolished by giant presses and you escape through a gauntlet (slam press, slide-under press, moving platform over a pit) to the elevator. |
+| 2 — The Cleanup Crew | **Playable** | Service level: a road-case arena against the "cleanup crew", the AD-BREAK SMG, a laser security sweep, and Scrub-O-Matic stations hiding 98 sets of scorch marks. |
+| 3 — The Locker Room | **Playable** | Contestant lockers 01–98, a shower-block laser grid, the WARDROBE CHECK spotlight hold, and the Bruiser on the catwalks. Locker 98 is welded shut. |
 | 4 — The Factory | **Playable** | Conveyor belts that carry you, hydraulic presses, robotic arms that swat, a fabricator building Clankers on the line, molten-metal channels, a crane pouring a crucible, catwalks, the gravity-cannon prototype, the stamping hall, and **The Foreman**, a ceiling-rail boss with breakable arms. Then the factory tears itself apart. |
+| 5 — The Floor Is Lava | **Playable** | A checkerboard game-show set over real lava: stepping stones, moving platforms, grapple rings, drones, the CONFETTI CANNON (arcing party bombs), and a winner's-spot hold. |
+| 6 — Neon District | **Playable** | Billboards, neon and parked cars; smash three AD TOWER relays (Iris learns every "viewer" comes from one server), a spinning laser show, then a Bruiser street fight. |
+| 7 — The Archive | **Playable** | Dark shelves and banker lamps, Stalkers, data vaults, a 25-second download hold, and the discovery that every contestant file reads RETAINED. |
 | 12 — Aquarium Apocalypse | **Playable** | Gallery of giant tanks with schools of fish, a glass tunnel the shark swims over, the rigged "SHATTER THE GLASS" vote, a flooding chamber (robots short-circuit, debris and containers float), swimming, the railgun, and **Megamouth-9**, a mechanical shark that leaps out of the water at you. |
 | 23, 38, 51, 76, 90, 99 | Designed, **not built** | Shown as "in production" in Floor Select. |
-| All other floors | Not built | Shown as not yet built. |
+| 8–11, 13+ | Not built yet | Being built five at a time on the procedural floor system (`src/floors/proc.js`). |
 
 The full design for every signature floor, the story and the ending is in [DESIGN.md](DESIGN.md).
 

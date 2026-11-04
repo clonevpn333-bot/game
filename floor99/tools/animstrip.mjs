@@ -11,16 +11,16 @@ await page.keyboard.press('F8');
 await page.waitForFunction(() => window.__floor99.animationStudio?.active, null, { timeout: 30000 });
 const n = +frames;
 for (let i = 0; i < n; i++) {
-  await page.evaluate(([clip, i, n, orbit, weapon]) => {
+  await page.evaluate(([clip, i, n, orbit, weapon, dist]) => {
     const A = window.__floor99, st = A.animationStudio;
     A.frozen = true;
     if (st.weaponId !== weapon) st.setWeapon(weapon);
-    st.clip = clip; st.orbit = +orbit; st.distance = 4.2; st.playing = false;
+    st.clip = clip; st.orbit = +orbit; st.distance = dist; st.playing = false;
     st.clock = (i / n) * st.duration();
     st.ui.style.display = 'none';
     for (let k = 0; k < 3; k++) st.update(0.001, true);
     A.renderer.render(st.scene, st.camera, 1 / 60, 0);
-  }, [clip, i, n, orbit, weapon]);
+  }, [clip, i, n, orbit, weapon, +(process.env.DIST || 4.2)]);
   await page.screenshot({ path: `${out}.${i}.png`, timeout: 120000 });
 }
 await browser.close();
