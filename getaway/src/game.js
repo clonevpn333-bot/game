@@ -1,6 +1,7 @@
 // GETAWAY! — game orchestrator: boot, systems, main loop, slow motion, mode transitions.
 import { PerfGovernor, updateView } from './core/perf.js';
 import { Guard } from './core/guard.js';
+import { Rockets } from './missions/air.js';
 import { sanitize, sanitizeCamera } from './core/sanitize.js';
 import * as THREE from 'three';
 import { G } from './core/context.js';
@@ -42,7 +43,7 @@ export class Game {
     G.rigid = new RigidWorld(G.world.static);
     G.sky = new Sky(G.scene, G.renderer); G.sky.nightMats = G.world.nightMats; G.sky.registerWet([G.world.mats.road, G.world.mats.roadRes, G.world.mats.hwy, G.world.mats.isect, G.world.mats.asphalt, G.world.mats.walk]);
     progress(0.7, 'Fueling 40 cars…'); await tick();
-    G.vehicles = new VehicleManager(G.scene, G.world.static); G.combat = new Combat(G.world.static);
+    G.vehicles = new VehicleManager(G.scene, G.world.static); G.combat = new Combat(G.world.static); G.rockets = new Rockets();
     G.traffic = new Traffic(G.world); G.humans = new HumanRenderer(G.scene, 380); G.peds = new Peds(G.world); G.peds.setDensity(G.settings.pedDensity);
     G.player = new Player(); G.combat.addTarget(G.player.target);
     G.cam = new CameraRig(G.camera); G.cam.baseFov = G.settings.fov;
@@ -93,7 +94,7 @@ export class Game {
       run('pedestrians', () => G.peds.update(dt), () => sanitize(0));
       run('vehicles', () => G.vehicles.update(dt), () => sanitize(0));
       run('physics', () => G.rigid.step(dt), resetDebris);
-      run('combat', () => G.combat.update(dt));
+      run('combat', () => { G.combat.update(dt); G.rockets.update(dt); }, () => G.rockets.clear());
       if (G.stunts) run('stunts', () => G.stunts.update(dt));
     } else if (G.mode === 'menu' && !G.paused) { run('vehicles', () => G.vehicles.update(dt)); run('traffic', () => G.traffic.update(dt)); run('pedestrians', () => G.peds.update(dt)); run('physics', () => G.rigid.step(dt), resetDebris); }
     if (!G.paused) { run('props', () => G.props.update(dt, G.time, G.sky.night)); run('effects', () => G.fx.update(dt), resetFx); }

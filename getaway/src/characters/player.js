@@ -27,6 +27,7 @@ export class Player {
   hit(dmg, dir, point, head, source, kind, push) {
     if (!this.alive || this.godMode) return; if (source && source.team === 'player') return; dmg *= G.dmgScale ?? 1;
     if (this.vehicle) { this.vehicle.damage(dmg * 0.3, point, dir, source && source.human); dmg *= 0.25; if (this.vehicle.glassLevel < 2) dmg *= 0.5; }
+    if (this.riding) { if (this.riding.damage) this.riding.damage(dmg, point); dmg *= 0.2; } // the airframe takes it
     const a = Math.min(this.armor, dmg * 0.65); this.armor -= a; this.health -= dmg - a; this.lastHit = G.time;
     G.emit('playerDamaged', dmg, dir, source);
     if (G.cam) G.cam.shake(clamp(dmg / 60, 0.08, 0.5)); if (G.input) G.input.rumble(0.6, 0.3, 120);
@@ -40,6 +41,7 @@ export class Player {
     const h = this.human; this.fireT -= dt;
     if (!this.alive) { h.animate(dt); this.syncWeapon(); return; }
     if (this.health < 100 && G.time - this.lastHit > 4) this.health = Math.min(100, this.health + dt * 12);
+    if (this.riding) { const r = this.riding; this.pos.copy(r.seat ? r.seat() : r.pos); this.vel.set(0, 0, 0); this.vy = 0; h.visible = false; return; } // in an aircraft / gunner seat
     if (this.entering) return this.updateEntering(dt, input);
     if (this.vehicle) return this.updateDriving(dt, input);
     if (h.mode === 'ragdoll') { this.ragT = (this.ragT || 0) + dt; h.animate(dt); if (h.settled || this.ragT > 4) { h.getUp(G.world.static); } this.syncWeapon(); return; }
@@ -50,7 +52,7 @@ export class Player {
     const h = this.human, S = G.world.static, cam = G.cam; const locked = this.controlsLocked;
     // weapon selection
     if (!locked) {
-      for (let i = 1; i <= 5; i++) if (input.pressed('w' + i)) { const id = WEAPON_ORDER[i]; if (this.inv[id]) this.setWeapon(id); else if (i === 1) this.setWeapon('pistol'); }
+      for (let i = 1; i <= 6; i++) if (input.pressed('w' + i)) { const id = WEAPON_ORDER[i]; if (this.inv[id]) this.setWeapon(id); else if (i === 1) this.setWeapon('pistol'); }
       if (input.pressed('nextWeapon') || input.wheel) { const owned = WEAPON_ORDER.filter((w) => this.inv[w]); let i = owned.indexOf(this.weapon); i = (i + (input.wheel < 0 ? -1 : 1) + owned.length) % owned.length; this.setWeapon(owned[i]); }
     }
     const W = this.W; const act = this.action;

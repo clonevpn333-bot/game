@@ -11,9 +11,10 @@ export const WEAPONS = {
   smg: { id: 'smg', name: 'Vandal SMG', kind: 'smg', dmg: 16, rpm: 820, auto: true, mag: 32, reload: 1.6, spread: 0.04, aimSpread: 0.014, range: 110, pellets: 1, recoil: 0.3, kick: 0.006, shake: 0.04, tracer: 0.5 },
   shotgun: { id: 'shotgun', name: 'Mauler 12', kind: 'shotgun', dmg: 14, rpm: 72, auto: false, mag: 6, reload: 2.3, spread: 0.075, aimSpread: 0.055, range: 55, pellets: 9, recoil: 1.2, kick: 0.05, shake: 0.2, tracer: 0.6 },
   rifle: { id: 'rifle', name: 'Halberd AR', kind: 'rifle', dmg: 31, rpm: 630, auto: true, mag: 30, reload: 1.9, spread: 0.03, aimSpread: 0.005, range: 220, pellets: 1, recoil: 0.35, kick: 0.009, shake: 0.06, tracer: 0.6 },
+  rpg: { id: 'rpg', name: 'Breacher RPG', kind: 'heavy', dmg: 0, rpm: 50, auto: false, mag: 1, reload: 1.8, spread: 0.004, aimSpread: 0.002, range: 400, pellets: 1, recoil: 1.8, kick: 0.06, shake: 0.25, projectile: 'rocket' },
   heavy: { id: 'heavy', name: 'Thumper GL', kind: 'heavy', dmg: 0, rpm: 70, auto: false, mag: 4, reload: 2.6, spread: 0.01, aimSpread: 0.005, range: 200, pellets: 1, recoil: 1.4, kick: 0.04, shake: 0.18, projectile: true },
 };
-export const WEAPON_ORDER = ['fists', 'pistol', 'smg', 'shotgun', 'rifle', 'heavy'];
+export const WEAPON_ORDER = ['fists', 'pistol', 'smg', 'shotgun', 'rifle', 'heavy', 'rpg'];
 
 const BX = (w, h, d, x, y, z, c) => ({ geo: new THREE.BoxGeometry(w, h, d).translate(x, y, z), c });
 const CY = (r, l, x, y, z, c, seg = 10) => ({ geo: new THREE.CylinderGeometry(r, r, l, seg).rotateX(Math.PI / 2).translate(x, y, z), c });
@@ -67,6 +68,14 @@ export class Combat {
     }
     return best;
   }
+  // big hittable spheres (aircraft, mission objects): { pos, r, team, alive(), hit(dmg, point, shooter, kind) }
+  addSphere(sp) { (this.spheres || (this.spheres = new Set())).add(sp); return sp; }
+  removeSphere(sp) { if (this.spheres) this.spheres.delete(sp); }
+  raySpheres(o, d, maxT, team) {
+    if (!this.spheres) return null; let best = null;
+    for (const sp of this.spheres) { if (!sp.alive() || (team && sp.team === team)) continue; const t = raySphere(o, d, sp.pos, sp.r); if (t < maxT && (!best || t < best.t)) best = { t, sp, point: new THREE.Vector3().copy(o).addScaledVector(d, t) }; }
+    return best;
+  }
   rayVehicles(o, d, maxT, ignoreV) {
     let best = null; const near = G.vehicles.list;
     for (const v of near) {
@@ -90,6 +99,9 @@ export class Combat {
     if (fx && muzzle) { fx.muzzle(muzzle, dir, W.kind === 'shotgun' ? 1.6 : W.kind === 'rifle' ? 1.2 : 0.9); if (W.kind !== 'heavy') fx.shell(muzzle, new THREE.Vector3(-dir.z, 0, dir.x)); if (A && Math.random() < 0.5) A.shell(muzzle); }
     if (isP && G.cam) G.cam.shake(W.shake);
     G.emit('gunshot', origin.clone(), shooter);
+    if (W.projectile === 'rocket' && G.rockets) { // homing on whatever big target is near the crosshair
+      const from = (muzzle || origin).clone(); let best = null, bs = 0.97; for (const sp of this.spheres || []) { if (!sp.alive() || sp.team === (isP ? 'player' : shooter.team)) continue; const d = sp.pos.clone().sub(from); const L = d.length(); if (L > 420) continue; const c = d.divideScalar(L).dot(dir); if (c > bs) { bs = c; best = sp; } }
+      G.rockets.fire(from, dir, { team: isP ? 'player' : shooter.team, homing: best ? () => (best.alive() ? best.pos : null) : null, size: 1.7, src: { human: shooter.human, team: isP ? 'player' : shooter.team } }); return; }
     if (W.projectile) { this.launchGrenade(shooter, muzzle || origin, dir); return; }
     const spread = shooter.aiming ? W.aimSpread : W.spread * (shooter.moving ? 1.5 : 1) * (shooter.inaccuracy || 1);
     let anyHit = false;
@@ -100,8 +112,9 @@ export class Combat {
       const hh = this.rayHumans(origin, d, tMax, shooter.target); const hv = this.rayVehicles(origin, d, hh ? hh.t : tMax, shooter.vehicle);
       // explosive barrels
       let hb = null; if (G.props) { const near = G.props.near(origin.x + d.x * 20, origin.z + d.z * 20, 40, this._pn || (this._pn = [])); for (const pr of near) if (pr.def.shootable) { const t = raySphere(origin, d, new THREE.Vector3(pr.x, pr.y + 0.45, pr.z), 0.42); if (t < (hv ? hv.t : hh ? hh.t : tMax) && (!hb || t < hb.t)) hb = { t, pr }; } }
-      let end;
-      if (hb) { end = origin.clone().addScaledVector(d, hb.t); G.props.hit(hb.pr, d.clone().multiplyScalar(4), end, 0.3); fx && fx.spark(end, d.clone().negate(), 8, 4); anyHit = true; }
+      let end; const team = shooter.isPlayer ? 'player' : shooter.team; const hs = this.raySpheres(origin, d, Math.min(tMax, hh ? hh.t : tMax, hv ? hv.t : tMax), team);
+      if (hs) { end = hs.point; hs.sp.hit(W.dmg, end, shooter, W.kind); anyHit = true; fx && fx.impact(end, d.clone().negate(), 'metal'); if (isP && A) A.ui('hit'); }
+      else if (hb) { end = origin.clone().addScaledVector(d, hb.t); G.props.hit(hb.pr, d.clone().multiplyScalar(4), end, 0.3); fx && fx.spark(end, d.clone().negate(), 8, 4); anyHit = true; }
       else if (hv && (!hh || hv.t < hh.t)) {
         end = hv.point; const v = hv.v; v.damage(W.dmg * 0.22, null, null, shooter.human); anyHit = true;
         const glass = hv.localY > v.spec.cabin?.belt; if (glass && Math.random() < 0.5) v.crackGlass(v.glassLevel + 1); if (glass) fx && fx.glass(end, 4, d.clone().negate(), 2);

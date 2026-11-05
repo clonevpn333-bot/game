@@ -29,7 +29,7 @@ export function tickAIs(m, list) { const off = m.r.flow.game.addUpdater((dt) => 
 
 export function baseSetup(m, { hour = 12, weather = 'clear', tier = 1, maxStars = 4, dmg = 0.6, acc = 0.65, heli = false, weapons = ['pistol'] } = {}) {
   const P = G.player; P.revive(); P.health = 100; P.armor = 100;
-  for (const w of ['pistol', ...weapons]) { if (!P.inv[w]) P.inv[w] = { mag: 0, res: 0 }; const W = { pistol: 15, smg: 32, shotgun: 6, rifle: 30, heavy: 4 }[w]; P.inv[w].mag = W; P.inv[w].res = Math.max(P.inv[w].res, W * 4); }
+  for (const w of ['pistol', ...weapons]) { if (!P.inv[w]) P.inv[w] = { mag: 0, res: 0 }; const W = { pistol: 15, smg: 32, shotgun: 6, rifle: 30, heavy: 4, rpg: 1 }[w]; P.inv[w].mag = W; P.inv[w].res = Math.max(P.inv[w].res, W * 4); }
   P.setWeapon(weapons[weapons.length - 1] || 'pistol');
   G.dmgScale = dmg; G.enemyAcc = acc; m.ents.offs.push(() => { G.dmgScale = 1; G.enemyAcc = 1; });
   G.sky.setWeather(weather, true); G.sky.dayScale = 0.2 / 60; if (!m.vars.hourSet) { G.sky.setTime(hour); m.vars.hourSet = true; }

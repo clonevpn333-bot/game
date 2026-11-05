@@ -26,13 +26,15 @@ export class CameraRig {
       if (c.t >= c.dur) { const f = c.onEnd; this.cine = null; if (f) f(); }
     } else if (this.mode === 'menu') {
       const a = this.t * 0.04; const r = 380; this.pos.set(Math.cos(a) * r + 60, 150 + Math.sin(this.t * 0.07) * 25, Math.sin(a) * r - 40); this.look.set(0, 40, -40); this.fov = 55; this.letterbox = damp(this.letterbox, 0, 4, dt);
+    } else if (this.custom) { // aircraft / gunner seats: the mission supplies the shot each frame
+      const r = this.custom(dt, input); if (r) { this.pos.copy(r.pos); this.look.copy(r.look); this.fov = r.fov || 70; this.roll = r.roll || 0; }
     } else if (P && P.vehicle) this._vehicle(dt, input, P.vehicle);
     else if (P) this._foot(dt, input, P);
     // shake
     const tr = this.trauma * this.trauma; const pvv = P && P.vehicle; const sp = pvv ? clamp((pvv.speed - 18) / 45, 0, 1) * 0.09 + (pvv.ctrl.boost && pvv.ctrl.throttle ? 0.05 : 0) : 0;
     const sx = (noise1(this.t * 18) * tr * 0.9 + noise1(this.t * 7 + 3) * sp), sy = (noise1(this.t * 19 + 10) * tr * 0.7 + noise1(this.t * 8 + 13) * sp * 0.6);
     cam.position.copy(this.pos);
-    cam.lookAt(this.look); cam.rotateX(sy * 0.08); cam.rotateY(sx * 0.08); cam.rotateZ(noise1(this.t * 15 + 30) * tr * 0.05 + (P && P.vehicle && !this.cine ? (this.roll || 0) : 0));
+    cam.lookAt(this.look); cam.rotateX(sy * 0.08); cam.rotateY(sx * 0.08); cam.rotateZ(noise1(this.t * 15 + 30) * tr * 0.05 + (((P && P.vehicle) || this.custom) && !this.cine ? (this.roll || 0) : 0));
     if (Math.abs(cam.fov - this.fov) > 0.01) { cam.fov = this.fov; cam.updateProjectionMatrix(); }
     this.vel.subVectors(cam.position, this.prev).divideScalar(Math.max(dt, 1e-3)); this.prev.copy(cam.position);
     if (!this.cine) this.letterbox = damp(this.letterbox, 0, 4, dt);

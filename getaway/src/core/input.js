@@ -4,7 +4,7 @@ const BINDS = {
   jump: ['Space'], sprint: ['ShiftLeft', 'ShiftRight'], crouch: ['KeyC', 'ControlLeft'],
   enter: ['KeyF'], interact: ['KeyE'], melee: ['KeyV'], reload: ['KeyR'],
   handbrake: ['Space'], horn: ['KeyH'], boost: ['ShiftLeft', 'ShiftRight'], camera: ['KeyC'], lookBack: ['KeyB'],
-  nextWeapon: ['KeyQ'], w1: ['Digit1'], w2: ['Digit2'], w3: ['Digit3'], w4: ['Digit4'], w5: ['Digit5'],
+  nextWeapon: ['KeyQ'], w1: ['Digit1'], w2: ['Digit2'], w3: ['Digit3'], w4: ['Digit4'], w5: ['Digit5'], w6: ['Digit6'],
   pause: ['Escape', 'KeyP'], confirm: ['Enter', 'NumpadEnter'], skip: ['Enter', 'Space'], map: ['KeyM'],
   airUp: ['ArrowUp'], airDown: ['ArrowDown'], flyUp: ['Space'], flyDown: ['ControlLeft', 'KeyC'],
   yawL: ['KeyQ'], yawR: ['KeyE'],
