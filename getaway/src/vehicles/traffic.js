@@ -130,7 +130,7 @@ export class Traffic {
       const mix = TRAFFIC_MIX[e.kind === 'hwy' ? 'hwy' : e.kind === 'res' ? 'res' : 'city'];
       const v = G.vehicles.spawn(pick(mix), { x: p.x, y: p.y, z: p.z, yaw: edgeDir(e, s) });
       v.pos.y = this.world.static.groundAt(p.x, p.z, p.y + 1, 0.5).h; v.vel.set(Math.sin(v.yaw), 0, Math.cos(v.yaw)).multiplyScalar(e.speed * 0.7);
-      new TrafficAI(v, e, lane, s); v.hasDriver = true; this.cars.push(v);
+      new TrafficAI(v, e, lane, s); v.hasDriver = true; this.cars.push(v); if (!fill) break; // one new car per tick: building a car costs a few ms
     }
     // parked cars
     for (let tries = 0; tries < (fill ? 3000 : 30) && this.parked.length < this.parkTarget * this.density; tries++) {
@@ -140,7 +140,7 @@ export class Traffic {
         const type = sp.police ? 'police' : pick(['sedan', 'hatch', 'sedan', 'pickup', 'suv', 'muscle', 'van', 'saetta', 'moto', 'hatch', 'taxi']);
         const y = sp.y ?? this.world.static.groundAt(sp.x, sp.z, 50, 0).h;
         const v = G.vehicles.spawn(type, { x: sp.x, y, z: sp.z, yaw: sp.yaw + rand(-0.04, 0.04), parked: true }); v.parkSpot = sp; sp.taken = true; v.onRemoved = () => { sp.taken = false; };
-        this.parked.push(v);
+        this.parked.push(v); if (!fill) break;
       }
     }
   }

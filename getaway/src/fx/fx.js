@@ -5,9 +5,10 @@ import { G } from '../core/context.js';
 import { rand, clamp, lerp } from '../core/utils.js';
 import { softParticle, sparkTexture, bulletHoleTexture, scorchTexture, skidTexture } from '../world/textures.js';
 
+export const SPRITE_MAX = { value: 120 }; // updated per frame to ~14% of the drawing buffer height
 const cap = (n) => (n > 0 && n < 400 ? n : n >= 400 ? 400 : 0); // NaN/Infinity-proof particle counts
-const PVS = `attribute float size; attribute vec4 pcolor; attribute float rot; varying vec4 vColor; varying float vRot;
-void main(){ vColor = pcolor; vRot = rot; vec4 mv = modelViewMatrix * vec4(position,1.0); gl_PointSize = min(size * (900.0 / max(0.5, -mv.z)) * (projectionMatrix[1][1] / 1.7), 320.0); gl_Position = projectionMatrix * mv; if (-mv.z < 1.2) vColor.a *= clamp((-mv.z - 0.4) / 0.8, 0.0, 1.0); }`;
+const PVS = `uniform float uMaxPx; attribute float size; attribute vec4 pcolor; attribute float rot; varying vec4 vColor; varying float vRot;
+void main(){ vColor = pcolor; vRot = rot; vec4 mv = modelViewMatrix * vec4(position,1.0); gl_PointSize = min(size * (900.0 / max(0.5, -mv.z)) * (projectionMatrix[1][1] / 1.7), uMaxPx); gl_Position = projectionMatrix * mv; if (-mv.z < 3.0) vColor.a *= clamp((-mv.z - 0.6) / 2.4, 0.0, 1.0); }`; // sprites capped to a fraction of the screen + fade out near the lens (smoke in your face = huge overdraw)
 const PFS = `uniform sampler2D map; varying vec4 vColor; varying float vRot;
 void main(){ vec2 c = gl_PointCoord - 0.5; float s = sin(vRot), co = cos(vRot); vec2 uv = vec2(co*c.x - s*c.y, s*c.x + co*c.y) + 0.5; vec4 t = texture2D(map, uv); gl_FragColor = vec4(vColor.rgb * t.rgb, vColor.a * t.a); if (gl_FragColor.a < 0.003) discard; }`;
 
@@ -21,7 +22,7 @@ class ParticleLayer {
     this.aPos = new THREE.BufferAttribute(this.pos, 3).setUsage(THREE.DynamicDrawUsage); this.aCol = new THREE.BufferAttribute(this.col, 4).setUsage(THREE.DynamicDrawUsage);
     this.aSize = new THREE.BufferAttribute(this.size, 1).setUsage(THREE.DynamicDrawUsage); this.aRot = new THREE.BufferAttribute(this.rot, 1).setUsage(THREE.DynamicDrawUsage);
     g.setAttribute('position', this.aPos); g.setAttribute('pcolor', this.aCol); g.setAttribute('size', this.aSize); g.setAttribute('rot', this.aRot);
-    const m = new THREE.ShaderMaterial({ vertexShader: PVS, fragmentShader: PFS, uniforms: { map: { value: tex } }, transparent: true, depthWrite: false, blending: additive ? THREE.AdditiveBlending : THREE.NormalBlending });
+    const m = new THREE.ShaderMaterial({ vertexShader: PVS, fragmentShader: PFS, uniforms: { map: { value: tex }, uMaxPx: SPRITE_MAX }, transparent: true, depthWrite: false, blending: additive ? THREE.AdditiveBlending : THREE.NormalBlending });
     this.points = new THREE.Points(g, m); this.points.frustumCulled = false; this.points.renderOrder = additive ? 5 : 4; scene.add(this.points);
     g.setDrawRange(0, 0);
   }
@@ -153,7 +154,7 @@ export class FX {
   smokePuff(p, { n = 1, size = 1.5, life = 2, color = 0.85, alpha = 0.35, vel = null, spread = 0.5, rise = 1 } = {}) {
     for (let i = 0, N = cap(n); i < N; i++) { const c = color * rand(0.9, 1.05); this.smoke.emit(p.x + rand(-spread, spread), p.y + rand(-0.2, 0.2), p.z + rand(-spread, spread), (vel ? vel.x : 0) + rand(-0.6, 0.6), rise + rand(0, 0.6) + (vel ? vel.y : 0), (vel ? vel.z : 0) + rand(-0.6, 0.6), { life: life * rand(0.8, 1.2), size, grow: 2.2, r: c, g: c, b: c * 1.02, a: alpha, drag: 0.9, spin: rand(-0.6, 0.6) }); }
   }
-  tireSmoke(p, intensity, vel) { if (Math.random() > intensity * 1.2 * this.quality) return; this.smokePuff(p, { size: 0.9 + intensity, life: 1.6 + intensity, color: 0.9, alpha: 0.18 + intensity * 0.25, vel: vel ? { x: vel.x * 0.25, y: 0, z: vel.z * 0.25 } : null, spread: 0.3, rise: 0.4 }); }
+  tireSmoke(p, intensity, vel) { if (Math.random() > intensity * 0.55 * this.quality || this.smoke.n > 1800) return; this.smokePuff(p, { size: 0.9 + intensity, life: 1.6 + intensity, color: 0.9, alpha: 0.18 + intensity * 0.25, vel: vel ? { x: vel.x * 0.25, y: 0, z: vel.z * 0.25 } : null, spread: 0.3, rise: 0.4 }); }
   dust(p, n = 6, size = 2, color = 0.65) { for (let i = 0, N = cap(n * this.quality); i < N; i++) this.smoke.emit(p.x + rand(-1, 1), p.y + rand(0, 0.5), p.z + rand(-1, 1), rand(-3, 3), rand(0.5, 2.5), rand(-3, 3), { life: rand(1.5, 3), size, grow: 2.5, r: color * 1.05, g: color * 0.98, b: color * 0.88, a: 0.35, drag: 1.2, spin: rand(-0.5, 0.5) }); }
   fire(p, intensity = 1, spread = 0.6) {
     if (Math.random() < intensity * this.quality) this.fireL.emit(p.x + rand(-spread, spread), p.y, p.z + rand(-spread, spread), rand(-0.5, 0.5), rand(2, 4) * intensity, rand(-0.5, 0.5), { life: rand(0.4, 0.9), size: rand(0.7, 1.4) * intensity, grow: -0.4, r: 1, g: rand(0.45, 0.7), b: 0.15, a: 0.8, drag: 0.5, fade: 3, spin: rand(-2, 2) });
@@ -210,6 +211,7 @@ export class FX {
   }
   addEmitter(e) { this.emitters.push(e); return e; } // { update(dt) -> bool alive }
   update(dt) {
+    if (G.renderer) { const h = G.renderer.domElement.height || 540; SPRITE_MAX.value = Math.max(48, h * 0.14); }
     this.smoke.update(dt); this.glow.update(dt); this.fireL.update(dt); this.chunks.update(dt, this.S); this.shards.update(dt, this.S); this.shells.update(dt, this.S);
     for (const l of this.lights) if (l.userData.t > 0) { l.userData.t -= dt; l.intensity = l.userData.i0 * Math.max(0, l.userData.t / l.userData.dur); } else l.intensity = 0;
     for (const s of this.flashes) if (s.visible) { s.userData.t -= dt; if (s.userData.t <= 0) s.visible = false; }

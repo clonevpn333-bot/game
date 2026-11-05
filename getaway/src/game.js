@@ -1,5 +1,7 @@
 // GETAWAY! — game orchestrator: boot, systems, main loop, slow motion, mode transitions.
 import { PerfGovernor, updateView } from './core/perf.js';
+import { Guard } from './core/guard.js';
+import { sanitize, sanitizeCamera } from './core/sanitize.js';
 import * as THREE from 'three';
 import { G } from './core/context.js';
 import { clamp, rand } from './core/utils.js';
@@ -63,54 +65,67 @@ export class Game {
   saveNow() { storeSave(G.save); }
   saveSettings() { storeSettings(G.settings); }
   // never let one bad frame kill the game: schedule the next frame first, contain + log errors (a thrown error used to freeze everything)
-  start() { let errs = 0; const loop = () => { requestAnimationFrame(loop); if (window.__fixedDt) return; /* a test is stepping frames itself */ try { this.frame(); } catch (e) { if (errs++ < 20) console.error('frame error (recovered)', e); } }; requestAnimationFrame(loop); }
+  start() { let errs = 0; const loop = () => { requestAnimationFrame(loop); if (window.__fixedDt) return; /* a test is stepping frames itself */ try { this.frame(); } catch (e) { Guard.report('frame', e); } }; requestAnimationFrame(loop); }
   // headless/test helper: advance the simulation without rendering
   simulate(seconds, dt = 1 / 60) { const n = Math.round(seconds / dt); window.__fixedDt = dt; for (let i = 0; i < n; i++) this.frame(true); window.__fixedDt = 0; }
   frame(noRender = false) {
     const now = performance.now(); const rawMs = now - this.last; let rdt = Math.min(0.05, rawMs / 1000); this.last = now; if (window.__fixedDt) rdt = window.__fixedDt;
+    if (!(rdt > 0)) rdt = 1 / 60;
     this.fpsT += rdt; this.frames++; if (this.fpsT > 0.5) { this.fps = this.frames / this.fpsT; this.fpsT = 0; this.frames = 0; }
-    const input = G.input; input.poll(); G.frame++;
+    const input = G.input; const run = (n, f, r) => Guard.run(n, f, r);
+    run('input', () => input.poll()); G.frame++;
     // slow motion
     let scale = 1; if (this.smT > 0) { this.smT -= rdt; scale = this.smT > 0.25 ? this.smScale : clamp(this.smScale + (0.25 - this.smT) * 4 * (1 - this.smScale), this.smScale, 1); }
-    G.timeScale = scale; G.slowmo = 1 - scale; if (G.audio) G.audio.setSlowmo(scale);
+    if (!(scale > 0)) scale = 1; G.timeScale = scale; G.slowmo = 1 - scale; if (G.audio) run('audio', () => G.audio.setSlowmo(scale));
     const dt = G.paused ? 0 : rdt * scale; G.dt = dt; G.rdt = rdt;
     if (!G.paused) G.time += dt;
-    for (const fn of this.extraUpdaters) fn(dt, rdt);
+    // every system is an isolated stage: a failure is logged + repaired, never fatal (src/core/guard.js)
+    for (const fn of [...this.extraUpdaters]) run('mission updater', () => fn(dt, rdt));
+    const resetFx = () => { for (const L of [G.fx.smoke, G.fx.glow, G.fx.fireL]) L.n = 0; };
+    const resetDebris = () => { for (const b of [...G.rigid.bodies]) if (b.kind !== 'vehicle') G.rigid.remove(b); };
     if (!G.paused && G.mode === 'play') {
-      G.player.update(dt, input);
-      if (G.mission) G.mission.update(dt);
-      if (G.police) G.police.update(dt);
-      if (G.npcs) G.npcs.update(dt);
-      if (G.trains) G.trains.update(dt);
-      G.traffic.update(dt); G.peds.update(dt); G.vehicles.update(dt); G.rigid.step(dt); G.combat.update(dt);
-      if (G.stunts) G.stunts.update(dt);
-    } else if (G.mode === 'menu' && !G.paused) { G.vehicles.update(dt); G.traffic.update(dt); G.peds.update(dt); G.rigid.step(dt); }
-    if (!G.paused) { G.props.update(dt, G.time, G.sky.night); G.fx.update(dt); }
+      run('player', () => G.player.update(dt, input), () => sanitize(0));
+      if (G.mission) run('mission', () => G.mission.update(dt));
+      if (G.police) run('police', () => G.police.update(dt), () => sanitize(0));
+      if (G.npcs) run('npcs', () => G.npcs.update(dt), () => sanitize(0));
+      if (G.trains) run('trains', () => G.trains.update(dt));
+      run('traffic', () => G.traffic.update(dt), () => { G.traffic.clear(); G.traffic.populate(); });
+      run('pedestrians', () => G.peds.update(dt), () => sanitize(0));
+      run('vehicles', () => G.vehicles.update(dt), () => sanitize(0));
+      run('physics', () => G.rigid.step(dt), resetDebris);
+      run('combat', () => G.combat.update(dt));
+      if (G.stunts) run('stunts', () => G.stunts.update(dt));
+    } else if (G.mode === 'menu' && !G.paused) { run('vehicles', () => G.vehicles.update(dt)); run('traffic', () => G.traffic.update(dt)); run('pedestrians', () => G.peds.update(dt)); run('physics', () => G.rigid.step(dt), resetDebris); }
+    if (!G.paused) { run('props', () => G.props.update(dt, G.time, G.sky.night)); run('effects', () => G.fx.update(dt), resetFx); }
+    run('sanitize', () => sanitize(dt));
     const focus = G.mode === 'menu' ? G.cam.look : (G.player.vehicle ? G.player.vehicle.pos : G.player.pos);
-    G.sky.update(G.paused ? 0 : dt, focus, G.camera.position, G.audio);
-    G.cam.update(G.paused ? 0 : rdt, input); updateView();
+    run('sky', () => G.sky.update(G.paused ? 0 : dt, focus, G.camera.position, G.audio));
+    run('camera', () => G.cam.update(G.paused ? 0 : rdt, input)); sanitizeCamera(); updateView();
     // pier wheel
     if (G.world.landmarks.pier) G.world.landmarks.pier.wheel.rotation.x += dt * 0.06;
-    if ((G.frame & 7) === 0) { const c = G.camera.position; const near = this.interiorDefs.map((d) => [d, (d.x - c.x) ** 2 + (d.y - c.y) ** 2 + (d.z - c.z) ** 2]).filter((e) => e[1] < 120 * 120).sort((a, b) => a[1] - b[1]);
-      this.interiorLights.forEach((l, i) => { const e = near[i]; if (!e) { l.intensity = 0; return; } const d = e[0]; l.position.set(d.x, d.y, d.z); l.color.set(d.color); l.intensity = d.intensity; l.distance = d.distance; }); }
+    if ((G.frame & 7) === 0) run('lights', () => { const c = G.camera.position; const near = this.interiorDefs.map((d) => [d, (d.x - c.x) ** 2 + (d.y - c.y) ** 2 + (d.z - c.z) ** 2]).filter((e) => e[1] < 120 * 120).sort((a, b) => a[1] - b[1]);
+      this.interiorLights.forEach((l, i) => { const e = near[i]; if (!e) { l.intensity = 0; return; } const d = e[0]; l.position.set(d.x, d.y, d.z); l.color.set(d.color); l.intensity = d.intensity; l.distance = d.distance; }); });
     // characters
-    G.humans.begin(); G.peds.draw(G.humans); if (G.player.human.visible) G.humans.draw(G.player.human); if (G.npcs) G.npcs.draw(G.humans); G.humans.end();
-    if (G.lighting) G.lighting.update(rdt);
+    run('characters', () => { G.humans.begin(); G.peds.draw(G.humans); if (G.player.human.visible) G.humans.draw(G.player.human); if (G.npcs) G.npcs.draw(G.humans); }); run('characters', () => G.humans.end());
+    if (G.lighting) run('lighting', () => G.lighting.update(rdt));
     // audio listener + ambience
-    if (G.audio.ready) {
+    if (G.audio.ready) run('audio', () => {
       G.audio.updateListener(G.camera.position, G.camera.getWorldDirection(new THREE.Vector3()), G.cam.vel);
       const d = G.world.district(G.camera.position.x, G.camera.position.z); const pv = G.player.vehicle;
       G.audio.updateAmbience(rdt, { city: d === 'downtown' || d === 'shopping' ? 0.8 : d === 'hills' || d === 'airport' ? 0.2 : 0.5, rain: G.sky.w.rain, wind: pv ? clamp((pv.speed - 15) / 50, 0, 1) : clamp(G.camera.position.y / 120, 0, 0.7), sea: d === 'beach' || d === 'port' ? 1 : 0, day: G.sky.day });
-    }
-    if (G.hud) G.hud.update(rdt);
+    });
+    if (G.hud) run('hud', () => G.hud.update(rdt));
     // post fx uniforms
-    const gr = G.composer.grade.uniforms; const pv = G.player.vehicle;
-    gr.speed.value = pv && G.settings.motionBlurFx ? clamp((pv.speed - 28) / 45, 0, 1) + (pv.ctrl.boost && pv.ctrl.throttle ? 0.35 : 0) : 0;
-    gr.damage.value = G.mode === 'play' ? clamp(1 - G.player.health / 55, 0, 1) * 0.8 + (G.time - G.player.lastHit < 0.25 ? 0.4 : 0) : 0;
-    gr.slowmo.value = G.slowmo; gr.letterbox.value = G.cam.letterbox; gr.flash.value = G.sky.flash * 0.15 + (this.flash || 0); this.flash = Math.max(0, (this.flash || 0) - rdt * 3);
-    gr.underwater.value = G.camera.position.y < -0.85 && G.world.static.waterLevel(G.camera.position.x, G.camera.position.z) > -1 ? 1 : 0;
-    if (!noRender && !G.perf.lost) { G.perf.tick(G.frame); G.composer.render(rdt); if (!window.__fixedDt) G.perf.frame(rawMs); }
-    input.endFrame(true);
+    run('post', () => {
+      const gr = G.composer.grade.uniforms; const pv = G.player.vehicle;
+      gr.speed.value = pv && G.settings.motionBlurFx ? clamp((pv.speed - 28) / 45, 0, 1) + (pv.ctrl.boost && pv.ctrl.throttle ? 0.35 : 0) : 0;
+      gr.damage.value = G.mode === 'play' ? clamp(1 - G.player.health / 55, 0, 1) * 0.8 + (G.time - G.player.lastHit < 0.25 ? 0.4 : 0) : 0;
+      gr.slowmo.value = G.slowmo; gr.letterbox.value = G.cam.letterbox; gr.flash.value = G.sky.flash * 0.15 + (this.flash || 0); this.flash = Math.max(0, (this.flash || 0) - rdt * 3);
+      gr.underwater.value = G.camera.position.y < -0.85 && G.world.static.waterLevel(G.camera.position.x, G.camera.position.z) > -1 ? 1 : 0;
+      for (const k in gr) if (typeof gr[k].value === 'number' && !Number.isFinite(gr[k].value)) gr[k].value = 0;
+    });
+    if (!noRender && !G.perf.lost) run('render', () => { G.perf.tick(G.frame); G.composer.render(rdt); if (!window.__fixedDt) G.perf.frame(rawMs); }, () => G.perf.apply(G.perf.pr * 0.8));
+    run('input', () => input.endFrame(true));
     window.__frames = (window.__frames || 0) + 1;
   }
 }

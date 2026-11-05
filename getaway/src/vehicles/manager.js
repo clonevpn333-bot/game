@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { G } from '../core/context.js';
 import { inView } from '../core/perf.js';
+const MAX_VEHICLES = 64;
 import { clamp, SpatialHash, rand, lerp } from '../core/utils.js';
 import { Vehicle } from './vehicle.js';
 import { wheelAssets, RIM_OF } from './models.js';
@@ -19,7 +20,11 @@ export class VehicleManager {
     for (const m of [this.tires, this.rims]) { m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); m.frustumCulled = false; m.castShadow = true; m.count = 0; scene.add(m); }
     this.voices = []; this.sirens = []; this.acc = 0; this.playerVehicle = null; this.skidVoice = null;
   }
-  spawn(type, opts) { const v = new Vehicle(type, opts); this.scene.add(v.root); this.list.push(v); return v; }
+  // hard budget: never more than MAX vehicles; the farthest disposable one (not the player's, not mission-kept) makes room
+  spawn(type, opts) {
+    if (this.list.length >= MAX_VEHICLES) { const cam = G.camera ? G.camera.position : null; let far = null, fd = -1; for (const o of this.list) { if (o.isPlayer || o.keep || G.player.vehicle === o) continue; const d = cam ? o.pos.distanceToSquared(cam) : 0; if (d > fd) { fd = d; far = o; } } if (far) this.remove(far); }
+    const v = new Vehicle(type, opts); this.scene.add(v.root); this.list.push(v); return v;
+  }
   remove(v) { const i = this.list.indexOf(v); if (i >= 0) this.list.splice(i, 1); v.dispose(); v.removed = true; if (v.onRemoved) v.onRemoved(); G.emit('vehicleRemoved', v); }
   query(x, z, r, out = []) { return this.hash.query(x, z, r, out); }
 
