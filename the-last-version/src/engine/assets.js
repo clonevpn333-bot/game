@@ -98,7 +98,7 @@ export function triplanar(material, scale = 1, normalStrength = 1) {
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nvTriPos = position; vTriN = normal;');
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>
-        varying vec3 vTriPos; varying vec3 vTriN; uniform float uTriScale; uniform float uTriNormal;
+        varying vec3 vTriPos; varying vec3 vTriN; uniform float uTriScale; uniform float uTriNormal; uniform mat3 normalMatrix;
         vec3 triW(){ vec3 w = pow(abs(normalize(vTriN)), vec3(4.0)); return w / (w.x + w.y + w.z); }
         vec4 tri(sampler2D t){ vec3 w = triW(); vec3 p = vTriPos * uTriScale;
           return texture2D(t, p.zy) * w.x + texture2D(t, p.xz) * w.y + texture2D(t, p.xy) * w.z; }`)

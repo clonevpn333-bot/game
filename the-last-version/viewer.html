@@ -1,0 +1,42 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>Character viewer</title>
+<style>html,body{margin:0;background:#222;overflow:hidden}#info{position:fixed;left:8px;top:8px;color:#ccc;font:12px monospace}</style>
+<script type="importmap">{ "imports": { "three": "./vendor/three/build/three.module.js", "three/addons/": "./vendor/three/addons/" } }</script>
+</head><body><div id="info"></div><script type="module">
+import * as THREE from 'three';
+import { buildCharacter, KAI, SERA, VENN } from './src/characters/cast.js';
+import { hdri } from './src/engine/assets.js';
+import { Animator } from './src/characters/anim.js';
+const q = new URLSearchParams(location.search);
+const r = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true }); r.setSize(innerWidth, innerHeight); r.setPixelRatio(devicePixelRatio);
+r.toneMapping = THREE.ACESFilmicToneMapping; r.outputColorSpace = THREE.SRGBColorSpace; r.shadowMap.enabled = true;
+document.body.appendChild(r.domElement);
+r.pmrem = new THREE.PMREMGenerator(r);
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0x30343a);
+const env = await hdri(r, 'interior'); scene.environment = env.env; scene.environmentIntensity = 0.6;
+const key = new THREE.DirectionalLight(0xfff1e0, 2.2); key.position.set(2, 3, 3); key.castShadow = true; key.shadow.mapSize.set(2048,2048);
+key.shadow.camera.left=-1;key.shadow.camera.right=1;key.shadow.camera.top=2;key.shadow.camera.bottom=-0.2; key.shadow.bias=-0.0005; key.shadow.normalBias=0.01;
+scene.add(key); const rim = new THREE.DirectionalLight(0x9fc4ff, 1.4); rim.position.set(-2, 2, -3); scene.add(rim);
+const floor = new THREE.Mesh(new THREE.CircleGeometry(3, 48), new THREE.MeshStandardMaterial({ color: 0x3a3a3a, roughness: 0.9 })); floor.rotation.x = -Math.PI/2; floor.receiveShadow = true; scene.add(floor);
+const t0 = performance.now();
+const defs = { kai: KAI, sera: SERA, venn: VENN };
+const who = (q.get('who') || 'kai').split(',');
+const chars = [];
+for (let i = 0; i < who.length; i++) { const c = await buildCharacter(defs[who[i]]); c.position.x = (i - (who.length-1)/2) * 0.9; scene.add(c); chars.push(c); }
+const anims = chars.map((c) => new Animator(c));
+window.__meshes = chars[0].meshes.map(m=>m.name+':'+((m.geometry.index?m.geometry.index.count:m.geometry.attributes.position.count)/3|0)).join(' ');
+document.getElementById('info').textContent = 'build ' + Math.round(performance.now() - t0) + 'ms  tris ' + chars.map(c=>{let n=0;c.traverse(o=>{if(o.isMesh)n+=(o.geometry.index?o.geometry.index.count:o.geometry.attributes.position.count)/3});return n}).join(',');
+const cam = new THREE.PerspectiveCamera(+(q.get('fov')||30), innerWidth/innerHeight, 0.01, 50);
+const view = q.get('view') || 'full';
+const ang = +(q.get('ang') || 0);
+const mode = q.get('mode') || 'idle', expr = q.get('expr') || 'neutral';
+function place() {
+  const tgt = view === 'face' ? new THREE.Vector3(chars[0].position.x, 1.66*chars[0].def.body.height/1.8, 0) : view === 'hand' ? new THREE.Vector3(0.5, 1.0, 0.1) : new THREE.Vector3(0, 0.95, 0);
+  const dist = view === 'face' ? 0.75 : view === 'hand' ? 0.6 : 3.6 * Math.max(1, who.length*0.6);
+  cam.position.set(tgt.x + Math.sin(ang)*dist, tgt.y + (view==='full'?0.15:0.02), tgt.z + Math.cos(ang)*dist); cam.lookAt(tgt);
+}
+let t = 0; const clock = new THREE.Clock(); const still = +(q.get('frames')||0); let fcount = 0;
+function frame() { const dt = still ? 1/30 : Math.min(clock.getDelta(), 0.05); t += dt; fcount++;
+  anims.forEach((a) => { a.mode = mode; a.speed = mode === 'walk' ? 1.4 : mode === 'run' ? 4.5 : 0; a.expression = expr; a.lookTarget = cam.position; a.talking = q.get('talk') === '1'; a.update(dt); });
+  place(); if (!still || fcount >= still) r.render(scene, cam); if (still && fcount >= still) { window.__done = true; return; } requestAnimationFrame(frame); }
+frame(); window.__ready = true;
+</script></body></html>

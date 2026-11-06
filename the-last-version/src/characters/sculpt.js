@@ -43,7 +43,7 @@ function sdBox(px, py, pz, p) {
 }
 function sdTorus(px, py, pz, p) { // ring in local XZ plane
   toLocal(px, py, pz, p, L);
-  const qx = Math.sqrt(L[0] * L[0] / (p.sx * p.sx) + L[2] * L[2] / (p.sz * p.sz)) * Math.min(p.sx, p.sz) - p.R;
+  const qx = (Math.sqrt(L[0] * L[0] / (p.sx * p.sx) + L[2] * L[2] / (p.sz * p.sz)) - p.R) * Math.min(p.sx, p.sz);
   return Math.sqrt(qx * qx + L[1] * L[1] / (p.sy * p.sy)) - p.r;
 }
 function sdPlane(px, py, pz, p) { return (px - p.cx) * p.nx + (py - p.cy) * p.ny + (pz - p.cz) * p.nz; }
@@ -78,7 +78,7 @@ export const P = {
   },
   torus(c, R, r, o = {}) {
     const p = { f: sdTorus, cx: c[0], cy: c[1], cz: c[2], R, r, sx: o.sx || 1, sy: o.sy || 1, sz: o.sz || 1, m: rotMatrix(o.rot), ...o };
-    const E = (R + r) * Math.max(p.sx, p.sz, 1) + 0.01; p.min = [c[0] - E, c[1] - E, c[2] - E]; p.max = [c[0] + E, c[1] + E, c[2] + E];
+    const E = (R + r) * Math.max(p.sx, p.sz, p.sy, 1) + r * p.sy + 0.01; p.min = [c[0] - E, c[1] - E, c[2] - E]; p.max = [c[0] + E, c[1] + E, c[2] + E];
     return p;
   },
   plane(c, n, o = {}) { const l = Math.hypot(...n); return { f: sdPlane, cx: c[0], cy: c[1], cz: c[2], nx: n[0] / l, ny: n[1] / l, nz: n[2] / l, global: true, ...o }; },

@@ -60,19 +60,19 @@ function headSculpt(f) {
   // NOTE: 'neck'-tagged prims are collected with the head set for weighting
   const w = f.width ?? 1, jw = f.jawWidth ?? 1, cl = f.chinLength ?? 1;
   // cranium + face mass
-  A(P.ellipsoid([0, 0.022, -0.012], [0.077 * w, 0.09, 0.097]), 0);
-  A(P.ellipsoid([0, -0.012, 0.03], [0.068 * w, 0.06, 0.066]), 0.03);
+  A(P.ellipsoid([0, 0.024, -0.012], [0.079 * w, 0.091, 0.097]), 0);
+  A(P.ellipsoid([0, -0.006, 0.014], [0.056 * w, 0.05, 0.06]), 0.03);
   // cheekbones + cheeks
   for (const sx of [1, -1]) {
-    A(P.ellipsoid([0.046 * sx * w, -0.006, 0.056], [0.026, 0.017, 0.022]), 0.02);
-    A(P.ellipsoid([0.04 * sx * w, -0.035, 0.05], [0.028, 0.025, 0.026]), 0.025);
+    A(P.ellipsoid([0.044 * sx * w, -0.002, 0.052], [0.02, 0.013, 0.018]), 0.016);
+    A(P.ellipsoid([0.038 * sx * w, -0.024, 0.042], [0.016, 0.016, 0.017]), 0.02);
     // jaw angle
-    A(P.ellipsoid([0.053 * sx * jw, -0.062, 0.004], [0.02, 0.026, 0.03], { rot: [0.3, 0, 0] }), 0.025, 'jaw');
+    A(P.ellipsoid([0.05 * sx * jw, -0.052, -0.016], [0.015, 0.024, 0.024], { rot: [0.3, 0, 0] }), 0.02, 'jaw');
   }
   // jaw / chin (lower face follows the jaw bone)
-  A(P.capsule([0.05 * jw, -0.066, 0.01], [0.018, -0.088 * cl, 0.058], 0.018, 0.015), 0.022, 'jaw');
-  A(P.capsule([-0.05 * jw, -0.066, 0.01], [-0.018, -0.088 * cl, 0.058], 0.018, 0.015), 0.022, 'jaw');
-  A(P.ellipsoid([0, -0.088 * cl, 0.061], [0.024 * (f.chinWidth ?? 1), 0.019, 0.02]), 0.02, 'jaw');
+  A(P.capsule([0.047 * jw, -0.06, -0.012], [0.017, -0.085 * cl, 0.05], 0.012, 0.012), 0.018, 'jaw');
+  A(P.capsule([-0.047 * jw, -0.06, -0.012], [-0.017, -0.085 * cl, 0.05], 0.012, 0.012), 0.018, 'jaw');
+  A(P.ellipsoid([0, -0.083 * cl, 0.058], [0.02 * (f.chinWidth ?? 1), 0.016, 0.017]), 0.016, 'jaw');
   // brow ridge + forehead slope
   A(P.capsule([-0.042 * w, 0.032, 0.077], [0.042 * w, 0.032, 0.077], 0.013 * (f.brow ?? 1)), 0.022);
   // nose
@@ -82,27 +82,27 @@ function headSculpt(f) {
   for (const sx of [1, -1]) A(P.ellipsoid([0.0125 * sx * nw, -0.028 * nl, 0.094], [0.0085, 0.0075, 0.009]), 0.006);
   // lips
   const lw = f.lipWidth ?? 1, lf = f.lipFull ?? 1;
-  A(P.ellipsoid([0, -0.0465, 0.0905], [0.021 * lw, 0.0062 * lf, 0.0095]), 0.007);
-  for (const sx of [1, -1]) A(P.ellipsoid([0.008 * sx, -0.0455, 0.0915], [0.009, 0.0055 * lf, 0.008]), 0.004);
-  A(P.ellipsoid([0, -0.0595, 0.086], [0.018 * lw, 0.0074 * lf, 0.0105]), 0.007, 'jaw');
+  A(P.ellipsoid([0, -0.0465, 0.0835], [0.02 * lw, 0.0056 * lf, 0.0075]), 0.007);
+  for (const sx of [1, -1]) A(P.ellipsoid([0.007 * sx, -0.0458, 0.0845], [0.0085, 0.0048 * lf, 0.0064]), 0.004);
+  A(P.ellipsoid([0, -0.059, 0.0795], [0.017 * lw, 0.0064 * lf, 0.0082]), 0.007, 'jaw');
   // philtrum ridge
-  A(P.capsule([0.003, -0.035, 0.094], [0.003, -0.043, 0.093], 0.0028), 0.004);
-  A(P.capsule([-0.003, -0.035, 0.094], [-0.003, -0.043, 0.093], 0.0028), 0.004);
+  A(P.capsule([0.003, -0.035, 0.0905], [0.003, -0.043, 0.0895], 0.0026), 0.004);
+  A(P.capsule([-0.003, -0.035, 0.0905], [-0.003, -0.043, 0.0895], 0.0026), 0.004);
   // ears
   for (const sx of [1, -1]) {
     A(P.ellipsoid([0.079 * sx * w, -0.004, -0.008], [0.011, 0.03, 0.019], { rot: [0.15, -0.35 * sx, 0.12 * sx] }), 0.008);
     A(P.torus([0.083 * sx * w, 0.0, -0.01], 0.017, 0.0042, { rot: [0, 0, Math.PI / 2], sx: 1, sy: 1, sz: 0.72 }), 0.004);
   }
   // neck + throat
-  A(P.capsule([0, -0.045, -0.03], [0, -0.17, -0.025], 0.05 * (f.neck ?? 1), 0.056 * (f.neck ?? 1)), 0.03, 'neck');
+  A(P.capsule([0, -0.06, -0.034], [0, -0.17, -0.026], 0.049 * (f.neck ?? 1), 0.056 * (f.neck ?? 1)), 0.025, 'neck');
   if (f.adam) A(P.ellipsoid([0, -0.11, 0.025], [0.009, 0.014, 0.008]), 0.012);
   // ---- carving ----
   // eye sockets
-  for (const sx of [1, -1]) s.sub(P.ellipsoid([0.032 * sx, 0.009, 0.082], [0.0175, 0.0125, 0.012]), 0.01);
+  for (const sx of [1, -1]) s.sub(P.ellipsoid([0.032 * sx, 0.009, 0.08], [0.0175, 0.0125, 0.013]), 0.009);
   // nostrils
   for (const sx of [1, -1]) s.sub(P.ellipsoid([0.0068 * sx * nw, -0.0315 * nl, 0.1], [0.0034, 0.0022, 0.005], { rot: [0.5, 0, 0] }), 0.002);
   // mouth line
-  s.sub(P.box([0, -0.0525, 0.093], [0.0205 * lw, 0.0011, 0.016], 0.001), 0.0025);
+  s.sub(P.box([0, -0.0525, 0.091], [0.0195 * lw, 0.001, 0.0085], 0.001), 0.002);
   // ear concha
   for (const sx of [1, -1]) s.sub(P.ellipsoid([0.087 * sx * w, -0.003, -0.006], [0.0055, 0.016, 0.011], { rot: [0.15, -0.35 * sx, 0] }), 0.003);
   // nasolabial softness and temples
@@ -320,7 +320,7 @@ export function hairMaterial(color, spec = 0.5) {
   const g = c.getContext('2d'); g.fillStyle = 'rgb(128,128,255)'; g.fillRect(0, 0, 64, 256);
   for (let x = 0; x < 64; x++) { const v = 128 + (Math.random() - 0.5) * 140; g.fillStyle = `rgb(${v},128,255)`; g.fillRect(x, 0, 1, 256); }
   const n = new THREE.CanvasTexture(c); n.wrapS = n.wrapT = THREE.RepeatWrapping; n.repeat.set(3, 1);
-  return new THREE.MeshPhysicalMaterial({ color, roughness: 0.42, metalness: 0, normalMap: n, normalScale: new THREE.Vector2(0.6, 0.6), vertexColors: true, sheen: 0.6, sheenRoughness: 0.35, sheenColor: new THREE.Color(color).lerp(new THREE.Color(0xffffff), 0.4), specularIntensity: spec, side: THREE.DoubleSide });
+  return new THREE.MeshPhysicalMaterial({ color, roughness: 0.5, metalness: 0, normalMap: n, normalScale: new THREE.Vector2(0.6, 0.6), vertexColors: true, sheen: 0.25, sheenRoughness: 0.4, sheenColor: new THREE.Color(color).lerp(new THREE.Color(0xffffff), 0.15), specularIntensity: spec, side: THREE.DoubleSide });
 }
 
 // ---------------------------------------------------------------------------
@@ -413,7 +413,7 @@ export class Humanoid extends THREE.Group {
     };
     for (const o of hsSculpt.ops) { if (o.prim) toWorld(o.prim); if (o.k) o.k *= hs; }
     // neck primitive also belongs to the neck bone at its base
-    const headGeo = polygonise(hsSculpt, [hc[0] - 0.11 * hs, hc[1] - 0.29 * hs, hc[2] - 0.13 * hs], [hc[0] + 0.11 * hs, hc[1] + 0.13 * hs, hc[2] + 0.13 * hs], 0.0024 * hs, { aoScale: 0.6 * hs });
+    const headGeo = polygonise(hsSculpt, [hc[0] - 0.11 * hs, hc[1] - 0.29 * hs, hc[2] - 0.13 * hs], [hc[0] + 0.11 * hs, hc[1] + 0.13 * hs, hc[2] + 0.13 * hs], 0.0029 * hs, { aoScale: 0.6 * hs });
     const P0 = (x, y, z) => [hc[0] + x * hs, hc[1] + y * hs, hc[2] + z * hs];
     const neckPrim = Object.assign(P.capsule(P0(0, -0.14, -0.03), P0(0, -0.3, -0.03), 0.05 * hs), { bone: 'neck' });
     const chestPrim = Object.assign(P.capsule(P0(0, -0.32, -0.03), P0(0, -0.4, -0.03), 0.06 * hs), { bone: 'chest' });
@@ -447,7 +447,7 @@ export class Humanoid extends THREE.Group {
       for (const p of H.prims) sc.add(p, p.k);
       const all = H.prims;
       const b = boundsOf(all, 0.02);
-      const g = polygonise(sc, b.min, b.max, 0.0019 * scale, { aoScale: 0.35 });
+      const g = polygonise(sc, b.min, b.max, 0.0025 * scale, { aoScale: 0.35 });
       skinWeights(g, all, this.boneIndex, { softness: 0.004 });
       // nails: lighter, pinker
       const pos = g.attributes.position.array, cols = new Float32Array(pos.length);
@@ -510,7 +510,7 @@ export class Humanoid extends THREE.Group {
       // lips
       const lu = Math.hypot(x / 0.021, (y + 0.047) / 0.0075), ll = Math.hypot(x / 0.019, (y + 0.06) / 0.0085);
       const lipT = Math.max(0, 1 - Math.min(lu, ll)) ;
-      if (z > 0.075) c.lerp(lip, Math.min(1, lipT * 2.2));
+      if (z > 0.07) c.lerp(lip, Math.min(0.75, lipT * 1.6));
       // cheek flush
       for (const sx of [1, -1]) { const dd = Math.hypot((x - 0.045 * sx) / 0.025, (y + 0.025) / 0.02); if (dd < 1 && z > 0.03) c.lerp(flush, (1 - dd) * 0.28); }
       // nose tip flush
@@ -521,7 +521,7 @@ export class Humanoid extends THREE.Group {
       for (const sx of [1, -1]) { const dd = Math.hypot((x - 0.032 * sx) / 0.024, (y - 0.006) / 0.018); if (dd < 1 && z > 0.05) c.multiplyScalar(1 - (1 - dd) * 0.12); }
       // stubble on jaw, chin, upper lip
       if (f.stubble) {
-        const jawRegion = y < -0.028 && y > -0.12 && z > -0.01 && Math.abs(x) < 0.07;
+        const jawRegion = y < -0.03 && y > -0.12 && z > 0.01 + Math.max(0, y + 0.06) * 1.5 && Math.abs(x) < 0.06;
         const notLips = lipT < 0.05;
         const upperLip = y < -0.032 && y > -0.044 && Math.abs(x) < 0.025;
         if ((jawRegion || upperLip) && notLips) {
@@ -548,7 +548,7 @@ export class Humanoid extends THREE.Group {
     const lashMat = new THREE.MeshStandardMaterial({ color: f.lashColor ?? 0x1a1412, roughness: 0.8 });
     for (const sx of [1, -1]) {
       const pivot = new THREE.Object3D();
-      const local = new THREE.Vector3(0.032 * sx * hs, 0.009 * hs, 0.074 * hs);
+      const local = new THREE.Vector3(0.032 * sx * hs, 0.009 * hs, 0.0685 * hs);
       pivot.position.set(hc[0] + local.x, hc[1] + local.y, hc[2] + local.z).sub(V(...this.J.head));
       this.bones.head.add(pivot);
       const eye = new THREE.Mesh(eyeGeometry(eyeR), eyeMat);
@@ -561,15 +561,14 @@ export class Humanoid extends THREE.Group {
       // eyelids: partial spherical shells that rotate about the eye centre
       for (const upper of [true, false]) {
         const lidR = eyeR * 1.12;
-        const g = new THREE.SphereGeometry(lidR, 28, 10, -Math.PI * 0.62 + Math.PI / 2 - Math.PI / 2, Math.PI * 1.24, upper ? 0 : Math.PI * 0.5, Math.PI * 0.5);
+        const g = new THREE.SphereGeometry(lidR, 28, 10, Math.PI / 2 - Math.PI * 0.62, Math.PI * 1.24, upper ? 0 : Math.PI * 0.5, Math.PI * 0.5);
         // rotate so the shell opening faces +Z
-        g.rotateY(Math.PI / 2 - Math.PI / 2);
         const lid = new THREE.Mesh(g, lidMat);
         const holder = new THREE.Object3D(); holder.add(lid);
         pivot.add(holder);
         // lash strip along the lid edge
         const lash = new THREE.Mesh(new THREE.TorusGeometry(lidR * 1.01, 0.0007 * hs, 4, 24, Math.PI * 0.95), lashMat);
-        lash.rotation.set(Math.PI / 2, 0, upper ? Math.PI * 1.025 : 0.025 * Math.PI);
+        lash.rotation.set(Math.PI / 2, 0, 0.025 * Math.PI);
         holder.add(lash);
         this.lids.push({ holder, upper, side: sx, lash });
       }
@@ -581,11 +580,11 @@ export class Humanoid extends THREE.Group {
     const gum = new THREE.MeshStandardMaterial({ color: 0x5a1f22, roughness: 0.6, side: THREE.DoubleSide });
     const mk = (upper) => {
       const g = new THREE.Group();
-      for (let i = -5; i <= 5; i++) {
-        const a = i * 0.16;
-        const w = (Math.abs(i) < 2 ? 0.0042 : 0.0036) * hs;
+      for (let i = -3; i <= 3; i++) {
+        const a = i * 0.2;
+        const w = (Math.abs(i) < 2 ? 0.0038 : 0.0032) * hs;
         const t = new THREE.Mesh(new THREE.BoxGeometry(w, 0.0058 * hs, 0.004 * hs), mat);
-        const R = 0.024 * hs;
+        const R = 0.02 * hs;
         t.position.set(Math.sin(a) * R, upper ? -0.0028 * hs : 0.0028 * hs, Math.cos(a) * R - R);
         t.rotation.y = a;
         g.add(t);
@@ -593,7 +592,7 @@ export class Humanoid extends THREE.Group {
       return g;
     };
     const upper = mk(true), lower = mk(false);
-    const ref = V(hc[0], hc[1] - 0.0515 * hs, hc[2] + 0.083 * hs);
+    const ref = V(hc[0], hc[1] - 0.0515 * hs, hc[2] + 0.073 * hs);
     upper.position.copy(ref).sub(V(...this.J.head));
     this.bones.head.add(upper);
     const jawW = this.worldRest.jaw;
@@ -601,8 +600,8 @@ export class Humanoid extends THREE.Group {
     this.bones.jaw.add(lower);
     // mouth interior so an open mouth never shows through the head
     const bag = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12), gum);
-    bag.scale.set(0.022 * hs, 0.016 * hs, 0.028 * hs);
-    bag.position.set(hc[0], hc[1] - 0.055 * hs, hc[2] + 0.06 * hs).sub(V(...this.J.head));
+    bag.scale.set(0.019 * hs, 0.013 * hs, 0.02 * hs);
+    bag.position.set(hc[0], hc[1] - 0.054 * hs, hc[2] + 0.05 * hs).sub(V(...this.J.head));
     this.bones.head.add(bag);
     const tongue = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8), new THREE.MeshStandardMaterial({ color: 0xa04a4a, roughness: 0.4 }));
     tongue.scale.set(0.015 * hs, 0.006 * hs, 0.022 * hs);
@@ -616,12 +615,12 @@ export class Humanoid extends THREE.Group {
     this.brows = [];
     for (const sx of [1, -1]) {
       const clumps = [];
-      for (let i = 0; i < 26; i++) {
-        const t = i / 25;
+      for (let i = 0; i < 44; i++) {
+        const t = i / 43;
         const x = (0.016 + t * 0.03) * sx;
         const y = 0.03 + Math.sin(t * Math.PI) * 0.005 - t * 0.002 + (f.browArch ?? 0) * Math.sin(t * Math.PI) * 0.004;
         const z = 0.0905 - t * t * 0.02;
-        clumps.push({ root: [x * hs, (y - 0.003 + Math.random() * 0.004) * hs, z * hs], dir: [sx * (0.6 + t * 0.4), 0.35 - t * 0.5, 0.2], len: 0.011 * hs, width: 0.0018 * hs * (f.browThick ?? 1) * (1 - t * 0.4), flat: 0.5, droop: 0.05, segs: 3, side: [0, 0, 1] });
+        clumps.push({ root: [x * hs, (y - 0.003 + Math.random() * 0.004) * hs, z * hs], dir: [sx * (0.6 + t * 0.4), 0.35 - t * 0.5, 0.2], len: 0.013 * hs, width: 0.0028 * hs * (f.browThick ?? 1) * (1 - t * 0.45), flat: 0.35, droop: 0.05, segs: 3, side: [0, 0, 1] });
       }
       const g = hairClumps({ clumps });
       const brow = new THREE.Mesh(g, mat);
@@ -677,19 +676,20 @@ export class Humanoid extends THREE.Group {
     if (spec.cap) {
       const sc = spec.cap;
       const b = spec.capBounds;
-      const g = polygonise(sc, b.min, b.max, 0.003, { aoScale: 0.5 });
+      const g = polygonise(sc, b.min, b.max, spec.capRes ?? 0.003, { aoScale: 0.5 });
       const cols = new Float32Array(g.attributes.position.count * 3).fill(0.75);
       g.setAttribute('color', new THREE.BufferAttribute(cols, 3));
       skinWeights(g, [Object.assign(P.sphere(hc, 0.1), { bone: 'head' })], this.boneIndex);
       const capMat = mat.clone(); capMat.side = THREE.FrontSide;
       this.addSkinned(g, capMat, 'hairCap');
     }
-    const g = hairClumps(spec);
-    // rigid to head bone, with secondary-motion uniform handled by the animator
-    const mesh = new THREE.Mesh(g, mat);
-    mesh.position.set(-this.J.head[0], -this.J.head[1], -this.J.head[2]);
-    this.bones.head.add(mesh);
-    this.hairMesh = mesh;
+    if (spec.clumps.length) {
+      const g = hairClumps(spec);
+      const mesh = new THREE.Mesh(g, mat);
+      mesh.position.set(-this.J.head[0], -this.J.head[1], -this.J.head[2]);
+      this.bones.head.add(mesh);
+      this.hairMesh = mesh;
+    }
     if (spec.tail) {
       // ponytail on a 3-bone spring chain
       this.tail = spec.tail(this, mat);
