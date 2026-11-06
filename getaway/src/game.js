@@ -3,7 +3,6 @@ import { PerfGovernor, updateView } from './core/perf.js';
 import { Guard } from './core/guard.js';
 import { Rockets } from './missions/air.js';
 import { Dents } from './fx/dents.js';
-import { SkinnedCrowd } from './characters/skinned.js';
 import { sanitize, sanitizeCamera } from './core/sanitize.js';
 import * as THREE from 'three';
 import { G } from './core/context.js';
@@ -48,7 +47,6 @@ export class Game {
     G.vehicles = new VehicleManager(G.scene, G.world.static); G.combat = new Combat(G.world.static); G.rockets = new Rockets(); G.dents = new Dents(G.scene);
     G.traffic = new Traffic(G.world); G.humans = new HumanRenderer(G.scene, 380); G.peds = new Peds(G.world); G.peds.setDensity(G.settings.pedDensity);
     G.player = new Player(); G.combat.addTarget(G.player.target);
-    try { G.skinned = new SkinnedCrowd(G.scene); console.log('[skinned] built in', G.skinned.buildMs.toFixed(0), 'ms'); } catch (e) { console.warn('skinned crowd disabled', e); G.skinned = null; }
     G.cam = new CameraRig(G.camera); G.cam.baseFov = G.settings.fov;
     G.lighting = new Lighting(G.scene); G.lighting.buildLampPools(G.props);
     G.composer = createComposer(G.renderer, G.scene, G.camera, G.settings); G.perf = new PerfGovernor(G.renderer, G.composer, G.settings);
@@ -110,8 +108,7 @@ export class Game {
     if ((G.frame & 7) === 0) run('lights', () => { const c = G.camera.position; const near = this.interiorDefs.map((d) => [d, (d.x - c.x) ** 2 + (d.y - c.y) ** 2 + (d.z - c.z) ** 2]).filter((e) => e[1] < 120 * 120).sort((a, b) => a[1] - b[1]);
       this.interiorLights.forEach((l, i) => { const e = near[i]; if (!e) { l.intensity = 0; return; } const d = e[0]; l.position.set(d.x, d.y, d.z); l.color.set(d.color); l.intensity = d.intensity; l.distance = d.distance; }); });
     // characters
-    run('characters', () => { if (G.skinned) { const hs = [G.player.human]; for (const p of G.peds.list) hs.push(p.human); if (G.npcs) for (const n of G.npcs.list) hs.push(n.human); G.skinned.assign(hs); }
-      G.humans.begin(); G.peds.draw(G.humans); if (G.player.human.visible) G.humans.draw(G.player.human); if (G.npcs) G.npcs.draw(G.humans); }); run('characters', () => { G.humans.end(); if (G.skinned) G.skinned.update(); }, () => { if (G.skinned) for (const s of G.skinned.slots) s.h = null; });
+    run('characters', () => { G.humans.begin(); G.peds.draw(G.humans); if (G.player.human.visible) G.humans.draw(G.player.human); if (G.npcs) G.npcs.draw(G.humans); }); run('characters', () => G.humans.end());
     if (G.lighting) run('lighting', () => G.lighting.update(rdt));
     // audio listener + ambience
     if (G.audio.ready) run('audio', () => {

@@ -26,8 +26,8 @@ export function randomLook(rng = Math.random) {
 }
 export const LOOKS = {
   kit: { skin: 0xd9a27a, hair: 0x5a2416, hairStyle: 'bun', shirt: 0x26292e, sleeve: 'long', pants: 0x22324a, shoes: 0x111111, scale: 1.0, build: 0.95, hat: null, jacket: 0x26292e },
-  police: () => ({ ...randomLook(), shirt: 0x1d2c4f, sleeve: 'short', pants: 0x151c2c, shoes: 0x0a0a0a, hat: 'cap', hatColor: 0x1d2c4f }),
-  swat: () => ({ ...randomLook(), shirt: 0x22262b, sleeve: 'long', pants: 0x22262b, shoes: 0x111111, hat: 'helmet', hatColor: 0x1a1d21, vest: true, build: 1.12 }),
+  police: () => ({ ...randomLook(), shirt: 0x1d2c4f, sleeve: 'short', pants: 0x151c2c, shoes: 0x0a0a0a, hat: 'cap', hatColor: 0x1d2c4f, uniform: 1 }),
+  swat: () => ({ ...randomLook(), shirt: 0x22262b, sleeve: 'long', pants: 0x22262b, shoes: 0x111111, hat: 'helmet', hatColor: 0x1a1d21, vest: true, build: 1.12, uniform: 3 }),
   halcyon: () => ({ ...randomLook(), shirt: 0x0d0f12, sleeve: 'long', pants: 0x0d0f12, shoes: 0x0a0a0a, hat: Math.random() < 0.5 ? 'beanie' : null, hatColor: 0x0d0f12, build: 1.08, shades: true }),
   thug: () => ({ ...randomLook(), shirt: [0x7a1f1f, 0x2d2d2d, 0x3e4a2f][(Math.random() * 3) | 0], hat: Math.random() < 0.4 ? 'beanie' : null, hatColor: 0x222222 }),
   worker: () => ({ ...randomLook(), shirt: 0xe67e22, hat: 'helmet', hatColor: 0xf1c40f }),
@@ -251,47 +251,49 @@ export class Human {
 
 // ---------------- instanced renderer ----------------
 function capsule(r0 = 1, r1 = 1) { const g = new THREE.CylinderGeometry(r1, r0, 1, 14, 1); g.translate(0, 0.5, 0); const a = new THREE.SphereGeometry(r0, 10, 6, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2); a.scale(1, 0.14, 1); const b = new THREE.SphereGeometry(r1, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2); b.scale(1, 0.14, 1); b.translate(0, 1, 0); return mergeParts([{ geo: g, c: 0xffffff }, { geo: a, c: 0xffffff }, { geo: b, c: 0xffffff }]); }
-const BODY_PARTS = new Set(['torso', 'pelvis', 'belt', 'head', 'eyes', 'limb', 'joint', 'hand', 'foot']);
+// rounded box: a box whose edges/corners are rounded with radius r (exact normals) — the base "shape" of the figures
+function rbox(w, h, d, r, seg = 2) { const g = new THREE.BoxGeometry(w, h, d, seg * 2, seg * 2, seg * 2); const p = g.attributes.position, n = g.attributes.normal; const hw = w / 2 - r, hh = h / 2 - r, hd = d / 2 - r; const v = new THREE.Vector3(), c = new THREE.Vector3();
+  for (let i = 0; i < p.count; i++) { v.fromBufferAttribute(p, i); c.set(Math.max(-hw, Math.min(hw, v.x)), Math.max(-hh, Math.min(hh, v.y)), Math.max(-hd, Math.min(hd, v.z))); v.sub(c); const l = v.length() || 1; v.multiplyScalar(1 / l); n.setXYZ(i, v.x, v.y, v.z); p.setXYZ(i, c.x + v.x * r, c.y + v.y * r, c.z + v.z * r); }
+  return g; }
+// narrow x/z towards the bottom between y0 (scale a0/b0) and y1 (scale 1) — tapered torso, jaw
+function taper(g, y0, y1, a0, a1, b0, b1) { const p = g.attributes.position; for (let i = 0; i < p.count; i++) { const t = Math.max(0, Math.min(1, (p.getY(i) - y0) / (y1 - y0))); p.setX(i, p.getX(i) * (a0 + (a1 - a0) * t)); p.setZ(i, p.getZ(i) * (b0 + (b1 - b0) * t)); } return g; }
 export class HumanRenderer {
   constructor(scene, max = 360) {
     this.max = max; this.meshes = {}; const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, metalness: 0.02 });
-    const head = new THREE.SphereGeometry(1, 24, 18); head.scale(0.92, 1.04, 1);
-    const jaw = new THREE.SphereGeometry(1, 18, 12); jaw.scale(0.7, 0.5, 0.72); jaw.translate(0, -0.42, 0.18); // stylized jaw + chin
-    const cheeks = [0.42, -0.42].map((x) => new THREE.SphereGeometry(0.3, 10, 8).translate(x, -0.12, 0.66));
-    const nose = new THREE.SphereGeometry(0.17, 10, 8); nose.scale(0.8, 1.15, 1.1); nose.translate(0, -0.08, 0.98); const bridge = new THREE.BoxGeometry(0.13, 0.3, 0.1); bridge.translate(0, 0.08, 0.93);
-    const lipU = new THREE.SphereGeometry(0.2, 10, 6); lipU.scale(1.3, 0.3, 0.45); lipU.translate(0, -0.4, 0.86); const lipL = new THREE.SphereGeometry(0.2, 10, 6); lipL.scale(1.15, 0.32, 0.45); lipL.translate(0, -0.5, 0.82);
-    const ears = [new THREE.SphereGeometry(0.22, 8, 6).scale(0.45, 1, 0.75).translate(0.9, 0.02, -0.02), new THREE.SphereGeometry(0.22, 8, 6).scale(0.45, 1, 0.75).translate(-0.9, 0.02, -0.02)];
-    const neckline = new THREE.CylinderGeometry(0.45, 0.5, 0.12, 12); neckline.translate(0, -0.95, -0.05);
-    // eyes: sclera + iris + pupil + catchlight, and brows — drawn with a white instance colour so they keep their own colours
-    const eyeParts = []; for (const sx of [1, -1]) { const x = sx * 0.34; eyeParts.push({ geo: new THREE.SphereGeometry(0.19, 12, 9).scale(1, 0.85, 0.6).translate(x, 0.1, 0.8), c: 0xf3efe8 }, { geo: new THREE.SphereGeometry(0.11, 10, 8).scale(1, 1, 0.4).translate(x, 0.09, 0.9), c: 0x4a2f1c },
-      { geo: new THREE.SphereGeometry(0.055, 8, 6).scale(1, 1, 0.4).translate(x, 0.09, 0.935), c: 0x050505 }, { geo: new THREE.SphereGeometry(0.025, 6, 4).translate(x + 0.04, 0.14, 0.955), c: 0xffffff },
-      { geo: new THREE.BoxGeometry(0.32, 0.07, 0.1).rotateZ(sx * -0.12).translate(x, 0.33, 0.86), c: 0x2a1c14 }); }
-    const torso = new THREE.CylinderGeometry(1, 0.8, 1, 18, 2); torso.translate(0, 0.5, 0); const shoulders = new THREE.SphereGeometry(1, 18, 8, 0, Math.PI * 2, 0, Math.PI / 2); shoulders.scale(1, 0.35, 1); shoulders.translate(0, 0.98, 0);
-    const chest = new THREE.SphereGeometry(1, 16, 10); chest.scale(0.85, 0.4, 0.55); chest.translate(0, 0.72, 0.42);
-    const collar = new THREE.TorusGeometry(0.45, 0.08, 6, 16); collar.rotateX(Math.PI / 2); collar.translate(0, 1.03, 0.02);
-    const placket = new THREE.BoxGeometry(0.1, 0.85, 0.06); placket.translate(0, 0.52, 0.86); const hem = new THREE.CylinderGeometry(0.83, 0.82, 0.1, 18, 1); hem.translate(0, 0.04, 0);
-    const pockets = [0.42, -0.42].map((x) => new THREE.BoxGeometry(0.3, 0.26, 0.05).translate(x, 0.72, 0.92));
-    const belt = new THREE.CylinderGeometry(1.02, 1.02, 0.28, 16); belt.scale(1, 1, 0.8); belt.translate(0, 0.25, 0); const buckle = new THREE.BoxGeometry(0.3, 0.22, 0.08); buckle.translate(0, 0.25, 0.82);
-    const hand = new THREE.SphereGeometry(1, 10, 8); hand.scale(0.8, 1.1, 0.55); const thumb = new THREE.CapsuleGeometry(0.25, 0.5, 3, 6); thumb.rotateZ(0.7); thumb.translate(0.55, 0.2, 0.25);
-    const shoe = new THREE.BoxGeometry(1, 0.85, 1); shoe.translate(0, 0.52, 0.2); const toe = new THREE.SphereGeometry(0.5, 10, 6); toe.scale(1, 0.75, 0.7); toe.translate(0, 0.42, 0.68); const sole = new THREE.BoxGeometry(1.06, 0.18, 1.45); sole.translate(0, 0.09, 0.3);
+    // ---- the shape kit: rounded boxes + cylinders, a graphic face. (No sculpted/organic meshes — see CLAUDE.md.) ----
+    const P_ = (geo, c, x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0) => { if (rx || ry || rz) geo.applyMatrix4(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(rx, ry, rz))); geo.translate(x, y, z); return { geo, c }; };
+    // head (unit = 0.123 m, origin = head centre, +z = face)
+    const head = taper(rbox(1.64, 1.96, 1.76, 0.42, 4), -0.98, 0.15, 0.84, 1, 0.92, 1);
+    const headParts = [{ geo: head, c: 0xffffff }, P_(rbox(0.2, 0.34, 0.24, 0.06), 0xeedcd0, 0, -0.13, 0.9), ...[1, -1].map((sx) => P_(rbox(0.16, 0.34, 0.26, 0.06), 0xf0dcd0, sx * 0.83, 0, -0.02))];
+    const face = []; for (const sx of [1, -1]) face.push(P_(rbox(0.3, 0.22, 0.06, 0.08), 0xf3efe8, sx * 0.34, 0.09, 0.875), P_(rbox(0.13, 0.17, 0.05, 0.04), 0x1c140e, sx * 0.31, 0.08, 0.9), P_(new THREE.BoxGeometry(0.04, 0.04, 0.02), 0xffffff, sx * 0.31 + 0.035, 0.12, 0.93), P_(new THREE.BoxGeometry(0.34, 0.075, 0.06), 0x2a1c14, sx * 0.34, 0.34, 0.88, 0, 0, sx * -0.1));
+    face.push(P_(rbox(0.34, 0.07, 0.05, 0.03), 0x6e2f2a, 0, -0.5, 0.86));
+    // hair + hats (head space)
+    const hairTop = () => P_(rbox(1.8, 0.62, 1.9, 0.26), 0xffffff, 0, 0.75, -0.03), hairBack = () => P_(rbox(1.74, 0.9, 0.36, 0.14), 0xffffff, 0, 0.22, -0.8);
+    const sideburns = () => [1, -1].map((sx) => P_(rbox(0.14, 0.5, 0.5, 0.05), 0xffffff, sx * 0.86, 0.3, -0.25));
+    // torso (unit: x 0.2 m half-width, y 0..1 = pelvis..chest joint, z 0.12 m)
+    const torsoBody = rbox(2.0, 1.0, 1.8, 0.28, 4); torsoBody.translate(0, 0.55, 0); taper(torsoBody, 0.05, 0.8, 0.74, 1, 0.85, 1);
+    const vestBody = taper(rbox(2.16, 0.8, 1.98, 0.3, 4), -0.4, 0.3, 0.8, 1, 0.9, 1); vestBody.translate(0, 0.58, 0);
+    const shoe = rbox(1.9, 0.78, 1.42, 0.3, 3); shoe.translate(0, 0.55, 0.3);
     const defs = {
-      head: mergeParts([{ geo: head, c: 0xffffff }, { geo: jaw, c: 0xffffff }, ...cheeks.map((g) => ({ geo: g, c: 0xffffff })), { geo: nose, c: 0xeedcd0 }, { geo: bridge, c: 0xf2e2d6 }, { geo: lipU, c: 0xc98e86 }, { geo: lipL, c: 0xd49c94 }, ...ears.map((g) => ({ geo: g, c: 0xf0dcd0 })), { geo: neckline, c: 0xe8d8cc }]),
-      eyes: mergeParts(eyeParts),
-      torso: mergeParts([{ geo: torso, c: 0xffffff }, { geo: shoulders, c: 0xffffff }, { geo: chest, c: 0xf2f2f2 }, { geo: collar, c: 0xc8c8c8 }, { geo: placket, c: 0xb8b8b8 }, { geo: hem, c: 0xa8a8a8 }, ...pockets.map((g) => ({ geo: g, c: 0xc4c4c4 }))]),
-      belt: mergeParts([{ geo: belt, c: 0x2b1d14 }, { geo: buckle, c: 0xc9a24a }]),
-      pelvis: (() => { const g = new THREE.SphereGeometry(1, 12, 8); g.scale(1, 0.75, 0.75); return g; })(),
-      limb: capsule(1, 0.85), hand: mergeParts([{ geo: hand, c: 0xffffff }, { geo: thumb, c: 0xffffff }]),
-      foot: mergeParts([{ geo: shoe, c: 0xffffff }, { geo: toe, c: 0xffffff }, { geo: sole, c: 0x5a5a5a }]),
-      hairCap: (() => { const g = new THREE.SphereGeometry(1.08, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.55); g.rotateX(-0.25); g.translate(0, 0.08, -0.06); return g; })(),
-      hairLong: (() => { const a = new THREE.SphereGeometry(1.1, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.6); a.rotateX(-0.2); a.translate(0, 0.06, -0.05); const b = new THREE.BoxGeometry(1.9, 1.6, 0.5); b.translate(0, -0.55, -0.62); return mergeParts([{ geo: a, c: 0xffffff }, { geo: b, c: 0xffffff }]); })(),
-      hairBun: (() => { const a = new THREE.SphereGeometry(1.08, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.55); a.rotateX(-0.25); a.translate(0, 0.08, -0.06); const b = new THREE.SphereGeometry(0.45, 10, 8); b.translate(0, 0.55, -0.85); return mergeParts([{ geo: a, c: 0xffffff }, { geo: b, c: 0xffffff }]); })(),
-      cap: (() => { const a = new THREE.CylinderGeometry(1.05, 1.1, 0.55, 14); a.translate(0, 0.55, 0); const b = new THREE.BoxGeometry(1.5, 0.08, 0.9); b.translate(0, 0.35, 1.0); const badge = new THREE.BoxGeometry(0.3, 0.3, 0.1); badge.translate(0, 0.62, 1.05); return mergeParts([{ geo: a, c: 0xffffff }, { geo: b, c: 0x111111 }, { geo: badge, c: 0xd4af37 }]); })(),
-      helmet: (() => { const a = new THREE.SphereGeometry(1.2, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.55); a.translate(0, 0.1, -0.05); const v = new THREE.BoxGeometry(1.5, 0.35, 0.3); v.translate(0, 0.15, 1.0); return mergeParts([{ geo: a, c: 0xffffff }, { geo: v, c: 0x222222 }]); })(),
-      beanie: (() => { const a = new THREE.SphereGeometry(1.12, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.5); a.translate(0, 0.12, -0.04); return a; })(),
-      shades: (() => { const g = new THREE.BoxGeometry(1.6, 0.28, 0.12); g.translate(0, 0.14, 0.95); return g; })(),
+      head: mergeParts(headParts),
+      eyes: mergeParts(face),
+      torso: mergeParts([{ geo: torsoBody, c: 0xffffff }, ...[1, -1].map((sx) => P_(new THREE.BoxGeometry(0.44, 0.2, 0.08), 0xc4c4c4, sx * 0.19, 0.98, 0.84, 0, 0, sx * 0.55)), P_(new THREE.BoxGeometry(0.1, 0.72, 0.05), 0xd6d6d6, 0, 0.52, 0.86)]),
+      belt: mergeParts([P_(rbox(2.06, 0.24, 1.7, 0.1), 0x2b1d14, 0, 0.42, 0), P_(new THREE.BoxGeometry(0.32, 0.2, 0.08), 0xb8963e, 0, 0.42, 0.86)]),
+      pelvis: (() => { const g = rbox(2.0, 1.25, 1.62, 0.3, 3); g.translate(0, -0.05, 0); return g; })(),
+      limb: capsule(1, 0.85),
+      hand: mergeParts([P_(rbox(1.0, 2.0, 1.5, 0.35, 3), 0xffffff, 0, 0.55, 0), P_(rbox(0.5, 0.9, 0.5, 0.2), 0xffffff, -0.3, 0.4, 0.75, 0.4)]),
+      foot: mergeParts([{ geo: shoe, c: 0xffffff }, P_(rbox(2.0, 0.2, 1.52, 0.06), 0x4a4a4a, 0, 0.1, 0.3)]),
+      hairCap: mergeParts([hairTop(), hairBack(), ...sideburns(), P_(rbox(1.5, 0.2, 0.22, 0.08), 0xffffff, 0.1, 0.82, 0.86, 0, 0, -0.08)]),
+      hairLong: mergeParts([hairTop(), P_(rbox(1.82, 1.9, 0.4, 0.15), 0xffffff, 0, -0.3, -0.8), ...[1, -1].map((sx) => P_(rbox(0.22, 1.45, 0.8, 0.08), 0xffffff, sx * 0.9, -0.12, -0.2)), P_(rbox(1.3, 0.24, 0.22, 0.08), 0xffffff, 0.18, 0.74, 0.86, 0, 0, -0.14)]),
+      hairBun: mergeParts([hairTop(), hairBack(), ...sideburns(), P_(rbox(0.66, 0.62, 0.56, 0.26), 0xffffff, 0, 0.66, -1.08)]),
+      cap: mergeParts([P_(rbox(1.88, 0.5, 1.98, 0.18), 0xffffff, 0, 1.0, 0.02)]),
+      capTrim: mergeParts([P_(rbox(1.82, 0.26, 1.92, 0.1), 0x111318, 0, 0.66, 0), P_(new THREE.BoxGeometry(1.5, 0.06, 0.62), 0x0c0c0c, 0, 0.52, 1.12, 0.28), P_(rbox(0.3, 0.32, 0.06, 0.05), 0xd4af37, 0, 0.98, 1.0)]),
+      helmet: mergeParts([P_(rbox(2.02, 1.02, 2.12, 0.46, 4), 0xffffff, 0, 0.62, -0.04), P_(rbox(2.08, 0.12, 2.18, 0.05), 0xb4b4b4, 0, 0.17, -0.04)]),
+      beanie: mergeParts([P_(rbox(1.86, 0.92, 1.96, 0.4, 4), 0xffffff, 0, 0.64, -0.02), P_(rbox(1.92, 0.3, 2.02, 0.12), 0xcfcfcf, 0, 0.26, -0.02)]),
+      shades: mergeParts([...[1, -1].map((sx) => P_(rbox(0.4, 0.26, 0.07, 0.07), 0xffffff, sx * 0.34, 0.1, 0.95)), P_(new THREE.BoxGeometry(0.3, 0.06, 0.06), 0xffffff, 0, 0.16, 0.95), ...[1, -1].map((sx) => P_(new THREE.BoxGeometry(0.05, 0.06, 0.95), 0xffffff, sx * 0.83, 0.14, 0.46))]),
       bag: (() => { const g = new THREE.CylinderGeometry(1, 1, 2.4, 12); g.rotateZ(Math.PI / 2); const s = new THREE.TorusGeometry(0.9, 0.08, 6, 12, Math.PI); s.translate(0, 0.9, 0); return mergeParts([{ geo: g, c: 0xffffff }, { geo: s, c: 0x222222 }]); })(),
-      joint: new THREE.SphereGeometry(1, 10, 8),
-      vest: (() => { const g = new THREE.CylinderGeometry(1.08, 0.95, 0.75, 12); g.translate(0, 0.55, 0); return g; })(),
+      joint: new THREE.SphereGeometry(1, 12, 8),
+      vest: mergeParts([{ geo: vestBody, c: 0xffffff }, ...[-0.55, 0, 0.55].map((x) => P_(rbox(0.42, 0.3, 0.2, 0.06), 0xd8d8d8, x, 0.42, 0.96))]),
     };
     for (const [k, g0] of Object.entries(defs)) {
       const g = g0.attributes.color ? g0 : mergeParts([{ geo: g0, c: 0xffffff }]);
@@ -303,7 +305,6 @@ export class HumanRenderer {
   }
   begin() { for (const k in this.meshes) this.meshes[k].n = 0; }
   _put(k, e, col) {
-    if (this._skipBody && BODY_PARTS.has(k)) return; // this person is drawn by the skinned close-up body (skinned.js)
     const M = this.meshes[k]; if (M.n >= M.mesh.instanceMatrix.count) return; const o = M.n * 16; const a = M.arr;
     for (let i = 0; i < 16; i++) a[o + i] = e[i];
     this.c.set(col); const ci = M.n * 3; M.col[ci] = this.c.r; M.col[ci + 1] = this.c.g; M.col[ci + 2] = this.c.b; M.n++;
@@ -312,7 +313,6 @@ export class HumanRenderer {
   // basis matrix from columns X,Y,Z scaled, translation T
   static mat(e, xx, xy, xz, yx, yy, yz, zx, zy, zz, tx, ty, tz) { e[0] = xx; e[1] = xy; e[2] = xz; e[3] = 0; e[4] = yx; e[5] = yy; e[6] = yz; e[7] = 0; e[8] = zx; e[9] = zy; e[10] = zz; e[11] = 0; e[12] = tx; e[13] = ty; e[14] = tz; e[15] = 1; return e; }
   draw(h) {
-    this._skipBody = !!h._sk;
     const J3 = h.joints, L = h.look, S = h.scale, b = L.build || 1; const e = this._e || (this._e = new Float32Array(16));
     const jx = (j) => J3[j * 3], jy = (j) => J3[j * 3 + 1], jz = (j) => J3[j * 3 + 2];
     // torso frame
@@ -331,7 +331,7 @@ export class HumanRenderer {
     const hrx = huy * hfz - huz * hfy, hry = huz * hfx - hux * hfz, hrz = hux * hfy - huy * hfx;
     HumanRenderer.mat(e, hrx * hr, hry * hr, hrz * hr, hux * hr, huy * hr, huz * hr, hfx * hr, hfy * hr, hfz * hr, hx, hy, hz); this._put('head', e, L.skin); this._put('eyes', e, 0xffffff);
     const hs = L.hairStyle; if (hs && hs !== 'bald' && L.hat !== 'helmet' && L.hat !== 'cap') this._put(hs === 'long' ? 'hairLong' : hs === 'bun' ? 'hairBun' : 'hairCap', e, L.hair);
-    if (L.hat) this._put(L.hat, e, L.hatColor || 0x222222);
+    if (L.hat) { this._put(L.hat, e, L.hatColor || 0x222222); if (L.hat === 'cap') this._put('capTrim', e, 0xffffff); }
     if (L.shades) this._put('shades', e, 0x050505);
     // limbs
     const limb = (a, bb, r0, col) => {
@@ -344,14 +344,21 @@ export class HumanRenderer {
     limb(3, 4, 0.065 * b, shirt); limb(4, 5, 0.052 * b, sleeve); limb(6, 7, 0.065 * b, shirt); limb(7, 8, 0.052 * b, sleeve);
     { const nr = 0.055 * S; const ax = jx(1), ay = jy(1) - 0.02, az = jz(1); let dx = hx - ax, dy = hy - 0.09 - ay, dz = hz - az; const len = Math.hypot(dx, dy, dz) || 0.1; dx /= len; dy /= len; dz /= len; let px = dy * fz - dz * fy, py = dz * fx - dx * fz, pz = dx * fy - dy * fx; const pl = Math.hypot(px, py, pz) || 1; px /= pl; py /= pl; pz /= pl; const qx = py * dz - pz * dy, qy = pz * dx - px * dz, qz = px * dy - py * dx; HumanRenderer.mat(e, px * nr, py * nr, pz * nr, dx * len, dy * len, dz * len, qx * nr, qy * nr, qz * nr, ax, ay, az); this._put('limb', e, L.skin); }
     const jt = (j, r, col) => { const rr = r * S; HumanRenderer.mat(e, rr, 0, 0, 0, rr, 0, 0, 0, rr, jx(j), jy(j), jz(j)); this._put('joint', e, col); };
-    jt(3, 0.08 * b, shirt); jt(6, 0.08 * b, shirt); jt(4, 0.058 * b, sleeve); jt(7, 0.058 * b, sleeve); jt(10, 0.075 * b, L.pants); jt(13, 0.075 * b, L.pants);
+    jt(3, 0.066 * b, shirt); jt(6, 0.066 * b, shirt); jt(4, 0.058 * b, sleeve); jt(7, 0.058 * b, sleeve); jt(10, 0.075 * b, L.pants); jt(13, 0.075 * b, L.pants);
     limb(9, 10, 0.085 * b, L.pants); limb(10, 11, 0.065 * b, L.pants); limb(12, 13, 0.085 * b, L.pants); limb(13, 14, 0.065 * b, L.pants);
     for (const [j, el] of [[5, 4], [8, 7]]) { const r = 0.052 * S; let dx = jx(j) - jx(el), dy = jy(j) - jy(el), dz = jz(j) - jz(el); const dl = Math.hypot(dx, dy, dz) || 1; dx /= dl; dy /= dl; dz /= dl; // hand along the forearm, thumb forward
       let px = dy * fz - dz * fy, py = dz * fx - dx * fz, pz = dx * fy - dy * fx; const pl = Math.hypot(px, py, pz) || 1; px /= pl; py /= pl; pz /= pl; const qx = py * dz - pz * dy, qy = pz * dx - px * dz, qz = px * dy - py * dx; const sd = j === 5 ? 1 : -1;
       HumanRenderer.mat(e, px * r * sd, py * r * sd, pz * r * sd, dx * r, dy * r, dz * r, qx * r, qy * r, qz * r, jx(j) + dx * r * 0.6, jy(j) + dy * r * 0.6, jz(j) + dz * r * 0.6); this._put('hand', e, L.skin); }
     // feet: oriented along body forward (flattened)
     let ffx = fx, ffz = fz; const fl = Math.hypot(ffx, ffz) || 1; ffx /= fl; ffz /= fl;
-    for (const j of [11, 14]) { const w = 0.1 * S, hh = 0.08 * S, l = 0.25 * S; HumanRenderer.mat(e, ffz * w, 0, -ffx * w, 0, hh, 0, ffx * l, 0, ffz * l, jx(j), jy(j) - 0.07, jz(j)); this._put('foot', e, L.shoes); }
+    for (const [j, kn] of [[11, 10], [14, 13]]) { const w = 0.1 * S, hh = 0.08 * S, l = 0.25 * S;
+      // heel-and-toe roll: the foot partly follows the shin (toes down on push-off, up on heel strike), never into the ground
+      let sx = jx(kn) - jx(j), sy = jy(kn) - jy(j), sz = jz(kn) - jz(j); const sl = Math.hypot(sx, sy, sz) || 1; const k = h.mode === 'ragdoll' ? 1 : 0.4;
+      let upx = sx / sl * k, upy = sy / sl * k + (1 - k), upz = sz / sl * k; const upl = Math.hypot(upx, upy, upz) || 1; upx /= upl; upy /= upl; upz /= upl;
+      let fwx = ffx, fwy = 0, fwz = ffz; const dd = fwx * upx + fwy * upy + fwz * upz; fwx -= dd * upx; fwy -= dd * upy; fwz -= dd * upz; const fwl = Math.hypot(fwx, fwy, fwz) || 1; fwx /= fwl; fwy /= fwl; fwz /= fwl;
+      const sdx = upy * fwz - upz * fwy, sdy = upz * fwx - upx * fwz, sdz = upx * fwy - upy * fwx;
+      let oy = jy(j) - 0.07; if (h.mode !== 'ragdoll') { const toe = oy + fwy * l * 1.0 + upy * hh * 0.1, heel = oy - fwy * l * 0.4; const ground = h.pos.y - 0.07; const lo = Math.min(toe, heel); if (lo < ground) oy += ground - lo; }
+      HumanRenderer.mat(e, sdx * w, sdy * w, sdz * w, upx * hh, upy * hh, upz * hh, fwx * l, fwy * l, fwz * l, jx(j), oy, jz(j)); this._put('foot', e, L.shoes); }
     if (h.carryBag) { const r = 0.16; const bx = jx(5), by = jy(5) - 0.2, bz = jz(5); HumanRenderer.mat(e, ffz * r * 0.9, 0, -ffx * r * 0.9, 0, r, 0, ffx * r * 1.4, 0, ffz * r * 1.4, bx, by, bz); this._put('bag', e, 0x2d3436); }
   }
 }
