@@ -69,6 +69,14 @@ export const Poses = {
   handsUp(o, t) { this.idle(o, t); o[P.lSP] = o[P.rSP] = 0.3; o[P.lSR] = o[P.rSR] = 1.6; o[P.lEl] = o[P.rEl] = 1.5; o[P.lSY] = o[P.rSY] = 0.2; o[P.hdP] = 0.1; return o; },
   cower(o, t) { zero(o); o[P.hipH] = 0.5; o[P.lHP] = o[P.rHP] = 1.6; o[P.lKn] = o[P.rKn] = 2.3; o[P.spP] = 0.9 + Math.sin(t * 20) * 0.02; o[P.lSP] = o[P.rSP] = 2.6; o[P.lEl] = o[P.rEl] = 2.4; o[P.lSR] = o[P.rSR] = 0.5; o[P.hdP] = -0.6; return o; },
   flee(o, ph) { this.run(o, ph, 1.05); o[P.lSP] = 2.2 + Math.sin(ph * 2) * 0.6; o[P.rSP] = 2.0 - Math.sin(ph * 2) * 0.6; o[P.lSR] = o[P.rSR] = 0.7; o[P.lEl] = o[P.rEl] = 0.8; o[P.hdY] = Math.sin(ph * 0.5) * 0.5; return o; },
+  // street life: talking with hand gestures (or listening, arms folded / nodding), filming on a phone, pointing
+  talk(o, t, speaking, w = 0) { this.idle(o, t, w); const a = t + w * 1.3;
+    if (speaking) { o[P.rSP] = 0.35 + Math.sin(a * 2.3) * 0.22; o[P.rEl] = 1.25 + Math.sin(a * 3.1) * 0.35; o[P.rSY] = 0.35 + Math.sin(a * 1.7) * 0.2; o[P.lSP] = 0.15 + Math.max(0, Math.sin(a * 1.4)) * 0.45; o[P.lEl] = 0.6 + Math.max(0, Math.sin(a * 1.4)) * 0.7; o[P.hdP] = Math.sin(a * 2.6) * 0.06; o[P.spP] += 0.03; }
+    else if ((w | 0) % 3 === 0) { o[P.lSP] = o[P.rSP] = 0.55; o[P.lEl] = o[P.rEl] = 2.1; o[P.lSY] = o[P.rSY] = 0.95; o[P.lSR] = o[P.rSR] = 0.15; o[P.hdP] = Math.max(0, Math.sin(a * 1.1)) * 0.08; }
+    else { o[P.hdP] = Math.max(0, Math.sin(a * 1.3)) * 0.1; o[P.lEl] = 0.3; o[P.rSP] = 0.1; }
+    return o; },
+  film(o, t) { this.idle(o, t); o[P.lSP] = o[P.rSP] = 1.3; o[P.lEl] = o[P.rEl] = 1.35; o[P.lSY] = o[P.rSY] = 0.6; o[P.lSR] = o[P.rSR] = 0.05; o[P.hdP] = -0.05 + Math.sin(t * 0.8) * 0.03; o[P.spP] = -0.04; return o; },
+  point(o, t) { this.idle(o, t); o[P.rSP] = 1.45 + Math.sin(t * 6) * 0.05; o[P.rEl] = 0.05; o[P.rSR] = 0.05; o[P.rSY] = 0.1; o[P.lSP] = 0.25; o[P.lEl] = 0.9; o[P.spP] = 0.05; return o; },
   phone(o, t) { this.idle(o, t); o[P.rSP] = 0.4; o[P.rSR] = 0.35; o[P.rEl] = 2.4; o[P.rSY] = 0.6; o[P.hdY] = 0.2; o[P.hdP] = 0.1; return o; },
   swim(o, ph) { zero(o); o[P.hipH] = 0.95; o[P.spP] = 1.35; o[P.lSP] = 2.4 + Math.sin(ph) * 1.2; o[P.rSP] = 2.4 - Math.sin(ph) * 1.2; o[P.lSR] = o[P.rSR] = 0.3; o[P.lHP] = -0.3 + Math.sin(ph * 2) * 0.3; o[P.rHP] = -0.3 - Math.sin(ph * 2) * 0.3; o[P.lKn] = o[P.rKn] = 0.3; o[P.hdP] = -0.9; return o; },
   dive(o, t) { zero(o); o[P.hipH] = 0.7 - t * 0.4; o[P.spP] = 1.1; o[P.lSP] = o[P.rSP] = 2.6; o[P.lHP] = -0.2; o[P.rHP] = 0.3; o[P.lKn] = 0.5; o[P.rKn] = 0.2; return o; },
@@ -166,6 +174,9 @@ export class Human {
     else if (st === 'handsUp') Poses.handsUp(p, this.t);
     else if (st === 'cower') Poses.cower(p, this.t);
     else if (st === 'phone') Poses.phone(p, this.t);
+    else if (st === 'talk') Poses.talk(p, this.t, this.speaking, this.id);
+    else if (st === 'film') Poses.film(p, this.t);
+    else if (st === 'point') Poses.point(p, this.t);
     else if (st === 'swim') { this.phase += dt * 3; Poses.swim(p, this.phase); }
     else if (st === 'dive') Poses.dive(p, clamp(this.stateT || 0, 0, 1));
     else if (st === 'crouch') { this.phase += dt * sp * 3.2; Poses.crouch(p, this.phase, sp > 0.3); }
@@ -187,6 +198,9 @@ export class Human {
       const k = Math.min(1, dt * 6); this._bank = (this._bank || 0) + ((loco ? clamp(-yr * Math.min(sp, 7) * 0.045, -0.32, 0.32) : 0) - (this._bank || 0)) * k;
       this._accL = (this._accL || 0) + ((loco ? clamp(ac * 0.03, -0.14, 0.2) : 0) - (this._accL || 0)) * k;
       if (Number.isFinite(this._bank) && Number.isFinite(this._accL)) { p[P.lean] += this._bank; p[P.spP] += this._accL; p[P.hdY] -= this._bank * 0.6; } else { this._bank = 0; this._accL = 0; } }
+    // look at something (a talking friend, a car crash, the guy with the gun): head first, then a bit of torso
+    { const want = this.lookAt && this.mode === 'anim' ? (() => { let r = Math.atan2(this.lookAt.x - this.pos.x, this.lookAt.z - this.pos.z) - this.yaw; r = Math.atan2(Math.sin(r), Math.cos(r)); return Math.abs(r) < 2.2 ? clamp(r, -1.15, 1.15) : 0; })() : 0;
+      this._look = (this._look || 0) + (want - (this._look || 0)) * Math.min(1, dt * 5); if (Math.abs(this._look) > 0.01) { p[P.hdY] = p[P.hdY] * 0.3 + this._look * 0.85; p[P.spY] += this._look * 0.22; } }
     // upper body overlays (aim eases in/out)
     if (this.aim) this._lastAim = this.aim; this.aimW += ((this.aim ? 1 : 0) - this.aimW) * Math.min(1, dt * 14);
     if (this._lastAim && this.aimW > 0.01 && this.mode === 'anim' && st !== 'climb' && st !== 'swim' && st !== 'ride' && st !== 'sit') {

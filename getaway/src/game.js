@@ -3,6 +3,7 @@ import { PerfGovernor, updateView } from './core/perf.js';
 import { Guard } from './core/guard.js';
 import { Rockets } from './missions/air.js';
 import { Dents } from './fx/dents.js';
+import { StreetAudio, RADIO_GENRES } from './core/streetaudio.js';
 import { sanitize, sanitizeCamera } from './core/sanitize.js';
 import * as THREE from 'three';
 import { G } from './core/context.js';
@@ -44,7 +45,7 @@ export class Game {
     G.rigid = new RigidWorld(G.world.static);
     G.sky = new Sky(G.scene, G.renderer); G.sky.nightMats = G.world.nightMats; G.sky.registerWet([G.world.mats.road, G.world.mats.roadRes, G.world.mats.hwy, G.world.mats.isect, G.world.mats.asphalt, G.world.mats.walk]);
     progress(0.7, 'Fueling 40 cars…'); await tick();
-    G.vehicles = new VehicleManager(G.scene, G.world.static); G.combat = new Combat(G.world.static); G.rockets = new Rockets(); G.dents = new Dents(G.scene);
+    G.vehicles = new VehicleManager(G.scene, G.world.static); G.combat = new Combat(G.world.static); G.rockets = new Rockets(); G.dents = new Dents(G.scene); G.street = new StreetAudio();
     G.traffic = new Traffic(G.world); G.humans = new HumanRenderer(G.scene, 380); G.peds = new Peds(G.world); G.peds.setDensity(G.settings.pedDensity);
     G.player = new Player(); G.combat.addTarget(G.player.target);
     G.cam = new CameraRig(G.camera); G.cam.baseFov = G.settings.fov;
@@ -111,6 +112,10 @@ export class Game {
     run('characters', () => { G.humans.begin(); G.peds.draw(G.humans); if (G.player.human.visible) G.humans.draw(G.player.human); if (G.npcs) G.npcs.draw(G.humans); }); run('characters', () => G.humans.end());
     if (G.lighting) run('lighting', () => G.lighting.update(rdt));
     // audio listener + ambience
+    if (G.audio.ready && G.mode === 'play') run('street audio', () => { // murmuring groups + radios in passing cars
+      const cars = this._radioCars || (this._radioCars = []); cars.length = 0;
+      for (const v of G.vehicles.list) { if (v.isPlayer || v.dead || v.wreck || v.mode !== 'drive' || !v.ai || (v.isPolice && v.isPolice())) continue; if (v.radio === undefined) v.radio = Math.random() < 0.45 ? RADIO_GENRES[(Math.random() * RADIO_GENRES.length) | 0] : null; if (v.radio) cars.push(v); }
+      G.street.update(rdt, G.peds.groups || [], cars); }, () => G.street && G.street.clear());
     if (G.audio.ready) run('audio', () => {
       G.audio.updateListener(G.camera.position, G.camera.getWorldDirection(new THREE.Vector3()), G.cam.vel);
       const d = G.world.district(G.camera.position.x, G.camera.position.z); const pv = G.player.vehicle;

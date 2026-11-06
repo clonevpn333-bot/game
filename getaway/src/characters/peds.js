@@ -6,6 +6,7 @@ import { inView } from '../core/perf.js';
 import { clamp, rand, pick, chance, dampAngle, SpatialHash, lerp } from '../core/utils.js';
 import { Human, randomLook, LOOKS, J } from './humanoid.js';
 import { walkSignal } from '../world/signals.js';
+import { voice } from '../core/streetaudio.js';
 
 const _v = new THREE.Vector3();
 let PID = 0;
@@ -26,7 +27,7 @@ class Ped {
   }
   flee(from, t = rand(7, 14)) {
     if (this.state === 'ragdoll' || !this.alive) return; this.threat = from.clone(); this.state = 'flee'; this.stateT = t; this.fear = 1; this.human.state = 'flee';
-    if (!this.screamed && chance(0.3) && G.audio) { this.screamed = true; G.audio.voiceChirp(rand(1.6, 2.4), 3); }
+    if (!this.screamed && chance(0.35) && G.audio) { this.screamed = true; voice(G.audio, this.pos, chance(0.6) ? 'scream' : 'shout', this.human.look.hairStyle === 'long' || this.human.look.hairStyle === 'bun' ? 1.35 : 1); }
   }
 }
 
@@ -37,7 +38,12 @@ export class Peds {
     this.weights = this.rects.map((r) => (r.density || 1) * Math.sqrt((r.x1 - r.x0) * (r.z1 - r.z0)));
     G.on('gunshot', (p, shooter) => this.alarm(p, 40, shooter));
     G.on('explosion', (p) => this.alarm(p, 80, null, true));
-    G.on('vehicleImpact', (v, imp, p) => { if (imp > 12) this.alarm(p, 18, null); });
+    G.on('vehicleImpact', (v, imp, p) => { if (imp > 12) this.alarm(p, 18, null); else if (imp > 5) this.gawk(p, 16, 0.6); });
+    this.groups = [];
+    // crimes the player commits get noticed: people stop and stare, point, pull out phones to film, shout, call it in
+    G.on('crime', (e) => { if (!e || !e.pos) return; if (e.type === 'murder' || e.sev >= 3) this.alarm(e.pos, 32, null); else if (e.type !== 'gunfire') this.gawk(e.pos, 26, 0.85, true); });
+    G.on('pedHit', (ped, v, sp) => { if (G.audio && chance(0.8)) voice(G.audio, ped.pos, 'scream', rand(0.9, 1.4)); this.gawk(ped.pos, 22, 0.9, v && v.isPlayer); });
+    G.on('enterVehicle', (v, occupied) => { if (occupied) this.gawk(v.pos, 20, 0.8, true); });
   }
   setDensity(q) { this.max = Math.round(170 * q); }
   alarm(p, r, shooter, big = false) {
@@ -48,6 +54,24 @@ export class Peds {
       if (shooter && shooter.isPlayer && !ped.witness && chance(0.25)) ped.witness = { delay: rand(4, 9), pos: p.clone() };
     }
   }
+  // stop and watch something happen (film it / point at it / stare), maybe shout, maybe call the cops
+  gawk(p, r, odds = 0.7, crime = false) {
+    let shouted = 0;
+    for (const ped of this.list) {
+      if (!ped.alive || ped.state === 'ragdoll' || ped.state === 'flee' || ped.state === 'cower' || ped.state === 'dive' || ped.keep) continue; const d = ped.pos.distanceTo(p); if (d > r || !chance(odds)) continue;
+      if (d < 5 && chance(0.5)) { ped.flee(p, rand(3, 6)); continue; }
+      this._leaveGroup(ped); ped.state = 'gawk'; ped.stateT = rand(4, 10); ped.look = p.clone(); ped.gawkKind = chance(0.4) ? 'film' : chance(0.55) ? 'point' : 'stare';
+      if (shouted < 2 && chance(0.35) && G.audio) { shouted++; setTimeout(() => voice(G.audio, ped.pos, chance(0.3) ? 'gasp' : 'shout', rand(0.9, 1.3)), rand(150, 900)); }
+      if (crime && !ped.witness && chance(0.3)) ped.witness = { delay: ped.stateT + rand(0.5, 2), pos: p.clone() };
+    }
+  }
+  _makeGroup(x, y, z, members, t) {
+    const g = { pos: new THREE.Vector3(x, y, z), members, t, speaker: members[0], speakT: rand(2, 5), hushed: false };
+    members.forEach((ped, i) => { const a = (i / members.length) * Math.PI * 2 + rand(-0.3, 0.3); const R = members.length > 2 ? 0.75 : 0.6; if (!ped.groupInPlace) { ped.pos.x = x + Math.sin(a) * R; ped.pos.z = z + Math.cos(a) * R; } ped.group = g; ped.state = 'chat'; ped.stateT = t; ped.goal = null; });
+    this.groups.push(g); return g;
+  }
+  _leaveGroup(ped) { const g = ped.group; if (!g) return; ped.group = null; ped.human.lookAt = null; ped.human.speaking = false; g.members = g.members.filter((m) => m !== ped); if (g.speaker === ped) g.speaker = g.members[0] || null;
+    if (g.members.length < 2) { for (const m of g.members) { m.group = null; m.human.lookAt = null; m.human.speaking = false; if (m.state === 'chat') { m.state = 'walk'; this._reattach(m); } } g.members = []; this.groups = this.groups.filter((q) => q !== g); } }
   pickRect(P) {
     let tot = 0; const cand = []; for (let i = 0; i < this.rects.length; i++) { const r = this.rects[i]; const cx = clamp(P.x, r.x0, r.x1), cz = clamp(P.z, r.z0, r.z1); const d = Math.hypot(cx - P.x, cz - P.z); if (d < 120) { cand.push(i); tot += this.weights[i]; } }
     let x = Math.random() * tot; for (const i of cand) { x -= this.weights[i]; if (x <= 0) return this.rects[i]; } return null;
@@ -64,9 +88,13 @@ export class Peds {
     const ped = new Ped(look, x, y, z, rand(0, 6.28)); ped.rect = r; ped.area = area; ped.u = u; ped.dir = chance(0.5) ? 1 : -1;
     if (chance(0.06) && !area) { ped.state = 'phone'; ped.stateT = rand(3, 8); }
     this.list.push(ped); G.combat.addTarget(ped.target);
+    if (chance(area ? 0.12 : 0.07) && this.list.length < this.max - 3) { // friends hanging out: 2-4 people talking on the sidewalk / plaza
+      const n = chance(0.5) ? 2 : chance(0.6) ? 3 : 4; const ms = [ped]; for (let k = 1; k < n; k++) { const o = new Ped(r.workers ? LOOKS.worker() : randomLook(), x, y, z, 0); o.rect = r; o.area = area; o.u = u; o.dir = ped.dir; this.list.push(o); G.combat.addTarget(o.target); ms.push(o); }
+      this._makeGroup(x, y, z, ms, rand(25, 80));
+    }
   }
   spawnCivilian(x, y, z, yaw, state = 'cower') { const ped = new Ped(randomLook(), x, y, z, yaw); ped.state = state; ped.stateT = 1e6; ped.keep = true; ped.human.state = state; ped.area = true; ped.rect = { x0: x - 2, x1: x + 2, z0: z - 2, z1: z + 2 }; this.list.push(ped); G.combat.addTarget(ped.target); return ped; }
-  remove(ped) { const i = this.list.indexOf(ped); if (i >= 0) this.list.splice(i, 1); G.combat.removeTarget(ped.target); }
+  remove(ped) { this._leaveGroup(ped); const i = this.list.indexOf(ped); if (i >= 0) this.list.splice(i, 1); G.combat.removeTarget(ped.target); }
   ejectDriver(v, player) {
     const p = v.local(v.spec.W / 2 + 0.4, (v.spec.cabin ? (v.spec.cabin.r0 - 0.5) * v.spec.L + 0.2 : 0));
     const look = v.isPolice() ? LOOKS.police() : randomLook(); const ped = new Ped(look, p.x, v.pos.y, p.z, v.yaw + Math.PI / 2);
@@ -87,6 +115,7 @@ export class Peds {
     this.t -= dt; if (this.t <= 0 && this.enabled) { this.t = 0.12; const n = this.fillNow ? 4000 : 14; this.fillNow = false; for (let k = 0; k < n && this.list.length < this.max; k++) this.spawn(P, cam, camDir, n > 100); }
     this.hash.clear(); for (const p of this.list) this.hash.insert(p, p.pos.x, p.pos.z, 0.5);
     const S = this.world.static; const time = G.time;
+    for (const g of this.groups) { g.speakT -= dt; if (g.speakT <= 0 && g.members.length) { g.speaker = pick(g.members); g.speakT = rand(1.8, 5); if (chance(0.06) && G.audio) voice(G.audio, g.pos, 'laugh', rand(0.9, 1.3)); } g.hushed = false; }
     for (let i = this.list.length - 1; i >= 0; i--) {
       const ped = this.list[i]; const h = ped.human; const d2 = (ped.pos.x - cam.x) ** 2 + (ped.pos.z - cam.z) ** 2;
       if (d2 > 135 * 135 && !ped.keep) { this.remove(ped); continue; }
@@ -114,8 +143,18 @@ export class Peds {
       const near = G.vehicles.query(ped.pos.x, ped.pos.z, 14, this._vq || (this._vq = []));
       for (const v of near) { const sp = v.speed; if (sp < 9 || v.mode !== 'drive') continue; const dx = ped.pos.x - v.pos.x, dz = ped.pos.z - v.pos.z; const fx = v.vel.x / sp, fz = v.vel.z / sp; const f = dx * fx + dz * fz, l = dx * fz - dz * fx; if (f > 0 && f < sp * 0.7 && Math.abs(l) < v.spec.W / 2 + 0.8 && chance(0.5 * dt * 10)) { ped.state = 'dive'; ped.stateT = 0.9; const side = Math.sign(l) || 1; ped.diveV = new THREE.Vector3(fz * side, 0, -fx * side).multiplyScalar(6.5); ped.human.yaw = Math.atan2(ped.diveV.x, ped.diveV.z); if (G.audio && chance(0.5)) G.audio.voiceChirp(2.2, 2); break; } }
     }
+    if (ped.group && ped.state !== 'chat') this._leaveGroup(ped);
+    // an armed / sprinting player close by: heads turn, people get out of the way
+    if (pl && !pl.vehicle && pl.alive && ped.state !== 'flee' && ped.state !== 'cower' && ped.state !== 'gawk') { const d = Math.hypot(ped.pos.x - pl.pos.x, ped.pos.z - pl.pos.z); const armed = !!pl.human.weapon && pl.weapon !== 'fists';
+      if (d < (armed ? 9 : 3.2)) { ped.human.lookAt = pl.pos; if (ped.group) ped.group.hushed = armed; if (armed && d < 4 && chance(dt * 0.4)) ped.flee(pl.pos, rand(2.5, 4)); } else if (!ped.group && ped.state !== 'gawk') ped.human.lookAt = null; }
     let move = 0, tx = 0, tz = 0, spd = ped.speed;
     switch (ped.state) {
+      case 'chat': { const g = ped.group; if (!g) { ped.state = 'walk'; break; } h.state = 'talk'; h.speed = 0; h.speaking = g.speaker === ped && !g.hushed;
+        if (!h.lookAt || h.lookAt === (g.speaker && g.speaker.pos) || chance(dt * 0.3)) h.lookAt = g.speaker && g.speaker !== ped ? g.speaker.pos : (g.members.find((m) => m !== ped) || ped).pos;
+        h.yaw = dampAngle(h.yaw, Math.atan2(g.pos.x - ped.pos.x, g.pos.z - ped.pos.z), 4, dt);
+        if (ped.stateT <= 0) { this._leaveGroup(ped); ped.state = 'walk'; this._reattach(ped); } break; }
+      case 'gawk': { const k = ped.gawkKind; h.state = k === 'film' ? 'film' : k === 'point' ? 'point' : 'idle'; h.speed = 0; h.lookAt = ped.look; h.yaw = dampAngle(h.yaw, Math.atan2(ped.look.x - ped.pos.x, ped.look.z - ped.pos.z), 5, dt);
+        if (ped.stateT <= 0) { h.lookAt = null; if (ped.witness && !ped.calledIn) { ped.state = 'phone'; ped.stateT = 4; ped.calling = true; } else { ped.state = 'walk'; this._reattach(ped); } } break; }
       case 'flee': {
         h.state = 'flee'; spd = 6.2; const th = ped.threat || ped.pos; let ax = ped.pos.x - th.x, az = ped.pos.z - th.z; const al = Math.hypot(ax, az) || 1; ax /= al; az /= al;
         // bias along sidewalk: steer away + wall avoidance handled by pushCircle
@@ -148,6 +187,7 @@ export class Peds {
       let dx = tx - ped.pos.x, dz = tz - ped.pos.z; const dl = Math.hypot(dx, dz) || 1; dx /= dl; dz /= dl;
       // separation from other peds & player
       const near = this.hash.query(ped.pos.x, ped.pos.z, 1.2, this._sq || (this._sq = []));
+      if (ped.state === 'walk' && !ped.area && !ped.chatted && chance(dt * 0.05)) for (const o of near) { if (o !== ped && o.alive && o.state === 'walk' && !o.group && !o.chatted && o.pos.distanceTo(ped.pos) < 1.3) { ped.chatted = o.chatted = true; ped.groupInPlace = o.groupInPlace = true; this._makeGroup((ped.pos.x + o.pos.x) / 2, ped.pos.y, (ped.pos.z + o.pos.z) / 2, [ped, o], rand(6, 16)); ped.groupInPlace = o.groupInPlace = false; return; } }
       for (const o of near) { if (o === ped) continue; const ox = ped.pos.x - o.pos.x, oz = ped.pos.z - o.pos.z; const ol = Math.hypot(ox, oz); if (ol < 0.9 && ol > 0.01) { dx += ox / ol * 0.6; dz += oz / ol * 0.6; } }
       if (G.player && !G.player.vehicle) { const ox = ped.pos.x - G.player.pos.x, oz = ped.pos.z - G.player.pos.z; const ol = Math.hypot(ox, oz); if (ol < 1.2 && ol > 0.01) { dx += ox / ol * 1.2; dz += oz / ol * 1.2; if (ol < 0.7 && G.player.sprinting && ped.state !== 'flee') { ped.human.ragdoll(new THREE.Vector3(G.player.vel.x, 1.5, G.player.vel.z), G.world.static); ped.state = 'ragdoll'; ped.stateT = 0; G.audio && G.audio.thud(ped.pos, 0.5); G.emit('pedShoved', ped); } } }
       const nl = Math.hypot(dx, dz) || 1; ped.pos.x += dx / nl * spd * dt; ped.pos.z += dz / nl * spd * dt;
@@ -193,6 +233,6 @@ export class Peds {
       }
     }
   }
-  clear() { for (const p of [...this.list]) if (!p.keep) this.remove(p); }
+  clear() { for (const p of [...this.list]) if (!p.keep) this.remove(p); this.groups = this.groups.filter((g) => g.members.length >= 2); }
   draw(R) { for (const p of this.list) if (p.human.visible && inView(p.pos, 1.2, 110)) R.draw(p.human); } // far / off-screen people aren't drawn (was ~1M triangles a frame)
 }

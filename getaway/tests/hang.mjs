@@ -1,7 +1,7 @@
 // node tests/hang.mjs "<query>" <script.js>  — runs the script; if the page stops responding, pauses it via CDP and prints the JS stack
 import { createRequire } from 'module'; const require = createRequire(import.meta.url); const { chromium } = require('playwright'); import fs from 'fs';
 const [,, query = '', file] = process.argv;
-const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--enable-precise-memory-info'] });
+const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--enable-precise-memory-info', '--autoplay-policy=no-user-gesture-required'] });
 const page = await browser.newPage({ viewport: { width: 960, height: 540 } }); let lastHB = Date.now(), hb = '';
 page.on('console', (m) => { const t = m.text(); if (t.startsWith('HB ')) { lastHB = Date.now(); hb = t; return; } if (!t.includes('404') && !t.includes('Canvas2D')) console.log(`[${m.type()}] ${t}`); });
 page.on('pageerror', (e) => console.log(`[pageerror] ${e.message}\n${e.stack}`)); page.on('crash', () => { console.log('!!! PAGE CRASHED, last heartbeat: ' + hb); process.exit(1); });
