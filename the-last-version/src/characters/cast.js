@@ -5,7 +5,7 @@ import { Humanoid, clothMaterial, hairMaterial, lerp3, add, mul, norm, V } from 
 import { surfaceTube, stitches, zipper, raySurface, attachDetail, project } from './details.js';
 import { preloadSets } from '../engine/assets.js';
 
-export const CAST_TEXTURES = ['leather_dark', 'denim', 'jersey', 'linen', 'fleece', 'leather_brown'];
+export const CAST_TEXTURES = ['leather_dark', 'denim', 'jersey', 'linen', 'fleece', 'leather_brown', 'velvet'];
 
 const T = (p, bone, k = 0.02) => Object.assign(p, { bone, k });
 const OP = (p, op, k = 0.004) => Object.assign(p, { op, k });
@@ -558,3 +558,43 @@ export async function buildCharacter(def) {
   }
   return ch;
 }
+
+// ---------------------------------------------------------------------------
+// THE CLERK — what remains of the night clerk of a version that collapsed.
+// Too tall, too thin, uniform immaculate, face smoothed away.
+// ---------------------------------------------------------------------------
+export const CLERK = {
+  name: 'Clerk',
+  skin: 0xb8b0a8,
+  body: { height: 2.12, shoulder: 0.86, hipWidth: 0.9, armAngle: 24, headScale: 0.92, handScale: 1.15 },
+  face: { width: 0.9, jawWidth: 0.85, chinWidth: 0.8, chinLength: 1.25, brow: 1.4, noseLength: 0.35, noseWidth: 0.6, lipWidth: 0.7, lipFull: 0.25, neck: 0.75, iris: 0x111111, browColor: 0x111111, browThick: 0.01, lipColor: 0x9a8a84, flush: 0xa89890 },
+  outfit(ch) {
+    const s = ch.def.body.height / 1.8;
+    const coat = clothMaterial('velvet', { color: 0x4a1418, scale: 9, normal: 0.8, sheen: 0.6, sheenColor: 0x803038 });
+    const brass = new THREE.MeshStandardMaterial({ color: 0xc9a14a, metalness: 1, roughness: 0.3 });
+    const tp = torsoPrims(ch, { sleeve: 0.05 });
+    const prims = [...tp,
+      T(P.torus([0, 1.505 * s, 0.0], 0.056 * s, 0.007 * s, { sy: 1.6, sz: 0.9 }), 'chest', 0.008),
+      OP(P.plane([0, 0.86 * s, 0], [0, -1, 0]), 'inter', 0.004),
+      OP(P.capsule([0, 1.43 * s, 0.03], [0, 1.75 * s, 0.03], 0.05 * s), 'sub', 0.004),
+      OP(P.box([0, 1.36 * s, 0.13 * s], [0.03 * s, 0.12 * s, 0.05 * s], 0.002, { rot: [0.0, 0, 0] }), 'sub', 0.01)];
+    const pieces = [{ name: 'coat', prims, material: coat, res: 0.0065 * s, softness: 0.035 * s,
+      after: (m, sc, c) => {
+        for (let i = 0; i < 4; i++) { const p = raySurface(sc, [0.035 * s, (1.3 - i * 0.1) * s, 0.4], [0, 0, -1], 0.6); if (!p) continue; const b = new THREE.Mesh(new THREE.SphereGeometry(0.009 * s, 8, 6), brass); b.position.set(p[0] - c.worldRest.chest[0], p[1] - c.worldRest.chest[1], p[2] - c.worldRest.chest[2] + 0.003); c.bones.chest.add(b); }
+      } }];
+    pieces.push({ name: 'shirt', prims: [T(P.ellipsoid([0, 1.38 * s, 0.05 * s], [0.06 * s, 0.09 * s, 0.05 * s]), 'chest', 0), T(P.torus([0, 1.47 * s, 0.01], 0.05 * s, 0.006 * s, { sy: 1.4 }), 'neck', 0.004), OP(P.capsule([0, 1.4 * s, 0.0], [0, 1.75 * s, 0.0], 0.046 * s), 'sub', 0.003)], material: clothMaterial('linen', { color: 0xe9e6e0, scale: 14 }), res: 0.004 * s, softness: 0.03 });
+    pieces.push(...pantsPieces(ch, clothMaterial('fleece', { color: 0x141416, scale: 12, normal: 0.4 }), { stitchMat: clothMaterial(null, { color: 0x222222 }), seamMat: clothMaterial(null, { color: 0x121212 }) }).map((p) => { p.after = null; return p; }));
+    pieces.push(...addShoes(ch, clothMaterial('leather_dark', { color: 0x0e0e10, scale: 16 }), clothMaterial(null, { color: 0x0a0a0a }), clothMaterial(null, { color: 0x0a0a0a })));
+    return pieces;
+  },
+  hair(ch, hc, hs) {
+    const sc = new Sculpt();
+    sc.add(P.ellipsoid(W(hc, hs, [0, 0.026, -0.016]), [0.081 * hs, 0.094 * hs, 0.1 * hs]), 0);
+    sc.inter(P.plane(W(hc, hs, [0, 0.075, 0.08]), [0, -1, 0.7]), 0.006 * hs);
+    for (const sx of [1, -1]) sc.sub(P.ellipsoid(W(hc, hs, [0.085 * sx, -0.012, 0.0]), [0.03 * hs, 0.04 * hs, 0.03 * hs]), 0.01 * hs);
+    sc.inter(P.plane(W(hc, hs, [0, -0.02, 0]), [0, -1, 0]), 0.01 * hs);
+    const c0 = W(hc, hs, [0, 0, 0]);
+    sc.disp((x, y, z) => Math.sin(Math.atan2((x - c0[0]) / hs, (y - c0[1]) / hs) * 60) * 0.0005 * hs);
+    return { color: 0x0c0b0a, spec: 0.9, cap: sc, capBounds: { min: [hc[0] - 0.11 * hs, hc[1] - 0.05 * hs, hc[2] - 0.13 * hs], max: [hc[0] + 0.11 * hs, hc[1] + 0.13 * hs, hc[2] + 0.12 * hs] }, clumps: [], capRes: 0.0034 };
+  },
+};

@@ -34,6 +34,9 @@ export class Game {
     });
   }
 
+  /** Debug/QA: advance the active chapter without rendering. */
+  simulate(seconds, dt = 1 / 30) { for (let t = 0; t < seconds; t += dt) { this.time += dt; this.chapter.update(dt * this.timeScale, this.time); this.input.endFrame(); } }
+
   capture() { this.renderer.render(0, this.time); return this.renderer.renderer.domElement.toDataURL('image/jpeg', 0.88); }
 
   loop() {
