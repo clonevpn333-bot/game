@@ -273,7 +273,8 @@ export class HumanRenderer {
     // torso (unit: x 0.2 m half-width, y 0..1 = pelvis..chest joint, z 0.12 m)
     const torsoBody = rbox(2.0, 1.0, 1.8, 0.28, 4); torsoBody.translate(0, 0.55, 0); taper(torsoBody, 0.05, 0.8, 0.74, 1, 0.85, 1);
     const vestBody = taper(rbox(2.16, 0.8, 1.98, 0.3, 4), -0.4, 0.3, 0.8, 1, 0.9, 1); vestBody.translate(0, 0.58, 0);
-    const shoe = rbox(1.9, 0.78, 1.42, 0.3, 3); shoe.translate(0, 0.55, 0.3);
+    // shoe (unit: x 0.1 m, y 0.08 m, z 0.25 m; origin under the ankle): an ankle-height upper + a lower, rounded toe box, on a thin sole
+    const shoe = rbox(1.08, 1.0, 0.62, 0.3, 3); shoe.translate(0, 0.62, 0.1); const toeBox = rbox(1.04, 0.62, 0.62, 0.28, 3); toeBox.translate(0, 0.43, 0.58);
     const defs = {
       head: mergeParts(headParts),
       eyes: mergeParts(face),
@@ -282,7 +283,7 @@ export class HumanRenderer {
       pelvis: (() => { const g = rbox(2.0, 1.25, 1.62, 0.3, 3); g.translate(0, -0.05, 0); return g; })(),
       limb: capsule(1, 0.85),
       hand: mergeParts([P_(rbox(1.0, 2.0, 1.5, 0.35, 3), 0xffffff, 0, 0.55, 0), P_(rbox(0.5, 0.9, 0.5, 0.2), 0xffffff, -0.3, 0.4, 0.75, 0.4)]),
-      foot: mergeParts([{ geo: shoe, c: 0xffffff }, P_(rbox(2.0, 0.2, 1.52, 0.06), 0x4a4a4a, 0, 0.1, 0.3)]),
+      foot: mergeParts([{ geo: shoe, c: 0xffffff }, { geo: toeBox, c: 0xffffff }, P_(rbox(1.14, 0.2, 1.12, 0.08), 0x4a4a4a, 0, 0.1, 0.34), P_(new THREE.BoxGeometry(0.5, 0.05, 0.36), 0xd0d0d0, 0, 0.92, 0.38, 0.7)]),
       hairCap: mergeParts([hairTop(), hairBack(), ...sideburns(), P_(rbox(1.5, 0.2, 0.22, 0.08), 0xffffff, 0.1, 0.82, 0.86, 0, 0, -0.08)]),
       hairLong: mergeParts([hairTop(), P_(rbox(1.82, 1.9, 0.4, 0.15), 0xffffff, 0, -0.3, -0.8), ...[1, -1].map((sx) => P_(rbox(0.22, 1.45, 0.8, 0.08), 0xffffff, sx * 0.9, -0.12, -0.2)), P_(rbox(1.3, 0.24, 0.22, 0.08), 0xffffff, 0.18, 0.74, 0.86, 0, 0, -0.14)]),
       hairBun: mergeParts([hairTop(), hairBack(), ...sideburns(), P_(rbox(0.66, 0.62, 0.56, 0.26), 0xffffff, 0, 0.66, -1.08)]),
