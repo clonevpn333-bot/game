@@ -140,10 +140,15 @@ export default class Chapter2 {
       for (let x = 40; x < 1000; x += 200) { g2.fillStyle = '#0b1418'; g2.fillRect(x, 300, 140, 70); g2.strokeStyle = '#555'; g2.strokeRect(x, 300, 140, 70); }
       const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })();
     const white = new THREE.MeshStandardMaterial({ map: labTex, roughness: 0.55, metalness: 0.2 });
-    const shell = new THREE.Mesh(new THREE.BoxGeometry(10, 4, 8), white); shell.position.set(-3, 13.6, -55); lab.add(shell);
+    // shell built from wall panels so the hatch is a real opening
+    const shell = new THREE.Group(); lab.add(shell);
+    const panel = (w, h, d, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), white); m.position.set(x, y, z); m.castShadow = m.receiveShadow = true; shell.add(m); return m; };
+    panel(10, 4, 0.15, -3, 13.6, -59); panel(10, 4, 0.15, -3, 13.6, -51);
+    panel(0.15, 4, 8, -8, 13.6, -55);
+    panel(0.15, 4, 2.55, 2, 13.6, -57.78); panel(0.15, 4, 4.3, 2, 13.6, -53.15); panel(0.15, 1.7, 1.2, 2, 14.75, -55.9);
+    panel(10.2, 0.2, 8.2, -3, 15.7, -55);
     // interior room (visible when the hatch opens)
-    const room = new THREE.Mesh(new THREE.BoxGeometry(9.4, 3.6, 7.4), new THREE.MeshStandardMaterial({ color: 0x8a9496, roughness: 0.8, side: THREE.BackSide })); room.position.copy(shell.position); lab.add(room);
-    shell.material = white; shell.visible = true;
+    const room = new THREE.Mesh(new THREE.BoxGeometry(9.4, 3.6, 7.4), new THREE.MeshStandardMaterial({ color: 0x8a9496, roughness: 0.8, side: THREE.BackSide })); room.position.set(-3, 13.6, -55); lab.add(room);
     // hatch on the starboard (+x) face
     const hatch = new THREE.Group(); hatch.position.set(2.02, 12.0, -55.9); lab.add(hatch);
     const door = new THREE.Mesh(new THREE.BoxGeometry(0.12, 2.3, 1.2), new THREE.MeshStandardMaterial({ color: 0x5a6a6c, metalness: 0.7, roughness: 0.4 })); door.position.set(0, 1.15, 0.6); hatch.add(door);
@@ -524,7 +529,7 @@ export default class Chapter2 {
     // the Meridian steams slowly, listing to port, heaving in the swell
     this.shipPos.z += dt * 3.2;
     const h = waterHeight(this.shipPos.x, this.shipPos.z, t) * 0.25;
-    this.ship.position.set(this.shipPos.x, h - 4.5, this.shipPos.z);
+    this.ship.position.set(this.shipPos.x, h - 7.2, this.shipPos.z);
     this.ship.rotation.set(Math.sin(t * 0.35) * 0.02, 0.0, this.shipList + Math.sin(t * 0.45) * 0.03);
     this.ship.userData.radar.rotation.y += dt * 1.5;
     for (const l of this.ship.userData.deckLights) l.intensity = Math.random() < 0.97 ? 25 : 0;
@@ -692,11 +697,13 @@ export default class Chapter2 {
     this.rescueCine = { t: 0 };
     ui.prompt(null); ui.objective(null);
     g.audio.metal({ base: 160, vol: 0.5, dur: 1.4 }); g.audio.crash(this.kai.getWorldPosition(V3()), 0.5);
+    this.lab.hatch.rotation.y = -2.95; // folded back against the inner wall
+    const inside = new THREE.PointLight(0xffe0c0, 6, 9, 2); inside.position.set(-1.5, 14.6, -55.5); this.ship.add(inside);
     g.music.play('onfoot', { intensity: 0.7 });
     // Sera inside the lab
     this.ship.add(this.sera); this.sera.visible = true;
-    this.sera.position.set(0.6, 11.6, -55.8); this.sera.rotation.y = Math.PI / 2;
-    this.onFoot.pos.set(3.6, 11.6, -55.9); this.onFoot.yaw = -Math.PI / 2; this.kai.position.copy(this.onFoot.pos); this.kai.rotation.y = this.onFoot.yaw;
+    this.sera.position.set(0.9, 11.6, -55.9); this.sera.rotation.y = Math.PI / 2;
+    this.onFoot.pos.set(3.0, 11.6, -55.9); this.onFoot.yaw = -Math.PI / 2; this.kai.position.copy(this.onFoot.pos); this.kai.rotation.y = this.onFoot.yaw;
     this.kaiAnim.mode = 'idle'; this.kaiAnim.speed = 0;
     this.seraAnim.mode = 'idle'; this.seraAnim.mood = 'tense';
     ui.letterbox(true);
@@ -740,9 +747,9 @@ export default class Chapter2 {
     this.kaiAnim.update(dt); this.seraAnim.update(dt);
     const cam = this.camera;
     const mid = kh.clone().lerp(sh, 0.5);
-    if (r.shot === 0) { cam.position.copy(this.ship.localToWorld(V3(2.4, 13.4, -53.6))); cam.lookAt(sh); cam.fov = 40; }
-    else if (r.shot === 1) { cam.position.copy(this.ship.localToWorld(V3(2.1, 13.3, -58.2))); cam.lookAt(r.speaker === 'kai' ? kh : sh); cam.fov = 34; }
-    else { cam.position.copy(this.ship.localToWorld(V3(5.5, 14.2, -52.5))); cam.lookAt(mid); cam.fov = 50; }
+    if (r.shot === 0) { cam.position.copy(this.ship.localToWorld(V3(4.9, 13.45, -54.9))); cam.lookAt(sh); cam.fov = 38; }
+    else if (r.shot === 1) { cam.position.copy(this.ship.localToWorld(r.speaker === 'kai' ? V3(0.2, 13.25, -56.5) : V3(3.9, 13.3, -55.2))); cam.lookAt(r.speaker === 'kai' ? kh : sh); cam.fov = 32; }
+    else { cam.position.copy(this.ship.localToWorld(V3(6.5, 14.0, -53.0))); cam.lookAt(mid); cam.fov = 48; }
     cam.updateProjectionMatrix();
     this.lab.emergency.intensity = Math.sin(t * 6) > 0 ? 6 : 0;
     this.spray.update(dt);

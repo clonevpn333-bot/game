@@ -215,9 +215,9 @@ export function buildHelicopter() {
   const turret = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 10), dark); turret.position.set(0, 0.35, 1.6); g.add(turret);
   const beamMat = new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
-    uniforms: { uI: { value: 0.35 } },
-    vertexShader: 'varying float vY; varying vec3 vN; varying vec3 vV; void main(){ vY = uv.y; vec4 mv = modelViewMatrix * vec4(position,1.0); vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }',
-    fragmentShader: 'uniform float uI; varying float vY; varying vec3 vN; varying vec3 vV; void main(){ float rim = pow(abs(dot(vN, vV)), 1.5); gl_FragColor = vec4(vec3(1.0, 0.97, 0.9) * uI * rim * pow(vY, 1.4), 1.0); }',
+    uniforms: { uI: { value: 0.22 } },
+    vertexShader: 'varying float vY; varying vec3 vN; varying vec3 vV; varying float vZ; void main(){ vY = clamp(-position.y, 0.0, 1.0); vec4 mv = modelViewMatrix * vec4(position,1.0); vZ = -mv.z; vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }',
+    fragmentShader: 'uniform float uI; varying float vY; varying vec3 vN; varying vec3 vV; varying float vZ; void main(){ float rim = pow(abs(dot(vN, vV)), 1.5); float along = pow(1.0 - vY, 1.6) * 0.85 + 0.08; float nearFade = smoothstep(3.0, 18.0, vZ); gl_FragColor = vec4(vec3(1.0, 0.97, 0.9) * uI * rim * along * nearFade, 1.0); }',
   });
   const beamGeo = new THREE.CylinderGeometry(0.15, 7, 1, 24, 1, true); beamGeo.translate(0, -0.5, 0);
   const beam = new THREE.Mesh(beamGeo, beamMat); beam.frustumCulled = false;
@@ -267,7 +267,7 @@ export class Helicopter {
     this.beam.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), lt.clone().sub(src).normalize());
     u.spot.position.copy(this.group.worldToLocal(src.clone()));
     u.spot.target.position.copy(this.group.worldToLocal(lt.clone()));
-    u.spot.intensity = 4000;
+    u.spot.intensity = 1600;
     if (this.sound) this.sound.update(wp, 0.7);
     const lit = !hidden && this.lightTarget.distanceTo(pp) < 9;
     return lit;
