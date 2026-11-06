@@ -142,57 +142,109 @@ export class Sculpt {
  * surface nets. Returns a BufferGeometry with position/normal and a
  * per-vertex 'ao' attribute.
  */
-export function polygonise(sculpt, min, max, h, { ao = true, aoScale = 1, project = 2 } = {}) {
+export const PROF = { poly: 0, sample: 0, ao: 0, skin: 0, proj: 0 };
+
+// ---- geometry cache (IndexedDB-backed; see cache.js). Keyed by a hash of the sculpt itself,
+// so any change to a primitive, displacement function or resolution invalidates it.
+export const POLY_CACHE = { map: new Map(), fresh: new Map(), used: null };
+function cyrb53(str, seed = 0) {
+  let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
+  for (let i = 0; i < str.length; i++) { const ch = str.charCodeAt(i); h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677); }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
+}
+const round = (k, v) => (typeof v === 'function' ? undefined : typeof v === 'number' ? Math.round(v * 1e6) / 1e6 : v);
+export function sculptKey(sculpt, extra) {
+  const parts = sculpt.ops.map((o) => o.op + ':' + (o.k ?? '') + ':' + (o.t ?? '') + ':' + (o.prim ? o.prim.f.name + JSON.stringify(o.prim, round) : '') + (o.fn ? o.fn.toString() : ''));
+  return cyrb53(parts.join('|') + JSON.stringify(extra, round));
+}
+export function polygonise(sculpt, min, max, h, { ao = true, aoScale = 1, project = 1 } = {}) {
+  const __t0 = performance.now();
+  const key = sculptKey(sculpt, [min, max, h, ao, aoScale, project]);
+  POLY_CACHE.used?.add(key);
+  const hit = POLY_CACHE.map.get(key);
+  if (hit) {
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(hit.pos, 3));
+    geo.setAttribute('normal', new THREE.BufferAttribute(hit.nor, 3));
+    geo.setIndex(new THREE.BufferAttribute(hit.idx, 1));
+    if (hit.ao) geo.setAttribute('ao', new THREE.BufferAttribute(hit.ao, 1));
+    PROF.poly += performance.now() - __t0;
+    return geo;
+  }
   const nx = Math.ceil((max[0] - min[0]) / h) + 1, ny = Math.ceil((max[1] - min[1]) / h) + 1, nz = Math.ceil((max[2] - min[2]) / h) + 1;
   const field = new Float32Array(nx * ny * nz);
-  const idx = (i, j, k) => i + nx * (j + ny * k);
-  // coarse-to-fine sampling: skip blocks far from the surface
-  const B = 4, cb = h * B * 0.9;
-  for (let k0 = 0; k0 < nz; k0 += B) for (let j0 = 0; j0 < ny; j0 += B) for (let i0 = 0; i0 < nx; i0 += B) {
-    const cx = min[0] + (i0 + B / 2) * h, cy = min[1] + (j0 + B / 2) * h, cz = min[2] + (k0 + B / 2) * h;
-    const dc = sculpt.eval(cx, cy, cz);
-    const far = Math.abs(dc) > cb * 1.8;
-    for (let k = k0; k < Math.min(k0 + B + 1, nz); k++) for (let j = j0; j < Math.min(j0 + B + 1, ny); j++) for (let i = i0; i < Math.min(i0 + B + 1, nx); i++) {
-      const id = idx(i, j, k);
-      if (field[id] !== 0) continue;
-      field[id] = far ? dc : sculpt.eval(min[0] + i * h, min[1] + j * h, min[2] + k * h) || 1e-7;
+  const sx = 1, sy = nx, sz = nx * ny;
+  // coarse-to-fine sampling: blocks whose centre is far from the surface are filled with one value
+  const B = 6, half = h * B * 0.5;
+  const bx = Math.ceil(nx / B), by = Math.ceil(ny / B), bz = Math.ceil(nz / B);
+  const near = new Uint8Array(bx * by * bz);
+  const thresh = half * 1.9; // > half-diagonal (≈1.73·half) with margin for non-exact SDFs
+  for (let kb = 0; kb < bz; kb++) for (let jb = 0; jb < by; jb++) for (let ib = 0; ib < bx; ib++) {
+    const i0 = ib * B, j0 = jb * B, k0 = kb * B;
+    const dc = sculpt.eval(min[0] + (i0 + B / 2) * h, min[1] + (j0 + B / 2) * h, min[2] + (k0 + B / 2) * h);
+    const isNear = Math.abs(dc) <= thresh;
+    near[ib + bx * (jb + by * kb)] = isNear ? 1 : 0;
+    const i1 = Math.min(i0 + B, nx - 1), j1 = Math.min(j0 + B, ny - 1), k1 = Math.min(k0 + B, nz - 1);
+    for (let k = k0; k <= k1; k++) for (let j = j0; j <= j1; j++) {
+      let id = i0 + sy * j + sz * k;
+      const z = min[2] + k * h, y = min[1] + j * h;
+      for (let i = i0; i <= i1; i++, id++) {
+        if (field[id] !== 0) continue;
+        field[id] = isNear ? (sculpt.eval(min[0] + i * h, y, z) || 1e-7) : dc;
+      }
     }
   }
-  // vertices: one per sign-changing cell
-  const cellVert = new Int32Array((nx - 1) * (ny - 1) * (nz - 1)).fill(-1);
-  const cidx = (i, j, k) => i + (nx - 1) * (j + (ny - 1) * k);
+  PROF.sample += performance.now() - __t0;
+  // vertices: one per sign-changing cell (only cells in near blocks can change sign)
+  const cnx = nx - 1, cny = ny - 1;
+  const cellVert = new Int32Array(cnx * cny * (nz - 1)).fill(-1);
   const pos = [];
-  const corners = [[0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0], [0, 0, 1], [1, 0, 1], [0, 1, 1], [1, 1, 1]];
-  const edges = [[0, 1], [2, 3], [4, 5], [6, 7], [0, 2], [1, 3], [4, 6], [5, 7], [0, 4], [1, 5], [2, 6], [3, 7]];
+  const cOff = [0, sx, sy, sx + sy, sz, sx + sz, sy + sz, sx + sy + sz];
+  const cx = [0, 1, 0, 1, 0, 1, 0, 1], cy = [0, 0, 1, 1, 0, 0, 1, 1], cz = [0, 0, 0, 0, 1, 1, 1, 1];
+  const EA = [0, 2, 4, 6, 0, 1, 4, 5, 0, 1, 2, 3], EB = [1, 3, 5, 7, 2, 3, 6, 7, 4, 5, 6, 7];
   const v = new Float32Array(8);
-  for (let k = 0; k < nz - 1; k++) for (let j = 0; j < ny - 1; j++) for (let i = 0; i < nx - 1; i++) {
-    let mask = 0;
-    for (let c = 0; c < 8; c++) { v[c] = field[idx(i + corners[c][0], j + corners[c][1], k + corners[c][2])]; if (v[c] < 0) mask |= 1 << c; }
-    if (mask === 0 || mask === 255) continue;
-    let sx = 0, sy = 0, sz = 0, n = 0;
-    for (const [a, b] of edges) {
-      if ((v[a] < 0) === (v[b] < 0)) continue;
-      const t = v[a] / (v[a] - v[b]);
-      sx += corners[a][0] + (corners[b][0] - corners[a][0]) * t;
-      sy += corners[a][1] + (corners[b][1] - corners[a][1]) * t;
-      sz += corners[a][2] + (corners[b][2] - corners[a][2]) * t; n++;
+  for (let kb = 0; kb < bz; kb++) for (let jb = 0; jb < by; jb++) for (let ib = 0; ib < bx; ib++) {
+    if (!near[ib + bx * (jb + by * kb)]) continue;
+    const i0 = ib * B, j0 = jb * B, k0 = kb * B;
+    // include one extra cell of the neighbouring block so seams are covered
+    const i1 = Math.min(i0 + B + 1, nx - 1), j1 = Math.min(j0 + B + 1, ny - 1), k1 = Math.min(k0 + B + 1, nz - 1);
+    for (let k = Math.max(0, k0 - 1); k < k1; k++) for (let j = Math.max(0, j0 - 1); j < j1; j++) for (let i = Math.max(0, i0 - 1); i < i1; i++) {
+      const ci = i + cnx * (j + cny * k);
+      if (cellVert[ci] !== -1) continue;
+      const base = i + sy * j + sz * k;
+      let mask = 0;
+      for (let c = 0; c < 8; c++) { v[c] = field[base + cOff[c]]; if (v[c] < 0) mask |= 1 << c; }
+      if (mask === 0 || mask === 255) { cellVert[ci] = -2; continue; }
+      let ax = 0, ay = 0, az = 0, n = 0;
+      for (let e = 0; e < 12; e++) {
+        const a = EA[e], b = EB[e];
+        if ((v[a] < 0) === (v[b] < 0)) continue;
+        const t = v[a] / (v[a] - v[b]);
+        ax += cx[a] + (cx[b] - cx[a]) * t; ay += cy[a] + (cy[b] - cy[a]) * t; az += cz[a] + (cz[b] - cz[a]) * t; n++;
+      }
+      cellVert[ci] = pos.length / 3;
+      pos.push(min[0] + (i + ax / n) * h, min[1] + (j + ay / n) * h, min[2] + (k + az / n) * h);
     }
-    cellVert[cidx(i, j, k)] = pos.length / 3;
-    pos.push(min[0] + (i + sx / n) * h, min[1] + (j + sy / n) * h, min[2] + (k + sz / n) * h);
   }
-  // faces: one quad per sign-changing grid edge
+  // faces: one quad per sign-changing grid edge (look only at cells that produced vertices)
   const index = [];
+  const cv = (i, j, k) => cellVert[i + cnx * (j + cny * k)];
   const quad = (a, b, c, d, flip) => {
     if (a < 0 || b < 0 || c < 0 || d < 0) return;
     if (flip) index.push(a, c, b, a, d, c); else index.push(a, b, c, a, c, d);
   };
   for (let k = 1; k < nz - 1; k++) for (let j = 1; j < ny - 1; j++) for (let i = 1; i < nx - 1; i++) {
-    const s0 = field[idx(i, j, k)] < 0;
-    if ((field[idx(i + 1, j, k)] < 0) !== s0 && i < nx - 1) quad(cellVert[cidx(i, j - 1, k - 1)], cellVert[cidx(i, j, k - 1)], cellVert[cidx(i, j, k)], cellVert[cidx(i, j - 1, k)], !s0);
-    if ((field[idx(i, j + 1, k)] < 0) !== s0) quad(cellVert[cidx(i - 1, j, k - 1)], cellVert[cidx(i - 1, j, k)], cellVert[cidx(i, j, k)], cellVert[cidx(i, j, k - 1)], !s0);
-    if ((field[idx(i, j, k + 1)] < 0) !== s0) quad(cellVert[cidx(i - 1, j - 1, k)], cellVert[cidx(i, j - 1, k)], cellVert[cidx(i, j, k)], cellVert[cidx(i - 1, j, k)], !s0);
+    if (cellVert[i + cnx * (j + cny * k)] < 0) continue; // the edge's cells all share (i,j,k)
+    const id = i + sy * j + sz * k;
+    const s0 = field[id] < 0;
+    if ((field[id + sx] < 0) !== s0) quad(cv(i, j - 1, k - 1), cv(i, j, k - 1), cv(i, j, k), cv(i, j - 1, k), !s0);
+    if ((field[id + sy] < 0) !== s0) quad(cv(i - 1, j, k - 1), cv(i - 1, j, k), cv(i, j, k), cv(i, j, k - 1), !s0);
+    if ((field[id + sz] < 0) !== s0) quad(cv(i - 1, j - 1, k), cv(i, j - 1, k), cv(i, j, k), cv(i - 1, j, k), !s0);
   }
   // project onto true surface + analytic normals
+  const __t1 = performance.now();
   const N = pos.length / 3, nor = new Float32Array(N * 3), g = [0, 0, 0];
   for (let i = 0; i < N; i++) {
     let x = pos[i * 3], y = pos[i * 3 + 1], z = pos[i * 3 + 2];
@@ -206,11 +258,19 @@ export function polygonise(sculpt, min, max, h, { ao = true, aoScale = 1, projec
     pos[i * 3] = x; pos[i * 3 + 1] = y; pos[i * 3 + 2] = z;
     nor[i * 3] = g[0]; nor[i * 3 + 1] = g[1]; nor[i * 3 + 2] = g[2];
   }
+  PROF.proj += performance.now() - __t1;
   const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  const P32 = new Float32Array(pos), I32 = new Uint32Array(index);
+  geo.setAttribute('position', new THREE.BufferAttribute(P32, 3));
   geo.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
-  geo.setIndex(index);
-  if (ao) geo.setAttribute('ao', new THREE.BufferAttribute(computeAO(sculpt, pos, nor, aoScale), 1));
+  geo.setIndex(new THREE.BufferAttribute(I32, 1));
+  const __t2 = performance.now();
+  let aoArr = null;
+  if (ao) { aoArr = computeAO(sculpt, pos, nor, aoScale); geo.setAttribute('ao', new THREE.BufferAttribute(aoArr, 1)); }
+  PROF.ao += performance.now() - __t2;
+  const entry = { pos: P32, nor, idx: I32, ao: aoArr };
+  POLY_CACHE.map.set(key, entry); POLY_CACHE.fresh.set(key, entry);
+  PROF.poly += performance.now() - __t0;
   return geo;
 }
 
@@ -236,7 +296,8 @@ export function computeAO(sculpt, pos, nor, scale = 1, extra = null) {
  * how close it is to each bone's primitives (soft-min of distances).
  * `influences` add localised deformers (face rig).
  */
-export function skinWeights(geo, prims, boneIndex, { softness = 0.02, influences = [] } = {}) {
+export function skinWeights(geo, prims, boneIndex, opts = {}) { const __t = performance.now(); const r = skinWeights_(geo, prims, boneIndex, opts); PROF.skin += performance.now() - __t; return r; }
+function skinWeights_(geo, prims, boneIndex, { softness = 0.02, influences = [] } = {}) {
   const pos = geo.attributes.position.array, N = pos.length / 3;
   const si = new Uint16Array(N * 4), sw = new Float32Array(N * 4);
   const boneD = new Map();

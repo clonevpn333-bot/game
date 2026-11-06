@@ -88,7 +88,9 @@ Known limitations, stated plainly:
   lips, ears, eyelids, teeth, brows, sculpted hair, layered clothing with real seams/stitching/zippers
   and a face rig with expressions — but they are stylised and not yet at the level of a hand-sculpted
   premium game character; faces in particular share one base topology and read as caricatures up close.
-  They are also heavy (~350–450k triangles each, 2–4 s to build at load).
+  They are also heavy (~350–450k triangles each). The first time a character is built it costs a
+  few seconds of CPU (≈7 s on the development container); the result is cached in IndexedDB, after
+  which it builds in well under a second.
 * **Animation** is fully procedural (IK gait, poses, springs). It avoids foot sliding and has weight
   shifts, but there are no authored mocap clips; climbing, getting-up and other contextual animations
   from the brief are not implemented.
@@ -99,6 +101,11 @@ Known limitations, stated plainly:
 * **Audio** is entirely synthesised at runtime — original, but it sounds synthetic rather than like a
   recorded orchestra. There is no voice acting; dialogue is subtitled.
 * Chapters 4–15 are not built. The slice ends at the doorway into Chapter 4 (*The Fallen King*).
+
+## Developer pages
+
+`viewer.html?who=kai,sera,venn,clerk&view=face|full&expr=happy` (character viewer),
+`carview.html?type=gt|police|sedan|hatch|van` and `citytest.html` render single assets for inspection.
 
 ## Assets and licences
 

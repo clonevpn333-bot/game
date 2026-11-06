@@ -426,7 +426,9 @@ export default class Chapter2 {
     const g = this.game, gun = this.boatMesh.userData.gun;
     // aim point: what the screen centre looks at
     const ray = new THREE.Raycaster(); ray.setFromCamera(new THREE.Vector2(0, 0), this.camera);
-    let aim = ray.ray.at(220, V3());
+    let aim = ray.ray.at(200, V3());
+    // never aim into the sea: clamp the far aim point to the horizon at deck height
+    if (aim.y < this.boat.pos.y + 1.5) aim.y = this.boat.pos.y + 1.5;
     for (const p of this.patrols) if (p.alive) { const s = new THREE.Sphere(p.body.pos.clone().add(V3(0, 1, 0)), 3); const hit = ray.ray.intersectSphere(s, V3()); if (hit) { aim = hit; break; } }
     if (this.ship.visible) for (const tu of this.ship.userData.turrets) if (tu.alive) { const hit = ray.ray.intersectSphere(new THREE.Sphere(tu.tank.getWorldPosition(V3()), 2), V3()); if (hit) aim = hit; }
     const local = gun.group.worldToLocal(aim.clone());
@@ -479,7 +481,7 @@ export default class Chapter2 {
       const alive = this.patrols.filter((p) => p.alive && !p.sinking).length;
       g.ui.objectiveDetail(`Patrol boats destroyed: ${this.kills} / 6`);
       if (alive === 0 && this.wave === 1 && this.kills >= 3) { this.wave = 2; this.spawnWave(3); this.line('h2', [['SERA', 'More coming in from the east!'], ['VENN', 'Sera. You always did pick the wrong side of a door.']]); }
-      if (this.kills >= 6 || (this.wave === 2 && alive === 0)) { g.checkpoint('meridian'); this.beginPhase('meridian'); }
+      else if (this.wave === 2 && alive === 0) { g.checkpoint('meridian'); this.beginPhase('meridian'); }
       if (this.phaseT > 40 && this.kills < 2) this.line('hint', [['SERA', 'Aim for their engines — the stern! Crippled boats can\'t chase you.']]);
     } else if (this.phase === 'meridian') {
       this.waypoint = this.ship.localToWorld(V3(0, 4, -90));
@@ -555,7 +557,7 @@ export default class Chapter2 {
     this.shake = Math.max(0, (this.shake || 0) - dt * 2);
     const s = this.shake * 0.35;
     cam.position.copy(this.camPos).add(V3((Math.random() - 0.5) * s, (Math.random() - 0.5) * s, (Math.random() - 0.5) * s));
-    const look = target.clone().add(V3(Math.sin(yaw) * 20, 0, Math.cos(yaw) * 20));
+    const look = target.clone().add(V3(Math.sin(yaw) * 60, 1.5, Math.cos(yaw) * 60));
     cam.lookAt(look);
     cam.fov = 62 + clamp(b.speed / 30, 0, 1) * 10 + (b.input.boost && b.boostFuel > 0 ? 6 : 0);
     cam.updateProjectionMatrix();

@@ -4,6 +4,8 @@ import { P, Sculpt } from './sculpt.js';
 import { Humanoid, clothMaterial, hairMaterial, lerp3, add, mul, norm, V } from './humanoid.js';
 import { surfaceTube, stitches, zipper, raySurface, attachDetail, project } from './details.js';
 import { preloadSets } from '../engine/assets.js';
+import { POLY_CACHE } from './sculpt.js';
+import { warmCache, persistCache } from './cache.js';
 
 export const CAST_TEXTURES = ['leather_dark', 'denim', 'jersey', 'linen', 'fleece', 'leather_brown', 'velvet'];
 
@@ -542,8 +544,12 @@ export const VENN = {
 /** Build a character (heavy; call while loading). */
 export async function buildCharacter(def) {
   await preloadSets(CAST_TEXTURES);
+  await warmCache(def.name);
+  POLY_CACHE.used = new Set(); POLY_CACHE.fresh.clear();
   const ch = new Humanoid(def);
   ch.build();
+  const used = POLY_CACHE.used; POLY_CACHE.used = null;
+  if (POLY_CACHE.fresh.size) persistCache(def.name, used);
   if (ch.tail) {
     // append tail bones to the skeleton and add the skinned ponytail
     const bones = [...ch.boneList, ...ch.tail.bones];

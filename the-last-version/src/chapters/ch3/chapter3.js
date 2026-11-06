@@ -41,6 +41,7 @@ export default class Chapter3 {
     this.kai = await buildCharacter(KAI);
     this.kaiAnim = new Animator(this.kai);
     scene.add(this.kai);
+    this.kai.anchor.light.distance = 3.5;
     this.flashlight = (await model('vintage_flashlight')).clone();
     this.flashlight.scale.setScalar(0.85);
     this.kai.bones.handR.add(this.flashlight);
@@ -97,7 +98,8 @@ export default class Chapter3 {
     h.sconces.forEach((s, i) => { s.on = on ? true : i % 5 === 0; s.shade.material.emissiveIntensity = s.on ? (on ? 2.2 : 0.8) : 0.05; });
     h.chandLight.intensity = on ? 3 : 0.4;
     this.power = on;
-    for (const [num, rp] of Object.entries(h.roomProps)) { rp.lamp.intensity = on ? 1.2 : 0; rp.lampShade.material.emissiveIntensity = on ? 1.5 : 0; }
+    // 602's bedside lamp survives the outage: a lure toward the flashlight
+    for (const [num, rp] of Object.entries(h.roomProps)) { const keep = num === '602'; rp.lamp.intensity = on ? 1.2 : keep ? 0.7 : 0; rp.lampShade.material.emissiveIntensity = on ? 1.5 : keep ? 1.0 : 0; }
   }
 
   set611(open) {
@@ -318,7 +320,7 @@ export default class Chapter3 {
     const cd = this.clerk.state !== 'dormant' ? this.clerk.pos.distanceTo(this.pos) : 99;
     const near = clamp(1 - cd / 14, 0, 1);
     const pulse = 0.5 + 0.5 * Math.sin(t * (3 + near * 14));
-    this.kai.anchor.light.intensity = 0.15 + near * pulse * 1.2 + (this.scanning ? 1.2 : 0);
+    this.kai.anchor.light.intensity = 0.35 + near * pulse * 1.2 + (this.scanning ? 1.2 : 0);
     this.kai.anchor.glow.emissiveIntensity = 1.2 + near * pulse * 3 + (this.scanning ? 3 : 0);
   }
 
