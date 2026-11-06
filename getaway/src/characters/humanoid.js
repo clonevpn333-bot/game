@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { clamp, lerp, smoothstep, rand, makeRng } from '../core/utils.js';
 import { mergeParts } from '../world/props.js';
+import { G } from '../core/context.js';
 
 // joint indices
 export const J = { pelvis: 0, chest: 1, head: 2, lSh: 3, lEl: 4, lHa: 5, rSh: 6, rEl: 7, rHa: 8, lHip: 9, lKn: 10, lFt: 11, rHip: 12, rKn: 13, rFt: 14 };
@@ -283,20 +284,21 @@ export class Human {
 }
 
 // ---------------- instanced renderer ----------------
-function capsule(r0 = 1, r1 = 1) { const g = new THREE.CylinderGeometry(r1, r0, 1, 14, 1); g.translate(0, 0.5, 0); const a = new THREE.SphereGeometry(r0, 10, 6, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2); a.scale(1, 0.14, 1); const b = new THREE.SphereGeometry(r1, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2); b.scale(1, 0.14, 1); b.translate(0, 1, 0); return mergeParts([{ geo: g, c: 0xffffff }, { geo: a, c: 0xffffff }, { geo: b, c: 0xffffff }]); }
+function capsule(r0 = 1, r1 = 1) { const g = new THREE.CylinderGeometry(r1, r0, 1, 9, 1); g.translate(0, 0.5, 0); const a = new THREE.SphereGeometry(r0, 9, 3, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2); a.scale(1, 0.14, 1); const b = new THREE.SphereGeometry(r1, 9, 3, 0, Math.PI * 2, 0, Math.PI / 2); b.scale(1, 0.14, 1); b.translate(0, 1, 0); return mergeParts([{ geo: g, c: 0xffffff }, { geo: a, c: 0xffffff }, { geo: b, c: 0xffffff }]); }
 // rounded box: a box whose edges/corners are rounded with radius r (exact normals) — the base "shape" of the figures
-function rbox(w, h, d, r, seg = 2) { const g = new THREE.BoxGeometry(w, h, d, seg * 2, seg * 2, seg * 2); const p = g.attributes.position, n = g.attributes.normal; const hw = w / 2 - r, hh = h / 2 - r, hd = d / 2 - r; const v = new THREE.Vector3(), c = new THREE.Vector3();
+function rbox(w, h, d, r, seg = 1) { const g = new THREE.BoxGeometry(w, h, d, seg * 2, seg * 2, seg * 2); const p = g.attributes.position, n = g.attributes.normal; const hw = w / 2 - r, hh = h / 2 - r, hd = d / 2 - r; const v = new THREE.Vector3(), c = new THREE.Vector3();
   for (let i = 0; i < p.count; i++) { v.fromBufferAttribute(p, i); c.set(Math.max(-hw, Math.min(hw, v.x)), Math.max(-hh, Math.min(hh, v.y)), Math.max(-hd, Math.min(hd, v.z))); v.sub(c); const l = v.length() || 1; v.multiplyScalar(1 / l); n.setXYZ(i, v.x, v.y, v.z); p.setXYZ(i, c.x + v.x * r, c.y + v.y * r, c.z + v.z * r); }
   return g; }
 // narrow x/z towards the bottom between y0 (scale a0/b0) and y1 (scale 1) — tapered torso, jaw
 function taper(g, y0, y1, a0, a1, b0, b1) { const p = g.attributes.position; for (let i = 0; i < p.count; i++) { const t = Math.max(0, Math.min(1, (p.getY(i) - y0) / (y1 - y0))); p.setX(i, p.getX(i) * (a0 + (a1 - a0) * t)); p.setZ(i, p.getZ(i) * (b0 + (b1 - b0) * t)); } return g; }
+const FAR_SKIP = new Set(['eyes', 'joint', 'belt', 'capTrim', 'shades', 'hand']);
 export class HumanRenderer {
   constructor(scene, max = 360) {
     this.max = max; this.meshes = {}; const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, metalness: 0.02 });
     // ---- the shape kit: rounded boxes + cylinders, a graphic face. (No sculpted/organic meshes — see CLAUDE.md.) ----
     const P_ = (geo, c, x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0) => { if (rx || ry || rz) geo.applyMatrix4(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(rx, ry, rz))); geo.translate(x, y, z); return { geo, c }; };
     // head (unit = 0.123 m, origin = head centre, +z = face)
-    const head = taper(rbox(1.64, 1.96, 1.76, 0.42, 4), -0.98, 0.15, 0.84, 1, 0.92, 1);
+    const head = taper(rbox(1.64, 1.96, 1.76, 0.42, 2), -0.98, 0.15, 0.84, 1, 0.92, 1);
     const headParts = [{ geo: head, c: 0xffffff }, P_(rbox(0.2, 0.34, 0.24, 0.06), 0xeedcd0, 0, -0.13, 0.9), ...[1, -1].map((sx) => P_(rbox(0.16, 0.34, 0.26, 0.06), 0xf0dcd0, sx * 0.83, 0, -0.02))];
     const face = []; for (const sx of [1, -1]) face.push(P_(rbox(0.3, 0.22, 0.06, 0.08), 0xf3efe8, sx * 0.34, 0.09, 0.875), P_(rbox(0.13, 0.17, 0.05, 0.04), 0x1c140e, sx * 0.31, 0.08, 0.9), P_(new THREE.BoxGeometry(0.04, 0.04, 0.02), 0xffffff, sx * 0.31 + 0.035, 0.12, 0.93), P_(new THREE.BoxGeometry(0.34, 0.075, 0.06), 0x2a1c14, sx * 0.34, 0.34, 0.88, 0, 0, sx * -0.1));
     face.push(P_(rbox(0.34, 0.07, 0.05, 0.03), 0x6e2f2a, 0, -0.5, 0.86));
@@ -304,29 +306,29 @@ export class HumanRenderer {
     const hairTop = () => P_(rbox(1.8, 0.62, 1.9, 0.26), 0xffffff, 0, 0.75, -0.03), hairBack = () => P_(rbox(1.74, 0.9, 0.36, 0.14), 0xffffff, 0, 0.22, -0.8);
     const sideburns = () => [1, -1].map((sx) => P_(rbox(0.14, 0.5, 0.5, 0.05), 0xffffff, sx * 0.86, 0.3, -0.25));
     // torso (unit: x 0.2 m half-width, y 0..1 = pelvis..chest joint, z 0.12 m)
-    const torsoBody = rbox(2.0, 1.0, 1.8, 0.28, 4); torsoBody.translate(0, 0.55, 0); taper(torsoBody, 0.05, 0.8, 0.74, 1, 0.85, 1);
-    const vestBody = taper(rbox(2.16, 0.8, 1.98, 0.3, 4), -0.4, 0.3, 0.8, 1, 0.9, 1); vestBody.translate(0, 0.58, 0);
+    const torsoBody = rbox(2.0, 1.0, 1.8, 0.28, 2); torsoBody.translate(0, 0.55, 0); taper(torsoBody, 0.05, 0.8, 0.74, 1, 0.85, 1);
+    const vestBody = taper(rbox(2.16, 0.8, 1.98, 0.3, 2), -0.4, 0.3, 0.8, 1, 0.9, 1); vestBody.translate(0, 0.58, 0);
     // shoe (unit: x 0.1 m, y 0.08 m, z 0.25 m; origin under the ankle): an ankle-height upper + a lower, rounded toe box, on a thin sole
-    const shoe = rbox(1.08, 1.0, 0.62, 0.3, 3); shoe.translate(0, 0.62, 0.1); const toeBox = rbox(1.04, 0.62, 0.62, 0.28, 3); toeBox.translate(0, 0.43, 0.58);
+    const shoe = rbox(1.08, 1.0, 0.62, 0.3, 2); shoe.translate(0, 0.62, 0.1); const toeBox = rbox(1.04, 0.62, 0.62, 0.28, 2); toeBox.translate(0, 0.43, 0.58);
     const defs = {
       head: mergeParts(headParts),
       eyes: mergeParts(face),
       torso: mergeParts([{ geo: torsoBody, c: 0xffffff }, ...[1, -1].map((sx) => P_(new THREE.BoxGeometry(0.44, 0.2, 0.08), 0xc4c4c4, sx * 0.19, 0.98, 0.84, 0, 0, sx * 0.55)), P_(new THREE.BoxGeometry(0.1, 0.72, 0.05), 0xd6d6d6, 0, 0.52, 0.86)]),
       belt: mergeParts([P_(rbox(2.06, 0.24, 1.7, 0.1), 0x2b1d14, 0, 0.42, 0), P_(new THREE.BoxGeometry(0.32, 0.2, 0.08), 0xb8963e, 0, 0.42, 0.86)]),
-      pelvis: (() => { const g = rbox(2.0, 1.25, 1.62, 0.3, 3); g.translate(0, -0.05, 0); return g; })(),
+      pelvis: (() => { const g = rbox(2.0, 1.25, 1.62, 0.3, 2); g.translate(0, -0.05, 0); return g; })(),
       limb: capsule(1, 0.85),
-      hand: mergeParts([P_(rbox(1.0, 2.0, 1.5, 0.35, 3), 0xffffff, 0, 0.55, 0), P_(rbox(0.5, 0.9, 0.5, 0.2), 0xffffff, -0.3, 0.4, 0.75, 0.4)]),
+      hand: mergeParts([P_(rbox(1.0, 2.0, 1.5, 0.35, 2), 0xffffff, 0, 0.55, 0), P_(rbox(0.5, 0.9, 0.5, 0.2), 0xffffff, -0.3, 0.4, 0.75, 0.4)]),
       foot: mergeParts([{ geo: shoe, c: 0xffffff }, { geo: toeBox, c: 0xffffff }, P_(rbox(1.14, 0.2, 1.12, 0.08), 0x4a4a4a, 0, 0.1, 0.34), P_(new THREE.BoxGeometry(0.5, 0.05, 0.36), 0xd0d0d0, 0, 0.92, 0.38, 0.7)]),
       hairCap: mergeParts([hairTop(), hairBack(), ...sideburns(), P_(rbox(1.5, 0.2, 0.22, 0.08), 0xffffff, 0.1, 0.82, 0.86, 0, 0, -0.08)]),
       hairLong: mergeParts([hairTop(), P_(rbox(1.82, 1.9, 0.4, 0.15), 0xffffff, 0, -0.3, -0.8), ...[1, -1].map((sx) => P_(rbox(0.22, 1.45, 0.8, 0.08), 0xffffff, sx * 0.9, -0.12, -0.2)), P_(rbox(1.3, 0.24, 0.22, 0.08), 0xffffff, 0.18, 0.74, 0.86, 0, 0, -0.14)]),
       hairBun: mergeParts([hairTop(), hairBack(), ...sideburns(), P_(rbox(0.66, 0.62, 0.56, 0.26), 0xffffff, 0, 0.66, -1.08)]),
       cap: mergeParts([P_(rbox(1.88, 0.5, 1.98, 0.18), 0xffffff, 0, 1.0, 0.02)]),
       capTrim: mergeParts([P_(rbox(1.82, 0.26, 1.92, 0.1), 0x111318, 0, 0.66, 0), P_(new THREE.BoxGeometry(1.5, 0.06, 0.62), 0x0c0c0c, 0, 0.52, 1.12, 0.28), P_(rbox(0.3, 0.32, 0.06, 0.05), 0xd4af37, 0, 0.98, 1.0)]),
-      helmet: mergeParts([P_(rbox(2.02, 1.02, 2.12, 0.46, 4), 0xffffff, 0, 0.62, -0.04), P_(rbox(2.08, 0.12, 2.18, 0.05), 0xb4b4b4, 0, 0.17, -0.04)]),
-      beanie: mergeParts([P_(rbox(1.86, 0.92, 1.96, 0.4, 4), 0xffffff, 0, 0.64, -0.02), P_(rbox(1.92, 0.3, 2.02, 0.12), 0xcfcfcf, 0, 0.26, -0.02)]),
+      helmet: mergeParts([P_(rbox(2.02, 1.02, 2.12, 0.46, 2), 0xffffff, 0, 0.62, -0.04), P_(rbox(2.08, 0.12, 2.18, 0.05), 0xb4b4b4, 0, 0.17, -0.04)]),
+      beanie: mergeParts([P_(rbox(1.86, 0.92, 1.96, 0.4, 2), 0xffffff, 0, 0.64, -0.02), P_(rbox(1.92, 0.3, 2.02, 0.12), 0xcfcfcf, 0, 0.26, -0.02)]),
       shades: mergeParts([...[1, -1].map((sx) => P_(rbox(0.4, 0.26, 0.07, 0.07), 0xffffff, sx * 0.34, 0.1, 0.95)), P_(new THREE.BoxGeometry(0.3, 0.06, 0.06), 0xffffff, 0, 0.16, 0.95), ...[1, -1].map((sx) => P_(new THREE.BoxGeometry(0.05, 0.06, 0.95), 0xffffff, sx * 0.83, 0.14, 0.46))]),
       bag: (() => { const g = new THREE.CylinderGeometry(1, 1, 2.4, 12); g.rotateZ(Math.PI / 2); const s = new THREE.TorusGeometry(0.9, 0.08, 6, 12, Math.PI); s.translate(0, 0.9, 0); return mergeParts([{ geo: g, c: 0xffffff }, { geo: s, c: 0x222222 }]); })(),
-      joint: new THREE.SphereGeometry(1, 12, 8),
+      joint: new THREE.SphereGeometry(1, 8, 6),
       vest: mergeParts([{ geo: vestBody, c: 0xffffff }, ...[-0.55, 0, 0.55].map((x) => P_(rbox(0.42, 0.3, 0.2, 0.06), 0xd8d8d8, x, 0.42, 0.96))]),
     };
     for (const [k, g0] of Object.entries(defs)) {
@@ -339,6 +341,7 @@ export class HumanRenderer {
   }
   begin() { for (const k in this.meshes) this.meshes[k].n = 0; }
   _put(k, e, col) {
+    if (this._far && FAR_SKIP.has(k)) return; // far away: the tiny parts don't read anyway
     const M = this.meshes[k]; if (M.n >= M.mesh.instanceMatrix.count) return; const o = M.n * 16; const a = M.arr;
     for (let i = 0; i < 16; i++) a[o + i] = e[i];
     this.c.set(col); const ci = M.n * 3; M.col[ci] = this.c.r; M.col[ci + 1] = this.c.g; M.col[ci + 2] = this.c.b; M.n++;
@@ -347,6 +350,7 @@ export class HumanRenderer {
   // basis matrix from columns X,Y,Z scaled, translation T
   static mat(e, xx, xy, xz, yx, yy, yz, zx, zy, zz, tx, ty, tz) { e[0] = xx; e[1] = xy; e[2] = xz; e[3] = 0; e[4] = yx; e[5] = yy; e[6] = yz; e[7] = 0; e[8] = zx; e[9] = zy; e[10] = zz; e[11] = 0; e[12] = tx; e[13] = ty; e[14] = tz; e[15] = 1; return e; }
   draw(h) {
+    { const c = G.camera.position, dx = h.pos.x - c.x, dz = h.pos.z - c.z, L = G.Q ? G.Q.humanLodD : 45; this._far = dx * dx + dz * dz > L * L; }
     const J3 = h.joints, L = h.look, S = h.scale, b = L.build || 1; const e = this._e || (this._e = new Float32Array(16));
     const jx = (j) => J3[j * 3], jy = (j) => J3[j * 3 + 1], jz = (j) => J3[j * 3 + 2];
     // torso frame

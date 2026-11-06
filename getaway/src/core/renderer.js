@@ -35,7 +35,7 @@ const GradeShader = {
 
 export function createRenderer(container, settings) {
   const renderer = new THREE.WebGLRenderer({ antialias: false, /* the composer renders off-screen; canvas MSAA only cost memory */ powerPreference: 'high-performance', stencil: false });
-  const pr = settings.quality === 'ultra' ? Math.min(2, devicePixelRatio) : settings.quality === 'high' ? Math.min(1.25, devicePixelRatio) : settings.quality === 'medium' ? 1 : 0.75;
+  const pr = settings.quality === 'ultra' ? Math.min(2, devicePixelRatio) : settings.quality === 'high' ? Math.min(1.25, devicePixelRatio) : settings.quality === 'medium' ? 0.9 : 0.72;
   renderer.setPixelRatio(pr);
   renderer.setSize(innerWidth, innerHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;

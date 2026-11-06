@@ -17,7 +17,7 @@ const DEFAULT_SAVE = () => ({
 });
 
 export const DEFAULT_SETTINGS = () => ({
-  quality: 'high', master: 0.9, music: 0.75, sfx: 0.9, sensitivity: 1, invertY: false,
+  quality: 'auto', master: 0.9, music: 0.75, sfx: 0.9, sensitivity: 1, invertY: false,
   fov: 72, shake: 1, bloom: true, shadows: true, pedDensity: 1, trafficDensity: 1, subtitles: true, units: 'kmh',
   motionBlurFx: true,
 });

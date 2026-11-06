@@ -2,6 +2,7 @@
 import { addInteriorMapping } from './interior.js';
 import * as THREE from 'three';
 import { makeRng, clamp, lerp, smoothstep, noise2 } from '../core/utils.js';
+import { G } from '../core/context.js';
 import { StaticWorld } from './static.js';
 import { Builder } from './builder.js';
 import * as T from './textures.js';
@@ -14,7 +15,7 @@ export const SHOP_NAMES = ['SOL BURGER', 'LUCKY DRAGON', 'VINYL VAULT', 'PIXEL P
 export function generateCity(scene, quality = 'high') {
   const rng = makeRng(20261101);
   const S = new StaticWorld(24);
-  const B = new Builder(200);
+  const B = new Builder(G.Q ? G.Q.cityChunk : 200); // bigger batches on weaker machines = far fewer draw calls
   const root = new THREE.Group(); root.name = 'city'; scene.add(root);
   const mats = makeMaterials();
   S.terrainFn = terrainHeight;
@@ -128,7 +129,7 @@ function makeMaterials() {
     const f = T.facade(s, v); const reflective = s === 'glass' || s === 'tower';
     const mat = std({ map: f.map, emissiveMap: f.emissive, emissive: 0xffffff, emissiveIntensity: 0, roughnessMap: f.rm, metalnessMap: f.rm, roughness: reflective ? 0.55 : 1, metalness: reflective ? 1 : 0.9, envMapIntensity: reflective ? 1.2 : 1.0 });
     mat.userData.night = s === 'shop' ? 1.1 : 1.0; night.push(mat); m[`fac_${s}_${v}`] = mat;
-    addInteriorMapping(mat, s, T.FACADES[s], v * 7 + s.length); // real 3D rooms behind every window
+    if (!G.Q || G.Q.interior) addInteriorMapping(mat, s, T.FACADES[s], v * 7 + s.length); // real 3D rooms behind every window (off on Low)
   }
   // sign atlas
   const atlas = makeSignAtlas(); m.signs = std({ map: atlas.tex, emissiveMap: atlas.tex, emissive: 0xffffff, emissiveIntensity: 0.15, roughness: 0.5 }); m.signs.userData.night = 1.3; m.signs.userData.day = 0.15; night.push(m.signs);

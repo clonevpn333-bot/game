@@ -28,7 +28,16 @@ export class VehicleManager {
   remove(v) { const i = this.list.indexOf(v); if (i >= 0) this.list.splice(i, 1); v.dispose(); v.removed = true; if (v.onRemoved) v.onRemoved(); G.emit('vehicleRemoved', v); }
   query(x, z, r, out = []) { return this.hash.query(x, z, r, out); }
 
+  // far cars: only the body shell, cabin, glass and lights (5 draw calls instead of ~17) — no shadow either
+  _lod() {
+    const c = G.camera.position; const L = G.Q ? G.Q.carDetailD : 110; const D2 = L * L;
+    for (const v of this.list) { const m = v.model; if (!m || !m.bodyMesh || !v.root) continue; const far = !v.isPlayer && v.pos.distanceToSquared(c) > D2; if (far === v._lodFar) continue; v._lodFar = far;
+      if (!v._lodParts) { const keep = new Set([m.bodyMesh, m.cabMesh, m.lights, m.glass && m.glass.isMesh ? m.glass : null]); v._lodParts = []; v.root.traverse((o) => { if (o.isMesh && !o.isInstancedMesh && !keep.has(o)) v._lodParts.push(o); }); }
+      for (const o of v._lodParts) { if (far) { if (o.visible) { o.visible = false; o.userData.lodHidden = true; } } else if (o.userData.lodHidden) { o.visible = true; o.userData.lodHidden = false; } }
+      m.bodyMesh.castShadow = !far; if (m.cabMesh) m.cabMesh.castShadow = !far; }
+  }
   update(dt) {
+    if ((G.frame & 7) === 3) this._lod();
     const S = this.S; const n = Math.max(1, Math.ceil(dt / (1 / 100))); const h = dt / n;
     for (let k = 0; k < n; k++) {
       for (const v of this.list) if (!v.parked || v.speed > 0.05 || v.vel.y !== 0) { v.step(h, S); if (v.mode === 'drive') this.collideStatic(v); }

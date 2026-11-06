@@ -3,6 +3,8 @@ import { PerfGovernor, updateView } from './core/perf.js';
 import { Guard } from './core/guard.js';
 import { Rockets } from './missions/air.js';
 import { Dents } from './fx/dents.js';
+import { resolveQuality } from './core/quality.js';
+import { InstanceCuller } from './core/instcull.js';
 import { StreetAudio, RADIO_GENRES } from './core/streetaudio.js';
 import { sanitize, sanitizeCamera } from './core/sanitize.js';
 import * as THREE from 'three';
@@ -32,25 +34,27 @@ import { Lighting } from './fx/lighting.js';
 export class Game {
   constructor() { this.last = performance.now(); this.fpsT = 0; this.frames = 0; this.fps = 60; this.hooks = []; }
   async boot(progress = () => {}) {
-    G.settings = loadSettings(); G.save = loadSave(); G.quality = G.settings.quality;
+    G.settings = loadSettings(); G.save = loadSave(); const qOverride = new URLSearchParams(location.search).get('q'); const Q = resolveQuality(qOverride || G.settings.quality); G.quality = Q.level; G.Q = Q.preset; G.Qinfo = Q.detected;
+    console.log('[quality]', G.settings.quality, '->', G.quality, Q.detected.gpu ? '(' + Q.detected.gpu + ', ' + Q.detected.cores + ' cores)' : '');
+    const RS = { ...G.settings, quality: G.quality, shadows: G.settings.shadows && G.Q.shadows, bloom: G.settings.bloom && G.Q.bloom }; G.rs = RS;
     const container = document.getElementById('game');
-    G.renderer = createRenderer(container, G.settings); setAniso(G.renderer.capabilities.getMaxAnisotropy());
-    G.scene = new THREE.Scene(); G.camera = new THREE.PerspectiveCamera(G.settings.fov, innerWidth / innerHeight, 0.2, 6000);
+    G.renderer = createRenderer(container, RS); setAniso(G.renderer.capabilities.getMaxAnisotropy());
+    G.scene = new THREE.Scene(); G.camera = new THREE.PerspectiveCamera(G.settings.fov, innerWidth / innerHeight, 0.2, G.Q.viewFar);
     G.input = new Input(G.renderer.domElement); G.input.sensitivity = G.settings.sensitivity; G.input.invertY = G.settings.invertY;
     G.audio = new AudioEngine(); G.music = new Music(G.audio);
     progress(0.1, 'Paving the streets of Port Sol…'); await tick();
     G.world = generateCity(G.scene, G.quality);
     progress(0.5, 'Planting palm trees & hydrants…'); await tick();
-    G.props = new Props(G.world, G.scene); G.fx = new FX(G.scene, G.world.static); G.decals = new Decals(G.scene); G.fx.quality = G.quality === 'low' ? 0.4 : G.quality === 'medium' ? 0.7 : 1;
+    G.instCull = new InstanceCuller(); G.props = new Props(G.world, G.scene); G.fx = new FX(G.scene, G.world.static); G.decals = new Decals(G.scene); G.fx.quality = G.quality === 'low' ? 0.4 : G.quality === 'medium' ? 0.7 : 1;
     G.rigid = new RigidWorld(G.world.static);
     G.sky = new Sky(G.scene, G.renderer); G.sky.nightMats = G.world.nightMats; G.sky.registerWet([G.world.mats.road, G.world.mats.roadRes, G.world.mats.hwy, G.world.mats.isect, G.world.mats.asphalt, G.world.mats.walk]);
     progress(0.7, 'Fueling 40 cars…'); await tick();
     G.vehicles = new VehicleManager(G.scene, G.world.static); G.combat = new Combat(G.world.static); G.rockets = new Rockets(); G.dents = new Dents(G.scene); G.street = new StreetAudio();
-    G.traffic = new Traffic(G.world); G.humans = new HumanRenderer(G.scene, 380); G.peds = new Peds(G.world); G.peds.setDensity(G.settings.pedDensity);
+    G.traffic = new Traffic(G.world); G.humans = new HumanRenderer(G.scene, 380); G.peds = new Peds(G.world); G.peds.setDensity(G.settings.pedDensity * G.Q.peds); G.traffic.density = G.Q.traffic;
     G.player = new Player(); G.combat.addTarget(G.player.target);
     G.cam = new CameraRig(G.camera); G.cam.baseFov = G.settings.fov;
     G.lighting = new Lighting(G.scene); G.lighting.buildLampPools(G.props);
-    G.composer = createComposer(G.renderer, G.scene, G.camera, G.settings); G.perf = new PerfGovernor(G.renderer, G.composer, G.settings);
+    G.composer = createComposer(G.renderer, G.scene, G.camera, RS); G.perf = new PerfGovernor(G.renderer, G.composer, RS);
     // interior lights: 2 real lights reassigned to the nearest fixtures (every light costs every pixel of every lit shader)
     this.interiorDefs = G.world.interiorLights; this.interiorLights = [0, 1].map(() => { const p = new THREE.PointLight(0xffffff, 0, 40, 1.5); G.scene.add(p); return p; });
     // one shared searchlight for the police helicopter, created up front so no shader ever recompiles mid-game
@@ -75,7 +79,7 @@ export class Game {
     const now = performance.now(); const rawMs = now - this.last; let rdt = Math.min(0.05, rawMs / 1000); this.last = now; if (window.__fixedDt) rdt = window.__fixedDt;
     if (!(rdt > 0)) rdt = 1 / 60;
     this.fpsT += rdt; this.frames++; if (this.fpsT > 0.5) { this.fps = this.frames / this.fpsT; this.fpsT = 0; this.frames = 0; }
-    const input = G.input; const run = (n, f, r) => Guard.run(n, f, r);
+    const input = G.input; const P = window.__prof; const run = P ? (n, f, r) => { const t0 = performance.now(); const x = Guard.run(n, f, r); P[n] = (P[n] || 0) + performance.now() - t0; return x; } : (n, f, r) => Guard.run(n, f, r);
     run('input', () => input.poll()); G.frame++;
     // slow motion
     let scale = 1; if (this.smT > 0) { this.smT -= rdt; scale = this.smT > 0.25 ? this.smScale : clamp(this.smScale + (0.25 - this.smT) * 4 * (1 - this.smScale), this.smScale, 1); }
@@ -135,6 +139,7 @@ export class Game {
         G.sky.sun.intensity *= 0.12 + 0.45 * k; G.sky.hemi.intensity *= 0.35 + 0.45 * k; }
       for (const k in gr) if (typeof gr[k].value === 'number' && !Number.isFinite(gr[k].value)) gr[k].value = 0;
     });
+    if (G.instCull) run('cull', () => G.instCull.update(rdt));
     if (!noRender && !G.perf.lost) run('render', () => { G.perf.tick(G.frame); G.composer.render(rdt); if (!window.__fixedDt) G.perf.frame(rawMs); }, () => G.perf.apply(G.perf.pr * 0.8));
     run('input', () => input.endFrame(true));
     window.__frames = (window.__frames || 0) + 1;

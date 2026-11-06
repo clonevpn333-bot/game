@@ -23,17 +23,17 @@ function shared() {
   // wheels (instanced globally)
   const prof = []; const w = 0.5;
   // tread: circumferential grooves along the contact patch + rounded shoulders + sidewall
-  for (let i = 0; i <= 28; i++) { const a = -Math.PI / 2 + (i / 28) * Math.PI; const ax = Math.sin(a); let r0 = 0.72 + 0.28 * Math.cos(a); const inTread = Math.abs(ax) < 0.78; if (inTread && (i % 4 === 1)) r0 -= 0.025; prof.push(new THREE.Vector2(r0, w * ax * 0.95)); }
-  const tire = new THREE.LatheGeometry(prof, 40); tire.rotateZ(Math.PI / 2);
-  const cap = new THREE.CircleGeometry(0.72, 32); cap.rotateY(Math.PI / 2); cap.translate(-w * 0.9, 0, 0);
-  const wall = new THREE.TorusGeometry(0.8, 0.012, 4, 40); wall.rotateY(Math.PI / 2); wall.translate(w * 0.42, 0, 0);
+  for (let i = 0; i <= 14; i++) { const a = -Math.PI / 2 + (i / 14) * Math.PI; const ax = Math.sin(a); let r0 = 0.72 + 0.28 * Math.cos(a); const inTread = Math.abs(ax) < 0.78; if (inTread && (i % 2 === 1)) r0 -= 0.025; prof.push(new THREE.Vector2(r0, w * ax * 0.95)); }
+  const tire = new THREE.LatheGeometry(prof, 22); tire.rotateZ(Math.PI / 2);
+  const cap = new THREE.CircleGeometry(0.72, 18); cap.rotateY(Math.PI / 2); cap.translate(-w * 0.9, 0, 0);
+  const wall = new THREE.TorusGeometry(0.8, 0.012, 3, 22); wall.rotateY(Math.PI / 2); wall.translate(w * 0.42, 0, 0);
   SHARED.tireGeo = mergeParts([{ geo: tire, c: 0x1c1c1e }, { geo: cap, c: 0x101012 }, { geo: wall, c: 0x3a3a3c }]);
   const base = () => [
-    { geo: new THREE.CylinderGeometry(0.72, 0.72, 0.1, 40, 1, true).rotateZ(Math.PI / 2).translate(0.18, 0, 0), c: 0xb8bec4 },
-    { geo: new THREE.TorusGeometry(0.71, 0.025, 6, 40).rotateY(Math.PI / 2).translate(0.235, 0, 0), c: 0xe8ecf0 },
-    { geo: new THREE.CylinderGeometry(0.64, 0.64, 0.05, 32).rotateZ(Math.PI / 2).translate(-0.06, 0, 0), c: 0x4a4e54 },
+    { geo: new THREE.CylinderGeometry(0.72, 0.72, 0.1, 22, 1, true).rotateZ(Math.PI / 2).translate(0.18, 0, 0), c: 0xb8bec4 },
+    { geo: new THREE.TorusGeometry(0.71, 0.025, 4, 22).rotateY(Math.PI / 2).translate(0.235, 0, 0), c: 0xe8ecf0 },
+    { geo: new THREE.CylinderGeometry(0.64, 0.64, 0.05, 18).rotateZ(Math.PI / 2).translate(-0.06, 0, 0), c: 0x4a4e54 },
     { geo: new THREE.BoxGeometry(0.16, 0.32, 0.24).translate(-0.01, 0.4, 0.2), c: 0xc0392b },
-    { geo: new THREE.CylinderGeometry(0.15, 0.17, 0.12, 16).rotateZ(Math.PI / 2).translate(0.25, 0, 0), c: 0xd0d4d8 },
+    { geo: new THREE.CylinderGeometry(0.15, 0.17, 0.12, 10).rotateZ(Math.PI / 2).translate(0.25, 0, 0), c: 0xd0d4d8 },
     { geo: new THREE.CylinderGeometry(0.07, 0.07, 0.02, 12).rotateZ(Math.PI / 2).translate(0.315, 0, 0), c: 0x15171a },
   ];
   const spoke = (a, w2, d, len, twist = 0, col = 0xc6ccd2, r0 = 0.15) => { const g = new THREE.BoxGeometry(0.09, len, w2); g.translate(0, r0 + len / 2, 0); if (twist) g.rotateY(twist); g.rotateX(a); g.translate(0.21 + d, 0, 0); return { geo: g, c: col }; };
@@ -41,11 +41,11 @@ function shared() {
     sport6: () => { const p = base(); for (let i = 0; i < 6; i++) p.push(spoke(i / 6 * Math.PI * 2, 0.12, 0, 0.56)); return p; },
     five: () => { const p = base(); for (let i = 0; i < 5; i++) { p.push(spoke(i / 5 * Math.PI * 2, 0.17, 0, 0.56)); p.push(spoke(i / 5 * Math.PI * 2 + 0.06, 0.03, 0.02, 0.5, 0, 0x9aa0a6)); } return p; },
     mesh: () => { const p = base(); for (let i = 0; i < 10; i++) { p.push(spoke(i / 10 * Math.PI * 2, 0.05, 0, 0.56, 0.5, 0x2a2d31)); p.push(spoke(i / 10 * Math.PI * 2, 0.05, 0.01, 0.56, -0.5, 0x2a2d31)); } return p; },
-    turbine: () => { const p = base(); for (let i = 0; i < 6; i++) p.push(spoke(i / 6 * Math.PI * 2, 0.2, 0, 0.56, 0.7, 0xe6e8ea)); p.push({ geo: new THREE.CylinderGeometry(0.6, 0.6, 0.03, 32).rotateZ(Math.PI / 2).translate(0.2, 0, 0), c: 0x16181b }); return p; },
-    aero: () => { const p = base(); p.push({ geo: new THREE.CylinderGeometry(0.62, 0.62, 0.03, 40).rotateZ(Math.PI / 2).translate(0.2, 0, 0), c: 0xdfe2e5 }); p.push({ geo: new THREE.TorusGeometry(0.66, 0.05, 6, 40).rotateY(Math.PI / 2).translate(0.215, 0, 0), c: 0x1a1c1f }); for (let i = 0; i < 5; i++) p.push(spoke(i / 5 * Math.PI * 2, 0.06, 0.02, 0.5, 0.18, 0x15171a, 0.1)); p.push({ geo: new THREE.CylinderGeometry(0.12, 0.12, 0.05, 20).rotateZ(Math.PI / 2).translate(0.235, 0, 0), c: 0x15171a }); return p; },
-    forged: () => { const p = base(); p.push({ geo: new THREE.CylinderGeometry(0.62, 0.62, 0.03, 40).rotateZ(Math.PI / 2).translate(0.12, 0, 0), c: 0x0c0d0f }); p.push({ geo: new THREE.TorusGeometry(0.69, 0.035, 6, 40).rotateY(Math.PI / 2).translate(0.235, 0, 0), c: 0x16181b }); for (let i = 0; i < 10; i++) { p.push(spoke(i / 10 * Math.PI * 2, 0.05, 0.01, 0.52, 0.32, 0x1a1c1f, 0.12)); p.push(spoke(i / 10 * Math.PI * 2 + 0.16, 0.035, 0.0, 0.5, -0.25, 0x141518, 0.12)); } p.push({ geo: new THREE.CylinderGeometry(0.13, 0.13, 0.05, 6).rotateZ(Math.PI / 2).translate(0.24, 0, 0), c: 0x101113 }); return p; },
-    multi: () => { const p = base(); p.push({ geo: new THREE.CylinderGeometry(0.62, 0.62, 0.03, 40).rotateZ(Math.PI / 2).translate(0.12, 0, 0), c: 0x0b0c0e }); p.push({ geo: new THREE.TorusGeometry(0.69, 0.03, 6, 40).rotateY(Math.PI / 2).translate(0.235, 0, 0), c: 0x1a1b1e }); for (let i = 0; i < 15; i++) { p.push(spoke(i / 15 * Math.PI * 2, 0.04, 0.01, 0.53, 0.15, 0x1d1f22, 0.12)); p.push(spoke(i / 15 * Math.PI * 2 + 0.12, 0.03, 0.0, 0.5, -0.15, 0x16171a, 0.14)); } p.push({ geo: new THREE.CylinderGeometry(0.14, 0.14, 0.05, 20).rotateZ(Math.PI / 2).translate(0.24, 0, 0), c: 0x2a2c30 }); return p; },
-    steel: () => { const p = base(); p.push({ geo: new THREE.CylinderGeometry(0.66, 0.66, 0.04, 32).rotateZ(Math.PI / 2).translate(0.22, 0, 0), c: 0x6d7378 }); for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; p.push({ geo: new THREE.CylinderGeometry(0.06, 0.06, 0.05, 10).rotateZ(Math.PI / 2).translate(0.235, Math.cos(a) * 0.44, Math.sin(a) * 0.44), c: 0x111111 }); } return p; },
+    turbine: () => { const p = base(); for (let i = 0; i < 6; i++) p.push(spoke(i / 6 * Math.PI * 2, 0.2, 0, 0.56, 0.7, 0xe6e8ea)); p.push({ geo: new THREE.CylinderGeometry(0.6, 0.6, 0.03, 18).rotateZ(Math.PI / 2).translate(0.2, 0, 0), c: 0x16181b }); return p; },
+    aero: () => { const p = base(); p.push({ geo: new THREE.CylinderGeometry(0.62, 0.62, 0.03, 22).rotateZ(Math.PI / 2).translate(0.2, 0, 0), c: 0xdfe2e5 }); p.push({ geo: new THREE.TorusGeometry(0.66, 0.05, 4, 22).rotateY(Math.PI / 2).translate(0.215, 0, 0), c: 0x1a1c1f }); for (let i = 0; i < 5; i++) p.push(spoke(i / 5 * Math.PI * 2, 0.06, 0.02, 0.5, 0.18, 0x15171a, 0.1)); p.push({ geo: new THREE.CylinderGeometry(0.12, 0.12, 0.05, 20).rotateZ(Math.PI / 2).translate(0.235, 0, 0), c: 0x15171a }); return p; },
+    forged: () => { const p = base(); p.push({ geo: new THREE.CylinderGeometry(0.62, 0.62, 0.03, 22).rotateZ(Math.PI / 2).translate(0.12, 0, 0), c: 0x0c0d0f }); p.push({ geo: new THREE.TorusGeometry(0.69, 0.035, 4, 22).rotateY(Math.PI / 2).translate(0.235, 0, 0), c: 0x16181b }); for (let i = 0; i < 10; i++) { p.push(spoke(i / 10 * Math.PI * 2, 0.05, 0.01, 0.52, 0.32, 0x1a1c1f, 0.12)); p.push(spoke(i / 10 * Math.PI * 2 + 0.16, 0.035, 0.0, 0.5, -0.25, 0x141518, 0.12)); } p.push({ geo: new THREE.CylinderGeometry(0.13, 0.13, 0.05, 6).rotateZ(Math.PI / 2).translate(0.24, 0, 0), c: 0x101113 }); return p; },
+    multi: () => { const p = base(); p.push({ geo: new THREE.CylinderGeometry(0.62, 0.62, 0.03, 22).rotateZ(Math.PI / 2).translate(0.12, 0, 0), c: 0x0b0c0e }); p.push({ geo: new THREE.TorusGeometry(0.69, 0.03, 4, 22).rotateY(Math.PI / 2).translate(0.235, 0, 0), c: 0x1a1b1e }); for (let i = 0; i < 15; i++) { p.push(spoke(i / 15 * Math.PI * 2, 0.04, 0.01, 0.53, 0.15, 0x1d1f22, 0.12)); p.push(spoke(i / 15 * Math.PI * 2 + 0.12, 0.03, 0.0, 0.5, -0.15, 0x16171a, 0.14)); } p.push({ geo: new THREE.CylinderGeometry(0.14, 0.14, 0.05, 20).rotateZ(Math.PI / 2).translate(0.24, 0, 0), c: 0x2a2c30 }); return p; },
+    steel: () => { const p = base(); p.push({ geo: new THREE.CylinderGeometry(0.66, 0.66, 0.04, 18).rotateZ(Math.PI / 2).translate(0.22, 0, 0), c: 0x6d7378 }); for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; p.push({ geo: new THREE.CylinderGeometry(0.06, 0.06, 0.05, 10).rotateZ(Math.PI / 2).translate(0.235, Math.cos(a) * 0.44, Math.sin(a) * 0.44), c: 0x111111 }); } return p; },
   };
   SHARED.rimGeos = {}; for (const k in designs) SHARED.rimGeos[k] = mergeParts(designs[k]());
   SHARED.rimGeo = SHARED.rimGeos.sport6;

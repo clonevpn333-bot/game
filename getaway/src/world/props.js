@@ -74,6 +74,7 @@ export class Props {
       arr.forEach((p, i) => { this._m.compose(this._v.set(p.x, p.y, p.z), this._q.setFromAxisAngle(this._v2 || (this._v2 = new THREE.Vector3(0, 1, 0)), p.yaw), this._s.set(1, 1, 1)); im.setMatrixAt(i, this._m); if (glow) glow.setMatrixAt(i, this._m); p.mesh = im; p.glow = glow; p.idx = i; });
       im.computeBoundingSphere(); this.scene.add(im); this.meshes.push(im);
       if (glow) { glow.computeBoundingSphere(); this.scene.add(glow); }
+      if (G.instCull && G.Q) { const small = def.h !== undefined ? def.h < 1.6 : (def.half ? def.half[1] < 0.8 : true); G.instCull.add(im, small ? G.Q.smallD : G.Q.propD, def.h || 2, [glow]); }
     }
     // crossing arms (animated)
     const xs = this.list.filter((p) => p.type === 'xing');
@@ -103,7 +104,7 @@ export class Props {
     for (const [k, arr] of groups) {
       const kind = k.split('|')[1]; const im = new THREE.InstancedMesh(kinds[kind], mat, arr.length); im.castShadow = true; im.receiveShadow = true;
       arr.forEach((t, i) => { this._m.compose(this._v.set(t.x, t.y, t.z), this._q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), (t.x * 13.7 + t.z) % 6.28), this._s.set(t.s, t.s * (0.9 + ((t.x * 7) % 1) * 0.3), t.s)); im.setMatrixAt(i, this._m); this.S.addBox(t.x - 0.3 * t.s, t.y, t.z - 0.3 * t.s, t.x + 0.3 * t.s, t.y + 3, t.z + 0.3 * t.s, { mat: 'wood', surface: false, tag: 'tree' }); });
-      im.computeBoundingSphere(); this.scene.add(im);
+      im.computeBoundingSphere(); this.scene.add(im); if (G.instCull && G.Q) G.instCull.add(im, G.Q.treeD, 6);
     }
   }
   _buildSignals(lights) {
@@ -166,7 +167,7 @@ export class Props {
   // knock a prop loose: hide instance, spawn rigid body
   hit(p, vel, point, power = 1) {
     if (!p.alive || p.def.static) return null; p.alive = false;
-    p.mesh.setMatrixAt(p.idx, this._zero); p.mesh.instanceMatrix.needsUpdate = true; if (p.glow) { p.glow.setMatrixAt(p.idx, this._zero); p.glow.instanceMatrix.needsUpdate = true; }
+    if (!(G.instCull && G.instCull.hide(p.mesh, p.idx))) { p.mesh.setMatrixAt(p.idx, this._zero); p.mesh.instanceMatrix.needsUpdate = true; if (p.glow) { p.glow.setMatrixAt(p.idx, this._zero); p.glow.instanceMatrix.needsUpdate = true; } }
     const def = p.def; const mesh = new THREE.Mesh(this.geos[p.type], this.mat); mesh.castShadow = true;
     // mesh geometry origin is at base; offset by half height so rigid center is mid-body
     const holder = new THREE.Group(); mesh.position.y = -def.half[1]; holder.add(mesh); this.scene.add(holder);

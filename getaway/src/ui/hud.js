@@ -134,7 +134,7 @@ export class HUD {
     const d = G.world.district(P.focus.x, P.focus.z); if (d !== this.lastDistrict) { this.lastDistrict = d; this.district.textContent = DISTRICT_NAMES[d] || ''; this.district.classList.remove('in'); void this.district.offsetWidth; this.district.classList.add('in'); }
     // speedo / weapon
     this.speedo.style.display = pv ? '' : 'none'; this.weapon.style.display = pv && !P.driveAim ? 'none' : '';
-    this._cv = (this._cv || 0) + dt; const drawCv = this._cv >= 1 / 30; if (drawCv) this._cv = 0; // 2D canvases at 30 Hz: they're the costliest part of the HUD
+    this._cv = (this._cv || 0) + dt; const drawCv = this._cv >= (G.quality === 'low' ? 1 / 15 : G.quality === 'medium' ? 1 / 20 : 1 / 30); if (drawCv) this._cv = 0; // 2D canvases at 30 Hz: they're the costliest part of the HUD
     if (pv && drawCv) this.drawSpeedo(pv);
     const W = WEAPONS[P.weapon]; const inv = P.inv[P.weapon]; this.wName.textContent = W.name.toUpperCase(); { const h = W.melee ? '—' : `${inv.mag}<small>/${inv.res}</small>${P.reloading > 0 ? ' <i>RELOADING</i>' : ''}`; if (h !== this._ammoH) { this._ammoH = h; this.wAmmo.innerHTML = h; } }
     // crosshair

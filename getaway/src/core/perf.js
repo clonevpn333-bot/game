@@ -15,13 +15,14 @@ export function inView(p, r = 1.5, maxD = 120) {
 // ---------------- adaptive resolution ----------------
 export class PerfGovernor {
   constructor(renderer, composer, settings) {
-    this.R = renderer; this.C = composer; this.max = this.cap(settings); this.min = 0.5; this.pr = Math.min(this.max, 1); this.avg = 16; this.t = 0; this.cool = 0; this.stalls = 0; this.lost = false; this.grace = 4;
+    this.R = renderer; this.C = composer; this.max = this.cap(settings); this.min = settings.quality === 'low' ? 0.45 : 0.5; this.pr = Math.min(this.max, 1); this.avg = 16; this.t = 0; this.cool = 0; this.stalls = 0; this.lost = false; this.grace = 4;
     this.apply(this.pr);
+    if (G.Q && G.Q.shadowEvery > 1) { renderer.shadowMap.autoUpdate = false; this.shadowEvery = G.Q.shadowEvery; } // cheaper shadows: refresh every Nth frame
     const cv = renderer.domElement;
     cv.addEventListener('webglcontextlost', (e) => { e.preventDefault(); this.lost = true; this.banner('Graphics driver reset — recovering…'); console.warn('WebGL context lost'); });
     cv.addEventListener('webglcontextrestored', () => { this.lost = false; this.max = Math.max(this.min, this.max * 0.75); this.apply(Math.min(this.pr, this.max) * 0.8); this.banner('Recovered — running at lower detail', 3000); if (G.sky && G.sky.sun) G.sky.sun.shadow.map = null; });
   }
-  cap(s) { const dpr = devicePixelRatio || 1; return s.quality === 'ultra' ? Math.min(2, dpr) : s.quality === 'high' ? Math.min(1.25, dpr) : s.quality === 'medium' ? Math.min(1, dpr) : 0.75; }
+  cap(s) { const dpr = devicePixelRatio || 1; return s.quality === 'ultra' ? Math.min(2, dpr) : s.quality === 'high' ? Math.min(1.25, dpr) : s.quality === 'medium' ? Math.min(0.9, dpr) : 0.72; }
   setQuality(s) { this.max = this.cap(s); this.apply(Math.min(this.pr, this.max)); }
   apply(pr) { pr = Math.round(Math.max(this.min, Math.min(this.max, pr)) * 20) / 20; if (Math.abs(pr - this.R.getPixelRatio()) < 0.01) { this.pr = pr; return; } this.pr = pr; this.R.setPixelRatio(pr); if (this.C.setPixelRatio) this.C.setPixelRatio(pr); this.R.setSize(innerWidth, innerHeight); this.C.setSize(innerWidth, innerHeight); }
   // rawMs = real time since the previous frame (includes GPU back-pressure)
@@ -40,8 +41,12 @@ export class PerfGovernor {
   degrade() {
     this.level = (this.level || 0) + 1;
     if (this.level === 1 && this.C.bloom) { this.C.bloom.enabled = false; this.banner('Low-spec mode: bloom off', 2500); }
-    else if (this.level === 2) { this.R.shadowMap.autoUpdate = false; this.shadowEvery = 3; this.banner('Low-spec mode: lighter shadows', 2500); }
+    else if (this.level === 2) { this.R.shadowMap.autoUpdate = false; this.shadowEvery = Math.max(3, this.shadowEvery || 0); this.banner('Low-spec mode: lighter shadows', 2500); }
+    else if (this.level === 3) { this.viewScale(0.75); if (G.peds) G.peds.setDensity((G.settings.pedDensity || 1) * G.Q.peds * 0.6); this.banner('Low-spec mode: shorter view distance', 2500); }
+    else if (this.level === 4) { this.viewScale(0.6); if (G.Q) { G.Q.humanLodD *= 0.6; G.Q.carDetailD *= 0.6; } if (G.peds) G.peds.setDensity((G.settings.pedDensity || 1) * G.Q.peds * 0.4); if (G.traffic) G.traffic.density = G.Q.traffic * 0.7; this.banner('Low-spec mode: fewer people and cars', 2500); }
   }
+  // shrink how far the world is drawn (camera range, fog, batched props) — no shader rebuild
+  viewScale(k) { if (!G.Q || !G.camera) return; G.camera.far = Math.max(320, G.Q.viewFar * k); G.camera.updateProjectionMatrix(); if (G.instCull) { G.instCull.scale = k; G.instCull.dirty = true; } }
   tick(frame) { if (this.shadowEvery && frame % this.shadowEvery === 0) this.R.shadowMap.needsUpdate = true; }
   banner(text, ms = 0) {
     let b = document.getElementById('perf-banner'); if (!b) { b = document.createElement('div'); b.id = 'perf-banner'; b.style.cssText = 'position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:99999;background:rgba(10,12,16,.85);color:#ffd36b;font:600 14px Rajdhani,system-ui,sans-serif;letter-spacing:.06em;padding:8px 16px;border-radius:6px;pointer-events:none;text-transform:uppercase'; document.body.appendChild(b); }

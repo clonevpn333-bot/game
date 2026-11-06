@@ -51,7 +51,7 @@ export class Sky {
     const mat = new THREE.ShaderMaterial({ vertexShader: SKY_VS, fragmentShader: SKY_FS, uniforms: this.uniforms, side: THREE.BackSide, depthWrite: false, fog: false });
     this.dome = new THREE.Mesh(new THREE.SphereGeometry(5000, 32, 16), mat); this.dome.renderOrder = -10; this.dome.frustumCulled = false; scene.add(this.dome);
     this.sun = new THREE.DirectionalLight(0xffffff, 3); this.sun.castShadow = true;
-    const hq = G.settings && (G.settings.quality === 'high' || G.settings.quality === 'ultra'); this.sun.shadow.mapSize.set(hq ? 2048 : 1024, hq ? 2048 : 1024); const sc = this.sun.shadow.camera; sc.left = -80; sc.right = 80; sc.top = 80; sc.bottom = -80; this.sun.shadow.radius = 3; sc.near = 10; sc.far = 600;
+    const Q = G.Q || { shadowMap: 2048, shadowRange: 80 }; this.sun.shadow.mapSize.set(Q.shadowMap, Q.shadowMap); const sc = this.sun.shadow.camera; const SR = Q.shadowRange; sc.left = -SR; sc.right = SR; sc.top = SR; sc.bottom = -SR; this.sun.shadow.radius = 3; sc.near = 10; sc.far = 600;
     this.sun.shadow.bias = -0.0004; this.sun.shadow.normalBias = 0.6; scene.add(this.sun); scene.add(this.sun.target);
     this.hemi = new THREE.HemisphereLight(0xbcd, 0x554, 0.8); scene.add(this.hemi);
     scene.fog = new THREE.Fog(0xb0c8dc, 200, 2200);
@@ -98,7 +98,7 @@ export class Sky {
     this.sun.target.updateMatrixWorld();
     lerpKey(elev, 'hemiS', this.hemi.color); lerpKey(elev, 'hemiG', this.hemi.groundColor); this.hemi.intensity = lerpKey(elev, 'hi') * (1 - ovc * 0.25) + this.flash * 2;
     const fog = this.scene.fog; lerpKey(elev, 'fog', fog.color); fog.color.lerp(_c1.set(0x8a9098).multiplyScalar(0.3 + 0.7 * this.day), ovc * 0.6);
-    fog.near = lerp(220, 15, w.fog); fog.far = lerp(2600, 260, w.fog) * (1 - w.rain * 0.4);
+    fog.near = lerp(220, 15, w.fog); fog.far = lerp(2600, 260, w.fog) * (1 - w.rain * 0.4); if (G.camera) { const vf = G.camera.far * 0.94; if (fog.far > vf) { fog.far = vf; fog.near = Math.min(fog.near, vf * 0.12); } } // nothing pops at the edge of the view distance
     this.uniforms.ground.value.copy(fog.color).multiplyScalar(0.6);
     this.renderer.toneMappingExposure = lerpKey(elev, 'exp') * (1 + this.flash * 0.6);
     // emissive night materials

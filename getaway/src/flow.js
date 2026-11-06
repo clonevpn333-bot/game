@@ -54,7 +54,7 @@ class Flow {
   }
   applySettings() {
     const s = G.settings; G.audio.setVolumes(s.master, s.music, s.sfx); G.music.volume = 1; G.input.sensitivity = s.sensitivity; G.input.invertY = !!s.invertY;
-    G.cam.baseFov = s.fov; G.composer.bloom.enabled = s.bloom && s.quality !== 'low'; G.peds.setDensity(s.pedDensity); G.traffic.density = s.trafficDensity; if (G.perf) G.perf.setQuality(s); this.game.saveSettings();
+    G.cam.baseFov = s.fov; G.composer.bloom.enabled = s.bloom && G.Q.bloom; G.peds.setDensity(s.pedDensity * G.Q.peds); G.traffic.density = G.Q.traffic; if (G.perf) G.perf.setQuality({ ...s, quality: G.quality }); this.game.saveSettings();
   }
   toMenu(title = false) {
     this.state = 'menu'; G.mode = 'menu'; G.paused = false; G.hud.show(false); G.cam.mode = 'menu'; G.cam.cine = null; G.input.releaseLock();
