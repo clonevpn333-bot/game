@@ -24,6 +24,13 @@ its full sequence exists as real gameplay and has been run end to end.
 | UI | ✅ | Title, menu, campaign, garage with paint, soundtrack, settings, controls, pause, results with grade and records, fail/retry, HUD |
 | Free roam | ✅ | Patrols, weapon and armor pickups, 12 hidden golden hubcaps (all 12 unlock the Vortice V12), weather cycle, down/busted respawn |
 
+## Recent round (living city + mission redo)
+- Characters rebuilt from clean shapes (rounded boxes/cylinders, graphic faces, fitted hats/hair/shoes). Rule recorded in `/CLAUDE.md`: never sculpted/organic bodies.
+- Fixed: GLB car bodies spinning with the wheels ('trim' matched 'rim'), police overlapping (separation + arrest ring), AI facing jitter, cover flip-flop.
+- Street life: chatting groups with gestures, bystanders film/point/scream/call it in, heads turn to an armed player; synthesized crowd murmur + car radios.
+- Underwater rendering (murk, depth-faded light), interior mapped windows, crush dents, gun FX, night lighting.
+- Not verified by a human yet: feel of the diving/sub/parachute controls, audio mix (headless tests can't listen).
+
 ## Campaign
 
 | # | Mission | Status |
@@ -31,8 +38,8 @@ its full sequence exists as real gameplay and has been run end to end.
 | 01 | WRONG CAR | ✅ **playable**: 7 checkpoints, about 8 minutes (details below) |
 | 02 | BANKROLL | ✅ Playable. Bank job: guards, vault, cash pallets, SWAT, back-door escape, highway roadblock, lose the cops. Smoke-tested start to results. |
 | 03 | SHOPPING SPREE | ✅ Playable. Galleria at night: lift the key from LUXE JEWELS, lockdown shutters, Halcyon rappels through the skylight, firefight, steal the Vortice off the showroom podium, drive down the promenade under the closing shutter and through the glass doors, street chase (Halcyon SUVs + police heli), drive off the end of Sunstrip Pier, swim to Juno's boat. Smoke-tested start to results (`tests/m03_smoke.js`). Not hand-played on a real GPU. |
-| 04 | ARMORED DELIVERY | ✅ Playable. Rain. Tail Halcyon's armored convoy in the Strada SV (stay 25–110 m), the Marrow crew ambushes it (escort explodes), wreck 3 Marrow muscle cars and the last escort, pull alongside the moving truck and leap aboard, drive the 9-ton truck through a police roadblock into the river tunnel, 90 s kill-switch countdown to Dez's garage, reveal. Smoke-tested start to results (`tests/m04_smoke.js`). Not hand-played on a real GPU. |
-| 05 | THE SKYLINE JOB | ✅ Playable. Dusk stealth into the tower site, builders' hoist up the steel skeleton, firefight on floor 10, restart the generator, hoist to floor 13, hold a 50 s download against stairwell waves, demolition charges: sprint across the floor through falling beams (they become new obstacles) to the crane hook, swing out as the tower's crown comes down, 4-star escape in the Strada, ending. Smoke-tested start to results (`tests/m05_smoke.js`). Not hand-played on a real GPU. |
+| 04 | DEEP END | ✅ Playable (rebuilt). Scuba dive off Juno's boat into a trench, spear Halcyon sentries, through a tunnel into their underwater mining cavern: loot 6 mineral clusters + plant 4 charges while divers hunt you, blow it, 45 s to escape the cave-in, submarine run under police depth charges and Halcyon mini-subs, surface in the offshore rig's moon pool, hold the rig against 3 SWAT waves + a gunship, then Commander Hale: stagger him and shove a grenade down his throat. `tests/m04_full.js` → MISSION COMPLETE. |
+| 05 | SKYFALL | ✅ Playable (rebuilt). Heli drop on a 172 m tower, zipline 100 m down to the next one, glass penthouse + safe-cracking minigame, rooftop SWAT raid + gunship, base jump → freefall → steerable parachute onto Halcyon's armored truck circling below, lose the cops, drive the truck up the ramp of Gramps's moving big rig (no garage). `tests/m05_full.js` → MISSION COMPLETE. |
 | 06 | GUNSHIP | ✅ Playable. You're the door gunner (minigun + homing rockets) in Juno's chopper covering the crew car across the city at 5 stars: cruisers, a bridge roadblock you must blow before they hit it (auto-ram fallback after 90 s), two Halcyon gunships, the Warbird boss; ends at the Ironside docks. Bot-tested start to finish (`tests/m06_bot.js`). |
 | 07 | BRIDGE RUN | ✅ Playable. On foot (rifle, grenade launcher, new Breacher RPG). A purpose-built 6-span swing bridge: fight span by span, free Gramps from the van, RPG the gunship, then run as the spans detonate one by one into the river; a tanker blocks the exit, dive into the river. `tests/m07_flow.js`. |
 | 08 | AIRPORT CHAOS | ✅ Playable. Crash the airport in a supercar, taxiing airliners flatten anything in their path, security rammers, chain-exploding fuel bowsers, board the cargo jet, **fly it**: taxi, trucks blocking the runway, take off, shake/shoot the gunship. `tests/m08_flow.js`. |
