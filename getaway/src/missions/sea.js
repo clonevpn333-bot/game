@@ -210,7 +210,7 @@ class Gear {
   dispose() { for (const m of this.all) G.scene.remove(m); }
 }
 // tip a figure's world joints forward around its pelvis (swimming is horizontal)
-function tipBody(h, angle) { const J = h.joints; const px = J[0], py = J[1], pz = J[2]; const ax = _w.set(Math.cos(h.yaw), 0, -Math.sin(h.yaw)); _q.setFromAxisAngle(ax, angle);
+export function tipBody(h, angle) { const J = h.joints; const px = J[0], py = J[1], pz = J[2]; const ax = _w.set(Math.cos(h.yaw), 0, -Math.sin(h.yaw)); _q.setFromAxisAngle(ax, angle);
   for (let i = 0; i < 15; i++) { _v.set(J[i * 3] - px, J[i * 3 + 1] - py, J[i * 3 + 2] - pz).applyQuaternion(_q); J[i * 3] = px + _v.x; J[i * 3 + 1] = py + _v.y; J[i * 3 + 2] = pz + _v.z; } }
 
 // ================= the player as a diver =================
@@ -376,6 +376,6 @@ export const DiveHUD = {
     if (this.mode === 'dive') { const o2 = Math.round(o.o2 * 100); const c = o2 > 40 ? '#7bd88f' : o2 > 20 ? '#ffb02e' : '#ff3b2f'; this.el.innerHTML = `DEPTH <b>${depth.toFixed(0)}</b> M<br>O₂ <b style="color:${c}">${o2}%</b><br><span style="font-size:12px;opacity:.75">SPACE UP · C DOWN · CLICK SPEARGUN</span>`; }
     else { const hp = Math.max(0, o.hp / o.maxHp); const c = hp > 0.5 ? '#7bd88f' : hp > 0.25 ? '#ffb02e' : '#ff3b2f'; this.el.innerHTML = `DEPTH <b>${depth.toFixed(0)}</b> M · SPD <b>${(Math.abs(o.speed) * 1.94).toFixed(0)}</b> KN<br>HULL <b style="color:${c}">${Math.round(hp * 100)}%</b> · TORPEDOES <b>${o.torps}</b><br><span style="font-size:12px;opacity:.75">W/S THRUST · A/D TURN · SPACE/C DIVE · CLICK TORPEDO</span>`; } },
 };
-export function ride(craft, mode) { const P = G.player; if (P.vehicle) P.leaveVehicleInstant(); P.riding = craft; if (P.mesh) P.mesh.visible = false; P.human.visible = !!craft.showHuman; G.cam.custom = (dt) => craft.camShot(dt); DiveHUD.show(mode); }
+export function ride(craft, mode) { const P = G.player; if (P.vehicle) P.leaveVehicleInstant(); P.riding = craft; if (P.mesh) P.mesh.visible = false; P.human.visible = !!craft.showHuman; G.cam.custom = (dt) => craft.camShot(dt); if (mode) DiveHUD.show(mode); else DiveHUD.hide(); }
 export function unride(at) { const P = G.player; P.riding = null; P.human.visible = true; G.cam.custom = null; DiveHUD.hide(); if (G.audio) G.audio.setUnderwater(false); if (at) P.teleport(at.x, at.y, at.z, 0); }
 export { voice };

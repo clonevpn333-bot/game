@@ -83,6 +83,9 @@ export const Poses = {
     o[P.lHP] = 0.1 + s * 0.34 * k + Math.sin(ph * 0.7) * 0.25 * idle; o[P.rHP] = 0.1 - s * 0.34 * k - Math.sin(ph * 0.7) * 0.25 * idle; o[P.lKn] = 0.25 + Math.max(0, -s) * 0.45 * k + 0.35 * idle; o[P.rKn] = 0.25 + Math.max(0, s) * 0.45 * k + 0.35 * idle;
     o[P.lSP] = 0.15 * k + (0.6 + c * 0.5) * idle; o[P.rSP] = 0.15 * k + (0.6 - c * 0.5) * idle; o[P.lSR] = o[P.rSR] = 0.22 * k + (0.9 + s * 0.35) * idle; o[P.lEl] = o[P.rEl] = 0.35 + 0.5 * idle;
     o[P.hdP] = 1.0 * k + 0.1 * idle; o[P.spP] = 0.02; o[P.spR] = s * 0.05 * k; return o; },
+  // freefall spread-eagle (the controller tips the figure belly-down) and hanging by both hands (zipline / parachute risers)
+  skydive(o, t) { zero(o); const w = Math.sin(t * 7) * 0.05; o[P.lSR] = o[P.rSR] = 1.35 + w; o[P.lSP] = o[P.rSP] = 0.35; o[P.lEl] = o[P.rEl] = 0.9; o[P.lHP] = o[P.rHP] = -0.15; o[P.lHR] = o[P.rHR] = 0.32 + w; o[P.lKn] = o[P.rKn] = 1.0; o[P.hdP] = 0.9; return o; },
+  hang(o, t, swing = 0) { zero(o); const s = Math.sin(t * 2.2) * 0.08 + swing; o[P.lSP] = o[P.rSP] = 2.85; o[P.lSR] = o[P.rSR] = 0.22; o[P.lEl] = o[P.rEl] = 0.25; o[P.lHP] = 0.55 + s; o[P.rHP] = 0.4 + s; o[P.lKn] = 0.9; o[P.rKn] = 0.7; o[P.hdP] = -0.15; return o; },
   phone(o, t) { this.idle(o, t); o[P.rSP] = 0.4; o[P.rSR] = 0.35; o[P.rEl] = 2.4; o[P.rSY] = 0.6; o[P.hdY] = 0.2; o[P.hdP] = 0.1; return o; },
   swim(o, ph) { zero(o); o[P.hipH] = 0.95; o[P.spP] = 1.35; o[P.lSP] = 2.4 + Math.sin(ph) * 1.2; o[P.rSP] = 2.4 - Math.sin(ph) * 1.2; o[P.lSR] = o[P.rSR] = 0.3; o[P.lHP] = -0.3 + Math.sin(ph * 2) * 0.3; o[P.rHP] = -0.3 - Math.sin(ph * 2) * 0.3; o[P.lKn] = o[P.rKn] = 0.3; o[P.hdP] = -0.9; return o; },
   dive(o, t) { zero(o); o[P.hipH] = 0.7 - t * 0.4; o[P.spP] = 1.1; o[P.lSP] = o[P.rSP] = 2.6; o[P.lHP] = -0.2; o[P.rHP] = 0.3; o[P.lKn] = 0.5; o[P.rKn] = 0.2; return o; },
@@ -181,6 +184,8 @@ export class Human {
     else if (st === 'cower') Poses.cower(p, this.t);
     else if (st === 'phone') Poses.phone(p, this.t);
     else if (st === 'talk') Poses.talk(p, this.t, this.speaking, this.id);
+    else if (st === 'skydive') Poses.skydive(p, this.t);
+    else if (st === 'hang') Poses.hang(p, this.t, this.swing || 0);
     else if (st === 'scuba') { this.phase += dt * (2.2 + sp * 1.8); Poses.scuba(p, this.phase, clamp(sp / 2.6, 0, 1)); }
     else if (st === 'film') Poses.film(p, this.t);
     else if (st === 'point') Poses.point(p, this.t);
