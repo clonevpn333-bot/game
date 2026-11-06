@@ -41,7 +41,8 @@ export const Poses = {
     zero(o); const s = Math.sin(ph), c = Math.cos(ph); const A = 0.38 * k; const sw = (x) => Math.max(0, x) ** 1.3;
     o[P.lHP] = A * s + 0.04; o[P.rHP] = -A * s + 0.04; o[P.lKn] = 0.08 + sw(c) * 0.85 * k; o[P.rKn] = 0.08 + sw(-c) * 0.85 * k;
     o[P.lSP] = -A * 0.75 * s; o[P.rSP] = A * 0.75 * s; o[P.lEl] = 0.22 + Math.max(0, -s) * 0.25; o[P.rEl] = 0.22 + Math.max(0, s) * 0.25; o[P.lSR] = o[P.rSR] = 0.09;
-    o[P.hipH] -= 0.025 + Math.abs(s) * 0.03 * k; o[P.spP] = 0.04; o[P.spY] = -s * 0.1 * k; o[P.spR] = s * 0.03; o[P.lean] = 0; o[P.hdY] = s * 0.06 * k; return o;
+    o[P.hipH] -= 0.025 + Math.abs(s) * 0.03 * k; o[P.spP] = 0.04; o[P.spY] = -s * 0.1 * k; o[P.spR] = s * 0.03; o[P.lean] = 0; o[P.hdY] = s * 0.06 * k;
+    o[P.offX] = -Math.cos(ph) * 0.022 * k; o[P.spR] += Math.cos(ph) * 0.02 * k; o[P.hdP] = Math.abs(s) * 0.03; return o; // weight shifts over the stance foot
   },
   run(o, ph, k = 1) {
     zero(o); const s = Math.sin(ph), c = Math.cos(ph); const sw = (x) => Math.max(0, x) ** 1.2; const A = 0.8 * k;
@@ -180,6 +181,12 @@ export class Human {
         const fs = Math.floor(this.phase / Math.PI); if (fs !== this.lastFoot) { this.lastFoot = fs; if (this.onFootstep) this.onFootstep(sp); }
       }
     }
+    // momentum: bank into turns, lean forward when speeding up / back when braking (smoothed, locomotion only)
+    { let dy = this.yaw - (this._ly ?? this.yaw); dy = Math.atan2(Math.sin(dy), Math.cos(dy)); this._ly = this.yaw; const yr = dt > 0 ? dy / dt : 0; const ac = dt > 0 ? (sp - (this._lsp ?? sp)) / dt : 0; this._lsp = sp;
+      const loco = !st || st === 'idle' || st === 'walk' || st === 'run' || st === 'flee' || st === 'crouch';
+      const k = Math.min(1, dt * 6); this._bank = (this._bank || 0) + ((loco ? clamp(-yr * Math.min(sp, 7) * 0.045, -0.32, 0.32) : 0) - (this._bank || 0)) * k;
+      this._accL = (this._accL || 0) + ((loco ? clamp(ac * 0.03, -0.14, 0.2) : 0) - (this._accL || 0)) * k;
+      if (Number.isFinite(this._bank) && Number.isFinite(this._accL)) { p[P.lean] += this._bank; p[P.spP] += this._accL; p[P.hdY] -= this._bank * 0.6; } else { this._bank = 0; this._accL = 0; } }
     // upper body overlays (aim eases in/out)
     if (this.aim) this._lastAim = this.aim; this.aimW += ((this.aim ? 1 : 0) - this.aimW) * Math.min(1, dt * 14);
     if (this._lastAim && this.aimW > 0.01 && this.mode === 'anim' && st !== 'climb' && st !== 'swim' && st !== 'ride' && st !== 'sit') {
