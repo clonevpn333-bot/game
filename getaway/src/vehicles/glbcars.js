@@ -28,7 +28,9 @@ export async function importCar(id, file) { const buf = await file.arrayBuffer()
 export async function flipCar(id) { const c = CUSTOM[id]; if (!c) return; c.flip = !c.flip; const rec = await dbGet(id); if (rec) { rec.flip = c.flip; await dbPut(id, rec); } }
 export async function removeCar(id) { delete CUSTOM[id]; await dbDel(id); }
 
-const WHEEL_RE = /wheel|tire|tyre|rim|rotor|disc|disk|brake|caliper|hub|spoke|lug/i, CALIPER_RE = /caliper/i, GLASS_RE = /glass|window|windshield|windscreen/i, PAINT_RE = /paint|body|carpaint|exterior|shell/i;
+// whole-word-ish matches only: 'trim_black' must NOT count as a 'rim' (that made the whole body spin with a wheel)
+const WHEEL_RE = /(^|[^a-z])(wheels?|tires?|tyres?|rims?|rotors?|discs?|disks?|brakes?|calipers?|hubs?|spokes?|lugs?)([^a-z]|$)/i, CALIPER_RE = /(^|[^a-z])calipers?([^a-z]|$)/i, GLASS_RE = /glass|window|windshield|windscreen/i, PAINT_RE = /paint|body|carpaint|exterior|shell/i;
+function ownNames(o) { const ms = !o.material ? [] : Array.isArray(o.material) ? o.material : [o.material]; return (' ' + (o.name || '') + ' ' + ((o.parent && o.parent.name) || '') + ' ' + ms.map((m) => m.name || '').join(' ') + ' ').replace(/([a-z])([A-Z])/g, '$1 $2'); }
 function nameChain(o) { let s = ''; for (let p = o; p; p = p.parent) s += ' ' + (p.name || '') + ' ' + (p.material && !Array.isArray(p.material) ? p.material.name || '' : ''); return s; }
 
 export function buildCustomCar(spec, paintColor, id) {
@@ -54,7 +56,8 @@ export function buildCustomCar(spec, paintColor, id) {
   if (!paint) paint = new THREE.MeshPhysicalMaterial({ color: paintColor });
   if (paint.color && paintColor !== spec.colors[0]) paint.color.set(paintColor);
   // 4) wheels: group wheel-ish meshes into 4 corners, re-parent into steer/spin pivots
-  const wheelMeshes = []; holder.traverse((o) => { if (o.isMesh && WHEEL_RE.test(nameChain(o))) wheelMeshes.push(o); });
+  // a wheel part is named like one (its own name / parent / material) AND is wheel-sized and low — never a body panel
+  const wheelMeshes = []; holder.updateMatrixWorld(true); holder.traverse((o) => { if (!o.isMesh || !WHEEL_RE.test(ownNames(o))) return; const sz = new THREE.Box3().setFromObject(o).getSize(new THREE.Vector3()); if (sz.x > spec.W * 0.42 || sz.z > spec.L * 0.3 || sz.y > spec.H * 0.75) return; wheelMeshes.push(o); });
   const wheels = []; const hw = spec.W / 2; const wh = spec.wheels;
   const corners = { '1,1': [], '-1,1': [], '1,-1': [], '-1,-1': [] };
   for (const o of wheelMeshes) { const b = new THREE.Box3().setFromObject(o); const cc = b.getCenter(new THREE.Vector3()); if (cc.y > spec.H * 0.6) continue; corners[`${cc.x >= 0 ? 1 : -1},${cc.z >= 0 ? 1 : -1}`].push(o); }
@@ -64,13 +67,13 @@ export function buildCustomCar(spec, paintColor, id) {
     if (found) {
       const b = new THREE.Box3(); for (const o of corners[key]) b.union(new THREE.Box3().setFromObject(o)); const cc = b.getCenter(new THREE.Vector3()); const s = b.getSize(new THREE.Vector3());
       const r = Math.max(s.y, s.z) / 2; const pivot = new THREE.Group(); pivot.position.set(cc.x, cc.y, cc.z); root.add(pivot); const spin = new THREE.Group(); pivot.add(spin); root.updateMatrixWorld(true);
-      for (const o of corners[key]) { const keep = new THREE.Matrix4().copy(o.matrixWorld); const target = CALIPER_RE.test(nameChain(o)) ? pivot : spin; target.updateMatrixWorld(true); o.removeFromParent(); target.add(o); o.matrix.copy(new THREE.Matrix4().copy(target.matrixWorld).invert().multiply(keep)); o.matrix.decompose(o.position, o.quaternion, o.scale); }
+      for (const o of corners[key]) { const keep = new THREE.Matrix4().copy(o.matrixWorld); const target = CALIPER_RE.test(ownNames(o)) ? pivot : spin; target.updateMatrixWorld(true); o.removeFromParent(); target.add(o); o.matrix.copy(new THREE.Matrix4().copy(target.matrixWorld).invert().multiply(keep)); o.matrix.decompose(o.position, o.quaternion, o.scale); }
       w = { x: cc.x, z: cc.z, r: cc.y, w: Math.max(0.2, s.x), pivot, spinner: spin, baseY: cc.y };
     } else w = { x: sx * wh.track * hw, z: (sz2 > 0 ? wh.f - 0.5 : wh.b - 0.5) * spec.L, r: wh.r, w: wh.w };
     wheels.push({ ...w, front: sz2 > 0, side: sx, spin: 0, comp: 0, lastP: null, skid: false });
   }
   // dentable body: every non-wheel mesh gets its own geometry copy (shared source stays pristine) + rest pose
-  const deformList = []; holder.traverse((o) => { if (!o.isMesh || WHEEL_RE.test(nameChain(o)) || GLASS_RE.test(nameChain(o))) return; o.geometry = o.geometry.clone(); deformList.push([o, o.geometry.attributes.position.array.slice()]); });
+  const wheelSet = new Set(wheelMeshes); const deformList = []; holder.traverse((o) => { if (!o.isMesh || wheelSet.has(o) || GLASS_RE.test(nameChain(o))) return; o.geometry = o.geometry.clone(); deformList.push([o, o.geometry.attributes.position.array.slice()]); });
   // glTF lights stay as modelled; the light uniform array keeps brake/indicator logic happy
   const lmat = makeLightMaterial();
   // modelled lights: emissive materials named light_* follow the game's light groups (head, brake, indicators, reverse)

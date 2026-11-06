@@ -65,10 +65,13 @@ export class Combatant {
     // arrest attempt (police, player unarmed / surrendering)
     const canArrest = this.team === 'police' && G.police && G.police.arrestable() && !P.vehicle && dist < 25;
     let goal = null, speed = 0, faceP = this.seesPlayer || dist < 30;
-    if (canArrest) { goal = ptarget; speed = dist > 3 ? this.speed : 0; this.cover = null; if (dist < 1.8) G.police.arrestTick(dt, this); }
+    if (canArrest) { // surround the suspect: each officer takes their own spot on a ring, the closest one moves in for the cuffs
+      const lead = G.npcs && G.npcs.arrestLead === this; const ang = (this.ringA ??= Math.random() * Math.PI * 2); const R = lead ? 0 : 2.4;
+      goal = lead ? ptarget : _b.set(ptarget.x + Math.sin(ang) * R, ptarget.y, ptarget.z + Math.cos(ang) * R); const gd = Math.hypot(goal.x - this.pos.x, goal.z - this.pos.z);
+      speed = gd > (lead ? 1.4 : 0.5) ? Math.min(this.speed, 1.2 + gd * 0.9) : 0; this.cover = null; if (lead && dist < 1.8) G.police.arrestTick(dt, this); }
     else if (this.state === 'engage' || this.state === 'cover') {
       const hurt = this.hp < this.maxHp * 0.35;
-      if (!this.cover || this.stateT > rand(7, 12) || (this.cover && this._coverCompromised(ptarget)) || (hurt && !this.retreated)) { this.cover = this.findCover(ptarget, hurt); this.stateT = 0; this.peek = false; if (hurt) this.retreated = true; }
+      if (!this.cover || this.stateT > (this.coverHold ??= rand(7, 12)) || (this.stateT > 1.5 && this.cover && this._coverCompromised(ptarget)) || (hurt && !this.retreated)) { this.coverHold = rand(7, 12); this.cover = this.findCover(ptarget, hurt); this.stateT = 0; this.peek = false; if (hurt) this.retreated = true; }
       if (this.cover) { const d = Math.hypot(this.cover.x - this.pos.x, this.cover.z - this.pos.z); if (d > 0.6) { goal = this.cover; speed = this.speed; this.peek = true; } else { // at cover: peek cycle
           this.peekT = (this.peekT ?? rand(0.5, 1.5)) - dt; if (this.peekT <= 0) { this.peek = !this.peek; this.peekT = this.peek ? rand(1.2, 2.6) : rand(0.8, 2.2); if (this.peek) this.burstLeft = Math.round(rand(...this.K.burst)); } } }
       else if (!this.seesPlayer && this.lastSeen) { goal = this.lastSeen; speed = this.speed; this.peek = true; }
@@ -79,14 +82,14 @@ export class Combatant {
       let dx = goal.x - this.pos.x, dz = goal.z - this.pos.z; const dl = Math.hypot(dx, dz);
       if (dl > 0.3) {
         dx /= dl; dz /= dl; if (this.detour > 0) { this.detour -= dt; const s = this.detourSide; const ndx = dx * 0.3 - dz * s, ndz = dz * 0.3 + dx * s; dx = ndx; dz = ndz; }
-        const st = Math.min(speed * dt, dl); this.pos.x += dx * st; this.pos.z += dz * st; h.speed = speed; if (!faceP || dl > 6) h.yaw = dampAngle(h.yaw, Math.atan2(dx, dz), 10, dt);
+        const st = Math.min(speed * dt, dl); this.pos.x += dx * st; this.pos.z += dz * st; h.speed = speed; if (!faceP || (dl > 6 && !this.seesPlayer)) { h.yaw = dampAngle(h.yaw, Math.atan2(dx, dz), 8, dt); faceP = false; }
         if (this.t % 0.5 < dt) { if (this.lastPos.distanceTo(this.pos) < speed * 0.12) { this.detour = 0.8; this.detourSide = chance(0.5) ? 1 : -1; } this.lastPos.copy(this.pos); }
       } else h.speed = 0;
     } else h.speed = 0;
     const c = G.world.static.pushCircle(this.pos.x, this.pos.z, 0.32, this.pos.y + 0.45, this.pos.y + 1.7); if (c.hit) { this.pos.x = c.x; this.pos.z = c.z; }
     for (const v of G.vehicles.query(this.pos.x, this.pos.z, 5, this._vq || (this._vq = []))) { const s = Math.sin(v.yaw), cc = Math.cos(v.yaw); const dx = this.pos.x - v.pos.x, dz = this.pos.z - v.pos.z; let lx = cc * dx - s * dz, lz = s * dx + cc * dz; const hw = v.spec.W / 2 + 0.35, hl = v.spec.L / 2 + 0.35; if (Math.abs(lx) < hw && Math.abs(lz) < hl && Math.abs(this.pos.y - v.pos.y) < 1.5) { if (v.speed > 5 && v.mode === 'drive') { this.hit(v.speed * 4, v.vel.clone().normalize(), this.pos, false, v.driver || null, 'vehicle', v.vel.clone().multiplyScalar(1.1).setY(3)); if (G.audio) G.audio.thud(this.pos, 1); G.emit('npcRunOver', this, v); return; } if (hw - Math.abs(lx) < hl - Math.abs(lz)) lx = Math.sign(lx) * hw; else lz = Math.sign(lz) * hl; this.pos.x = v.pos.x + cc * lx + s * lz; this.pos.z = v.pos.z - s * lx + cc * lz; } }
     this.pos.y = G.world.static.groundAt(this.pos.x, this.pos.z, this.pos.y + 0.6, 0, this.gres).h;
-    if (faceP) h.yaw = dampAngle(h.yaw, Math.atan2(ptarget.x - this.pos.x, ptarget.z - this.pos.z), 8, dt);
+    if (faceP) h.yaw = dampAngle(h.yaw, Math.atan2(ptarget.x - this.pos.x, ptarget.z - this.pos.z), 7, dt);
     // stance & shooting
     const inCover = this.cover && Math.hypot(this.cover.x - this.pos.x, this.cover.z - this.pos.z) < 0.7;
     h.state = inCover && !this.peek ? 'crouch' : 'run';
@@ -154,7 +157,19 @@ export class Npcs {
   }
   update(dt) {
     const cam = G.camera.position;
+    { // who goes in for the arrest: the closest able officer (the rest hold a ring)
+      const P = G.player; let best = null, bd = 1e9; if (G.police && G.police.arrestable && G.police.arrestable() && !P.vehicle) for (const n of this.list) { if (n.team !== 'police' || !n.alive || n.seat || n.state === 'ragdoll') continue; const d = n.pos.distanceToSquared(P.pos); if (d < bd) { bd = d; best = n; } } this.arrestLead = best; }
+    this.separate(dt);
     for (let i = this.list.length - 1; i >= 0; i--) { const n = this.list[i]; n.update(dt); if (!n.alive && n.human.ragT > 25 && n.pos.distanceTo(cam) > 60) { n.dispose(); this.list.splice(i, 1); } else if (n.pos.distanceTo(cam) > 400 && !n.keep) { n.dispose(); this.list.splice(i, 1); } }
+  }
+  // personal space: nobody stands inside anybody else (or inside the player)
+  separate(dt) {
+    const L = this.list, P = G.player; const R = 0.72;
+    for (let i = 0; i < L.length; i++) { const a = L[i]; if (!a.alive || a.seat || a.state === 'ragdoll' || a.state === 'dead' || a.calm) continue;
+      for (let j = i + 1; j < L.length; j++) { const b = L[j]; if (!b.alive || b.seat || b.state === 'ragdoll' || b.state === 'dead') continue;
+        const dx = b.pos.x - a.pos.x, dz = b.pos.z - a.pos.z; if (Math.abs(dx) > R || Math.abs(dz) > R || Math.abs(a.pos.y - b.pos.y) > 1.2) continue; const d = Math.hypot(dx, dz);
+        if (d < R) { const push = (R - d) * 0.5 * Math.min(1, dt * 12) + 0.0005; const nx = d > 1e-4 ? dx / d : Math.cos(i + j), nz = d > 1e-4 ? dz / d : Math.sin(i + j); const bw = b.calm ? 0 : 1; a.pos.x -= nx * push * (bw ? 1 : 2); a.pos.z -= nz * push * (bw ? 1 : 2); if (bw) { b.pos.x += nx * push; b.pos.z += nz * push; } } }
+      if (!P.vehicle && P.alive) { const dx = a.pos.x - P.pos.x, dz = a.pos.z - P.pos.z, d = Math.hypot(dx, dz); if (d < 0.6 && d > 1e-4 && Math.abs(a.pos.y - P.pos.y) < 1.2) { a.pos.x += dx / d * (0.6 - d); a.pos.z += dz / d * (0.6 - d); } } }
   }
   draw(R) { for (const n of this.list) if (n.human.visible && inView(n.pos, 1.2, 160)) R.draw(n.human); }
   clear() { for (const n of this.list) n.dispose(); this.list = []; this.coverTaken.clear(); }
