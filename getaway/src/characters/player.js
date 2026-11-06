@@ -278,7 +278,7 @@ export class Player {
     // seat the visible driver
     const seat = v.spec.bike ? v.local(0, -0.1) : v.local(v.spec.W * 0.19, (v.spec.cabin.r0 - 0.5) * v.spec.L + 0.15);
     h.pos.set(seat.x, v.pos.y + (v.spec.bike ? 0.05 : Math.max(0.45, v.spec.cabin.belt - 0.55) - 0.48 + v.heave), seat.z); h.yaw = v.yaw;
-    h.state = v.spec.bike ? 'ride' : 'sit'; h.speed = 0; h.aim = this.driveAim ? { kind: W.kind, pitch: 0 } : null; h.visible = !v.spec.bike ? v.mode === 'drive' : true;
+    h.state = v.spec.bike ? 'ride' : 'sit'; h.speed = 0; h.aim = this.driveAim ? { kind: W.kind, pitch: 0 } : null; h.visible = !!v.spec.bike || (!!this.driveAim && v.mode === 'drive'); // inside a car you don't see Kit (only on bikes, or leaning out for a drive-by)
     if (v.mode === 'drive') h.animate(dt); this.syncWeapon();
     // exit / bail
     if (!locked && input.pressed('enter')) {

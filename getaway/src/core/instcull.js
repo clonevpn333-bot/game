@@ -35,3 +35,19 @@ export class InstanceCuller {
     }
   }
 }
+
+// dissolve objects over the last quarter of their draw distance (screen-door dither: no sorting, no transparency
+// cost) so culled props / trees never visibly pop in or out. Works for instanced and plain meshes.
+export function addDistanceFade(mat, end) {
+  const u = { value: new THREE.Vector2(end * 0.74, end) }; mat.userData.fade = u;
+  mat.onBeforeCompile = (sh) => { sh.uniforms.uFade = u;
+    sh.vertexShader = 'varying float vFadeD;\n' + sh.vertexShader.replace('#include <project_vertex>', `#include <project_vertex>
+      #ifdef USE_INSTANCING
+        vFadeD = distance((modelMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz, cameraPosition);
+      #else
+        vFadeD = distance((modelMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz, cameraPosition);
+      #endif`);
+    sh.fragmentShader = 'varying float vFadeD; uniform vec2 uFade;\n' + sh.fragmentShader.replace('#include <clipping_planes_fragment>', `#include <clipping_planes_fragment>
+      { float fk = 1.0 - smoothstep(uFade.x, uFade.y, vFadeD); if (fk < 0.999) { float dn = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715)))); if (fk <= dn) discard; } }`); };
+  mat.customProgramCacheKey = () => 'distFade1:' + mat.type; return u;
+}

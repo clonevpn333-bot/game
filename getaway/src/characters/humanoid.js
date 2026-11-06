@@ -291,7 +291,7 @@ function rbox(w, h, d, r, seg = 1) { const g = new THREE.BoxGeometry(w, h, d, se
   return g; }
 // narrow x/z towards the bottom between y0 (scale a0/b0) and y1 (scale 1) — tapered torso, jaw
 function taper(g, y0, y1, a0, a1, b0, b1) { const p = g.attributes.position; for (let i = 0; i < p.count; i++) { const t = Math.max(0, Math.min(1, (p.getY(i) - y0) / (y1 - y0))); p.setX(i, p.getX(i) * (a0 + (a1 - a0) * t)); p.setZ(i, p.getZ(i) * (b0 + (b1 - b0) * t)); } return g; }
-const FAR_SKIP = new Set(['eyes', 'joint', 'belt', 'capTrim', 'shades', 'hand']);
+const FAR_SKIP = new Set(['eyes', 'belt', 'capTrim', 'shades']);
 export class HumanRenderer {
   constructor(scene, max = 360) {
     this.max = max; this.meshes = {}; const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, metalness: 0.02 });

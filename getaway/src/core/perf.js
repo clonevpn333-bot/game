@@ -15,14 +15,14 @@ export function inView(p, r = 1.5, maxD = 120) {
 // ---------------- adaptive resolution ----------------
 export class PerfGovernor {
   constructor(renderer, composer, settings) {
-    this.R = renderer; this.C = composer; this.max = this.cap(settings); this.min = settings.quality === 'low' ? 0.45 : 0.5; this.pr = Math.min(this.max, 1); this.avg = 16; this.t = 0; this.cool = 0; this.stalls = 0; this.lost = false; this.grace = 4;
+    this.R = renderer; this.C = composer; this.max = this.cap(settings); this.min = settings.quality === 'low' || settings.quality === 'minimum' ? 0.45 : 0.5; this.pr = Math.min(this.max, 1); this.avg = 16; this.t = 0; this.cool = 0; this.stalls = 0; this.lost = false; this.grace = 4;
     this.apply(this.pr);
     if (G.Q && G.Q.shadowEvery > 1) { renderer.shadowMap.autoUpdate = false; this.shadowEvery = G.Q.shadowEvery; } // cheaper shadows: refresh every Nth frame
     const cv = renderer.domElement;
     cv.addEventListener('webglcontextlost', (e) => { e.preventDefault(); this.lost = true; this.banner('Graphics driver reset — recovering…'); console.warn('WebGL context lost'); });
     cv.addEventListener('webglcontextrestored', () => { this.lost = false; this.max = Math.max(this.min, this.max * 0.75); this.apply(Math.min(this.pr, this.max) * 0.8); this.banner('Recovered — running at lower detail', 3000); if (G.sky && G.sky.sun) G.sky.sun.shadow.map = null; });
   }
-  cap(s) { const dpr = devicePixelRatio || 1; return s.quality === 'ultra' ? Math.min(2, dpr) : s.quality === 'high' ? Math.min(1.25, dpr) : s.quality === 'medium' ? Math.min(0.9, dpr) : 0.72; }
+  cap(s) { const dpr = devicePixelRatio || 1; return s.quality === 'ultra' ? Math.min(2, dpr) : s.quality === 'high' ? Math.min(1.25, dpr) : s.quality === 'medium' ? Math.min(0.9, dpr) : s.quality === 'minimum' ? 0.62 : 0.72; }
   setQuality(s) { this.max = this.cap(s); this.apply(Math.min(this.pr, this.max)); }
   apply(pr) { pr = Math.round(Math.max(this.min, Math.min(this.max, pr)) * 20) / 20; if (Math.abs(pr - this.R.getPixelRatio()) < 0.01) { this.pr = pr; return; } this.pr = pr; this.R.setPixelRatio(pr); if (this.C.setPixelRatio) this.C.setPixelRatio(pr); this.R.setSize(innerWidth, innerHeight); this.C.setSize(innerWidth, innerHeight); }
   // rawMs = real time since the previous frame (includes GPU back-pressure)

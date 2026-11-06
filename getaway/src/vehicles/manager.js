@@ -31,7 +31,7 @@ export class VehicleManager {
   // far cars: only the body shell, cabin, glass and lights (5 draw calls instead of ~17) — no shadow either
   _lod() {
     const c = G.camera.position; const L = G.Q ? G.Q.carDetailD : 110; const D2 = L * L;
-    for (const v of this.list) { const m = v.model; if (!m || !m.bodyMesh || !v.root) continue; const far = !v.isPlayer && v.pos.distanceToSquared(c) > D2; if (far === v._lodFar) continue; v._lodFar = far;
+    for (const v of this.list) { const m = v.model; if (!m || !m.bodyMesh || !v.root) continue; const d2 = v.pos.distanceToSquared(c); const far = !v.isPlayer && (v._lodFar ? d2 > D2 * 0.85 : d2 > D2 * 1.15); if (far === v._lodFar) continue; v._lodFar = far;
       if (!v._lodParts) { const keep = new Set([m.bodyMesh, m.cabMesh, m.lights, m.glass && m.glass.isMesh ? m.glass : null]); v._lodParts = []; v.root.traverse((o) => { if (o.isMesh && !o.isInstancedMesh && !keep.has(o)) v._lodParts.push(o); }); }
       for (const o of v._lodParts) { if (far) { if (o.visible) { o.visible = false; o.userData.lodHidden = true; } } else if (o.userData.lodHidden) { o.visible = true; o.userData.lodHidden = false; } }
       m.bodyMesh.castShadow = !far; if (m.cabMesh) m.cabMesh.castShadow = !far; }

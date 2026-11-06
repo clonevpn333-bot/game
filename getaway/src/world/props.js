@@ -2,6 +2,7 @@
 // Props are static until hit; then the instance is hidden and a physical rigid body takes over.
 import * as THREE from 'three';
 import { G } from '../core/context.js';
+import { addDistanceFade } from '../core/instcull.js';
 import { rand, clamp } from '../core/utils.js';
 import { RigidBody } from '../fx/rigid.js';
 import { signal } from './signals.js';
@@ -52,6 +53,9 @@ export class Props {
     this.world = world; this.scene = scene; this.S = world.static; this.list = []; this.hash = new Map(); this.cell = 16;
     this.mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.6, metalness: 0.25 });
     this.glowMat = new THREE.MeshBasicMaterial({ color: 0xfff0cc, toneMapped: false });
+    // street lamps are tall and seen from far away: they get the tree draw distance; everything else fades out at the prop distance
+    this.lampMat = this.mat.clone(); this.lampGlowMat = this.glowMat.clone();
+    if (G.Q) { addDistanceFade(this.mat, G.Q.propD); addDistanceFade(this.lampMat, G.Q.treeD); addDistanceFade(this.glowMat, G.Q.propD); addDistanceFade(this.lampGlowMat, G.Q.treeD); }
     this.geos = {}; for (const k in DEFS) this.geos[k] = mergeParts(DEFS[k].parts());
     this.loose = []; this.sprays = [];
     this._m = new THREE.Matrix4(); this._q = new THREE.Quaternion(); this._s = new THREE.Vector3(); this._v = new THREE.Vector3(); this._zero = new THREE.Matrix4().makeScale(0, 0, 0);
@@ -69,12 +73,12 @@ export class Props {
     this.meshes = [];
     for (const [ck, arr] of groups) {
       const type = ck.split('|')[1]; const def = DEFS[type];
-      const im = new THREE.InstancedMesh(this.geos[type], this.mat, arr.length); im.castShadow = type !== 'cone' && type !== 'meter'; im.receiveShadow = true;
-      let glow = null; if (def.glow) { const [gx, gy, gz, w, h, d] = def.glow; const gg = new THREE.BoxGeometry(w, h, d); gg.translate(gx, gy, gz); glow = new THREE.InstancedMesh(gg, this.glowMat, arr.length); }
+      const lampy = type === 'lamp' || type === 'hwylamp'; const im = new THREE.InstancedMesh(this.geos[type], lampy ? this.lampMat : this.mat, arr.length); im.castShadow = type !== 'cone' && type !== 'meter'; im.receiveShadow = true;
+      let glow = null; if (def.glow) { const [gx, gy, gz, w, h, d] = def.glow; const gg = new THREE.BoxGeometry(w, h, d); gg.translate(gx, gy, gz); glow = new THREE.InstancedMesh(gg, lampy ? this.lampGlowMat : this.glowMat, arr.length); }
       arr.forEach((p, i) => { this._m.compose(this._v.set(p.x, p.y, p.z), this._q.setFromAxisAngle(this._v2 || (this._v2 = new THREE.Vector3(0, 1, 0)), p.yaw), this._s.set(1, 1, 1)); im.setMatrixAt(i, this._m); if (glow) glow.setMatrixAt(i, this._m); p.mesh = im; p.glow = glow; p.idx = i; });
       im.computeBoundingSphere(); this.scene.add(im); this.meshes.push(im);
       if (glow) { glow.computeBoundingSphere(); this.scene.add(glow); }
-      if (G.instCull && G.Q) { const small = def.h !== undefined ? def.h < 1.6 : (def.half ? def.half[1] < 0.8 : true); G.instCull.add(im, small ? G.Q.smallD : G.Q.propD, def.h || 2, [glow]); }
+      if (G.instCull && G.Q) G.instCull.add(im, lampy ? G.Q.treeD : G.Q.propD, def.h || 2, [glow]); // culled exactly where the fade ends: no pop
     }
     // crossing arms (animated)
     const xs = this.list.filter((p) => p.type === 'xing');
@@ -100,7 +104,7 @@ export class Props {
     };
     const CH = 600; const groups = new Map();
     for (const t of trees) { const k = Math.floor(t.x / CH) + ',' + Math.floor(t.z / CH) + '|' + t.kind; let g = groups.get(k); if (!g) groups.set(k, (g = [])); g.push(t); }
-    const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9 });
+    const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9 }); if (G.Q) addDistanceFade(mat, G.Q.treeD);
     for (const [k, arr] of groups) {
       const kind = k.split('|')[1]; const im = new THREE.InstancedMesh(kinds[kind], mat, arr.length); im.castShadow = true; im.receiveShadow = true;
       arr.forEach((t, i) => { this._m.compose(this._v.set(t.x, t.y, t.z), this._q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), (t.x * 13.7 + t.z) % 6.28), this._s.set(t.s, t.s * (0.9 + ((t.x * 7) % 1) * 0.3), t.s)); im.setMatrixAt(i, this._m); this.S.addBox(t.x - 0.3 * t.s, t.y, t.z - 0.3 * t.s, t.x + 0.3 * t.s, t.y + 3, t.z + 0.3 * t.s, { mat: 'wood', surface: false, tag: 'tree' }); });

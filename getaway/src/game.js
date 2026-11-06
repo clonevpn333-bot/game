@@ -45,7 +45,7 @@ export class Game {
     progress(0.1, 'Paving the streets of Port Sol…'); await tick();
     G.world = generateCity(G.scene, G.quality);
     progress(0.5, 'Planting palm trees & hydrants…'); await tick();
-    G.instCull = new InstanceCuller(); G.props = new Props(G.world, G.scene); G.fx = new FX(G.scene, G.world.static); G.decals = new Decals(G.scene); G.fx.quality = G.quality === 'low' ? 0.4 : G.quality === 'medium' ? 0.7 : 1;
+    G.instCull = new InstanceCuller(); G.props = new Props(G.world, G.scene); G.fx = new FX(G.scene, G.world.static); G.decals = new Decals(G.scene); G.fx.quality = G.quality === 'low' || G.quality === 'minimum' ? 0.4 : G.quality === 'medium' ? 0.7 : 1;
     G.rigid = new RigidWorld(G.world.static);
     G.sky = new Sky(G.scene, G.renderer); G.sky.nightMats = G.world.nightMats; G.sky.registerWet([G.world.mats.road, G.world.mats.roadRes, G.world.mats.hwy, G.world.mats.isect, G.world.mats.asphalt, G.world.mats.walk]);
     progress(0.7, 'Fueling 40 cars…'); await tick();
