@@ -1,4 +1,5 @@
 // GETAWAY! — Port Sol procedural city generator
+import { addInteriorMapping } from './interior.js';
 import * as THREE from 'three';
 import { makeRng, clamp, lerp, smoothstep, noise2 } from '../core/utils.js';
 import { StaticWorld } from './static.js';
@@ -127,6 +128,7 @@ function makeMaterials() {
     const f = T.facade(s, v); const reflective = s === 'glass' || s === 'tower';
     const mat = std({ map: f.map, emissiveMap: f.emissive, emissive: 0xffffff, emissiveIntensity: 0, roughnessMap: f.rm, metalnessMap: f.rm, roughness: reflective ? 0.55 : 1, metalness: reflective ? 1 : 0.9, envMapIntensity: reflective ? 1.2 : 1.0 });
     mat.userData.night = s === 'shop' ? 1.1 : 1.0; night.push(mat); m[`fac_${s}_${v}`] = mat;
+    addInteriorMapping(mat, s, T.FACADES[s], v * 7 + s.length); // real 3D rooms behind every window
   }
   // sign atlas
   const atlas = makeSignAtlas(); m.signs = std({ map: atlas.tex, emissiveMap: atlas.tex, emissive: 0xffffff, emissiveIntensity: 0.15, roughness: 0.5 }); m.signs.userData.night = 1.3; m.signs.userData.day = 0.15; night.push(m.signs);
@@ -188,7 +190,7 @@ function setupHelpers(ctx) {
   ctx.building = (x0, z0, x1, z1, h, style, v, o = {}) => {
     const y0 = o.y0 ?? CURB; const f = FACADE_DIMS[style];
     const box = S.addBox(x0, y0 - 0.2, z0, x1, h, z1, { mat: style === 'glass' || style === 'tower' ? 'glass' : 'concrete', climb: !!o.climb, tag: 'building' });
-    const mat = ctx.facMat(style, v);
+    const mat = ctx.facMat(style, v); box.fac = { mat, tw: f.tw, th: f.th, base: y0 }; // lets crashes crush this exact facade (fx/dents.js)
     B.box(mat, x0, y0, z0, x1, h, z1, { tw: f.tw, th: f.th, faces: 'pz nz px nx', base: y0 + (o.groundFloor ? 0 : 0) });
     B.box('roof', x0, h - 0.01, z0, x1, h, z1, { faces: 'py', topScale: 8 });
     if (o.parapet !== false && (x1 - x0) > 6) {

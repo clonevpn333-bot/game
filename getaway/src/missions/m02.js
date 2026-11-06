@@ -21,41 +21,45 @@ function setup(m) {
 function resetVault() { const b = G.world.landmarks.bank; b.vaultDoor.rotation.y = 0; b.vaultBox.disabled = false; }
 function playerIn(m, v) { G.player.teleport(v.pos.x, v.pos.y, v.pos.z, v.yaw); G.player.enterVehicle(v); G.cam.yaw = v.yaw; }
 
+// money bursting out of a pallet / the vault: green paper flutter + gold glints
+function moneyBurst(p, n = 40) { const fx = G.fx; if (!fx) return; for (let i = 0; i < n; i++) fx.smoke.emit(p.x, p.y + 0.6, p.z, (Math.random() - 0.5) * 6, 2 + Math.random() * 4, (Math.random() - 0.5) * 6, { life: 2.5 + Math.random() * 2, size: 0.12, grow: 0, r: 0.35, g: 0.62, b: 0.32, a: 1, drag: 1.6, grav: 2.2, spin: 6, fade: 1 }); fx.spark(p, V3(0, 1, 0), 10, 4); }
 async function cp0(m) {
-  setup(m); m.vars.cash = 0;
-  const car = m.vehicle('sedan', { x: -50, y: 0, z: -5.25, yaw: -Math.PI / 2, color: 0x2f4f3f }); m.vars.crewCar = car; playerIn(m, car);
-  G.traffic.populate(); G.peds.populate(); m.music('bankroll', 1);
-  const bank = G.world.landmarks.bank;
+  setup(m); m.vars.cash = 0; m.vars.drill = 0;
+  const car = m.vehicle('sedan', { x: -50, y: 0, z: -5.25, yaw: -Math.PI / 2, color: 0x2f4f3f }); m.vars.crewCar = car;
+  G.player.teleport(-46, 0.15, -30, Math.PI); G.traffic.populate(); G.peds.populate(); m.music('bankroll', 2);
   m.r.flow.showIntro(m.def);
   m.say('GRAMPS', 'Forty years in this business. Never once used the front door. Today\'s special.');
-  await m.cine({ dur: 5.5, fov: 40, pos: (k) => V3(-50 + Math.sin(k * 1.2) * 30, 4 + k * 6, -2 + k * 4), look: () => V3(-50, 9, -40) });
+  await m.cine({ dur: 5, fov: 40, pos: (k) => V3(-50 + Math.sin(k * 1.2) * 30, 4 + k * 6, -2 + k * 4), look: () => V3(-50, 6, -40) });
   m.r.flow.hideIntro();
-  m.say('DEZ', 'Kit, you\'re the wheel. Engine running, eyes open. Ninety seconds, tops.');
-  m.objective('WAIT FOR THE CREW', 'KEEP THE ENGINE RUNNING');
-  await m.wait(7);
+  // the front door goes in — LOUD
+  m.say('GRAMPS', 'Fire in the hole!'); await m.wait(1.2);
+  const door = V3(-50, 2, -41); G.emit('explosion', door, 1.6, 'breach', null); G.emit('explosion', door.clone().add(V3(4, 0, 0)), 0.9, 'breach', null); m.slowmo(1.1, 0.3); G.cam.shake(1);
+  if (G.fx) G.fx.debris(door, 50, 0xd8d2c4, 10, 0.3);
   const alarm = G.audio.createLoop('alarm', { ref: 25, wet: 0.5 }); if (alarm) { alarm.update(V3(-50, 6, -45), 0.5); m.track({ dispose: () => alarm.dispose() }); }
-  G.input.rumble(0.5, 0.5, 400); m.intensity(3);
-  m.say('GRAMPS', 'Silent alarm my foot — it\'s SCREAMING. Kid, the vault\'s on a timer and Dez is pinned down. I need hands!');
-  m.objective('GET INSIDE THE BANK', 'FRONT DOORS — UP THE STEPS');
-  await m.goTo(V3(-50, 0.15, -44), null, '', { r: 3, onFoot: true });
+  G.input.rumble(1, 1, 500); m.intensity(4); m.music('bankroll', 4);
+  for (const [x, z] of [[-70, -48], [-66, -45], [-34, -47], [-28, -50], [-40, -44], [-58, -50], [-44, -55]]) G.peds.spawnCivilian(x, 0.15, z, Math.random() * 6, 'cower');
+  const guards = [[-62, -62, 'hold'], [-38, -63, 'flank'], [-55, -52, 'hold'], [-30, -56, 'flank'], [-68, -56, 'hold'], [-46, -66, 'hold']].map(([x, z, role]) => m.npc('guard', x, 0.15, z, 0, { role, acc: 0.35 }));
+  m.say('DEZ', 'GO GO GO! Security\'s armed — drop them before they lock the vault!');
+  const off = m.r.flow.game.addUpdater(() => { const n = guards.filter((g) => !g.alive).length; G.hud.objective('STORM THE BANK', `TAKE DOWN SECURITY (${n}/6)`); }); m.ents.offs.push(off);
+  m.objective('STORM THE BANK', 'TAKE DOWN SECURITY (0/6)');
+  await m.until(() => guards.every((g) => !g.alive), { timeout: 240 }); off();
 }
 async function cp1(m, fresh) {
-  if (fresh) { setup(m); G.player.teleport(-50, 0.15, -44, Math.PI); m.music('bankroll', 3); G.traffic.populate(); G.peds.populate(); }
-  // hostages + guards inside the hall
-  for (const [x, z] of [[-70, -48], [-66, -45], [-34, -47], [-28, -50], [-40, -44]]) G.peds.spawnCivilian(x, 0.15, z, Math.random() * 6, 'cower');
-  const guards = [[-62, -62, 'hold'], [-38, -63, 'flank'], [-55, -52, 'hold']].map(([x, z, role]) => m.npc('guard', x, 0.15, z, 0, { role }));
-  m.say('KIT', 'Everybody stay down. Nobody\'s getting hurt today.');
-  m.objective('DEAL WITH THE GUARDS', 'THEN GET TO THE VAULT AT THE BACK');
-  const vault = V3(-50, 0.15, -67);
-  const b = m.blip(vault, { color: '#ffd36b', size: 7 });
-  await m.until(() => guards.every((g) => !g.alive) || (G.player.pos.z < -60 && Math.abs(G.player.pos.x + 50) < 10), { timeout: 240 });
-  m.objective('GET TO THE VAULT', 'GRAMPS IS CRACKING IT'); const mk = m.marker(vault, { r: 2.2, h: 5 });
-  await m.until(() => m.near(vault, 3, G.player.pos)); m.unblip(b); m.unmark(mk);
-  // the vault swings open
+  if (fresh) { setup(m); G.player.teleport(-50, 0.15, -52, Math.PI); m.music('bankroll', 4); G.traffic.populate(); G.peds.populate(); }
+  // Gramps drills the vault while the cops pour in through the blown front door: hold the lobby
+  m.say('GRAMPS', 'Drill\'s on. Thirty-five seconds. Keep them OFF me!'); m.intensity(4);
+  const drillP = V3(-50, 1.2, -69.5); const spark = m.r.flow.game.addUpdater(() => { if (G.fx && Math.random() < 0.6) G.fx.spark(drillP, V3(0, 0.3, 1), 3, 3); }); m.ents.offs.push(spark);
+  m.timer(35, { failReason: null }); // a countdown, not a failure
+  m.objective('HOLD THE LOBBY', 'POLICE ARE COMING THROUGH THE FRONT DOOR');
+  G.police.setStars(2);
+  const waves = [[-52, -38, 'police'], [-46, -38, 'police'], [-56, -36, 'police'], [-44, -36, 'swat'], [-50, -36, 'police'], [-54, -37, 'swat'], [-48, -35, 'police'], [-42, -37, 'police']];
+  let wi = 0; const spawn = m.r.flow.game.addUpdater(() => { const t = 35 - (m.r.timerLeft ?? 0); while (wi < waves.length && t > 2 + wi * 3.8) { const [x, z, k] = waves[wi++]; m.npc(k, x, 0.15, z, Math.PI, { role: wi % 2 ? 'flank' : 'hold', acc: 0.38 }); } }); m.ents.offs.push(spawn);
+  await m.until(() => (m.r.timerLeft ?? 0) <= 0.05); spawn(); spark(); m.stopTimer();
+  // the vault blows open
   m.say('GRAMPS', 'Three… two… and THAT is why you don\'t retire.'); G.audio.creak(V3(-50, 2, -70), 2);
-  const door = G.world.landmarks.bank.vaultDoor; G.world.landmarks.bank.vaultBox.disabled = true;
-  await m.cine({ dur: 2.4, fov: 50, letterbox: false, pos: () => V3(-44, 2.4, -60), look: (k) => { door.rotation.y = -1.7 * Math.min(1, k * 1.3); return V3(-50, 1.6, -71); } });
-  G.audio.impact(V3(-50, 2, -70), 1, 'metal'); G.cam.shake(0.3);
+  const door = G.world.landmarks.bank.vaultDoor; G.world.landmarks.bank.vaultBox.disabled = true; G.emit('explosion', V3(-50, 1.6, -70), 0.8, 'vault', null);
+  await m.cine({ dur: 2.4, fov: 50, letterbox: false, pos: () => V3(-44, 2.4, -60), look: (k) => { door.rotation.y = -1.7 * Math.min(1, k * 2); return V3(-50, 1.6, -71); } });
+  moneyBurst(V3(-50, 1, -72), 60); G.audio.impact(V3(-50, 2, -70), 1, 'metal'); G.cam.shake(0.5);
 }
 async function cp2(m, fresh) {
   const bank = G.world.landmarks.bank;
@@ -65,7 +69,7 @@ async function cp2(m, fresh) {
   const marks = pallets.map((p) => m.marker(V3(p.x, 0.15, p.z), { r: 0.9, h: 2.5, color: 0x7bd88f }));
   while (m.vars.cash < 3) {
     await m.until(() => { const i = pallets.findIndex((p, k) => marks[k] && Math.hypot(G.player.pos.x - p.x, G.player.pos.z - p.z) < 1.8); G.hud.promptOverride = i >= 0 ? '<kbd>E</kbd> Bag the cash' : null; if (i >= 0 && G.input.pressed('interact')) { m.unmark(marks[i]); marks[i] = null; return true; } return false; });
-    m.vars.cash++; G.player.money += 41000; G.audio.ui('cash'); G.stunts.award('CASH GRAB', 200, '$41,000');
+    m.vars.cash++; G.player.money += 41000; G.audio.ui('cash'); G.stunts.award('CASH GRAB', 200, '$41,000'); { const pp = pallets[m.vars.cash - 1] || pallets[0]; moneyBurst(V3(pp.x, 0.2, pp.z), 35); }
     m.objective(`GRAB THE CASH (${m.vars.cash}/3)`, 'PRESS E AT EACH PALLET');
   }
   G.hud.promptOverride = null; G.player.carrying = { bag: true, heavy: true };
@@ -73,6 +77,10 @@ async function cp2(m, fresh) {
 async function cp3(m, fresh) {
   if (fresh) { setup(m); m.vars.cash = 3; G.player.carrying = { bag: true, heavy: true }; G.player.money = Math.max(G.player.money, 123000); G.player.teleport(-50, 0.15, -72, 0); m.music('bankroll', 4); G.traffic.populate(); G.peds.populate(); }
   m.intensity(4); G.police.setStars(2);
+  // SWAT breach: flashbang through the front, a stack pours into the hall
+  m.say('JUNO', 'SWAT stack at the front door — FLASHBANG, cover your eyes!'); await m.wait(1.2);
+  m.r.flow.game.flash = 1.6; G.cam.shake(0.6); if (G.audio) G.audio.explosion(V3(-50, 2, -44), 0.5); if (G.fx) G.fx.smokePuff(V3(-50, 1.5, -46), { n: 12, size: 3, life: 4, color: 0.9, alpha: 0.5, spread: 3 });
+  for (const [x, z] of [[-56, -46], [-50, -44], [-44, -46], [-53, -49], [-47, -49]]) m.npc('swat', x, 0.15, z, Math.PI, { role: 'flank', acc: 0.4 });
   for (const [x, z] of [[-56, -30], [-50, -28], [-44, -30]]) m.npc('swat', x, 0.15, z, Math.PI, { role: 'hold', acc: 0.4 });
   for (const x of [-70, -30]) { const v = m.vehicle('police', { x, y: 0, z: -1.75, yaw: Math.PI / 2 }); v.siren = true; v.lightsOn = true; }
   m.say('DEZ', 'SWAT on the front steps! Back door — NOW! Gramps and I will meet you at the garage.');
@@ -82,7 +90,10 @@ async function cp3(m, fresh) {
 async function cp4(m, fresh) {
   if (fresh) { setup(m); m.vars.cash = 3; G.player.carrying = { bag: true, heavy: true }; G.player.money = Math.max(G.player.money, 123000); G.player.teleport(-30, 0.15, -86, Math.PI); m.music('bankroll', 4); G.traffic.populate(); G.peds.populate(); G.police.setStars(2); }
   const saetta = m.vehicle('saetta', { x: -36, y: 0, z: -98.25, yaw: Math.PI / 2, color: 0xc0392b }); saetta.engineOn = true; m.vars.saetta = saetta;
-  m.say('JUNO', 'Red Saetta at the curb. Keys in, tank full, I even cleaned the seats.');
+  m.say('JUNO', 'Red Saetta at the curb. Keys in, tank full, I even cleaned the seats. …There are also two police cars parked across the street. Ram them.');
+  for (const [x, yaw] of [[-8, 0.4], [-8, -0.5]]) { const v = m.vehicle('police', { x, z: -98 + (yaw > 0 ? 3 : -3), yaw }); v.siren = true; v.lightsOn = true; v.hp = v.maxHp * 0.35; }
+  for (const z of [-104, -92]) m.npc('police', -4, 0.15, z, -Math.PI / 2, { role: 'hold', acc: 0.3 });
+  G.police.tactics = { pit: true, roadblocks: true, heli: true }; // air support joins the chase this time
   m.objective('GET IN THE RED SAETTA', '');
   const b = m.blip(() => saetta.pos, { color: '#ffd36b', size: 7 });
   await m.until(() => G.player.vehicle === saetta); m.unblip(b); G.player.carrying = null; G.stunts.award('GETAWAY!', 300);

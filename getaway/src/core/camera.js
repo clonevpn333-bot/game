@@ -35,7 +35,8 @@ export class CameraRig {
     const sx = (noise1(this.t * 18) * tr * 0.9 + noise1(this.t * 7 + 3) * sp), sy = (noise1(this.t * 19 + 10) * tr * 0.7 + noise1(this.t * 8 + 13) * sp * 0.6);
     cam.position.copy(this.pos);
     cam.lookAt(this.look); cam.rotateX(sy * 0.08); cam.rotateY(sx * 0.08); cam.rotateZ(noise1(this.t * 15 + 30) * tr * 0.05 + (((P && P.vehicle) || this.custom) && !this.cine ? (this.roll || 0) : 0));
-    if (Math.abs(cam.fov - this.fov) > 0.01) { cam.fov = this.fov; cam.updateProjectionMatrix(); }
+    this.punch = Math.max(0, (this.punch || 0) - dt * 30); const fov = this.fov + Math.min(6, this.punch);
+    if (Math.abs(cam.fov - fov) > 0.01) { cam.fov = fov; cam.updateProjectionMatrix(); }
     this.vel.subVectors(cam.position, this.prev).divideScalar(Math.max(dt, 1e-3)); this.prev.copy(cam.position);
     if (!this.cine) this.letterbox = damp(this.letterbox, 0, 4, dt);
   }

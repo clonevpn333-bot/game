@@ -3,13 +3,14 @@
   const settle = async (s = 1) => { window.__fixedDt = 1 / 20; for (let i = 0; i < Math.round(s * 20); i++) { g.frame(true); await Promise.resolve(); await Promise.resolve(); } window.__fixedDt = 0; };
   const tap = async (c) => { K.add(c); await settle(0.05); K.delete(c); await settle(0.1); };
   const step = (l) => log.push(`${l} | cp=${G.mission ? G.mission.cpReached : '-'} obj="${obj()}" stars=${G.police.stars}`);
-  await settle(0.3); G.cam.stopCine(); await settle(8.5); step('alarm');
-  G.player.leaveVehicleInstant(); G.player.teleport(-50, 0.15, -44, Math.PI); await settle(1); step('inside');
-  for (const n of G.npcs.list) if (n.team === 'guard' && n.alive) n.die(new (G.player.pos.constructor)(0, 0, 1)); await settle(1); step('guards down');
+  await settle(0.3); G.cam.stopCine(); await settle(3); step('breach');
+  const kill = (team) => { for (const n of G.npcs.list) if (n.alive && (!team || n.team === team)) n.die(new (G.player.pos.constructor)(0, 0, 1)); };
+  G.player.teleport(-50, 0.15, -52, Math.PI); kill('guard'); await settle(1.5); step('guards down');
+  for (let k = 0; k < 9; k++) { await settle(4.5); kill('police'); } step('lobby held');
   G.player.teleport(-50, 0.15, -67, Math.PI); await settle(4); step('vault open');
   for (const p of G.world.landmarks.bank.cash.slice(0, 3)) { G.player.teleport(p.x, 0.45, p.z + 1.2, Math.PI); await settle(0.3); await tap('KeyE'); }
   await settle(1); step('cash');
-  G.player.teleport(-30, 0.15, -84, Math.PI); await settle(1.5); step('back door');
+  await settle(2); kill('police'); G.player.teleport(-30, 0.15, -84, Math.PI); await settle(1.5); step('back door');
   const s = G.mission.ctx.vars.saetta; G.player.teleport(s.pos.x - 2.2, 0.15, s.pos.z, Math.PI / 2); await settle(0.5); K.add('KeyF'); await settle(0.1); K.delete('KeyF'); await settle(3); step('in saetta inCar=' + (G.player.vehicle === s)); K.add('KeyW'); await settle(3); K.delete('KeyW'); step('drove');
   s.pos.set(-106, 0.2, -568); s.vel.set(0, 0, 0); await settle(1.5); step('ramp mouth'); s.pos.set(30, 12.1, -556); s.vel.set(0, 0, 0); await settle(1.5); step('on deck');
   s.pos.set(150, 12, -544); s.vel.set(0, 0, 0); await settle(1); s.pos.set(300, 12, -544); await settle(1.5); step('past roadblock');

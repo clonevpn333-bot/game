@@ -31,8 +31,8 @@ void main(){
 }`;
 
 const KEYS = [ // by sun elevation (degrees)
-  { e: -18, zen: 0x03060f, hor: 0x0b1222, sun: 0x000000, si: 0, hemiS: 0x24325a, hemiG: 0x0a0b10, hi: 0.32, fog: 0x0d1424, exp: 1.15 },
-  { e: -4, zen: 0x101a3a, hor: 0x3a3352, sun: 0xff6a3a, si: 0.05, hemiS: 0x3a4170, hemiG: 0x1a1414, hi: 0.4, fog: 0x2a2840, exp: 1.1 },
+  { e: -18, zen: 0x050a18, hor: 0x141c32, sun: 0x000000, si: 0, hemiS: 0x4a5c8c, hemiG: 0x2a2018, hi: 0.62, fog: 0x141b2e, exp: 1.3 }, // brighter, bluer moonlit night with warm city bounce from below
+  { e: -4, zen: 0x101a3a, hor: 0x3a3352, sun: 0xff6a3a, si: 0.05, hemiS: 0x4a5180, hemiG: 0x2a1c18, hi: 0.55, fog: 0x2a2840, exp: 1.15 },
   { e: 3, zen: 0x2c3f7a, hor: 0xf5864c, sun: 0xff8c4a, si: 1.6, hemiS: 0x7a7ab0, hemiG: 0x40302a, hi: 0.55, fog: 0xc8846a, exp: 1.0 },
   { e: 12, zen: 0x3a64b8, hor: 0xf2c095, sun: 0xffc488, si: 2.6, hemiS: 0x9ab6e0, hemiG: 0x5a4a3a, hi: 0.7, fog: 0xd8c0a8, exp: 0.95 },
   { e: 35, zen: 0x2d68c9, hor: 0xa8cdea, sun: 0xfff2dc, si: 3.3, hemiS: 0xb8d4f0, hemiG: 0x6a5e50, hi: 0.85, fog: 0xb5cde0, exp: 0.9 },
@@ -92,7 +92,7 @@ export class Sky {
     // sun or moon light
     const useMoon = elev < -2; const ld = useMoon ? md : sd;
     this.sun.color.copy(useMoon ? _c2.set(0x8fa6d8) : this.uniforms.sunColor.value);
-    this.sun.intensity = useMoon ? 0.35 * (1 - ovc * 0.6) : si; this.sun.intensity += this.flash * 6;
+    this.sun.intensity = useMoon ? 0.7 * (1 - ovc * 0.6) : si; // stronger moonlight: readable nights this.sun.intensity += this.flash * 6;
     this.sun.position.set(focus.x + ld.x * 300, focus.y + ld.y * 300, focus.z + ld.z * 300); this.sun.target.position.copy(focus);
     // snap shadow camera to texels to avoid shimmering
     this.sun.target.updateMatrixWorld();

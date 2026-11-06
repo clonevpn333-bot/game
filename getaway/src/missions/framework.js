@@ -82,7 +82,7 @@ export class MissionRunner {
   }
   update(dt) {
     if (!this.active || !this.ctx) return; this.stats.time += dt; this.ctx.update(dt); if (this.def.onUpdate) this.def.onUpdate(this.ctx);
-    if (this.timerLeft !== null && this.timerLeft !== undefined) { this.timerLeft -= dt; G.hud.setTimer(Math.max(0, this.timerLeft)); if (this.timerLeft <= 10 && Math.floor(this.timerLeft) !== Math.floor(this.timerLeft + dt) && G.audio) G.audio.ui('beepUrgent'); if (this.timerLeft <= 0) { this.timerLeft = null; this.fail(this.timerFail); } }
+    if (this.timerLeft !== null && this.timerLeft !== undefined) { this.timerLeft -= dt; G.hud.setTimer(Math.max(0, this.timerLeft)); if (this.timerLeft <= 10 && Math.floor(this.timerLeft) !== Math.floor(this.timerLeft + dt) && G.audio) G.audio.ui('beepUrgent'); if (this.timerLeft <= 0) { if (this.timerFail) { this.timerLeft = null; this.fail(this.timerFail); } else this.timerLeft = 0; } } // failReason null = a plain countdown
     // adaptive music
     if (this.musicOverride === null || this.musicOverride === undefined) { const s = G.police ? G.police.stars : 0; G.music.setIntensity(s >= 3 ? 4 : s >= 1 ? 3 : 2); }
     else G.music.setIntensity(this.musicOverride);

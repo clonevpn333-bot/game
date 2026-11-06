@@ -8,12 +8,12 @@ import { mergeParts } from '../world/props.js';
 export const J = { pelvis: 0, chest: 1, head: 2, lSh: 3, lEl: 4, lHa: 5, rSh: 6, rEl: 7, rHa: 8, lHip: 9, lKn: 10, lFt: 11, rHip: 12, rKn: 13, rFt: 14 };
 const NJ = 15;
 // pose parameter indices
-const P = { hipH: 0, spP: 1, spY: 2, spR: 3, hdY: 4, hdP: 5, lHP: 6, lHR: 7, lKn: 8, rHP: 9, rHR: 10, rKn: 11, lSP: 12, lSR: 13, lSY: 14, lEl: 15, rSP: 16, rSR: 17, rSY: 18, rEl: 19, lean: 20, offX: 21, offZ: 22 };
-const NP = 23;
+export const P = { hipH: 0, spP: 1, spY: 2, spR: 3, hdY: 4, hdP: 5, lHP: 6, lHR: 7, lKn: 8, rHP: 9, rHR: 10, rKn: 11, lSP: 12, lSR: 13, lSY: 14, lEl: 15, rSP: 16, rSR: 17, rSY: 18, rEl: 19, lean: 20, offX: 21, offZ: 22 };
+export const NP = 23;
 const UPPER = [P.spP, P.spY, P.spR, P.hdY, P.hdP, P.lSP, P.lSR, P.lSY, P.lEl, P.rSP, P.rSR, P.rSY, P.rEl];
 const ARMS_R = [P.rSP, P.rSR, P.rSY, P.rEl], ARMS = [P.lSP, P.lSR, P.lSY, P.lEl, P.rSP, P.rSR, P.rSY, P.rEl];
 
-const DIM = { hipH: 0.95, thigh: 0.45, shin: 0.45, torso: 0.5, shW: 0.19, hipW: 0.095, upper: 0.29, fore: 0.27, neck: 0.2 };
+export const DIM = { hipH: 0.95, thigh: 0.45, shin: 0.45, torso: 0.5, shW: 0.19, hipW: 0.095, upper: 0.29, fore: 0.27, neck: 0.2 };
 const SKINS = [0xf1c8a4, 0xe0ac7f, 0xc68a5e, 0x9a6440, 0x6e4529, 0xf5d5bd, 0xb57e55];
 const HAIRS = [0x1b120c, 0x3b2416, 0x6b4325, 0xb88a4a, 0x161616, 0x8a8a8a, 0x5a2e1a, 0xd9c08a];
 const SHIRTS = [0xc0392b, 0x2980b9, 0x27ae60, 0xf1c40f, 0x8e44ad, 0xecf0f1, 0x34495e, 0xe67e22, 0x16a085, 0xd35400, 0x2c3e50, 0xbdc3c7, 0x7f8c8d, 0xff6b81, 0x1e3799];
@@ -36,7 +36,7 @@ export const LOOKS = {
 // ---------------- pose library ----------------
 function zero(o) { o.fill(0); o[P.hipH] = DIM.hipH; return o; }
 export const Poses = {
-  idle(o, t, w = 0) { zero(o); const b = Math.sin(t * 1.6) * 0.012; o[P.hipH] -= 0.02 + b; o[P.spP] = 0.03 + b; o[P.lKn] = o[P.rKn] = 0.08; o[P.lHP] = o[P.rHP] = 0.04; o[P.lSR] = o[P.rSR] = 0.12; o[P.lEl] = o[P.rEl] = 0.2; o[P.lHR] = o[P.rHR] = 0.04; o[P.hdY] = Math.sin(t * 0.4 + w) * 0.3; return o; },
+  idle(o, t, w = 0) { zero(o); const b = Math.sin(t * 1.6) * 0.012; const shift = Math.sin(t * 0.45 + w * 1.7); o[P.hipH] -= 0.02 + b; o[P.spP] = 0.03 + b * 1.5; o[P.spR] = shift * 0.035; o[P.lSR] = 0.12 + b * 2; o[P.rSR] = 0.12 + b * 2; o[P.hdP] = Math.sin(t * 0.7 + w) * 0.05; /* breathing + weight shift */ o[P.lKn] = o[P.rKn] = 0.08; o[P.lHP] = o[P.rHP] = 0.04; o[P.lEl] = o[P.rEl] = 0.2 + b; o[P.lHR] = 0.04 + Math.max(0, shift) * 0.06; o[P.rHR] = 0.04 + Math.max(0, -shift) * 0.06; o[P.lKn] = 0.08 + Math.max(0, -shift) * 0.12; o[P.rKn] = 0.08 + Math.max(0, shift) * 0.12; o[P.hdY] = Math.sin(t * 0.4 + w) * 0.3 + Math.sin(t * 1.9 + w * 3) * Math.max(0, Math.sin(t * 0.23 + w)) * 0.25; return o; },
   walk(o, ph, k = 1) {
     zero(o); const s = Math.sin(ph), c = Math.cos(ph); const A = 0.38 * k; const sw = (x) => Math.max(0, x) ** 1.3;
     o[P.lHP] = A * s + 0.04; o[P.rHP] = -A * s + 0.04; o[P.lKn] = 0.08 + sw(c) * 0.85 * k; o[P.rKn] = 0.08 + sw(-c) * 0.85 * k;
@@ -189,6 +189,8 @@ export class Human {
     if (this.carryBag && st !== 'climb') Poses.carry(p);
     if (this.upper) { this.upperT += dt; const u = this.upper; const k = clamp(this.upperT / u.dur, 0, 1); this.tmpB.set(p); if (u.name === 'reload') Poses.reload(this.tmpB, this.upperT); else if (u.name === 'punch') Poses.punch(this.tmpB, k, u.right); else if (u.name === 'hit') Poses.hit(this.tmpB, k); else if (u.name === 'wave') { this.tmpB[P.rSP] = 0.3; this.tmpB[P.rSR] = 2.4 + Math.sin(this.upperT * 12) * 0.3; this.tmpB[P.rEl] = 0.6; }
       this._blendIdx(p, this.tmpB, UPPER, Math.min(1, Math.sin(k * Math.PI) * 3)); if (k >= 1) this.upper = null; }
+    if ((this._prevSt === 'fall' || this._prevSt === 'jump') && st !== 'fall' && st !== 'jump' && st !== 'climb') this.landT = 0.32;
+    this._prevSt = st; if (this.landT > 0) { this.landT -= dt; const k = Math.sin(clamp(this.landT / 0.32, 0, 1) * Math.PI); p[P.hipH] -= 0.16 * k; p[P.lKn] += 0.55 * k; p[P.rKn] += 0.55 * k; p[P.lHP] += 0.3 * k; p[P.rHP] += 0.3 * k; p[P.spP] += 0.25 * k; p[P.lSP] += 0.4 * k; p[P.rSP] += 0.4 * k; } /* landing absorb */
     if (opts.lean) p[P.lean] += opts.lean;
     // cross-fade between states so nothing ever snaps
     const key = st === 'run' || st === 'idle' || st === 'flee' ? 'loco' : st;
@@ -248,24 +250,38 @@ export class Human {
 }
 
 // ---------------- instanced renderer ----------------
-function capsule(r0 = 1, r1 = 1) { const g = new THREE.CylinderGeometry(r1, r0, 1, 10, 1); g.translate(0, 0.5, 0); const a = new THREE.SphereGeometry(r0, 10, 6, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2); a.scale(1, 0.14, 1); const b = new THREE.SphereGeometry(r1, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2); b.scale(1, 0.14, 1); b.translate(0, 1, 0); return mergeParts([{ geo: g, c: 0xffffff }, { geo: a, c: 0xffffff }, { geo: b, c: 0xffffff }]); }
+function capsule(r0 = 1, r1 = 1) { const g = new THREE.CylinderGeometry(r1, r0, 1, 14, 1); g.translate(0, 0.5, 0); const a = new THREE.SphereGeometry(r0, 10, 6, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2); a.scale(1, 0.14, 1); const b = new THREE.SphereGeometry(r1, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2); b.scale(1, 0.14, 1); b.translate(0, 1, 0); return mergeParts([{ geo: g, c: 0xffffff }, { geo: a, c: 0xffffff }, { geo: b, c: 0xffffff }]); }
+const BODY_PARTS = new Set(['torso', 'pelvis', 'belt', 'head', 'eyes', 'limb', 'joint', 'hand', 'foot']);
 export class HumanRenderer {
   constructor(scene, max = 360) {
     this.max = max; this.meshes = {}; const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, metalness: 0.02 });
-    const head = new THREE.SphereGeometry(1, 16, 12); head.scale(0.92, 1.05, 1);
-    const eyeL = new THREE.SphereGeometry(0.16, 8, 6); eyeL.translate(0.36, 0.12, 0.84); const eyeR = eyeL.clone(); eyeR.translate(-0.72, 0, 0);
-    const nose = new THREE.ConeGeometry(0.14, 0.35, 6); nose.rotateX(Math.PI / 2); nose.translate(0, -0.06, 1.02);
-    const brow = new THREE.BoxGeometry(0.8, 0.07, 0.1); brow.translate(0, 0.33, 0.9);
-    const mouth = new THREE.BoxGeometry(0.4, 0.05, 0.1); mouth.translate(0, -0.42, 0.87);
-    const ears = [new THREE.SphereGeometry(0.2, 6, 5).translate(0.9, 0.05, 0), new THREE.SphereGeometry(0.2, 6, 5).translate(-0.9, 0.05, 0)];
-    const torso = new THREE.CylinderGeometry(1, 0.8, 1, 12, 1); torso.translate(0, 0.5, 0); const shoulders = new THREE.SphereGeometry(1, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2); shoulders.scale(1, 0.35, 1); shoulders.translate(0, 0.98, 0);
-    const collar = new THREE.CylinderGeometry(0.42, 0.5, 0.12, 10); collar.translate(0, 1.04, 0);
+    const head = new THREE.SphereGeometry(1, 24, 18); head.scale(0.92, 1.04, 1);
+    const jaw = new THREE.SphereGeometry(1, 18, 12); jaw.scale(0.7, 0.5, 0.72); jaw.translate(0, -0.42, 0.18); // stylized jaw + chin
+    const cheeks = [0.42, -0.42].map((x) => new THREE.SphereGeometry(0.3, 10, 8).translate(x, -0.12, 0.66));
+    const nose = new THREE.SphereGeometry(0.17, 10, 8); nose.scale(0.8, 1.15, 1.1); nose.translate(0, -0.08, 0.98); const bridge = new THREE.BoxGeometry(0.13, 0.3, 0.1); bridge.translate(0, 0.08, 0.93);
+    const lipU = new THREE.SphereGeometry(0.2, 10, 6); lipU.scale(1.3, 0.3, 0.45); lipU.translate(0, -0.4, 0.86); const lipL = new THREE.SphereGeometry(0.2, 10, 6); lipL.scale(1.15, 0.32, 0.45); lipL.translate(0, -0.5, 0.82);
+    const ears = [new THREE.SphereGeometry(0.22, 8, 6).scale(0.45, 1, 0.75).translate(0.9, 0.02, -0.02), new THREE.SphereGeometry(0.22, 8, 6).scale(0.45, 1, 0.75).translate(-0.9, 0.02, -0.02)];
+    const neckline = new THREE.CylinderGeometry(0.45, 0.5, 0.12, 12); neckline.translate(0, -0.95, -0.05);
+    // eyes: sclera + iris + pupil + catchlight, and brows — drawn with a white instance colour so they keep their own colours
+    const eyeParts = []; for (const sx of [1, -1]) { const x = sx * 0.34; eyeParts.push({ geo: new THREE.SphereGeometry(0.19, 12, 9).scale(1, 0.85, 0.6).translate(x, 0.1, 0.8), c: 0xf3efe8 }, { geo: new THREE.SphereGeometry(0.11, 10, 8).scale(1, 1, 0.4).translate(x, 0.09, 0.9), c: 0x4a2f1c },
+      { geo: new THREE.SphereGeometry(0.055, 8, 6).scale(1, 1, 0.4).translate(x, 0.09, 0.935), c: 0x050505 }, { geo: new THREE.SphereGeometry(0.025, 6, 4).translate(x + 0.04, 0.14, 0.955), c: 0xffffff },
+      { geo: new THREE.BoxGeometry(0.32, 0.07, 0.1).rotateZ(sx * -0.12).translate(x, 0.33, 0.86), c: 0x2a1c14 }); }
+    const torso = new THREE.CylinderGeometry(1, 0.8, 1, 18, 2); torso.translate(0, 0.5, 0); const shoulders = new THREE.SphereGeometry(1, 18, 8, 0, Math.PI * 2, 0, Math.PI / 2); shoulders.scale(1, 0.35, 1); shoulders.translate(0, 0.98, 0);
+    const chest = new THREE.SphereGeometry(1, 16, 10); chest.scale(0.85, 0.4, 0.55); chest.translate(0, 0.72, 0.42);
+    const collar = new THREE.TorusGeometry(0.45, 0.08, 6, 16); collar.rotateX(Math.PI / 2); collar.translate(0, 1.03, 0.02);
+    const placket = new THREE.BoxGeometry(0.1, 0.85, 0.06); placket.translate(0, 0.52, 0.86); const hem = new THREE.CylinderGeometry(0.83, 0.82, 0.1, 18, 1); hem.translate(0, 0.04, 0);
+    const pockets = [0.42, -0.42].map((x) => new THREE.BoxGeometry(0.3, 0.26, 0.05).translate(x, 0.72, 0.92));
+    const belt = new THREE.CylinderGeometry(1.02, 1.02, 0.28, 16); belt.scale(1, 1, 0.8); belt.translate(0, 0.25, 0); const buckle = new THREE.BoxGeometry(0.3, 0.22, 0.08); buckle.translate(0, 0.25, 0.82);
+    const hand = new THREE.SphereGeometry(1, 10, 8); hand.scale(0.8, 1.1, 0.55); const thumb = new THREE.CapsuleGeometry(0.25, 0.5, 3, 6); thumb.rotateZ(0.7); thumb.translate(0.55, 0.2, 0.25);
+    const shoe = new THREE.BoxGeometry(1, 0.85, 1); shoe.translate(0, 0.52, 0.2); const toe = new THREE.SphereGeometry(0.5, 10, 6); toe.scale(1, 0.75, 0.7); toe.translate(0, 0.42, 0.68); const sole = new THREE.BoxGeometry(1.06, 0.18, 1.45); sole.translate(0, 0.09, 0.3);
     const defs = {
-      head: mergeParts([{ geo: head, c: 0xffffff }, { geo: eyeL, c: 0x15110f }, { geo: eyeR, c: 0x15110f }, { geo: nose, c: 0xe6d0c0 }, { geo: brow, c: 0x2a1c14 }, { geo: mouth, c: 0x6a3a32 }, ...ears.map((g) => ({ geo: g, c: 0xffffff }))]),
-      torso: mergeParts([{ geo: torso, c: 0xffffff }, { geo: shoulders, c: 0xffffff }, { geo: collar, c: 0xd8d8d8 }]),
+      head: mergeParts([{ geo: head, c: 0xffffff }, { geo: jaw, c: 0xffffff }, ...cheeks.map((g) => ({ geo: g, c: 0xffffff })), { geo: nose, c: 0xeedcd0 }, { geo: bridge, c: 0xf2e2d6 }, { geo: lipU, c: 0xc98e86 }, { geo: lipL, c: 0xd49c94 }, ...ears.map((g) => ({ geo: g, c: 0xf0dcd0 })), { geo: neckline, c: 0xe8d8cc }]),
+      eyes: mergeParts(eyeParts),
+      torso: mergeParts([{ geo: torso, c: 0xffffff }, { geo: shoulders, c: 0xffffff }, { geo: chest, c: 0xf2f2f2 }, { geo: collar, c: 0xc8c8c8 }, { geo: placket, c: 0xb8b8b8 }, { geo: hem, c: 0xa8a8a8 }, ...pockets.map((g) => ({ geo: g, c: 0xc4c4c4 }))]),
+      belt: mergeParts([{ geo: belt, c: 0x2b1d14 }, { geo: buckle, c: 0xc9a24a }]),
       pelvis: (() => { const g = new THREE.SphereGeometry(1, 12, 8); g.scale(1, 0.75, 0.75); return g; })(),
-      limb: capsule(1, 0.85), hand: new THREE.SphereGeometry(1, 8, 6),
-      foot: (() => { const g = new THREE.BoxGeometry(1, 1, 1); g.translate(0, 0.5, 0.32); return g; })(),
+      limb: capsule(1, 0.85), hand: mergeParts([{ geo: hand, c: 0xffffff }, { geo: thumb, c: 0xffffff }]),
+      foot: mergeParts([{ geo: shoe, c: 0xffffff }, { geo: toe, c: 0xffffff }, { geo: sole, c: 0x5a5a5a }]),
       hairCap: (() => { const g = new THREE.SphereGeometry(1.08, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.55); g.rotateX(-0.25); g.translate(0, 0.08, -0.06); return g; })(),
       hairLong: (() => { const a = new THREE.SphereGeometry(1.1, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.6); a.rotateX(-0.2); a.translate(0, 0.06, -0.05); const b = new THREE.BoxGeometry(1.9, 1.6, 0.5); b.translate(0, -0.55, -0.62); return mergeParts([{ geo: a, c: 0xffffff }, { geo: b, c: 0xffffff }]); })(),
       hairBun: (() => { const a = new THREE.SphereGeometry(1.08, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.55); a.rotateX(-0.25); a.translate(0, 0.08, -0.06); const b = new THREE.SphereGeometry(0.45, 10, 8); b.translate(0, 0.55, -0.85); return mergeParts([{ geo: a, c: 0xffffff }, { geo: b, c: 0xffffff }]); })(),
@@ -287,6 +303,7 @@ export class HumanRenderer {
   }
   begin() { for (const k in this.meshes) this.meshes[k].n = 0; }
   _put(k, e, col) {
+    if (this._skipBody && BODY_PARTS.has(k)) return; // this person is drawn by the skinned close-up body (skinned.js)
     const M = this.meshes[k]; if (M.n >= M.mesh.instanceMatrix.count) return; const o = M.n * 16; const a = M.arr;
     for (let i = 0; i < 16; i++) a[o + i] = e[i];
     this.c.set(col); const ci = M.n * 3; M.col[ci] = this.c.r; M.col[ci + 1] = this.c.g; M.col[ci + 2] = this.c.b; M.n++;
@@ -295,6 +312,7 @@ export class HumanRenderer {
   // basis matrix from columns X,Y,Z scaled, translation T
   static mat(e, xx, xy, xz, yx, yy, yz, zx, zy, zz, tx, ty, tz) { e[0] = xx; e[1] = xy; e[2] = xz; e[3] = 0; e[4] = yx; e[5] = yy; e[6] = yz; e[7] = 0; e[8] = zx; e[9] = zy; e[10] = zz; e[11] = 0; e[12] = tx; e[13] = ty; e[14] = tz; e[15] = 1; return e; }
   draw(h) {
+    this._skipBody = !!h._sk;
     const J3 = h.joints, L = h.look, S = h.scale, b = L.build || 1; const e = this._e || (this._e = new Float32Array(16));
     const jx = (j) => J3[j * 3], jy = (j) => J3[j * 3 + 1], jz = (j) => J3[j * 3 + 2];
     // torso frame
@@ -305,13 +323,13 @@ export class HumanRenderer {
     const shirt = L.jacket || L.shirt;
     HumanRenderer.mat(e, rx * tw, ry * tw, rz * tw, ux * ul, uy * ul, uz * ul, fx * td, fy * td, fz * td, jx(0), jy(0), jz(0)); this._put('torso', e, shirt);
     if (L.vest) { HumanRenderer.mat(e, rx * tw * 1.05, ry * tw * 1.05, rz * tw * 1.05, ux * ul, uy * ul, uz * ul, fx * td * 1.25, fy * td * 1.25, fz * td * 1.25, jx(0), jy(0), jz(0)); this._put('vest', e, 0x2f3a2a); }
-    const pw = 0.165 * S * b; HumanRenderer.mat(e, rx * pw, ry * pw, rz * pw, ux * pw * 0.9, uy * pw * 0.9, uz * pw * 0.9, fx * pw * 0.9, fy * pw * 0.9, fz * pw * 0.9, jx(0), jy(0) - 0.02, jz(0)); this._put('pelvis', e, L.pants);
+    const pw = 0.165 * S * b; HumanRenderer.mat(e, rx * pw, ry * pw, rz * pw, ux * pw * 0.9, uy * pw * 0.9, uz * pw * 0.9, fx * pw * 0.9, fy * pw * 0.9, fz * pw * 0.9, jx(0), jy(0) - 0.02, jz(0)); this._put('pelvis', e, L.pants); this._put('belt', e, 0xffffff);
     // head (yaw from torso frame + head joint)
-    const hr = 0.115 * S; const hx = jx(2), hy = jy(2) + 0.02, hz = jz(2);
+    const hr = 0.123 * S; const hx = jx(2), hy = jy(2) + 0.03, hz = jz(2); // slightly heroic head size (stylized)
     let hux = hx - jx(1), huy = hy - jy(1), huz = hz - jz(1); const hul = Math.hypot(hux, huy, huz) || 1; hux /= hul; huy /= hul; huz /= hul;
     let hfx = fx, hfy = fy, hfz = fz; d = hfx * hux + hfy * huy + hfz * huz; hfx -= d * hux; hfy -= d * huy; hfz -= d * huz; const hfl = Math.hypot(hfx, hfy, hfz) || 1; hfx /= hfl; hfy /= hfl; hfz /= hfl;
     const hrx = huy * hfz - huz * hfy, hry = huz * hfx - hux * hfz, hrz = hux * hfy - huy * hfx;
-    HumanRenderer.mat(e, hrx * hr, hry * hr, hrz * hr, hux * hr, huy * hr, huz * hr, hfx * hr, hfy * hr, hfz * hr, hx, hy, hz); this._put('head', e, L.skin);
+    HumanRenderer.mat(e, hrx * hr, hry * hr, hrz * hr, hux * hr, huy * hr, huz * hr, hfx * hr, hfy * hr, hfz * hr, hx, hy, hz); this._put('head', e, L.skin); this._put('eyes', e, 0xffffff);
     const hs = L.hairStyle; if (hs && hs !== 'bald' && L.hat !== 'helmet' && L.hat !== 'cap') this._put(hs === 'long' ? 'hairLong' : hs === 'bun' ? 'hairBun' : 'hairCap', e, L.hair);
     if (L.hat) this._put(L.hat, e, L.hatColor || 0x222222);
     if (L.shades) this._put('shades', e, 0x050505);
@@ -328,7 +346,9 @@ export class HumanRenderer {
     const jt = (j, r, col) => { const rr = r * S; HumanRenderer.mat(e, rr, 0, 0, 0, rr, 0, 0, 0, rr, jx(j), jy(j), jz(j)); this._put('joint', e, col); };
     jt(3, 0.08 * b, shirt); jt(6, 0.08 * b, shirt); jt(4, 0.058 * b, sleeve); jt(7, 0.058 * b, sleeve); jt(10, 0.075 * b, L.pants); jt(13, 0.075 * b, L.pants);
     limb(9, 10, 0.085 * b, L.pants); limb(10, 11, 0.065 * b, L.pants); limb(12, 13, 0.085 * b, L.pants); limb(13, 14, 0.065 * b, L.pants);
-    for (const j of [5, 8]) { const r = 0.05 * S; HumanRenderer.mat(e, r, 0, 0, 0, r, 0, 0, 0, r, jx(j), jy(j), jz(j)); this._put('hand', e, L.skin); }
+    for (const [j, el] of [[5, 4], [8, 7]]) { const r = 0.052 * S; let dx = jx(j) - jx(el), dy = jy(j) - jy(el), dz = jz(j) - jz(el); const dl = Math.hypot(dx, dy, dz) || 1; dx /= dl; dy /= dl; dz /= dl; // hand along the forearm, thumb forward
+      let px = dy * fz - dz * fy, py = dz * fx - dx * fz, pz = dx * fy - dy * fx; const pl = Math.hypot(px, py, pz) || 1; px /= pl; py /= pl; pz /= pl; const qx = py * dz - pz * dy, qy = pz * dx - px * dz, qz = px * dy - py * dx; const sd = j === 5 ? 1 : -1;
+      HumanRenderer.mat(e, px * r * sd, py * r * sd, pz * r * sd, dx * r, dy * r, dz * r, qx * r, qy * r, qz * r, jx(j) + dx * r * 0.6, jy(j) + dy * r * 0.6, jz(j) + dz * r * 0.6); this._put('hand', e, L.skin); }
     // feet: oriented along body forward (flattened)
     let ffx = fx, ffz = fz; const fl = Math.hypot(ffx, ffz) || 1; ffx /= fl; ffz /= fl;
     for (const j of [11, 14]) { const w = 0.1 * S, hh = 0.08 * S, l = 0.25 * S; HumanRenderer.mat(e, ffz * w, 0, -ffx * w, 0, hh, 0, ffx * l, 0, ffz * l, jx(j), jy(j) - 0.07, jz(j)); this._put('foot', e, L.shoes); }

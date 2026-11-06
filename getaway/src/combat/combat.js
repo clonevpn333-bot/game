@@ -96,8 +96,8 @@ export class Combat {
   fire(shooter, W, origin, dir, muzzle) {
     const A = G.audio, fx = G.fx; const isP = !!shooter.isPlayer;
     if (A) A.gunshot(muzzle || origin, W.kind === 'heavy' ? 'heavy' : W.kind, isP);
-    if (fx && muzzle) { fx.muzzle(muzzle, dir, W.kind === 'shotgun' ? 1.6 : W.kind === 'rifle' ? 1.2 : 0.9); if (W.kind !== 'heavy') fx.shell(muzzle, new THREE.Vector3(-dir.z, 0, dir.x)); if (A && Math.random() < 0.5) A.shell(muzzle); }
-    if (isP && G.cam) G.cam.shake(W.shake);
+    if (fx && muzzle) { fx.muzzle(muzzle, dir, W.kind === 'shotgun' ? 1.6 : W.kind === 'rifle' ? 1.2 : 0.9, undefined, isP); if (W.kind !== 'heavy') fx.shell(muzzle, new THREE.Vector3(-dir.z, 0, dir.x)); if (A && Math.random() < 0.5) A.shell(muzzle); }
+    if (isP && G.cam) { G.cam.shake(W.shake); G.cam.punch = (G.cam.punch || 0) + (W.kind === 'shotgun' ? 3.5 : W.kind === 'heavy' ? 5 : W.kind === 'rifle' ? 1.2 : 0.8); } // FOV punch: every shot kicks the view
     G.emit('gunshot', origin.clone(), shooter);
     if (W.projectile === 'rocket' && G.rockets) { // homing on whatever big target is near the crosshair
       const from = (muzzle || origin).clone(); let best = null, bs = 0.97; for (const sp of this.spheres || []) { if (!sp.alive() || sp.team === (isP ? 'player' : shooter.team)) continue; const d = sp.pos.clone().sub(from); const L = d.length(); if (L > 420) continue; const c = d.divideScalar(L).dot(dir); if (c > bs) { bs = c; best = sp; } }
@@ -130,7 +130,7 @@ export class Combat {
       } else if (sh) {
         end = new THREE.Vector3(sh.x, sh.y, sh.z); const n = new THREE.Vector3(sh.nx, sh.ny, sh.nz);
         if (sh.box && sh.box.glass && sh.box.onBreak) sh.box.onBreak(sh.box, d.clone().multiplyScalar(6));
-        else { fx && fx.impact(end, n, sh.mat === 'metal' ? 'metal' : sh.mat === 'glass' ? 'glass' : sh.mat === 'ground' && end.y < -0.5 ? 'water' : sh.mat); A && Math.random() < 0.5 && A.bulletImpact(end, sh.mat); if (G.decals && !(sh.mat === 'ground' && end.y < -0.5)) G.decals.bullet(end, n, sh.mat); }
+        else { fx && fx.impact(end, n, sh.mat === 'metal' ? 'metal' : sh.mat === 'glass' ? 'glass' : sh.mat === 'ground' && end.y < -0.5 ? 'water' : sh.mat, isP); A && Math.random() < 0.5 && A.bulletImpact(end, sh.mat); if (G.decals && !(sh.mat === 'ground' && end.y < -0.5)) G.decals.bullet(end, n, sh.mat); }
       } else end = origin.clone().addScaledVector(d, maxT);
       // near-miss whiz for player
       if (!isP && G.player && G.audio) { const pp = G.player.pos; const tt = clamp((pp.x - origin.x) * d.x + (pp.y + 1.2 - origin.y) * d.y + (pp.z - origin.z) * d.z, 0, 200); const cx = origin.x + d.x * tt - pp.x, cy = origin.y + d.y * tt - pp.y - 1.2, cz = origin.z + d.z * tt - pp.z; if (cx * cx + cy * cy + cz * cz < 4 && Math.random() < 0.5) G.audio.whoosh(new THREE.Vector3(pp.x + cx, pp.y + 1.2 + cy, pp.z + cz), 0.25, 0.15); }

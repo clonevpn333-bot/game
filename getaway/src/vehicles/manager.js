@@ -87,7 +87,7 @@ export class VehicleManager {
       const t = G.time; if (t - v.lastImpact > 0.12 || imp > 10) {
         v.lastImpact = t;
         if (G.audio) G.audio.impact(p.clone(), clamp(imp / 16, 0.15, 1.6), 'metal');
-        if (G.fx) { G.fx.spark(p, new THREE.Vector3(nx, 0.3, nz), Math.min(40, imp * 2), 5); if (imp > 8) G.fx.debris(p, Math.min(12, imp * 0.6), v.color, 4, 0.08); if (imp > 6) G.fx.glass(p, Math.min(20, imp)); if (box && imp > 9) G.fx.dust(p, 4, 1.5); } if (box && G.decals) G.decals.crash(box, x, y, z, nx, nz, imp);
+        if (G.fx) { G.fx.spark(p, new THREE.Vector3(nx, 0.3, nz), Math.min(40, imp * 2), 5); if (imp > 8) G.fx.debris(p, Math.min(12, imp * 0.6), v.color, 4, 0.08); if (imp > 6) G.fx.glass(p, Math.min(20, imp)); if (box && imp > 9) G.fx.dust(p, 4, 1.5); } if (box && G.decals) if (!(G.dents && box && box.fac && G.dents.crash(v, box, Math.abs(nx) > Math.abs(nz) ? new THREE.Vector3(Math.sign(nx), 0, 0) : new THREE.Vector3(0, 0, Math.sign(nz)), imp))) G.decals.crash(box, x, y, z, nx, nz, imp, v);
         G.emit('vehicleImpact', v, imp, p.clone(), other);
       }
       const dmg = Math.max(0, imp - 4.5) * (imp > 15 ? 2.2 : 1.4) * (other && other.isPlayer ? 1.25 : 1); // rammed by the player: hurts them more

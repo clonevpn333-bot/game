@@ -169,17 +169,27 @@ export class FX {
   }
   shell(p, dir) { this.shells.emit(p, new THREE.Vector3(dir.x * 3 + rand(-0.5, 0.5), rand(2, 3.5), dir.z * 3 + rand(-0.5, 0.5)), 0.025, 4, 0xd4a64a); }
   tracer(a, b, color = [1, 0.85, 0.5]) {
+    // a visible hot round flying down the line (the 1-pixel tracer alone was too thin to read)
+    const dx = b.x - a.x, dy = b.y - a.y, dz = b.z - a.z; const L = Math.hypot(dx, dy, dz) || 1; const sp = 420;
+    this.glow.emit(a.x, a.y, a.z, dx / L * sp, dy / L * sp, dz / L * sp, { life: Math.min(0.5, L / sp), size: 0.09, r: color[0], g: color[1], b: color[2], a: 1, drag: 0, grav: 0, fade: 0 });
+    this.streaks.emit(a.x, a.y, a.z, dx / L * sp, dy / L * sp, dz / L * sp, Math.min(0.5, L / sp), color[0], color[1], color[2], 0.012, 0);
     const i = this.trN % this.trMax; this.trN++; const o = i * 6;
     this.trPos.set([a.x, a.y, a.z, b.x, b.y, b.z], o); this.trCol.set([...color.map((c) => c * 0.3), ...color], o); this.trLife[i] = 0.07;
   }
-  muzzle(p, dir, size = 1, color = 0xffd28a) {
-    const s = this.flashes.find((f) => !f.visible) || this.flashes[0]; s.visible = true; s.position.copy(p).addScaledVector(dir, 0.15 * size); s.scale.setScalar(0.7 * size * rand(0.8, 1.2)); s.material.color.set(color); s.material.rotation = rand(0, 6); s.userData.t = 0.05;
-    this._light(p, 0xffb060, 6 * size, 12, 0.06);
+  muzzle(p, dir, size = 1, color = 0xffd28a, player = false) {
+    const s = this.flashes.find((f) => !f.visible) || this.flashes[0]; s.visible = true; s.position.copy(p).addScaledVector(dir, 0.15 * size); s.scale.setScalar((player ? 1.0 : 0.7) * size * rand(0.8, 1.25)); s.material.color.set(color); s.material.rotation = rand(0, 6); s.userData.t = player ? 0.06 : 0.05;
+    // a real flash of light: lights up walls, faces and the street around the shooter (the night firefights read now)
+    this._light(p, 0xffb060, (player ? 22 : 10) * size, player ? 20 : 14, 0.07);
+    // forward flash spikes + a short cone of embers
+    for (let i = 0, N = cap(player ? 5 : 2); i < N; i++) this.streaks.emit(p.x, p.y, p.z, dir.x * 60 + rand(-6, 6), dir.y * 60 + rand(-6, 6), dir.z * 60 + rand(-6, 6), 0.035, 1, 0.8, 0.45, 0.012, 0);
+    if (player) for (let i = 0, N = cap(3); i < N; i++) this.glow.emit(p.x, p.y, p.z, dir.x * rand(6, 14) + rand(-2, 2), dir.y * rand(6, 14) + rand(-1, 2), dir.z * rand(6, 14) + rand(-2, 2), { life: rand(0.08, 0.2), size: rand(0.05, 0.1), r: 1, g: 0.7, b: 0.35, a: 1, drag: 3, grav: 4, fade: 2 });
     this.glow.emit(p.x, p.y, p.z, dir.x * 4, dir.y * 4 + 0.5, dir.z * 4, { life: 0.15, size: 0.35 * size, grow: 1, r: 1, g: 0.8, b: 0.5, a: 0.7, fade: 2 });
     this.smoke.emit(p.x, p.y, p.z, dir.x * 2, 0.5, dir.z * 2, { life: 0.9, size: 0.3 * size, grow: 3, r: 0.8, g: 0.8, b: 0.8, a: 0.12, drag: 2 });
   }
-  impact(p, n, mat = 'concrete') {
+  impact(p, n, mat = 'concrete', big = false) {
     const nx = n ? n.x : 0, ny = n ? n.y : 1, nz = n ? n.z : 0;
+    // every hit throws a few hot sparks + a puff that hangs in the air; player shots hit harder
+    if (mat !== 'water' && mat !== 'flesh') { for (let i = 0, N = cap(big ? 6 : 3); i < N; i++) this.streaks.emit(p.x, p.y, p.z, nx * rand(3, 9) + rand(-4, 4), ny * rand(3, 9) + rand(0, 5), nz * rand(3, 9) + rand(-4, 4), rand(0.12, 0.3), 1, rand(0.55, 0.8), 0.3, 0.03, 14); if (big) this._light(p, 0xffb070, 4, 6, 0.05); }
     if (mat === 'metal' || mat === 'vehicle') this.spark(p, n, 6, 5);
     else if (mat === 'glass') this.glass(p, 6, n, 3);
     else if (mat === 'water') this.splash(p, 0.25);
