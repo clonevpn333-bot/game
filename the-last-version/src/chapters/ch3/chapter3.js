@@ -46,6 +46,7 @@ export default class Chapter3 {
     this.kai.bones.handR.add(this.flashlight);
     this.flashlight.position.set(-0.04, -0.07, 0.03); this.flashlight.rotation.set(0.4, 0, 0.3);
     this.flashlight.visible = false;
+    this.flashlight.traverse((o) => { if (o.isMesh) o.castShadow = false; });
     this.torch = new THREE.SpotLight(0xfff0dc, 0, 22, 0.42, 0.55, 1.6);
     this.torch.castShadow = true; this.torch.shadow.mapSize.set(R.quality.shadows >= 2048 ? 1024 : 512, R.quality.shadows >= 2048 ? 1024 : 512); this.torch.shadow.bias = -0.0008; this.torch.shadow.camera.near = 0.2;
     scene.add(this.torch, this.torch.target);
@@ -53,7 +54,7 @@ export default class Chapter3 {
     // the Clerk
     this.clerk = await new Clerk().load(scene, this.hotel, g.audio);
     this.clerk.walls = this.colliders;
-    this.camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.03, 200);
+    this.camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.06, 200);
     R.set(scene, this.camera);
     R.setGrade({ exposure: 1.25, bloom: [0.45, 0.4, 0.85], saturation: 0.82, contrast: 1.12, vignette: 0.62, lift: [0.01, 0.008, 0.012], gain: [1.02, 0.98, 0.94], grain: 0.025 });
     this.buildHud();
@@ -297,7 +298,7 @@ export default class Chapter3 {
     this.kai.bones.head.scale.setScalar(0.001);
     // camera at the eyes, stabilised
     const head = this.kai.bones.neck.getWorldPosition(V3());
-    const eye = this.hidden ? this.hidden.inside.clone() : head.add(V3(0, 0.16 - this.crouch * 0.05, 0)).add(V3(Math.sin(this.yaw), 0, Math.cos(this.yaw)).multiplyScalar(0.12));
+    const eye = this.hidden ? this.hidden.inside.clone() : head.add(V3(0, 0.2 - this.crouch * 0.05, 0)).add(V3(Math.sin(this.yaw), 0, Math.cos(this.yaw)).multiplyScalar(0.19));
     if (!this.eye) this.eye = eye.clone();
     this.eye.lerp(eye, 1 - Math.exp(-dt * 18));
     cam.position.copy(this.eye);
@@ -306,7 +307,8 @@ export default class Chapter3 {
     const on = this.torchOn && this.battery > 0 && this.f.flashlight;
     const flick = this.battery < 0.2 ? (Math.random() < 0.1 ? 0.2 : 1) : 1;
     this.torch.intensity = on ? 38 * flick : 0; this.torchFill.intensity = on ? 0.6 : 0;
-    const tp = this.f.flashlight && !this.hidden ? this.flashlight.getWorldPosition(V3()) : cam.position;
+    // light origin just ahead of the lens so the hand and torch body don't shadow the beam
+    const tp = (this.f.flashlight && !this.hidden ? this.flashlight.getWorldPosition(V3()) : cam.position.clone()).add(V3(0, 0, -0.35).applyQuaternion(cam.quaternion));
     this.torch.position.lerp(tp, 1 - Math.exp(-dt * 20));
     const aim = fromCam(0, 0, -6);
     this.torch.target.position.lerp(aim, 1 - Math.exp(-dt * 10));

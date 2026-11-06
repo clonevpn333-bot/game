@@ -568,7 +568,7 @@ export default class Chapter1 {
     this.waveZ -= dt * (22 + this.floodT * 4);
     this.wave.position.set(AVENUE_X, -1.5, this.waveZ);
     this.camState.shake = Math.max(this.camState.shake, 0.3 + this.floodT * 0.05);
-    this.wind.set(0.4, 900);
+    this.wind?.set(0.4, 900);
     if (this.waveZ - this.car.pos.z < 22 || this.floodT > 14) this.beginEnding();
   }
 
@@ -685,7 +685,7 @@ export default class Chapter1 {
     if (!this.engine && !this.ending && this.game.audio.ctx) this.startAudio();
     if (this.engine) this.engine.update(car.rpm, car.input.throttle);
     if (this.tyres) this.tyres.set(car.skid * 0.25, 1200 + car.speed * 20);
-    if (this.wind) this.wind.set(clamp(car.speed / 70, 0, 1) * 0.22, 300 + car.speed * 25);
+    if (this.wind) this.wind?.set(clamp(car.speed / 70, 0, 1) * 0.22, 300 + car.speed * 25);
   }
 
   updateHud(dt) {

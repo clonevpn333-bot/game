@@ -3,7 +3,7 @@
 <script type="importmap">{ "imports": { "three": "./vendor/three/build/three.module.js", "three/addons/": "./vendor/three/addons/" } }</script>
 </head><body><div id="info"></div><script type="module">
 import * as THREE from 'three';
-import { buildCharacter, KAI, SERA, VENN } from './src/characters/cast.js';
+import { buildCharacter, KAI, SERA, VENN, CLERK } from './src/characters/cast.js';
 import { hdri } from './src/engine/assets.js';
 import { Animator } from './src/characters/anim.js';
 const q = new URLSearchParams(location.search);
@@ -18,7 +18,7 @@ key.shadow.camera.left=-1;key.shadow.camera.right=1;key.shadow.camera.top=2;key.
 scene.add(key); const rim = new THREE.DirectionalLight(0x9fc4ff, 1.4); rim.position.set(-2, 2, -3); scene.add(rim);
 const floor = new THREE.Mesh(new THREE.CircleGeometry(3, 48), new THREE.MeshStandardMaterial({ color: 0x3a3a3a, roughness: 0.9 })); floor.rotation.x = -Math.PI/2; floor.receiveShadow = true; scene.add(floor);
 const t0 = performance.now();
-const defs = { kai: KAI, sera: SERA, venn: VENN };
+const defs = { kai: KAI, sera: SERA, venn: VENN, clerk: CLERK };
 const who = (q.get('who') || 'kai').split(',');
 const chars = [];
 for (let i = 0; i < who.length; i++) { const c = await buildCharacter(defs[who[i]]); c.position.x = (i - (who.length-1)/2) * 0.9; scene.add(c); chars.push(c); }

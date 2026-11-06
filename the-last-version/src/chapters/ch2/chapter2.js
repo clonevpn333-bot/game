@@ -132,7 +132,14 @@ export default class Chapter2 {
   buildLab() {
     // modular ATLAS lab on the aft deck where Sera is trapped
     const lab = new THREE.Group(); this.ship.add(lab);
-    const white = new THREE.MeshStandardMaterial({ color: 0xd8dcd8, roughness: 0.5, metalness: 0.2 });
+    const labTex = (() => { const c = document.createElement('canvas'); c.width = 1024; c.height = 512; const g2 = c.getContext('2d'); g2.fillStyle = '#d6dad6'; g2.fillRect(0, 0, 1024, 512);
+      g2.strokeStyle = 'rgba(40,50,50,0.5)'; g2.lineWidth = 3; for (let x = 0; x < 1024; x += 128) { g2.beginPath(); g2.moveTo(x, 0); g2.lineTo(x, 512); g2.stroke(); } g2.beginPath(); g2.moveTo(0, 256); g2.lineTo(1024, 256); g2.stroke();
+      for (let i = 0; i < 400; i++) { g2.fillStyle = `rgba(90,70,50,${Math.random() * 0.12})`; g2.fillRect(Math.random() * 1024, Math.random() * 512, 2, 8 + Math.random() * 40); }
+      g2.fillStyle = '#1b2b3d'; g2.font = 'bold 72px Rajdhani, sans-serif'; g2.fillText('ATLAS · FIELD LAB 2', 40, 120); g2.fillStyle = '#c9a43a'; g2.fillRect(40, 140, 520, 10);
+      g2.fillStyle = '#b02a1a'; g2.font = 'bold 34px Rajdhani, sans-serif'; g2.fillText('VERSION-SENSITIVE EQUIPMENT · AUTHORISED PERSONNEL', 40, 210);
+      for (let x = 40; x < 1000; x += 200) { g2.fillStyle = '#0b1418'; g2.fillRect(x, 300, 140, 70); g2.strokeStyle = '#555'; g2.strokeRect(x, 300, 140, 70); }
+      const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })();
+    const white = new THREE.MeshStandardMaterial({ map: labTex, roughness: 0.55, metalness: 0.2 });
     const shell = new THREE.Mesh(new THREE.BoxGeometry(10, 4, 8), white); shell.position.set(-3, 13.6, -55); lab.add(shell);
     // interior room (visible when the hatch opens)
     const room = new THREE.Mesh(new THREE.BoxGeometry(9.4, 3.6, 7.4), new THREE.MeshStandardMaterial({ color: 0x8a9496, roughness: 0.8, side: THREE.BackSide })); room.position.copy(shell.position); lab.add(room);

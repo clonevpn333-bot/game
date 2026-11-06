@@ -484,7 +484,7 @@ export const VENN = {
   face: { width: 0.94, jawWidth: 0.9, chinWidth: 0.9, chinLength: 1.04, brow: 0.9, noseLength: 1.12, noseWidth: 0.92, lipWidth: 0.95, lipFull: 0.78, neck: 0.86, iris: 0x55473a, browColor: 0x8c8580, browThick: 0.8, browArch: 0.6, lipColor: 0xa66b66, flush: 0xc78a7a },
   outfit(ch) {
     const s = ch.def.body.height / 1.8;
-    const coat = clothMaterial('jersey', { color: 0xe9e7e1, scale: 9, normal: 0.6 });
+    const coat = clothMaterial('linen', { color: 0xffffff, scale: 10, normal: 0.5 }); coat.color.setRGB(1.25, 1.25, 1.3);
     const turtle = clothMaterial('fleece', { color: 0x1d1d20, scale: 12, normal: 0.8 });
     const J = ch.J;
     const tp = torsoPrims(ch, { fem: true, sleeve: 0.06 });

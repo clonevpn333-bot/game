@@ -17,9 +17,9 @@ export class MenuScene {
     scene.environment = env.env; scene.environmentIntensity = 0.6;
     const sunDir = new THREE.Vector3(-0.5, 0.12, -0.85).normalize();
     this.sky = makeSky({ sunDir, top: 0x0c1428, mid: 0x7a3a3a, horizon: 0xe08a52, cloud: 0.5, cloudColor: 0x3a2638 });
-    this.sky.userData.u.uRewrite.value = 0.35;
+    this.sky.userData.u.uRewrite.value = 0.06;
     scene.add(this.sky);
-    scene.fog = new THREE.FogExp2(0x2a1e28, 0.006);
+    scene.fog = new THREE.FogExp2(0x1a1420, 0.007);
     const sun = new THREE.DirectionalLight(0xffb27a, 2.4); sun.position.copy(sunDir).multiplyScalar(100); scene.add(sun);
     scene.add(new THREE.HemisphereLight(0x6a7aa8, 0x201418, 0.5));
 
@@ -61,7 +61,7 @@ export class MenuScene {
     const pl = new THREE.PointLight(0xffb070, 40, 18, 2); pl.position.set(3, 3.8, 1); this.items[0].s.add(pl);
     // the Anchor ring
     const ring = new THREE.Group();
-    const glow = new THREE.MeshStandardMaterial({ color: 0x0a2a30, emissive: 0x4fe3ff, emissiveIntensity: 3 });
+    const glow = new THREE.MeshStandardMaterial({ color: 0x0a2a30, emissive: 0x4fe3ff, emissiveIntensity: 1.4 });
     const steel = new THREE.MeshStandardMaterial({ color: 0x6d7378, metalness: 1, roughness: 0.35 });
     ring.add(new THREE.Mesh(new THREE.TorusGeometry(22, 0.25, 8, 160), glow));
     for (let i = 0; i < 24; i++) { const seg = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.2, 0.5), steel); const a = (i / 24) * Math.PI * 2; seg.position.set(Math.cos(a) * 22, Math.sin(a) * 22, 0); seg.rotation.z = a; ring.add(seg); }
@@ -70,7 +70,7 @@ export class MenuScene {
     this.dust = new Particles(scene, { max: 400, additive: true, texture: 'dot' });
     this.camera = new THREE.PerspectiveCamera(42, innerWidth / innerHeight, 0.1, 4000);
     R.set(scene, this.camera);
-    R.setGrade({ exposure: 1.05, bloom: [0.9, 0.6, 0.75], saturation: 1.05, contrast: 1.08, vignette: 0.55, lift: [0.02, 0.0, 0.04] });
+    R.setGrade({ exposure: 0.85, bloom: [0.55, 0.5, 0.88], saturation: 1.05, contrast: 1.1, vignette: 0.6, lift: [0.0, 0.0, 0.02] });
     this.t = 0;
   }
 
@@ -92,8 +92,8 @@ export class MenuScene {
     }
     this.ring.rotation.z += dt * 0.03;
     const a = k * 0.035;
-    this.camera.position.set(Math.sin(a) * 38, 8 + Math.sin(k * 0.1) * 2, Math.cos(a) * 38);
-    this.camera.lookAt(0, 2, 0);
+    this.camera.position.set(Math.sin(a) * 52, 15 + Math.sin(k * 0.1) * 2, Math.cos(a) * 52);
+    this.camera.lookAt(-6, 0, 0);
     if (Math.random() < 0.6) this.dust.emit(new THREE.Vector3((Math.random() - 0.5) * 60, -10, (Math.random() - 0.5) * 60), new THREE.Vector3(0, 1 + Math.random(), 0), { life: 12, size: 0.15, grow: 0, color: [0.5, 0.85, 1], alpha: 0.7, drag: 0 });
     this.dust.update(dt);
     this.sky.userData.u.uTime.value = t;
