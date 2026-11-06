@@ -54,6 +54,17 @@ export class Animator {
     this.blend = { walk: 0, run: 0, sit: 0, drive: 0, crouch: 0 };
   }
 
+  /** Orient a hand (character space): fingers along `finger`, palm facing `palm`. */
+  handPose(side, finger, palm) {
+    const h = this.ch.hands[side];
+    const D = new THREE.Vector3(...h.D).normalize(), Nn = new THREE.Vector3(...h.N).normalize();
+    const B1 = new THREE.Matrix4().makeBasis(D, Nn, D.clone().cross(Nn).normalize());
+    const F = finger.clone().normalize(), Pm = palm.clone().sub(F.clone().multiplyScalar(palm.dot(F))).normalize();
+    const B2 = new THREE.Matrix4().makeBasis(F, Pm, F.clone().cross(Pm).normalize());
+    const q = new THREE.Quaternion().setFromRotationMatrix(B2.multiply(B1.transpose()));
+    this.ik['handRot' + side] = q.premultiply(this.ch.getWorldQuaternion(new THREE.Quaternion()));
+  }
+
   hitReact(dir = 1, power = 1) { this.hitV.x += dir * power * 6; this.hitV.y += power * 4; }
 
   resetPose() {
@@ -335,7 +346,7 @@ export class Animator {
     for (const s of ['L', 'R']) {
       const g = this.grip[s] ?? 0.15, ax = this.curlAxis[s];
       for (const f of ['index', 'middle', 'ring', 'pinky']) {
-        const spread = f === 'index' ? 0.9 : f === 'pinky' ? 1.15 : 1;
+        const spread = f === 'pinky' ? 1.1 : 1;
         for (let i = 0; i < 3; i++) this.b[f + i + s].quaternion.multiply(_q.setFromAxisAngle(ax, g * (i === 0 ? 1.25 : 1.35) * spread));
       }
       for (let i = 0; i < 3; i++) this.b['thumb' + i + s].quaternion.multiply(_q.setFromAxisAngle(ax, g * (i === 0 ? 0.25 : 0.5)));

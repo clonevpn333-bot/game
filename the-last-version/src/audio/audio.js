@@ -66,6 +66,7 @@ export class AudioEngine {
   }
 
   setReverb(seconds, decay) {
+    if (!this.ctx) return;
     const ctx = this.ctx, n = Math.floor(ctx.sampleRate * seconds);
     const buf = ctx.createBuffer(2, n, ctx.sampleRate);
     for (let c = 0; c < 2; c++) {

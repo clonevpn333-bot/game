@@ -1,0 +1,19 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>Car viewer</title><style>html,body{margin:0;overflow:hidden;background:#111}</style>
+<script type="importmap">{ "imports": { "three": "./vendor/three/build/three.module.js", "three/addons/": "./vendor/three/addons/" } }</script></head><body><script type="module">
+import * as THREE from 'three';
+import { buildCar, policeLivery } from './src/vehicles/carModel.js';
+import { hdri } from './src/engine/assets.js';
+const q = new URLSearchParams(location.search);
+const r = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true }); r.setSize(innerWidth, innerHeight); r.toneMapping = THREE.ACESFilmicToneMapping; r.outputColorSpace = THREE.SRGBColorSpace; r.shadowMap.enabled = true; document.body.appendChild(r.domElement);
+r.pmrem = new THREE.PMREMGenerator(r);
+const scene = new THREE.Scene(); const env = await hdri(r, 'city_dusk'); scene.environment = env.env; scene.background = env.raw;
+const sun = new THREE.DirectionalLight(0xffd0a0, 2.5); sun.position.set(-4, 5, 6); sun.castShadow = true; scene.add(sun);
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.5 })); ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+const type = q.get('type') || 'gt';
+const opts = type === 'police' ? { color: 0xffffff, livery: policeLivery, lightbar: true, pushBar: true, metallic: 0.2 } : { color: +(q.get('color') || 0x7a1f1a), spoiler: type === 'gt', caliper: true };
+const car = buildCar(type, opts); scene.add(car);
+const cam = new THREE.PerspectiveCamera(35, innerWidth / innerHeight, 0.05, 200);
+const a = +(q.get('ang') || 0.8), d = +(q.get('dist') || 7.5);
+cam.position.set(Math.sin(a) * d, +(q.get('h') || 1.6), Math.cos(a) * d); cam.lookAt(0, 0.6, 0);
+r.render(scene, cam); window.__done = true;
+</script></body></html>

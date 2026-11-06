@@ -34,7 +34,10 @@ export class Game {
     });
   }
 
+  capture() { this.renderer.render(0, this.time); return this.renderer.renderer.domElement.toDataURL('image/jpeg', 0.88); }
+
   loop() {
+    if (window.__holdLoop) { setTimeout(() => this.loop(), 100); return; }
     requestAnimationFrame(() => this.loop());
     let dt = Math.min(this.clock.getDelta(), 1 / 20);
     this.input.poll();

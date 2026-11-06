@@ -36,7 +36,7 @@ function place() {
 }
 let t = 0; const clock = new THREE.Clock(); const still = +(q.get('frames')||0); let fcount = 0;
 function frame() { const dt = still ? 1/30 : Math.min(clock.getDelta(), 0.05); t += dt; fcount++;
-  anims.forEach((a) => { a.mode = mode; a.speed = mode === 'walk' ? 1.4 : mode === 'run' ? 4.5 : 0; a.expression = expr; a.lookTarget = cam.position; a.talking = q.get('talk') === '1'; a.update(dt); });
+  anims.forEach((a) => { a.mode = mode; a.speed = mode === 'walk' ? 1.4 : mode === 'run' ? 4.5 : 0; a.expression = expr; a.lookTarget = cam.position; a.talking = q.get('talk') === '1'; if (q.get('ik')) { const c = a.ch; a.ik.handL = c.localToWorld(new THREE.Vector3(0.17, 1.05, 0.38)); a.ik.handR = c.localToWorld(new THREE.Vector3(-0.17, 1.05, 0.38)); a.grip.L = a.grip.R = 0.95; c.updateMatrixWorld(true); a.handPose('L', new THREE.Vector3(0, 0.75, 0.65), new THREE.Vector3(-1, 0, 0.3)); a.handPose('R', new THREE.Vector3(0, 0.75, 0.65), new THREE.Vector3(1, 0, 0.3)); } a.update(dt); if (q.get('ik')) { a.grip.L = a.grip.R = 0.95; } });
   place(); if (!still || fcount >= still) r.render(scene, cam); if (still && fcount >= still) { window.__done = true; return; } requestAnimationFrame(frame); }
 frame(); window.__ready = true;
 </script></body></html>

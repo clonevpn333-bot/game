@@ -10,6 +10,8 @@ import { onProgress, setAnisotropy } from './engine/assets.js';
 import { MenuScene } from './game/menuScene.js';
 
 const settings = loadSettings();
+const qp = new URLSearchParams(location.search);
+if (qp.get('quality')) settings.quality = qp.get('quality');
 const canvas = document.getElementById('view');
 const renderer = new Renderer(canvas, settings.quality);
 setAnisotropy(Math.min(8, renderer.renderer.capabilities.getMaxAnisotropy()));
