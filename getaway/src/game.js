@@ -109,7 +109,7 @@ export class Game {
     if ((G.frame & 7) === 0) run('lights', () => { const c = G.camera.position; const near = this.interiorDefs.map((d) => [d, (d.x - c.x) ** 2 + (d.y - c.y) ** 2 + (d.z - c.z) ** 2]).filter((e) => e[1] < 120 * 120).sort((a, b) => a[1] - b[1]);
       this.interiorLights.forEach((l, i) => { const e = near[i]; if (!e) { l.intensity = 0; return; } const d = e[0]; l.position.set(d.x, d.y, d.z); l.color.set(d.color); l.intensity = d.intensity; l.distance = d.distance; }); });
     // characters
-    run('characters', () => { G.humans.begin(); G.peds.draw(G.humans); if (G.player.human.visible) G.humans.draw(G.player.human); if (G.npcs) G.npcs.draw(G.humans); }); run('characters', () => G.humans.end());
+    run('characters', () => { G.humans.begin(); G.peds.draw(G.humans); if (G.player.human.visible) G.humans.draw(G.player.human); if (G.npcs) G.npcs.draw(G.humans); if (G.extraHumans) for (const h of G.extraHumans) if (h.visible) G.humans.draw(h); }); run('characters', () => G.humans.end());
     if (G.lighting) run('lighting', () => G.lighting.update(rdt));
     // audio listener + ambience
     if (G.audio.ready && G.mode === 'play') run('street audio', () => { // murmuring groups + radios in passing cars
@@ -129,6 +129,10 @@ export class Game {
       gr.damage.value = G.mode === 'play' ? clamp(1 - G.player.health / 55, 0, 1) * 0.8 + (G.time - G.player.lastHit < 0.25 ? 0.4 : 0) : 0;
       gr.slowmo.value = G.slowmo; gr.letterbox.value = G.cam.letterbox; gr.flash.value = G.sky.flash * 0.15 + (this.flash || 0); this.flash = Math.max(0, (this.flash || 0) - rdt * 3);
       gr.underwater.value = G.camera.position.y < -0.85 && G.world.static.waterLevel(G.camera.position.x, G.camera.position.z) > -1 ? 1 : 0;
+      if (gr.underwater.value > 0) { // under the sea: murk instead of sky, light fading with depth (a mission can tune it via G.underwater)
+        const U = G.underwater || {}; const depth = Math.max(0, -0.8 - G.camera.position.y); const k = Math.exp(-depth / (U.att || 16)); const fc = (this._uwc || (this._uwc = new THREE.Color())).set(U.color ?? 0x0f4f5c).multiplyScalar((0.2 + 0.8 * k) * (0.25 + 0.75 * G.sky.day));
+        G.scene.fog.color.copy(fc); G.scene.fog.near = U.near ?? 1; G.scene.fog.far = U.far ?? 55; const su = G.sky.uniforms; su.zenith.value.copy(fc); su.horizon.value.copy(fc); su.ground.value.copy(fc);
+        G.sky.sun.intensity *= 0.12 + 0.45 * k; G.sky.hemi.intensity *= 0.35 + 0.45 * k; }
       for (const k in gr) if (typeof gr[k].value === 'number' && !Number.isFinite(gr[k].value)) gr[k].value = 0;
     });
     if (!noRender && !G.perf.lost) run('render', () => { G.perf.tick(G.frame); G.composer.render(rdt); if (!window.__fixedDt) G.perf.frame(rawMs); }, () => G.perf.apply(G.perf.pr * 0.8));

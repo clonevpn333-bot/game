@@ -57,3 +57,13 @@ export function watchDistance(m, getTarget, maxD, secs, reason) {
   let t = 0; const off = m.r.flow.game.addUpdater((dt) => { if (G.mission !== m.r || G.paused) return; const tg = getTarget(); if (!tg) return; const d = tg.distanceTo(G.player.focus); if (d > maxD) { t += dt; G.hud.warnOverride = `TARGET GETTING AWAY! ${Math.max(0, secs - t).toFixed(1)}`; if (t > secs) m.fail(reason); } else { if (t > 0) G.hud.warnOverride = null; t = 0; } });
   m.ents.offs.push(off); return () => { off(); G.hud.warnOverride = null; };
 }
+
+// rammers (used by the airport chase): run at the target's flank and hit it
+export class RamAI { // Marrow muscle cars: run at the truck's flank and ram it
+  constructor(v, target) { this.v = v; this.t = target; v.ai = this; v.keep = true; v.hasDriver = true; this.kind = 'ram'; this.side = Math.random() < 0.5 ? -1 : 1; }
+  update() {
+    const v = this.v, T = this.t(); if (v.ai !== this || v.dead || v.mode !== 'drive' || !T) return;
+    const s = Math.sin(T.yaw), c = Math.cos(T.yaw); const tx = T.pos.x + s * 4 + c * this.side * 1.5, tz = T.pos.z + c * 4 - s * this.side * 1.5;
+    driveTo(v, tx, tz, (T.speed || 0) + 9, { aggressive: true });
+  }
+}

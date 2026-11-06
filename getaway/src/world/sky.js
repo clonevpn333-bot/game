@@ -92,7 +92,7 @@ export class Sky {
     // sun or moon light
     const useMoon = elev < -2; const ld = useMoon ? md : sd;
     this.sun.color.copy(useMoon ? _c2.set(0x8fa6d8) : this.uniforms.sunColor.value);
-    this.sun.intensity = useMoon ? 0.7 * (1 - ovc * 0.6) : si; // stronger moonlight: readable nights this.sun.intensity += this.flash * 6;
+    this.sun.intensity = useMoon ? 0.7 * (1 - ovc * 0.6) : si; /* stronger moonlight: readable nights */ this.sun.intensity += this.flash * 6;
     this.sun.position.set(focus.x + ld.x * 300, focus.y + ld.y * 300, focus.z + ld.z * 300); this.sun.target.position.copy(focus);
     // snap shadow camera to texels to avoid shimmering
     this.sun.target.updateMatrixWorld();

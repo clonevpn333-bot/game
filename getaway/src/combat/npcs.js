@@ -32,7 +32,7 @@ export class Combatant {
     const ab = Math.min(this.armor, dmg * (head ? 0.2 : 0.6)); this.armor -= ab; this.hp -= dmg - ab; this.calm = false; this.alert();
     if (this.seat && this.vehicle) { if (this.hp <= 0) this.die(dir, push); return; }
     if (this.hp <= 0) return this.die(dir, push, kind);
-    if (push || dmg > 45) { this.human.ragdoll(push || dir.clone().multiplyScalar(3).setY(1.5), G.world.static); this.state = 'ragdoll'; this.stateT = 0; }
+    if (push || (dmg > 45 && !this.noKnockdown)) { this.human.ragdoll(push || dir.clone().multiplyScalar(3).setY(1.5), G.world.static); this.state = 'ragdoll'; this.stateT = 0; }
     else { this.human.upper = { name: 'hit', dur: 0.35 }; this.human.upperT = 0; this.fireT = Math.max(this.fireT, 0.4); if (this.cover && this.peek) this.peek = false; }
     G.emit('npcHit', this, dmg, head, src);
   }
@@ -61,7 +61,7 @@ export class Combatant {
     if (this.passive) this.seesPlayer = false; // scripted bystander (mission-controlled), never reacts on sight
     if (this.seesPlayer) { this.lastSeen = ptarget.clone(); this.engagedT += dt; this.alert(); } else this.engagedT = Math.max(0, this.engagedT - dt * 0.5);
     if (this.seat) return this.updateSeated(dt, dist);
-    if (this.calm) { h.state = 'idle'; h.speed = 0; h.animate(dt); this._weapon(); return; }
+    if (this.calm) { h.state = this.calmPose || 'idle'; h.speed = 0; h.animate(dt); this._weapon(); return; }
     // arrest attempt (police, player unarmed / surrendering)
     const canArrest = this.team === 'police' && G.police && G.police.arrestable() && !P.vehicle && dist < 25;
     let goal = null, speed = 0, faceP = this.seesPlayer || dist < 30;

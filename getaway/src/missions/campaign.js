@@ -17,7 +17,7 @@ export const CAMPAIGN = [
   { ...L(1, 0, 'WRONG CAR', 'A simple vehicle pickup becomes a high-speed pursuit through downtown.', 'wrongcar'), impl: M01 },
   { ...L(2, 0, 'BANKROLL', 'Walk into First Meridian, crack the vault, and escape out the back as SWAT storms the front.', 'bankroll'), impl: M02 },
   { ...L(3, 0, 'SHOPPING SPREE', 'Lift a Halcyon key from the Galleria, fight through a lockdown, steal the grand-prize car and drive it into the sea.', 'mall'), impl: M03 },
-  { ...L(4, 0, 'ARMORED DELIVERY', 'Tail an armored convoy in the rain, fend off a rival crew, leap onto the moving truck and drive it through a roadblock and the river tunnel.', 'armored'), impl: M04 },
+  { ...L(4, 0, 'DEEP END', M04.desc, 'whiteout'), impl: M04 },
   { ...L(5, 0, 'THE SKYLINE JOB', 'Climb an unfinished tower, steal Halcyon\'s server data on floor 13, and escape on a crane hook as the demolition charges bring the top down.', 'skyline'), impl: M05 },
   { ...L(6, 0, 'GUNSHIP', M06.desc, 'fivestar'), impl: M06 },
   { ...L(7, 1, 'BRIDGE RUN', M07.desc, 'desert'), impl: M07 },

@@ -7,7 +7,7 @@ import { G } from '../core/context.js';
 import { clamp, rand, damp } from '../core/utils.js';
 import { V3, baseSetup, playerIn, tickAIs } from './helpers.js';
 import { Aircraft, Gunship, board, unboard, planeMesh, FlightHUD } from './air.js';
-import { RamAI } from './m04.js';
+import { RamAI } from './helpers.js';
 import { driveTo } from '../vehicles/traffic.js';
 
 const JET = V3(-1640, 0, -200), RW = { x0: -2180, x1: -1180, z: -320 };
