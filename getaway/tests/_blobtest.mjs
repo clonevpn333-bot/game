@@ -1,0 +1,12 @@
+import { createRequire } from 'module'; const require = createRequire(import.meta.url); const { chromium } = require('playwright');
+const b = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] }); const ctx = await b.newContext({ viewport: { width: 960, height: 540 } }); const p = await ctx.newPage();
+const errs = []; p.on('pageerror', (e) => errs.push('PAGE ' + e.message));
+await p.goto('file:///home/user/game/getaway/dist/getaway.html'); await p.waitForFunction(() => window.__ready === true, null, { timeout: 120000 });
+const info = await p.evaluate(() => ({ srcMB: (window.__GETAWAY_SRC || '').length / 1e6, btn: !!document.querySelector('.blob-open'), startsWith: (window.__GETAWAY_SRC || '').slice(0, 40) }));
+console.log('original page:', JSON.stringify(info));
+const [pop] = await Promise.all([ctx.waitForEvent('page', { timeout: 30000 }), p.click('.blob-open')]);
+await pop.waitForLoadState('domcontentloaded'); console.log('new tab url:', pop.url().slice(0, 60)); await p.close();
+const perrs = []; pop.on('pageerror', (e) => perrs.push(e.message));
+await pop.waitForFunction(() => window.__ready === true, null, { timeout: 150000 }); const t = await pop.evaluate(() => ({ title: document.title, btn: !!document.querySelector('.blob-open'), proto: location.protocol }));
+console.log('blob tab booted:', JSON.stringify(t), 'errors:', perrs.length ? perrs.slice(0, 3) : 'none'); 
+await pop.screenshot({ path: process.argv[2], timeout: 120000 }).catch((e) => console.log('shot', e.message)); console.log(errs.length ? errs.slice(0, 3) : 'no errors (original)'); await b.close();

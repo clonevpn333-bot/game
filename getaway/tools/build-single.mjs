@@ -24,7 +24,10 @@ html = html.replace(/<script type="importmap">[\s\S]*?<\/script>/, '');
 const carDir = path.join(root, 'assets/cars'); const cars = {};
 if (fs.existsSync(carDir)) for (const f of fs.readdirSync(carDir)) if (f.endsWith('.glb')) cars[f.slice(0, -4)] = fs.readFileSync(path.join(carDir, f)).toString('base64');
 const embed = `<script>window.__EMBED_CARS = ${JSON.stringify(cars)};</script>`;
-html = html.replace(/<script type="module" src="src\/main.js"><\/script>/, () => `${embed}\n<script type="module">\n${js}\n</script>`);
+// a classic script after the (deferred) module runs while the page is still untouched: keep a copy of this exact
+// HTML so the title screen's "open in new tab" button can re-open the game as a blob: page
+const snap = `<script>window.__GETAWAY_SRC = '<!DOCTYPE html>\\n' + document.documentElement.outerHTML;</script>`;
+html = html.replace(/<script type="module" src="src\/main.js"><\/script>/, () => `${embed}\n<script type="module">\n${js}\n</script>\n${snap}`);
 fs.writeFileSync(path.join(dist, 'getaway.html'), html);
 fs.unlinkSync(tmp);
 console.log('wrote dist/getaway.html', (fs.statSync(path.join(dist, 'getaway.html')).size / 1e6).toFixed(2), 'MB');

@@ -21,9 +21,11 @@ export class Menus {
   title() {
     const n = this.mount(h(`<div class="menu bg interactive" style="flex-direction:column;justify-content:center;padding-left:7vw">
       <div class="logo">GETAWAY<span>!</span></div><div class="tagline">Drive fast · Steal everything · Never look back</div>
-      <div class="press">PRESS ENTER OR CLICK TO PLAY</div><div class="toast">Best with headphones · Keyboard & mouse or gamepad</div></div>`));
+      <div class="press">PRESS ENTER OR CLICK TO PLAY</div><div class="toast">Best with headphones · Keyboard & mouse or gamepad</div>
+      ${window.__GETAWAY_SRC ? '<button class="blob-open" title="Open this game as a blob: page in a new tab">⧉ OPEN IN NEW TAB (BLOB)</button>' : ''}</div>`));
     const go = () => { removeEventListener('keydown', k); this.ui('click'); this.flow.onTitleContinue(); };
     const k = (e) => { if (e.code === 'Enter' || e.code === 'Space') go(); }; addEventListener('keydown', k); n.addEventListener('click', go);
+    const bb = n.querySelector('.blob-open'); if (bb) bb.addEventListener('click', (e) => { e.stopPropagation(); this.ui('click'); openAsBlob(); });
   }
   main() {
     const S = G.save; const next = nextMission(S); const first = !Object.keys(S.completed).length;
@@ -126,4 +128,11 @@ export class Menus {
   }
   intro(def) { const n = h(`<div class="intro"><div class="act">${ACTS[def.act]}</div><div class="num">${String(def.num).padStart(2, '0')}</div><div class="ttl">${def.title}</div><div class="skip"><kbd>ENTER</kbd> skip</div></div>`); this.root.appendChild(n); this.introEl = n; }
   hideIntro() { if (this.introEl) { this.introEl.remove(); this.introEl = null; } }
+}
+// re-open the whole game (its own pristine HTML, captured at load by the single-file build) as a blob: page in a new tab
+export function openAsBlob() {
+  const src = window.__GETAWAY_SRC; if (!src) return false;
+  const url = URL.createObjectURL(new Blob([src], { type: 'text/html' }));
+  const w = window.open(url, '_blank'); if (!w) location.href = url; // popup blocked: open it here instead
+  setTimeout(() => URL.revokeObjectURL(url), 120000); return true;
 }

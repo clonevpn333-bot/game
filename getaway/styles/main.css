@@ -133,3 +133,6 @@ kbd{display:inline-block;min-width:18px;padding:1px 6px;border:1px solid rgba(25
 .hud.cine .hud-wp{opacity:0!important}
 .flare{position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen;opacity:0;z-index:1}
 .flare i{position:absolute;left:0;top:0;border-radius:50%}
+
+.blob-open{margin-top:26px;align-self:flex-start;font:700 14px Rajdhani,system-ui,sans-serif;letter-spacing:.18em;color:#fff;background:rgba(0,0,0,.45);border:2px solid rgba(255,211,107,.8);border-radius:6px;padding:9px 16px;cursor:pointer;pointer-events:auto}
+.blob-open:hover{background:rgba(255,211,107,.9);color:#111}
