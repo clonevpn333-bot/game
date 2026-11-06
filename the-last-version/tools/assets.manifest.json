@@ -1,0 +1,53 @@
+{
+  "source": "Poly Haven (https://polyhaven.com) — all assets CC0 1.0 Universal",
+  "textures": {
+    "asphalt": "asphalt_02",
+    "asphalt_clean": "clean_asphalt",
+    "sidewalk": "concrete_pavement",
+    "curb": "concrete_floor_02",
+    "brick_red": "red_brick_03",
+    "brick_dark": "dark_brick_wall",
+    "concrete_wall": "concrete_wall_008",
+    "plaster": "plastered_wall_04",
+    "facade_tiles": "rectangular_facade_tiles",
+    "concrete_facade": "concrete_tile_facade",
+    "metal_plate": "metal_plate",
+    "rust_metal": "rusty_metal_02",
+    "corrugated": "corrugated_iron",
+    "shutter": "painted_metal_shutter",
+    "ship_hull": "rusty_painted_metal",
+    "ship_deck": "metal_plate_02",
+    "green_rust": "green_metal_rust",
+    "teak": "wood_floor_deck",
+    "leather_dark": "fabric_leather_02",
+    "leather_brown": "brown_leather",
+    "denim": "denim_fabric",
+    "jersey": "cotton_jersey",
+    "linen": "rough_linen",
+    "fleece": "knitted_fleece",
+    "carpet": "dirty_carpet",
+    "wallpaper": "decrepit_wallpaper",
+    "wood_panel": "dark_paneled_wood",
+    "parquet": "herringbone_parquet",
+    "bath_tiles": "long_white_tiles",
+    "ceiling": "ceiling_interior",
+    "walnut": "black_walnut_veneer_01",
+    "velvet": "velour_velvet",
+    "plaster_white": "white_plaster_rough_01",
+    "marble": "marble_01"
+  },
+  "hdris": {
+    "city_dusk": "sunset_jhbcentral",
+    "storm": "kloofendal_overcast_puresky",
+    "interior": "warm_restaurant_night",
+    "menu": "the_sky_is_on_fire"
+  },
+  "models": [
+    "street_lamp_02", "utility_box_01", "trashbag", "metal_trash_can", "exterior_aircon_unit", "modular_fire_escape",
+    "lifebuoy", "life_jacket", "wooden_crate_01", "propane_tank", "ocean_buoy", "portable_searchlight",
+    "ArmChair_01", "ClassicConsole_01", "ClassicNightstand_01", "Chandelier_01", "Television_01", "vintage_suitcase",
+    "ornate_mirror_01", "fancy_picture_frame_01", "hanging_picture_frame_02", "wooden_bookshelf_worn", "Sofa_01",
+    "GothicBed_01", "vintage_telephone_wall_clock", "wall_clock", "painted_wooden_nightstand", "drawer_cabinet",
+    "Shelf_01", "vintage_flashlight", "crowbar_01", "industrial_wall_lamp", "WetFloorSign_01"
+  ]
+}
