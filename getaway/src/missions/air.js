@@ -71,7 +71,7 @@ const GUN = { id: 'minigun', name: 'Minigun', kind: 'rifle', dmg: 24, rpm: 1800,
 export class Aircraft {
   constructor(kind, { pos, yaw = 0, color, accent } = {}) {
     this.kind = kind; this.pos = pos.clone(); this.yaw = yaw; this.pitch = 0; this.roll = 0; this.vel = V(0, 0, 0); this.speed = 0; this.throttle = kind === 'plane' ? 0 : 0.5;
-    this.hp = this.maxHp = kind === 'plane' ? 420 : 300; this.alive = true; this.grounded = true; this.gunT = 0; this.rocketT = 0; this.ammo = 24; this.heat = 0; this.t = 0;
+    this.hp = this.maxHp = kind === 'plane' ? 420 : 460; this.alive = true; this.grounded = true; this.gunT = 0; this.rocketT = 0; this.ammo = 24; this.heat = 0; this.t = 0;
     const m = kind === 'plane' ? planeMesh(color, accent) : heliMesh(color, accent); this.m = m; this.g = m.g; G.scene.add(this.g);
     this.gear = kind === 'plane' ? 2.2 : 1.45;
     this.sphere = G.combat.addSphere({ pos: this.pos, r: kind === 'plane' ? 6 : 3.6, team: 'player', alive: () => this.alive, hit: (d, p) => this.damage(d * 0.6, p) });
@@ -81,7 +81,7 @@ export class Aircraft {
   }
   get fwd() { return V(Math.sin(this.yaw) * Math.cos(this.pitch), Math.sin(this.pitch), Math.cos(this.yaw) * Math.cos(this.pitch)); }
   seat() { return this.pos; }
-  damage(d, p) { if (!this.alive) return; this.hp -= d; G.cam.shake(Math.min(0.4, d / 80)); if (G.fx && p) G.fx.spark(p, V(0, 1, 0), 6, 6); if (this.hp <= 0) { if (this.invuln) this.hp = 20; else this.destroy(); } }
+  damage(d, p) { if (!this.alive) return; d *= this.dmgMul ?? 1; this.hp -= d; G.cam.shake(Math.min(0.4, d / 80)); if (G.fx && p) G.fx.spark(p, V(0, 1, 0), 6, 6); if (this.hp <= 0) { if (this.invuln) this.hp = 20; else this.destroy(); } }
   destroy() { if (!this.alive) return; this.alive = false; this.hp = 0; G.emit('explosion', this.pos.clone(), 2.2, 'aircraft', null); G.emit('aircraftDown', this); }
   // pilot input → flight
   control(dt, input) {
@@ -126,7 +126,7 @@ export class Aircraft {
     // move + collide
     const step = this.vel.clone().multiplyScalar(dt); const L = step.length();
     if (L > 0.001) { const d = step.clone().divideScalar(L); const hit = S.raycast(this.pos.x, this.pos.y, this.pos.z, d.x, d.y, d.z, L + (this.kind === 'plane' ? 5 : 3), { noGround: true });
-      if (hit && !(hit.box && hit.box.glass) && this.t - (this.hitT || -9) > 0.5) { this.hitT = this.t; const hard = this.speed > 1 ? this.speed : this.vel.length(); this.damage(clamp(hard * (this.kind === 'plane' ? 1.6 : 2.2), 8, 400), V(hit.x, hit.y, hit.z)); G.emit('explosion', V(hit.x, hit.y, hit.z), 0.8, 'crash', null);
+      if (hit && !(hit.box && hit.box.glass) && this.t - (this.hitT || -9) > 0.5) { this.hitT = this.t; const hard = this.speed > 1 ? this.speed : this.vel.length(); this.damage(clamp(hard * (this.kind === 'plane' ? 1.6 : 1.4), 6, 400), V(hit.x, hit.y, hit.z)); if (G.fx) G.fx.explosion(V(hit.x, hit.y, hit.z), 0.5); if (G.audio) G.audio.impact(V(hit.x, hit.y, hit.z), 1, 'metal'); /* visual only: the hull damage above is the cost */
         const n = V(hit.nx, hit.ny, hit.nz); this.vel.reflect(n).multiplyScalar(0.3); this.speed *= 0.35; this.pos.addScaledVector(n, 2); if (this.kind === 'plane') { this.yaw += Math.PI * 0.5 * Math.sign(Math.random() - 0.5); } }
       else this.pos.add(step); } // within the 0.5 s after a hit it keeps moving, so it can never stick inside a wall
     const gnd = S.groundAt(this.pos.x, this.pos.z, this.pos.y + 1, 0).h; const water = S.waterLevel ? S.waterLevel(this.pos.x, this.pos.z) : -99; const floor = Math.max(gnd, water > gnd ? water : -99);
@@ -136,6 +136,7 @@ export class Aircraft {
       if (this.kind === 'plane') { const soft = vy > -7 && Math.abs(this.roll) < 0.4 && this.pitch > -0.25 && water < gnd; if (!soft) { this.damage(60 + Math.abs(vy) * 6, this.pos.clone()); this.vel.y = 6; } else { this.grounded = true; this.pitch = Math.max(0, this.pitch); this.vel.y = 0; } }
       else { if (vy < -12) this.damage(-vy * 3, this.pos.clone()); this.vel.y = Math.max(0, this.vel.y); this.grounded = true; }
     } else if (this.pos.y - this.gear > floor + 0.6) this.grounded = false;
+    if (this.kind === 'heli') this.grounded = this.pos.y - this.gear <= floor + 0.25; // resting on any surface = landed
     if (this.kind === 'plane' && this.grounded) { this.vel.y = 0; this.pitch = Math.max(this.speed > 34 ? this.pitch : 0, 0); }
     this.pos.y = Math.min(this.pos.y, 900);
     this.sync(dt);

@@ -27,7 +27,7 @@ export class Player {
   hit(dmg, dir, point, head, source, kind, push) {
     if (!this.alive || this.godMode) return; if (source && source.team === 'player') return; dmg *= G.dmgScale ?? 1;
     if (this.vehicle) { this.vehicle.damage(dmg * 0.3, point, dir, source && source.human); dmg *= 0.25; if (this.vehicle.glassLevel < 2) dmg *= 0.5; }
-    if (this.riding) { if (this.riding.damage) this.riding.damage(dmg, point); dmg *= 0.2; } // the airframe takes it
+    if (this.riding) { if (this.riding.damage) this.riding.damage(dmg * 0.5, point); dmg *= 0.2; } // the airframe takes it
     const a = Math.min(this.armor, dmg * 0.65); this.armor -= a; this.health -= dmg - a; this.lastHit = G.time;
     G.emit('playerDamaged', dmg, dir, source);
     if (G.cam) G.cam.shake(clamp(dmg / 60, 0.08, 0.5)); if (G.input) G.input.rumble(0.6, 0.3, 120);

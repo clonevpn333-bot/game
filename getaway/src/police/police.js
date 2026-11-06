@@ -31,7 +31,7 @@ export class PursuitAI {
   update(dt) {
     const v = this.v; if (v.dead || v.removed) return;
     if (v.mode !== 'drive' || v.flipped) { this.dismount(); v.ctrl.throttle = 0; return; }
-    const P = G.player; const tgtV = P.vehicle; const tp = this.p.state === 'pursuit' ? (tgtV ? tgtV.pos : P.pos) : this.p.searchPoint(this);
+    const P = G.player; const tgtV = P.vehicle || (this.p.targetVehicle && !this.p.targetVehicle.removed ? this.p.targetVehicle : null); const tp = this.p.state === 'pursuit' ? (tgtV ? tgtV.pos : P.pos) : this.p.searchPoint(this); // missions can point the pursuit at another car (e.g. the crew you're covering)
     const d = Math.hypot(tp.x - v.pos.x, tp.z - v.pos.z);
     if (this.revT > 0) { this.revT -= dt; v.ctrl.throttle = 0; v.ctrl.brake = 1; v.ctrl.steer = -this.side; v.ctrl.handbrake = false; return; }
     if (this.parked) { v.ctrl.throttle = 0; v.ctrl.brake = 1; return; }
@@ -244,5 +244,5 @@ export class Police {
     for (const o of this.officers) if (o.alive && o.pos.distanceTo(cam) > 80) { o.dispose(); G.npcs.list.splice(G.npcs.list.indexOf(o), 1); }
     if (this.heli) { this.heli.update(dt); if (this.heli && this.heli.pos.distanceTo(cam) > 300) { this.heli.dispose(); this.heli = null; } }
   }
-  reset() { this.unitCap = 0; for (const u of this.units) G.vehicles.remove(u.v); this.units = []; for (const o of this.officers) { o.dispose(); const i = G.npcs.list.indexOf(o); if (i >= 0) G.npcs.list.splice(i, 1); } this.officers = []; if (this.heli) { this.heli.dispose(); this.heli = null; } this.heat = 0; this.stars = 0; this.state = 'none'; this.minStars = 0; this.maxStars = 5; this.locked = false; this.enabled = true; }
+  reset() { this.unitCap = 0; this.targetVehicle = null; for (const u of this.units) G.vehicles.remove(u.v); this.units = []; for (const o of this.officers) { o.dispose(); const i = G.npcs.list.indexOf(o); if (i >= 0) G.npcs.list.splice(i, 1); } this.officers = []; if (this.heli) { this.heli.dispose(); this.heli = null; } this.heat = 0; this.stars = 0; this.state = 'none'; this.minStars = 0; this.maxStars = 5; this.locked = false; this.enabled = true; }
 }

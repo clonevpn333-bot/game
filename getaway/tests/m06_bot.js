@@ -1,7 +1,7 @@
 (async () => { try {
   const { Guard } = await import('/src/core/guard.js'); const G = __G, g = __game; const log = (x) => console.log(x); let lastObj = '';
   const obj = () => document.querySelector('.hud-obj-text').textContent + ' / ' + (document.querySelector('.hud-obj-sub') || {}).textContent;
-  G.cam.stopCine();
+  G.cam.stopCine(); { const f0 = G.mission.fail.bind(G.mission); G.mission.fail = (r) => { log('FAIL: ' + r + ' at cp ' + G.mission.cpReached + ' t=' + G.time.toFixed(0)); f0(r); }; }
   const step = async (secs) => { window.__fixedDt = 1 / 30; for (let i = 0; i < Math.round(secs * 30); i++) {
       const R = G.mission && G.mission.ctx && G.mission.ctx.vars.R;
       if (R && R.gun && i % 3 === 0) { // aim at the nearest threat

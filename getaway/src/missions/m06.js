@@ -20,7 +20,7 @@ function rig(m, i) {
   const dmg = car.damage.bind(car); car.damage = (amt, p, d, src) => { if (src === G.player.human) return; dmg(amt * 0.55, p, d, src); }; // your rounds never hurt the crew
   const R = { pts, car, stopAt: null, speed: 25 }; const ai = new RouteAI(car, pts.slice(i + 1), { speed: () => (R.stopAt && car.pos.distanceTo(R.stopAt) < 115 ? 0 : R.speed) });
   const heli = new Aircraft('heli', { pos: V3(a.x - 20, 40, a.z - 20), yaw, color: 0x2c3e50, accent: 0xf1c40f }); heli.maxHp = heli.hp = 900;
-  heli.sphere.hit = (d, p) => heli.damage(d * 0.3, p); const gun = new GunnerSeat(heli); gun.ammo = 30; R.heli = heli; R.gun = gun; R.ai = ai; R.gunships = [];
+  heli.dmgMul = 0.3; G.police.targetVehicle = car; m.ents.offs.push(() => { G.police.targetVehicle = null; }); const gun = new GunnerSeat(heli); gun.ammo = 30; R.heli = heli; R.gun = gun; R.ai = ai; R.gunships = [];
   const P = G.player; P.riding = heli; P.human.visible = false; G.cam.custom = () => gun.camShot(); FlightHUD.show(heli, gun);
   R.off = m.r.flow.game.addUpdater((dt) => {
     if (G.mission !== m.r || G.paused || !heli.alive) return; const t = G.time;
@@ -29,6 +29,9 @@ function rig(m, i) {
     const want = c.clone().addScaledVector(f, -14).add(V3(-f.z * 22 * side, 0, f.x * 22 * side)); const roof = G.world.static.groundAt(want.x, want.z, 400, 0).h; want.y = Math.max(c.y + 26, roof + 16);
     heli.pos.x = damp(heli.pos.x, want.x, 0.9, dt); heli.pos.z = damp(heli.pos.z, want.z, 0.9, dt); heli.pos.y = damp(heli.pos.y, want.y, 1.2, dt);
     heli.yaw = dampAngle(heli.yaw, Math.atan2(c.x - heli.pos.x, c.z - heli.pos.z) + Math.PI / 2 * side, 1.2, dt); heli.roll = Math.sin(t * 0.7) * 0.08; heli.pitch = 0.05; heli.vel.set(0, 0, 0);
+    // unstick: if the crew car is wedged while it should be driving, put it back on its route (out of sight is best, but never stall)
+    const holding = R.stopAt && car.pos.distanceTo(R.stopAt) < 115; if (!holding && !ai.done && car.speed < 1) R.stuck = (R.stuck || 0) + dt; else R.stuck = 0;
+    if (R.stuck > 6) { R.stuck = 0; const p = ai.pts[Math.min(ai.i, ai.pts.length - 1)], q = ai.pts[Math.min(ai.i + 1, ai.pts.length - 1)]; if (p) { if (car.rigid) { G.rigid.remove(car.rigid); car.rigid = null; car.mode = 'drive'; } car.pos.set(p.x, G.world.static.groundAt(p.x, p.z, 50, 0).h + 0.4, p.z); car.vel.set(0, 0, 0); car.yaw = Math.atan2(q.x - p.x, q.z - p.z); car.pitch = car.roll = 0; } }
     heli.hp = Math.min(heli.maxHp, heli.hp + dt * 4); car.hp = Math.min(car.maxHp, car.hp + dt * 1.5); if (car.hp > car.maxHp * 0.3) car.smoking = 0; heli.update(dt, null); heli.rockets.update(dt); gun.update(dt, G.input);
     for (const s of R.gunships) if (!s.gone) s.update(dt, heli.pos);
     FlightHUD.extra = `CREW CAR <b style="color:${car.hp / car.maxHp > 0.4 ? '#7bd88f' : '#ff3b2f'}">${Math.max(0, car.hp / car.maxHp * 100).toFixed(0)}%</b>`; FlightHUD.update();
@@ -74,10 +77,10 @@ async function cp1(m, fresh) {
   const ok = await m.until(cleared, { timeout: 90 }); m.unblip(blip);
   if (!ok) { m.say('DEZ', 'Screw it — HOLD ON TO SOMETHING!'); for (const v of block) if (!v.dead && !v.removed) { v.toRigid(V3(rand(-2, 2), rand(1, 3), rand(-2, 2))); v.rigid.vel.y += 6; G.emit('explosion', v.pos.clone(), 0.9, 'ram', null); } } // never a soft-lock
   m.slowmo(1.0, 0.35); m.say('DEZ', 'HA! Bridge is OPEN!'); R.stopAt = null; R.speed = 28; if (G.stunts) G.stunts.award('ROADBLOCK OBLITERATED', 900);
-  await m.until(() => R.car.pos.x > 450, { timeout: 60 });
+  await m.until(() => R.car.pos.x > 470, { timeout: 60 }); R.stopAt = R.car.pos.clone(); // the crew lie low under the cranes while you fight
 }
 async function cp2(m, fresh) {
-  let R = m.vars.R; if (fresh || !R || R.heli.disposed) { setup(m); R = rig(m, idxNear(route(), (p) => p.x > 460)); m.music('fivestar', 4); G.police.setStars(4); G.police.minStars = 3; }
+  let R = m.vars.R; if (fresh || !R || R.heli.disposed) { setup(m); R = rig(m, idxNear(route(), (p) => p.x > 460)); m.music('fivestar', 4); G.police.setStars(4); G.police.minStars = 3; } R.stopAt = R.car.pos.clone();
   m.say('JUNO', 'Contacts, two o\'clock — black choppers, no markings. Halcyon. They\'re coming for ME.');
   const hp = R.heli.pos; for (let k = 0; k < 2; k++) R.gunships.push(new Gunship(hp.clone().add(V3(150 + k * 60, 30, -120 + k * 200)), { hp: 420, aggro: 1 }));
   m.objective('SHOOT DOWN THE GUNSHIPS', 'ROCKETS LOCK ON — CLICK TO SHRED, RIGHT-CLICK TO FINISH');
@@ -87,7 +90,7 @@ async function cp2(m, fresh) {
 }
 async function cp3(m, fresh) {
   let R = m.vars.R; if (fresh || !R || R.heli.disposed) { setup(m); R = rig(m, idxNear(route(), (p) => p.x > 470 && p.z > 80)); m.music('fivestar', 4); G.police.setStars(3); }
-  G.police.minStars = 0; m.intensity(4);
+  G.police.minStars = 0; m.intensity(4); R.stopAt = R.car.pos.clone();
   m.say('JUNO', 'Oh no. That one\'s not a chopper, that\'s a FLYING TANK.');
   const boss = new Gunship(R.heli.pos.clone().add(V3(-160, 40, 120)), { hp: 1700, aggro: 1.5, accent: 0xff2a2a, bulletMul: 0.05, rocketMul: 0.55 }); boss.g.scale.setScalar(1.7); boss.sphere.r = 7; boss.rad = 55; R.gunships.push(boss);
   const bb = m.blip(() => (boss.alive ? boss.pos : null), { color: '#ff3b2f', size: 9 });
@@ -97,7 +100,7 @@ async function cp3(m, fresh) {
   m.say('DEZ', 'IT\'S GOING DOWN — RIGHT INTO THE CONTAINERS!'); if (G.stunts) G.stunts.award('WARBIRD DESTROYED', 2500);
   await m.wait(3);
   // the crew reach the docks: a container ship with its doors open; Juno sets down on the quay at sunset
-  R.speed = 22; m.objective('GET THE CREW TO THE DOCKS', 'CONTAINER 4417 IS WAITING');
+  R.stopAt = null; R.speed = 22; m.objective('GET THE CREW TO THE DOCKS', 'CONTAINER 4417 IS WAITING');
   const dk = V3(DOCKS[0], 0, DOCKS[1]); const db = m.blip(dk, { color: '#ffd36b', size: 7 });
   await m.until(() => R.car.pos.distanceTo(dk) < 25 || R.ai.done, { timeout: 120 }); m.unblip(db);
   G.police.reset(); m.intensity(1); m.lock(true); const end = V3(DOCKS[0] + 30, 6, DOCKS[1] + 10);
