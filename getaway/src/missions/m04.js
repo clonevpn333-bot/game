@@ -22,7 +22,7 @@ class FollowAI { // escorts hold a slot ahead of / behind the truck
     driveTo(v, this.ahead > 0 ? tx + s * 10 : tx, this.ahead > 0 ? tz + c * 10 : tz, Math.max(4, L.speed + clamp(fwd * 0.5, -8, 10)), { aggressive: true }); if (d < 3 && fwd < 0) { v.ctrl.throttle = 0; v.ctrl.brake = 0.6; }
   }
 }
-class RamAI { // Marrow muscle cars: run at the truck's flank and ram it
+export class RamAI { // Marrow muscle cars: run at the truck's flank and ram it
   constructor(v, target) { this.v = v; this.t = target; v.ai = this; v.keep = true; v.hasDriver = true; this.kind = 'ram'; this.side = Math.random() < 0.5 ? -1 : 1; }
   update() {
     const v = this.v, T = this.t(); if (v.ai !== this || v.dead || v.mode !== 'drive' || !T) return;

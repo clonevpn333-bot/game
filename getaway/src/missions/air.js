@@ -81,7 +81,7 @@ export class Aircraft {
   }
   get fwd() { return V(Math.sin(this.yaw) * Math.cos(this.pitch), Math.sin(this.pitch), Math.cos(this.yaw) * Math.cos(this.pitch)); }
   seat() { return this.pos; }
-  damage(d, p) { if (!this.alive) return; this.hp -= d; G.cam.shake(Math.min(0.4, d / 80)); if (G.fx && p) G.fx.spark(p, V(0, 1, 0), 6, 6); if (this.hp <= 0) this.destroy(); }
+  damage(d, p) { if (!this.alive) return; this.hp -= d; G.cam.shake(Math.min(0.4, d / 80)); if (G.fx && p) G.fx.spark(p, V(0, 1, 0), 6, 6); if (this.hp <= 0) { if (this.invuln) this.hp = 20; else this.destroy(); } }
   destroy() { if (!this.alive) return; this.alive = false; this.hp = 0; G.emit('explosion', this.pos.clone(), 2.2, 'aircraft', null); G.emit('aircraftDown', this); }
   // pilot input → flight
   control(dt, input) {
@@ -93,7 +93,7 @@ export class Aircraft {
       const rollT = (left ? 1 : 0) - (right ? 1 : 0); this.roll = damp(this.roll, rollT * 0.95, 3, dt);
       let pitchIn = (up ? 1 : 0) - (down ? 1 : 0) + clamp(-input.lookY() * 8, -1, 1);
       if (this.grounded) { if (this.speed < 34) pitchIn = Math.max(0, pitchIn) * 0; this.roll = 0; }
-      this.pitch = clamp(this.pitch + pitchIn * dt * 0.9 - (pitchIn === 0 ? this.pitch * dt * 0.6 : 0), -0.9, 0.85);
+      this.pitch = clamp(this.pitch + pitchIn * dt * 0.65 - (pitchIn === 0 ? this.pitch * dt * 1.4 : 0), -0.75, 0.6); // gentle stick, auto-levels when released
       if (!this.grounded && this.speed < 30) this.pitch = damp(this.pitch, -0.5, 1.5, dt); // stall: nose drops
       this.yaw += this.roll * dt * 0.75 * clamp(this.speed / 50, 0.3, 1.2) + (this.grounded ? rollT * dt * 0.6 * clamp(this.speed / 10, 0, 1) : 0);
       this.speed -= Math.sin(this.pitch) * 9.8 * dt * 0.35; this.vel.copy(this.fwd).multiplyScalar(this.speed);
@@ -126,9 +126,9 @@ export class Aircraft {
     // move + collide
     const step = this.vel.clone().multiplyScalar(dt); const L = step.length();
     if (L > 0.001) { const d = step.clone().divideScalar(L); const hit = S.raycast(this.pos.x, this.pos.y, this.pos.z, d.x, d.y, d.z, L + (this.kind === 'plane' ? 5 : 3), { noGround: true });
-      if (hit && !(hit.box && hit.box.glass)) { const hard = this.speed > 1 ? this.speed : this.vel.length(); this.damage(clamp(hard * (this.kind === 'plane' ? 1.6 : 2.2), 8, 400), V(hit.x, hit.y, hit.z)); G.emit('explosion', V(hit.x, hit.y, hit.z), 0.8, 'crash', null);
-        this.vel.reflect(V(hit.nx, hit.ny, hit.nz)).multiplyScalar(0.3); this.speed *= 0.35; if (this.kind === 'plane') { this.yaw += Math.PI * 0.5 * Math.sign(Math.random() - 0.5); } }
-      else this.pos.add(step); }
+      if (hit && !(hit.box && hit.box.glass) && this.t - (this.hitT || -9) > 0.5) { this.hitT = this.t; const hard = this.speed > 1 ? this.speed : this.vel.length(); this.damage(clamp(hard * (this.kind === 'plane' ? 1.6 : 2.2), 8, 400), V(hit.x, hit.y, hit.z)); G.emit('explosion', V(hit.x, hit.y, hit.z), 0.8, 'crash', null);
+        const n = V(hit.nx, hit.ny, hit.nz); this.vel.reflect(n).multiplyScalar(0.3); this.speed *= 0.35; this.pos.addScaledVector(n, 2); if (this.kind === 'plane') { this.yaw += Math.PI * 0.5 * Math.sign(Math.random() - 0.5); } }
+      else this.pos.add(step); } // within the 0.5 s after a hit it keeps moving, so it can never stick inside a wall
     const gnd = S.groundAt(this.pos.x, this.pos.z, this.pos.y + 1, 0).h; const water = S.waterLevel ? S.waterLevel(this.pos.x, this.pos.z) : -99; const floor = Math.max(gnd, water > gnd ? water : -99);
     if (this.pos.y - this.gear < floor) {
       const vy = this.vel.y; this.pos.y = floor + this.gear;
@@ -188,6 +188,32 @@ export class Gunship {
     if (this.useRockets) { this.rockT -= dt; if (this.rockT <= 0 && d > 30) { this.rockT = rand(6, 11) / this.aggro; const from = this.pos.clone().add(V(0, -1, 0)); const aim = tgt.clone().add(V(rand(-6, 6), 0, rand(-6, 6))); this.rockets.fire(from, aim.sub(from), { team: this.team, speed: 60, size: 1.1 }); } }
   }
   dispose() { G.scene.remove(this.g); G.combat.removeSphere(this.sphere); if (this.snd) this.snd.dispose(); this.rockets.clear(); }
+}
+
+// ---------------- enemy fighter: circles, then makes gun runs at you ----------------
+export class EnemyJet {
+  constructor(pos, { hp = 300, team = 'halcyon', color = 0x22262c, accent = 0xc0392b, aggro = 1 } = {}) {
+    const m = planeMesh(color, accent); this.m = m; this.g = m.g; this.g.scale.setScalar(0.62); G.scene.add(this.g); this.pos = pos.clone(); this.yaw = rand(0, 6.28); this.pitch = 0; this.roll = 0; this.speed = 68;
+    this.hp = this.maxHp = hp; this.alive = true; this.team = team; this.aggro = aggro; this.state = 'circle'; this.stT = rand(3, 7); this.fireT = 0; this.ang = rand(0, 6.28);
+    this.sphere = G.combat.addSphere({ pos: this.pos, r: 5, team, alive: () => this.alive, hit: (d, p, sh, kind) => this.damage(kind === 'rocket' ? d : d * 0.3, p) });
+    this.snd = G.audio && G.audio.createLoop('fire', { ref: 70, wet: 0.2 }); this.shooter = { isPlayer: false, team, human: null, target: null, inaccuracy: 1.4 / aggro };
+  }
+  damage(d, p) { if (!this.alive) return; this.hp -= d; if (G.fx && p) G.fx.spark(p, V(0, 1, 0), 5, 6); if (this.hp <= 0) { this.alive = false; G.emit('jetDown', this); if (G.fx) G.fx.explosion(this.pos, 1.2); if (G.audio) G.audio.explosion(this.pos, 1.2); if (G.stunts) G.stunts.award('SPLASH ONE!', 700); } }
+  update(dt, tgt) {
+    if (!this.alive) { this.pitch = Math.max(-1.2, this.pitch - dt * 0.6); this.roll += dt * 3; this.pos.addScaledVector(V(Math.sin(this.yaw) * Math.cos(this.pitch), Math.sin(this.pitch), Math.cos(this.yaw) * Math.cos(this.pitch)), this.speed * dt); if (G.fx) { G.fx.fire(this.pos, 1.3); G.fx.smokePuff(this.pos, { size: 2.2, life: 2.5, color: 0.12, alpha: 0.5 }); }
+      const g = G.world.static.groundAt(this.pos.x, this.pos.z, this.pos.y + 1, 0).h; if (this.pos.y < g + 1) { G.emit('explosion', this.pos.clone(), 2.6, 'jet', null); this.dispose(); this.gone = true; } this.sync(); return; }
+    if (!tgt) return; this.stT -= dt; const to = tgt.clone().sub(this.pos); const dist = to.length();
+    let aim; if (this.state === 'circle') { this.ang += dt * 0.5; aim = tgt.clone().add(V(Math.cos(this.ang) * 220, 40, Math.sin(this.ang) * 220)); if (this.stT <= 0) { this.state = 'attack'; this.stT = 9; } }
+    else { aim = tgt.clone(); if (dist < 70 || this.stT <= 0) { this.state = 'circle'; this.stT = rand(4, 8) / this.aggro; this.ang = Math.atan2(this.pos.z - tgt.z, this.pos.x - tgt.x); } }
+    const gnd = G.world.static.groundAt(aim.x, aim.z, 600, 0).h; aim.y = Math.max(aim.y, gnd + 25);
+    const d = aim.sub(this.pos); const wantYaw = Math.atan2(d.x, d.z), wantPitch = clamp(Math.atan2(d.y, Math.hypot(d.x, d.z)), -0.5, 0.5);
+    const dy = ((wantYaw - this.yaw + Math.PI * 3) % (Math.PI * 2)) - Math.PI; this.yaw += clamp(dy, -1, 1) * dt * 1.1; this.roll = damp(this.roll, -clamp(dy, -1, 1) * 0.9, 3, dt); this.pitch = damp(this.pitch, wantPitch, 1.5, dt);
+    this.pos.addScaledVector(V(Math.sin(this.yaw) * Math.cos(this.pitch), Math.sin(this.pitch), Math.cos(this.yaw) * Math.cos(this.pitch)), this.speed * dt);
+    if (this.state === 'attack' && dist < 320) { const f = V(Math.sin(this.yaw) * Math.cos(this.pitch), Math.sin(this.pitch), Math.cos(this.yaw) * Math.cos(this.pitch)); if (f.dot(to.clone().normalize()) > 0.96) { this.fireT -= dt; if (this.fireT <= 0) { this.fireT = 0.08; const W = { id: 'rifle', kind: 'rifle', dmg: 7 * this.aggro, pellets: 1, range: 340, spread: 0.03, aimSpread: 0.03, tracer: 1, shake: 0 }; const o = this.pos.clone().addScaledVector(f, 5); G.combat.fire(this.shooter, W, o, tgt.clone().add(V(rand(-3, 3), rand(-2, 2), rand(-3, 3))).sub(o).normalize(), o); } } }
+    this.sync();
+  }
+  sync() { this.g.position.copy(this.pos); this.g.rotation.set(-this.pitch, this.yaw, -this.roll, 'YXZ'); if (this.snd) this.snd.update(this.pos, this.alive ? 1 : 0.5, 0.8); }
+  dispose() { G.scene.remove(this.g); G.combat.removeSphere(this.sphere); if (this.snd) this.snd.dispose(); }
 }
 
 // ---------------- door gunner: ride a scripted path, aim with mouse/arrows ----------------

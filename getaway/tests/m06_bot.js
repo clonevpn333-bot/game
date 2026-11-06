@@ -10,7 +10,7 @@
         if (!best) for (const v of G.vehicles.list) if (!v.dead && v.ai && v.ai.hostile && v !== R.car) { const d = v.pos.distanceTo(hp); if (d < bd && d < 250) { bd = d; best = v.pos; } }
         if (best) { const d = best.clone().sub(hp); R.gun.yaw = Math.atan2(d.x, d.z) - R.heli.yaw; R.gun.pitch = Math.atan2(d.y + 0.5, Math.hypot(d.x, d.z)); G.input.mouseButtons = (G.input.mouseButtons | 1) | (i % 60 === 0 ? 4 : 0); } else G.input.mouseButtons = 0;
       }
-      g.frame(true); const o = obj(); if (o !== lastObj) { lastObj = o; log(`t=${G.time.toFixed(0)} cp=${G.mission ? G.mission.cpReached : '-'} OBJ ${o}`); }
+      g.frame(true); await Promise.resolve(); await Promise.resolve(); const o = obj(); if (o !== lastObj) { lastObj = o; log(`t=${G.time.toFixed(0)} cp=${G.mission ? G.mission.cpReached : '-'} OBJ ${o}`); }
       if (i % 30 === 0) await new Promise((r) => setTimeout(r, 0)); if (!G.mission || G.mission.done || G.mission.failed) break; }
     window.__fixedDt = 0; };
   for (let k = 0; k < 120; k++) { await step(5); const R = G.mission && G.mission.ctx.vars.R; if (k % 4 === 0 && R) log(`   t=${G.time.toFixed(0)} car=${R.car.pos.x.toFixed(0)},${R.car.pos.z.toFixed(0)} carHP=${R.car.hp.toFixed(0)} heliHP=${R.heli.hp.toFixed(0)} units=${G.police.units.length} gunships=${R.gunships.filter((s) => s.alive).length} veh=${G.vehicles.list.length} errors=${Guard.total}`);

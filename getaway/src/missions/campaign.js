@@ -6,6 +6,8 @@ import { M04 } from './m04.js';
 import { M05 } from './m05.js';
 import { M06 } from './m06.js';
 import { M07 } from './m07.js';
+import { M08 } from './m08.js';
+import { M09 } from './m09.js';
 
 export const ACTS = ['ACT I — THE CITY GOES LOUD', 'ACT II — NO ROAD HOME', 'ACT III — ITALIAN TROUBLE', 'ACT IV — INTERNATIONAL MAYHEM', 'ACT V — EVERYONE WANTS YOU'];
 const L = (num, act, title, desc, music) => ({ id: 'm' + String(num).padStart(2, '0'), num, act, title, desc, music });
@@ -17,10 +19,10 @@ export const CAMPAIGN = [
   { ...L(5, 0, 'THE SKYLINE JOB', 'Climb an unfinished tower, steal Halcyon\'s server data on floor 13, and escape on a crane hook as the demolition charges bring the top down.', 'skyline'), impl: M05 },
   { ...L(6, 0, 'GUNSHIP', M06.desc, 'fivestar'), impl: M06 },
   { ...L(7, 1, 'BRIDGE RUN', M07.desc, 'desert'), impl: M07 },
-  L(8, 1, 'FLOOD WARNING', 'A flood-control facility floods while you try to escape it.', 'armored'),
-  L(9, 1, 'DESERT THUNDER', 'Armored trucks, motorcycles and dust storms on the desert highway.', 'desert'),
+  { ...L(8, 1, 'AIRPORT CHAOS', M08.desc, 'fivestar'), impl: M08 },
+  { ...L(9, 1, 'NO PASSPORT', M09.desc, 'skyline'), impl: M09 },
   L(10, 1, 'THE FREIGHT TRAIN', 'Fight across a moving freight train before the tunnel complex.', 'desert'),
-  L(11, 1, 'AIRPORT CHAOS', 'Service roads, hangars, taxiways and moving aircraft.', 'fivestar'),
+
   L(12, 1, 'NO PASSPORT', 'Steal an aircraft and fly through a storm to Italy.', 'skyline'),
   L(13, 2, 'CIAO, TROUBLE', 'Markets, alleys and steep streets the moment you land.', 'italia'),
   L(14, 2, 'THE ROMAN JOB', 'Infiltration, rooftop escape, motorbike chase.', 'italia'),
