@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { CITY, rng } from './city.js';
 import { buildCar } from '../../vehicles/carModel.js';
-import { CarBody, HANDLING } from '../../vehicles/carPhysics.js';
+import { CarBody, HANDLING, collideCars } from '../../vehicles/carPhysics.js';
 import { placeWarped } from './warp.js';
 
 const LANES = [3.4, 9.4];
@@ -131,8 +131,24 @@ export class Traffic {
       for (const o of this.cars) if (o !== c && o.active) check(o.body.pos, false);
       check(pp, true);
       c.honk -= dt;
+      if (c.yieldT > 0) { c.yieldT -= dt; want = 0; }
       c.body.kinematicMove(dt, target, want, null);
       placeWarped(c.mesh, c.body.pos, c.body.yaw, c.body.pitch, 0);
+    }
+    this.separate();
+  }
+
+  /** Traffic never overlaps itself: separate pairs and make the one behind wait. */
+  separate() {
+    const list = this.cars.filter((c) => c.active);
+    for (let i = 0; i < list.length; i++) for (let j = i + 1; j < list.length; j++) {
+      const a = list[i], b = list[j];
+      if (a.body.pos.distanceToSquared(b.body.pos) > 49) continue;
+      if (!collideCars(a.body, b.body, 0.1) && a.body.pos.distanceToSquared(b.body.pos) > 16) continue;
+      // whoever is heading into the other yields
+      const ab = b.body.pos.clone().sub(a.body.pos);
+      const aInto = a.body.forward.dot(ab) > 0, bInto = b.body.forward.dot(ab.negate()) > 0;
+      if (aInto) a.yieldT = 1.2; if (bInto && !aInto) b.yieldT = 1.2;
     }
   }
 

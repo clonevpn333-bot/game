@@ -62,7 +62,8 @@ export default class Chapter1 {
     // player car
     this.carMesh = buildCar('gt', { color: 0x6e1c18, spoiler: true, caliper: true, plate: 'VOSS 7', dirt: 0.3, chips: 60 });
     scene.add(this.carMesh);
-    this.car = new CarBody(this.carMesh, HANDLING.gt);
+    this.car = new CarBody(this.carMesh, HANDLING.gt, { player: true });
+    this.car.onShift = () => this.game.audio.tone({ type: 'sawtooth', freq: 140, freqEnd: 90, dur: 0.08, vol: 0.05, reverb: 0 });
     // headlights
     this.headlights = [];
     for (const sx of [-0.65, 0.65]) {
@@ -238,7 +239,7 @@ export default class Chapter1 {
     this.marketLost = false; this.flood = false; this.ending = false; this.said = new Set();
     this.yardGate.userData.open = 1;
     this.cinematic = null;
-    this.camState.pos.set(0, 0, 0);
+    this.camState.p = null; this.camState.yaw = undefined;
   }
 
   start(cp) {
@@ -306,7 +307,7 @@ export default class Chapter1 {
     this.kaiAnim.talking = false;
     shot(3);
     // police arrive behind
-    const u = this.police.spawn(V3(START.x, 0, START.z - 70), 0); if (u) u.body.input.throttle = 0.5;
+    const u = this.police.spawn(V3(START.x, 0, START.z - 70), 0); if (u) u.scripted = V3(START.x + 0.6, 0, START.z - 10); // pulls up 10 m behind
     this.kaiAnim.expression = 'surprise';
     await say('VENN', 'Mr. Voss. You are wearing eleven years of my work. Stay exactly where you are.');
     this.kaiAnim.expression = 'focus'; this.kaiAnim.talking = true;
@@ -327,6 +328,7 @@ export default class Chapter1 {
   // ------------------------------------------------------------------ phases
   beginPhase(name) {
     const g = this.game, ui = g.ui;
+    for (const u of this.police.activeUnits) u.scripted = null;
     this.phase = name; this.phaseT = 0;
     this.showHud(true);
     if (name === 'escape') {
@@ -378,7 +380,9 @@ export default class Chapter1 {
     placeWarped(this.carMesh, this.car.pos, this.car.yaw, this.car.pitch, this.car.roll);
     this.updateKai(dt);
     this.police.update(dt, t, this.car, this.colliders, this.ctx());
-    for (const u of this.police.activeUnits) { if (u.body.pos.distanceTo(this.car.pos) < 25) { u.body.input = { throttle: 0, brake: 1, steer: 0, handbrake: 1, nitro: 0 }; } }
+    // cutscenes obey the same collisions as gameplay: nothing passes through Kai's car
+    for (const u of this.police.activeUnits) collideCars(this.car, u.body);
+    for (const tc of this.traffic.active) collideCars(this.car, tc.body);
     const cam = this.camera, car = this.carMesh;
     const L = (x, y, z) => car.localToWorld(V3(x, y, z));
     let pos, look;
@@ -408,9 +412,12 @@ export default class Chapter1 {
     // ---- input
     if (inp.hit('KeyC')) this.camState.mode = (this.camState.mode + 1) % 3;
     if (inp.hit('KeyR') && car.speed < 3) { car.yaw += Math.PI; car.vel.set(0, 0, 0); }
-    car.input = { throttle: inp.throttle, brake: inp.brake, steer: -inp.steer, handbrake: inp.down('Space') || inp.padBtn(0) > 0.5 ? 1 : 0, nitro: inp.down('ShiftLeft') || inp.down('ShiftRight') || inp.padBtn(1) > 0.5 ? 1 : 0 };
+    // keyboard steering ramps like GETAWAY!'s (faster back to centre than out to lock)
+    const sx = clamp(inp.steer, -1, 1), cur = this.steerIn || 0, rate = (Math.sign(sx) !== Math.sign(cur) || sx === 0 ? 10 : 6) * dt;
+    this.steerIn = inp.pad && Math.abs(inp.padAxis(0)) > 0 ? sx : (cur < sx ? Math.min(sx, cur + rate) : Math.max(sx, cur - rate));
+    car.input = { throttle: inp.throttle, brake: inp.brake, steer: this.steerIn, handbrake: inp.down('Space') || inp.padBtn(0) > 0.5 ? 1 : 0, nitro: inp.down('ShiftLeft') || inp.down('ShiftRight') || inp.padBtn(1) > 0.5 ? 1 : 0 };
     // ---- physics (2 substeps)
-    const sub = 2;
+    const sub = Math.max(1, Math.ceil(dt / (1 / 100))); // Getaway steps vehicles at <= 1/100 s
     let impact = 0;
     for (let s = 0; s < sub; s++) {
       car.update(dt / sub, null);
@@ -455,7 +462,7 @@ export default class Chapter1 {
     const p = warpPoint(car.pos.clone().add(V3(0, 0.6, 0))).p;
     g.audio.crash(p, clamp(v / 25, 0.2, 1));
     car.health -= clamp((v - 4) / 160, 0, 0.3);
-    this.camState.shake = Math.min(1.2, this.camState.shake + v / 25);
+    this.camState.shake = Math.min(1, this.camState.shake + v / 30);
     this.kaiAnim.hitReact(Math.sign(car.yawRate) || 1, clamp(v / 20, 0.2, 1));
     for (let i = 0; i < Math.min(30, v * 2); i++) this.sparks.emit(p, V3((Math.random() - 0.5) * 10, Math.random() * 6, (Math.random() - 0.5) * 10), { life: 0.4 + Math.random() * 0.4, size: 0.12, grow: 0, color: [1, 0.7, 0.3], alpha: 1, gravity: 12, drag: 1 });
     for (let i = 0; i < 6; i++) this.smoke.emit(p, V3((Math.random() - 0.5) * 3, Math.random() * 2, (Math.random() - 0.5) * 3), { life: 1.5, size: 2, color: [0.35, 0.33, 0.32], alpha: 0.5 });
@@ -647,37 +654,70 @@ export default class Chapter1 {
     this.smoke.update(dt); this.sparks.update(dt);
   }
 
+  /** GETAWAY!'s chase camera (src/core/camera.js `_vehicle`), computed in unwarped space then bent. */
   updateCamera(dt, t) {
-    const cs = this.camState, cam = this.camera, car = this.car, mesh = this.carMesh;
-    const spd = car.speed;
-    const modes = [[0, 2.35, -6.6], [0, 3.6, -10.5], [0, 1.15, 0.6]];
-    const [ox, oy, oz] = modes[cs.mode];
-    // look-back yaw lag gives a sense of drift
-    const slip = Math.atan2(car.vel.x, car.vel.z);
-    let yawOff = 0;
-    if (spd > 3 && cs.mode < 2) { let d = slip - car.yaw; d = Math.atan2(Math.sin(d), Math.cos(d)); yawOff = clamp(d, -0.6, 0.6) * 0.55; }
-    const off = V3(ox, oy, oz).applyAxisAngle(V3(0, 1, 0), yawOff);
-    const want = mesh.localToWorld(off.clone());
-    // keep the camera inside the avenue (don't clip into buildings)
-    if (!cs.pos.lengthSq() || cs.mode === 2) cs.pos.copy(want);
-    else cs.pos.lerp(want, 1 - Math.exp(-dt * (cs.mode === 2 ? 30 : 9)));
-    const look = mesh.localToWorld(V3(0, cs.mode === 2 ? 1.05 : 1.2, cs.mode === 2 ? 20 : 4 + spd * 0.06));
-    if (!cs.look.lengthSq()) cs.look.copy(look); else cs.look.lerp(look, 1 - Math.exp(-dt * 12));
-    cs.shake = Math.max(0, cs.shake - dt * 1.8);
-    const sh = cs.shake * 0.25 + clamp((spd - 35) / 40, 0, 1) * 0.03;
-    cam.position.copy(cs.pos).add(V3((Math.random() - 0.5) * sh, (Math.random() - 0.5) * sh, (Math.random() - 0.5) * sh));
-    // up vector follows the bend so the horizon rolls with the world
-    const { pitch } = warpPoint(car.pos);
+    const cs = this.camState, cam = this.camera, car = this.car, mesh = this.carMesh, spec = car.h;
+    const speed = car.speed, damp = (a, b2, k) => a + (b2 - a) * (1 - Math.exp(-k * dt));
+    const dampAng = (a, b2, k) => a + Math.atan2(Math.sin(b2 - a), Math.cos(b2 - a)) * (1 - Math.exp(-k * dt));
+    if (cs.yaw === undefined) { cs.yaw = car.yaw; cs.p = null; cs.fov = 72; cs.roll = 0; }
+    // heading: car yaw, blending toward the velocity direction while drifting fast
+    let head = car.yaw;
+    if (speed > 8 && car.vF > 0) { const vh = Math.atan2(car.vel.x, car.vel.z); head = car.yaw + Math.atan2(Math.sin(vh - car.yaw), Math.cos(vh - car.yaw)) * 0.45; }
+    cs.yaw = dampAng(cs.yaw, head, car.airborne ? 1.5 : 6.5);
+    const boosting = car.input.nitro && car.nitroFuel > 0 && car.input.throttle;
+    const target = V3(car.pos.x, car.pos.y + spec.H * 0.85 + 0.4, car.pos.z);
+    let dist = 2.6 + spec.L * 0.7 + clamp(speed * 0.05, 0, 3.2) + (car.airborne ? 1.4 : 0) + (boosting ? 0.8 : 0), height = 0.85 + spec.H * 0.5;
+    if (cs.mode === 1) { dist *= 1.7; height *= 1.8; }
+    cs.roll = damp(cs.roll, clamp(-car.yawRate * clamp(speed / 35, 0, 1.2) * 0.07, -0.1, 0.1), 4);
+    let pos, look;
+    if (cs.mode === 2) { // hood cam
+      const sx = Math.sin(car.yaw), cz = Math.cos(car.yaw);
+      pos = V3(car.pos.x + sx * spec.L * 0.15, car.pos.y + spec.H * 0.8 + 0.25, car.pos.z + cz * spec.L * 0.15);
+      look = V3(pos.x + sx * 20, pos.y - 0.6, pos.z + cz * 20); cs.p = pos.clone();
+    } else {
+      const desired = V3(target.x - Math.sin(cs.yaw) * dist, target.y + height - 0.2, target.z - Math.cos(cs.yaw) * dist);
+      this.camCollide(target, desired);
+      if (!cs.p) cs.p = desired.clone();
+      cs.p.x = damp(cs.p.x, desired.x, 8.5); cs.p.z = damp(cs.p.z, desired.z, 8.5); cs.p.y = damp(cs.p.y, desired.y, 6);
+      this.camCollide(target, cs.p); // never let the lag put the camera inside a wall
+      pos = cs.p.clone();
+      look = V3(target.x + car.vel.x * 0.12, target.y + 0.2, target.z + car.vel.z * 0.12);
+    }
+    // trauma shake + speed shake
+    cs.shake = Math.max(0, cs.shake - dt * 1.1);
+    const tr = cs.shake * cs.shake, sp = clamp((speed - 18) / 45, 0, 1) * 0.09 + (boosting ? 0.05 : 0);
+    const n = (k) => Math.sin(t * k) * 0.6 + Math.sin(t * k * 2.31 + 1.7) * 0.4;
+    // bend both points with the world
+    const wp = warpPoint(pos).p.clone(), wl = warpPoint(look).p.clone(), { pitch } = warpPoint(car.pos);
+    cam.position.copy(wp);
     cam.up.set(0, Math.cos(pitch), -Math.sin(pitch));
-    cam.lookAt(cs.look);
-    const nitro = car.input.nitro && car.nitroFuel > 0 ? 1 : 0;
-    cs.fovKick += ((nitro ? 12 : 0) - cs.fovKick) * dt * 3;
-    cam.fov = 60 + clamp(spd / 70, 0, 1) * 16 + cs.fovKick;
-    cam.updateProjectionMatrix();
-    this.game.renderer.grade.uniforms.uSpeedBlur.value = clamp((spd - 30) / 45, 0, 1) * 0.8 + nitro * 0.6;
+    cam.lookAt(wl);
+    cam.rotateX((n(19) * tr * 0.7 + n(8) * sp * 0.6) * 0.08); cam.rotateY((n(18) * tr * 0.9 + n(7) * sp) * 0.08); cam.rotateZ(n(15) * tr * 0.05 + (cs.mode === 2 ? 0 : cs.roll));
+    const fovT = 72 + clamp(speed - 8, 0, 70) * 0.42 + (boosting ? 13 : 0) + (cs.mode === 2 ? 6 : 0);
+    cs.fov = damp(cs.fov, fovT, 2.5);
+    cam.fov = Math.min(cs.fov, 110); cam.updateProjectionMatrix();
+    this.game.renderer.grade.uniforms.uSpeedBlur.value = clamp((speed - 30) / 45, 0, 1) * 0.6 + (boosting ? 0.4 : 0);
     this.game.renderer.grade.uniforms.uDamage.value = clamp(0.35 - car.health, 0, 0.35) * 2 * (0.6 + 0.4 * Math.sin(t * 6));
-    // shadow camera follows the player
     this.sun.position.copy(mesh.position).addScaledVector(this.sunDir, 300); this.sun.target.position.copy(mesh.position);
+  }
+
+  /** Pull `to` back toward `from` if the segment enters a building (2D boxes with height). */
+  camCollide(from, to, pad = 0.4) {
+    const boxes = this.city.near(to.x, to.z, 20).concat(this.extraColliders());
+    let tMin = 1;
+    const dx = to.x - from.x, dz = to.z - from.z;
+    for (const b of boxes) {
+      if (b.h !== undefined && Math.min(from.y, to.y) > b.h) continue;
+      let t0 = 0, t1 = 1, ok = true;
+      for (const [p, d, lo, hi] of [[from.x, dx, b.minX - pad, b.maxX + pad], [from.z, dz, b.minZ - pad, b.maxZ + pad]]) {
+        if (Math.abs(d) < 1e-6) { if (p < lo || p > hi) { ok = false; break; } continue; }
+        let ta = (lo - p) / d, tb = (hi - p) / d; if (ta > tb) [ta, tb] = [tb, ta];
+        t0 = Math.max(t0, ta); t1 = Math.min(t1, tb); if (t0 > t1) { ok = false; break; }
+      }
+      if (ok && t0 < tMin) tMin = Math.max(0.15, t0);
+    }
+    if (tMin < 1) to.lerpVectors(from, to.clone(), tMin);
+    return to;
   }
 
   updateAudio(dt) {

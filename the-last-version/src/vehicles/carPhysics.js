@@ -5,31 +5,40 @@ import * as THREE from 'three';
 
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 
+// Handling specs follow GETAWAY!'s vehicle roster (src/vehicles/types.js on the getaway branch):
+// top speed m/s, accel m/s², tyre grip, steering lock, drift tendency, CG height, brake m/s².
 export const HANDLING = {
-  gt: { mass: 1450, inertia: 2600, a: 1.25, b: 1.37, engine: 15500, topSpeed: 74, brake: 17000, grip: 1.25, rearGrip: 1.15, cf: 95000, cr: 105000, maxSteer: 0.6, drag: 0.36, nitro: 11000, gears: [0, 16, 27, 38, 50, 62, 80] },
-  police: { mass: 1750, inertia: 3300, a: 1.4, b: 1.55, engine: 16500, topSpeed: 70, brake: 18000, grip: 1.2, rearGrip: 1.15, cf: 100000, cr: 110000, maxSteer: 0.55, drag: 0.4, nitro: 0, gears: [0, 15, 26, 37, 48, 60, 74] },
-  traffic: { mass: 1400, inertia: 2400, a: 1.3, b: 1.4, engine: 6000, topSpeed: 30, brake: 12000, grip: 1.0, rearGrip: 1.0, cf: 80000, cr: 85000, maxSteer: 0.6, drag: 0.5, nitro: 0, gears: [0, 10, 18, 26, 34] },
+  gt: { mass: 1450, L: 4.55, W: 1.95, H: 1.28, wb: 2.62, top: 76, accel: 9.5, grip: 1.18, steer: 0.62, drift: 0.9, cgH: 0.45, brake: 15, drive: 'RWD', gears: 6, nitro: true },
+  police: { mass: 1750, L: 5.0, W: 1.98, H: 1.47, wb: 2.95, top: 72, accel: 9.0, grip: 1.12, steer: 0.6, drift: 0.8, cgH: 0.55, brake: 16, drive: 'RWD', gears: 6 },
+  traffic: { mass: 1400, L: 4.6, W: 1.85, H: 1.45, wb: 2.75, top: 34, accel: 5, grip: 1.0, steer: 0.6, drift: 0.7, cgH: 0.55, brake: 12, drive: 'FWD', gears: 5 },
 };
 
+const GRAV = 9.81 * 1.6;
+const lerp = (a, b, t) => a + (b - a) * t;
+const approach = (v, t, r) => (v < t ? Math.min(t, v + r) : Math.max(t, v - r));
+const sstep = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
+
 export class CarBody {
-  constructor(mesh, handling = HANDLING.gt) {
-    this.mesh = mesh; this.h = handling;
+  constructor(mesh, handling = HANDLING.gt, { player = false } = {}) {
+    this.mesh = mesh; this.h = handling; this.isPlayer = player;
     this.pos = new THREE.Vector3(); this.vel = new THREE.Vector3();
-    this.yaw = 0; this.yawRate = 0;
+    this.yaw = 0; this.yawRate = 0; this.vF = 0; this.vL = 0;
     this.vy = 0; this.airborne = false; this.airTime = 0;
     this.half = mesh.halfExtents ? mesh.halfExtents.clone() : new THREE.Vector3(0.95, 0.7, 2.3);
     this.mass = handling.mass;
+    this.a = handling.wb / 2; this.b = handling.wb / 2; this.wb = handling.wb;
+    this.I = handling.mass * (handling.L * handling.L + handling.W * handling.W) / 12 * 1.15;
     this.input = { throttle: 0, brake: 0, steer: 0, handbrake: 0, nitro: 0 };
-    this.steerAngle = 0;
-    this.gear = 1; this.rpm = 900;
+    this.steerAngle = 0; this.gear = 1; this.rpm = 900; this.shiftT = 0;
     this.health = 1; this.nitroFuel = 1;
-    this.slip = 0; this.skid = 0;
+    this.slip = 0; this.skid = 0; this.spin = 0; this.drifting = 0;
+    this.axPrev = 0; this.ayPrev = 0;
     this.pitch = 0; this.roll = 0; this.pitchV = 0; this.rollV = 0;
     this.accLong = 0; this.accLat = 0;
     this.wheelSpin = 0;
     this.kinematic = false; // traffic follows a path until it is hit
     this.enabled = true;
-    this.grounded = true;
     this.lastImpact = 0;
   }
 
@@ -38,94 +47,105 @@ export class CarBody {
   get speed() { return Math.hypot(this.vel.x, this.vel.z); }
   get forwardSpeed() { return this.vel.x * Math.sin(this.yaw) + this.vel.z * Math.cos(this.yaw); }
 
-  place(x, z, yaw, y = 0) { this.pos.set(x, y, z); this.yaw = yaw; this.vel.set(0, 0, 0); this.yawRate = 0; this.vy = 0; this.sync(); }
+  place(x, z, yaw, y = 0) { this.pos.set(x, y, z); this.yaw = yaw; this.vel.set(0, 0, 0); this.yawRate = 0; this.vy = 0; this.vF = this.vL = 0; this.airborne = false; this.sync(); }
 
-  update(dt, ground) {
+  /** Port of GETAWAY!'s Vehicle.step: Pacejka-lite tyres, weight transfer, gearbox, arcade player assist. */
+  update(h, ground) {
     if (!this.enabled) return;
-    const h = this.h, inp = this.input;
-    const fx = Math.sin(this.yaw), fz = Math.cos(this.yaw);
-    const rx = Math.cos(this.yaw), rz = -Math.sin(this.yaw);
-    let vf = this.vel.x * fx + this.vel.z * fz;
-    let vl = this.vel.x * rx + this.vel.z * rz;
-    const speed = Math.abs(vf);
-    // steering: speed-sensitive with smoothing
-    const steerTarget = inp.steer * h.maxSteer * (1 / (1 + speed * 0.045));
-    this.steerAngle += (steerTarget - this.steerAngle) * Math.min(1, dt * 10);
-    const delta = this.steerAngle;
-
-    let Fx = 0, Fyf = 0, Fyr = 0;
-    const N = this.mass * 9.81;
+    const sp = this.h, c = this.input, m = this.mass;
+    const sy = Math.sin(this.yaw), cy = Math.cos(this.yaw);
+    let vF = this.vel.x * sy + this.vel.z * cy, vL = this.vel.x * cy - this.vel.z * sy, r = this.yawRate;
+    const dmgF = 0.6 + 0.4 * clamp(this.health / 0.5, 0, 1);
+    const throttle = c.throttle;
+    const boost = !!(c.nitro && sp.nitro && this.nitroFuel > 0);
+    if (boost) this.nitroFuel = Math.max(0, this.nitroFuel - h * 0.2); else this.nitroFuel = Math.min(1, this.nitroFuel + h * 0.05);
+    // steering (speed sensitive); positive input steers right
+    const lock = sp.steer / (1 + Math.abs(vF) / (this.isPlayer ? 40 : 32));
+    this.steerAngle = approach(this.steerAngle, -c.steer * lock, (this.isPlayer ? 5.5 : 2.6) * h);
+    const d = this.steerAngle;
     if (!this.airborne) {
+      // virtual gearbox
+      const vt = sp.top * (boost ? 1.18 : 1), frac = clamp(Math.abs(vF) / vt, 0, 1), ng = sp.gears;
+      let gear = 1; while (gear < ng && frac > Math.pow(gear / ng, 0.85)) gear++;
+      const lo = gear === 1 ? 0 : Math.pow((gear - 1) / ng, 0.85), hi = Math.pow(gear / ng, 0.85);
+      const gf = clamp((frac - lo) / (hi - lo), 0, 1);
+      if (gear !== this.gear) { this.shiftT = gear > this.gear ? 0.16 : 0.08; this.gear = gear; this.onShift?.(gear); }
+      let rpm = 850 + 6350 * (0.25 + 0.75 * gf);
+      if (Math.abs(vF) < 1.5) rpm = 850 + throttle * 6350 * 0.55;
+      if (this.spin > 0.5) rpm = lerp(rpm, 7200 * 0.95, 0.6);
+      this.rpm = lerp(this.rpm, rpm, 1 - Math.exp(-14 * h)); this.shiftT -= h;
       // longitudinal
-      const reversing = inp.brake > 0.1 && vf < 1.5 && inp.throttle < 0.1;
-      const top = h.topSpeed * (inp.nitro && this.nitroFuel > 0 ? 1.18 : 1);
-      if (inp.throttle > 0) Fx += inp.throttle * h.engine * clamp(1 - vf / top, 0, 1) * (vf < 8 ? 1.25 : 1);
-      if (reversing) Fx -= inp.brake * h.engine * 0.5 * clamp(1 + vf / 12, 0, 1);
-      else if (inp.brake > 0) Fx -= Math.sign(vf) * inp.brake * h.brake * Math.min(1, speed / 2);
-      if (inp.nitro && this.nitroFuel > 0 && h.nitro) { Fx += h.nitro; this.nitroFuel = Math.max(0, this.nitroFuel - dt * 0.22); }
-      else this.nitroFuel = Math.min(1, this.nitroFuel + dt * 0.04);
-      if (inp.handbrake) Fx -= Math.sign(vf) * h.brake * 0.35 * Math.min(1, speed / 3);
-      Fx -= h.drag * vf * Math.abs(vf) + 140 * vf * 0.15;
-      // lateral tyre forces (slip angles)
-      const sv = Math.max(speed, 3);
-      const af = Math.atan2(vl + h.a * this.yawRate, sv) - delta * Math.sign(vf || 1);
-      const ar = Math.atan2(vl - h.b * this.yawRate, sv);
-      const wf = N * h.b / (h.a + h.b), wr = N * h.a / (h.a + h.b);
-      // weight transfer under braking/accel
-      const transfer = clamp(-this.accLong * 0.08, -0.25, 0.25);
-      const muF = h.grip * (1 + transfer), muR = h.rearGrip * (1 - transfer) * (inp.handbrake ? 0.42 : 1) * (inp.throttle > 0.9 && speed < 12 ? 0.85 : 1);
-      Fyf = clamp(-h.cf * af, -muF * wf, muF * wf);
-      Fyr = clamp(-h.cr * ar * (inp.handbrake ? 0.5 : 1), -muR * wr, muR * wr);
-      this.slip = Math.abs(ar) + (inp.handbrake ? 0.2 : 0);
-      this.skid = clamp((Math.abs(Fyr) / (muR * wr) > 0.95 ? Math.abs(ar) * 3 : 0) + (inp.handbrake && speed > 6 ? 0.6 : 0) + (inp.brake > 0.5 && speed > 15 ? 0.35 : 0) + (inp.throttle > 0.9 && speed < 10 ? 0.4 : 0), 0, 1);
-    } else { this.skid = 0; Fx -= h.drag * vf * Math.abs(vf) * 0.5; }
-
-    const m = this.mass;
-    const ax = (Fx - Fyf * Math.sin(delta)) / m;
-    const ay = (Fyr + Fyf * Math.cos(delta)) / m;
-    let yawAcc = (h.a * Fyf * Math.cos(delta) - h.b * Fyr) / h.inertia;
-    if (this.airborne) yawAcc = 0;
-    this.accLong = ax; this.accLat = ay;
-    vf += ax * dt; vl += ay * dt;
-    this.yawRate += yawAcc * dt;
-    // low-speed kinematic blend keeps parking-speed handling stable
-    if (!this.airborne) {
-      const kin = clamp(1 - Math.abs(vf) / 5, 0, 1);
-      const kinRate = (vf * Math.tan(delta)) / (h.a + h.b);
-      this.yawRate = this.yawRate * (1 - kin) + kinRate * kin;
-      if (kin > 0) vl *= 1 - kin * Math.min(1, dt * 8);
-      // arcade stability assist (less with handbrake so drifts hold)
-      this.yawRate *= 1 - Math.min(1, dt * (inp.handbrake ? 0.4 : 1.6));
-      if (inp.throttle < 0.05 && inp.brake < 0.05 && Math.abs(vf) < 0.4) vf *= 0.9;
-    } else this.yawRate *= 1 - dt * 0.5;
-    this.yaw += this.yawRate * dt;
-    const nfx = Math.sin(this.yaw), nfz = Math.cos(this.yaw), nrx = Math.cos(this.yaw), nrz = -Math.sin(this.yaw);
-    this.vel.x = nfx * vf + nrx * vl; this.vel.z = nfz * vf + nrz * vl;
-    this.pos.x += this.vel.x * dt; this.pos.z += this.vel.z * dt;
-    // vertical: follow ground, or fly
+      let drive = 0, brake = 0; const rev = c.brake > 0.1 && vF < 1.2 && throttle < 0.1;
+      if (rev) drive = -c.brake * m * sp.accel * 0.45 * (vF > -11 ? 1 : 0) * dmgF;
+      if (throttle > 0) drive = throttle * m * sp.accel * (1 - Math.pow(frac, 2.1)) * (this.shiftT > 0 ? (this.isPlayer ? 0.7 : 0.35) : 1) * (boost ? 1.55 : 1) * dmgF * (vF < -0.5 ? 1.6 : 1);
+      if (!rev && c.brake > 0 && Math.abs(vF) > 0.2) brake = c.brake * m * sp.brake * Math.sign(vF);
+      if (c.handbrake && Math.abs(vF) > 0.2) brake += m * sp.brake * (throttle > 0.2 ? 0.05 : 0.18) * Math.sign(vF);
+      const drag = 0.38 * sp.W * sp.H * vF * Math.abs(vF) + m * 0.11 * vF;
+      // loads + weight transfer
+      const down = 0.9 * vF * vF;
+      const Wt = m * GRAV + down; let Wf = Wt * this.b / this.wb - m * this.axPrev * sp.cgH / this.wb; Wf = clamp(Wf, Wt * 0.15, Wt * 0.85); const Wr = Wt - Wf;
+      const mu = sp.grip * 0.95; // wet streets
+      const muF = mu, muR = mu * (c.handbrake ? 0.42 + 0.2 * (1 - sp.drift) : 1);
+      const rearShare = sp.drive === 'FWD' ? 0 : sp.drive === 'AWD' ? 0.6 : 1;
+      const Fxr = drive * rearShare, Fxf = drive * (1 - rearShare);
+      const spinR = Math.abs(Fxr) / (muR * Wr * 1.05), spinF = Math.abs(Fxf) / (muF * Wf * 1.05);
+      this.spin = Math.max(spinR, spinF) > 1 && Math.abs(vF) < 25 ? Math.max(spinR, spinF) - 1 : 0;
+      const combR = Math.sqrt(Math.max(0.08, 1 - Math.min(1, spinR) ** 2)), combF = Math.sqrt(Math.max(0.15, 1 - Math.min(1, spinF) ** 2));
+      // lateral tyre forces (Pacejka-lite)
+      const vx = Math.max(Math.abs(vF), 2.5);
+      const af = Math.atan2(vL + r * this.a, vx) - d * Math.sign(vF || 1);
+      const ar = Math.atan2(vL - r * this.b, vx);
+      const Bf = 10, Br = 10 * (1.1 - 0.3 * sp.drift), Cc = 1.45;
+      const Fyf = -muF * Wf * Math.sin(Cc * Math.atan(Bf * af)) * combF;
+      const Fyr = -muR * Wr * Math.sin(Cc * Math.atan(Br * ar)) * combR;
+      const Fx = clamp(Fxr, -muR * Wr * 1.1, muR * Wr * 1.1) + clamp(Fxf, -muF * Wf * 1.1, muF * Wf * 1.1) - brake - drag;
+      const dvF = (Fx - Fyf * Math.sin(d)) / m + r * vL;
+      const dvL = (Fyf * Math.cos(d) + Fyr) / m - r * vF;
+      const dr = (this.a * Fyf * Math.cos(d) - this.b * Fyr) / this.I;
+      const vF0 = vF;
+      vF += dvF * h; vL += dvL * h; r += dr * h;
+      if (brake !== 0 && Math.sign(vF) !== Math.sign(vF0) && Math.abs(vF0) > 0) vF = 0; // braking never reverses
+      // low-speed kinematic blend
+      const s = sstep(0.8, 4, Math.abs(vF));
+      const rk = vF * Math.tan(d) / this.wb; r = lerp(rk, r, s); vL *= 1 - (1 - s) * 12 * h;
+      // ARCADE HANDLING (player): turn where you steer up to the grip limit; slide only on the handbrake
+      if (this.isPlayer) {
+        const rMax = (sp.grip * GRAV * 1.25 + (boost ? 2 : 0)) / Math.max(4, Math.abs(vF));
+        const rWant = clamp(vF * Math.tan(d) / this.wb, -rMax, rMax);
+        if (c.handbrake && Math.abs(vF) > 6) { r += -c.steer * 3.2 * h * clamp(Math.abs(vF) / 18, 0, 1.2); vF *= 1 - 0.05 * h; this.drifting = 0.6; }
+        else {
+          this.drifting = Math.max(0, this.drifting - h);
+          const grip = this.drifting > 0 && throttle > 0.3 ? 0.3 : clamp(1.25 - this.slip / 20, 0.6, 1);
+          r = lerp(r, rWant, 1 - Math.exp(-h * 10 * grip));
+          vL *= 1 - Math.min(1, h * 5 * grip);
+        }
+      }
+      if (Math.abs(vF) < 0.08 && throttle === 0 && !rev) vF *= 0.5;
+      this.axPrev = lerp(this.axPrev, clamp(dvF - r * vL, -25, 25), 0.3); this.ayPrev = lerp(this.ayPrev, clamp(dvL + r * vF, -25, 25), 0.3);
+      this.slip = Math.abs(vL - r * this.b);
+      this.skid = clamp((this.slip - 2.5) / 6, 0, 1) * (Math.abs(vF) > 4 ? 1 : 0) + (this.spin > 0.2 ? 0.5 : 0) + (c.handbrake && Math.abs(vF) > 6 ? 0.5 : 0) + (c.brake > 0.6 && Math.abs(vF) > 14 ? 0.35 : 0);
+      this.skid = clamp(this.skid, 0, 1);
+      this.vel.x = sy * vF + cy * vL; this.vel.z = cy * vF - sy * vL;
+    } else {
+      r *= 1 - 0.4 * h; this.slip = 0; this.spin = 0; this.skid = 0;
+      this.rpm = lerp(this.rpm, 3000 + throttle * 4000, 1 - Math.exp(-6 * h));
+    }
+    this.vF = vF; this.vL = vL; this.yawRate = r;
+    this.yaw = wrap(this.yaw + r * h);
+    this.pos.x += this.vel.x * h; this.pos.z += this.vel.z * h;
+    this.accLong = this.axPrev; this.accLat = this.ayPrev;
+    // vertical: flat streets; ballistic when launched (the flood)
     const gy = ground ? ground(this.pos.x, this.pos.z) : 0;
     if (this.airborne) {
-      this.vy -= 22 * dt; this.pos.y += this.vy * dt; this.airTime += dt;
-      if (this.pos.y <= gy) { this.landImpact = Math.max(0, -this.vy); this.pos.y = gy; this.vy = 0; this.airborne = false; this.airTime = 0; this.pitchV -= 1.5; }
-    } else {
-      const slopeVy = (gy - this.pos.y) / Math.max(dt, 1e-3);
-      if (gy < this.pos.y - 0.25 || (this.lastSlopeVy !== undefined && slopeVy < this.lastSlopeVy - 9 && speed > 15)) { this.airborne = true; this.vy = Math.max(this.lastSlopeVy ?? 0, 0); }
-      else { this.pos.y = gy; this.lastSlopeVy = slopeVy; }
-    }
-    // gearbox / rpm for audio
-    const g = h.gears;
-    const absV = Math.abs(vf);
-    while (this.gear < g.length - 1 && absV > g[this.gear] * 0.95) this.gear++;
-    while (this.gear > 1 && absV < g[this.gear - 1] * 0.7) this.gear--;
-    const lo = g[this.gear - 1] * 0.7, hi = g[this.gear];
-    const targetRpm = 900 + clamp((absV - lo) / Math.max(hi - lo, 1), 0, 1) * 6300 + (inp.throttle > 0 && absV < 3 ? 1500 * inp.throttle : 0) + (this.airborne ? inp.throttle * 2000 : 0);
-    this.rpm += (targetRpm - this.rpm) * Math.min(1, dt * 8);
-    this.wheelSpin += (vf / (this.mesh.def?.wheelR || 0.34)) * dt + (inp.throttle > 0.9 && absV < 10 ? 30 * dt : 0);
-    // suspension visuals: damped springs driven by accelerations
-    this.pitchV += (-this.pitch * 90 - this.pitchV * 11 - ax * 0.012) * dt;
-    this.rollV += (-this.roll * 90 - this.rollV * 11 + ay * 0.01) * dt;
-    this.pitch += this.pitchV * dt; this.roll += this.rollV * dt;
-    this.sync(dt);
+      this.vy -= GRAV * h; this.pos.y += this.vy * h; this.airTime += h;
+      if (this.pos.y <= gy) { this.landImpact = Math.max(0, -this.vy); this.pos.y = gy; this.vy = 0; this.airborne = false; this.airTime = 0; }
+    } else this.pos.y = gy;
+    this.wheelSpin += (vF / 0.34) * h + (this.spin > 0.3 ? 40 * h : 0);
+    // body suspension springs (visual), as in Getaway
+    const tgtP = clamp(-this.axPrev * 0.006 * (sp.cgH / 0.5), -0.08, 0.08), tgtR = clamp(this.ayPrev * 0.007 * (sp.cgH / 0.5), -0.09, 0.09);
+    this.pitchV += ((tgtP - this.pitch) * 90 - this.pitchV * 11) * h; this.pitch += this.pitchV * h;
+    this.rollV += ((tgtR - this.roll) * 90 - this.rollV * 11) * h; this.roll += this.rollV * h;
+    this.sync();
   }
 
   /** Path-following for kinematic traffic. */
@@ -231,8 +251,8 @@ export function collideCars(a, b, restitution = 0.3) {
   // contact point lever arm → spin
   const cx = (a.pos.x + b.pos.x) / 2, cz = (a.pos.z + b.pos.z) / 2;
   const ra = (cx - a.pos.x) * hit.nz - (cz - a.pos.z) * hit.nx, rb = (cx - b.pos.x) * hit.nz - (cz - b.pos.z) * hit.nx;
-  a.yawRate += clamp((ra * j) / (a.h.inertia * 1.5), -3, 3);
-  b.yawRate -= clamp((rb * j) / (b.h.inertia * 1.5), -3, 3);
+  a.yawRate += clamp((ra * j) / (a.I * 1.5), -3, 3);
+  b.yawRate -= clamp((rb * j) / (b.I * 1.5), -3, 3);
   a.lastImpact = b.lastImpact = -vn;
   return -vn;
 }

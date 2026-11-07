@@ -51,7 +51,7 @@ export class Police {
   spawn(at, yaw, { roadblock = false } = {}) {
     const u = this.units.find((x) => !x.active);
     if (!u) return null;
-    u.active = true; u.roadblock = roadblock; u.stuck = 0; u.reverse = 0; u.crashed = 0;
+    u.active = true; u.roadblock = roadblock; u.scripted = null; u.stuck = 0; u.reverse = 0; u.crashed = 0;
     u.body.place(at.x, at.z, yaw); u.body.health = 1; u.body.enabled = true;
     u.mesh.visible = true;
     if (!u.siren && this.audio.ctx) u.siren = new Siren(this.audio);
@@ -102,7 +102,15 @@ export class Police {
       const toP = new THREE.Vector3().subVectors(pp, b.pos);
       const dist = toP.length();
       if (dist > 420 && !u.roadblock) { this.despawn(u); continue; }
-      if (u.roadblock) {
+      if (u.scripted) {
+        // cutscene arrival: roll up and stop at a mark (never into the player's car)
+        const to = new THREE.Vector3().subVectors(u.scripted, b.pos); to.y = 0;
+        const dd = to.length(), want = Math.atan2(to.x, to.z);
+        let a = want - b.yaw; a = Math.atan2(Math.sin(a), Math.cos(a));
+        const vWant = Math.min(14, Math.max(0, (dd - 1.5) * 0.9));
+        const v = b.forwardSpeed;
+        b.input = { throttle: v < vWant - 0.5 ? 0.6 : 0, brake: v > vWant + 0.5 || dd < 1.5 ? 1 : 0, steer: dd > 3 ? -Math.max(-1, Math.min(1, a * 1.5)) : 0, handbrake: dd < 1.5 ? 1 : 0, nitro: 0 };
+      } else if (u.roadblock) {
         b.input = { throttle: 0, brake: 1, steer: 0, handbrake: 1, nitro: 0 };
         if (dist < 40 && b.lastImpact > 2) u.roadblock = false; // knocked loose, join the chase
       } else if (u.crashed > 0) {
@@ -138,12 +146,13 @@ export class Police {
         if (spd < 1.2 && throttle > 0.5) u.stuck += dt; else u.stuck = Math.max(0, u.stuck - dt);
         if (u.stuck > 1.6) { u.reverse = 1.2; u.stuck = 0; }
         if (u.reverse > 0) { u.reverse -= dt; throttle = 0; brake = 1; steer = -steer; }
-        b.input = { throttle, brake, steer: steer, handbrake: Math.abs(d) > 1.2 && spd > 12 ? 1 : 0, nitro: 0 };
+        b.input = { throttle, brake, steer: -steer, handbrake: Math.abs(d) > 1.2 && spd > 12 ? 1 : 0, nitro: 0 }; // physics uses +steer = right
         // catch-up assist when far behind (keeps the chase tense)
         if (dist > 120 && spd < player.speed + 8) b.vel.addScaledVector(b.forward, dt * 6);
       }
-      b.update(dt, null);
-      for (const c of ctx.nearColliders(b.pos, 10)) ctx.collideStatic(b, c);
+      const nsub = Math.max(1, Math.ceil(dt / (1 / 100)));
+      const near = ctx.nearColliders(b.pos, 12);
+      for (let k = 0; k < nsub; k++) { b.update(dt / nsub, null); for (const c of near) ctx.collideStatic(b, c); }
       placeWarped(u.mesh, b.pos, b.yaw, b.pitch, b.roll);
       // lightbar strobe
       const s = Math.sin((t + u.phase) * 18), s2 = Math.sin((t + u.phase) * 18 + Math.PI);
