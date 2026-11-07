@@ -168,3 +168,5 @@ html, body { margin: 0; height: 100%; background: #000; overflow: hidden; color:
 .pause-hint { position: absolute; left: 3.5vw; top: 2vh; font-family: var(--mono); font-size: 10px; letter-spacing: 0.3em; color: rgba(255,255,255,0.25); }
 .fps { position: absolute; right: 8px; bottom: 6px; font-family: var(--mono); font-size: 11px; color: rgba(255,255,255,0.5); }
 .click-to-start { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: var(--mono); letter-spacing: 0.4em; font-size: 13px; color: var(--dim); }
+.crosshair.lock { transform: translate(-50%, -50%) scale(1.25); transition: transform 0.08s; }
+.crosshair.lock::before, .crosshair.lock::after { background: var(--accent); }

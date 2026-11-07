@@ -18,6 +18,8 @@ export class Tracers {
     scene.add(this.mesh, this.meshE);
     this.items = [];
   }
+  /** Instant visual streak for hitscan shots (muzzle → impact), fades in ~70 ms. */
+  streak(from, to) { this.items.push({ p: to.clone(), prev: from.clone(), v: new THREE.Vector3(), life: 0.07, streak: true }); }
   fire(from, dir, { speed = 420, enemy = false, damage = 0.06, life = 1.6, spread = 0.004 } = {}) {
     const d = dir.clone().add(new THREE.Vector3((Math.random() - 0.5) * spread, (Math.random() - 0.5) * spread, (Math.random() - 0.5) * spread)).normalize();
     this.items.push({ p: from.clone(), v: d.multiplyScalar(speed), life, enemy, damage, prev: from.clone() });
@@ -29,6 +31,14 @@ export class Tracers {
     let n = 0, ne = 0;
     for (let i = this.items.length - 1; i >= 0; i--) {
       const it = this.items[i];
+      if (it.streak) {
+        it.life -= dt; if (it.life <= 0) { this.items.splice(i, 1); continue; }
+        const d = it.p.clone().sub(it.prev), L = d.length(), k = it.life / 0.07;
+        // the bright head travels from the muzzle to the impact over the streak's life
+        const head = it.prev.clone().addScaledVector(d, 1 - k * 0.6);
+        q.setFromUnitVectors(z, d.normalize()); s.set(1.4, 1.4, Math.min(L, 14));
+        M.compose(head, q, s); this.mesh.setMatrixAt(n++, M); continue;
+      }
       it.prev.copy(it.p);
       it.v.y -= 9.81 * dt * 0.3;
       it.p.addScaledVector(it.v, dt);

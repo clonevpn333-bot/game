@@ -427,41 +427,93 @@ export default class Chapter2 {
     }
   }
 
+  /**
+   * Bow gun, GETAWAY!-style: hitscan from the crosshair (the shot lands exactly where you aim,
+   * instantly), light aim assist toward a boat just off the crosshair, and the tracer, muzzle
+   * flash, kick, FOV punch, hit tick and impact effects as feedback.
+   */
   aimAndFire(dt, t) {
-    const g = this.game, gun = this.boatMesh.userData.gun;
-    // aim point: what the screen centre looks at
-    const ray = new THREE.Raycaster(); ray.setFromCamera(new THREE.Vector2(0, 0), this.camera);
-    let aim = ray.ray.at(200, V3());
-    // never aim into the sea: clamp the far aim point to the horizon at deck height
-    if (aim.y < this.boat.pos.y + 1.5) aim.y = this.boat.pos.y + 1.5;
-    for (const p of this.patrols) if (p.alive) { const s = new THREE.Sphere(p.body.pos.clone().add(V3(0, 1, 0)), 3); const hit = ray.ray.intersectSphere(s, V3()); if (hit) { aim = hit; break; } }
-    if (this.ship.visible) for (const tu of this.ship.userData.turrets) if (tu.alive) { const hit = ray.ray.intersectSphere(new THREE.Sphere(tu.tank.getWorldPosition(V3()), 2), V3()); if (hit) aim = hit; }
-    const local = gun.group.worldToLocal(aim.clone());
-    const yaw = clamp(Math.atan2(local.x, local.z), -2.2, 2.2);
-    gun.yaw.rotation.y += (yaw - gun.yaw.rotation.y) * Math.min(1, dt * 14);
-    const lp = gun.yaw.worldToLocal(aim.clone());
-    gun.pitch.rotation.x = clamp(-Math.atan2(lp.y - 0.25, Math.hypot(lp.x, lp.z)), -0.6, 0.35);
+    const g = this.game, gun = this.boatMesh.userData.gun, cam = this.camera;
+    const origin = cam.position.clone(), look = cam.getWorldDirection(V3());
+    // targets: patrol boats (generous hull spheres) and the ship's coolant tanks
+    const targets = [];
+    for (const p of this.patrols) if (p.alive && !p.sinking) targets.push({ c: p.body.pos.clone().add(V3(0, 1, 0)), r: 3.0, hit: (pt, d) => { p.hitAt(pt, d); if (p.sinking && !p.counted) { p.counted = true; this.kills++; this.killConfirm(pt); } }, boat: p });
+    if (this.ship.visible) for (const tu of this.ship.userData.turrets) if (tu.alive) targets.push({ c: tu.tank.getWorldPosition(V3()), r: 1.6, hit: (pt) => this.hitTurret(tu, pt) });
+    // aim assist: if a target sits within ~3 degrees of the crosshair, bend the aim onto it
+    let dir = look.clone(), assisted = null, best = Math.cos(0.055);
+    for (const tg of targets) { const to = tg.c.clone().sub(origin); const dist = to.length(); const c = to.normalize().dot(look); const cone = Math.cos(Math.min(0.055, Math.atan2(tg.r * 1.4, dist))); if (c > Math.min(best, cone)) { best = c; assisted = tg; } }
+    if (assisted) dir.lerp(assisted.c.clone().sub(origin).normalize(), 0.6).normalize();
+    // what the crosshair is on (for the turret to point at)
+    const hitInfo = this.castShot(origin, dir, targets);
+    const aimPoint = hitInfo.point;
+    // the turret points straight at it (no lag: shots go where the crosshair is)
+    const local = gun.group.worldToLocal(aimPoint.clone());
+    gun.yaw.rotation.y = clamp(Math.atan2(local.x, local.z), -2.4, 2.4);
+    const lp = gun.yaw.worldToLocal(aimPoint.clone());
+    gun.pitch.rotation.x = clamp(-Math.atan2(lp.y - 0.25, Math.hypot(lp.x, lp.z)), -0.7, 0.45);
+    this.H.cross.classList.toggle('lock', !!assisted);
     this.fireCd -= dt; this.overheat -= dt;
-    this.heat = Math.max(0, this.heat - dt * (this.overheat > 0 ? 0.35 : 0.28));
-    const firing = (g.input.mouse.down.has(0) || g.input.padBtn(7) > 0.5 && false) && this.overheat <= 0;
+    this.heat = Math.max(0, this.heat - dt * (this.overheat > 0 ? 0.4 : 0.32));
+    const firing = (g.input.mouse.down.has(0) || g.input.padBtn(7) > 0.5) && this.overheat <= 0;
     this.muzzleLight.intensity = Math.max(0, this.muzzleLight.intensity - dt * 120);
     if (firing && this.fireCd <= 0) {
-      this.fireCd = 1 / 13;
+      this.fireCd = 1 / 12;
       this.barrel = (this.barrel || 0) ^ 1;
       const mz = gun.muzzles[this.barrel].getWorldPosition(V3());
-      const dir = aim.clone().sub(mz).normalize();
-      this.tracers.fire(mz, dir, { speed: 430, damage: 0.075, spread: 0.006 });
+      // small spread around the (assisted) aim
+      const sd = dir.clone().add(V3((Math.random() - 0.5) * 0.008, (Math.random() - 0.5) * 0.008, (Math.random() - 0.5) * 0.008)).normalize();
+      const shot = this.castShot(origin, sd, targets);
+      if (shot.target) { shot.target.hit(shot.point, 0.07); this.hitMarker(); this.fxApi().spark(shot.point); }
+      else if (shot.water) { this.spray.emit(shot.point, V3(0, 5, 0), { life: 0.7, size: 0.5, grow: 2, color: [0.85, 0.9, 0.92], alpha: 0.6, gravity: 9 }); }
+      else if (shot.wall) this.fxApi().spark(shot.point);
+      this.tracers.streak(mz, shot.point);
       g.audio.gunshot(mz, true);
-      this.fxApi().muzzle(mz, dir);
+      this.fxApi().muzzle(mz, sd);
       this.muzzleLight.intensity = 18;
-      this.shake = Math.max(this.shake || 0, 0.12);
-      gun.pitch.position.z = -0.06;
-      this.heat += 0.032;
-      if (this.heat >= 1) { this.overheat = 2.2; this.heat = 1; g.audio.burst({ freq: 4000, type: 'highpass', dur: 1.2, vol: 0.2 }); }
-      // casings
+      this.shake = Math.max(this.shake || 0, 0.16);
+      this.fovPunch = Math.min(5, (this.fovPunch || 0) + 1.2);
+      this.camPitch += 0.0025; // a little climb per shot
+      gun.pitch.position.z = -0.07;
+      this.heat += 0.026;
+      if (this.heat >= 1) { this.overheat = 2.0; this.heat = 1; g.audio.burst({ freq: 4000, type: 'highpass', dur: 1.2, vol: 0.2 }); }
       this.fire.emit(mz.clone().add(V3(0, -0.2, 0)), this.boat.right.multiplyScalar(3).add(V3(0, 2, 0)), { life: 0.5, size: 0.06, grow: 0, color: [0.9, 0.7, 0.3], alpha: 1, gravity: 12, drag: 0.2 });
     }
     gun.pitch.position.z += (0 - gun.pitch.position.z) * Math.min(1, dt * 20);
+  }
+
+  /** Hitscan: nearest of target spheres, towers, the ship, and the sea surface (ray-marched). */
+  castShot(origin, dir, targets, range = 320) {
+    let tBest = range, res = { point: origin.clone().addScaledVector(dir, range) };
+    for (const tg of targets) {
+      const oc = origin.clone().sub(tg.c), b = oc.dot(dir), c = oc.lengthSq() - tg.r * tg.r, h = b * b - c;
+      if (h < 0) continue; const tt = -b - Math.sqrt(h);
+      if (tt > 0 && tt < tBest) { tBest = tt; res = { point: origin.clone().addScaledVector(dir, tt), target: tg }; }
+    }
+    const boxes = this.towers.concat(this.ship.visible ? [{ ...this.shipBox(), maxY: this.ship.position.y + 26 }] : []);
+    for (const bx of boxes) {
+      let t0 = 0, t1 = tBest, ok = true;
+      for (const [o, d, lo, hi] of [[origin.x, dir.x, bx.minX, bx.maxX], [origin.z, dir.z, bx.minZ, bx.maxZ], [origin.y, dir.y, -50, bx.maxY ?? 400]]) {
+        if (Math.abs(d) < 1e-6) { if (o < lo || o > hi) { ok = false; break; } continue; }
+        let ta = (lo - o) / d, tb = (hi - o) / d; if (ta > tb) [ta, tb] = [tb, ta]; t0 = Math.max(t0, ta); t1 = Math.min(t1, tb); if (t0 > t1) { ok = false; break; }
+      }
+      if (ok && t0 > 0.5 && t0 < tBest) { tBest = t0; res = { point: origin.clone().addScaledVector(dir, t0), wall: true }; }
+    }
+    // sea surface: march then refine
+    if (dir.y < 0) {
+      let prev = 0;
+      for (let tt = 2; tt < tBest; tt += 4) {
+        const p = origin.clone().addScaledVector(dir, tt);
+        if (p.y < waterHeight(p.x, p.z)) { let lo = prev, hi = tt; for (let k = 0; k < 6; k++) { const m = (lo + hi) / 2, q = origin.clone().addScaledVector(dir, m); if (q.y < waterHeight(q.x, q.z)) hi = m; else lo = m; } res = { point: origin.clone().addScaledVector(dir, hi), water: true }; break; }
+        prev = tt;
+      }
+    }
+    return res;
+  }
+
+  killConfirm(p) {
+    this.game.ui.toast('PATROL BOAT DESTROYED', 1600);
+    this.game.audio.tone({ type: 'triangle', freq: 880, freqEnd: 1320, dur: 0.18, vol: 0.06, reverb: 0.2 });
+    this.shake = Math.max(this.shake || 0, 0.5);
   }
 
   phaseLogic(dt, t) {
@@ -564,7 +616,8 @@ export default class Chapter2 {
     cam.position.copy(this.camPos).add(V3((Math.random() - 0.5) * s, (Math.random() - 0.5) * s, (Math.random() - 0.5) * s));
     const look = target.clone().add(V3(Math.sin(yaw) * 60, 1.5, Math.cos(yaw) * 60));
     cam.lookAt(look);
-    cam.fov = 62 + clamp(b.speed / 30, 0, 1) * 10 + (b.input.boost && b.boostFuel > 0 ? 6 : 0);
+    this.fovPunch = Math.max(0, (this.fovPunch || 0) - dt * 30);
+    cam.fov = 62 + clamp(b.speed / 30, 0, 1) * 10 + (b.input.boost && b.boostFuel > 0 ? 6 : 0) + this.fovPunch;
     cam.updateProjectionMatrix();
     this.game.renderer.grade.uniforms.uDamage.value = clamp(0.35 - b.health, 0, 0.35) * 2 + (this.damageFlash = Math.max(0, (this.damageFlash || 0) - dt * 2)) * 0.5;
     this.moon.position.copy(b.pos).addScaledVector(this.sunDir, 100); this.moon.target.position.copy(b.pos);
