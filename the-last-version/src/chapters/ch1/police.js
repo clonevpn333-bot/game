@@ -107,14 +107,14 @@ export class Police {
         const to = new THREE.Vector3().subVectors(u.scripted, b.pos); to.y = 0;
         const dd = to.length(), want = Math.atan2(to.x, to.z);
         let a = want - b.yaw; a = Math.atan2(Math.sin(a), Math.cos(a));
-        const vWant = Math.min(14, Math.max(0, (dd - 1.5) * 0.9));
+        const vWant = Math.min(11, Math.sqrt(Math.max(0, 2 * 3.5 * (dd - 1.5)))); // constant-deceleration stop on the mark
         const v = b.forwardSpeed;
         b.input = { throttle: v < vWant - 0.5 ? 0.6 : 0, brake: v > vWant + 0.5 || dd < 1.5 ? 1 : 0, steer: dd > 3 ? -Math.max(-1, Math.min(1, a * 1.5)) : 0, handbrake: dd < 1.5 ? 1 : 0, nitro: 0 };
       } else if (u.roadblock) {
         b.input = { throttle: 0, brake: 1, steer: 0, handbrake: 1, nitro: 0 };
         if (dist < 40 && b.lastImpact > 2) u.roadblock = false; // knocked loose, join the chase
       } else if (u.crashed > 0) {
-        u.crashed -= dt; b.input = { throttle: 0, brake: 1, steer: 0, handbrake: 0, nitro: 0 };
+        u.crashed -= dt; b.input = { throttle: 0, brake: 1, steer: 0, handbrake: 1, nitro: 0 };
       } else {
         // --- pursuit target selection
         const lead = clamp(dist / 40, 0, 1.2);

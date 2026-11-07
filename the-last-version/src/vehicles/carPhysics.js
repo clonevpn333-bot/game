@@ -75,7 +75,7 @@ export class CarBody {
       if (this.spin > 0.5) rpm = lerp(rpm, 7200 * 0.95, 0.6);
       this.rpm = lerp(this.rpm, rpm, 1 - Math.exp(-14 * h)); this.shiftT -= h;
       // longitudinal
-      let drive = 0, brake = 0; const rev = c.brake > 0.1 && vF < 1.2 && throttle < 0.1;
+      let drive = 0, brake = 0; const rev = c.brake > 0.1 && vF < 1.2 && throttle < 0.1 && !c.handbrake; // brake+handbrake = hold still
       if (rev) drive = -c.brake * m * sp.accel * 0.45 * (vF > -11 ? 1 : 0) * dmgF;
       if (throttle > 0) drive = throttle * m * sp.accel * (1 - Math.pow(frac, 2.1)) * (this.shiftT > 0 ? (this.isPlayer ? 0.7 : 0.35) : 1) * (boost ? 1.55 : 1) * dmgF * (vF < -0.5 ? 1.6 : 1);
       if (!rev && c.brake > 0 && Math.abs(vF) > 0.2) brake = c.brake * m * sp.brake * Math.sign(vF);

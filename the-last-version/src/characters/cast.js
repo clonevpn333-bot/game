@@ -6,7 +6,9 @@ import { surfaceTube, stitches, zipper, raySurface, attachDetail, project } from
 import { preloadSets } from '../engine/assets.js';
 import { POLY_CACHE } from './sculpt.js';
 import { warmCache, persistCache } from './cache.js';
+import { BlockHumanoid } from './blocks.js';
 
+const MAT_CANVAS = 7; // blocks.js MAT.canvas
 export const CAST_TEXTURES = ['leather_dark', 'denim', 'jersey', 'linen', 'fleece', 'leather_brown', 'velvet'];
 
 const T = (p, bone, k = 0.02) => Object.assign(p, { bone, k });
@@ -178,124 +180,19 @@ function capSculpt(hc, hs, hairline, extra = 0.004) {
 // ---------------------------------------------------------------------------
 export const KAI = {
   name: 'Kai',
-  skin: 0xbf957e,
-  body: { height: 1.8, shoulder: 1.05, hipWidth: 1, armAngle: 40, headScale: 1.0 },
-  face: { width: 1, jawWidth: 1.08, chinWidth: 1.18, brow: 1.15, noseLength: 1.05, noseWidth: 1.02, lipWidth: 1, lipFull: 0.9, neck: 1.08, adam: true, stubble: 0.32, stubbleColor: 0x3a2e2a, iris: 0x6a8aa8, browColor: 0x231812, browThick: 1.6, lipColor: 0xa86a5e, flush: 0xc97b68 },
-  gloves: null,
-  outfit(ch) {
-    const s = 1;
-    const jacket = clothMaterial('leather_dark', { color: 0x6c7a80, scale: 6, normal: 0.9 });
-    const lining = clothMaterial('jersey', { color: 0xc8692a, scale: 10 });
-    const seamMat = clothMaterial('leather_dark', { color: 0x3c3f3c, scale: 10 });
-    const stitch = clothMaterial(null, { color: 0x8c8a80, roughness: 0.8 });
-    const metal = new THREE.MeshStandardMaterial({ color: 0x9a9c9e, metalness: 1, roughness: 0.32 });
-    const denim = clothMaterial('denim', { color: 0x6a7890, scale: 9, normal: 1.2 });
-    const shirt = clothMaterial('jersey', { color: 0x2c2f33, scale: 12 });
-    ch.def.gloves = clothMaterial('leather_brown', { color: 0x4a3a30, scale: 14 });
-
-    const J = ch.J;
-    const tp = torsoPrims(ch);
-    // flaps on the chest: positioned on the actual surface
-    const flaps = [];
-    for (const sx of [1, -1]) {
-      const sp = findSurface(tp, 0.085 * sx, 1.335);
-      if (sp) flaps.push(T(P.box([sp[0], sp[1], sp[2] + 0.002], [0.042, 0.027, 0.006], 0.004, { rot: [-0.18, 0.32 * sx, 0] }), 'chest', 0.006));
-    }
-    const prims = [
-      ...tp, ...flaps,
-      T(P.torus([0, 1.505, 0.0], 0.068, 0.012, { sy: 2.6, sz: 0.92 }), 'chest', 0.012),
-      T(P.torus([0, 0.945, 0.0], 1, 0.011, { sx: 0.152, sz: 0.104, sy: 1.4 }), 'hips', 0.008),
-      OP(P.plane([0, 0.925, 0], [0, -1, 0]), 'inter', 0.004),
-      OP(P.capsule([0, 1.43, 0.0], [0, 1.75, 0.01], 0.057), 'sub', 0.004),
-      OP(P.box([0, 1.56, 0.1], [0.012, 0.05, 0.05], 0.002, { rot: [0.3, 0, 0] }), 'sub', 0.006),
-    ];
-    const wrinkle = (x, y, z) => {
-      let d = 0;
-      for (const side of ['L', 'R']) {
-        const e = J['forearm' + side];
-        const dd = Math.hypot(x - e[0], y - e[1], z - e[2]);
-        if (dd < 0.09) d += (1 - dd / 0.09) * 0.003 * Math.sin((x * 0.6 + y) * 220);
-        const w = J['hand' + side];
-        const dw = Math.hypot(x - w[0], y - w[1], z - w[2]);
-        if (dw < 0.12 && dw > 0.03) d += (1 - dw / 0.12) * 0.0022 * Math.sin(dw * 300);
-      }
-      // waist gathering above the hem
-      if (y < 1.0 && y > 0.94) d += 0.0015 * Math.sin(Math.atan2(z, x) * 22) * (1 - Math.abs(y - 0.97) / 0.03);
-      // back folds
-      if (z < -0.05 && y > 1.1 && y < 1.4) d += 0.0012 * Math.sin(y * 70 + x * 30);
-      return d;
-    };
-    const pieces = [];
-    pieces.push({
-      name: 'jacket', prims, material: jacket, res: 0.0062, softness: 0.03, disp: wrinkle,
-      after: (m, sc, c) => {
-        const wp = prims.filter((p) => !p.op);
-        // zipper from hem to collar
-        const zp = [];
-        for (let i = 0; i <= 12; i++) { const y = 0.935 + i * (0.6 / 12); const hit = raySurface(sc, [0, y, 0.3], [0, 0, -1], 0.5); if (hit) zp.push(hit); }
-        if (zp.length > 3) attachDetail(c, zipper(sc, zp, { teeth: 90, sliderAt: 0.93 }), metal, wp, 'zipper');
-        // placket seams either side of the zipper
-        for (const sx of [1, -1]) attachDetail(c, stitches(sc, zp.map((p) => [p[0] + 0.011 * sx, p[1], p[2]]), { spacing: 0.006, radius: 0.0007 }), stitch, wp, 'stitch');
-        // shoulder seams, armholes, side seams, yoke
-        for (const [side, sx] of [['L', 1], ['R', -1]]) {
-          const ua = J['upperArm' + side], d = J['armDir' + side];
-          attachDetail(c, surfaceTube(sc, [[0.07 * sx, 1.53, -0.01], [0.14 * sx, 1.5, -0.015], [0.2 * sx, 1.49, -0.02]], { radius: 0.0018, samples: 16 }), seamMat, wp, 'seam');
-          const ring = [], up = [0, 0, 1], side2 = norm([d[1], -d[0], 0].map((v) => v * sx));
-          const ctr = add(ua, mul(d, 0.03));
-          for (let i = 0; i <= 20; i++) { const a = (i / 20) * Math.PI * 2; ring.push(add(ctr, add(mul(up, Math.cos(a) * 0.08), mul(side2, Math.sin(a) * 0.08)))); }
-          attachDetail(c, surfaceTube(sc, ring, { radius: 0.0018, samples: 40 }), seamMat, wp, 'seam');
-          attachDetail(c, stitches(sc, ring.map((p) => add(p, mul(d, 0.008))), { spacing: 0.006, radius: 0.0007 }), stitch, wp, 'stitch');
-          const sideSeam = [[0.16 * sx, 1.34, -0.02], [0.16 * sx, 1.2, -0.02], [0.17 * sx, 1.05, -0.02], [0.17 * sx, 0.94, -0.02]];
-          attachDetail(c, surfaceTube(sc, sideSeam, { radius: 0.0016, samples: 20 }), seamMat, wp, 'seam');
-          // chest yoke
-          attachDetail(c, surfaceTube(sc, [[0.015 * sx, 1.405, 0.2], [0.09 * sx, 1.41, 0.2], [0.17 * sx, 1.42, 0.1]], { radius: 0.0016, samples: 16 }), seamMat, wp, 'seam');
-          attachDetail(c, stitches(sc, [[0.015 * sx, 1.398, 0.2], [0.09 * sx, 1.403, 0.2], [0.17 * sx, 1.413, 0.1]], { spacing: 0.006, radius: 0.0007 }), stitch, wp, 'stitch');
-          // reflective accent strip on the sleeve
-          const fa = J['forearm' + side];
-          const strip = [];
-          for (let i = 0; i <= 16; i++) { const a = (i / 16) * Math.PI * 2; strip.push(add(lerp3(ua, fa, 0.55), add(mul(up, Math.cos(a) * 0.08), mul(side2, Math.sin(a) * 0.08)))); }
-          attachDetail(c, surfaceTube(sc, strip, { radius: 0.0035, samples: 40, radial: 4 }), new THREE.MeshStandardMaterial({ color: 0xc8692a, roughness: 0.5 }), wp, 'accent');
-        }
-      },
-    });
-    // collar lining (visible orange inner band)
-    pieces.push({ name: 'lining', prims: [T(P.torus([0, 1.51, 0.0], 0.06, 0.006, { sy: 3.2, sz: 0.9 }), 'chest', 0), OP(P.capsule([0, 1.4, 0.0], [0, 1.75, 0.01], 0.054), 'sub', 0.002)], material: lining, res: 0.0035, softness: 0.03 });
-    // t-shirt neckline
-    pieces.push({ name: 'shirt', prims: [T(P.torus([0, 1.46, 0.02], 0.058, 0.009, { sy: 1.2, sz: 0.95 }), 'chest', 0), T(P.ellipsoid([0, 1.4, 0.03], [0.07, 0.05, 0.05]), 'chest', 0.01), OP(P.capsule([0, 1.4, 0.0], [0, 1.75, 0.0], 0.051), 'sub', 0.003)], material: shirt, res: 0.004, softness: 0.03 });
-    pieces.push(...pantsPieces(ch, denim, { stitchMat: clothMaterial(null, { color: 0xb08a4a, roughness: 0.8 }), seamMat: clothMaterial('denim', { color: 0x58647a, scale: 9 }) }));
-    const upperMat = clothMaterial('leather_brown', { color: 0x9a9a96, scale: 18, normal: 0.8 });
-    const soleMat = clothMaterial(null, { color: 0xd8cdb5, roughness: 0.85 });
-    const laceMat = clothMaterial(null, { color: 0xe6e2da, roughness: 0.9 });
-    pieces.push(...addShoes(ch, upperMat, soleMat, laceMat));
-    return pieces;
-  },
-  hair(ch, hc, hs) {
-    // Sculpted short hair: a volume over the scalp with a swept quiff and
-    // displacement grooves along the comb direction, plus a fringe of clumps.
-    const sc = new Sculpt();
-    sc.add(P.ellipsoid(W(hc, hs, [0, 0.026, -0.014]), [0.0835 * hs, 0.098 * hs, 0.1035 * hs]), 0);
-    sc.add(P.ellipsoid(W(hc, hs, [-0.006, 0.083, 0.02]), [0.06 * hs, 0.03 * hs, 0.07 * hs], { rot: [0.25, 0, 0.08] }), 0.03 * hs);
-    sc.add(P.ellipsoid(W(hc, hs, [0, 0.07, -0.05]), [0.07 * hs, 0.04 * hs, 0.06 * hs]), 0.03 * hs);
-    // hairline: forehead, temples, around the ears and nape
-    sc.inter(P.plane(W(hc, hs, [0, 0.068, 0.08]), [0, -1, 0.75]), 0.008 * hs);
-    for (const sx of [1, -1]) {
-      sc.sub(P.sphere(W(hc, hs, [0.047 * sx, 0.078, 0.095]), 0.026 * hs), 0.012 * hs);
-      sc.sub(P.ellipsoid(W(hc, hs, [0.085 * sx, -0.012, 0.0]), [0.03 * hs, 0.042 * hs, 0.03 * hs]), 0.01 * hs);
-      // short faded sides
-      sc.sub(P.ellipsoid(W(hc, hs, [0.105 * sx, 0.01, -0.02]), [0.022 * hs, 0.06 * hs, 0.08 * hs]), 0.02 * hs);
-    }
-    sc.inter(P.plane(W(hc, hs, [0, -0.05, 0]), [0, -1, 0]), 0.01 * hs);
-    const c0 = W(hc, hs, [0, 0.0, 0]);
-    sc.disp((x, y, z) => {
-      const lx = (x - c0[0]) / hs, ly = (y - c0[1]) / hs, lz = (z - c0[2]) / hs;
-      // strands run front→back: grooves vary across the head (around Z)
-      const a = Math.atan2(lx + 0.01 * Math.sin(lz * 60), ly + 0.03);
-      const g = Math.sin(a * 34 + lz * 25) * 0.0016 + Math.sin(a * 79 + lz * 9) * 0.0007;
-      return g * hs * Math.min(1, Math.max(0, ly / 0.04));
-    });
-    const b = { min: [hc[0] - 0.11 * hs, hc[1] - 0.07 * hs, hc[2] - 0.13 * hs], max: [hc[0] + 0.11 * hs, hc[1] + 0.14 * hs, hc[2] + 0.12 * hs] };
-    const clumps = [];
-    return { color: 0x2b1f18, cap: sc, capBounds: b, clumps, capRes: 0.0032 };
+  body: { height: 1.8, shoulder: 1.05, hipWidth: 1, armAngle: 40, headScale: 1.2 },
+  look: {
+    skin: '#c39276', hair: '#2b1f18', hairStyle: 'swept', eyes: '#46657f', stubble: true, browThick: 1.3,
+    top: '#3e4542', topMat: MAT_CANVAS, sleeves: 'long', cuff: '#2c302f', pants: '#2c3a52', shoes: '#9a9a96', sole: '#e6e0d2',
+    outfit(add, { J, s, sw, C, MAT, rbox, at }) {
+      const top = C('#3e4542'), dark = C('#2c302f'), orange = C('#c8692a'), metal = C('#a8acb0');
+      add(rbox(0.15, 0.06, 0.14), at([0, J.neck[1] + 0.0, -0.005]), dark, 'chest', MAT.canvas);              // standing collar
+      add(rbox(0.13, 0.015, 0.125), at([0, J.neck[1] + 0.03, 0.0]), orange, 'chest', MAT.canvas, 0);          // orange lining
+      add(rbox(0.012, 0.42 * s, 0.012), at([0, J.chest[1] - 0.07 * s, 0.108]), metal, 'chest', MAT.metal, 0);  // zip
+      for (const x of [-1, 1]) add(rbox(0.085, 0.06, 0.014), at([x * 0.085 * sw, J.chest[1] + 0.05 * s, 0.108]), dark, 'chest', MAT.canvas, 0); // chest pocket flaps
+      add(rbox(0.31, 0.045, 0.21), at([0, J.hips[1] + 0.02 * s, 0]), dark, 'hips', MAT.canvas, 0);            // jacket hem band
+      for (const sd of ['L', 'R']) { const u = J['upperArm' + sd], f = J['forearm' + sd]; add(rbox(0.108, 0.03, 0.112), at([(u[0] + f[0]) / 2, (u[1] + f[1]) / 2, -0.005], 0, 0, sd === 'L' ? 0.7 : -0.7), orange, 'upperArm' + sd, MAT.canvas, 0); } // reflective band
+    },
   },
   accessories(ch) { addAnchor(ch, 'L'); },
 };
@@ -345,86 +242,20 @@ export function addAnchor(ch, side) {
 // ---------------------------------------------------------------------------
 export const SERA = {
   name: 'Sera',
-  skin: 0xe0b196,
-  body: { height: 1.69, shoulder: 0.9, hipWidth: 1.06, armAngle: 38, headScale: 1.02, handScale: 0.92 },
-  face: { width: 0.95, jawWidth: 0.88, chinWidth: 0.85, chinLength: 0.95, brow: 0.75, noseLength: 0.9, noseWidth: 0.88, lipWidth: 0.96, lipFull: 1.22, neck: 0.84, freckles: true, iris: 0x6f8048, browColor: 0x4a2a1c, browThick: 0.95, browArch: 1, lipColor: 0xb4605a, flush: 0xd9826f, lashColor: 0x120c0a },
-  outfit(ch) {
-    const s = ch.def.body.height / 1.8;
-    const jacketMat = clothMaterial('linen', { color: 0x54706f, scale: 9, normal: 1.1, sheen: 0.4, sheenColor: 0x9ab8b4 });
-    const seamMat = clothMaterial('linen', { color: 0x40585a, scale: 9 });
-    const stitch = clothMaterial(null, { color: 0xc9c3a8, roughness: 0.8 });
-    const pantsMat = clothMaterial('fleece', { color: 0x3a3a36, scale: 10, normal: 0.6 });
-    const strap = clothMaterial('leather_dark', { color: 0x2a2a2c, scale: 14 });
-    const metal = new THREE.MeshStandardMaterial({ color: 0xb0b2b4, metalness: 1, roughness: 0.3 });
-    const J = ch.J;
-    const tp = torsoPrims(ch, { fem: true, rolled: true, sleeve: 0.054 });
-    const prims = [
-      ...tp,
-      T(P.torus([0, 1.505 * s, 0.0], 0.062 * s, 0.009 * s, { sy: 2.2, sz: 0.9 }), 'chest', 0.01 * s),
-      OP(P.plane([0, 0.93 * s, 0], [0, -1, 0]), 'inter', 0.004),
-      OP(P.capsule([0, 1.43 * s, 0.0], [0, 1.75 * s, 0.01], 0.052 * s), 'sub', 0.004),
-      OP(P.box([0, 1.5 * s, 0.1 * s], [0.02 * s, 0.08 * s, 0.05 * s], 0.002, { rot: [0.25, 0, 0] }), 'sub', 0.008),
-    ];
-    const pieces = [{
-      name: 'jacket', prims, material: jacketMat, res: 0.005 * s, softness: 0.028 * s,
-      disp: (x, y, z) => (y < 1.0 * s ? 0.0015 * Math.sin(Math.atan2(z, x) * 18) : 0) + (z < -0.05 ? 0.001 * Math.sin(y * 80) : 0),
-      after: (m, sc, c) => {
-        const wp = prims.filter((p) => !p.op);
-        const zp = [];
-        for (let i = 0; i <= 10; i++) { const y = (0.94 + i * 0.045) * s; const hit = raySurface(sc, [0, y, 0.3], [0, 0, -1], 0.5); if (hit) zp.push(hit); }
-        if (zp.length > 3) attachDetail(c, zipper(sc, zp, { teeth: 70, sliderAt: 0.92 }), metal, wp, 'zipper');
-        // harness: two straps over the shoulders crossing to a chest buckle
-        for (const sx of [1, -1]) {
-          const pts = [[0.09 * sx * s, 1.5 * s, -0.08 * s], [0.1 * sx * s, 1.52 * s, 0.0], [0.08 * sx * s, 1.42 * s, 0.12 * s], [0.02 * sx * s, 1.3 * s, 0.14 * s], [0.08 * sx * s, 1.1 * s, 0.12 * s]];
-          attachDetail(c, surfaceTube(sc, pts, { radius: 0.0055 * s, lift: 0.003, samples: 40, radial: 4 }), strap, wp, 'strap');
-          attachDetail(c, surfaceTube(sc, [[0.06 * sx * s, 1.25 * s, -0.12 * s], [0.12 * sx * s, 1.05 * s, -0.08 * s], [0.16 * sx * s, 1.05 * s, 0.02]], { radius: 0.005 * s, lift: 0.003, samples: 20, radial: 4 }), strap, wp, 'strap');
-          attachDetail(c, surfaceTube(sc, [[0.07 * sx * s, 1.53 * s, -0.01 * s], [0.18 * sx * s, 1.5 * s, -0.02 * s]], { radius: 0.0016, samples: 12 }), seamMat, wp, 'seam');
-          attachDetail(c, stitches(sc, zp.map((p) => [p[0] + 0.012 * sx, p[1], p[2]]), { spacing: 0.006, radius: 0.0007 }), stitch, wp, 'stitch');
-        }
-        const buckle = new THREE.Mesh(new THREE.BoxGeometry(0.03 * s, 0.025 * s, 0.008 * s), metal);
-        const bp = project(sc, [0, 1.3 * s, 0.2], 0.008);
-        buckle.position.copy(bp.p).sub(V(...c.worldRest.chest)); c.bones.chest.add(buckle);
-        // ATLAS patch on the left sleeve
-        const patch = new THREE.Mesh(new THREE.CircleGeometry(0.022 * s, 24), new THREE.MeshStandardMaterial({ map: patchTexture(), roughness: 0.8 }));
-        const pp = project(sc, lerp3(J.upperArmL, J.forearmL, 0.35).map((v, i) => v + (i === 0 ? 0.06 : i === 2 ? 0.02 : 0)), 0.0015);
-        patch.position.copy(pp.p).sub(V(...c.worldRest.upperArmL));
-        patch.lookAt(pp.p.clone().add(pp.n)); patch.quaternion.premultiply(new THREE.Quaternion());
-        c.bones.upperArmL.add(patch); patch.position.copy(pp.p).sub(V(...c.worldRest.upperArmL));
-      },
-    }];
-    // bare forearms below the rolled sleeves
-    for (const [side] of [['L'], ['R']]) {
-      const fa = J['forearm' + side], ha = J['hand' + side];
-      pieces.push({ name: 'arm' + side, prims: [T(P.capsule(lerp3(fa, ha, 0.3), lerp3(fa, ha, 1.0), 0.038 * s, 0.025 * s), 'forearm' + side, 0)], material: ch.skinMat, res: 0.004 * s, softness: 0.02,
-        color: (x, y, z, c) => c.set(ch.def.skin) });
-    }
-    pieces.push(...pantsPieces(ch, pantsMat, { cargo: true, tucked: true, stitchMat: stitch, seamMat: pantsMat }));
-    const boot = clothMaterial('leather_brown', { color: 0x6b4a34, scale: 16 });
-    const sole = clothMaterial(null, { color: 0x1e1c1a, roughness: 0.9 });
-    pieces.push(...addShoes(ch, boot, sole, clothMaterial(null, { color: 0x2a2018, roughness: 0.9 }), { boot: true }));
-    return pieces;
-  },
-  hair(ch, hc, hs) {
-    const hairline = { c: [0, 0.055, 0.088], n: [0, -1, 0.62] };
-    const { sc, b } = capSculpt(hc, hs, hairline, 0.004);
-    const tie = [0, -0.035, -0.105];
-    const clumps = [];
-    const accept = (p) => (p[1] - 0.055) - 0.62 * (p[2] - 0.088) > 0.003;
-    for (const { p, n } of scalpSampler(ch, hc, hs, accept, 420)) {
-      // middle part: strands flow sideways away from x=0, then back to the tie
-      const sx = p[0] >= 0 ? 1 : -1;
-      const toTie = norm([tie[0] - p[0], tie[1] - p[1], tie[2] - p[2]]);
-      const dist = Math.hypot(tie[0] - p[0], tie[1] - p[1], tie[2] - p[2]);
-      clumps.push({ root: W(hc, hs, mul(p, 0.985)), dir: norm(add(mul(n, 0.5), add([0.5 * sx, 0, 0], toTie))), len: dist * 1.05 * hs, width: (0.006 + Math.random() * 0.003) * hs, flat: 0.3, droop: 0.05, towards: toTie, pull: 0.9, segs: 8, side: [0, 1, 0] });
-    }
-    // face-framing loose strands
-    for (const sx of [1, -1]) for (let i = 0; i < 5; i++) {
-      clumps.push({ root: W(hc, hs, [0.045 * sx + i * 0.004 * sx, 0.065 - i * 0.004, 0.07]), dir: [0.3 * sx, -0.4, 0.4], len: (0.1 + Math.random() * 0.03) * hs, width: 0.004 * hs, flat: 0.3, droop: 0.5, curl: 0.6 * sx, segs: 8, side: [0, 0, 1] });
-    }
-    return {
-      color: 0x5a2b1c, spec: 0.6, cap: sc, capBounds: b, clumps, scalp: { c: V(...W(hc, hs, [0, 0.022, -0.012])), r: 0.084 * hs },
-      tail: (c, mat) => ponytail(c, hc, hs, tie, mat),
-    };
+  body: { height: 1.69, shoulder: 0.92, hipWidth: 1.05, armAngle: 38, headScale: 1.2, handScale: 0.92 },
+  look: {
+    fem: true, skin: '#e0b196', hair: '#5a2b1c', hairStyle: 'framed', ponytail: true, eyes: '#6f8048', freckles: true, browThick: 0.9,
+    top: '#54706f', topMat: MAT_CANVAS, sleeves: 'rolled', pants: '#3a3a36', shoes: '#6b4a34', sole: '#1e1c1a', boots: true, build: 0.92,
+    outfit(add, { J, s, sw, C, MAT, rbox, at }) {
+      const strap = C('#2a2a2c'), metal = C('#b0b2b4');
+      add(rbox(0.14, 0.05, 0.13), at([0, J.neck[1] + 0.0, -0.005]), C('#40585a'), 'chest', MAT.canvas);       // collar
+      for (const x of [-1, 1]) add(rbox(0.03, 0.32 * s, 0.012), at([x * 0.075 * sw, J.chest[1] + 0.0, 0.112], -0.04, 0, x * 0.12), strap, 'chest', MAT.leather, 0); // harness
+      add(rbox(0.22 * sw, 0.028, 0.012), at([0, J.chest[1] - 0.05 * s, 0.112]), strap, 'chest', MAT.leather, 0);
+      add(rbox(0.032, 0.03, 0.012), at([0, J.chest[1] - 0.05 * s, 0.12]), metal, 'chest', MAT.metal, 0);    // buckle
+      add(rbox(0.05, 0.05, 0.01), at([0.21 * sw, J.chest[1] + 0.06 * s, 0.0], 0, Math.PI / 2, 0), C('#1b2a2c'), 'upperArmL', MAT.canvas, 0); // ATLAS patch
+      add(rbox(0.3, 0.04, 0.2), at([0, J.hips[1] + 0.04 * s, 0]), C('#2a221b'), 'hips', MAT.leather, 0);   // belt
+      for (const sd of ['L', 'R']) { const t = J['thigh' + sd], k = J['shin' + sd]; add(rbox(0.04, 0.11, 0.1), at([t[0] * 1.55, (t[1] + k[1]) / 2, 0.01]), C('#33332f'), 'thigh' + sd, MAT.canvas); } // cargo pockets
+    },
   },
 };
 
@@ -481,68 +312,25 @@ function makeTailGeo(clumps) { return hairClumps({ clumps }); }
 // ---------------------------------------------------------------------------
 export const VENN = {
   name: 'Venn',
-  skin: 0xd7b39f,
-  body: { height: 1.71, shoulder: 0.92, hipWidth: 1.02, armAngle: 36, headScale: 1.0, handScale: 0.92 },
-  face: { width: 0.94, jawWidth: 0.9, chinWidth: 0.9, chinLength: 1.04, brow: 0.9, noseLength: 1.12, noseWidth: 0.92, lipWidth: 0.95, lipFull: 0.78, neck: 0.86, iris: 0x55473a, browColor: 0x8c8580, browThick: 0.8, browArch: 0.6, lipColor: 0xa66b66, flush: 0xc78a7a },
-  outfit(ch) {
-    const s = ch.def.body.height / 1.8;
-    const coat = clothMaterial('linen', { color: 0xffffff, scale: 10, normal: 0.5 }); coat.color.setRGB(1.25, 1.25, 1.3);
-    const turtle = clothMaterial('fleece', { color: 0x1d1d20, scale: 12, normal: 0.8 });
-    const J = ch.J;
-    const tp = torsoPrims(ch, { fem: true, sleeve: 0.06 });
-    const skirt = [];
-    for (const sx of [1, -1]) skirt.push(T(P.capsule([0.08 * sx * s, 0.98 * s, 0], [0.12 * sx * s, 0.52 * s, -0.01 * s], 0.11 * s, 0.11 * s), 'thigh' + (sx > 0 ? 'L' : 'R'), 0.06 * s));
-    const prims = [...tp, ...skirt,
-      T(P.box([0.07 * s, 1.36 * s, 0.11 * s], [0.03 * s, 0.11 * s, 0.006 * s], 0.004, { rot: [0.0, 0.0, 0.3] }), 'chest', 0.008),
-      T(P.box([-0.07 * s, 1.36 * s, 0.11 * s], [0.03 * s, 0.11 * s, 0.006 * s], 0.004, { rot: [0.0, 0.0, -0.3] }), 'chest', 0.008),
-      OP(P.plane([0, 0.5 * s, 0], [0, -1, 0]), 'inter', 0.004),
-      OP(P.capsule([0, 1.4 * s, 0.03], [0, 1.75 * s, 0.03], 0.06 * s), 'sub', 0.006),
-      OP(P.box([0, 0.75 * s, 0.14 * s], [0.006 * s, 0.24 * s, 0.05 * s], 0.002), 'sub', 0.004),
-    ];
-    const pieces = [{ name: 'coat', prims, material: coat, res: 0.0058 * s, softness: 0.04 * s, disp: (x, y, z) => (y < 0.95 * s ? 0.003 * Math.sin(Math.atan2(z, x) * 9 + y * 6) : 0) }];
-    pieces.push({ name: 'turtleneck', prims: [T(P.capsule([0, 1.43 * s, 0.0], [0, 1.53 * s, -0.005], 0.06 * s, 0.056 * s), 'neck', 0), T(P.ellipsoid([0, 1.38 * s, 0.03 * s], [0.09 * s, 0.06 * s, 0.07 * s]), 'chest', 0.02), OP(P.capsule([0, 1.45 * s, 0.0], [0, 1.75 * s, 0.0], 0.049 * s), 'sub', 0.003)], material: turtle, res: 0.004 * s, softness: 0.03, disp: (x, y) => 0.0015 * Math.sin(y * 260) });
-    pieces.push(...pantsPieces(ch, clothMaterial('fleece', { color: 0x26272b, scale: 12, normal: 0.5 }), { stitchMat: clothMaterial(null, { color: 0x333338 }), seamMat: clothMaterial(null, { color: 0x222226 }) }).map((p) => { p.prims = p.prims.filter((q) => !(q.bone && q.bone.startsWith('hips') && !q.op)); p.prims.push(OP(P.plane([0, 0.6 * s, 0], [0, 1, 0]), 'inter', 0.004)); p.after = null; return p; }));
-    pieces.push(...addShoes(ch, clothMaterial('leather_dark', { color: 0x1a1a1c, scale: 16 }), clothMaterial(null, { color: 0x111111 }), clothMaterial(null, { color: 0x111111 })));
-    return pieces;
-  },
-  hair(ch, hc, hs) {
-    const hairline = { c: [0, 0.058, 0.086], n: [0, -1, 0.66] };
-    const { sc, b } = capSculpt(hc, hs, hairline, 0.0035);
-    const bun = [0, 0.06, -0.1];
-    const clumps = [];
-    const accept = (p) => (p[1] - 0.058) - 0.66 * (p[2] - 0.086) > 0.003;
-    for (const { p, n } of scalpSampler(ch, hc, hs, accept, 300)) {
-      const to = norm([bun[0] - p[0], bun[1] - p[1], bun[2] - p[2]]);
-      clumps.push({ root: W(hc, hs, mul(p, 0.99)), dir: norm(add(mul(n, 0.3), to)), len: Math.hypot(bun[0] - p[0], bun[1] - p[1], bun[2] - p[2]) * hs, width: 0.0055 * hs, flat: 0.3, droop: 0.0, towards: to, pull: 1, segs: 7, side: [0, 1, 0] });
-    }
-    // the bun: coiled clumps
-    for (let i = 0; i < 60; i++) {
-      const a = (i / 60) * Math.PI * 6, r = 0.012 + (i / 60) * 0.018;
-      clumps.push({ root: W(hc, hs, [bun[0] + Math.cos(a) * r, bun[1] + Math.sin(a) * r, bun[2] - 0.012]), dir: [-Math.sin(a), Math.cos(a), -0.2], len: 0.05 * hs, width: 0.008 * hs, flat: 0.5, droop: 0, curl: 1.5, segs: 6, side: [0, 0, 1] });
-    }
-    return { color: 0xa7a29c, spec: 0.7, cap: sc, capBounds: b, clumps, scalp: { c: V(...W(hc, hs, [0, 0.022, -0.012])), r: 0.082 * hs } };
-  },
-  accessories(ch) {
-    // thin wire glasses
-    const hc = ch.headCentre(), hs = 1.71 / 1.8;
-    const mat = new THREE.MeshStandardMaterial({ color: 0xc0b8a8, metalness: 1, roughness: 0.25 });
-    const lensMat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, transmission: 0.95, roughness: 0.02, transparent: true, opacity: 0.2, thickness: 0.002 });
-    const g = new THREE.Group();
-    for (const sx of [1, -1]) {
-      const rim = new THREE.Mesh(new THREE.TorusGeometry(0.017, 0.0011, 6, 28), mat); rim.scale.y = 0.75;
-      rim.position.set(0.032 * sx, 0.008, 0.103); g.add(rim);
-      const lens = new THREE.Mesh(new THREE.CircleGeometry(0.017, 24), lensMat); lens.scale.y = 0.75; lens.position.copy(rim.position); g.add(lens);
-      const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.0009, 0.0009, 0.1, 5), mat); arm.rotation.x = Math.PI / 2; arm.position.set(0.05 * sx, 0.01, 0.055); arm.rotation.z = 0.05 * sx; g.add(arm);
-    }
-    const bridge = new THREE.Mesh(new THREE.TorusGeometry(0.007, 0.0009, 5, 12, Math.PI), mat); bridge.position.set(0, 0.012, 0.104); g.add(bridge);
-    g.scale.setScalar(hs);
-    g.position.set(hc[0] - ch.J.head[0], hc[1] - ch.J.head[1], hc[2] - ch.J.head[2]);
-    ch.bones.head.add(g);
+  body: { height: 1.71, shoulder: 0.93, hipWidth: 1.0, armAngle: 36, headScale: 1.18, handScale: 0.92 },
+  look: {
+    fem: true, skin: '#d7b39f', hair: '#a7a29c', hairStyle: 'bun', eyes: '#55473a', glasses: true, browThick: 0.8, headW: 0.95,
+    top: '#e9e7e1', sleeves: 'long', cuff: '#d6d3cc', pants: '#26272b', shoes: '#151517', sole: '#111111',
+    outfit(add, { J, s, sw, C, MAT, rbox, at }) {
+      const coat = C('#e9e7e1'), black = C('#1d1d20');
+      add(rbox(0.12, 0.09, 0.12), at([0, J.neck[1] + 0.02, 0]), black, 'neck', MAT.knit);                  // turtleneck
+      add(rbox(0.08, 0.2 * s, 0.012), at([0, J.chest[1] - 0.02 * s, 0.108]), black, 'chest', MAT.knit, 0);   // turtleneck between the lapels
+      for (const x of [-1, 1]) add(rbox(0.05, 0.22 * s, 0.014), at([x * 0.055, J.chest[1] + 0.0, 0.11], 0, 0, x * 0.2), C('#d8d5ce'), 'chest', MAT.cloth, 0); // lapels
+      add(rbox(0.06, 0.08, 0.012), at([0.09 * sw, J.chest[1] - 0.02 * s, 0.112]), C('#1b2b3d'), 'chest', MAT.canvas, 0);      // ATLAS ID badge
+      for (const sd of ['L', 'R']) { const t = J['thigh' + sd], k = J['shin' + sd]; add(rbox(0.17, 0.48 * s, 0.2), at([t[0] * 1.05, (t[1] + k[1]) / 2 - 0.02 * s, -0.005]), coat, 'thigh' + sd, MAT.cloth); } // coat skirts
+      add(rbox(0.34, 0.12, 0.22), at([0, J.hips[1] - 0.02 * s, 0]), coat, 'hips', MAT.cloth);
+    },
   },
 };
 
 /** Build a character (heavy; call while loading). */
 export async function buildCharacter(def) {
+  if (def.look) { const ch = new BlockHumanoid(def); ch.build(); return ch; } // block characters: instant, no textures
   await preloadSets(CAST_TEXTURES);
   await warmCache(def.name);
   POLY_CACHE.used = new Set(); POLY_CACHE.fresh.clear();

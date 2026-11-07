@@ -329,6 +329,8 @@ export class Animator {
     for (const [n] of [['cheekL'], ['cheekR']]) b[n].position.y += (F.cheek * 0.003 + F.squint * 0.0015) * hs;
     // eyelids: open angle with squint/wide/sad, blink, and follow eye pitch
     const ep = this.eyePitch || 0;
+    // block faces: eyes squash to blink (MARCHLIGHT style)
+    if (this.ch.blinkGroups) for (const g of this.ch.blinkGroups) g.scale.y = clamp(1 - blinkAmt * 0.92 - F.squint * 0.35 + F.lidWide * 0.15 - F.lid * 0.3, 0.06, 1.15);
     for (const l of this.ch.lids || []) {
       if (l.upper) {
         let open = -0.48 - F.lidWide * 0.2 + F.squint * 0.28 + F.lid * 0.25 + ep * 0.6;
