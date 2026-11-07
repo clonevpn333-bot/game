@@ -9,7 +9,7 @@ import { warmCache, persistCache } from './cache.js';
 import { BlockHumanoid } from './blocks.js';
 
 const MAT_CANVAS = 7; // blocks.js MAT.canvas
-export const CAST_TEXTURES = ['leather_dark', 'denim', 'jersey', 'linen', 'fleece', 'leather_brown', 'velvet'];
+export const CAST_TEXTURES = ['leather_dark', 'linen', 'fleece', 'velvet']; // only the Clerk still uses textured cloth
 
 const T = (p, bone, k = 0.02) => Object.assign(p, { bone, k });
 const OP = (p, op, k = 0.004) => Object.assign(p, { op, k });

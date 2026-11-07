@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { pbr, preloadSets, model } from '../../engine/assets.js';
 
 export const HOTEL_TEXTURES = ['carpet', 'wallpaper', 'wood_panel', 'ceiling', 'walnut', 'velvet', 'plaster_white', 'parquet', 'marble', 'linen', 'bath_tiles', 'ship_hull', 'ship_deck'];
-export const HOTEL_MODELS = ['ArmChair_01', 'ClassicConsole_01', 'ClassicNightstand_01', 'Chandelier_01', 'Television_01', 'vintage_suitcase', 'ornate_mirror_01', 'fancy_picture_frame_01', 'hanging_picture_frame_02', 'wooden_bookshelf_worn', 'Sofa_01', 'GothicBed_01', 'vintage_telephone_wall_clock', 'wall_clock', 'painted_wooden_nightstand', 'drawer_cabinet', 'vintage_flashlight', 'WetFloorSign_01'];
+export const HOTEL_MODELS = ['ArmChair_01', 'ClassicConsole_01', 'ClassicNightstand_01', 'Chandelier_01', 'Television_01', 'vintage_suitcase', 'ornate_mirror_01', 'fancy_picture_frame_01', 'wooden_bookshelf_worn', 'GothicBed_01', 'vintage_telephone_wall_clock', 'wall_clock', 'drawer_cabinet', 'vintage_flashlight', 'WetFloorSign_01'];
 
 const H = 2.9; // ceiling height
 export const LAYOUT = {

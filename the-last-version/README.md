@@ -34,7 +34,7 @@ Checkpoints: Ch1 `start, air, fold` · Ch2 `start, hunters, meridian, boarding` 
 
 ## Single-file build
 
-`node tools/build-single.mjs` writes `dist/the-last-version.html` (~72 MB): all code bundled with
+`node tools/build-single.mjs` writes `dist/the-last-version.html` (~21 MB): all code bundled with
 esbuild and every texture, HDRI and model embedded, so it runs by double-clicking — no server needed.
 The output is git-ignored because of its size.
 
@@ -45,6 +45,12 @@ The output is git-ignored because of its size.
 * **On foot (deck)** — WASD · mouse · Shift run · E interact (hold E to pry)
 * **Hotel** — WASD · mouse · Shift run (it hears you) · C crouch · F flashlight · E interact / hide · hold LMB on a door and move the mouse to swing it · hold Space to hold your breath while hidden · hold Q to raise the Anchor
 * Dialogue choices: 1–4 or click. Esc pauses (restart from checkpoint, settings, save & quit).
+
+## Credits to earlier games
+
+Driving physics, steering input and the chase camera are ported from GETAWAY! (`getaway/` on the
+`lucid-mendel` branch); block characters follow MARCHLIGHT's rig (`marchlight/` on `confident-bardeen`).
+See `CLAUDE.md` for the owner's standing rules.
 
 ## How it is built
 
@@ -90,13 +96,9 @@ exercised in automated headless runs.
 
 Known limitations, stated plainly:
 
-* **Characters** are sculpted procedurally (no external character assets). They have modelled noses,
-  lips, ears, eyelids, teeth, brows, sculpted hair, layered clothing with real seams/stitching/zippers
-  and a face rig with expressions — but they are stylised and not yet at the level of a hand-sculpted
-  premium game character; faces in particular share one base topology and read as caricatures up close.
-  They are also heavy (~350–450k triangles each). The first time a character is built it costs a
-  few seconds of CPU (≈7 s on the development container); the result is cached in IndexedDB, after
-  which it builds in well under a second.
+* **Characters** are block characters (rounded boxes per body part, block faces), built on the
+  same rig approach as Marchlight: about 4k triangles and one draw call each, built in milliseconds.
+  The Chapter 3 Clerk is the one exception and keeps its sculpted look.
 * **Animation** is fully procedural (IK gait, poses, springs). It avoids foot sliding and has weight
   shifts, but there are no authored mocap clips; climbing, getting-up and other contextual animations
   from the brief are not implemented.
