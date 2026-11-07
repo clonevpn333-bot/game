@@ -32,6 +32,12 @@ Developer shortcuts (URL parameters): `?chapter=2` jumps to a chapter, `&cp=hunt
 `&quality=low|medium|high|ultra` overrides the graphics preset.
 Checkpoints: Ch1 `start, air, fold` · Ch2 `start, hunters, meridian, boarding` · Ch3 `start, phone, power, door611`.
 
+## Single-file build
+
+`node tools/build-single.mjs` writes `dist/the-last-version.html` (~72 MB): all code bundled with
+esbuild and every texture, HDRI and model embedded, so it runs by double-clicking — no server needed.
+The output is git-ignored because of its size.
+
 ## Controls
 
 * **Driving** — W/S throttle & brake/reverse · A/D steer · Space handbrake · Shift nitrous · C camera · R flip around when stopped
