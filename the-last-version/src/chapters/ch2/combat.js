@@ -100,10 +100,10 @@ export class Patrol {
     if (this.sinking) {
       this.sinkT += dt;
       b.input = { throttle: 0, brake: 0, rudder: 0, boost: 0, trim: 0 };
-      b.points.forEach((pt) => (pt.y = 0.1 + this.sinkT * 0.5));
+      b.sink = this.sinkT * 0.5;
       b.update(dt, t);
       if (Math.random() < 0.5) this.fx.smoke(b.pos.clone().add(new THREE.Vector3(0, 1.5, 0)), true);
-      if (this.sinkT > 7) { this.alive = false; this.mesh.visible = false; b.points.forEach((pt) => (pt.y = 0.1)); }
+      if (this.sinkT > 7) { this.alive = false; this.mesh.visible = false; b.sink = 0; }
       return;
     }
     const pp = player.pos;

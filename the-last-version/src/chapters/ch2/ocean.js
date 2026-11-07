@@ -15,7 +15,8 @@ const G = 9.81;
 const PRE = WAVES.map(([dx, dz, L, S, sm]) => {
   const l = Math.hypot(dx, dz), k = (2 * Math.PI) / L;
   // height amplitude from steepness; horizontal (choppiness) factor Q kept below the fold limit
-  return { dx: dx / l, dz: dz / l, k, a: (S / k) * 1.35, c: Math.sqrt(G / k) * sm, S: 0.55 };
+  // long swells keep their height (a 9 m hull can ride them); short chop is kept low so it never washes through the boat
+  return { dx: dx / l, dz: dz / l, k, a: (S / k) * (L >= 24 ? 1.15 : 0.45), c: Math.sqrt(G / k) * sm, S: 0.55 };
 });
 
 export const OCEAN = { amp: 1.0, time: 0 };
