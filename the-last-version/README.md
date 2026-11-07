@@ -60,12 +60,12 @@ src/
                triplanar, HDRI, glTF), input (KB/mouse/pad), UI (subtitles, choices, objectives), sky, FX
   audio/       Web Audio engine: buses, convolution reverb, synthesised SFX (engines, sirens, rotor,
                crashes, gunfire, splashes, thunder, footsteps, creaks, heartbeat) and an adaptive score
-  characters/  SDF "digital clay" sculpting → surface nets → AO + bone weights; humanoid rig with face
-               bones; procedural animator (planted-foot gait IK, moods, look-at, blinks, expressions,
-               talking, hand poses, ponytail springs); garment details (raised seams, stitching, zippers,
-               laces) projected onto the cloth surface; the cast (Kai, Sera, Venn, the Clerk)
+  characters/  block characters (one rounded box per body part on a humanoid rig with face bones, block
+               eyes/brows/mouth); procedural animator (planted-foot gait IK, moods, look-at, blinks,
+               expressions, talking, hand poses, ponytail springs); the cast (Kai, Sera, Venn; the
+               Clerk keeps its sculpted look)
   vehicles/    lofted car bodies with panel/glass textures and real wheel assemblies; slip-angle car
-               physics + OBB collisions; deep-V boat hulls, RIBs, the research ship; rigid-body buoyancy
+               physics + OBB collisions; deep-V boat hulls, RIBs, the research ship; wave-riding boat physics
   chapters/    ch1 (city generator, facade & wet-road shaders, traffic, police, helicopter, the bend),
                ch2 (ocean, rain, combat), ch3 (hotel builder, doors, the Clerk)
   game/        director (chapter flow, checkpoints, fail/retry, pause), state & saves, menu
@@ -78,8 +78,11 @@ Notable techniques:
   function on the CPU, so physics stays simple while everything you see bends consistently.
 * **Facade shader.** Every building window is drawn in-shader with frames, mullions, sills, blinds and
   an interior-mapped room behind the glass (lit or dark per room), over photo-scanned PBR walls.
-* **Gerstner ocean shared with physics.** The same wave set drives the vertex shader and the boat's
-  hull-point buoyancy (with horizontal-displacement inversion), so boats ride the waves you see.
+* **Gerstner ocean shared with physics.** The same wave set drives the vertex shader and the boats:
+  each hull rides a plane fitted to the water under its bow, stern and beam (with horizontal-displacement
+  inversion), through a damped follower that smooths chop, so the deck stays dry and the boat only
+  leaves the water off a big crest or when you jump. Boat wakes and hull foam are drawn in the ocean
+  shader, and the surface is also shaded from below for the underwater intro.
 * **The Clerk** hears footsteps, door slams and breath through walls; sees light and movement; walks a
   room/corridor graph; investigates, searches the hiding places nearest the noise (and goes straight to
   the one it watched you enter), opens doors, and chases.

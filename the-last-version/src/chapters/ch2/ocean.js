@@ -73,6 +73,8 @@ vec3 gerst(vec2 p, out vec3 nrm, out float jac){
   return o;
 }`;
 
+const WAKE_N = 24, HULL_N = 6;
+
 export function makeOcean(scene, { size = 900, seg = 256, color = 0x06222b, deep = 0x020b10, envIntensity = 1 } = {}) {
   const U = {
     uTime: { value: 0 }, uAmp: { value: 1 },
@@ -80,6 +82,10 @@ export function makeOcean(scene, { size = 900, seg = 256, color = 0x06222b, deep
     uWS: { value: PRE.map((w) => new THREE.Vector2(w.c, w.S)) },
     uDeep: { value: new THREE.Color(deep) }, uShallow: { value: new THREE.Color(color) },
     uFlash: { value: 0 }, uFoamCol: { value: new THREE.Color(0xd8e6ea) },
+    // wake trail behind the player's boat: x, z, half-width, strength
+    uWake: { value: Array.from({ length: WAKE_N }, () => new THREE.Vector4()) },
+    // boats on the water: x, z, yaw, strength (foam ring around the hull)
+    uHull: { value: Array.from({ length: HULL_N }, () => new THREE.Vector4()) },
   };
   // radial grid: dense near the camera, sparse far away
   const geo = new THREE.BufferGeometry();
@@ -91,10 +97,12 @@ export function makeOcean(scene, { size = 900, seg = 256, color = 0x06222b, deep
   }
   for (let r = 0; r < rings; r++) for (let s = 0; s < spokes; s++) {
     const a = r * spokes + s, b = r * spokes + ((s + 1) % spokes), c = a + spokes, d = b + spokes;
-    idx.push(a, c, b, b, c, d);
+    idx.push(a, b, c, b, d, c); // counter-clockwise seen from above, so the surface faces up
   }
   geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setIndex(idx);
-  const m = new THREE.MeshPhysicalMaterial({ color, roughness: 0.16, metalness: 0, clearcoat: 0.0, envMapIntensity: envIntensity, specularIntensity: 0.6 });
+  // double-sided so the surface is also visible from below; a heightfield seen from above always
+  // hits a front face first, so the underside shading never shows from the air
+  const m = new THREE.MeshPhysicalMaterial({ color, roughness: 0.16, metalness: 0, clearcoat: 0.0, envMapIntensity: envIntensity, specularIntensity: 0.6, side: THREE.DoubleSide });
   m.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, U);
     sh.vertexShader = sh.vertexShader
@@ -108,6 +116,7 @@ export function makeOcean(scene, { size = 900, seg = 256, color = 0x06222b, deep
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>
         uniform float uTime, uFlash; uniform vec3 uDeep, uShallow, uFoamCol;
+        uniform vec4 uWake[${WAKE_N}]; uniform vec4 uHull[${HULL_N}];
         varying float vH; varying float vJac; varying vec3 vOW; varying float vDist;
         float oh(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
         float on(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f); return mix(mix(oh(i), oh(i+vec2(1,0)), f.x), mix(oh(i+vec2(0,1)), oh(i+vec2(1,1)), f.x), f.y); }
@@ -120,6 +129,32 @@ export function makeOcean(scene, { size = 900, seg = 256, color = 0x06222b, deep
         float foam = clamp(foamMask * (0.4 + foamTex * 1.4), 0.0, 1.0);
         // streaks of wind-blown foam
         foam = max(foam, smoothstep(0.66, 0.82, ofbm(vec2(vOW.x * 0.05, vOW.z * 0.4) + uTime * 0.05)) * 0.18 * crest);
+        // boat wakes: a churned trail with brighter spreading edges, and a ring where hulls push the water aside
+        float wk = 0.0;
+        for (int i = 0; i < ${WAKE_N - 1}; i++) {
+          vec4 wa = uWake[i], wb = uWake[i + 1];
+          if (wa.w <= 0.0 || wb.w <= 0.0) continue;
+          vec2 pa = vOW.xz - wa.xy, ba = wb.xy - wa.xy;
+          float hr = dot(pa, ba) / max(dot(ba, ba), 1e-4), hh = clamp(hr, 0.0, 1.0);
+          float d = length(pa - ba * hh), hw = mix(wa.z, wb.z, hh), st = mix(wa.w, wb.w, hh);
+          float age = (hw - 1.1) / 2.4;
+          // churned centre dies out in ~2 s; the two spreading edges (the V) last longer
+          float body = (1.0 - smoothstep(hw * 0.25, hw * 0.6, d)) * max(0.0, 1.0 - age / 2.0);
+          float ew = 0.35 + age * 0.25;
+          // edges only beside the segment (not around its end caps, which would draw rings)
+          float edge = (1.0 - smoothstep(0.0, ew, abs(d - hw))) * step(-0.02, hr) * step(hr, 1.02);
+          wk = max(wk, st * max(body * 0.75, edge * 0.55));
+        }
+        for (int i = 0; i < ${HULL_N}; i++) {
+          vec4 hb = uHull[i];
+          if (hb.w <= 0.0) continue;
+          vec2 r = vOW.xz - hb.xy; float cy = cos(hb.z), sy = sin(hb.z);
+          float lz = r.x * sy + r.y * cy, lx = r.x * cy - r.y * sy;
+          float e = length(vec2(lx / 1.8, lz / (lz > 0.0 ? 4.9 : 4.4)));
+          wk = max(wk, hb.w * smoothstep(0.82, 1.0, e) * (1.0 - smoothstep(1.0, 1.5, e)));
+        }
+        wk *= smoothstep(0.2, 0.62, ofbm(vOW.xz * 0.7 + vec2(uTime * 0.4, -uTime * 0.2)) + wk * 0.25);
+        foam = clamp(max(foam, wk), 0.0, 1.0);
         diffuseColor.rgb = mix(diffuseColor.rgb, uFoamCol, foam);`)
       .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
         roughnessFactor = mix(0.08, 0.7, foam);`)
@@ -130,14 +165,41 @@ export function makeOcean(scene, { size = 900, seg = 256, color = 0x06222b, deep
         normal = normalize(normal + mat3(viewMatrix) * rn * smoothstep(120.0, 10.0, vDist));`)
       .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
         // light passing through thin crests
-        totalEmissiveRadiance += vec3(0.02, 0.12, 0.11) * pow(crest, 3.0) * (1.0 - foam) + uFoamCol * foam * 0.03 + vec3(0.6, 0.7, 0.9) * uFlash * 0.15;`);
+        totalEmissiveRadiance += vec3(0.02, 0.12, 0.11) * pow(crest, 3.0) * (1.0 - foam) + uFoamCol * foam * 0.03 + vec3(0.6, 0.7, 0.9) * uFlash * 0.15;`)
+      .replace('#include <opaque_fragment>', `
+        // seen from below (the intro surfaces from underwater): a dark ceiling with the bright
+        // window of sky straight overhead, foam as dark patches
+        if (!gl_FrontFacing) {
+          vec3 vd = normalize(vOW - cameraPosition);
+          float win = smoothstep(0.55, 0.8, vd.y);
+          outgoingLight = mix(vec3(0.012, 0.05, 0.06), vec3(0.2, 0.34, 0.38) * (1.0 + uFlash * 2.0), win) * (1.0 - foam * 0.6);
+        }
+        #include <opaque_fragment>`);
   };
   m.customProgramCacheKey = () => 'ocean';
   const mesh = new THREE.Mesh(geo, m);
   mesh.frustumCulled = false; mesh.receiveShadow = true;
   scene.add(mesh);
+  const wake = [];
+  let wakeT = 0;
   return {
     mesh, U,
+    /** Drop a wake point at the stern; call every frame with the boat's state. */
+    wake(dt, x, z, speed) {
+      wakeT -= dt;
+      for (const w of wake) w.age += dt;
+      while (wake.length && wake[wake.length - 1].age > 5) wake.pop();
+      if (wakeT <= 0) { wakeT = 0.12; wake.unshift({ x, z, age: 0, s: Math.min(1, speed / 14) }); if (wake.length > WAKE_N) wake.pop(); }
+      else if (wake.length) { wake[0].x = x; wake[0].z = z; wake[0].s = Math.min(1, speed / 14); }
+      for (let i = 0; i < WAKE_N; i++) {
+        const w = wake[i];
+        if (!w) { U.uWake.value[i].set(0, 0, 0, 0); continue; }
+        U.uWake.value[i].set(w.x, w.z, 1.1 + w.age * 2.4, w.s * Math.max(0, 1 - w.age / 5));
+      }
+    },
+    clearWake() { wake.length = 0; for (const v of U.uWake.value) v.set(0, 0, 0, 0); },
+    /** Hull foam rings: list of {x, z, yaw, s}. */
+    hulls(list) { for (let i = 0; i < HULL_N; i++) { const h = list[i]; U.uHull.value[i].set(h ? h.x : 0, h ? h.z : 0, h ? h.yaw : 0, h ? h.s : 0); } },
     update(t, camera) {
       U.uTime.value = t; OCEAN.time = t; U.uAmp.value = OCEAN.amp;
       // follow the camera in 6 m steps so the grid doesn't swim

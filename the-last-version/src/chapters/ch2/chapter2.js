@@ -205,7 +205,7 @@ export default class Chapter2 {
   reset(cp) {
     this.cp = cp;
     const c = CHECKPOINTS[cp] || CHECKPOINTS.start;
-    this.boat.place(c.pos.x, c.pos.z, c.yaw); this.boat.health = 1; this.boat.boostFuel = 1;
+    this.boat.place(c.pos.x, c.pos.z, c.yaw); this.ocean.clearWake(); this.boat.health = 1; this.boat.boostFuel = 1;
     this.camYaw = c.yaw; this.camPitch = 0.12; this.heat = 0; this.overheat = 0; this.fireCd = 0; this.hurtT = 9;
     for (const p of this.patrols) { p.alive = false; p.mesh.visible = false; p.engine?.stop(); p.engine = null; }
     this.tracers.clear();
@@ -253,7 +253,7 @@ export default class Chapter2 {
     // under the flood: silence, then the car rewrites itself into a boat and surfaces
     ui.fadeColor('#05222c'); await ui.fade(1, 0.01);
     g.audio.setMuffle(300, 0.01);
-    this.boat.place(0, 0, 0);
+    this.boat.place(0, 0, 0); this.ocean.clearWake();
     this.cinematic.under = true;
     ui.fade(0.55, 2.5);
     await wait(1600);
@@ -327,6 +327,7 @@ export default class Chapter2 {
     this.rain.update(t, this.camera);
     this.sky.userData.u.uTime.value = t;
     this.weather(dt, t);
+    this.waterFx(dt, t);
     this.updateShip(dt, t);
     if (this.cinematic) { this.updateIntroCam(dt, t); return; }
     if (this.onFoot || this.rescueCine) { this.updateOnFoot(dt, t); return; }
@@ -342,6 +343,27 @@ export default class Chapter2 {
     this.moon.intensity = 0.9 + f * 5;
     this.hemi.intensity = 0.5 + f * 1.5;
     for (const b of this.beacons) b.material.emissiveIntensity = Math.sin(t * 2.5 + b.position.x) > 0.7 ? 5 : 0.2;
+  }
+
+  /** Wake and hull foam on the sea, plus the underwater look when the camera is below the surface. */
+  waterFx(dt, t) {
+    const b = this.boat, list = [];
+    const onWater = (body) => !body.airborne && body.pos.y > waterHeight(body.pos.x, body.pos.z, t) - 2;
+    if (this.boatMesh.visible && onWater(b)) {
+      list.push({ x: b.pos.x, z: b.pos.z, yaw: b.yaw, s: 0.25 + Math.min(1, b.speed / 16) * 0.75 });
+      const st = b.pos.clone().addScaledVector(V3(Math.sin(b.yaw), 0, Math.cos(b.yaw)), -4.6);
+      this.ocean.wake(dt, st.x, st.z, b.speed);
+    } else this.ocean.wake(dt, b.pos.x, b.pos.z, 0);
+    for (const p of this.patrols) if (p.alive && !p.sinking && onWater(p.body)) list.push({ x: p.body.pos.x, z: p.body.pos.z, yaw: p.body.yaw, s: 0.2 + Math.min(1, p.body.speed / 16) * 0.6 });
+    this.ocean.hulls(list);
+    const cam = this.camera.position, under = cam.y < waterHeight(cam.x, cam.z, t) - 0.05;
+    if (under !== this.underwater) {
+      this.underwater = under;
+      const sc = this.scene;
+      sc.fog.color.set(under ? 0x05242c : 0x1d262e); sc.fog.density = under ? 0.05 : 0.0065;
+      sc.background = under ? sc.fog.color.clone() : null;
+      this.sky.visible = !under; this.rain.lines.visible = !under;
+    }
   }
 
   updateIntroCam(dt, t) {

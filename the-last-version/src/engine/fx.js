@@ -11,7 +11,9 @@ void main(){ vAlpha = aAlpha; vColor = aColor; vRot = aRot;
 const FS_SOFT = `
 uniform sampler2D tTex; varying float vAlpha; varying vec3 vColor; varying float vRot;
 void main(){ vec2 p = gl_PointCoord - 0.5; float c = cos(vRot), s = sin(vRot); p = mat2(c, -s, s, c) * p;
-  vec4 t = texture2D(tTex, p + 0.5); if (t.a * vAlpha < 0.01) discard; gl_FragColor = vec4(vColor * t.rgb, t.a * vAlpha); }`;
+  // round falloff computed here: at small point sizes the mipmapped texture blurs to a flat square
+  float round = 1.0 - smoothstep(0.25, 0.5, length(gl_PointCoord - 0.5));
+  vec4 t = texture2D(tTex, p + 0.5); float a = t.a * vAlpha * round; if (a < 0.01) discard; gl_FragColor = vec4(vColor * t.rgb, a); }`;
 
 function puffTexture() {
   const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d');

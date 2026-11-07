@@ -26,6 +26,7 @@ export class BoatBody {
     this.submerged = 1; this.airborne = false; this.airTime = 0;
     this.slam = 0; this.spray = 0; this.rpm = 900;
     this.points = []; // kept for compatibility (unused)
+    this.launchVy = o.launchVy ?? 5; this.launchA = o.launchA ?? 25; // crest-launch thresholds
   }
 
   get forward() { return new THREE.Vector3(0, 0, 1).applyQuaternion(this.quat); }
@@ -35,7 +36,7 @@ export class BoatBody {
   get yaw() { return this.yawA; }
 
   place(x, z, yaw) {
-    this.yawA = yaw; this.vel.set(0, 0, 0); this.vy = 0; this.yawRate = 0; this.airborne = false;
+    this.yawA = yaw; this.vel.set(0, 0, 0); this.vy = 0; this.yawRate = 0; this.airborne = false; this.prevTargetY = undefined;
     const s = this.surface(x, z, OCEAN_T());
     this.pos.set(x, s.y, z); this.pitch = s.pitch; this.roll = s.roll;
     this.sync();
@@ -61,17 +62,23 @@ export class BoatBody {
     const planing = clamp((vf - 8) / 12, 0, 1);
     if (inWater) {
       let T = 0;
-      if (inp.throttle > 0) T += inp.throttle * this.thrust * clamp(1 - vf / 34, 0, 1);
+      if (inp.throttle > 0) T += inp.throttle * this.thrust * clamp(1 - vf / 40, 0, 1);
       if (inp.brake > 0) T -= inp.brake * this.thrust * (vf > 1 ? 0.8 : 0.45);
       if (inp.boost && this.boostFuel > 0) { T += this.boost; this.boostFuel = Math.max(0, this.boostFuel - dt * 0.25); }
       vf += (T / this.mass) * dt;
-      vf -= vf * Math.abs(vf) * (0.012 - planing * 0.005) * dt * 6;
+      // hull drag drops once the boat is up on the plane (top speed ~36 kn, ~45 kn boosted)
+      vf -= vf * Math.abs(vf) * (0.0045 - planing * 0.0015) * dt * 6;
       vs -= vs * Math.min(1, (2.2 + Math.abs(vs) * 0.25) * dt);         // the keel
       this.rudder += (inp.rudder - this.rudder) * Math.min(1, dt * 6);
       const yawAcc = this.rudder * (Math.abs(vf) * 0.09 + inp.throttle * 0.6) * Math.sign(vf + 0.5) * 1.4;
       this.yawRate += yawAcc * dt;
       this.yawRate -= this.yawRate * Math.min(1, dt * 2.6);
-    } else this.yawRate -= this.yawRate * Math.min(1, dt * 0.4);
+    } else {
+      // a little air control so a hop never takes the steering away
+      this.rudder += (inp.rudder - this.rudder) * Math.min(1, dt * 6);
+      this.yawRate += this.rudder * 0.5 * dt;
+      this.yawRate -= this.yawRate * Math.min(1, dt * 0.8);
+    }
     if (!inp.boost) this.boostFuel = Math.min(1, this.boostFuel + dt * 0.06);
     this.yawA += this.yawRate * dt;
     const f2 = new THREE.Vector3(Math.sin(this.yawA), 0, Math.cos(this.yawA)), r2 = new THREE.Vector3(Math.cos(this.yawA), 0, -Math.sin(this.yawA));
@@ -81,22 +88,32 @@ export class BoatBody {
     const s = this.surface(this.pos.x, this.pos.z, t);
     const lift = planing * 0.18 + (inp.trim && inWater && vf > 6 ? 0.15 : 0);
     const targetY = s.y + lift;
+    const prevT = this.prevTargetY; this.prevTargetY = targetY;
     if (this.airborne) {
       this.vy -= G * dt; this.pos.y += this.vy * dt; this.airTime += dt;
       this.pitch += (-0.06 - inp.trim * 0.4 - this.pitch * 0.3) * dt; // nose drops, trim lifts it
       if (this.pos.y <= targetY) {
         this.slam = this.airTime > 0.35 ? Math.min(1.5, -this.vy * 0.15) : 0;
-        this.airborne = false; this.airTime = 0; this.pos.y = targetY; this.vy = 0;
+        this.airborne = false; this.airTime = 0; this.pos.y = targetY; this.vy = 0; this.landCd = 0.9;
       }
     } else {
-      const vyT = (targetY - this.pos.y) / Math.max(dt, 1e-3);
-      // the surface drops away faster than the hull can follow at speed: launch
-      if (vf > 9 && vyT < this.vy - G * dt * 2.2 && this.vy > 1.5) { this.airborne = true; this.airTime = 0; }
+      // Ride the swell: a stiff, critically damped follower toward the fitted surface. It smooths
+      // the chop and never lets the hull sink in. The boat only leaves the water on purpose
+      // (Space) or when a big swell throws it upward at speed and then falls away beneath it.
+      const vyS = prevT === undefined ? 0 : clamp((targetY - prevT) / Math.max(dt, 1e-3), -15, 15);
+      const w0 = 14;
+      this.vy += (w0 * w0 * (targetY - this.pos.y) - 2 * w0 * (this.vy - vyS)) * dt;
+      this.pos.y += this.vy * dt;
+      if (this.pos.y < targetY - 0.1) { this.pos.y = targetY - 0.1; this.vy = Math.max(this.vy, vyS); }
+      if (inp.trim && vf > 10 && (this.trimCd ?? 0) <= 0) { this.airborne = true; this.airTime = 0; this.vy = Math.max(this.vy, 0) + 4.5 + vf * 0.08; this.trimCd = 1.2; }
       else {
-        // trim (Space) pops the bow up a swell for a deliberate jump
-        if (inp.trim && vf > 10 && this.trimCd <= 0) { this.airborne = true; this.vy = 4.5 + vf * 0.08; this.trimCd = 1.2; }
-        else { this.vy = clamp(vyT, -20, 20); this.pos.y = targetY; }
+        // surface curving away hard under a hull that is still rising fast = thrown off the crest
+        const aS = (vyS - (this.prevVyS ?? vyS)) / Math.max(dt, 1e-3);
+        this.aS = (this.aS ?? 0) + (aS - (this.aS ?? 0)) * Math.min(1, dt * 12);
+        this.landCd = (this.landCd ?? 0) - dt;
+        if (vf > 15 && this.landCd <= 0 && this.vy > this.launchVy && this.aS < -this.launchA) { this.airborne = true; this.airTime = 0; }
       }
+      this.prevVyS = vyS;
       this.trimCd = (this.trimCd ?? 0) - dt;
       // pitch/roll follow the surface with a little lag and bank into turns
       const kP = 1 - Math.exp(-dt * 7);
