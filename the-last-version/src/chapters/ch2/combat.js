@@ -146,7 +146,7 @@ export class Patrol {
     let part = 'hull';
     if (local.z < -2.6) part = 'engine'; else if (local.z > 0.9 && local.y > 0.6) part = 'gunner';
     this.parts[part] = Math.max(0, this.parts[part] - dmg * (part === 'hull' ? 1 : 1.6));
-    this.parts.hull = Math.max(0, this.parts.hull - dmg * 0.35);
+    this.parts.hull = Math.max(0, this.parts.hull - dmg * 0.6);
     this.flash = 0.08;
     this.fx.spark(p);
     if (this.parts.hull <= 0) this.kill(p);
@@ -211,7 +211,7 @@ export class Patrol {
         this.burst--;
         const mz = gun.muzzles[this.burst % 2].getWorldPosition(new THREE.Vector3());
         const dir = lead.clone().sub(mz).normalize();
-        tracers.fire(mz, dir, { enemy: true, speed: 260, damage: 0.026, spread: 0.03 + dist * 0.0003 });
+        tracers.fire(mz, dir, { enemy: true, speed: 260, damage: 0.011, spread: 0.04 + dist * 0.0004 });
         this.audio.gunshotFar(mz);
         this.fx.muzzle(mz, dir);
       }

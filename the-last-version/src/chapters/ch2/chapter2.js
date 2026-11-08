@@ -298,7 +298,7 @@ export default class Chapter2 {
     if (name === 'hunters') {
       ui.objective('Survive the ATLAS patrol', 'Destroy the patrol boats — shoot engines to cripple, the bow to silence the gunner');
       g.music.play('naval', { intensity: 0.7 });
-      this.wave = 1; this.spawnWave(3);
+      this.wave = 1; this.spawnWave(2);
       this.line('h1', [1, ['SERA', 'Those are Venn\'s. They\'ll board me if they reach the ship first.'], ['VENN', 'Mr. Voss. You swim well for a man who doesn\'t exist here.'], ['KAI', 'Does she ever stop talking?'], ['SERA', 'Not since 2019. Both of them.']]);
     }
     if (name === 'meridian') {
@@ -317,7 +317,7 @@ export default class Chapter2 {
       if (p.alive || k >= n) continue;
       const a = b.yaw + (k - (n - 1) / 2) * 0.7;
       const pos = b.pos.clone().add(V3(Math.sin(a) * 180, 0, Math.cos(a) * 180));
-      p.spawn(pos, a + Math.PI); k++;
+      p.spawn(pos, a + Math.PI); p.counted = false; k++;
     }
   }
 
@@ -418,7 +418,7 @@ export default class Chapter2 {
     } });
     // health regen
     this.hurtT += dt;
-    if (this.hurtT > 5) b.health = Math.min(1, b.health + dt * 0.03);
+    if (this.hurtT > 2.5) b.health = Math.min(1, b.health + dt * 0.09); // out of fire for a moment, the hull patches up fast
     if (b.health <= 0) { g.fail('SUNK'); b.health = 1; }
     this.phaseLogic(dt, t);
     this.updateFx(dt, t);
@@ -433,7 +433,7 @@ export default class Chapter2 {
   impact(v) {
     const b = this.boat;
     this.game.audio.crash(b.pos, clamp(v / 18, 0.2, 1));
-    b.health -= clamp(v / 120, 0, 0.2);
+    b.health -= clamp(v / 300, 0, 0.08);
     this.shake = Math.max(this.shake || 0, v / 15);
     this.kaiAnim.hitReact(1, 0.8);
     this.hurtT = 0;
@@ -465,7 +465,7 @@ export default class Chapter2 {
   }
   hitMarker() { this.H.cross.classList.add('hit'); clearTimeout(this.hmT); this.hmT = setTimeout(() => this.H.cross.classList.remove('hit'), 90); this.game.audio.tone({ type: 'square', freq: 1800, dur: 0.03, vol: 0.03, reverb: 0 }); }
   hitTurret(tu, p) {
-    tu.hp -= 0.07; this.hitMarker(); this.fxApi().spark(p);
+    tu.hp -= 0.14; this.hitMarker(); this.fxApi().spark(p);
     if (tu.hp <= 0 && tu.alive) {
       tu.alive = false; tu.tank.visible = false;
       this.game.audio.explosion(p, 1); this.fxApi().explode(p);
@@ -488,9 +488,9 @@ export default class Chapter2 {
     for (const p of this.patrols) if (p.alive && !p.sinking) targets.push({ c: p.body.pos.clone().add(V3(0, 1, 0)), r: 3.0, hit: (pt, d) => { p.hitAt(pt, d); if (p.sinking && !p.counted) { p.counted = true; this.kills++; this.killConfirm(pt); } }, boat: p });
     if (this.ship.visible) for (const tu of this.ship.userData.turrets) if (tu.alive) targets.push({ c: tu.tank.getWorldPosition(V3()), r: 1.6, hit: (pt) => this.hitTurret(tu, pt) });
     // aim assist: if a target sits within ~3 degrees of the crosshair, bend the aim onto it
-    let dir = look.clone(), assisted = null, best = Math.cos(0.055);
-    for (const tg of targets) { const to = tg.c.clone().sub(origin); const dist = to.length(); const c = to.normalize().dot(look); const cone = Math.cos(Math.min(0.055, Math.atan2(tg.r * 1.4, dist))); if (c > Math.min(best, cone)) { best = c; assisted = tg; } }
-    if (assisted) dir.lerp(assisted.c.clone().sub(origin).normalize(), 0.6).normalize();
+    let dir = look.clone(), assisted = null, best = Math.cos(0.1);
+    for (const tg of targets) { const to = tg.c.clone().sub(origin); const dist = to.length(); const c = to.normalize().dot(look); const cone = Math.cos(Math.min(0.1, Math.atan2(tg.r * 2.2, dist) + 0.03)); if (c > Math.min(best, cone)) { best = c; assisted = tg; } }
+    if (assisted) dir.lerp(assisted.c.clone().sub(origin).normalize(), 0.85).normalize();
     // what the crosshair is on (for the turret to point at)
     const hitInfo = this.castShot(origin, dir, targets);
     const aimPoint = hitInfo.point;
@@ -522,7 +522,7 @@ export default class Chapter2 {
       this.fovPunch = Math.min(5, (this.fovPunch || 0) + 1.2);
       this.camPitch += 0.0025; // a little climb per shot
       gun.pitch.position.z = -0.07;
-      this.heat += 0.026;
+      this.heat += 0.016;
       if (this.heat >= 1) { this.overheat = 2.0; this.heat = 1; g.audio.burst({ freq: 4000, type: 'highpass', dur: 1.2, vol: 0.2 }); }
       this.fire.emit(mz.clone().add(V3(0, -0.2, 0)), this.boat.right.multiplyScalar(3).add(V3(0, 2, 0)), { life: 0.5, size: 0.06, grow: 0, color: [0.9, 0.7, 0.3], alpha: 1, gravity: 12, drag: 0.2 });
     }
@@ -537,7 +537,9 @@ export default class Chapter2 {
       if (h < 0) continue; const tt = -b - Math.sqrt(h);
       if (tt > 0 && tt < tBest) { tBest = tt; res = { point: origin.clone().addScaledVector(dir, tt), target: tg }; }
     }
-    const boxes = this.towers.concat(this.ship.visible ? [{ ...this.shipBox(), maxY: this.ship.position.y + 26 }] : []);
+    // the drowned towers stop shots; the ship's bounding box does NOT (its turrets sit inside it,
+    // so letting the box block shots made them impossible to destroy)
+    const boxes = this.towers;
     for (const bx of boxes) {
       let t0 = 0, t1 = tBest, ok = true;
       for (const [o, d, lo, hi] of [[origin.x, dir.x, bx.minX, bx.maxX], [origin.z, dir.z, bx.minZ, bx.maxZ], [origin.y, dir.y, -50, bx.maxY ?? 400]]) {
@@ -578,14 +580,17 @@ export default class Chapter2 {
         if (ct.t > 0.85 && !ct.splashed) { ct.splashed = true; g.audio.explosion(V3(-20, 0, 260), 1); for (let i = 0; i < 120; i++) this.spray.emit(V3(-30 + Math.random() * 80, 0, 250 + Math.random() * 20), V3((Math.random() - 0.5) * 10, 10 + Math.random() * 20, (Math.random() - 0.5) * 10), { life: 3, size: 3, grow: 3, color: [0.8, 0.85, 0.9], alpha: 0.5, gravity: 9 }); this.shake = 1.2; }
         // the fallen tower becomes an obstacle across the channel
         const span = ct.t > 0.85;
-        if (span) { this.towers[this.towers.length - 1] = { minX: -90, maxX: 40, minZ: 250, maxZ: 270, maxY: 6, mesh: ct.mesh }; }
+        if (span) { this.towers[this.towers.length - 1] = { minX: -100, maxX: -33, minZ: 248, maxZ: 272, maxY: 6, mesh: ct.mesh } /* only the part that sticks out of the water */; }
       }
       if (b.pos.z > 330) { g.checkpoint('hunters'); this.beginPhase('hunters'); }
     } else if (this.phase === 'hunters') {
       this.waypoint = V3(-20, 0, 860);
       const alive = this.patrols.filter((p) => p.alive && !p.sinking).length;
-      g.ui.objectiveDetail(`Patrol boats destroyed: ${this.kills} / 6`);
-      if (alive === 0 && this.wave === 1 && this.kills >= 3) { this.wave = 2; this.spawnWave(3); this.line('h2', [['SERA', 'More coming in from the east!'], ['VENN', 'Sera. You always did pick the wrong side of a door.']]); }
+      for (const p of this.patrols) if (p.sinking && !p.counted) { p.counted = true; this.kills++; this.killConfirm?.(p.body.pos.clone()); }
+      // a patrol that wandered off (stuck behind a tower, fled too far) never blocks the fight
+      for (const p of this.patrols) if (p.alive && !p.sinking && p.body.pos.distanceTo(b.pos) > 420) { p.alive = false; p.mesh.visible = false; p.engine?.stop(); p.engine = null; }
+      g.ui.objectiveDetail(`Patrol boats destroyed: ${this.kills} / 4`);
+      if (alive === 0 && this.wave === 1) { this.wave = 2; this.spawnWave(2); this.line('h2', [['SERA', 'More coming in from the east!'], ['VENN', 'Sera. You always did pick the wrong side of a door.']]); }
       else if (this.wave === 2 && alive === 0) { g.checkpoint('meridian'); this.beginPhase('meridian'); }
       if (this.phaseT > 40 && this.kills < 2) this.line('hint', [['SERA', 'Aim for their engines — the stern! Crippled boats can\'t chase you.']]);
     } else if (this.phase === 'meridian') {
@@ -594,9 +599,9 @@ export default class Chapter2 {
       // reach the ramp: behind the stern, aligned, with speed
       const local = this.ship.worldToLocal(b.pos.clone());
       const turretsDown = this.ship.userData.turrets.every((x) => !x.alive);
-      if (local.z < -76 && local.z > -100 && Math.abs(local.x) < 6) {
+      if (local.z < -70 && local.z > -115 && Math.abs(local.x) < 14) {
         if (!turretsDown) this.line('nope', [['SERA', 'The turrets will shred you on the ramp — take them out first!']]);
-        else if (b.speed > 6) this.startRampJump();
+        else if (b.speed > 2.5) this.startRampJump();
         else this.line('faster', [['SERA', 'Faster! You need speed to make the ramp!']]);
       }
     }
@@ -617,10 +622,10 @@ export default class Chapter2 {
       if (tu.fireT < 0 && d < 260) {
         tu.burst = (tu.burst ?? 0) + 1;
         const mz = tu.muzzles[tu.burst % 2].getWorldPosition(V3());
-        this.tracers.fire(mz, target.clone().sub(mz).normalize(), { enemy: true, speed: 300, damage: 0.03, spread: 0.03 });
+        this.tracers.fire(mz, target.clone().sub(mz).normalize(), { enemy: true, speed: 300, damage: 0.012, spread: 0.05 });
         this.game.audio.gunshotFar(mz); this.game.audio.tone({ pos: mz, ref: 30, type: 'triangle', freq: 90, freqEnd: 35, dur: 0.22, vol: 0.5 });
         this.fxApi().muzzle(mz, target.clone().sub(mz).normalize());
-        if (tu.burst % 10 === 0) tu.fireT = 2.4; else tu.fireT = 0.08;
+        if (tu.burst % 6 === 0) tu.fireT = 3.0; else tu.fireT = 0.1;
       }
     }
   }
