@@ -222,7 +222,7 @@ export async function buildHotel(scene) {
   const colliders = [];
   const solid = (x0, x1, z0, z1, tag) => colliders.push({ minX: Math.min(x0, x1), maxX: Math.max(x0, x1), minZ: Math.min(z0, z1), maxZ: Math.max(z0, z1), tag });
   // corridor wall colliders (with door gaps)
-  const wallCol = (zLine, list) => { let x = C.x0; for (const d of list.sort((a, b) => a.op[0] - b.op[0])) { if (d.r.hidden) continue; solid(x, d.op[0], zLine - 0.08, zLine + 0.08); x = d.op[1]; } solid(x, C.x1 + 0.2, zLine - 0.08, zLine + 0.08); };
+  const wallCol = (zLine, list) => { let x = C.x0; for (const d of list.sort((a, b) => a.op[0] - b.op[0])) { solid(x, d.op[0], zLine - 0.08, zLine + 0.08); x = d.op[1]; } /* 611's gap is plugged by hiddenCol until it exists */ solid(x, C.x1 + 0.2, zLine - 0.08, zLine + 0.08); };
   wallCol(C.z0, south); wallCol(C.z1, north);
   solid(C.x1, C.x1 + 0.15, C.z0, -0.48); solid(C.x1, C.x1 + 0.15, 0.48, C.z1);
   solid(L.x0, L.x1, L.z0 - 0.1, L.z0); solid(L.x0, L.x1, L.z1, L.z1 + 0.1); solid(L.x0 - 0.1, L.x0, L.z0, L.z1);

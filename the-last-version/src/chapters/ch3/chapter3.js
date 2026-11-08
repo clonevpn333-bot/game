@@ -6,7 +6,7 @@ import { buildCharacter, KAI } from '../../characters/cast.js';
 import { Animator } from '../../characters/anim.js';
 import { hdri, model } from '../../engine/assets.js';
 import { NoiseLoop } from '../../audio/audio.js';
-import { wait } from '../../engine/ui.js';
+import { wait, el } from '../../engine/ui.js';
 import { state, setFlag, addEvidence } from '../../game/state.js';
 
 const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
@@ -16,7 +16,7 @@ const CHECKPOINTS = {
   start: { pos: V3(-3, 0, 0), yaw: -Math.PI / 2, flags: {} },
   phone: { pos: V3(14.6, 0, -2.4), yaw: Math.PI / 2, flags: { flashlight: true, phone: true } },
   power: { pos: V3(63.5, 0, 0.4), yaw: -Math.PI / 2, flags: { flashlight: true, phone: true, keycard: true, power: true } },
-  door611: { pos: V3(46.4, 0, 3.2), yaw: 0, flags: { flashlight: true, phone: true, keycard: true, power: true, journal: true, open611: true } },
+  door611: { pos: V3(40.5, 0, 0.2), yaw: Math.PI / 2, flags: { flashlight: true, phone: true, keycard: true, power: true, journal: true, open611: true } },
 };
 
 const NOTES = {
@@ -36,9 +36,22 @@ export default class Chapter3 {
     scene.environment = env.env; scene.environmentIntensity = 0.05;
     scene.add(new THREE.HemisphereLight(0x302a28, 0x050404, 0.12));
     this.hotel = await buildHotel(scene);
+    this.buildSigns();
     this.colliders = this.hotel.colliders;
     // Kai, first person (full-body awareness: look down and you see yourself)
     this.kai = await buildCharacter(KAI);
+    // in first person the hand sits a foot from the lens, under the torch: a bare block of skin glares.
+    // In this hotel Kai wears dark leather gloves, so the hand stays in the gloom with everything else.
+    this.kai.traverse((o) => {
+      if (!o.isSkinnedMesh) return;
+      const geo = o.geometry, si = geo.attributes.skinIndex, col = geo.attributes.color, mat = geo.attributes.aMat, bones = o.skeleton.bones;
+      if (!si || !col) return;
+      for (let i = 0; i < si.count; i++) {
+        const name = bones[si.getX(i)]?.name || '';
+        if (/^(hand|thumb|index|middle|ring|pinky|finger)/i.test(name)) { const k = 0.6 + (i % 7) * 0.02; col.setXYZ(i, 0.035 * k, 0.03 * k, 0.028 * k); if (mat) mat.setX(i, 2); }
+      }
+      col.needsUpdate = true; if (mat) mat.needsUpdate = true;
+    });
     this.kaiAnim = new Animator(this.kai);
     scene.add(this.kai);
     this.kai.anchor.light.distance = 3.5;
@@ -84,7 +97,10 @@ export default class Chapter3 {
     this.setPower(this.f.power);
     this.set611(this.f.open611);
     this.clerk.hide();
-    if (cp !== 'start') { const sp = cp === 'door611' ? V3(10, 0, 0) : cp === 'power' ? V3(30, 0, 0) : V3(58, 0, 0); this.clerk.spawn(sp); }
+    // everything before the final chase is scripted: the Clerk only appears when the story puts it there
+    this.sc = { glimpse: cp !== 'start', walkby: cp !== 'start' && cp !== 'phone' ? true : cp === 'phone', cart: !!this.f.keycard, behind: !!this.f.power, wardrobe: !!this.f.journal, stepsT: 30 };
+    this.act = null; this.blackout = 0; this.shakeT = 0;
+    if (cp === 'door611') { const d611 = this.hotel.roomInfo[611].door; d611.locked = true; d611.forcing = 0; this.startChase(); }
     this.phase = cp === 'start' ? 'wake' : 'explore';
     this.phoneRinging = false; this.said = new Set(); this.ending = false; this.caught = false;
     this.stepT = 0;
@@ -177,7 +193,7 @@ export default class Chapter3 {
     else if (!f.keycard) ui.objective('Find a master keycard', 'Housekeeping — the cart was left near 612');
     else if (!f.power) ui.objective('Restore the power', 'The breaker is in the housekeeping room at the end of the hall');
     else if (!f.open611) ui.objective('Find room 611', f.journal ? 'It should be between 609 and 613. Use the Anchor (hold Q) where it should be.' : 'There is no 611 on this floor. Room 609 might explain why.');
-    else ui.objective('Go through', 'The door in Lia\'s room');
+    else ui.objective('Get into 611', this.hotel.roomInfo[611].door.locked ? 'Hold E at its door to force it — he is coming' : 'Go through the door in Lia\'s room');
   }
 
   // ------------------------------------------------------------------ update
@@ -186,10 +202,14 @@ export default class Chapter3 {
     if (this.caught) { this.updateCaught(dt, t); return; }
     if (this.ending) { this.updateEnding(dt, t); return; }
     this.control(dt, t);
+    this.scripts(dt, t);
+    this.blackout = Math.max(0, this.blackout - dt);
+    if (this.shakeT > 0) { this.shakeT -= dt; const k = this.shakeT * 0.12; this.camera.position.add(V3((Math.random() - 0.5) * k, (Math.random() - 0.5) * k, (Math.random() - 0.5) * k)); }
     this.updateWorld(dt, t);
     const r = this.clerk.update(dt, t, this.playerState());
-    if (r === 'caught') this.getCaught();
+    if (r === 'caught' && this.f.open611) this.getCaught(); // only the final chase can end you
     this.updateTension(dt, t);
+    this.updateMarker();
   }
 
   playerState() {
@@ -338,12 +358,17 @@ export default class Chapter3 {
     for (const d of h.doors) {
       if (!d.group.visible) continue;
       const c = d.group.localToWorld(V3(d.width / 2, 1.1, 0));
+      c.y = cam.position.y; // judge facing the door horizontally, so standing right at it still counts
       const dist = c.distanceTo(cam.position);
       if (dist < bd && c.clone().sub(cam.position).normalize().dot(look) > 0.75) { bd = dist; bestDoor = d; }
     }
     if (bestDoor && !this.grab) {
       const d = bestDoor;
-      if (d.locked) {
+      if (d.locked && d.number === 611 && f.open611) {
+        prompt = `<b>Hold</b> <kbd>E</kbd> Force the door ${'▮'.repeat(Math.round((d.forcing || 0) / 2.2 * 8))}${'▯'.repeat(8 - Math.round((d.forcing || 0) / 2.2 * 8))}`;
+        if (inp.down('KeyE')) { d.forcing = (d.forcing || 0) + dt; if (Math.random() < dt * 8) g.audio.metal({ pos: d.hingeWorld().add(V3(0, 1, 0)), base: 260 + Math.random() * 120, vol: 0.18, dur: 0.3 }); if (d.forcing > 2.2) { d.locked = false; d.vel = 3.2; g.audio.crash(d.hingeWorld(), 0.5); this.objectiveForState(); this.line('forced', [['SERA', 'You\'re through — the door, Kai, the light!']]); } }
+        else d.forcing = Math.max(0, (d.forcing || 0) - dt * 0.5);
+      } else if (d.locked) {
         if (d.keycard && f.keycard) { prompt = '<kbd>E</kbd> Swipe keycard'; if (inp.hit('KeyE')) { d.locked = false; d.led?.material.emissive.setHex(0x20ff40); g.audio.tone({ type: 'sine', freq: 1760, dur: 0.12, vol: 0.06 }); g.audio.tone({ type: 'sine', freq: 2349, dur: 0.18, vol: 0.06, at: 0.12 }); } }
         else { prompt = d.stair ? 'Chained shut' : d.keycard ? 'Keycard required' : 'Locked'; if (inp.hit('KeyE') || inp.mouse.pressed.has(0)) { g.audio.metal({ base: 400, vol: 0.12, dur: 0.25 }); this.emitNoise(0.3); if (d.number && !this.said.has('locked')) this.line('locked', [['KAI', 'Locked. Of course it\'s locked.', { duration: 1.6 }]]); } }
       } else {
@@ -435,10 +460,8 @@ export default class Chapter3 {
     g.audio.burst({ freq: 3000, q: 1, dur: 1.2, vol: 0.08 });
     await ui.say('NONE', '<i>The line fills with static. Somewhere down the hall, a door opens.</i>', { duration: 3 });
     this.game.checkpoint('phone');
-    // first sighting: the Clerk at the far end, under the one working light
-    this.clerk.spawn(V3(58, 0, 0), 'patrol');
-    this.clerk.route(V3(40, 0, 0));
     this.objectiveForState();
+    this.playScene('walkby');
   }
 
   async restorePower() {
@@ -454,6 +477,7 @@ export default class Chapter3 {
     this.line('pw', [1, ['ANCHOR', 'CHARGE RESTORED. ADJACENT VERSION ACCESSIBLE FOR 3 SECONDS.'], ['KAI', 'It\'s drinking the building.'], 2, ['KAI', '…and it definitely heard that.']]);
     g.checkpoint('power');
     this.objectiveForState();
+    setTimeout(() => { if (!this.disposed && !this.f.open611) this.playScene('behind'); }, 2600);
   }
 
   open611() {
@@ -463,12 +487,11 @@ export default class Chapter3 {
     this.set611(true);
     this.rewriteT = 0; g.renderer.grade.uniforms.uRewrite.value = 0;
     this.emitNoise(2);
-    // it knows exactly where you are now
-    if (this.clerk.state === 'dormant') this.clerk.spawn(V3(20, 0, 0));
-    this.clerk.state = 'chase'; this.clerk.alert = 1; this.clerk.lastSeen = this.pos.clone(); this.clerk.route(this.pos.clone());
-    this.clerk.voice('spot');
+    // the only real chase: the new door is jammed shut by the rewrite, and it knows where you are
+    const d611 = this.hotel.roomInfo[611].door; d611.locked = true; d611.forcing = 0;
+    this.startChase();
     g.music.setIntensity(1);
-    this.line('611', [['KAI', 'Six-eleven.'], ['SERA', 'Kai — the door in her room. Go through it. GO!']]);
+    this.line('611', [['KAI', 'Six-eleven.'], ['SERA', 'It\'s jammed — FORCE it! He\'s coming, Kai, he can hear the room being made!']]);
     this.objectiveForState();
     g.checkpoint('door611');
   }
@@ -507,6 +530,124 @@ export default class Chapter3 {
   }
   updateEnding(dt) { this.ending.t += dt; this.kaiAnim.update(dt); }
 
+  startChase() {
+    const c = this.clerk, fwd = V3(Math.sin(this.yaw), 0, Math.cos(this.yaw));
+    this.act = null;
+    // it comes from down the corridor on the far side from 611, so the race is to the door, not into it
+    const dx = this.hotel.roomInfo[611].door.group.localToWorld(V3(0.5, 0, 0)).x;
+    const at = V3(clamp(dx + (this.pos.x >= dx ? 1 : -1) * 15, 2, 60), 0, 0);
+    if (Math.abs(at.x - this.pos.x) < 11) at.x = clamp(this.pos.x + (this.pos.x >= dx ? 12 : -12), 2, 60);
+    c.spawn(at, 'chase'); c.chaseSpeed = 3.55; c.alert = 1; c.lastSeen = this.pos.clone(); c.route(this.pos.clone());
+    c.voice('spot');
+  }
+
+  // ------------------------------------------------------------------ scripted scares
+  stinger(loud = 1) {
+    const a = this.game.audio;
+    a.burst({ freq: 2600, freqEnd: 380, q: 2, dur: 1.0, vol: 0.75 * loud }); a.tone({ type: 'sawtooth', freq: 82, freqEnd: 34, dur: 1.1, vol: 0.55 * loud });
+    a.burst({ freq: 6000, q: 1, dur: 0.08, vol: 0.4 * loud });
+    this.game.music.hit?.(1);
+  }
+  dread() { const a = this.game.audio; a.tone({ type: 'sawtooth', freq: 55, freqEnd: 52, dur: 3, vol: 0.18, attack: 1.2, reverb: 0.8 }); a.tone({ type: 'sine', freq: 2900, freqEnd: 3100, dur: 2.5, vol: 0.03, attack: 1, reverb: 0.9 }); }
+  playScene(kind) {
+    const c = this.clerk, p = this.pos, fwd = V3(Math.sin(this.yaw), 0, Math.cos(this.yaw)), g = this.game;
+    this.sc[kind] = true;
+    if (kind === 'glimpse') {
+      // far down the corridor, under the one light that still works, facing you
+      const x = clamp(p.x + 24, 28, 58); c.appear(V3(x, 0, 0.2), -Math.PI / 2); c.lookAtPlayer = true;
+      this.dread(); this.act = { kind, t: 0 };
+      this.line('glimpse', [2, ['KAI', '…Hello?', { thought: true }]]);
+    }
+    if (kind === 'walkby') {
+      const x = clamp(p.x + 13, 16, 52); c.appear(V3(x, 0, -0.85), Math.PI / 2, [V3(x + 9, 0, -0.85)], 0.9); c.lookAtPlayer = false;
+      this.dread(); this.act = { kind, t: 0 };
+    }
+    if (kind === 'cart') {
+      // right in front of you, for half a second
+      const at = p.clone().addScaledVector(fwd, 1.5); at.z = clamp(at.z, -1.0, 1.0);
+      c.appear(at, Math.atan2(p.x - at.x, p.z - at.z)); c.lookAtPlayer = true;
+      this.stinger(1); this.blackout = 0.15; this.shakeT = 0.5; g.renderer.grade.uniforms.uRewrite.value = 0.6;
+      this.act = { kind, t: 0 };
+    }
+    if (kind === 'behind') {
+      const at = p.clone().addScaledVector(fwd, -2.3); at.z = clamp(at.z, -1.0, 1.0);
+      c.appear(at, Math.atan2(p.x - at.x, p.z - at.z)); c.lookAtPlayer = true;
+      g.audio.burst({ pos: at.clone().setY(1.6), freq: 500, freqEnd: 300, q: 3, dur: 1.4, vol: 0.18, buf: g.audio.brown, reverb: 0.3 }); // breathing, right behind you
+      this.act = { kind, t: 0 };
+    }
+    if (kind === 'wardrobe') {
+      const h = this.hotel, jp = h.journal.getWorldPosition(V3());
+      const hd = h.hides.slice().sort((a, b) => a.pos.distanceTo(jp) - b.pos.distanceTo(jp))[0];
+      const at = hd ? hd.pos.clone().setY(1.2) : jp;
+      for (let i = 0; i < 3; i++) g.audio.burst({ pos: at, freq: 320, type: 'lowpass', dur: 0.12, vol: 0.5, at: 1.2 + i * 0.42, buf: g.audio.brown, reverb: 0.5 });
+      setTimeout(() => g.audio.creakShort(at, 0.5), 3600);
+      this.line('wardrobe', [3, ['KAI', 'That came from inside the wardrobe.', { thought: true }], ['KAI', 'I am not opening the wardrobe.', { thought: true }]]);
+    }
+  }
+  scripts(dt, t) {
+    const S = this.sc, f = this.f, p = this.pos, c = this.clerk, g = this.game;
+    if (f.open611 || this.caught || this.ending) return;
+    // triggers
+    if (f.flashlight && !S.glimpse && p.x > 3 && Math.abs(p.z) < 1.3 && !this.act) this.playScene('glimpse');
+    if (f.keycard && !S.cart && !this.act) { S.cartT = (S.cartT ?? 1.1) - dt; if (S.cartT < 0) this.playScene('cart'); }
+    if (f.journal && !S.wardrobe) this.playScene('wardrobe');
+    // footsteps over the ceiling, following you, now and then
+    if (f.flashlight && !this.act) { S.stepsT -= dt; if (S.stepsT < 0) { S.stepsT = 26 + Math.random() * 20; S.steps = { t: 0, x: p.x - 8 }; } }
+    if (S.steps) { S.steps.t += dt; S.steps.x += dt * 1.1; if (Math.floor(S.steps.t / 0.85) !== Math.floor((S.steps.t - dt) / 0.85)) { const q = V3(S.steps.x, 3.4, 0); g.audio.burst({ pos: q, freq: 200, freqEnd: 60, type: 'lowpass', dur: 0.25, vol: 0.4, buf: g.audio.brown, reverb: 0.7 }); g.audio.tone({ pos: q, freq: 60, freqEnd: 40, dur: 0.2, vol: 0.25 }); } if (S.steps.t > 9) S.steps = null; }
+    // running scene
+    const sc = this.act; if (!sc) return;
+    sc.t += dt;
+    const toC = V3(c.pos.x - p.x, 0, c.pos.z - p.z), dist = toC.length();
+    const fwd = V3(Math.sin(this.yaw), 0, Math.cos(this.yaw));
+    const looking = fwd.dot(toC.clone().normalize()) > 0.72 && !blocked(p, c.pos, this.colliders);
+    if (sc.kind === 'glimpse') {
+      if (!sc.flick && (sc.t > 3.2 || dist < 12)) { sc.flick = true; this.blackout = 0.55; g.audio.burst({ freq: 120, type: 'lowpass', dur: 0.4, vol: 0.4, buf: g.audio.brown }); }
+      if (sc.flick && this.blackout <= 0.3) { c.vanish(); this.act = null; }
+    }
+    if (sc.kind === 'walkby' && (!c.path.length || sc.t > 11)) { this.blackout = 0.3; c.vanish(); this.act = null; }
+    if (sc.kind === 'cart' && sc.t > 0.55) { c.vanish(); g.renderer.grade.uniforms.uRewrite.value = 0; this.act = null; this.line('cart', [1, ['KAI', 'NO— no. Nothing. There\'s nothing there.', { thought: true }]]); }
+    if (sc.kind === 'behind') {
+      if (looking && !sc.seen) { sc.seen = sc.t; this.stinger(1); this.shakeT = 0.45; this.blackout = 0.12; }
+      if (sc.seen !== undefined && sc.t - sc.seen > 0.4 || sc.t > 7) { if (!sc.seen) g.audio.burst({ pos: c.pos.clone().setY(1.6), freq: 900, freqEnd: 200, q: 4, dur: 0.6, vol: 0.2, reverb: 0.6 }); c.vanish(); this.act = null; this.blackout = 0.2; }
+    }
+  }
+
+  /** Glowing room numbers over every door, with a red/green lamp, and a faint marker for the goal. */
+  buildSigns() {
+    this.doorSigns = [];
+    const mk = (text) => { const cv = document.createElement('canvas'); cv.width = 256; cv.height = 96; const g2 = cv.getContext('2d'); g2.fillStyle = '#120c06'; g2.fillRect(0, 0, 256, 96); g2.strokeStyle = '#a8823a'; g2.lineWidth = 4; g2.strokeRect(4, 4, 248, 88); g2.fillStyle = '#ffd890'; g2.font = `bold ${text.length > 4 ? 30 : 56}px Georgia, serif`; g2.textAlign = 'center'; g2.fillText(text, 128, text.length > 4 ? 60 : 68); const tx = new THREE.CanvasTexture(cv); tx.colorSpace = THREE.SRGBColorSpace; return tx; };
+    for (const d of this.hotel.doors) {
+      const label = d.number ? String(d.number) : d.keycard ? 'STAFF' : null; if (!label) continue;
+      const tx = mk(label);
+      const sign = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.16), new THREE.MeshStandardMaterial({ map: tx, emissiveMap: tx, emissive: 0xffffff, emissiveIntensity: 0.9 }));
+      sign.position.set(d.width / 2, 2.42, -0.13); sign.rotation.y = Math.PI; d.group.add(sign);
+      const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.05, 10, 8), new THREE.MeshBasicMaterial({ color: 0xff3020 })); lamp.position.set(d.width / 2 + 0.28, 2.42, -0.13); d.group.add(lamp);
+      this.doorSigns.push({ d, sign, lamp });
+    }
+    this.marker = el('div', 'foot-marker', this.game.ui.hudRoot, '<div class="d">◆</div><div class="m"></div>');
+    this.marker.style.opacity = '0.75';
+  }
+  objectiveTarget() {
+    const h = this.hotel, f = this.f, w = (o) => o.getWorldPosition(V3());
+    if (!f.flashlight) return w(h.flashlightProp);
+    if (!f.phone) return w(h.phone);
+    if (!f.keycard) return w(h.keycard);
+    if (!f.power) return w(h.panel);
+    if (!f.open611) return f.journal ? V3(LAYOUT.rooms[611].x, 1.4, 1.3) : w(h.journal);
+    const d611 = h.roomInfo[611].door; if (d611.locked) return d611.group.localToWorld(V3(d611.width / 2, 1.2, 0));
+    return w(h.lia.userData.portal).add(V3(0, 1.3, 0));
+  }
+  updateMarker() {
+    for (const s of this.doorSigns) { const open = !s.d.locked; s.lamp.material.color.setHex(open ? 0x30ff60 : 0xff3020); s.sign.material.emissiveIntensity = this.power ? 1.8 : 1.5; }
+    const show = !this.hidden && !this.caught && !this.ending && this.phase !== 'wake';
+    this.marker.style.display = show ? 'block' : 'none'; if (!show) return;
+    const tp = this.objectiveTarget(), q = tp.clone().project(this.camera);
+    let x = (q.x * 0.5 + 0.5) * innerWidth, y = (-q.y * 0.5 + 0.5) * innerHeight;
+    if (q.z > 1) { x = innerWidth - x; y = innerHeight - 60; }
+    this.marker.style.transform = `translate(${clamp(x, 40, innerWidth - 40)}px, ${clamp(y, 60, innerHeight - 60)}px)`;
+    this.marker.querySelector('.m').textContent = `${Math.round(tp.distanceTo(V3(this.pos.x, tp.y, this.pos.z)))} m`;
+  }
+
   updateWorld(dt, t) {
     const g = this.game, h = this.hotel;
     // doors: physics + slam noise
@@ -527,6 +668,7 @@ export default class Chapter3 {
       // the Clerk drains the light around it
       const cd = Math.hypot(s.x - this.clerk.pos.x, s.z - this.clerk.pos.z);
       if (this.clerk.state !== 'dormant' && cd < 4) k *= 0.1 + Math.random() * 0.3;
+      if (this.blackout > 0) k = 0;
       L.intensity = k;
       s.shade.material.emissiveIntensity = k * 0.9;
     });

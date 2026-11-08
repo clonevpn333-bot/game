@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { buildCharacter, CLERK } from '../../characters/cast.js';
 import { Animator } from '../../characters/anim.js';
+import { NoiseLoop } from '../../audio/audio.js';
 
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
@@ -49,8 +50,12 @@ export class Clerk {
     return this;
   }
 
+  /** Scripted apparition: stands or walks a set path, makes its noises, can never catch you. */
+  appear(at, yaw = 0, path = [], speed = 1.0) { this.pos.copy(at); this.yaw = yaw; this.state = 'scripted'; this.ch.visible = true; this.path = path.map((p) => p.clone()); this.scriptSpeed = speed; this.alert = 0; }
+  vanish() { this.state = 'dormant'; this.ch.visible = false; this.hum?.set(0, 120, 0.3); }
+
   spawn(at, state = 'patrol') { this.pos.copy(at); this.state = state; this.ch.visible = true; this.alert = 0; this.path = []; this.timer = 0; }
-  hide() { this.state = 'dormant'; this.ch.visible = false; }
+  hide() { this.state = 'dormant'; this.ch.visible = false; this.hum?.set(0, 120, 0.3); }
 
   nearestNode(p) { let b = 0, bd = Infinity; this.hotel.nodes.forEach((n, i) => { const d = (n.x - p.x) ** 2 + (n.z - p.z) ** 2; if (d < bd && !blocked(p, n, this.walls, 'hidden611')) { bd = d; b = i; } }); return b; }
   route(to) {
@@ -64,7 +69,7 @@ export class Clerk {
 
   /** noise from the player or world: loudness 0..1.5 */
   hear(p, loud) {
-    if (this.state === 'dormant' || this.state === 'chase') return;
+    if (this.state === 'dormant' || this.state === 'chase' || this.state === 'scripted') return;
     const d = p.distanceTo(this.pos);
     const wallsBetween = blocked(this.pos, p, this.walls, 'hidden611') ? 0.55 : 1;
     if (d < loud * 16 * wallsBetween) {
@@ -82,8 +87,44 @@ export class Clerk {
   }
 
   /** Returns 'caught' when it reaches the player. */
+  /** Heavy steps with a drag, and a low hum that rises the closer it is. */
+  sounds(dt, moving, player) {
+    const a = this.audio; if (!a.ctx) return;
+    if (!this.hum) this.hum = new NoiseLoop(a, { type: 'lowpass', freq: 120, q: 4, buf: a.brown, positional: true, ref: 3 });
+    const d = this.pos.distanceTo(player.pos);
+    this.hum?.pos(this.pos.clone().setY(1.6)); this.hum?.set(this.ch.visible ? Math.min(0.5, 0.12 + (1 - Math.min(1, d / 14)) * 0.45) : 0, 90 + Math.sin(performance.now() / 300) * 20, 0.2);
+    if (moving) {
+      this.stepT = (this.stepT ?? 0) - dt * Math.max(0.6, this.speed);
+      if (this.stepT < 0) {
+        this.stepT = 0.85;
+        const p = this.pos.clone().setY(0.1);
+        a.burst({ pos: p, freq: 260, freqEnd: 70, type: 'lowpass', dur: 0.22, vol: 0.55, buf: a.brown, reverb: 0.6 });
+        a.tone({ pos: p, freq: 70, freqEnd: 40, dur: 0.18, vol: 0.35 });
+        if (Math.random() < 0.6) a.burst({ pos: p, freq: 900, freqEnd: 400, q: 0.8, dur: 0.45, vol: 0.12, buf: a.pink, at: 0.15, reverb: 0.5 }); // the dragging foot
+      }
+    }
+  }
+
   update(dt, t, player) {
     if (this.state === 'dormant') return null;
+    if (this.state === 'scripted') {
+      let moving = false;
+      if (this.path.length) {
+        const tg = this.path[0], d = V3(tg.x - this.pos.x, 0, tg.z - this.pos.z), dl = d.length();
+        if (dl < 0.2) this.path.shift();
+        else { this.pos.addScaledVector(d.normalize(), Math.min(dl, this.scriptSpeed * dt)); this.yaw = Math.atan2(d.x, d.z); moving = true; }
+      }
+      this.speed = moving ? this.scriptSpeed : 0;
+      this.sounds(dt, moving, player);
+      this.ch.position.copy(this.pos); this.ch.rotation.y = this.yaw;
+      if (Math.random() < dt * 1.5) this.ch.position.x += (Math.random() - 0.5) * 0.08;
+      this.anim.mode = moving ? 'walk' : 'idle'; this.anim.speed = this.speed;
+      this.anim.lookTarget = this.lookAtPlayer ? player.pos.clone().add(V3(0, 1.5, 0)) : null;
+      this.anim.custom = (an) => { an.rot('head', new THREE.Vector3(0, 0, 1), Math.sin(t * 0.7) * 0.25); an.rot('neck', new THREE.Vector3(1, 0, 0), 0.25); };
+      this.anim.update(dt);
+      this.ghosts.forEach((g, i) => { g.position.set((Math.random() - 0.5) * 0.06 * (i + 1), (Math.random() - 0.5) * 0.03, (Math.random() - 0.5) * 0.06 * (i + 1)); g.visible = Math.random() < 0.85; });
+      return null;
+    }
     const walls = this.walls;
     const pp = player.pos;
     const toP = V3(pp.x - this.pos.x, 0, pp.z - this.pos.z); const dist = toP.length();
@@ -127,7 +168,7 @@ export class Clerk {
         }
       }
     } else if (this.state === 'chase') {
-      speed = 4.05;
+      speed = this.chaseSpeed ?? 4.05;
       if (sees || dist < 3) { this.path = [pp.clone()]; this.lostT = 0; }
       else {
         this.lostT = (this.lostT || 0) + dt;
@@ -157,6 +198,7 @@ export class Clerk {
       if (door.locked || door.angle > 1.2) continue;
       const h = door.hingeWorld(); if (Math.hypot(h.x - this.pos.x, h.z - this.pos.z) < 1.4) { door.vel = 4; this.audio.creakShort(h, 0.25); }
     }
+    this.sounds(dt, this.speed > 0.2, player);
     // body
     this.ch.position.copy(this.pos);
     // micro "skips": it is a version that doesn't hold together
