@@ -46,4 +46,5 @@ export const CHAPTERS = [
   { n: 3, id: 'room611', name: 'ROOM 611', genre: 'First-person survival horror' },
   { n: 4, id: 'fallenking', name: 'THE FALLEN KING', genre: 'Medieval action RPG' },
   { n: 5, id: 'works', name: 'RUNNING OUT OF TIME', genre: '2.5D precision platformer' },
+  { n: 6, id: 'table', name: 'THE GENERAL', genre: 'Real-time tactics' },
 ];

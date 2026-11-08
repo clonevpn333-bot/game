@@ -291,6 +291,21 @@ const TRACKS = {
     },
   },
 
+  // Chapter 6: the war table — a ticking clock, a field snare, low strings, the motif on a music box
+  table: {
+    bpm: 88, steps: 16,
+    layers: { clock: [0, 0.01], strings: [0, 0.2], snare: [0.3, 0.55], box: [0.15, 0.4], brass: [0.7, 0.95] },
+    step(s, t, L, I, bar) {
+      const chord = PROG[(bar >> 1) % 4], sp = 60 / this.bpm / 4;
+      if (s % 4 === 0) I.hat(L.clock, t, s % 8 === 0 ? 0.35 : 0.2);
+      if (s === 0 && bar % 2 === 0) I.strings(L.strings, t, [chord[0] - 12, chord[2] - 12], sp * 32, 0.04, 1.4);
+      if ([0, 3, 4, 8, 11, 12, 14].includes(s)) I.snare(L.snare, t, s % 4 === 0 ? 0.45 : 0.2, 170);
+      if (bar % 4 === 0 && s % 4 === 0 && s / 4 < 4) I.musicbox(L.box, t, MOTIF[s / 4] + 24, 0.07, 0);
+      if (bar % 4 === 1 && s === 0) I.musicbox(L.box, t, MOTIF[4] + 24, 0.07, 0);
+      if (bar % 4 === 2 && s === 0) I.brass(L.brass, t, chord[0] - 12, sp * 14, 0.1);
+    },
+  },
+
   title: { // sting for chapter cards
     bpm: 60, steps: 16, layers: { a: [0, 0.01] },
     step(s, t, L, I, bar) { if (bar === 0 && s === 0) { I.taiko(L.a, t, 0.9, 45); I.choir(L.a, t, [50, 57, 62], 3, 0.05); MOTIF.forEach((m, i) => I.piano(L.a, t + i * 0.22, m + 12, 0.1)); } },
