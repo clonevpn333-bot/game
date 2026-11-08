@@ -14,6 +14,8 @@ export const SPEAKERS = {
   CLERK: { name: '???', color: '#c9c9c9' },
   CAPTAIN: { name: 'Captain Bren', color: '#9fc0ff' },
   KING: { name: 'The Fallen King', color: '#ffb347' },
+  ODILE: { name: 'Odile', color: '#f2d0a0' }, HALVARD: { name: 'Mr. Halvard', color: '#b8d0a0' }, JUNA: { name: 'Juna', color: '#a0c0f0' },
+  PIM: { name: 'Pim', color: '#f0d870' }, WREN: { name: 'Old Wren', color: '#d8b8f0' }, TOBI: { name: 'Tobi', color: '#f0a080' },
 };
 
 export class UI {

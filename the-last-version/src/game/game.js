@@ -11,6 +11,7 @@ const CHAPTER_MODULES = {
   4: () => import('../chapters/ch4/chapter4.js'),
   5: () => import('../chapters/ch5/chapter5.js'),
   6: () => import('../chapters/ch6/chapter6.js'),
+  7: () => import('../chapters/ch7/chapter7.js'),
 };
 
 export class Game {

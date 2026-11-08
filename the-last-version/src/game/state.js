@@ -47,4 +47,5 @@ export const CHAPTERS = [
   { n: 4, id: 'fallenking', name: 'THE FALLEN KING', genre: 'Medieval action RPG' },
   { n: 5, id: 'works', name: 'RUNNING OUT OF TIME', genre: '2.5D precision platformer' },
   { n: 6, id: 'table', name: 'THE GENERAL', genre: 'Real-time tactics' },
+  { n: 7, id: 'lindmere', name: 'THE QUIET PLACE', genre: 'Pixel-art narrative exploration' },
 ];

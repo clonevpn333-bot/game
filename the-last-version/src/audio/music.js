@@ -306,6 +306,19 @@ const TRACKS = {
     },
   },
 
+  // Chapter 7: Lindmere — a gentle chiptune (square melody, triangle bass), the motif as a lullaby
+  village: {
+    bpm: 92, steps: 16,
+    layers: { bass: [0, 0.01], melody: [0, 0.05], hats: [0.3, 0.6] },
+    step(s, t, L, I, bar) {
+      const chord = PROG[(bar >> 1) % 4], sp = 60 / this.bpm / 4;
+      if (s % 4 === 0) I.pluck(L.bass, t, chord[(s >> 2) % 3] - 12, 0.1, 0.3, 'triangle');
+      if (s % 2 === 0) I.pluck(L.melody, t, chord[(s >> 1) % 3] + 12, 0.025, 0.12, 'square');
+      if (bar % 4 < 2 && s % 4 === 0 && (bar % 4) * 4 + s / 4 < 5) I.pluck(L.melody, t, MOTIF[(bar % 4) * 4 + s / 4] + 12, 0.07, 0.5, 'square');
+      if (s % 4 === 2) I.hat(L.hats, t, 0.12);
+    },
+  },
+
   title: { // sting for chapter cards
     bpm: 60, steps: 16, layers: { a: [0, 0.01] },
     step(s, t, L, I, bar) { if (bar === 0 && s === 0) { I.taiko(L.a, t, 0.9, 45); I.choir(L.a, t, [50, 57, 62], 3, 0.05); MOTIF.forEach((m, i) => I.piano(L.a, t + i * 0.22, m + 12, 0.1)); } },
