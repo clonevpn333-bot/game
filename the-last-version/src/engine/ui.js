@@ -12,6 +12,8 @@ export const SPEAKERS = {
   RADIO: { name: 'Radio', color: '#ffd27a', radio: true },
   MARA: { name: 'Mara', color: '#ffe08a', radio: true },
   CLERK: { name: '???', color: '#c9c9c9' },
+  CAPTAIN: { name: 'Captain Bren', color: '#9fc0ff' },
+  KING: { name: 'The Fallen King', color: '#ffb347' },
 };
 
 export class UI {

@@ -233,6 +233,43 @@ const TRACKS = {
     },
   },
 
+  // Chapter 4: war drums, horns and choir; a lute-like pluck carries the Anchor motif in the quiet
+  siege: {
+    bpm: 100, steps: 16,
+    layers: { lute: [0, 0.3], drone: [0, 0.05], drums: [0.3, 0.5], horns: [0.5, 0.75], choir: [0.75, 0.95] },
+    step(s, t, L, I, bar) {
+      const chord = PROG[(bar >> 1) % 4], sp = 60 / this.bpm / 4;
+      if (s === 0 && bar % 2 === 0) I.strings(L.drone, t, [chord[0] - 12, chord[0] - 5], sp * 32, 0.04, 1.2);
+      // lute: broken chords with the motif every fourth bar
+      if (bar % 4 === 0 && s % 3 === 0 && s / 3 < 5) I.pluck(L.lute, t, MOTIF[s / 3] + 12, 0.11, 0.6, 'triangle');
+      else if (s % 2 === 0) I.pluck(L.lute, t, chord[(s >> 1) % 3] + 12 + (s % 8 === 6 ? 12 : 0), 0.06, 0.4, 'triangle');
+      // marching war drums
+      if ([0, 4, 8, 10, 12].includes(s)) I.taiko(L.drums, t, s === 0 || s === 8 ? 1 : 0.55, s === 0 ? 48 : 64);
+      if (s % 2 === 1 && Math.random() < 0.5) I.snare(L.drums, t, 0.18, 150);
+      // horns: the motif, broad
+      if (bar % 4 === 1 && s % 4 === 0) I.brass(L.horns, t, MOTIF[s / 4] - 12, sp * 3.8, 0.11);
+      if (bar % 4 === 2 && s === 0) I.brass(L.horns, t, MOTIF[4] - 12, sp * 12, 0.12);
+      if (bar % 4 === 3 && s === 0) I.brass(L.horns, t, chord[0] - 12, sp * 14, 0.09);
+      if (s === 0 && bar % 2 === 0) I.choir(L.choir, t, chord.map((m) => m + 12), sp * 30, 0.04);
+    },
+  },
+
+  // the Fallen King: a fast, heavy duel
+  duel: {
+    bpm: 132, steps: 16,
+    layers: { drone: [0, 0.05], drums: [0.1, 0.35], strings: [0.35, 0.6], brass: [0.6, 0.8], choir: [0.8, 1] },
+    step(s, t, L, I, bar) {
+      const chord = PROG[bar % 4], sp = 60 / this.bpm / 4;
+      if (s === 0) I.strings(L.drone, t, [chord[0] - 24, chord[0] - 12], sp * 16, 0.05, 0.4);
+      if ([0, 3, 6, 8, 11, 14].includes(s)) I.taiko(L.drums, t, s === 0 ? 1.1 : 0.7, s % 8 === 0 ? 44 : 60);
+      if (s === 4 || s === 12) I.snare(L.drums, t, 0.5, 160);
+      const ost = [0, 12, 7, 12, 3, 12, 7, 12, 0, 12, 7, 12, 5, 12, 7, 15];
+      I.stab(L.strings, t, [chord[0] + ost[s]], s % 4 === 0 ? 0.07 : 0.045);
+      if (bar % 2 === 0 && s % 4 === 0) I.brass(L.brass, t, MOTIF[(s / 4 + bar) % 5] - 12, sp * 3.5, 0.12);
+      if (s === 0 && bar % 2 === 1) I.choir(L.choir, t, [chord[0] + 12, chord[1] + 12, chord[2] + 24], sp * 16, 0.05);
+    },
+  },
+
   title: { // sting for chapter cards
     bpm: 60, steps: 16, layers: { a: [0, 0.01] },
     step(s, t, L, I, bar) { if (bar === 0 && s === 0) { I.taiko(L.a, t, 0.9, 45); I.choir(L.a, t, [50, 57, 62], 3, 0.05); MOTIF.forEach((m, i) => I.piano(L.a, t + i * 0.22, m + 12, 0.1)); } },

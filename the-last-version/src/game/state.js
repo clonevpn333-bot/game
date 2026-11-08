@@ -44,4 +44,5 @@ export const CHAPTERS = [
   { n: 1, id: 'wrongturn', name: 'WRONG TURN', genre: 'High-speed driving action' },
   { n: 2, id: 'storm', name: 'BELOW THE STORM', genre: 'Naval action' },
   { n: 3, id: 'room611', name: 'ROOM 611', genre: 'First-person survival horror' },
+  { n: 4, id: 'fallenking', name: 'THE FALLEN KING', genre: 'Medieval action RPG' },
 ];

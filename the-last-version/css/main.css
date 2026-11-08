@@ -176,3 +176,38 @@ html, body { margin: 0; height: 100%; background: #000; overflow: hidden; color:
   border-top: 6px solid rgba(255, 70, 50, 0.9); border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 6px solid transparent;
   filter: drop-shadow(0 0 6px rgba(255, 60, 40, 0.8)); animation: hitdir 0.9s ease-out forwards; }
 @keyframes hitdir { 0% { opacity: 1; } 100% { opacity: 0; } }
+
+/* ---------------- Chapter 4: sword HUD ---------------- */
+.kh-bars { position: absolute; left: 3.5vw; bottom: 5vh; width: 340px; }
+.kh-hp, .kh-st { position: relative; height: 12px; background: rgba(0,0,0,0.55); border: 1px solid rgba(255,255,255,0.18); margin-bottom: 6px; overflow: hidden; }
+.kh-st { height: 7px; width: 78%; }
+.kh-hp i, .kh-hp b, .kh-st i { position: absolute; left: 0; top: 0; bottom: 0; }
+.kh-hp b { background: rgba(255, 220, 160, 0.55); width: 100%; }
+.kh-hp i { background: linear-gradient(#d84a3a, #8a1e16); width: 100%; z-index: 1; }
+.kh-st i { background: linear-gradient(#e8d58a, #a8913a); width: 100%; transition: width 0.08s; }
+.kh-st.low i { background: linear-gradient(#e8805a, #a8402a); }
+.kh-flask { color: #ffb347; font-size: 18px; letter-spacing: 4px; text-shadow: 0 0 8px rgba(255, 160, 60, 0.6); }
+.kh-lock, .kh-db { position: absolute; left: 0; top: 0; pointer-events: none; opacity: 0; transition: opacity 0.12s; }
+.kh-lock { width: 14px; height: 14px; margin: -7px 0 0 -7px; border: 2px solid rgba(255,255,255,0.9); border-radius: 50%; box-shadow: 0 0 8px rgba(255,255,255,0.6); }
+.kh-lock.on, .kh-db.on { opacity: 1; }
+.kh-db { color: #ff2a1a; font-size: 34px; margin: -20px 0 0 -11px; text-shadow: 0 0 12px #ff2a1a, 0 0 2px #fff; animation: khpulse 0.5s infinite alternate; }
+@keyframes khpulse { from { transform-origin: center; filter: brightness(1); } to { filter: brightness(1.8); } }
+.kh-pop { position: absolute; left: 50%; top: 38%; transform: translate(-50%, -50%) scale(0.9); font: 700 26px/1 var(--display, 'Inter', sans-serif); letter-spacing: 0.3em; color: #fff; opacity: 0; transition: opacity 0.12s, transform 0.12s; text-shadow: 0 2px 12px rgba(0,0,0,0.8); pointer-events: none; white-space: nowrap; }
+.kh-pop.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+.kh-pop.parry { color: #fff6d0; text-shadow: 0 0 18px rgba(255, 230, 150, 0.9); }
+.kh-pop.db, .kh-pop.red { color: #ff4a30; text-shadow: 0 0 18px rgba(255, 40, 20, 0.9); }
+.kh-pop.bad { color: #c8c0b8; }
+.kh-pop.heal { color: #ffb347; }
+.kh-boss, .kh-ram { position: absolute; left: 50%; top: 5vh; width: min(760px, 62vw); transform: translateX(-50%); opacity: 0; transition: opacity 0.6s; pointer-events: none; }
+.kh-boss.show, .kh-ram.show { opacity: 1; }
+.kh-ram { top: 5vh; width: min(360px, 40vw); }
+.kh-boss .nm, .kh-ram .nm { font: 600 13px/1 var(--display, 'Inter', sans-serif); letter-spacing: 0.35em; color: #e8dcc8; margin-bottom: 6px; text-shadow: 0 1px 6px #000; }
+.kh-bhp, .kh-rhp { height: 10px; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.2); }
+.kh-bhp i, .kh-rhp i { display: block; height: 100%; width: 100%; background: linear-gradient(#c84a2a, #6a160e); transition: width 0.2s; }
+.kh-rhp i { background: linear-gradient(#c8a050, #6a5020); }
+.kh-bpost { position: relative; height: 6px; width: 60%; margin: 6px auto 0; background: rgba(0,0,0,0.5); display: flex; justify-content: center; }
+.kh-bpost i { display: block; height: 100%; background: linear-gradient(90deg, #ffb347, #fff2c0, #ffb347); width: 0; transition: width 0.1s; }
+.kh-bpost.full i { background: #ff2a1a; box-shadow: 0 0 12px #ff2a1a; }
+.kh-foe { position: absolute; left: 0; top: 0; width: 70px; margin-left: -35px; pointer-events: none; }
+.kh-foe i { display: block; height: 4px; margin-bottom: 2px; background: #c84a2a; box-shadow: 0 0 0 1px rgba(0,0,0,0.6); }
+.kh-foe i.po { height: 3px; background: #ffb347; margin: 0 auto; }
