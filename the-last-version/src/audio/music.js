@@ -319,6 +319,20 @@ const TRACKS = {
     },
   },
 
+  // Chapter 8: the vector sky — arpeggiated saw, sub bass, gated pulses
+  vector: {
+    bpm: 128, steps: 16,
+    layers: { sub: [0, 0.01], arp: [0, 0.05], drums: [0.35, 0.6], lead: [0.6, 0.9] },
+    step(s, t, L, I, bar) {
+      const chord = PROG[(bar >> 1) % 4], sp = 60 / this.bpm / 4;
+      if (s % 8 === 0) I.bass(L.sub, t, chord[0] - 24, sp * 7, 0.3, 200);
+      I.pluck(L.arp, t, chord[s % 3] + 12 + (s % 6 < 3 ? 0 : 12), 0.04, 0.12, 'sawtooth');
+      if (s % 4 === 0) I.kick(L.drums, t, 0.8); if (s % 4 === 2) I.hat(L.drums, t, 0.25);
+      if (bar % 4 === 0 && s % 4 === 0 && s / 4 < 4) I.pluck(L.lead, t, MOTIF[s / 4] + 24, 0.09, 0.6, 'square');
+      if (bar % 4 === 1 && s === 0) I.pluck(L.lead, t, MOTIF[4] + 24, 0.09, 1.2, 'square');
+    },
+  },
+
   title: { // sting for chapter cards
     bpm: 60, steps: 16, layers: { a: [0, 0.01] },
     step(s, t, L, I, bar) { if (bar === 0 && s === 0) { I.taiko(L.a, t, 0.9, 45); I.choir(L.a, t, [50, 57, 62], 3, 0.05); MOTIF.forEach((m, i) => I.piano(L.a, t + i * 0.22, m + 12, 0.1)); } },

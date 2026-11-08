@@ -4,7 +4,7 @@
 
 A browser-playable 3D action-adventure (three.js, plain ES modules, no build step) in which the
 genre itself changes as reality rewrites around the player. This folder contains the **multi-genre
-slice**: the title screen and Chapters 1–5, played as one continuous adventure with no level
+slice**: the title screen and Chapters 1–8, played as one continuous adventure with no level
 select between them.
 
 | # | Chapter | Genre | What you actually do |
@@ -14,6 +14,9 @@ select between them.
 | 3 | **ROOM 611** | First-person survival horror | Unarmed, in a hotel that used to be the ship's passageway. Physical doors you drag open with the mouse, a dying flashlight, a phone call through the walls, hiding in wardrobes and under beds, holding your breath — while the Clerk listens, looks, searches and hunts. Make a room that doesn't exist exist, and go through the door inside it. |
 | 4 | **THE FALLEN KING** | Medieval action RPG (third-person sword & shield) | Wake in armour outside a besieged castle with Sera. Combat is blocking, timed parries, dodging and posture (break it for a deathblow), not the shooter with a sword. Fight down a burning village road (a watchtower collapses mid-fight), escort the battering ram across the field under trebuchet boulders and arrow volleys, breach the gate and the courtyard, then duel the armoured King (combos, a lunge, a leaping slam, a spin; phase two brings the courtyard wall down). |
 | 5 | **RUNNING OUT OF TIME** | 2.5D precision platformer (side-on) | The battlefield folds into a giant machine. Run, jump, wall-jump and air-dash through crushers, saws, drones, steam launchers, laser gates and crumbling grates against a countdown, then outrun the wall of collapse to the exit. Deaths restart instantly at the last beacon. |
+| 6 | **THE GENERAL** | Real-time tactics (an inked paper map) | The world goes abstract: the valley becomes a war map and armies become tokens in military symbols. Infantry/cavalry/archers/catapult counters, flanks, morale and routs, terrain, river crossings, formations, tactical pause. Venn commands the other side. Every token has a name; losses are crossed out in ink. |
+| 7 | **THE QUIET PLACE** | Pixel-art narrative exploration (320 px wide) | A lakeside village at golden hour. No combat: walk, talk, look. Sera recognises everyone and nobody recognises her. Find five traces of a life ATLAS deleted, then answer her on the dock (the game keeps your answer). |
+| 8 | **THE EMPTY SKY** | Vector space combat (glowing lines on black) | Mouse-aimed flight, lasers, lock-on missiles, interceptors that lead and break off, wreckage, and an ATLAS carrier taken apart turret by turret, generator by generator, to its core; fly into the hangar. The transmissions reveal what "keeping" a version costs. |
 
 ## Running it
 
@@ -32,7 +35,7 @@ gamepads work for driving and the boat.
 
 Developer shortcuts (URL parameters): `?chapter=2` jumps to a chapter, `&cp=hunters` to a checkpoint,
 `&quality=low|medium|high|ultra` overrides the graphics preset.
-Checkpoints: Ch1 `start, air, fold` · Ch2 `start, hunters, meridian, boarding` · Ch3 `start, phone, power, door611` · Ch4 `start, field, breach, king` · Ch5 `start, c1, c2, c3`.
+Checkpoints: Ch1 `start, air, fold` · Ch2 `start, hunters, meridian, boarding` · Ch3 `start, phone, power, door611` · Ch4 `start, field, breach, king` · Ch5 `start, c1, c2, c3` · Ch6–8 `start`.
 
 ## Single-file build
 
@@ -48,6 +51,9 @@ The output is git-ignored because of its size.
 * **Hotel** — WASD · mouse · Shift run (it hears you) · C crouch · F flashlight · E interact / hide · hold LMB on a door and move the mouse to swing it · hold Space to hold your breath while hidden · hold Q to raise the Anchor
 * **Sword (Ch4)** — WASD · mouse · LMB attack (three-hit combo; hold for a charged thrust) · RMB shield (tap as the blow lands to parry) · Space dodge · Q lock on · R drink a flask · LMB on a staggered enemy (red ◆) for a deathblow. A glint on an enemy blade means parry it; a red flare means dodge.
 * **Platformer (Ch5)** — A/D run · Space jump (hold for height; against a wall to wall-jump) · Shift air dash in any WASD direction (dash through drones) · S drop through grates. Gamepad works too.
+* **War table (Ch6)** — click / drag to select · right-click to move or attack · F line ⇄ column · Space pause · WASD pan · wheel zoom · Ctrl+A select all
+* **Village (Ch7)** — WASD walk · E talk / look
+* **Vector sky (Ch8)** — mouse aims · W/S thrust · A/D strafe · Shift boost · LMB lasers · hold RMB on a target to lock, release to fire a missile
 * Dialogue choices: 1–4 or click. Esc pauses (restart from checkpoint, settings, save & quit).
 
 ## Credits to earlier games
@@ -115,7 +121,10 @@ Known limitations, stated plainly:
   7–10. Some beats (e.g. the Ch2 ship interior) are compressed compared with the design brief.
 * **Audio** is entirely synthesised at runtime — original, but it sounds synthetic rather than like a
   recorded orchestra. There is no voice acting; dialogue is subtitled.
-* Chapters 6–15 are not built. The design's real-time strategy chapter (*The General*) is not built
+* The style gets more abstract chapter by chapter: photoreal-ish 3D (1–3), block characters (4), side-on
+  2.5D (5), an inked map (6), pixels (7), vector lines (8). Chapters 6–8 draw on a 2D canvas layer
+  (`src/engine/canvas2d.js`) instead of the 3D renderer.
+* Chapters 9–15 are not built (the end card points at *The Archive*). The design's real-time strategy chapter (*The General*) is not built
   yet, so the platformer currently follows the King directly; the end card names *The General* next.
 * Chapters 4 and 5 use MARCHLIGHT's block rig and FK animator (vendored in `src/characters/ml/`), with
   armour, helmets and weapons built from boxes and every texture drawn procedurally. Their combat and
