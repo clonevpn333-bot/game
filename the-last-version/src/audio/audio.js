@@ -119,6 +119,14 @@ export class AudioEngine {
   setPos(panner, v) {
     if (!panner) return;
     const t = this.t;
+    // a fresh panner sits at the world origin: place it instantly (gliding from the origin made short
+    // one-shots like gunshots play hundreds of metres away, i.e. silently); glide only when it moves
+    if (!panner._placed) {
+      panner._placed = true;
+      if (panner.positionX) { panner.positionX.cancelScheduledValues(0); panner.positionX.setValueAtTime(v.x, t); panner.positionY.setValueAtTime(v.y, t); panner.positionZ.setValueAtTime(v.z, t); panner.positionX.value = v.x; panner.positionY.value = v.y; panner.positionZ.value = v.z; }
+      else panner.setPosition(v.x, v.y, v.z);
+      return;
+    }
     if (panner.positionX) { panner.positionX.setTargetAtTime(v.x, t, 0.02); panner.positionY.setTargetAtTime(v.y, t, 0.02); panner.positionZ.setTargetAtTime(v.z, t, 0.02); }
     else panner.setPosition(v.x, v.y, v.z);
   }
@@ -137,7 +145,7 @@ export class AudioEngine {
 
   // ---------- one-shot SFX ----------
   /** Generic noise burst with filter sweep. */
-  burst({ dest = this.sfx, pos = null, dur = 0.3, freq = 1200, freqEnd = null, q = 1, type = 'bandpass', vol = 0.5, buf = this.white, attack = 0.002, at = 0, reverb = 0.2 } = {}) {
+  burst({ dest = this.sfx, pos = null, ref = 8, dur = 0.3, freq = 1200, freqEnd = null, q = 1, type = 'bandpass', vol = 0.5, buf = this.white, attack = 0.002, at = 0, reverb = 0.2 } = {}) {
     if (!this.ctx) return;
     const t = this.t + at;
     const s = this.noise(buf, false), f = this.filter(type, freq, q), g = this.gain();
@@ -145,21 +153,21 @@ export class AudioEngine {
     if (freqEnd) f.frequency.exponentialRampToValueAtTime(freqEnd, t + dur);
     this.env(g.gain, t, attack, vol, dur);
     s.connect(f); f.connect(g);
-    const out = pos ? this.spatial(dest) : dest;
+    const out = pos ? this.spatial(dest, { ref }) : dest;
     if (pos) this.setPos(out, pos);
     g.connect(out);
     if (reverb > 0) { const rs = this.gain(reverb); g.connect(rs); rs.connect(this.reverb); }
     s.start(t, rand(0, 3)); s.stop(t + dur + 0.1);
   }
 
-  tone({ dest = this.sfx, pos = null, type = 'sine', freq = 440, freqEnd = null, dur = 0.3, vol = 0.3, attack = 0.005, at = 0, reverb = 0.1 } = {}) {
+  tone({ dest = this.sfx, pos = null, ref = 8, type = 'sine', freq = 440, freqEnd = null, dur = 0.3, vol = 0.3, attack = 0.005, at = 0, reverb = 0.1 } = {}) {
     if (!this.ctx) return;
     const t = this.t + at;
     const o = this.osc(type, freq), g = this.gain();
     if (freqEnd) o.frequency.exponentialRampToValueAtTime(freqEnd, t + dur);
     this.env(g.gain, t, attack, vol, dur);
     o.connect(g);
-    const out = pos ? this.spatial(dest) : dest;
+    const out = pos ? this.spatial(dest, { ref }) : dest;
     if (pos) this.setPos(out, pos);
     g.connect(out);
     if (reverb > 0) { const rs = this.gain(reverb); g.connect(rs); rs.connect(this.reverb); }
@@ -203,6 +211,26 @@ export class AudioEngine {
     this.burst({ pos, freq: heavy ? 1200 : 2400, freqEnd: 300, q: 0.6, type: 'lowpass', dur: heavy ? 0.25 : 0.12, vol: heavy ? 0.9 : 0.6, reverb: 0.4 });
     this.tone({ pos, freq: heavy ? 110 : 160, freqEnd: 40, dur: 0.15, vol: 0.7 });
     this.burst({ pos, freq: 6000, q: 1, dur: 0.04, vol: 0.4 });
+  }
+
+  /** Enemy automatic fire at range: a hard crack plus a low thump that carries across the water. */
+  gunshotFar(pos) {
+    this.burst({ pos, ref: 28, freq: 2600, freqEnd: 350, q: 0.7, type: 'lowpass', dur: 0.16, vol: 0.85, reverb: 0.55 });
+    this.burst({ pos, ref: 28, freq: 5000, q: 0.9, dur: 0.03, vol: 0.5, reverb: 0 });
+    this.tone({ pos, ref: 28, type: 'triangle', freq: 130, freqEnd: 45, dur: 0.16, vol: 0.55, reverb: 0.2 });
+  }
+
+  /** A round passing close: supersonic snap and a short whine. */
+  whizz(pos) {
+    this.burst({ pos, ref: 3, freq: 7500, q: 0.7, type: 'highpass', dur: 0.025, vol: 0.55, reverb: 0 });
+    this.burst({ pos, ref: 3, freq: 5200, freqEnd: 1500, q: 5, dur: 0.18, vol: 0.45, reverb: 0.05, at: 0.01 });
+  }
+
+  /** A round striking your own hull. */
+  hullHit(pos) {
+    this.metal({ pos, base: 500 + Math.random() * 400, vol: 0.5, dur: 0.35 });
+    this.burst({ pos, freq: 900, freqEnd: 200, q: 0.8, type: 'lowpass', dur: 0.1, vol: 0.7, reverb: 0.1 });
+    this.burst({ pos, freq: 6000, q: 1.2, dur: 0.03, vol: 0.4, reverb: 0 });
   }
 
   splash(pos, size = 1) {

@@ -181,6 +181,7 @@ export default class Chapter2 {
     this.hud = this.game.ui.hud(`
       <div class="compass"><div class="strip"></div><div class="mark"></div></div>
       <div class="crosshair"></div>
+      <div class="hitdir"></div>
       <div class="health"><div class="label">HULL</div><div class="track"><i></i></div><div class="label" style="margin-top:10px">BOOST</div><div class="track"><i class="boost" style="background:var(--cyan)"></i></div></div>
       <div class="ammo"><div class="v">——</div><div class="u">BOW GUN · HEAT</div><div class="heatbar"><i></i></div></div>
       <div class="speedo" style="bottom:auto;top:4.5vh;right:3.5vw"><div class="v" style="font-size:40px">0</div><div class="u">KNOTS</div></div>
@@ -188,7 +189,7 @@ export default class Chapter2 {
       <div class="waypoint"><div class="m"></div><div class="d"></div></div>
       <div class="pause-hint">ESC · PAUSE</div>`);
     const q = (s) => this.hud.querySelector(s);
-    this.H = { strip: q('.compass .strip'), cross: q('.crosshair'), hull: q('.health .track i'), hullBox: q('.health'), boost: q('.boost'), heat: q('.heatbar i'), ammo: q('.ammo .v'), spd: q('.speedo .v'), targets: q('.targets'), wp: q('.waypoint'), wpd: q('.waypoint .d'), ammoBox: q('.ammo'), speedBox: q('.speedo') };
+    this.H = { strip: q('.compass .strip'), cross: q('.crosshair'), hull: q('.health .track i'), hullBox: q('.health'), boost: q('.boost'), heat: q('.heatbar i'), ammo: q('.ammo .v'), spd: q('.speedo .v'), targets: q('.targets'), wp: q('.waypoint'), wpd: q('.waypoint .d'), ammoBox: q('.ammo'), speedBox: q('.speedo'), hitdir: q('.hitdir') };
     const strip = []; for (let a = -360; a <= 720; a += 15) strip.push(`<span style="position:absolute;left:${(a + 360) * 4}px;transform:translateX(-50%)">${a % 90 === 0 ? ['N', 'E', 'S', 'W'][((a / 90) % 4 + 4) % 4] : a % 45 === 0 ? '·' : '|'}</span>`);
     this.H.strip.innerHTML = strip.join('');
     this.targetEls = this.patrols.map(() => { const d = el('div', 'target-box', this.H.targets, '<div class="hp"><i></i></div>'); d.style.display = 'none'; return d; });
@@ -206,7 +207,7 @@ export default class Chapter2 {
     this.cp = cp;
     const c = CHECKPOINTS[cp] || CHECKPOINTS.start;
     this.boat.place(c.pos.x, c.pos.z, c.yaw); this.ocean.clearWake(); this.boat.health = 1; this.boat.boostFuel = 1;
-    this.camYaw = c.yaw; this.camPitch = 0.12; this.heat = 0; this.overheat = 0; this.fireCd = 0; this.hurtT = 9;
+    this.camYaw = c.yaw; this.camPitch = 0.0; this.heat = 0; this.overheat = 0; this.fireCd = 0; this.hurtT = 9;
     for (const p of this.patrols) { p.alive = false; p.mesh.visible = false; p.engine?.stop(); p.engine = null; }
     this.tracers.clear();
     this.kills = 0; this.wave = 0;
@@ -216,6 +217,8 @@ export default class Chapter2 {
     this.collapseTower.t = 0; this.collapseTower.falling = false; this.collapseTower.mesh.rotation.set(0, 0, 0);
     for (const t of this.ship.userData.turrets) { t.alive = true; t.hp = 1; t.tank.visible = true; t.fireT = 2; }
     this.onFoot = null; this.sera.visible = false;
+    if (this.boatMesh.parent !== this.scene) this.scene.add(this.boatMesh);
+    this.rampCine = null; this.rampDone = false;
     if (this.kai.parent !== this.boatMesh) this.placeKaiAtHelm();
     this.boatMesh.visible = true;
     this.lab.hatch.rotation.y = 0; this.hasCrowbar = false; this.crowbarObj.visible = true;
@@ -330,6 +333,7 @@ export default class Chapter2 {
     this.waterFx(dt, t);
     this.updateShip(dt, t);
     if (this.cinematic) { this.updateIntroCam(dt, t); return; }
+    if (this.rampCine) { this.updateRampJump(dt, t); return; }
     if (this.onFoot || this.rescueCine) { this.updateOnFoot(dt, t); return; }
     this.sail(dt, t);
   }
@@ -349,7 +353,7 @@ export default class Chapter2 {
   waterFx(dt, t) {
     const b = this.boat, list = [];
     const onWater = (body) => !body.airborne && body.pos.y > waterHeight(body.pos.x, body.pos.z, t) - 2;
-    if (this.boatMesh.visible && onWater(b)) {
+    if (this.boatMesh.visible && !this.rampCine && !this.onFoot && onWater(b)) {
       list.push({ x: b.pos.x, z: b.pos.z, yaw: b.yaw, s: 0.25 + Math.min(1, b.speed / 16) * 0.75 });
       const st = b.pos.clone().addScaledVector(V3(Math.sin(b.yaw), 0, Math.cos(b.yaw)), -4.6);
       this.ocean.wake(dt, st.x, st.z, b.speed);
@@ -392,7 +396,7 @@ export default class Chapter2 {
     // controls
     b.input = { throttle: inp.throttle, brake: inp.brake, rudder: -inp.steer, boost: inp.any('ShiftLeft', 'ShiftRight') || inp.padBtn(1) > 0.5 ? 1 : 0, trim: inp.down('Space') ? 1 : 0 };
     const [lx, ly] = inp.lookDelta();
-    this.camYaw -= lx + inp.padAxis(2) * 0; this.camPitch = clamp(this.camPitch + ly, -0.25, 0.6);
+    this.camYaw -= lx; this.camPitch = clamp(this.camPitch - ly, -0.32, 0.5);
     const sub = 2;
     for (let i = 0; i < sub; i++) b.update(dt / sub, t);
     for (const tw of this.towers) { const hit = b.collideBox(tw); if (hit > 4) this.impact(hit); }
@@ -406,10 +410,15 @@ export default class Chapter2 {
     const enemyTargets = [];
     for (const p of this.patrols) if (p.alive && !p.sinking) enemyTargets.push({ pos: p.body.pos.clone().add(V3(0, 1, 0)), radius: 2.4, hit: (pt, dmg) => { p.hitAt(pt, dmg); this.hitMarker(); if (p.sinking && !p.counted) { p.counted = true; this.kills++; } } });
     if (this.ship.visible) for (const tu of this.ship.userData.turrets) if (tu.alive) enemyTargets.push({ pos: tu.tank.getWorldPosition(V3()), radius: 1.3, hit: (pt) => this.hitTurret(tu, pt) });
-    this.tracers.update(dt, playerTargets, enemyTargets, (p) => { if (Math.random() < 0.5) this.spray.emit(p, V3(0, 4, 0), { life: 0.6, size: 0.4, grow: 2, color: [0.85, 0.9, 0.92], alpha: 0.5, gravity: 8 }); });
+    const splash = (p) => { if (Math.random() < 0.5) this.spray.emit(p, V3(0, 4, 0), { life: 0.6, size: 0.4, grow: 2, color: [0.85, 0.9, 0.92], alpha: 0.5, gravity: 8 }); if (p.distanceTo(b.pos) < 25 && Math.random() < 0.5) g.audio.burst({ pos: p, freq: 2200, freqEnd: 500, q: 0.5, type: 'lowpass', dur: 0.12, vol: 0.35, reverb: 0.1 }); };
+    this.tracers.update(dt, playerTargets, enemyTargets, splash, { pos: b.pos.clone().add(V3(0, 1.6, 0)), cb: (p) => {
+      // play the snap just beside the listener so it reads as "that one was close"
+      const cp = this.camera.position, d = p.clone().sub(cp); g.audio.whizz(cp.clone().addScaledVector(d.normalize(), 2.5));
+      this.shake = Math.max(this.shake || 0, 0.1);
+    } });
     // health regen
     this.hurtT += dt;
-    if (this.hurtT > 4) b.health = Math.min(1, b.health + dt * 0.04);
+    if (this.hurtT > 5) b.health = Math.min(1, b.health + dt * 0.03);
     if (b.health <= 0) { g.fail('SUNK'); b.health = 1; }
     this.phaseLogic(dt, t);
     this.updateFx(dt, t);
@@ -432,10 +441,27 @@ export default class Chapter2 {
   hurt(p, dmg) {
     const b = this.boat;
     b.health -= dmg; this.hurtT = 0;
-    this.game.audio.metal({ pos: p, base: 600 + Math.random() * 300, vol: 0.15, dur: 0.3 });
+    this.game.audio.hullHit(p);
+    this.shake = Math.max(this.shake || 0, 0.25);
+    this.hitDir(p);
     this.fxApi().spark(p);
     this.damageFlash = 0.4;
     if (Math.random() < 0.3) this.kaiAnim.hitReact(Math.random() < 0.5 ? -1 : 1, 0.4);
+  }
+  /** Red wedge around the crosshair pointing at where the fire came from. */
+  hitDir(p) {
+    const now = performance.now();
+    if (now - (this.hitDirT || 0) < 120) return; this.hitDirT = now;
+    const cam = this.camera, f = cam.getWorldDirection(V3()); f.y = 0; f.normalize();
+    const to = p.clone().sub(cam.position); to.y = 0; to.normalize();
+    // the shooter is beyond the impact point, along the incoming round; use the nearest live shooter if any
+    let src = null, bd = 1e9;
+    for (const pt of this.patrols) if (pt.alive && !pt.sinking) { const d = pt.body.pos.distanceTo(this.boat.pos); if (d < bd) { bd = d; src = pt.body.pos; } }
+    if (this.ship.visible && this.shipPos.distanceTo(this.boat.pos) < bd) src = this.shipPos;
+    if (src) { to.copy(src).sub(cam.position); to.y = 0; to.normalize(); }
+    const ang = Math.atan2(f.x * to.z - f.z * to.x, f.dot(to)); // signed angle, + = to the right
+    const w = el('i', '', this.H.hitdir); w.style.transform = `rotate(${(ang * 180) / Math.PI}deg)`;
+    setTimeout(() => w.remove(), 900);
   }
   hitMarker() { this.H.cross.classList.add('hit'); clearTimeout(this.hmT); this.hmT = setTimeout(() => this.H.cross.classList.remove('hit'), 90); this.game.audio.tone({ type: 'square', freq: 1800, dur: 0.03, vol: 0.03, reverb: 0 }); }
   hitTurret(tu, p) {
@@ -570,7 +596,7 @@ export default class Chapter2 {
       const turretsDown = this.ship.userData.turrets.every((x) => !x.alive);
       if (local.z < -76 && local.z > -100 && Math.abs(local.x) < 6) {
         if (!turretsDown) this.line('nope', [['SERA', 'The turrets will shred you on the ramp — take them out first!']]);
-        else if (b.speed > 6) { g.checkpoint('boarding'); this.beginPhase('boarding'); }
+        else if (b.speed > 6) this.startRampJump();
         else this.line('faster', [['SERA', 'Faster! You need speed to make the ramp!']]);
       }
     }
@@ -592,7 +618,8 @@ export default class Chapter2 {
         tu.burst = (tu.burst ?? 0) + 1;
         const mz = tu.muzzles[tu.burst % 2].getWorldPosition(V3());
         this.tracers.fire(mz, target.clone().sub(mz).normalize(), { enemy: true, speed: 300, damage: 0.03, spread: 0.03 });
-        this.game.audio.gunshot(mz, true);
+        this.game.audio.gunshotFar(mz); this.game.audio.tone({ pos: mz, ref: 30, type: 'triangle', freq: 90, freqEnd: 35, dur: 0.22, vol: 0.5 });
+        this.fxApi().muzzle(mz, target.clone().sub(mz).normalize());
         if (tu.burst % 10 === 0) tu.fireT = 2.4; else tu.fireT = 0.08;
       }
     }
@@ -625,19 +652,23 @@ export default class Chapter2 {
 
   updateBoatCamera(dt, t) {
     const cam = this.camera, b = this.boat;
-    const dist = 11.5, height = 4.2;
-    const yaw = this.camYaw, pitch = this.camPitch;
-    const target = b.pos.clone().add(V3(0, 2.2, 0));
-    const want = target.clone().add(V3(-Math.sin(yaw) * Math.cos(pitch) * dist, Math.sin(pitch) * dist + height * 0.4, -Math.cos(yaw) * Math.cos(pitch) * dist));
+    // Third-person shooter camera: camYaw/camPitch are the AIM (mouse up = aim up). The camera
+    // orbits behind the boat and looks exactly along the aim, so the crosshair is where shots go.
+    const yaw = this.camYaw, aim = this.camPitch;
+    const dist = 11, orbit = 0.1 - aim * 0.55; // aiming up lowers the camera, aiming down lifts it
+    const pivot = b.pos.clone().add(V3(0, 2.4, 0));
+    const want = pivot.clone().add(V3(-Math.sin(yaw) * Math.cos(orbit) * dist, Math.sin(orbit) * dist + 0.7, -Math.cos(yaw) * Math.cos(orbit) * dist));
     // keep above the water
     want.y = Math.max(want.y, waterHeight(want.x, want.z, t) + 1.2);
     if (!this.camPos) this.camPos = want.clone();
-    this.camPos.lerp(want, 1 - Math.exp(-dt * 7));
+    // follow the boat tightly (it moves fast) but smooth the heave
+    this.camPos.x += (want.x - this.camPos.x) * (1 - Math.exp(-dt * 14));
+    this.camPos.z += (want.z - this.camPos.z) * (1 - Math.exp(-dt * 14));
+    this.camPos.y += (want.y - this.camPos.y) * (1 - Math.exp(-dt * 6));
     this.shake = Math.max(0, (this.shake || 0) - dt * 2);
     const s = this.shake * 0.35;
     cam.position.copy(this.camPos).add(V3((Math.random() - 0.5) * s, (Math.random() - 0.5) * s, (Math.random() - 0.5) * s));
-    const look = target.clone().add(V3(Math.sin(yaw) * 60, 1.5, Math.cos(yaw) * 60));
-    cam.lookAt(look);
+    cam.lookAt(cam.position.clone().add(V3(Math.sin(yaw) * Math.cos(aim), Math.sin(aim), Math.cos(yaw) * Math.cos(aim))));
     this.fovPunch = Math.max(0, (this.fovPunch || 0) - dt * 30);
     cam.fov = 62 + clamp(b.speed / 30, 0, 1) * 10 + (b.input.boost && b.boostFuel > 0 ? 6 : 0) + this.fovPunch;
     cam.updateProjectionMatrix();
@@ -696,6 +727,98 @@ export default class Chapter2 {
   }
 
   // ------------------------------------------------------------------ on foot aboard the Meridian
+  // ------------------------------------------------------------------ the stern-ramp jump
+  // Ship-local key poses: up the ramp, launch, land on the stern deck, skid to a stop beside the lab.
+  static RAMP = { top: [0, 7.6, -75], land: [0, 12.05, -67], park: [6.6, 12.05, -52], parkYaw: 0.5 };
+
+  startRampJump() {
+    const b = this.boat, g = this.game;
+    const L = this.ship.worldToLocal(b.pos.clone());
+    this.rampCine = { t: 0, from: L, yaw0: b.yaw - this.ship.rotation.y, sparkT: 0, landed: false };
+    this.hud.style.opacity = 0; g.ui.letterbox(true); g.ui.prompt(null);
+    this.tracers.clear();
+    for (const p of this.patrols) { p.alive = false; p.mesh.visible = false; p.engine?.stop(); p.engine = null; }
+    g.audio.burst({ pos: b.pos, freq: 600, freqEnd: 2400, q: 0.6, type: 'lowpass', dur: 0.8, vol: 0.6, reverb: 0.3 }); // engine scream up the ramp
+    g.music.play('naval', { intensity: 1 });
+  }
+
+  /** Boat pose on the ship for cine time u (seconds); returns {p (local), yaw, pitch, roll, phase}. */
+  rampPose(u) {
+    const R = Chapter2.RAMP, c = this.rampCine, V = (a) => V3(a[0], a[1], a[2]);
+    const ease = (x) => 1 - Math.pow(1 - clamp(x, 0, 1), 3);
+    if (u < 0.5) { // drive up the ramp
+      const k = u / 0.5;
+      return { p: c.from.clone().lerp(V(R.top), k), yaw: c.yaw0 * (1 - k), pitch: 0.3 * k, roll: 0, phase: 0 };
+    }
+    if (u < 1.3) { // airborne: an arc from the ramp lip onto the deck, nose dropping
+      const k = (u - 0.5) / 0.8;
+      const p = V(R.top).lerp(V(R.land), k); p.y += Math.sin(k * Math.PI) * 2.6;
+      return { p, yaw: 0, pitch: 0.3 - 0.4 * k, roll: Math.sin(k * Math.PI) * 0.06, phase: 1 };
+    }
+    // skid: slews sideways across the deck and grinds to a stop
+    const k = ease((u - 1.3) / 1.5);
+    const p = V(R.land).lerp(V(R.park), k);
+    return { p, yaw: R.parkYaw * Math.pow(k, 0.7), pitch: -0.1 * (1 - k), roll: -0.05 * Math.sin(k * Math.PI), phase: 2, k };
+  }
+
+  updateRampJump(dt, t) {
+    const c = this.rampCine, g = this.game, b = this.boat;
+    // slow motion while airborne
+    const pose0 = this.rampPose(c.t);
+    c.t += dt * (pose0.phase === 1 ? 0.4 : 1);
+    const pose = this.rampPose(c.t);
+    const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(-pose.pitch, pose.yaw, pose.roll, 'YXZ'));
+    this.ship.updateMatrixWorld();
+    b.pos.copy(this.ship.localToWorld(pose.p.clone()));
+    this.boatMesh.position.copy(b.pos); this.boatMesh.quaternion.copy(this.ship.quaternion).multiply(q);
+    if (pose.phase === 2 && !c.landed) {
+      c.landed = true; this.shake = 1.4; this.flash(0.3);
+      g.audio.crash(b.pos, 1); g.audio.metal({ pos: b.pos, base: 140, vol: 0.7, dur: 1.6 });
+      this.kaiAnim.hitReact(1, 1);
+    }
+    if (pose.phase === 2 && pose.k < 0.95) {
+      // sparks off the keel and a grinding scrape
+      c.sparkT -= dt;
+      for (let i = 0; i < 4; i++) {
+        const sp = this.boatMesh.localToWorld(V3((Math.random() - 0.5) * 2.2, 0.1, -4 + Math.random() * 8));
+        this.fire.emit(sp, V3((Math.random() - 0.5) * 6, 2 + Math.random() * 4, -6 - Math.random() * 6).applyQuaternion(this.ship.quaternion), { life: 0.5, size: 0.08, grow: 0, color: [1, 0.7, 0.3], alpha: 1, gravity: 12 });
+      }
+      if (c.sparkT <= 0) { c.sparkT = 0.07; g.audio.burst({ pos: b.pos, freq: 3000 + Math.random() * 2000, q: 2, dur: 0.12, vol: 0.35 * (1 - pose.k), reverb: 0.1 }); }
+    }
+    if (pose.phase === 0 && Math.random() < 0.8) this.spray.emit(this.boatMesh.localToWorld(V3(0, 0.2, -4.5)), V3((Math.random() - 0.5) * 4, 5, -6), { life: 1, size: 0.8, grow: 2, color: [0.9, 0.93, 0.95], alpha: 0.4, gravity: 8 });
+    // camera: low behind the stern for the launch, then up on the deck rail for the skid
+    const cam = this.camera;
+    const camL = pose.phase < 2 ? V3(-7, 13.5, -101) : V3(9.5, 15.2, -69);
+    const want = this.ship.localToWorld(camL);
+    want.y = Math.max(want.y, waterHeight(want.x, want.z, t) + 1.5);
+    if (!c.cam) c.cam = want.clone();
+    c.cam.lerp(want, 1 - Math.exp(-dt * (pose.phase < 2 ? 6 : 2.5)));
+    this.shake = Math.max(0, (this.shake || 0) - dt * 2);
+    const s = this.shake * 0.3;
+    cam.position.copy(c.cam).add(V3((Math.random() - 0.5) * s, (Math.random() - 0.5) * s, (Math.random() - 0.5) * s));
+    cam.lookAt(b.pos.clone().add(V3(0, 1.5, 0)));
+    cam.fov = pose.phase === 1 ? 56 : 62; cam.updateProjectionMatrix();
+    this.kaiAnim.update(dt);
+    this.spray.update(dt); this.smoke.update(dt); this.fire.update(dt);
+    this.updateAudio(dt);
+    this.moon.position.copy(b.pos).addScaledVector(this.sunDir, 100); this.moon.target.position.copy(b.pos);
+    if (c.t > 3.0 && !c.done) {
+      c.done = true;
+      this.line('rampend', [['KAI', 'Parked.'], ['SERA', 'You— on the DECK? Okay. Okay! Aft lab, the white module!']]);
+      this.rampDone = true; this.rampCine = null;
+      g.ui.letterbox(false);
+      g.checkpoint('boarding'); this.beginPhase('boarding');
+    }
+  }
+
+  parkBoatOnDeck() {
+    const R = Chapter2.RAMP, m = this.boatMesh;
+    this.ship.add(m);
+    m.position.set(R.park[0], R.park[1], R.park[2]);
+    m.quaternion.setFromEuler(new THREE.Euler(0, R.parkYaw, 0, 'YXZ'));
+    m.visible = true;
+  }
+
   startBoarding() {
     const g = this.game, ui = g.ui;
     ui.objective('Find Sera', 'She\'s locked in the aft lab module');
@@ -703,14 +826,14 @@ export default class Chapter2 {
     g.music.play('onfoot', { intensity: 0.4 });
     for (const p of this.patrols) { p.alive = false; p.mesh.visible = false; p.engine?.stop(); p.engine = null; }
     this.tracers.clear();
-    // the boat is left on the ramp; Kai walks the (listing) deck in ship space
-    this.boatMesh.visible = this.cp !== 'boarding' ? true : false;
+    // the boat ends up skidded across the stern deck; Kai walks the (listing) deck in ship space
     this.ship.visible = true;
-    this.shipPos.set(this.boat.pos.x, 0, this.boat.pos.z + 85);
+    if (!this.rampDone) this.shipPos.set(this.boat.pos.x, 0, this.boat.pos.z + 85);
+    this.parkBoatOnDeck();
     this.ship.add(this.kai);
     this.kai.scale.setScalar(1);
     this.onFoot = new OnFoot(this.kai, this.kaiAnim, this.ship);
-    this.onFoot.pos.set(0, 11.6, -66); this.onFoot.yaw = 0; this.onFoot.camYaw = 0;
+    this.onFoot.pos.set(3.4, 11.6, -64); this.onFoot.yaw = 0; this.onFoot.camYaw = 0;
     const hullW = (z) => this.ship.userData.hull.width(z) - 0.8;
     this.onFoot.floors = [{ minX: -12, maxX: 12, minZ: -75, maxZ: 76, y: 11.6 }];
     const boxes = this.onFoot.boxes;
@@ -721,6 +844,7 @@ export default class Chapter2 {
     boxes.push({ minX: -9, maxX: 9, minZ: -1, maxZ: 21 });
     boxes.push({ minX: -8.1, maxX: 2.05, minZ: -59.1, maxZ: -50.9 });
     this.hatchBox = { minX: 2.0, maxX: 2.3, minZ: -56.5, maxZ: -55.3 };
+    boxes.push({ minX: 4.9, maxX: 8.6, minZ: -57.5, maxZ: -46.5 }); // the interceptor, skidded to a stop
     this.line('b1', [['KAI', 'I\'m on board. Sera?'], ['SERA', 'Aft lab — the white module. The hatch jammed when we started listing. There\'s a pry bar in the lifeboat locker, starboard side.']]);
     this.waveT = 6;
     this.deckWater = new Particles(this.scene, { max: 400 });

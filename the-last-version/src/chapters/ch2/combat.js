@@ -69,7 +69,7 @@ export class Tracers {
     this.aC.array.set([r, g, b, width], n * 4);
   }
   /** targets: [{pos, radius, hit(p, dmg)}] for each side. onWater(p) for splashes. */
-  update(dt, playerTargets, enemyTargets, onWater) {
+  update(dt, playerTargets, enemyTargets, onWater, near = null) {
     let n = 0;
     const tail = new THREE.Vector3(), head = new THREE.Vector3(), d = new THREE.Vector3();
     for (let i = this.items.length - 1; i >= 0; i--) {
@@ -97,7 +97,15 @@ export class Tracers {
         const c = it.prev.clone().addScaledVector(ab, tt);
         if (c.distanceTo(t.pos) < t.radius) { t.hit(c, it.damage); dead = true; }
       }
-      if (!dead && it.p.y < waterHeight(it.p.x, it.p.z) - 0.2) { onWater?.(it.p); dead = true; }
+      // enemy guns sit low on small boats: let their rounds skim through crest tops instead of every
+      // wave between you and them eating the burst
+      if (!dead && it.p.y < waterHeight(it.p.x, it.p.z) - (it.enemy ? 1.3 : 0.2)) { onWater?.(it.p); dead = true; }
+      // enemy rounds passing close to the listener snap and whine past
+      if (!dead && near && it.enemy && !it.whizzed) {
+        const ab = it.p.clone().sub(it.prev), ap = near.pos.clone().sub(it.prev);
+        const tt = clamp(ap.dot(ab) / Math.max(ab.lengthSq(), 1e-6), 0, 1), c = it.prev.clone().addScaledVector(ab, tt);
+        if (c.distanceTo(near.pos) < 6) { it.whizzed = true; near.cb(c); }
+      }
       if (dead) { this.items.splice(i, 1); continue; }
       const sp = it.v.length(), len = Math.min(sp * 0.03, 9, it.p.distanceTo(it.from));
       head.copy(it.p); tail.copy(it.p).addScaledVector(it.v, -len / Math.max(sp, 1e-3));
@@ -192,19 +200,19 @@ export class Patrol {
     if (this.parts.engine <= 0 && Math.random() < 0.3) this.fx.smoke(b.pos.clone().add(b.forward.multiplyScalar(-3.4)).add(new THREE.Vector3(0, 1.2, 0)), true);
     // gun: aim with lead, fire bursts when in the arc
     const gun = this.mesh.userData.gun;
-    const lead = pp.clone().addScaledVector(player.vel, dist / 260).add(new THREE.Vector3(0, 1, 0));
+    const lead = pp.clone().addScaledVector(player.vel, dist / 260).add(new THREE.Vector3(0, 1.4, 0));
     const localT = gun.group.worldToLocal(lead.clone());
     gun.yaw.rotation.y = Math.atan2(localT.x, localT.z);
     gun.pitch.rotation.x = -Math.atan2(localT.y - 1, Math.hypot(localT.x, localT.z));
     this.fireT -= dt;
     if (this.parts.gunner > 0 && this.state !== 'flee' && dist < 120) {
-      if (this.fireT <= 0) { this.burst = 6 + Math.floor(Math.random() * 6); this.fireT = 2.2 + Math.random() * 1.8; }
+      if (this.fireT <= 0) { this.burst = 6 + Math.floor(Math.random() * 6); this.fireT = 1.6 + Math.random() * 1.4; }
       if (this.burst > 0 && Math.random() < dt * 12) {
         this.burst--;
         const mz = gun.muzzles[this.burst % 2].getWorldPosition(new THREE.Vector3());
         const dir = lead.clone().sub(mz).normalize();
-        tracers.fire(mz, dir, { enemy: true, speed: 260, damage: 0.022, spread: 0.035 + dist * 0.0004 });
-        this.audio.gunshot(mz, false);
+        tracers.fire(mz, dir, { enemy: true, speed: 260, damage: 0.026, spread: 0.03 + dist * 0.0003 });
+        this.audio.gunshotFar(mz);
         this.fx.muzzle(mz, dir);
       }
     }
