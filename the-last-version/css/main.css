@@ -217,3 +217,7 @@ html, body { margin: 0; height: 100%; background: #000; overflow: hidden; color:
 .pf-time.low { color: #ff5a3a; animation: khpulse 0.4s infinite alternate; }
 .pf-sub { position: absolute; left: 50%; top: calc(4vh + 50px); transform: translateX(-50%); font: 600 11px/1 var(--display, 'Inter', sans-serif); letter-spacing: 0.45em; color: rgba(255, 220, 180, 0.6); }
 .pf-deaths { position: absolute; right: 3.5vw; top: 4vh; font: 600 12px/1 var(--display, 'Inter', sans-serif); letter-spacing: 0.3em; color: rgba(255, 220, 180, 0.6); }
+/* Ch2 boarding: where to go next */
+.foot-marker { position: absolute; left: 0; top: 0; pointer-events: none; text-align: center; transform-origin: 0 0; }
+.foot-marker .d { margin-left: -9px; margin-top: -14px; width: 18px; color: #ffc860; font-size: 20px; text-shadow: 0 0 10px rgba(255, 180, 60, 0.9); animation: khpulse 0.8s infinite alternate; }
+.foot-marker .m { margin-left: -30px; width: 60px; color: #ffe2b0; font: 600 12px/1 var(--display, 'Inter', sans-serif); letter-spacing: 0.15em; text-shadow: 0 1px 4px #000; }

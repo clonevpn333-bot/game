@@ -8,7 +8,7 @@ import { buildCharacter, KAI, SERA } from '../../characters/cast.js';
 import { Animator } from '../../characters/anim.js';
 import { OnFoot } from '../../game/onfoot.js';
 import { makeSky } from '../../engine/sky.js';
-import { hdri, preloadSets, model } from '../../engine/assets.js';
+import { hdri, preloadSets, model, pbr } from '../../engine/assets.js';
 import { Particles } from '../../engine/fx.js';
 import { EngineSound, NoiseLoop } from '../../audio/audio.js';
 import { facadeMaterial, CITY_TEXTURES, rng } from '../ch1/city.js';
@@ -65,6 +65,7 @@ export default class Chapter2 {
     this.ship = buildResearchShip(); scene.add(this.ship);
     this.ship.visible = false;
     this.buildLab();
+    this.dressDeck();
     this.crowbar = await model('crowbar_01');
     this.crowbarObj = this.crowbar.clone(); this.crowbarObj.scale.setScalar(1.4); this.ship.add(this.crowbarObj);
     this.crowbarObj.position.set(8.2, 12.2, -38); this.crowbarObj.rotation.set(0, 0.4, Math.PI / 2);
@@ -129,6 +130,75 @@ export default class Chapter2 {
     this.towers.push({ ...this.collapseTower.box, mesh: ct });
   }
 
+  /** Dress the aft working deck (ship space): containers, cargo, rope, bollards, floodlights, the lifeboat locker. */
+  dressDeck() {
+    const ship = this.ship, props = this.deckProps = [];
+    const add = (geo, mat, x, y, z, ry = 0) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.rotation.y = ry; m.castShadow = m.receiveShadow = true; ship.add(m); return m; };
+    const collide = (x, z, w, d) => props.push({ minX: x - w / 2, maxX: x + w / 2, minZ: z - d / 2, maxZ: z + d / 2 });
+    const wood = pbr('teak', { size: 1, color: 0x9a7a58 }), corr = (c) => pbr('corrugated', { size: 1.4, color: c, metal: true, roughness: 0.6 });
+    const yellow = new THREE.MeshStandardMaterial({ color: 0xe8b020, roughness: 0.55, metalness: 0.3 });
+    const steel = new THREE.MeshStandardMaterial({ color: 0x5a6266, metalness: 0.8, roughness: 0.4 });
+    // re-skin the deck containers in corrugated steel with doors and lock bars
+    const cols = [0x9a4a32, 0x3a6a8a, 0x7a8a42, 0xb8b8b4];
+    ship.children.filter((o) => o.isMesh && o.geometry?.parameters?.depth === 6.1).forEach((c, i) => {
+      c.material = corr(cols[i % 4]);
+      for (const k of [-0.3, 0.3]) add(new THREE.BoxGeometry(0.05, 2.3, 0.05), steel, c.position.x + k, c.position.y, c.position.z - 3.08);
+    });
+    // cargo: crates, barrels, rope coils, bollards, a cable spool
+    for (const [x, z, s] of [[-9, -45, 1.3], [-9.2, -43.4, 1.0], [-8.6, -44.2, 0.8]]) { add(new THREE.BoxGeometry(s, s, s), wood, x, 11.6 + s / 2, z, 0.3); collide(x, z, 1.5, 1.5); }
+    add(new THREE.BoxGeometry(1.0, 1.0, 1.0), wood, -9, 11.6 + 1.3 + 0.5, -45, 0.8);
+    for (const [x, z, col] of [[-7.2, -66, 0x9a2a1a], [-6.2, -67, 0x2a4a8a], [-7.6, -67.8, 0x9a2a1a], [-8.8, -64.8, 0x2a4a8a]]) { add(new THREE.CylinderGeometry(0.42, 0.42, 1.2, 14), new THREE.MeshStandardMaterial({ color: col, roughness: 0.5, metalness: 0.4 }), x, 12.2, z); collide(x, z, 0.9, 0.9); }
+    for (const [x, z] of [[8.4, -70], [-8, -30], [8.5, -8]]) { const r = add(new THREE.TorusGeometry(0.55, 0.16, 8, 20), new THREE.MeshStandardMaterial({ color: 0xb89a6a, roughness: 0.95 }), x, 11.75, z); r.rotation.x = Math.PI / 2; const r2 = add(new THREE.TorusGeometry(0.4, 0.15, 8, 18), r.material, x, 11.95, z); r2.rotation.x = Math.PI / 2; }
+    for (const sx of [-1, 1]) for (const z of [-72, -30, 0]) { add(new THREE.CylinderGeometry(0.3, 0.36, 0.7, 12), steel, sx * 9.3, 11.95, z); collide(sx * 9.3, z, 0.7, 0.7); }
+    { const sp = add(new THREE.CylinderGeometry(0.9, 0.9, 1.3, 16), wood, -8.4, 12.5, -12); sp.rotation.z = Math.PI / 2; collide(-8.4, -12, 1.4, 1.9); }
+    // painted walkway lines and hazard stripes
+    for (const x of [-2.6, 2.6]) { const l = add(new THREE.PlaneGeometry(0.14, 70), yellow, x, 11.63, -36); l.rotation.x = -Math.PI / 2; l.castShadow = false; }
+    // floodlight masts: pools of light on the wet deck
+    for (const [x, z, tx, tz] of [[9.4, -50, 2, -46], [-9.4, -26, -1, -32], [9.4, -12, 2, -6]]) {
+      add(new THREE.CylinderGeometry(0.12, 0.14, 6, 8), steel, x, 14.6, z); add(new THREE.BoxGeometry(0.7, 0.4, 0.5), steel, x, 17.6, z);
+      const spot = new THREE.SpotLight(0xfff0d0, 120, 26, 0.75, 0.5, 1.4); spot.position.set(x, 17.4, z); spot.target.position.set(tx, 11.6, tz); ship.add(spot, spot.target);
+      collide(x, z, 0.5, 0.5);
+    }
+    // the lifeboat locker on the starboard rail, where the pry bar is: yellow, door open, lit inside
+    { const L = new THREE.Group(); L.position.set(9.4, 11.6, -38); ship.add(L);
+      const body = new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.9, 1.8), yellow); body.position.set(0, 0.95, 0); body.castShadow = body.receiveShadow = true; L.add(body);
+      const inner = new THREE.Mesh(new THREE.BoxGeometry(0.02, 1.6, 1.5), new THREE.MeshStandardMaterial({ color: 0x1a1a1a })); inner.position.set(-0.5, 0.95, 0); L.add(inner);
+      const door = new THREE.Mesh(new THREE.BoxGeometry(0.05, 1.7, 1.6), yellow); door.position.set(-0.75, 0.95, 0.75); door.rotation.y = -1.1; L.add(door);
+      const sign = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.3), new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x30ff90, emissiveIntensity: 0.6 })); sign.position.set(-0.51, 2.05, 0); sign.rotation.y = -Math.PI / 2; L.add(sign);
+      const glow = new THREE.PointLight(0xffd890, 4, 4, 2); glow.position.set(-0.8, 1.2, 0); L.add(glow);
+      collide(9.4, -38, 1.0, 1.8);
+    }
+    // the objective beacon: a soft pillar of light and a bobbing chevron over whatever you need next
+    const beamMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(1.0, 0.75, 0.3).multiplyScalar(2), transparent: true, opacity: 0.22, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+    this.beacon = new THREE.Group();
+    const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 9, 16, 1, true), beamMat); beam.position.y = 4.5; this.beacon.add(beam);
+    const chev = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.5, 4), new THREE.MeshBasicMaterial({ color: new THREE.Color(1.0, 0.75, 0.3).multiplyScalar(3) })); chev.rotation.x = Math.PI; chev.position.y = 2.6; this.beacon.add(chev); this.beaconChev = chev;
+    this.beacon.visible = false; ship.add(this.beacon);
+  }
+
+  /** Where Kai should go next on the ship (ship space), for the beacon and the HUD marker. */
+  objectivePoint() {
+    if (this.phase === 'escape') return V3(0, 11.6, -1.4);
+    if (!this.hasCrowbar) return V3(8.4, 11.6, -38);
+    return V3(2.6, 11.6, -55.9);
+  }
+  updateGuidance(t) {
+    const show = !!this.onFoot && !this.rescueCine && !this.leaving;
+    this.beacon.visible = show;
+    const el2 = this.H.foot || (this.H.foot = el('div', 'foot-marker', this.game.ui.hudRoot, '<div class="d">◆</div><div class="m"></div>'));
+    el2.style.display = show ? 'block' : 'none';
+    if (!show) return;
+    const p = this.objectivePoint();
+    this.beacon.position.copy(p); this.beaconChev.position.y = 2.6 + Math.sin(t * 3) * 0.2; this.beaconChev.rotation.y = t * 2;
+    const w = this.ship.localToWorld(p.clone().add(V3(0, 2.2, 0))), q = w.clone().project(this.camera);
+    const dist = this.onFoot.pos.distanceTo(p);
+    let x = (q.x * 0.5 + 0.5) * innerWidth, y = (-q.y * 0.5 + 0.5) * innerHeight;
+    if (q.z > 1) { x = innerWidth - x; y = innerHeight - 40; }
+    x = clamp(x, 40, innerWidth - 40); y = clamp(y, 60, innerHeight - 60);
+    el2.style.transform = `translate(${x}px, ${y}px)`;
+    el2.querySelector('.m').textContent = `${Math.round(dist)} m`;
+  }
+
   buildLab() {
     // modular ATLAS lab on the aft deck where Sera is trapped
     const lab = new THREE.Group(); this.ship.add(lab);
@@ -159,6 +229,27 @@ export default class Chapter2 {
     const bench = new THREE.Mesh(new THREE.BoxGeometry(5, 0.9, 1), white); bench.position.set(-3, 12.05, -57.6); lab.add(bench);
     const screenTex = (() => { const c = document.createElement('canvas'); c.width = 512; c.height = 256; const g2 = c.getContext('2d'); g2.fillStyle = '#041014'; g2.fillRect(0, 0, 512, 256); g2.fillStyle = '#4fe3ff'; g2.font = '22px monospace'; ['ATLAS // VERSION MONITOR', 'STABLE VERSIONS: 3,917 → 2,204', 'MERGE EVENTS (24H): 41', 'ANCHOR UNITS ONLINE: 2', 'DIRECTIVE V-9: SELECT ONE.'].forEach((l, i) => g2.fillText(l, 20, 40 + i * 42)); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })();
     const screen = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 1.2), new THREE.MeshStandardMaterial({ map: screenTex, emissiveMap: screenTex, emissive: 0xffffff, emissiveIntensity: 1.2 })); screen.position.set(-3, 13.7, -58.9); lab.add(screen);
+    // ---- the lab inside: racks, desks of ATLAS readouts, the Anchor cradle Sera was strapped to
+    const dark = new THREE.MeshStandardMaterial({ color: 0x2a3034, metalness: 0.6, roughness: 0.45 });
+    const steel = new THREE.MeshStandardMaterial({ color: 0x8a9296, metalness: 0.8, roughness: 0.3 });
+    const add = (geo, mat, x, y, z, ry = 0) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.rotation.y = ry; m.castShadow = m.receiveShadow = true; lab.add(m); return m; };
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(9.4, 7.4), pbr('metal_plate', { size: 1.2, color: 0x6a7276, metal: true, roughness: 0.5 })); floor.rotation.x = -Math.PI / 2; floor.position.set(-3, 11.82, -55); floor.receiveShadow = true; lab.add(floor);
+    const glowTex = (lines, col) => { const c = document.createElement('canvas'); c.width = 256; c.height = 160; const g2 = c.getContext('2d'); g2.fillStyle = '#031014'; g2.fillRect(0, 0, 256, 160); g2.fillStyle = col; g2.font = '15px monospace'; lines.forEach((l, i) => g2.fillText(l, 10, 24 + i * 22)); g2.strokeStyle = col; g2.globalAlpha = 0.5; g2.beginPath(); for (let x = 0; x < 256; x += 4) g2.lineTo(x, 140 - Math.abs(Math.sin(x * 0.07)) * 30 * Math.random()); g2.stroke(); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; };
+    const screens = [[['SUBJECT: S. LIND', 'ANCHOR SYNC 12%', 'MEMORY DRIFT: HIGH'], '#ffb347'], [['HALDEN: MERGING', 'LINDMERE: KEPT', 'ROOM REQUIRED'], '#4fe3ff'], [['VERSIONS 4,812', 'CAPACITY 100%', 'SELECT ONE'], '#ff6a5a']];
+    screens.forEach(([lines, col], i) => {
+      const x = -6.6 + i * 2.2;
+      add(new THREE.BoxGeometry(1.9, 0.08, 0.9), steel, x, 12.75, -58.1); add(new THREE.BoxGeometry(0.08, 0.9, 0.8), dark, x - 0.9, 12.3, -58.1); add(new THREE.BoxGeometry(0.08, 0.9, 0.8), dark, x + 0.9, 12.3, -58.1);
+      const tex = glowTex(lines, col); const sc = add(new THREE.PlaneGeometry(1.2, 0.75), new THREE.MeshStandardMaterial({ map: tex, emissiveMap: tex, emissive: 0xffffff, emissiveIntensity: 1.6 }), x, 13.3, -58.4); sc.castShadow = false;
+      add(new THREE.BoxGeometry(1.25, 0.8, 0.06), dark, x, 13.3, -58.47);
+    });
+    for (const z of [-52.2, -53.4]) { const rack = add(new THREE.BoxGeometry(0.9, 2.6, 1.0), dark, -7.3, 13.1, z); for (let k = 0; k < 8; k++) { const led = add(new THREE.BoxGeometry(0.02, 0.05, 0.05), new THREE.MeshBasicMaterial({ color: k % 3 ? 0x30ff90 : 0xff5a3a }), -6.83, 12.3 + k * 0.22, z - 0.3 + (k % 2) * 0.2); led.castShadow = false; } }
+    // the Anchor cradle: a ring over a reclined chair, still humming
+    const ring = add(new THREE.TorusGeometry(1.0, 0.09, 8, 32), new THREE.MeshStandardMaterial({ color: 0x1a2a2e, emissive: 0x4fe3ff, emissiveIntensity: 1.4, metalness: 0.6 }), -3.6, 13.4, -54.6); ring.rotation.x = Math.PI / 2;
+    add(new THREE.BoxGeometry(0.7, 0.35, 1.8), dark, -3.6, 12.2, -54.6); add(new THREE.BoxGeometry(0.7, 0.9, 0.25), dark, -3.6, 12.6, -55.45);
+    for (let k = 0; k < 3; k++) { const cbl = add(new THREE.CylinderGeometry(0.04, 0.04, 3.2, 6), dark, -3.6 + (k - 1) * 0.4, 14.9, -54.6); cbl.rotation.z = Math.PI / 2 * 0.15 * (k - 1); }
+    add(new THREE.BoxGeometry(9.2, 0.06, 0.25), new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xd8f0ff, emissiveIntensity: 2 }), -3, 15.55, -55);
+    const labLight = new THREE.PointLight(0xbfe6ff, 10, 10, 1.6); labLight.position.set(-3, 15.2, -55); lab.add(labLight);
+    this.labRing = ring;
     this.lab = { hatch, door, emergency, shell };
   }
 
@@ -216,7 +307,7 @@ export default class Chapter2 {
     this.shipPos = SHIP_START.clone(); this.shipList = 0.12; this.ship.visible = cp !== 'start';
     this.collapseTower.t = 0; this.collapseTower.falling = false; this.collapseTower.mesh.rotation.set(0, 0, 0);
     for (const t of this.ship.userData.turrets) { t.alive = true; t.hp = 1; t.tank.visible = true; t.fireT = 2; }
-    this.onFoot = null; this.sera.visible = false;
+    this.onFoot = null; this.sera.visible = false; if (this.beacon) this.beacon.visible = false; if (this.H?.foot) this.H.foot.style.display = 'none';
     if (this.boatMesh.parent !== this.scene) this.scene.add(this.boatMesh);
     this.rampCine = null; this.rampDone = false;
     if (this.kai.parent !== this.boatMesh) this.placeKaiAtHelm();
@@ -850,6 +941,7 @@ export default class Chapter2 {
     boxes.push({ minX: -8.1, maxX: 2.05, minZ: -59.1, maxZ: -50.9 });
     this.hatchBox = { minX: 2.0, maxX: 2.3, minZ: -56.5, maxZ: -55.3 };
     boxes.push({ minX: 4.9, maxX: 8.6, minZ: -57.5, maxZ: -46.5 }); // the interceptor, skidded to a stop
+    for (const b of this.deckProps) boxes.push(b);
     this.line('b1', [['KAI', 'I\'m on board. Sera?'], ['SERA', 'Aft lab — the white module. The hatch jammed when we started listing. There\'s a pry bar in the lifeboat locker, starboard side.']]);
     this.waveT = 6;
     this.deckWater = new Particles(this.scene, { max: 400 });
@@ -860,7 +952,9 @@ export default class Chapter2 {
     if (this.rescueCine) { this.updateRescue(dt, t); return; }
     // the list pushes you toward port; waves sweep the deck periodically
     this.shipList = Math.min(0.2, this.shipList + dt * 0.0015);
-    f.list.set(-Math.sin(this.shipList) * 9.81 * 0.35, 0);
+    // the list leans you gently to port; working the hatch you brace and hold your ground
+    const bracing = this.game.input.down('KeyE');
+    f.list.set(bracing ? 0 : -Math.sin(this.shipList) * 9.81 * 0.1, 0);
     this.waveT -= dt;
     if (this.waveT < 0) {
       this.waveT = 9 + Math.random() * 5; this.sweep = 1.4;
@@ -871,7 +965,7 @@ export default class Chapter2 {
       this.sweep -= dt;
       // being near cover (container/superstructure) protects you
       const covered = f.boxes.some((b) => f.pos.x > b.minX - 1.6 && f.pos.x < b.maxX + 1.6 && f.pos.z > b.minZ - 1.6 && f.pos.z < b.maxZ + 1.6 && (b.maxZ - b.minZ) < 30 && (b.maxX - b.minX) > 1);
-      if (!covered) { f.list.x -= 26; f.vel.z -= dt * 8; this.kaiAnim.expression = 'strain'; }
+      if (!covered && !bracing) { f.list.x -= 6; f.vel.z -= dt * 2; this.kaiAnim.expression = 'strain'; }
       for (let i = 0; i < 6; i++) { const p = this.ship.localToWorld(V3(10 - Math.random() * 3, 12 + Math.random(), f.pos.z + (Math.random() - 0.5) * 20)); this.spray.emit(p, this.ship.localToWorld(V3(-12, 13, f.pos.z)).sub(p).multiplyScalar(0.8), { life: 1.2, size: 1.4, grow: 2, color: [0.85, 0.9, 0.92], alpha: 0.4, gravity: 6 }); }
       // washed overboard?
       if (Math.abs(f.pos.x) > this.ship.userData.hull.width(f.pos.z) - 1.0) { g.fail('OVERBOARD'); return; }
@@ -891,6 +985,8 @@ export default class Chapter2 {
     }
     ui.prompt(prompt);
     this.lab.emergency.intensity = Math.sin(t * 6) > 0 ? 6 : 0;
+    if (this.labRing) this.labRing.material.emissiveIntensity = 1.2 + Math.sin(t * 4) * 0.5;
+    this.updateGuidance(t);
     this.spray.update(dt); this.smoke.update(dt); this.fire.update(dt);
     this.moon.position.copy(this.kai.getWorldPosition(V3())).addScaledVector(this.sunDir, 100); this.moon.target.position.copy(this.kai.getWorldPosition(V3()));
   }
@@ -945,6 +1041,10 @@ export default class Chapter2 {
 
   updateRescue(dt, t) {
     const r = this.rescueCine; r.t += dt;
+    this.beacon.visible = false; if (this.H.foot) this.H.foot.style.display = 'none';
+    this.rain.lines.visible = false; // indoors
+    clearTimeout(this.rainBack); this.rainBack = setTimeout(() => { if (!this.underwater) this.rain.lines.visible = true; }, 400);
+    if (this.labRing) this.labRing.material.emissiveIntensity = 1.2 + Math.sin(t * 4) * 0.5;
     const head = (ch) => ch.bones.head.getWorldPosition(V3());
     const kh = head(this.kai), sh = head(this.sera);
     this.kaiAnim.lookTarget = sh; this.seraAnim.lookTarget = kh;
@@ -953,7 +1053,7 @@ export default class Chapter2 {
     const mid = kh.clone().lerp(sh, 0.5);
     if (r.shot === 0) { cam.position.copy(this.ship.localToWorld(V3(4.9, 13.45, -54.9))); cam.lookAt(sh); cam.fov = 38; }
     else if (r.shot === 1) { cam.position.copy(this.ship.localToWorld(r.speaker === 'kai' ? V3(0.2, 13.25, -56.5) : V3(3.9, 13.3, -55.2))); cam.lookAt(r.speaker === 'kai' ? kh : sh); cam.fov = 32; }
-    else { cam.position.copy(this.ship.localToWorld(V3(6.5, 14.0, -53.0))); cam.lookAt(mid); cam.fov = 48; }
+    else { cam.position.copy(this.ship.localToWorld(V3(-6.2, 14.1, -52.3))); cam.lookAt(mid); cam.fov = 52; } // inside the lab: screens, racks and the cradle in frame
     cam.updateProjectionMatrix();
     this.lab.emergency.intensity = Math.sin(t * 6) > 0 ? 6 : 0;
     this.spray.update(dt);

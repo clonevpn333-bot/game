@@ -10,7 +10,7 @@ export class OnFoot {
     this.ch = character; this.anim = animator;
     this.frame = frame; // Object3D the character walks in (e.g. the ship); null = world
     this.pos = new THREE.Vector3(); this.vel = new THREE.Vector3(); this.yaw = 0;
-    this.camYaw = 0; this.camPitch = 0.25; this.camDist = 3.6;
+    this.camYaw = 0; this.camPitch = 0.38; this.camDist = 4.4;
     this.boxes = []; // {minX,maxX,minZ,maxZ,minY?,maxY?} in frame space
     this.floors = []; // {minX,maxX,minZ,maxZ,y} walkable heights
     this.radius = 0.32;
@@ -29,7 +29,7 @@ export class OnFoot {
     const mx = input.moveX, my = input.moveY;
     const run = input.any('ShiftLeft', 'ShiftRight');
     const len = Math.min(1, Math.hypot(mx, my));
-    const maxV = (run ? 4.6 : 1.9) * speedMul;
+    const maxV = (run ? 5.4 : 3.4) * speedMul;
     // camera-relative direction
     const dir = new THREE.Vector3(mx, 0, my).normalize();
     const cy = this.camYaw;
@@ -70,10 +70,14 @@ export class OnFoot {
     const head = this.pos.clone().add(new THREE.Vector3(0, 1.55, 0));
     const off = new THREE.Vector3(Math.sin(this.camYaw) * Math.cos(this.camPitch), Math.sin(this.camPitch), Math.cos(this.camYaw) * Math.cos(this.camPitch)).multiplyScalar(-this.camDist);
     let cp = head.clone().add(off).add(new THREE.Vector3(0.45 * Math.cos(this.camYaw), 0, -0.45 * Math.sin(this.camYaw)));
-    // pull the camera in front of walls
-    for (const b of this.boxes) {
-      if (cp.x > b.minX && cp.x < b.maxX && cp.z > b.minZ && cp.z < b.maxZ && (b.maxY === undefined || cp.y < b.maxY)) cp.lerp(head, 0.6);
-    }
+    // march from the head toward the camera and stop just short of the first wall, so the
+    // camera never ends up inside a container or a cabin staring at a flat face
+    const inside = (v) => this.boxes.some((b) => v.x > b.minX - 0.1 && v.x < b.maxX + 0.1 && v.z > b.minZ - 0.1 && v.z < b.maxZ + 0.1 && (b.maxY === undefined || v.y < b.maxY));
+    const ray = cp.clone().sub(head), L = ray.length(); ray.normalize();
+    let safe = L;
+    for (let d = 0.4; d <= L; d += 0.15) { if (inside(head.clone().addScaledVector(ray, d))) { safe = Math.max(1.4, d - 0.2); break; } }
+    cp = head.clone().addScaledVector(ray, safe);
+    cp.y = Math.max(cp.y, this.floorAt(cp.x, cp.z) + 0.5);
     const toW = (v) => (this.frame ? this.frame.localToWorld(v.clone()) : v.clone());
     const wc = toW(cp), wl = toW(head.clone().add(new THREE.Vector3(Math.sin(this.camYaw) * 2, -0.2, Math.cos(this.camYaw) * 2)));
     if (!this.camPos.lengthSq()) { this.camPos.copy(wc); this.camLook.copy(wl); }
