@@ -9,6 +9,7 @@ const CHAPTER_MODULES = {
   2: () => import('../chapters/ch2/chapter2.js'),
   3: () => import('../chapters/ch3/chapter3.js'),
   4: () => import('../chapters/ch4/chapter4.js'),
+  5: () => import('../chapters/ch5/chapter5.js'),
 };
 
 export class Game {
@@ -128,7 +129,7 @@ export class Game {
     this.ui.clearHud();
     await this.ui.fade(1, 2);
     if (this.chapter) { this.chapter.dispose(); this.chapter = null; }
-    const NEXT = { 4: ['THE FALLEN KING', 'Medieval action RPG'], 5: ['THE GENERAL', 'Real-time tactical strategy'], 6: ['RUNNING OUT OF TIME', '2.5D precision platformer'] };
+    const NEXT = { 4: ['THE FALLEN KING', 'Medieval action RPG'], 5: ['RUNNING OUT OF TIME', '2.5D precision platformer'], 6: ['THE GENERAL', 'Real-time tactical strategy'] };
     const n = Object.keys(CHAPTER_MODULES).length + 1, [name, genre] = NEXT[n] || ['TO BE CONTINUED', ''];
     state.chapter = n - 1; state.checkpoint = 'start'; save();
     const c = el('div', 'chapter-card show', this.ui.root, `<div class="num">END OF THE PLAYABLE CHAPTERS</div><div class="name">${name}</div><div class="genre">Chapter ${n} · ${genre} · in development</div><div class="rule" style="width:420px"></div>`);

@@ -4,7 +4,7 @@
 
 A browser-playable 3D action-adventure (three.js, plain ES modules, no build step) in which the
 genre itself changes as reality rewrites around the player. This folder contains the **multi-genre
-vertical slice**: the title screen and Chapters 1–3, played as one continuous adventure with no level
+slice**: the title screen and Chapters 1–5, played as one continuous adventure with no level
 select between them.
 
 | # | Chapter | Genre | What you actually do |
@@ -12,6 +12,8 @@ select between them.
 | 1 | **WRONG TURN** | High-speed driving action | Escape Civic Security through a dusk city: traffic, ramming interceptors, roadblocks, the Air-1 helicopter and its searchlight, hiding under the Covered Market — until the avenue bends up into the sky and a wall of water takes the car. |
 | 2 | **BELOW THE STORM** | Naval action / vehicle survival | The car is rewritten into a gunboat underwater. Ride Gerstner storm swells between drowned towers, survive a collapsing skyscraper, fight ATLAS patrol RIBs with a mouse-aimed bow gun (component damage: engine / gunner / hull), disable the research ship's turrets, jump the stern ramp, then cross the listing deck on foot to free Sera. |
 | 3 | **ROOM 611** | First-person survival horror | Unarmed, in a hotel that used to be the ship's passageway. Physical doors you drag open with the mouse, a dying flashlight, a phone call through the walls, hiding in wardrobes and under beds, holding your breath — while the Clerk listens, looks, searches and hunts. Make a room that doesn't exist exist, and go through the door inside it. |
+| 4 | **THE FALLEN KING** | Medieval action RPG (third-person sword & shield) | Wake in armour outside a besieged castle with Sera. Combat is blocking, timed parries, dodging and posture (break it for a deathblow), not the shooter with a sword. Fight down a burning village road (a watchtower collapses mid-fight), escort the battering ram across the field under trebuchet boulders and arrow volleys, breach the gate and the courtyard, then duel the armoured King (combos, a lunge, a leaping slam, a spin; phase two brings the courtyard wall down). |
+| 5 | **RUNNING OUT OF TIME** | 2.5D precision platformer (side-on) | The battlefield folds into a giant machine. Run, jump, wall-jump and air-dash through crushers, saws, drones, steam launchers, laser gates and crumbling grates against a countdown, then outrun the wall of collapse to the exit. Deaths restart instantly at the last beacon. |
 
 ## Running it
 
@@ -30,7 +32,7 @@ gamepads work for driving and the boat.
 
 Developer shortcuts (URL parameters): `?chapter=2` jumps to a chapter, `&cp=hunters` to a checkpoint,
 `&quality=low|medium|high|ultra` overrides the graphics preset.
-Checkpoints: Ch1 `start, air, fold` · Ch2 `start, hunters, meridian, boarding` · Ch3 `start, phone, power, door611`.
+Checkpoints: Ch1 `start, air, fold` · Ch2 `start, hunters, meridian, boarding` · Ch3 `start, phone, power, door611` · Ch4 `start, field, breach, king` · Ch5 `start, c1, c2, c3`.
 
 ## Single-file build
 
@@ -44,6 +46,8 @@ The output is git-ignored because of its size.
 * **Boat** — W/S throttle · A/D rudder · mouse look & aim · LMB fire (watch the heat) · Shift boost · Space trim / launch off a swell
 * **On foot (deck)** — WASD · mouse · Shift run · E interact (hold E to pry)
 * **Hotel** — WASD · mouse · Shift run (it hears you) · C crouch · F flashlight · E interact / hide · hold LMB on a door and move the mouse to swing it · hold Space to hold your breath while hidden · hold Q to raise the Anchor
+* **Sword (Ch4)** — WASD · mouse · LMB attack (three-hit combo; hold for a charged thrust) · RMB shield (tap as the blow lands to parry) · Space dodge · Q lock on · R drink a flask · LMB on a staggered enemy (red ◆) for a deathblow. A glint on an enemy blade means parry it; a red flare means dodge.
+* **Platformer (Ch5)** — A/D run · Space jump (hold for height; against a wall to wall-jump) · Shift air dash in any WASD direction (dash through drones) · S drop through grates. Gamepad works too.
 * Dialogue choices: 1–4 or click. Esc pauses (restart from checkpoint, settings, save & quit).
 
 ## Credits to earlier games
@@ -111,12 +115,19 @@ Known limitations, stated plainly:
   7–10. Some beats (e.g. the Ch2 ship interior) are compressed compared with the design brief.
 * **Audio** is entirely synthesised at runtime — original, but it sounds synthetic rather than like a
   recorded orchestra. There is no voice acting; dialogue is subtitled.
-* Chapters 4–15 are not built. The slice ends at the doorway into Chapter 4 (*The Fallen King*).
+* Chapters 6–15 are not built. The design's real-time strategy chapter (*The General*) is not built
+  yet, so the platformer currently follows the King directly; the end card names *The General* next.
+* Chapters 4 and 5 use MARCHLIGHT's block rig and FK animator (vendored in `src/characters/ml/`), with
+  armour, helmets and weapons built from boxes and every texture drawn procedurally. Their combat and
+  movement were tuned with scripted headless runs (every hard jump in Ch5 was reached by a bot), not by
+  hand on real hardware.
 
 ## Developer pages
 
 `viewer.html?who=kai,sera,venn,clerk&view=face|full&expr=happy` (character viewer),
-`carview.html?type=gt|police|sedan|hatch|van` and `citytest.html` render single assets for inspection.
+`carview.html?type=gt|police|sedan|hatch|van`, `citytest.html` and
+`ch4test.html?poses=guard,block,l1w,...&who=kai|king&weapon=sword|greatsword` render single assets and
+key poses for inspection.
 
 ## Assets and licences
 

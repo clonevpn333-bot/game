@@ -211,3 +211,9 @@ html, body { margin: 0; height: 100%; background: #000; overflow: hidden; color:
 .kh-foe { position: absolute; left: 0; top: 0; width: 70px; margin-left: -35px; pointer-events: none; }
 .kh-foe i { display: block; height: 4px; margin-bottom: 2px; background: #c84a2a; box-shadow: 0 0 0 1px rgba(0,0,0,0.6); }
 .kh-foe i.po { height: 3px; background: #ffb347; margin: 0 auto; }
+
+/* ---------------- Chapter 5: the countdown ---------------- */
+.pf-time { position: absolute; left: 50%; top: 4vh; transform: translateX(-50%); font: 700 44px/1 'JetBrains Mono', ui-monospace, monospace; color: #ffe2b0; letter-spacing: 0.04em; text-shadow: 0 0 18px rgba(255, 140, 40, 0.6), 0 2px 6px #000; }
+.pf-time.low { color: #ff5a3a; animation: khpulse 0.4s infinite alternate; }
+.pf-sub { position: absolute; left: 50%; top: calc(4vh + 50px); transform: translateX(-50%); font: 600 11px/1 var(--display, 'Inter', sans-serif); letter-spacing: 0.45em; color: rgba(255, 220, 180, 0.6); }
+.pf-deaths { position: absolute; right: 3.5vw; top: 4vh; font: 600 12px/1 var(--display, 'Inter', sans-serif); letter-spacing: 0.3em; color: rgba(255, 220, 180, 0.6); }

@@ -453,10 +453,10 @@ export default class Chapter4 {
     for (let i = 0; i < 120; i++) this.sparks.emit(k.pos.clone().add(V3((Math.random() - 0.5) * 1.5, Math.random() * 2.8, (Math.random() - 0.5) * 1.5)), V3((Math.random() - 0.5) * 2, 1 + Math.random() * 3, (Math.random() - 0.5) * 2), { life: 1.8, size: 0.12, color: [1, 0.6, 0.25], alpha: 1, gravity: -0.5 });
     k.group.visible = false; k.alive = false;
     setFlag('ch4_king', true);
-    await ui.say('ANCHOR', 'LOCAL VERSION FAILING. NEXT VERSION: STRATEGIC. COMMAND PRIVILEGES TRANSFERRED TO: KAI VOSS.', { duration: 3.6 });
+    await ui.say('ANCHOR', 'LOCAL VERSION FAILING. THE BATTLEFIELD IS BEING REWRITTEN AS A MACHINE.', { duration: 3.6 });
     // the camera pulls up and away, high over the battlefield, as the armies become pieces on a map
     this.ending.rise = 0;
-    await ui.say('KAI', 'Command privileges? What does that—', { duration: 2.4 });
+    await ui.say('KAI', 'The armies are— they\'re turning into parts. Sera!', { duration: 2.4 });
     await wait(3800); if (this.disposed) return;
     ui.fadeColor('#000'); await ui.fade(1, 1.6);
     ui.letterbox(false);

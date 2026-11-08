@@ -270,6 +270,27 @@ const TRACKS = {
     },
   },
 
+  // Chapter 5: the Works — a driving industrial loop; the motif on a hard square lead
+  works: {
+    bpm: 150, steps: 16,
+    layers: { drone: [0, 0.05], drums: [0, 0.1], bass: [0.1, 0.3], metal: [0.3, 0.6], lead: [0.6, 0.85], choir: [0.85, 1] },
+    step(s, t, L, I, bar) {
+      const chord = PROG[(bar >> 1) % 4], sp = 60 / this.bpm / 4;
+      if (s === 0 && bar % 4 === 0) I.drone(L.drone, t, chord[0] - 24, sp * 64, 0.05);
+      if (s % 4 === 0) I.kick(L.drums, t, 1);
+      if (s === 4 || s === 12) I.snare(L.drums, t, 0.6, 210);
+      if (s % 2 === 1) I.hat(L.drums, t, 0.25, s === 15);
+      const ost = [0, 0, 12, 0, 7, 0, 12, 10, 0, 0, 12, 0, 7, 12, 3, 5];
+      if (s % 2 === 0) I.bass(L.bass, t, chord[0] - 12 + ost[s], sp * 1.6, 0.28, 520);
+      if ([2, 7, 10, 14].includes(s)) I.snare(L.metal, t, 0.25, 900 + (s * 37) % 400);
+      if (s === 0 && bar % 2 === 1) I.swell(L.metal, t, sp * 14, 0.06);
+      if (bar % 4 < 2 && s % 2 === 0 && s / 2 < 5 && bar % 4 === 0) I.pluck(L.lead, t, MOTIF[s / 2] + 12, 0.13, 0.25, 'square');
+      if (bar % 4 === 1 && s === 0) I.pluck(L.lead, t, MOTIF[4] + 12, 0.13, 0.8, 'square');
+      if (bar % 4 >= 2 && s % 4 === 2) I.pluck(L.lead, t, chord[(s >> 2) % 3] + 24, 0.06, 0.12, 'square');
+      if (s === 0 && bar % 4 === 0) I.choir(L.choir, t, chord.map((m) => m + 12), sp * 60, 0.035);
+    },
+  },
+
   title: { // sting for chapter cards
     bpm: 60, steps: 16, layers: { a: [0, 0.01] },
     step(s, t, L, I, bar) { if (bar === 0 && s === 0) { I.taiko(L.a, t, 0.9, 45); I.choir(L.a, t, [50, 57, 62], 3, 0.05); MOTIF.forEach((m, i) => I.piano(L.a, t + i * 0.22, m + 12, 0.1)); } },
