@@ -190,7 +190,7 @@ export default class Chapter3 {
     for (const w of this.walls) w.piv.rotation.x = -k * Math.PI / 2 * (w.axis === 'back' ? 1 : 0.98);
     this.spot.intensity = 900 * clamp(f.t - 1, 0, 1); f.k = ease.inOutCubic(clamp((f.t - 1.5) / 4.5, 0, 1));
     if (Math.floor(f.t * 3) !== Math.floor((f.t - dt) * 3) && f.t < 4) g.sfx.play('pp.fold');
-    if (f.t > 7.5 && !f.done) { f.done = true; const ok = g.director.handoff(4, { from3: true }); if (!ok) { this.ended = true; g.save.complete(3); g.director.end({ chapter: 3 }); } }
+    if (f.t > 7.5) f.snap = true;
   }
 
   // ---- update --------------------------------------------------------------------
@@ -257,6 +257,7 @@ export default class Chapter3 {
     this.cam.lookAt(this.camT);
     this.sun.position.set(this.camT.x - 9, this.camT.y + 16, 13); this.sun.target.position.set(this.camT.x, this.camT.y, 0);
     r.render(this.scene, this.cam);
+    if (this.fin?.snap && !this.fin.done) { const f = this.fin; f.done = true; g.freezeFrame(); const ok = g.director.handoff(4, { from3: true }); if (!ok) { g.clear2d(); this.ended = true; g.save.complete(3); g.director.end({ chapter: 3 }); } return; }
     // DOM: prompt + dialogue
     const u = this.near; if (u) { const v = new THREE.Vector3(u.x, u.y + 2.6, 0.9).project(this.cam); this.prompt.style.display = 'block'; this.prompt.style.left = ((v.x + 1) / 2) * 100 + '%'; this.prompt.style.top = ((1 - v.y) / 2) * 100 + '%'; const [k, ...rest] = u.label.split(' — '); this.prompt.innerHTML = `<kbd>${k}</kbd>${rest.join(' — ')}`; } else this.prompt.style.display = 'none';
     const d = g.dialogue.current; if (d) { this.dlg.style.display = 'block'; this.dlg.firstChild.textContent = d.speaker.name; this.dlg.firstChild.style.color = d.speaker.color === '#f4f6ff' ? '#3b2c22' : d.speaker.color; this.dlg.lastChild.textContent = g.dialogue.visibleText; } else this.dlg.style.display = 'none';

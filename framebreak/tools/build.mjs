@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const esbuild = createRequire(import.meta.url)(process.env.ESBUILD || 'esbuild');
 const missing = { name: 'missing', setup(b) { b.onResolve({ filter: /^\.\.?\// }, (a) => { const p = resolve(a.resolveDir, a.path); return existsSync(p) ? null : { path: a.path, external: true }; }); } };
-const out = await esbuild.build({ entryPoints: [resolve(root, 'src/main.js')], bundle: true, format: 'esm', minify: true, write: false, alias: { three: resolve(root, 'vendor/three.module.min.js') }, plugins: [missing], logLevel: 'warning' });
+const out = await esbuild.build({ entryPoints: [resolve(root, 'src/main.js')], bundle: true, format: 'esm', minify: true, write: false, alias: { three: resolve(root, 'vendor/three.module.min.js'), 'cannon-es': resolve(root, 'vendor/cannon-es.js') }, plugins: [missing], logLevel: 'warning' });
 const js = out.outputFiles[0].text.replace(/<\/script/g, '<\\/script'), css = readFileSync(resolve(root, 'style.css'), 'utf8');
 const html = readFileSync(resolve(root, 'index.html'), 'utf8');
 const page = (chapter) => html
