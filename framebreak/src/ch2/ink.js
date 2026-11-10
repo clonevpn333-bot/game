@@ -44,7 +44,7 @@ export class Pen {
   // radial impact burst lines
   burst(ctx, x, y, r0, r1, n = 8, seed = 1, lw = 6) { for (let i = 0; i < n; i++) { const a = (i / n) * TAU + this.j(seed + i, 0.2); this.line(ctx, x + Math.cos(a) * r0, y + Math.sin(a) * r0, x + Math.cos(a) * r1, y + Math.sin(a) * r1, lw, seed + i * 3); } }
   text(ctx, str, x, y, size = 40, col = INK, align = 'center', rot = 0) {
-    ctx.save(); ctx.translate(x, y); ctx.rotate(rot + this.j(str.length, 0.012)); ctx.font = `900 ${size}px "Comic Sans MS","Chalkboard SE","Marker Felt","Segoe Print",cursive`; ctx.textAlign = align; ctx.textBaseline = 'middle';
+    ctx.save(); ctx.translate(x, y); ctx.rotate(rot + this.j(str.length, 0.012)); ctx.font = `900 ${size}px "Comic Sans MS","Chalkboard SE","Marker Felt","Segoe Print","Comic Neue","Bradley Hand",cursive`; ctx.textAlign = align; ctx.textBaseline = 'middle';
     ctx.lineWidth = size * 0.22; ctx.strokeStyle = CREAM; ctx.lineJoin = 'round'; ctx.strokeText(str, 0, 0); ctx.fillStyle = col; ctx.fillText(str, 0, 0); ctx.restore();
   }
 }
