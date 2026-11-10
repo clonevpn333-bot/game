@@ -14,7 +14,7 @@ export const CHAPTERS = [
   { id: 6, key: 'ch6', title: 'BLOCK COLLAPSE', format: 'DESTRUCTIBLE VOXELS', load: () => import('../ch6/chapter6.js'), status: 'playable' },
   { id: 7, key: 'ch7', title: 'FULL RESOLUTION', format: 'HIGH-DETAIL 3D', load: () => import('../ch7/chapter7.js'), status: 'playable' },
   { id: 8, key: 'ch8', title: 'CLAY HEART', format: 'STOP-MOTION CLAY', load: () => import('../ch8/chapter8.js'), status: 'playable' },
-  { id: 9, key: 'ch9', title: 'BREAK THE PAGE', format: 'INKED COMIC', load: null, status: 'planned' },
+  { id: 9, key: 'ch9', title: 'BREAK THE PAGE', format: 'INKED COMIC', load: () => import('../ch9/chapter9.js'), status: 'playable' },
   { id: 10, key: 'ch10', title: 'FRAMEBREAK', format: 'HYBRID', load: null, status: 'planned' },
 ];
 
