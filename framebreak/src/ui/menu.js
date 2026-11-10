@@ -5,6 +5,7 @@ import { CHAPTERS } from '../core/director.js';
 import { SONG_MENU } from '../audio/songs/menu.js';
 import { SONG_CH1 } from '../audio/songs/ch1.js';
 import { SONG_CH2 } from '../audio/songs/ch2.js';
+import { SONG_CH3 } from '../audio/songs/ch3.js';
 import { DEFAULT_SETTINGS } from '../core/save.js';
 
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
@@ -18,6 +19,7 @@ export const TRACKS = [
   { name: 'Off-Grid', sub: 'chapter 1 · final phase', song: () => SONG_CH1, section: 'boss3', intensity: 3 },
   { name: 'Ink & Violence', sub: 'chapter 2 · factory swing', song: () => SONG_CH2, section: 'A', intensity: 1 },
   { name: 'Hot Off The Press', sub: 'chapter 2 · boss', song: () => SONG_CH2, section: 'boss', intensity: 1 },
+  { name: 'Fold The World', sub: 'chapter 3 · music-box waltz', song: () => SONG_CH3, section: 'A', intensity: 2 },
 ];
 
 export class Menu {
