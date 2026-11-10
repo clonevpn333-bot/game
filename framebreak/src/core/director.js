@@ -10,7 +10,7 @@ export const CHAPTERS = [
   { id: 2, key: 'ch2', title: 'INK & VIOLENCE', format: 'HAND-DRAWN CARTOON', load: () => import('../ch2/chapter2.js'), status: 'playable' },
   { id: 3, key: 'ch3', title: 'FOLD THE WORLD', format: '2.5D PAPERCRAFT', load: () => import('../ch3/chapter3.js'), status: 'playable' },
   { id: 4, key: 'ch4', title: 'DOMINO CITY', format: 'ISOMETRIC DIORAMA', load: () => import('../ch4/chapter4.js'), status: 'playable' },
-  { id: 5, key: 'ch5', title: '1996', format: 'RETRO PSEUDO-3D', load: null, status: 'planned' },
+  { id: 5, key: 'ch5', title: '1996', format: 'RETRO PSEUDO-3D', load: () => import('../ch5/chapter5.js'), status: 'playable' },
   { id: 6, key: 'ch6', title: 'BLOCK COLLAPSE', format: 'DESTRUCTIBLE VOXELS', load: null, status: 'planned' },
   { id: 7, key: 'ch7', title: 'FULL RESOLUTION', format: 'HIGH-DETAIL 3D', load: null, status: 'planned' },
   { id: 8, key: 'ch8', title: 'CLAY HEART', format: 'STOP-MOTION CLAY', load: null, status: 'planned' },
