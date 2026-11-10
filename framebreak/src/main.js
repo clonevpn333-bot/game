@@ -17,7 +17,9 @@ const boot = document.getElementById('boot'), fill = document.getElementById('bo
     fill.style.width = '100%';
     game.start();
     if (q.get('mute')) { game.settings.master = 0; }
+    const forced = window.__FB_CHAPTER;
     if (q.get('ch')) { await game.director.startChapter(+q.get('ch'), { checkpoint: q.get('cp') || null, replay: true }); }
+    else if (forced) { await game.director.startChapter(forced, { replay: true }); }
     else menu.openMain();
     boot.classList.add('hide');
     window.__ready = true;

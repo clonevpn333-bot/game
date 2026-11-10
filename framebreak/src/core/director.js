@@ -34,10 +34,12 @@ export class Director {
     if (this.loading[id]) return this.loading[id];
     const def = CHAPTERS[id]; if (!def?.load) return null;
     this.loading[id] = (async () => {
-      const mod = await def.load();
-      const ch = new mod.default(this.game);
-      await ch.load?.();
-      this.modules[id] = ch; return ch;
+      try {
+        const mod = await def.load();
+        const ch = new mod.default(this.game);
+        await ch.load?.();
+        this.modules[id] = ch; return ch;
+      } catch (e) { console.warn('chapter ' + id + ' unavailable:', e.message); this.loading[id] = null; return null; }
     })();
     return this.loading[id];
   }
