@@ -130,7 +130,8 @@ export class Player {
       }
     }
     // ---- dash / slide
-    if (ctl && inp.pressed.dash && this.dashCd <= 0 && !this.diving) {
+    if (ctl && inp.pressed.down && this.onGround && this.dashCd <= 0 && !this.move && this.state === 'normal' && this.groundTile !== 2) { this.state = 'slide'; this.slideT = SLIDE_T; this.h = SLIDE_H; this.dashCd = 0.25; if (ix) this.facing = ix; sfx.play('px.slide'); }
+    else if (ctl && inp.pressed.dash && this.dashCd <= 0 && !this.diving) {
       if (down && this.onGround) { this.state = 'slide'; this.slideT = SLIDE_T; this.h = SLIDE_H; this.move = null; this.dashCd = 0.25; sfx.play('px.slide'); }
       else if (this.onGround || this.airDash > 0) {
         if (!this.onGround) this.airDash--;

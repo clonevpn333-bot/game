@@ -21,6 +21,7 @@ export class TrainRide {
     // timeline (seconds since departure)
     this.script = [
       [1.0, () => ch.game.dialogue.say('vell', 'A train! I love things that only go one way.')],
+      [7.5, () => ch.game.dialogue.say('vell', 'Pillars coming! Tall ones: press S to SLIDE under. Short ones: JUMP.')],
       [5, () => this.wasps(2)],
       [10, () => this.ob('high')], [12.2, () => this.ob('low')], [14.2, () => this.ob('high')], [15.4, () => this.ob('high')], [17.5, () => this.ob('low')], [18.3, () => this.ob('low')],
       [20, () => this.wasps(1)], [22, () => this.ob('high')],
@@ -130,6 +131,7 @@ export class TrainRide {
       if (o.warn > 0 && Math.floor(o.warn * 12) % 2 === 0) { // incoming marker at the right edge
         const wy = o.kind === 'high' ? ry - 34 : ry - 12; ctx.fillStyle = PAL.K; ctx.fillRect(301, wy - 6, 17, 13); ctx.fillStyle = o.kind === 'high' ? PAL.O : PAL.y; ctx.fillRect(302, wy - 5, 15, 11);
         ptext(ctx, o.kind === 'high' ? 'v' : '^', 307, wy - 3, PAL.K, 0, null);
+        ptext(ctx, o.kind === 'high' ? 'SLIDE! PRESS S' : 'JUMP!', 296, wy - 3, o.kind === 'high' ? PAL.O : PAL.y, 1);
       }
     }
     void ch;

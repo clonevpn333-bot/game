@@ -84,6 +84,7 @@ export function buildLevel() {
   L.ground(132, 24, 10);
   L.checkpoint('station', 134, 24);
   L.sign(133, 19, 'PLATFORM 9', 'm');
+  L.sign(136, 16, 'S  SLIDE UNDER', 'O');
   L.decor.push({ k: 'bench', x: 136, y: 24 }, { k: 'lamp', x: 140, y: 24 });
   for (const c of [...TRAIN.cars, TRAIN.loco]) L.fill(c, TRAIN.roofY, TRAIN.len, 3, T.TRAIN);
   L.fill(TRAIN.loco + TRAIN.len, TRAIN.roofY, 1, 3, T.TRAIN);   // nose buffer, flush with the dock
@@ -103,7 +104,7 @@ export function buildLevel() {
   L.plat(250, 22, 4, T.ONEWAY);
   L.spawn('scrapper', 242, 26); L.spawn('scrapper', 252, 26); L.spawn('sentry', 252, 22, { face: -1 });
   L.spawn('barrel', 245, 26); L.spawn('crate', 240, 26);
-  L.sign(236, 21, 'DOWN + SHIFT  SLIDE', 'O');
+  L.sign(236, 21, 'S  SLIDE', 'O');
   // crusher gauntlet
   L.fill(258, 26, 16, 1, T.CONV_L);
   for (let i = 0; i < 4; i++) L.spawn('crusher', 259 + i * 4, 12, { phase: i * 0.55, bottom: 26 });
