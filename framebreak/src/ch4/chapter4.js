@@ -29,13 +29,14 @@ export default class Chapter4 {
     this.t = 0; this.sel = 0; this.said = {}; this.fin = null; this.noPause = false; this.shake = 0; this.booms = [];
     this.ui = el('hud3'); this.panel = el('mach'); this.dlg = el('dlg dark', '<div class="who"></div><div class="txt"></div>'); this.banner = el('banner', '<small>CHAPTER 4</small>DOMINO CITY'); this.ui.append(this.panel, this.dlg, this.banner); g.ui.appendChild(this.ui);
     this.build(); g.show3d(true);
-    if (handoff) g.fadeFrozen(1200, () => g.director.releaseOutgoing()); else g.clear2d();
+    this.introK = handoff ? 0 : 1;
+    if (handoff) g.fadeFrozen(1600, () => g.director.releaseOutgoing()); else g.clear2d();
     g.audio.muffle(0); g.music.play(SONG, { intensity: 1, fade: 1 });
     setTimeout(() => { this.banner.style.opacity = '1'; setTimeout(() => (this.banner.style.opacity = '0'), 3000); }, 600);
-    g.dialogue.say([{ who: 'vell', text: "We're tiny! And you're stuck on that ledge. I can't push you..." }, { who: 'vell', text: '...but this whole city is levers. Pick a machine and make something fall over.' }]);
+    g.dialogue.say([{ who: 'vell', text: handoff ? "The stage unfolded flat — and it was only ever one block of a whole CITY. We're the size of the props now." : "We're tiny, and this whole city is a model." }, { who: 'vell', text: "I can't push you along that road..." }, { who: 'vell', text: '...but this whole city is levers. Pick a machine and make something fall over.' }]);
     g.director.preload(5);
   }
-  stop() { this.ui?.remove(); this.game.show3d(false); this.game.gl.style.imageRendering = ''; this.scene = null; }
+  stop() { this.ui?.remove(); this.game.gl.style.imageRendering = ''; this.scene = null; }
   respawn() { this.build(); }
 
   // ---- world -------------------------------------------------------------------
@@ -88,6 +89,8 @@ export default class Chapter4 {
     this.mag2 = this.magnet(12, 9.5, -14.6, this.sphere(12, 8.3, -14.6, 0.9, mat('#c9d1e6', 0.2, 1), 60));
     // exit tunnel
     stat(27, 2.2, 2, 4, 4.4, 5, mat('#2b3040', 0.8)); const hole = new THREE.Mesh(new THREE.BoxGeometry(0.2, 3, 2.4), mat('#000', 1)); hole.position.set(24.95, 1.5, 2); S.add(hole);
+    // the unfolded paper theater from Chapter 3, lying flat where Rin arrives
+    stat(-25, 0.04, 9.5, 9, 0.08, 5, mat('#35406b', 0.95), { noBody: true }); stat(-25, 0.1, 9.5, 8, 0.06, 2.2, mat('#52609a', 0.95), { noBody: true }); for (const sx of [-4.8, 4.8]) stat(-25 + sx, 0.12, 9.5, 0.6, 0.2, 5, mat('#b5574a', 0.9), { noBody: true }); stat(-25, 0.12, 12.2, 10.2, 0.2, 0.6, mat('#e9c46a', 0.8), { noBody: true });
     // Rin + Vell miniatures
     const rin = (this.rin = new THREE.Group()); const pc = (w, h, d, c, y, x = 0) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(c, 0.7)); m.position.set(x, y, 0); m.castShadow = true; rin.add(m); return m; };
     pc(0.5, 0.6, 0.35, '#2fd3c6', 0.8); pc(0.5, 0.45, 0.45, '#ffd0a4', 1.35); pc(0.56, 0.2, 0.5, '#f4f6ff', 1.62); pc(0.6, 0.14, 0.4, '#ff9a3c', 1.1); this.legs = [pc(0.2, 0.5, 0.25, '#3f5196', 0.25, 0), pc(0.2, 0.5, 0.25, '#3f5196', 0.25, 0)]; this.legs[0].position.z = 0.14; this.legs[1].position.z = -0.14; S.add(rin);
@@ -156,7 +159,7 @@ export default class Chapter4 {
     for (const b of this.booms) { b.t += dt; b.f.scale.setScalar(1 + b.t * 22); b.f.material.opacity = 1 - b.t * 2.2; } this.booms = this.booms.filter((b) => { if (b.t > 0.45) { this.scene.remove(b.f); return false; } return true; });
     this.walkRin(dt);
     if (this.fin) this.updateFinale(dt);
-    this.shake = Math.max(0, this.shake - dt * 1.5);
+    this.shake = Math.max(0, this.shake - dt * 1.5); this.introK = Math.min(1, this.introK + dt / 4.5);
   }
   // Rin walks whenever the physics has left a walkable surface ahead.
   walkRin(dt) {
@@ -166,7 +169,7 @@ export default class Chapter4 {
     let dirx = 1, dirz = 0; if (p.z > 2.05 && p.x < -22.5) { dirx = 0.4; dirz = -1; }
     const nx = p.x + dirx * 0.7, nz = p.z + dirz * 0.7, down = ray(nx, p.y + 1.5, nz, nx, p.y - 2.5, nz), fwd = ray(p.x, p.y + 1.1, p.z, p.x + dirx * 0.9, p.y + 1.1, p.z + dirz * 0.9), head = ray(p.x, p.y + 1.7, p.z, p.x + dirx * 0.7, p.y + 1.7, p.z + dirz * 0.7);
     const ok = down && !fwd && !head && down.hitPointWorld.y - p.y < 1.3 && down.hitPointWorld.y > -1.2;
-    if (ok) { const sp = 3.2 * dt; p.x += dirx * sp; p.z += dirz * sp; p.z = dirz ? Math.max(2, p.z) : damp(p.z, 2, 4, dt); const here = ray(p.x, p.y + 1.5, p.z, p.x, p.y - 2.5, p.z); if (here) p.y = damp(p.y, here.hitPointWorld.y, 14, dt); p.stuck = 0; p.walk = (p.walk || 0) + dt * 10; }
+    if (ok && (this.introK ?? 1) > 0.9) { const sp = 3.2 * dt; p.x += dirx * sp; p.z += dirz * sp; p.z = dirz ? Math.max(2, p.z) : damp(p.z, 2, 4, dt); const here = ray(p.x, p.y + 1.5, p.z, p.x, p.y - 2.5, p.z); if (here) p.y = damp(p.y, here.hitPointWorld.y, 14, dt); p.stuck = 0; p.walk = (p.walk || 0) + dt * 10; }
     else p.stuck += dt;
     this.rin.position.set(p.x, p.y, p.z); this.rin.rotation.y = dirz ? 0.9 : 0; this.legs[0].position.x = ok ? Math.sin(p.walk) * 0.18 : 0; this.legs[1].position.x = ok ? -Math.sin(p.walk) * 0.18 : 0;
     this.vell.position.set(p.x - 0.9, p.y + 2.4 + Math.sin(this.t * 2.4) * 0.25, p.z + 0.6); this.vell.rotation.y = this.t;
@@ -199,7 +202,8 @@ export default class Chapter4 {
     if (r.domElement.width !== w || r.domElement.height !== h) { r.setSize(w, h, false); g.gl.style.imageRendering = pix > 1 ? 'pixelated' : ''; }
     const m = this.machines[this.sel]; let rp = m.pos; if (this.sel === 3) rp = this.barrel ? [this.barrel.position.x, this.barrel.position.y, this.barrel.position.z] : null; this.ring.visible = !!rp && !f; if (rp) { this.ring.position.set(rp[0], rp[1] + 1.4 + Math.sin(this.t * 4) * 0.2, rp[2]); this.ring.rotation.z = this.t * 2; }
     let cam = this.cam; const cx = clamp(p.x * 0.55, -8, 8), sh = this.shake * (g.settings.shake ?? 1);
-    cam.position.set(40 + cx + (Math.random() - 0.5) * sh, 44 + (Math.random() - 0.5) * sh, 40); cam.lookAt(cx, 0, 0);
+    const ik = ease.inOutCubic(this.introK ?? 1), tx = lerp(-25, cx, ik), tz = lerp(8, 0, ik);
+    cam.position.set(40 + tx + (Math.random() - 0.5) * sh, 44 + (Math.random() - 0.5) * sh, 40 + tz); cam.lookAt(tx, 0, tz); cam.zoom = lerp(3.6, 1, ik);
     const asp = g.W / g.H; cam.left = -18 * asp; cam.right = 18 * asp; cam.updateProjectionMatrix();
     if (f && f.k > 0) { // hand the ortho view to a perspective lens, then fall into Rin's eyes
       cam = this.cam2; cam.aspect = asp; const k = f.k, eye = new THREE.Vector3(p.x - 0.4, p.y + 1.5, p.z), far = new THREE.Vector3(40 + cx, 44, 40).sub(new THREE.Vector3(cx, 0, 0)).multiplyScalar(2.2).add(new THREE.Vector3(cx, 0, 0));

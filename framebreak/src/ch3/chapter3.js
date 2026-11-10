@@ -45,7 +45,7 @@ export default class Chapter3 {
     if (!handoff) this.say('hello', [{ who: 'vell', text: 'Papercraft! Mind the edges. Everything here has a back.' }]);
     this.snapCam();
   }
-  stop() { this.ui?.remove(); this.game.show3d(false); this.scene?.traverse((o) => { if (o.geometry) o.geometry.dispose(); }); this.scene = null; }
+  stop() { this.ui?.remove(); this.scene?.traverse((o) => { if (o.geometry) o.geometry.dispose(); }); this.scene = null; }
   say(key, lines) { if (this.said[key]) return; this.said[key] = true; this.game.dialogue.say(lines); }
   respawn() { const [x, y] = this.cps[this.cp]; Object.assign(this.p, { x, y, z: 0, vx: 0, vy: 0, rider: null }); this.game.sfx.play('pp.hurt'); }
   presolve(cp) { const order = ['start', 'disc', 'tabs', 'bridge', 'theater'], i = order.indexOf(cp); if (i >= 1) this.tower.fall(true); if (i >= 2) this.tt1.snap(-90); if (i >= 3) this.sliders.forEach((s) => s.set(true, true)); if (i >= 4) this.acc.u = this.acc.target = 1; }
@@ -251,7 +251,7 @@ export default class Chapter3 {
     const lookX = p.x + p.face * 1.2 + (p.x > 63 ? 2 : 0), tgt = new THREE.Vector3(lookX, p.y + 1.7 + (p.x > 63 ? 1.2 : 0), 0); this.camT.lerp(tgt, 1 - Math.exp(-4 * dt));
     let dist = p.x > 63 ? 22 : 17, fov = 32, off = new THREE.Vector3(1.4, 2.6, dist);
     if (this.intro) { const k = ease.inOutCubic(clamp(this.intro.t / 3.2, 0, 1)); this.scene.fog.near = 30 + (1 - k) * 300; this.scene.fog.far = 70 + (1 - k) * 300; fov = lerp(7, 32, k); off.set(lerp(0, 1.4, k), lerp(0.6, 2.6, k), lerp(110, dist, k)); this.waves.forEach((w, i) => { w.position.y = 3 - k * (9 + i * 2.5); w.position.z = 4 - i * 1.2 - 0.03 - k * i * 2; }); this.rin.scale.y = ease.outBack(clamp((this.intro.t - 1.6) / 0.9, 0.02, 1)); this.rin.rotation.x = -1.5 * (1 - clamp((this.intro.t - 1.6) / 0.9, 0, 1)); } else { this.rin.scale.y = 1; this.rin.rotation.x = 0; }
-    if (this.fin) { const k = this.fin.k || 0; off.lerp(new THREE.Vector3(27, 30, 27), k); fov = lerp(32, 26, k); this.camT.lerpVectors(tgt, new THREE.Vector3(78, Y2 + 3, -1), k); }
+    if (this.fin) { const k = this.fin.k || 0; off.lerp(new THREE.Vector3(30, 33, 30), k); fov = lerp(32, 26, k); this.camT.lerpVectors(tgt, new THREE.Vector3(78, Y2 + 3, -1), k); }
     this.cam.fov = fov; this.cam.aspect = g.W / g.H; this.cam.updateProjectionMatrix();
     const want = this.camT.clone().add(off); this.cam.position.lerp(want, this.intro ? 1 : 1 - Math.exp(-5 * dt)); if (this.shake > 0) this.cam.position.y += Math.sin(t * 80) * this.shake * 0.15;
     this.cam.lookAt(this.camT);

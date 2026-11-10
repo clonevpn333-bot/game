@@ -58,7 +58,7 @@ export default class Chapter8 {
     g.dialogue.say([{ who: 'rin', text: 'I had cheekbones a minute ago.' }, { who: 'vell', text: 'Now you have OPTIONS. Hold W to be tall. Hold S to be flat. Hold J to be long.' }]);
     g.director.preload(9);
   }
-  stop() { this.ui?.remove(); this.game.show3d(false); this.scene = null; }
+  stop() { this.ui?.remove(); this.scene = null; }
   addPellet(x, y) { const m = new THREE.Mesh(new THREE.SphereGeometry(0.28, 8, 6), this.clay('#2fd3c6')); m.position.set(x, y, 0.3); m.castShadow = true; this.scene.add(m); this.pellets.push({ x, y, m }); }
   respawn() { const p = this.p; p.x = this.cps[this.cp]; p.y = this.cp === 2 ? 2.7 : 0.1; p.vx = p.vy = 0; p.hp = 3; p.inv = 1.5; this.game.sfx.play('ink.squash'); }
   dims() { const p = this.p, k = 1 + (p.mass - 1) * 0.22; return p.shape === 'tall' ? [0.6 * k, 3.1 * k] : p.shape === 'flat' ? [1.9 * k, 0.38] : [0.95 * k, 1.0 * k]; }

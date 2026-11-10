@@ -85,7 +85,7 @@ export default class Chapter7 {
     g.dialogue.say([{ who: 'rin', text: 'Fingers. Eyelashes. Rain I can actually feel. Is this... the real one?' }, { who: 'vell', text: "It's the EXPENSIVE one. Don't confuse the two. Also the city is rearranging itself, so: run." }]);
     g.director.preload(8);
   }
-  stop() { this.ui?.remove(); this.game.show3d(false); this.game.input.exitLock(); this.scene = null; }
+  stop() { this.ui?.remove(); this.game.input.exitLock(); this.scene = null; }
   respawn() { const c = this.cps[this.cp], p = this.p; p.pos.set(c[0], c[1] + 1, c[2]); p.vel.set(0, 0, 0); p.hp = 5; p.inv = 1.5; p.grap = null; p.climb = null; if (this.cp >= 4) { this.squeeze = 0; this.sqOn = false; } this.game.sfx.play('px.hurt'); }
   hitBox(pos, h) { for (const q of this.plats) if (Math.abs(pos.x - q.c.x) < q.h.x + 0.33 && Math.abs(pos.z - q.c.z) < q.h.z + 0.33 && pos.y < q.c.y + q.h.y && pos.y + h > q.c.y - q.h.y) return q; return null; }
 

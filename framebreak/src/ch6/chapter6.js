@@ -49,7 +49,7 @@ export default class Chapter6 {
     g.dialogue.say([{ who: 'vell', text: 'Volume! Everything here is made of the same little cube. Including the walls. Hint.' }, { who: 'vell', text: 'J cuts. L builds. And that noise behind us is the Curator\'s LEVELER, so... forward.' }]);
     g.director.preload(7);
   }
-  stop() { this.ui?.remove(); this.game.show3d(false); this.scene = null; }
+  stop() { this.ui?.remove(); this.scene = null; }
   respawn() { const p = this.p; p.x = this.cps[this.cp]; p.y = 12; p.z = 12; p.vx = p.vy = p.vz = 0; p.hp = 5; p.inv = 2; this.lx = p.x - 30; this.orbs.forEach((o) => this.scene.remove(o.m)); this.orbs = []; }
   gen() {
     this.fill(0, SX - 1, 0, 2, 0, SZ - 1, CONC);
