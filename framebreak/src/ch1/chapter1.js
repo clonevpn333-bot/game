@@ -41,7 +41,7 @@ export default class Chapter1 {
     this.activeCp = checkpoint || 'start';
     const cp = this.level.checkpoints.find((c) => c.id === this.activeCp) || this.level.checkpoints[0];
     this.player.spawn(cp.x, cp.y); this.applyCheckpointState(cp.id, true);
-    this.cam.x = clamp(cp.x - 160, 0, this.level.W * 16 - VW); this.cam.y = cp.y - 124; this.cam.ty = this.cam.y;
+    this.cam.x = clamp(cp.x - 160, 0, this.level.W * 16 - VW); this.cam.y = cp.y - 138; this.cam.ty = this.cam.y;
     g.show3d(false); g.c2d.style.imageRendering = 'pixelated';
     g.music.play(SONG_CH1, { section: this.activeCp === 'start' ? 'intro' : 'A', intensity: 1, fade: 0.2 });
     if (this.activeCp === 'start') g.dialogue.say('rin', 'Sector Nine, frame seam check. Third alarm this shift...', { hold: 2.2 });
@@ -120,7 +120,7 @@ export default class Chapter1 {
       this.entities.forEach((e) => { if (e.enemy && e.x > BR.x0 * 16) e.dead = true; });
       this.boss = null; this.tear = 0; this.tearOn = false; this.outro = null; this.gates.b1.release(); this.gates.b2.release(); L.triggers.find((t) => t.id === 'boss').fired = false;
     }
-    pl.spawn(cp.x, cp.y); this.cam.x = clamp(cp.x - 160, 0, L.W * 16 - VW); this.cam.y = this.cam.ty = cp.y - 124;
+    pl.spawn(cp.x, cp.y); this.cam.x = clamp(cp.x - 160, 0, L.W * 16 - VW); this.cam.y = this.cam.ty = cp.y - 138;
     g.music.queue('A'); g.music.setIntensity(1); g.audio.muffle(0); this.flash(0.3, '#0d0f1f');
   }
 
@@ -274,9 +274,9 @@ export default class Chapter1 {
     const pl = this.player, L = this.level, c = this.cam;
     c.look = damp(c.look, pl.facing * 26, 2.5, dt);
     let tx = pl.x - VW / 2 + c.look;
-    if (pl.onGround || pl.wallSliding) c.ty = pl.y - 124; else if (pl.y - c.y < 44) c.ty = pl.y - 44; else if (pl.y - c.y > 150) c.ty = pl.y - 150;
+    if (pl.onGround || pl.wallSliding) c.ty = pl.y - 138; else if (pl.y - c.y < 44) c.ty = pl.y - 44; else if (pl.y - c.y > 150) c.ty = pl.y - 150;
     let ty = c.ty, minX = 0, maxX = L.W * 16 - VW;
-    if (this.train.state !== 'done' && pl.x > TRAIN.cars[0] * 16 - 40) { maxX = (TRAIN.dockX - 1) * 16 - VW + 40; ty = TRAIN.roofY * 16 - 118; if (this.train.state !== 'parked') minX = Math.max(minX, this.train.rearX * 16 - 60); }
+    if (this.train.state !== 'done' && pl.x > TRAIN.cars[0] * 16 - 40) { maxX = (TRAIN.dockX - 1) * 16 - VW + 40; ty = TRAIN.roofY * 16 - 128; if (this.train.state !== 'parked') minX = Math.max(minX, Math.min(this.train.rearX * 16, (132 + this.train.t * 7) * 16)); }
     if (this.boss) { minX = BR.x0 * 16; maxX = BR.x1 * 16 - VW; ty = BR.ceilY * 16 - 6; }
     tx = clamp(tx, minX, Math.max(minX, maxX)); ty = clamp(ty, 0, L.H * 16 - VH);
     c.x = damp(c.x, tx, this.boss ? 5 : 9, dt); c.y = damp(c.y, ty, 7, dt);
@@ -295,8 +295,8 @@ export default class Chapter1 {
     const cam = { x: Math.round(this.cam.x) + sx, y: Math.round(this.cam.y) + sy }, px = cam.x + this.train.scroll;
     // --- sky + the Framework
     ctx.drawImage(bg.sky, 0, 0);
-    const fwx = 176 - Math.round(px * 0.012) % 400, fwy = 4 - Math.round(cam.y * 0.02);
-    ctx.drawImage(bg.framework, ((fwx % 620) + 620) % 620 - 150, fwy + 6);
+    const fwx = 196 - Math.round(px * 0.012) % 400, fwy = -30 - Math.round((cam.y - 300) * 0.03);
+    ctx.drawImage(bg.framework, ((fwx % 620) + 620) % 620 - 150, fwy);
     // --- parallax city
     const strip = (img, w, f, y) => { const o = -Math.floor(px * f) % w; for (let x = o - w; x < VW; x += w) ctx.drawImage(img, x, y); return o; };
     const baseY = Math.round((L.H * 16 - VH - cam.y) * 0.06);
@@ -349,7 +349,7 @@ export default class Chapter1 {
     this.fx.draw(ctx, at, cam);
     this.train.drawObstacles(ctx, cam);
     if (this.outro) this.drawRift(ctx, cam);
-    if (this.flashT > 0) { ctx.globalAlpha = clamp(this.flashT / (this.flashDur || 0.2), 0, 1) * 0.8; ctx.fillStyle = this.flashC; ctx.fillRect(0, 0, VW, VH); ctx.globalAlpha = 1; }
+    if (this.flashT > 0) { ctx.globalAlpha = clamp(this.flashT / (this.flashDur || 0.2), 0, 1) * (this.flashC === '#c2362f' ? 0.32 : 0.8); ctx.fillStyle = this.flashC; ctx.fillRect(0, 0, VW, VH); ctx.globalAlpha = 1; }
     this.drawHud(ctx);
   }
   drawDecor(ctx, d, cam) {
@@ -388,14 +388,14 @@ export default class Chapter1 {
     // title card
     if (this.title > 0) {
       const a = this.title, k = a > 3.7 ? (4.2 - a) / 0.5 : a < 0.5 ? a / 0.5 : 1, w = Math.round(VW * k);
-      ctx.fillStyle = PAL.K; ctx.fillRect((VW - w) >> 1, 66, w, 30); ctx.fillStyle = PAL.c; ctx.fillRect((VW - w) >> 1, 66, w, 1); ctx.fillRect((VW - w) >> 1, 95, w, 1);
-      if (k >= 1) { ptext(ctx, 'CHAPTER 1', VW / 2, 71, PAL.c, 0.5); ptext(ctx, 'P I X E L   P A N I C', VW / 2, 82, PAL.W, 0.5); }
+      ctx.fillStyle = PAL.K; ctx.fillRect((VW - w) >> 1, 34, w, 30); ctx.fillStyle = PAL.c; ctx.fillRect((VW - w) >> 1, 34, w, 1); ctx.fillRect((VW - w) >> 1, 63, w, 1);
+      if (k >= 1) { ptext(ctx, 'CHAPTER 1', VW / 2, 39, PAL.c, 0.5); ptext(ctx, 'P I X E L   P A N I C', VW / 2, 50, PAL.W, 0.5); }
     }
     // dialogue
     const d = g.dialogue.current;
     if (d) {
-      const lines = wrapText(g.dialogue.visibleText, 46), full = wrapText(d.text, 46), h = 16 + full.length * 9, y = VH - h - (this.boss && this.boss.active ? 30 : 6);
-      ctx.fillStyle = PAL.K; ctx.fillRect(14, y, VW - 28, h); ctx.fillStyle = PAL.k; ctx.fillRect(15, y + 1, VW - 30, h - 2); ctx.fillStyle = d.speaker.color; ctx.fillRect(15, y + 1, 2, h - 2);
+      const lines = wrapText(g.dialogue.visibleText, 46), full = wrapText(d.text, 46), h = 16 + full.length * 9, y = this.title > 0 ? 68 : 28;
+      if (this.boss) ctx.globalAlpha = 0.82; ctx.fillStyle = PAL.K; ctx.fillRect(14, y, VW - 28, h); ctx.fillStyle = PAL.k; ctx.fillRect(15, y + 1, VW - 30, h - 2); ctx.globalAlpha = 1; ctx.fillStyle = d.speaker.color; ctx.fillRect(15, y + 1, 2, h - 2);
       ptext(ctx, d.speaker.name, 21, y + 4, d.speaker.color, 0, null);
       lines.forEach((ln, i) => ptext(ctx, ln, 21, y + 13 + i * 9, PAL.W, 0, null));
     }

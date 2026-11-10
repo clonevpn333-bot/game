@@ -69,7 +69,7 @@ export function buildLevel() {
   L.trigger('collapse', 73);
   L.spawn('wasp', 80, 21); L.spawn('wasp', 90, 20); L.spawn('wasp', 97, 21);
   L.ground(100, 27, 8);
-  L.fill(103, 5, 1, 18, T.SOLID);                 // shaft left wall (opening rows 23-26)
+  L.fill(103, 5, 1, 19, T.SOLID);                 // shaft left wall (opening rows 24-26)
   L.fill(108, 14, 24, 26, T.SOLID);               // high roof block (its left face is the shaft's right wall)
   L.plat(104, 20, 2);
   L.sign(104, 24, 'KICK OFF WALLS', 'c');
@@ -120,7 +120,7 @@ export function buildLevel() {
   L.fill(303, 6, 20, 6, T.EMPTY); L.bfill(303, 6, 20, 6, 1);
   L.trigger('arena', 306);
   L.plat(307, 13, 3); L.plat(316, 13, 3);
-  L.sign(304, 8, 'HEAVY HITS BREAK GUARDS', 'O');
+  L.sign(305, 10, 'HEAVY HITS BREAK GUARDS', 'O');
   // corridor to the control hall
   L.checkpoint('preboss', 327, 17);
   L.trigger('vell2', 325);

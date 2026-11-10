@@ -122,7 +122,7 @@ export class Player {
       else if (this.coyote > 0) this.doJump();
       else if (!this.onGround && (touchingWall(L, this, 1) || touchingWall(L, this, -1))) {
         const d = touchingWall(L, this, 1) ? 1 : -1;
-        this.vx = -d * WALL_JX; this.vy = -WALL_JY; this.facing = -d; this.wallLock = WALL_LOCK; this.jumpBuf = 0; this.jumps = 1; this.move = null;
+        this.vx = -d * WALL_JX; this.vy = -WALL_JY; this.facing = -d; this.wallLock = WALL_LOCK; this.jumpBuf = 0; this.jumps = 1; this.move = null; this.launched = true;
         sfx.play('px.jump', { pitch: 1.15 }); ch.fx.sprite('fx_dust', this.x + d * 5, this.y - 8, 4, 18);
       } else if (this.jumps > 0) {
         this.jumps--; this.vy = -DJUMP; this.jumpBuf = 0; this.move = null;

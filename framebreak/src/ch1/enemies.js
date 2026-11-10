@@ -178,7 +178,7 @@ export class Barrel extends Enemy {
 function fill(ctx, c, x, y, w, h) { ctx.fillStyle = PAL[c]; ctx.fillRect(Math.round(x), Math.round(y), w, h); }
 
 export class Crusher {
-  constructor(ch, x, y, o) { this.ch = ch; this.x0 = x - 8; this.top = y; this.bottom = o.bottom * 16; this.len = 30; this.t = -(o.phase || 0); this.solid = { x: this.x0, y: this.top, w: 32, h: this.len, dx: 0, dy: 0 }; this.mech = true; this.rest = 30; }
+  constructor(ch, x, y, o) { this.ch = ch; this.x0 = x - 8; this.top = y; this.bottom = o.bottom * 16; this.len = 30; this.t = -(o.phase || 0); this.rest = this.bottom - this.top - 92; this.len = this.rest; this.solid = { x: this.x0, y: this.top, w: 32, h: this.len, dx: 0, dy: 0 }; this.mech = true; }
   update(dt) {
     this.t += dt; const full = this.bottom - this.top, c = ((this.t % 3.1) + 3.1) % 3.1, prev = this.len;
     if (c < 1.2) this.len = this.rest;

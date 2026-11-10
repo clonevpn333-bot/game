@@ -14,6 +14,7 @@ export class TrainRide {
     const ch = this.ch, L = ch.level;
     this.state = 'parked'; this.t = 0; this.speed = 0; this.scroll = 0; this.obstacles = []; this.falling = []; this.gone = 0; this.ev = 0; this.arrival = 900; this.spawned = [];
     for (const c of [...TRAIN.cars, TRAIN.loco]) L.fill(c, TRAIN.roofY, TRAIN.len, 3, T.TRAIN);
+    L.ground(132, 24, 10); this.stationGone = false;
     L.hidden = { x0: TRAIN.dockX };
     ch.player.wallX = TRAIN.dockX * 16 - 2;
     const tr = L.triggers.find((t) => t.id === 'train'); if (tr) tr.fired = false;
@@ -57,6 +58,7 @@ export class TrainRide {
     this.t += dt;
     if (this.state === 'run') {
       this.speed = Math.min(MAXV, this.speed + 110 * dt);
+      if (!this.stationGone && this.t > 2.2) { this.stationGone = true; ch.level.fill(132, 24, 11, ch.level.H - 24, T.EMPTY); }
       while (this.ev < this.script.length && this.t >= this.script[this.ev][0]) this.script[this.ev++][1]();
       if (Math.floor(this.t * 5) !== Math.floor((this.t - dt) * 5) && this.speed > 100) ch.game.sfx.play('px.train', { vol: 0.35 });
     } else if (this.state === 'arrive') {

@@ -59,7 +59,7 @@ export class Game {
     const tick = (now) => {
       requestAnimationFrame(tick);
       let dt = (now - this.last) / 1000; this.last = now;
-      if (dt > 0.25) dt = 0.25;
+      if (dt > 0.25) dt = 0.25; if (dt < 0) dt = 0;
       this.perf.begin(dt);
       this.acc += dt;
       let steps = 0;
