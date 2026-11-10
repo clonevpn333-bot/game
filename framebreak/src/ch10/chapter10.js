@@ -34,7 +34,7 @@ export default class Chapter10 {
   respawn() { const p = this.p; p.hp = 6; p.x = 300; p.y = FLOOR; p.inv = 2; this.cubes = []; this.beam = null; if (this.phase === 0) this.cur.shield = 3; if (this.phase === 1) this.cur.pins = [true, true, true]; }
   bounds() { const t = this.t, a = 640 + Math.sin(t * 0.3) * 170, b = 1280 + Math.sin(t * 0.23 + 2) * 170; return [0, a, b, VW]; }
   zoneAt(x) { const b = this.bounds(); return this.order[x < b[1] ? 0 : x < b[2] ? 1 : 2]; }
-  hurt(n = 1) { const p = this.p; if (p.inv > 0) return; p.hp -= n; p.inv = 1.3; p.vy = -500; this.shake = 14; this.game.sfx.play(p.form === 'pixel' ? 'px.hurt' : 'ink.hurt'); if (p.hp <= 0) { this.game.save.data.stats.deaths++; this.respawn(); } }
+  hurt(n = 1) { const p = this.p; if (p.inv > 0) return; if (this.game.easy && p.hp <= 1) n = 0; p.hp -= n; p.inv = this.game.easy ? 2.4 : 1.3; p.vy = -500; this.shake = 14; this.game.sfx.play(p.form === 'pixel' ? 'px.hurt' : 'ink.hurt'); if (p.hp <= 0) { this.game.save.data.stats.deaths++; this.respawn(); } }
   burst(x, y, col) { this.fx.push({ x, y, t: 0, col }); }
 
   update(dt, outgoing) {

@@ -93,6 +93,7 @@ export class Game {
   }
 
   // Clear the 2D canvas (it floats above the WebGL canvas).
+  get easy() { return !!this.settings.easy; }
   clear2d() { this.ctx.setTransform(1, 0, 0, 1, 0, 0); this.ctx.clearRect(0, 0, this.W, this.H); }
   show3d(on) { this.gl.style.visibility = on ? 'visible' : 'hidden'; }
   // Copy the current WebGL frame onto the 2D canvas (call right after a 3D

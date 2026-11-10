@@ -7,7 +7,7 @@ export const DEFAULT_SETTINGS = {
   master: 0.8, music: 0.75, sfx: 0.9,
   resScale: 1, shadows: 2, effects: 2, textures: 2, post: 2,
   particles: 1, physics: 1, drawDistance: 1,
-  shake: 1, showPerf: false, fullscreen: false,
+  shake: 1, showPerf: false, fullscreen: false, easy: false,
 };
 
 function blank() {

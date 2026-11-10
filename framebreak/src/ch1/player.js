@@ -245,7 +245,8 @@ export class Player {
   hurt(dmg, dir = 0, force = false) {
     if (this.state === 'dead' || (!force && (this.invuln > 0 || this.iframes > 0))) return false;
     const ch = this.ch;
-    this.hp -= dmg; this.invuln = 1.15; this.move = null; this.diving = false; this.chargeT = 0; if (this.h !== STAND_H && canStand(ch.level, this, STAND_H)) this.h = STAND_H;
+    const easy = ch.game.easy; if (easy) { this._half = !this._half; if (this._half) dmg = 0; }
+    this.hp -= dmg; this.invuln = easy ? 1.8 : 1.15; this.move = null; this.diving = false; this.chargeT = 0; if (this.h !== STAND_H && canStand(ch.level, this, STAND_H)) this.h = STAND_H;
     ch.combo.drop(); ch.shake(5, 0.25); ch.hitstop(0.09); ch.flash(0.12, '#c2362f');
     if (this.hp <= 0) { this.die(); return true; }
     this.state = 'hurt'; this.hurtT = 0.28; this.vx = (dir || -this.facing) * 130; this.vy = -170; this.onGround = false;

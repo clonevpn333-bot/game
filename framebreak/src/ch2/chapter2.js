@@ -124,7 +124,7 @@ export default class Chapter2 {
     this.cam.y = damp(this.cam.y, this.flood ? Math.min(0, p.y - 620) : Math.min(0, p.y - 500), 4, dt);
     if (p.hp <= 0 && !this.dead) { this.dead = 1.2; g.sfx.play('ink.whistle'); } if (this.dead) { this.dead -= dt; if (this.dead <= 0) { this.dead = 0; this.respawn(); } }
   }
-  hurt(n, quiet) { const p = this.p; if (p.inv > 0 || this.fed > 0) return; p.hp -= n; p.inv = 1.4; p.hurt = 0.5; if (p.hold) { p.hold.state = 'stun'; p.hold = null; } p.arm.state = 'idle'; if (!quiet) { p.vy = -600; p.vx = -p.face * 300; } this.shake = 12; this.game.sfx.play('ink.hurt'); this.game.save.data.stats.deaths += p.hp <= 0 ? 1 : 0; }
+  hurt(n, quiet) { const p = this.p; if (p.inv > 0 || this.fed > 0) return; if (this.game.easy && p.hp <= 1) n = 0; p.hp -= n; p.inv = 1.4; p.hurt = 0.5; if (p.hold) { p.hold.state = 'stun'; p.hold = null; } p.arm.state = 'idle'; if (!quiet) { p.vy = -600; p.vx = -p.face * 300; } this.shake = 12; this.game.sfx.play('ink.hurt'); this.game.save.data.stats.deaths += p.hp <= 0 ? 1 : 0; }
 
   updateArm(dt, ix, up, down, inp, ctl) {
     const p = this.p, arm = p.arm, g = this.game, sh = { x: p.x + p.face * 18, y: p.y - 100 };

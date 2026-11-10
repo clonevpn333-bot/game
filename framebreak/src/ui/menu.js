@@ -91,6 +91,7 @@ export class Menu {
     const vol = (k) => ({ val: () => s[k], adj: (d) => { s[k] = Math.max(0, Math.min(1, Math.round((s[k] + d * 0.1) * 10) / 10)); save(); g.sfx.play('ui.move'); } });
     const lvl = (k, names = LV) => ({ val: () => names[s[k]] ?? String(s[k]), adj: (d) => { s[k] = (s[k] + d + names.length) % names.length; save(); g.events.emit('settings', s); } });
     this.openPanel('SETTINGS', (p) => {
+      this.addRow(p, '<b>DIFFICULTY</b><span class="sub">easy: more health, slower threats, you cannot be knocked out by a single mistake</span>', { val: () => (s.easy ? 'EASY' : 'NORMAL'), adj: () => { s.easy = !s.easy; save(); } });
       this.addRow(p, '<b>MASTER VOLUME</b>', { ...vol('master'), }); this.addRow(p, '<b>MUSIC</b>', vol('music')); this.addRow(p, '<b>SOUND EFFECTS</b>', vol('sfx'));
       this.addRow(p, '<b>RENDER SCALE</b><span class="sub">3D chapters · pixel art always stays integer-sharp</span>', { val: () => Math.round(s.resScale * 100) + '%', adj: (d) => { const o = [0.5, 0.75, 1], i = (o.indexOf(s.resScale) + d + 3) % 3; s.resScale = o[i]; save(); g.resize(); } });
       this.addRow(p, '<b>SHADOW QUALITY</b>', lvl('shadows', ['OFF', 'MEDIUM', 'HIGH']));
@@ -132,6 +133,7 @@ export class Menu {
     this.setItems(this.root, [
       { label: 'RESUME', act: () => this.resume() },
       { label: 'RESTART FROM CHECKPOINT', act: () => { const ch = g.director.current; this.resume(); ch.respawn?.(); } },
+      { label: 'DIFFICULTY: ' + (g.settings.easy ? 'EASY' : 'NORMAL'), act: () => { g.settings.easy = !g.settings.easy; g.save.write(); this.mode = null; this.clearDom(); this.openPause(); } },
       { label: 'SETTINGS', act: () => this.openSettings() },
       { label: 'QUIT TO MENU', act: () => { g.audio.muffle(0); this.mode = null; this.openMain(); } },
     ]);

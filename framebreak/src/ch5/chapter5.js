@@ -103,7 +103,7 @@ export default class Chapter5 {
     if (p.hp <= 0) { g.save.data.stats.deaths++; g.sfx.play('px.die'); this.start(); }
   }
   say(k, who, text) { if (!this.said[k]) { this.said[k] = true; this.game.dialogue.say(who, text); } }
-  hurt(n) { const p = this.p; p.hp -= n; p.hurt = 0.3; this.game.sfx.play('px.hurt'); }
+  hurt(n) { const p = this.p; p.hp -= this.game.easy ? n * 0.35 : n; p.hurt = 0.3; this.game.sfx.play('px.hurt'); }
   hitscan(spread, dmg, wide) {
     const p = this.p; let best = null, bd = 99;
     for (const e of this.things) { if (e.item || e.st === 'dead') continue; const dx = e.x - p.x, dy = e.y - p.y, d = Math.hypot(dx, dy); let da = Math.atan2(dy, dx) - p.a; while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI; if (Math.abs(da) < spread + 0.3 / d && this.los(p.x, p.y, e.x, e.y)) { if (wide) this.damage(e, dmg); else if (d < bd) { bd = d; best = e; } } }

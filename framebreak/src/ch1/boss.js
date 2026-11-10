@@ -39,7 +39,7 @@ export class Gridlock {
   }
   hitByBarrel(b) { for (const hb of this.hitBoxes()) if (b.x > hb.x - 8 && b.x < hb.x + hb.w + 8 && b.y - 9 > hb.y - 8 && b.y - 9 < hb.y + hb.h + 8) return true; return false; }
   damage(d, hb, fx, fy, heavy) {
-    const ch = this.ch; this.hp -= d; this.flash = 0.09; if (hb?.fist) hb.fist.flash = 0.09;
+    const ch = this.ch; this.hp -= d * (ch.game.easy ? 1.8 : 1); this.flash = 0.09; if (hb?.fist) hb.fist.flash = 0.09;
     ch.fx.hit(fx, fy, heavy); ch.game.sfx.play(heavy ? 'px.hitbig' : 'px.hit', { pitch: 0.8 }); if (hb?.part === 'core') this.setFace('hurt', 0.35);
     if (this.hp <= 0) { this.hp = 0; this.die(); return; }
     const want = this.hp <= BOSS_MAXHP * 0.34 ? 3 : this.hp <= BOSS_MAXHP * 0.68 ? 2 : 1;

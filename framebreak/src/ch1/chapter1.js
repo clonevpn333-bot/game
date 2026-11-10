@@ -99,7 +99,7 @@ export default class Chapter1 {
     return false;
   }
   fellOut() {
-    const pl = this.player; pl.hp -= 1; this.game.sfx.play('px.hurt'); this.combo.drop();
+    const pl = this.player; if (!this.game.easy) pl.hp -= 1; this.game.sfx.play('px.hurt'); this.combo.drop();
     if (pl.hp <= 0) { pl.die(); pl.deadT = 0.7; return; }
     let s = pl.lastSafe;
     if (this.train.state !== 'parked' && this.train.state !== 'done' && s.x < this.train.rearX * 16 + 16) s = { x: this.train.rearX * 16 + 60, y: TRAIN.roofY * 16 };
