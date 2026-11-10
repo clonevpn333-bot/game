@@ -144,8 +144,8 @@ export class Menu {
     const g = this.game; g.overlay = this; this.mode = 'end'; this.clearDom(); g.music.play(SONG_MENU, { section: 'B', intensity: 1, fade: 2 }); g.audio.muffle(0); g.input.exitLock();
     const next = CHAPTERS[info.chapter + 1];
     this.root = el('div', 'card');
-    this.root.appendChild(el('h1', null, 'TO BE CONTINUED')); this.root.appendChild(el('h3', null, `chapter ${info.chapter} complete`));
-    this.root.appendChild(el('p', null, info.text || `Rin falls onward${next ? ` — toward <b>${next.title}</b> (${next.format.toLowerCase()})` : ''}.`));
+    this.root.appendChild(el('h1', null, info.final ? info.title : 'TO BE CONTINUED')); this.root.appendChild(el('h3', null, info.final ? 'FRAMEBREAK — the end' : `chapter ${info.chapter} complete`));
+    this.root.appendChild(el('p', null, info.text || `Rin falls onward${next && !info.final ? ` — toward <b>${next.title}</b> (${next.format.toLowerCase()})` : ''}.`));
     if (next && !next.load) this.root.appendChild(el('p', null, 'That reality is not built yet. Everything up to this point is the finished vertical slice; your progress is saved.'));
     this.setItems(this.root, [{ label: 'RETURN TO MENU', act: () => { this.mode = null; this.openMain(); } }]);
     this.sel = 0; this.refresh(); this.ui.appendChild(this.root);
