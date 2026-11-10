@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FRAMEBREAK</title>
+<link rel="stylesheet" href="style.css">
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.min.js" } }
+</script>
+</head>
+<body>
+<div id="stage">
+  <canvas id="gl"></canvas>
+  <canvas id="c2d"></canvas>
+  <div id="ui"></div>
+  <div id="boot">
+    <div class="boot-title">FRAMEBREAK</div>
+    <div class="boot-sub" id="boot-msg">assembling realities…</div>
+    <div class="boot-bar"><i id="boot-fill"></i></div>
+  </div>
+</div>
+<script type="module" src="src/main.js"></script>
+</body>
+</html>

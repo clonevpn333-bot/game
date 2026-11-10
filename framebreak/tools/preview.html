@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>FRAMEBREAK art preview</title>
+<style>body{margin:0;background:#2a1f47;color:#fff;font:12px monospace}canvas{image-rendering:pixelated;display:block}</style>
+</head><body>
+<canvas id="c"></canvas>
+<script type="module">
+// Art inspection sheet: ?mod=../src/ch1/sprites_rin.js&fn=addRinFrames&scale=6&filter=run
+import { Atlas } from '../src/ch1/pix.js';
+const q = new URLSearchParams(location.search);
+const scale = +(q.get('scale') || 6), filter = q.get('filter') || '', cols = +(q.get('cols') || 8), bg = q.get('bg') || '#40295f';
+const atlas = new Atlas();
+for (const spec of (q.get('mods') || '../src/ch1/sprites_rin.js:addRinFrames').split(',')) {
+  const [mod, fn] = spec.split(':'); const m = await import(mod); m[fn](atlas);
+}
+const list = atlas.list.filter((f) => !filter || filter.split('|').some((s) => f.name.includes(s)));
+const cw = Math.max(...list.map((f) => f.w)) + 2, ch = Math.max(...list.map((f) => f.h)) + 10;
+const rows = Math.ceil(list.length / cols);
+const c = document.getElementById('c'); c.width = cols * cw * scale; c.height = rows * ch * scale;
+const ctx = c.getContext('2d'); ctx.imageSmoothingEnabled = false; ctx.fillStyle = bg; ctx.fillRect(0, 0, c.width, c.height);
+list.forEach((f, i) => {
+  const x = (i % cols) * cw * scale, y = ((i / cols) | 0) * ch * scale;
+  ctx.fillStyle = i % 2 ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.08)'; ctx.fillRect(x, y, cw * scale, ch * scale);
+  ctx.drawImage(f.pix.toCanvas(), x + scale, y + scale, f.w * scale, f.h * scale);
+  ctx.fillStyle = '#fff'; ctx.font = '11px monospace'; ctx.fillText(f.name, x + 4, y + ch * scale - 5);
+});
+window.__done = true;
+</script></body></html>
