@@ -19,7 +19,11 @@ export const CHAPTERS = [
   { id: 11, key: 'ch11', title: 'LEAD & LIGHT', format: 'STAINED GLASS', load: () => import('../ch11/chapter11.js'), status: 'playable' },
   { id: 12, key: 'ch12', title: 'LOOSE THREADS', format: 'KNITTED WOOL', load: () => import('../ch12/chapter12.js'), status: 'playable' },
   { id: 13, key: 'ch13', title: 'PHOSPHOR', format: 'VECTOR DISPLAY', load: () => import('../ch13/chapter13.js'), status: 'playable' },
-  { id: 14, key: 'ch14', title: 'FRAMEBREAK', format: 'EVERYTHING AT ONCE', load: () => import('../ch14/chapter14.js'), status: 'playable' },
+  { id: 14, key: 'ch14', title: 'ONE BREATH', format: 'INK WASH', load: () => import('../ch14/chapter14.js'), status: 'playable' },
+  { id: 15, key: 'ch15', title: 'PERSISTENCE', format: 'PENCIL FLIPBOOK', load: () => import('../ch15/chapter15.js'), status: 'playable' },
+  { id: 16, key: 'ch16', title: "CAT'S CRADLE", format: 'STRING & HANDS', load: () => import('../ch16/chapter16.js'), status: 'playable' },
+  { id: 17, key: 'ch17', title: 'COUNTERWEIGHT', format: 'KINETIC MOBILE', load: () => import('../ch17/chapter17.js'), status: 'playable' },
+  { id: 18, key: 'ch18', title: 'FRAMEBREAK', format: 'EVERYTHING AT ONCE', load: () => import('../ch18/chapter18.js'), status: 'playable' },
 ];
 
 export class Director {

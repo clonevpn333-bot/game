@@ -83,7 +83,7 @@ export class City {
     this.vell.userData.tick(this.t);
   }
   choose(k) {
-    const g = this.game, S = this.scene; this.end = { k, t: 0, line: -1 }; g.dialogue.clear(); g.sfx.play('fx.boom'); g.sfx.play('fx.shimmer'); this.flash = 1; g.save.flag('ending', k); g.save.complete(14); this.ch.noPause = true; this.prompt = '';
+    const g = this.game, S = this.scene; this.end = { k, t: 0, line: -1 }; g.dialogue.clear(); g.sfx.play('fx.boom'); g.sfx.play('fx.shimmer'); this.flash = 1; g.save.flag('ending', k); g.save.complete(18); this.ch.noPause = true; this.prompt = '';
     if (k === 'seal') { this.glass = []; const gm = new THREE.MeshPhysicalMaterial({ color: '#8ff5e3', roughness: 0.05, transmission: 0.7, transparent: true, opacity: 0.35, emissive: '#2fd3c6', emissiveIntensity: 0.35 }); for (let i = 0; i < 8; i++) for (const ns of [0, 1]) { const m = box(ns ? 0.4 : 270, 60, ns ? 270 : 0.4, gm, ns ? (i - 3.5) * CELL : 0, 30, ns ? 0 : (i - 3.5) * CELL, S); m.castShadow = false; m.scale.y = 0.001; this.glass.push(m); } }
     g.music.setIntensity(k === 'open' ? 2 : k === 'seal' ? 1 : 0);
   }

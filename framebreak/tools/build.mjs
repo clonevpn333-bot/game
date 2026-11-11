@@ -20,5 +20,5 @@ const page = (chapter) => html
 mkdirSync(resolve(root, 'dist'), { recursive: true });
 writeFileSync(resolve(root, 'dist/framebreak.html'), page(0));
 const built = [];
-for (let i = 1; i <= 14; i++) if (existsSync(resolve(root, `src/ch${i}/chapter${i}.js`))) { writeFileSync(resolve(root, `dist/chapter${i}.html`), page(i)); built.push(i); }
+for (let i = 1; i <= 18; i++) if (existsSync(resolve(root, `src/ch${i}/chapter${i}.js`))) { writeFileSync(resolve(root, `dist/chapter${i}.html`), page(i)); built.push(i); }
 console.log('built chapters', built.join(','), '·', Math.round(js.length / 1024) + ' KB js');

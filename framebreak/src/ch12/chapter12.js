@@ -7,7 +7,7 @@ import * as THREE from 'three';
 import { renderFX } from '../fx/post.js';
 import { getRenderer } from '../ch3/chapter3.js';
 import { canvasTex, normalFromHeight } from '../fx/tex.js';
-import { V, buildVell, buildHud, bar } from '../ch14/kit.js';
+import { V, buildVell, buildHud, bar } from '../ch18/kit.js';
 import { clamp, lerp, hash2, TAU } from '../core/util.js';
 
 const LEN = 1000, RAMPS = [340, 540, 820], HOLES = [[150, 172, -1], [250, 270, 1], [340, 348, 0], [420, 444, -1], [468, 492, 1], [540, 548, 0], [620, 650, 1], [700, 724, -1], [728, 752, 1], [820, 828, 0], [880, 910, -1]];
