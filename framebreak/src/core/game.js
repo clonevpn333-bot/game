@@ -99,5 +99,6 @@ export class Game {
   // Copy the current WebGL frame onto the 2D canvas (call right after a 3D
   // render) so the next reality can dissolve out of it.
   freezeFrame() { this.ctx.setTransform(1, 0, 0, 1, 0, 0); this.ctx.drawImage(this.gl, 0, 0, this.W, this.H); }
+  snapshot() { const c = document.createElement('canvas'); c.width = this.W; c.height = this.H; c.getContext('2d').drawImage(this.c2d, 0, 0); return c; }
   fadeFrozen(ms = 1000, then) { const c = this.c2d; c.style.transition = `opacity ${ms}ms`; c.style.opacity = '0'; setTimeout(() => { this.clear2d(); c.style.transition = ''; c.style.opacity = '1'; then?.(); }, ms + 60); }
 }

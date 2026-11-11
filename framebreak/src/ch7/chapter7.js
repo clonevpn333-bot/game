@@ -80,17 +80,17 @@ export default class Chapter7 {
     this.cps = [[0, 0, 2], [0, 0.5, 62], [0, 5.5, 132], [0, 6.2, 178], [0, 14.2, 234]]; this.cp = 0;
     this.p = { pos: V(0, 0.2, 2), vel: V(0, 0, 0), yaw: 0, ground: null, slide: 0, climb: null, grap: null, strike: 0, hp: 5, inv: 0, speed: 0, coy: 0, buf: 0 }; this.cy = 0; this.camPos = V(0, 3, -4);
     this.ui = el('hud3'); this.dlg = el('dlg dark', '<div class="who"></div><div class="txt"></div>'); this.dlg.style.top = 'auto'; this.dlg.style.bottom = '8%'; this.banner = el('banner', '<small>CHAPTER 7</small>FULL RESOLUTION'); this.hud = el('mach'); this.tip = el('prompt paper'); this.tip.style.cssText += ';left:50%;top:70%;background:rgba(13,15,31,.8);color:#fff;display:none'; this.ui.append(this.dlg, this.banner, this.hud, this.tip); g.ui.appendChild(this.ui);
-    g.show3d(true); if (handoff) g.fadeFrozen(1400, () => g.director.releaseOutgoing()); else g.clear2d();
+    this.introK = handoff ? 0 : 1; g.show3d(true); if (handoff) g.fadeFrozen(700, () => g.director.releaseOutgoing()); else g.clear2d();
     g.audio.muffle(0); g.music.play(SONG, { intensity: 1, fade: 1 }); setTimeout(() => { this.banner.style.opacity = '1'; setTimeout(() => (this.banner.style.opacity = '0'), 3000); }, 700);
     g.dialogue.say([{ who: 'rin', text: 'Fingers. Eyelashes. Rain I can actually feel. Is this... the real one?' }, { who: 'vell', text: "It's the EXPENSIVE one. Don't confuse the two. Also the city is rearranging itself, so: run." }]);
     g.director.preload(8);
   }
-  stop() { this.ui?.remove(); this.game.input.exitLock(); this.scene = null; }
+  stop() { this.game.gl.style.imageRendering = ''; this.ui?.remove(); this.game.input.exitLock(); this.scene = null; }
   respawn() { const c = this.cps[this.cp], p = this.p; p.pos.set(c[0], c[1] + 1, c[2]); p.vel.set(0, 0, 0); p.hp = 5; p.inv = 1.5; p.grap = null; p.climb = null; if (this.cp >= 4) { this.squeeze = 0; this.sqOn = false; } this.game.sfx.play('px.hurt'); }
   hitBox(pos, h) { for (const q of this.plats) if (Math.abs(pos.x - q.c.x) < q.h.x + 0.33 && Math.abs(pos.z - q.c.z) < q.h.z + 0.33 && pos.y < q.c.y + q.h.y && pos.y + h > q.c.y - q.h.y) return q; return null; }
 
   update(dt, outgoing) {
-    if (outgoing || !this.scene) return; const g = this.game, inp = g.input, p = this.p, sfx = g.sfx; this.t += dt; const t = this.t;
+    if (outgoing || !this.scene) return; const g = this.game, inp = g.input, p = this.p, sfx = g.sfx; this.t += dt; const t = this.t; if (this.introK < 1) this.introK = Math.min(1, this.introK + dt / 4.5);
     for (const q of this.plats) { if (q.fn) { const o = q.c.clone(); q.fn(t, q.c); q.d.subVectors(q.c, o); q.grp.position.copy(q.c); } }
     if (this.fin) { this.fin.t += dt; this.fin.k = clamp(this.fin.t / 7, 0, 1); g.audio.muffle(this.fin.k * 0.5); if (this.fin.t > 7.6) this.fin.snap = true; p.vel.multiplyScalar(0.9); }
     if (inp.mouse.left && !inp.locked) inp.requestLock();
@@ -136,7 +136,7 @@ export default class Chapter7 {
   }
 
   render(dt) {
-    if (!this.scene) return; const g = this.game, r = this.r, p = this.p, t = this.t; if (r.domElement.width !== g.W || r.domElement.height !== g.H) r.setSize(g.W, g.H, false);
+    if (!this.scene) return; const g = this.game, r = this.r, p = this.p, t = this.t; { const S = [64, 48, 32, 24, 16, 12, 8, 6, 4, 3, 2, 1], px = this.introK < 1 ? S[Math.min(11, Math.floor(this.introK * 12))] : 1, w = Math.max(16, Math.round(g.W / px)), h = Math.max(9, Math.round(g.H / px)); if (r.domElement.width !== w || r.domElement.height !== h) { r.setSize(w, h, false); g.gl.style.imageRendering = px > 1 ? 'pixelated' : ''; if (px > 1) g.sfx.play('px.glitch', { vol: 0.35, pitch: 0.5 + this.introK }); } }
     this.rin.position.copy(p.pos); let dy = p.yaw - this.rin.rotation.y; while (dy > Math.PI) dy -= 2 * Math.PI; while (dy < -Math.PI) dy += 2 * Math.PI; this.rin.rotation.y += dy * Math.min(1, dt * 12); this.rin.visible = !(p.inv > 0 && Math.floor(p.inv * 14) % 2);
     const vp = p.pos.clone().add(V(Math.sin(t) * 0.3 + 0.9, 2.1 + Math.sin(t * 2) * 0.12, 0.6)); this.vell.position.lerp(vp, Math.min(1, dt * 4)); this.vell.rotation.y = t * 0.8;
     animateRin(this.rin, { speed: p.speed, ground: !!p.ground, vy: p.vel.y, slide: p.slide > 0, climb: p.climb ? Math.min(1, p.climb.t) : 0, grapple: !!p.grap, strike: p.strike, hurt: p.inv > 0.6 ? 1 : 0, t, dt, lookAt: g.dialogue.current ? this.vell.position : null, talk: g.dialogue.current?.speaker.name === 'RIN' && !g.dialogue.current.done });

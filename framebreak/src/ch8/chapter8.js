@@ -53,7 +53,7 @@ export default class Chapter8 {
     this.pin = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 2.2, 14, 18), new THREE.MeshStandardMaterial({ color: '#b98d5e', roughness: 0.55 })); this.pin.rotation.x = Math.PI / 2; this.pin.position.set(-40, 2.2, 0); this.pin.castShadow = true; S.add(this.pin);
     this.p = { x: -4, y: 0, vx: 0, vy: 0, mass: 1, w: new Spring(0.95, 220, 16), h: new Spring(1, 220, 16), ground: false, face: 1, shape: 'blob', long: 0, hp: 3, inv: 0, coy: 0 }; this.lumps = []; this.cps = [-4, 16, 33, 45]; this.cp = 0;
     this.ui = el('hud3'); this.dlg = el('dlg paper', '<div class="who"></div><div class="txt"></div>'); this.banner = el('banner', '<small>CHAPTER 8</small>CLAY HEART'); this.banner.style.color = '#5a3a2a'; this.banner.style.textShadow = '0 3px 0 #fff3d6'; this.hud = el('mach'); this.ui.append(this.dlg, this.banner, this.hud); g.ui.appendChild(this.ui);
-    g.show3d(true); if (handoff) g.fadeFrozen(1500, () => g.director.releaseOutgoing()); else g.clear2d();
+    this.introK = handoff ? 0 : 1; g.show3d(true); if (handoff) g.fadeFrozen(900, () => g.director.releaseOutgoing()); else g.clear2d();
     g.audio.muffle(0); g.music.play(SONG, { intensity: 1, fade: 1 }); setTimeout(() => { this.banner.style.opacity = '1'; setTimeout(() => (this.banner.style.opacity = '0'), 3000); }, 700);
     g.dialogue.say([{ who: 'rin', text: 'I had cheekbones a minute ago.' }, { who: 'vell', text: 'Now you have OPTIONS. Hold W to be tall. Hold S to be flat. Hold J to be long.' }]);
     g.director.preload(9);
@@ -65,7 +65,7 @@ export default class Chapter8 {
   hit(x, y, w, h) { for (const s of this.solids) if (s.on && x + w / 2 > s.x0 && x - w / 2 < s.x1 && y + h > s.y0 && y < s.y1) return s; return null; }
 
   update(dt, outgoing) {
-    if (outgoing || !this.scene) return; const g = this.game, inp = g.input, p = this.p, sfx = g.sfx; this.t += dt; p.inv -= dt;
+    if (outgoing || !this.scene) return; const g = this.game, inp = g.input, p = this.p, sfx = g.sfx; this.t += dt; p.inv -= dt; if (this.introK < 1) { const was = this.introK; this.introK = Math.min(1, this.introK + dt / 4.5); if (was < 0.25 && this.introK >= 0.25) { sfx.play('ink.squash'); p.h.kick(-7); p.w.kick(5); this.shake = 0.6; } }
     if (this.fin) return this.updateFinale(dt);
     // choose shape (it must physically fit to change back)
     const want = inp.down.down ? 'flat' : inp.down.up ? 'tall' : 'blob'; if (want !== p.shape && !p.long) { const old = p.shape; p.shape = want; const [w, h] = this.dims(); if (this.hit(p.x, p.y + 0.02, w * 0.9, h - 0.04)) p.shape = old; else { sfx.play(want === 'flat' ? 'ink.squash' : want === 'tall' ? 'ink.stretch' : 'ink.pop', { vol: 0.6 }); } }
@@ -117,7 +117,7 @@ export default class Chapter8 {
       if (this.fin) { const px = this.pin.position.x; this.scene.traverse((o) => { if (o.isMesh && o !== this.pin && o.geometry.type !== 'PlaneGeometry') { const wp = o.getWorldPosition(new THREE.Vector3()); if (wp.x < px - 1 && !o.userData.fl) { o.userData.fl = true; o.scale.z *= 0.04; o.scale.y *= 0.9; } } }); }
     }
     const k = this.fin?.k || 0, cx = this.fin ? lerp(p.x, 30, k) : p.x + p.face * 1.5; this.camT = (this.camT ?? cx) + (cx - (this.camT ?? cx)) * Math.min(1, dt * 3);
-    const sh = this.shake * (g.settings.shake ?? 1); this.cam.position.set(this.camT + 2 + (Math.random() - 0.5) * sh * 0.3, p.y * 0.5 + 5 + k * 8 + (Math.random() - 0.5) * sh * 0.3, 20 + k * 44 + (p.x > 44 ? 8 : 0)); this.cam.lookAt(this.camT, p.y * 0.5 + 2, 0); this.cam.aspect = g.W / g.H; this.cam.updateProjectionMatrix();
+    const sh = this.shake * (g.settings.shake ?? 1); this.cam.position.set(this.camT + 2 + (Math.random() - 0.5) * sh * 0.3, p.y * 0.5 + 5 + k * 8 + (Math.random() - 0.5) * sh * 0.3, 20 + k * 44 + (p.x > 44 ? 8 : 0)); this.cam.lookAt(this.camT, p.y * 0.5 + 2, 0); if (this.introK < 1) { const e = ease.inOutCubic(clamp((this.introK - 0.3) / 0.7, 0, 1)), a = (1 - e) * 1.42, R = lerp(9, 20, e); this.cam.position.set(p.x - Math.sin(a) * R + 2 * e, lerp(3.4, p.y * 0.5 + 5, e), Math.cos(a) * R); this.cam.lookAt(lerp(p.x + 5, this.camT, e), lerp(1.2, p.y * 0.5 + 2, e), 0); const H = this.hands[0].h, d = clamp(this.introK / 0.25, 0, 1), up = clamp((this.introK - 0.3) / 0.5, 0, 1); H.position.set(p.x, 1.9 + (1 - d) * 5 + up * 16, 0); H.rotation.z = 0; } this.cam.aspect = g.W / g.H; this.cam.updateProjectionMatrix();
     this.key.position.set(this.camT - 8, 22, 14); this.key.target.position.set(this.camT, 0, 0);
     r.render(this.scene, this.cam);
     if (this.fin?.snap && !this.fin.done) { this.fin.done = true; g.freezeFrame(); const ok = g.director.handoff(9, { from8: true }); if (!ok) { g.clear2d(); g.save.complete(8); g.audio.muffle(0); g.director.end({ chapter: 8 }); } return; }

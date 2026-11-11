@@ -50,8 +50,8 @@ export default class Chapter5 {
     this.shade = [1, 0.82, 0.66, 0.5, 0.36, 0.24, 0.14];
   }
   controlsHelp() { return '<b>W/S</b> move · <b>A/D</b> strafe · <b>← →</b> or mouse: turn · <b>J</b> / click: fire · <b>L</b>: wide blast (4 ammo) · <b>E</b>: use doors, switches, suspicious walls'; }
-  start() {
-    const g = this.game; g.show3d(false); g.c2d.style.imageRendering = 'pixelated'; g.c2d.style.opacity = '1';
+  start({ handoff } = {}) {
+    const g = this.game; this.snap = handoff ? g.snapshot() : null; this.introT = handoff ? 0 : 9; g.show3d(false); g.c2d.style.imageRendering = 'pixelated'; g.c2d.style.opacity = '1';
     this.map = MAP.map((r) => r.split('')); this.doors = {}; this.things = []; this.shots = []; this.t = 0; this.said = {}; this.fin = null; this.noPause = false; this.msg = null; this.title = 3.5;
     this.p = { x: 1.5, y: 1.5, a: 0.4, hp: 100, ammo: 40, key: false, bob: 0, fire: 0, hurt: 0, kick: 0 };
     this.map.forEach((row, y) => row.forEach((c, x) => { if (c === 'P') { this.p.x = x + 0.5; this.p.y = y + 0.5; row[x] = '.'; } else if ('eih'.includes(c)) { this.things.push({ k: c, x: x + 0.5, y: y + 0.5, hp: c === 'h' ? 9 : c === 'i' ? 2 : 4, st: 'idle', t: Math.random() * 2, cool: 1 }); row[x] = '.'; } else if ('amk'.includes(c)) { this.things.push({ k: c, x: x + 0.5, y: y + 0.5, item: true }); row[x] = '.'; } else if (c === 'D' || c === 'X' || c === 'S') this.doors[x + ',' + y] = { open: 0, dir: 0 }; }));
@@ -159,6 +159,11 @@ export default class Chapter5 {
     if (this.msg) ptext(bx, this.msg.s, VW / 2, 12, PAL.Y, 0.5);
     if (this.title > 0) { ptext(bx, 'CHAPTER 5', VW / 2, 40, PAL.O, 0.5); bx.save(); bx.translate(VW / 2, 52); bx.scale(3, 3); ptext(bx, '1996', 0, 0, PAL.W, 0.5); bx.restore(); }
     const d = g.dialogue.current; if (d) { const lines = wrapText(g.dialogue.visibleText, 44), full = wrapText(d.text, 44), h = 14 + full.length * 9; const y = this.title > 0 ? 78 : 22; bx.globalAlpha = 0.85; bx.fillStyle = PAL.K; bx.fillRect(20, y, VW - 40, h); bx.globalAlpha = 1; bx.fillStyle = d.speaker.color; bx.fillRect(20, y, 2, h); ptext(bx, d.speaker.name, 26, y + 3, d.speaker.color, 0, null); lines.forEach((ln, i) => ptext(bx, ln, 26, y + 12 + i * 9, PAL.W, 0, null)); }
+    if (this.introT < 3.2) { this.introT += 1 / 60; const it = this.introT, step = it < 0.8 ? 32 : it < 1.3 ? 16 : it < 1.8 ? 8 : it < 2.3 ? 4 : it < 2.8 ? 2 : 1; bx.imageSmoothingEnabled = false;
+      if (this.snap && it < 1.3) { bx.globalAlpha = Math.min(1, (1.3 - it) / 0.7); bx.drawImage(this.snap, 0, 0, this.snap.width, this.snap.height, 0, 0, VW, RH); bx.globalAlpha = 1; }
+      if (step > 1) { for (let x = 0; x < VW; x += step) bx.drawImage(this.buf, x, 0, 1, RH, x, 0, step, RH); for (let y = 0; y < RH; y += step) bx.drawImage(this.buf, 0, y, VW, 1, 0, y, VW, step); }
+      const hud = Math.max(0, 1 - (it - 1.4) / 0.6); if (hud > 0) { bx.fillStyle = '#000'; bx.fillRect(0, RH, VW, VH - RH); bx.drawImage(this.buf, 0, RH - 1, VW, 1, 0, RH, VW, Math.round((VH - RH) * hud)); }
+      if (Math.floor(it * 2) !== Math.floor((it - 1 / 60) * 2) && it < 2.8) g.sfx.play('px.glitch', { vol: 0.5, pitch: 0.6 + it * 0.3 }); }
     const ctx = g.ctx; ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.imageSmoothingEnabled = false; ctx.fillStyle = '#000'; ctx.fillRect(0, 0, g.W, g.H); const sc = Math.max(1, Math.floor(Math.min(g.W / VW, g.H / VH))); ctx.drawImage(this.buf, 0, 0, VW, VH, (g.W - VW * sc) >> 1, (g.H - VH * sc) >> 1, VW * sc, VH * sc);
   }
 }

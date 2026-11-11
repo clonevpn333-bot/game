@@ -41,7 +41,7 @@ export default class Chapter6 {
     for (const z of [5, SZ - 5]) { const e = new THREE.Mesh(new THREE.BoxGeometry(0.4, 2, 3), new THREE.MeshStandardMaterial({ color: '#fff', emissive: '#ff5a3c', emissiveIntensity: 3 })); e.position.set(-1.9, 22, z); L.add(e); } S.add(L); this.lx = -26;
     this.turrets = [[104, 12], [128, 8]].map(([x, z]) => { const m = new THREE.Group(); const b = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.6, 1.6), mk('#52609a')); b.position.y = 0.8; const eye = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 1), new THREE.MeshStandardMaterial({ color: '#fff', emissive: '#ff3c3c', emissiveIntensity: 2 })); eye.position.set(-0.8, 1, 0); m.add(b, eye); m.position.set(x, 3, z); S.add(m); return { m, x, z, cool: 1, dead: false }; });
     this.orbs = []; this.orbMesh = new THREE.Mesh(new THREE.SphereGeometry(0.35, 8, 6), new THREE.MeshBasicMaterial({ color: '#ff5a3c' }));
-    this.cps = [6, 54, 84, 112]; this.cp = 0;
+    this.cps = [6, 54, 84, 112]; this.cp = 0; this.introK = handoff ? 0 : 1;
     this.p = { x: 6, y: 3, z: 12, vx: 0, vy: 0, vz: 0, fx: 1, fz: 0, ground: false, hp: 5, cd: 0, walk: 0, inv: 0, swing: 0 };
     this.ui = el('hud3'); this.dlg = el('dlg dark', '<div class="who"></div><div class="txt"></div>'); this.banner = el('banner', '<small>CHAPTER 6</small>BLOCK COLLAPSE'); this.hud = el('mach'); this.ui.append(this.dlg, this.banner, this.hud); g.ui.appendChild(this.ui);
     g.show3d(true); if (handoff) g.fadeFrozen(900, () => g.director.releaseOutgoing()); else g.clear2d();
@@ -49,7 +49,7 @@ export default class Chapter6 {
     g.dialogue.say([{ who: 'vell', text: 'Volume! Everything here is made of the same little cube. Including the walls. Hint.' }, { who: 'vell', text: 'J cuts. L builds. And that noise behind us is the Curator\'s LEVELER, so... forward.' }]);
     g.director.preload(7);
   }
-  stop() { this.ui?.remove(); this.scene = null; }
+  stop() { this.game.gl.style.imageRendering = ''; this.ui?.remove(); this.scene = null; }
   respawn() { const p = this.p; p.x = this.cps[this.cp]; p.y = 12; p.z = 12; p.vx = p.vy = p.vz = 0; p.hp = 5; p.inv = 2; this.lx = p.x - 30; this.orbs.forEach((o) => this.scene.remove(o.m)); this.orbs = []; }
   gen() {
     this.fill(0, SX - 1, 0, 2, 0, SZ - 1, CONC);
@@ -97,6 +97,7 @@ export default class Chapter6 {
   update(dt, outgoing) {
     if (outgoing || !this.scene) return; const g = this.game, inp = g.input, p = this.p, sfx = g.sfx; this.t += dt; p.cd -= dt; p.inv -= dt; p.swing = Math.max(0, p.swing - dt * 5);
     if (this.fin) return this.updateFinale(dt);
+    if (this.introK < 1) { this.introK = Math.min(1, this.introK + dt / 4.2); this.lx = Math.min(this.lx, p.x - 34); }
     const ax = (inp.down.up ? 1 : 0) - (inp.down.down ? 1 : 0), az = inp.axisX, len = Math.hypot(ax, az) || 1, sp = 7;
     p.vx = lerp(p.vx, (ax / len) * sp, 0.25); p.vz = lerp(p.vz, (az / len) * sp, 0.25); if (ax || az) { p.fx = ax / len; p.fz = az / len; p.walk += dt * 12; }
     if (inp.pressed.jump && p.ground) { p.vy = 9.5; sfx.play('px.jump', { pitch: 0.8 }); } p.vy = Math.max(p.vy - 26 * dt, -30);
@@ -128,12 +129,12 @@ export default class Chapter6 {
   updateFinale(dt) { const f = this.fin, g = this.game; f.t += dt; f.k = clamp(f.t / 6, 0, 1); for (const d of this.debris) { d.t = Math.min(d.t, 1); d.vy += 30 * dt; d.s *= 1 - dt * 0.5; if (d.s < 0.12 && this.debris.length < 600) { d.s = 0.3; this.debris.push({ ...d, vx: -d.vx + 2, vz: -d.vz, s: 0.3 }); } d.x += d.vx * dt; d.y += d.vy * dt * 0.3; d.z += d.vz * dt; } if (Math.random() < 0.6) this.carve(150 + Math.random() * 16, 4 + Math.random() * 14, 6 + Math.random() * 12, 2.5, 9); let b = 8; for (const k of this.dirty) { this.mesh(k); this.dirty.delete(k); if (--b <= 0) break; } g.audio.muffle(f.k * 0.6); if (f.t > 6.4) f.snap = true; }
 
   render(dt) {
-    if (!this.scene) return; const g = this.game, r = this.r, p = this.p, t = this.t; if (r.domElement.width !== g.W || r.domElement.height !== g.H) r.setSize(g.W, g.H, false);
+    if (!this.scene) return; const g = this.game, r = this.r, p = this.p, t = this.t; { const px = this.introK < 1 ? [10, 8, 6, 5, 4, 3, 2, 1][Math.min(7, Math.floor(this.introK * 2.4 * 8))] || 1 : 1, w = Math.round(g.W / px), h = Math.round(g.H / px); if (r.domElement.width !== w || r.domElement.height !== h) { r.setSize(w, h, false); g.gl.style.imageRendering = px > 1 ? 'pixelated' : ''; } }
     this.rin.position.set(p.x, p.y, p.z); this.rin.rotation.y = Math.atan2(-p.fz, p.fx) + Math.PI / 2; const mv = Math.hypot(p.vx, p.vz) > 1 && p.ground ? Math.sin(p.walk) * 0.7 : 0; this.legs[0].rotation.x = mv; this.legs[1].rotation.x = -mv; this.arms[0].rotation.x = -mv; this.arms[1].rotation.x = mv - p.swing * 2.2; this.rin.visible = !(p.inv > 0 && Math.floor(p.inv * 14) % 2);
     this.vell.position.set(p.x - 1.2, p.y + 2.6 + Math.sin(t * 2.4) * 0.3, p.z + 1); this.vell.rotation.y = t;
     this.lev.position.x = this.lx; this.drums.forEach((d, i) => (d.rotation.y = t * (i % 2 ? 7 : -7)));
     const k = this.fin?.k || 0, sh = this.shake * (g.settings.shake ?? 1), tgt = new THREE.Vector3(p.x + 4, p.y + 1.5, lerp(p.z, SZ / 2, 0.5));
-    const want = new THREE.Vector3(p.x - 11 + k * 6, p.y + 9 + k * 14, lerp(p.z, SZ / 2, 0.5) + 12); this.cam.position.lerp(want, 1 - Math.exp(-4 * dt)); this.cam.position.x += (Math.random() - 0.5) * sh; this.cam.position.y += (Math.random() - 0.5) * sh; this.cam.lookAt(tgt); this.cam.aspect = g.W / g.H; this.cam.updateProjectionMatrix();
+    const want = new THREE.Vector3(p.x - 11 + k * 6, p.y + 9 + k * 14, lerp(p.z, SZ / 2, 0.5) + 12); this.cam.position.lerp(want, 1 - Math.exp(-4 * dt)); this.cam.position.x += (Math.random() - 0.5) * sh; this.cam.position.y += (Math.random() - 0.5) * sh; if (this.introK < 1) { const e = ease.inOutCubic(clamp((this.introK - 0.45) / 0.55, 0, 1)); this.cam.position.lerpVectors(new THREE.Vector3(p.x + 0.25, p.y + 1.62, p.z), want, e); tgt.lerpVectors(new THREE.Vector3(p.x + 12, p.y + 1.4, p.z), tgt.clone(), e); this.rin.visible = e > 0.12; this.cam.fov = lerp(72, 50, e); } this.cam.lookAt(tgt); this.cam.aspect = g.W / g.H; this.cam.updateProjectionMatrix();
     this.sun.position.set(p.x - 20, 50, 34); this.sun.target.position.set(p.x + 6, 0, 12);
     const n = Math.min(700, this.debris.length), col = new THREE.Color(); this.deb.count = n; for (let i = 0; i < n; i++) { const d = this.debris[i], s = d.s * (d.t > 2.6 ? (3.2 - d.t) / 0.6 : 1); this.dummy.position.set(d.x, d.y, d.z); this.dummy.rotation.set(d.rx + d.t * 3, d.ry + d.t * 2, 0); this.dummy.scale.setScalar(Math.max(0.01, s)); this.dummy.updateMatrix(); this.deb.setMatrixAt(i, this.dummy.matrix); this.deb.setColorAt(i, col.setRGB(d.c[0], d.c[1], d.c[2])); } this.deb.instanceMatrix.needsUpdate = true; if (this.deb.instanceColor) this.deb.instanceColor.needsUpdate = true;
     if (k > 0) { this.scene.fog.near = lerp(40, 4, k); this.scene.fog.far = lerp(110, 30, k); this.scene.fog.color.lerp(new THREE.Color('#ffffff'), 0.03); this.scene.background = this.scene.fog.color; }

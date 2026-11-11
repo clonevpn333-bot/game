@@ -22,8 +22,8 @@ export default class Chapter10 {
   constructor(game) { this.game = game; this.id = 10; this.compositesOutgoing = true; }
   async load() { this.pen = new Pen(); await this.game.director.preload(1); }
   controlsHelp() { return '<b>A/D</b> move · <b>SPACE</b> jump · your form follows the frame you stand in:<br><b>PIXEL</b> J slash, double-jump · <b>INK</b> J grab / throw (W aims up) · <b>CLAY</b> hold S flat, hold W tall · <b>E</b> hold: commit to a choice'; }
-  start() {
-    const g = this.game; g.show3d(false); g.c2d.style.imageRendering = ''; g.c2d.style.opacity = '1'; g.director.releaseOutgoing();
+  start({ handoff } = {}) {
+    const g = this.game; this.introT = handoff ? 0 : 9; g.show3d(false); g.c2d.style.imageRendering = ''; g.c2d.style.opacity = '1'; g.director.releaseOutgoing();
     this.t = 0; this.phase = 0; this.pt = 0; this.shake = 0; this.cubes = []; this.fx = []; this.noPause = false; this.ending = null; this.order = ['pixel', 'ink', 'clay']; this.beam = null;
     this.p = { x: 300, y: FLOOR, vx: 0, vy: 0, face: 1, ground: true, hp: 6, inv: 0, jumps: 1, atk: 0, walk: 0, sx: new Spring(1, 260, 13), sy: new Spring(1, 260, 13), arm: null, hold: null, shape: 'blob', form: 'pixel', hT: 0 };
     this.cur = { x: 960, y: 300, shield: 3, pins: [true, true, true], cool: 2, hurt: 0, small: 0 }; this.vell = { x: 200, y: 600, t: 0 };
@@ -38,7 +38,7 @@ export default class Chapter10 {
   burst(x, y, col) { this.fx.push({ x, y, t: 0, col }); }
 
   update(dt, outgoing) {
-    if (outgoing) return; const g = this.game, inp = g.input, p = this.p, c = this.cur, sfx = g.sfx; this.t += dt; this.pt += dt; this.pen.tick(this.t); this.shake = Math.max(0, this.shake - dt * 40); p.inv -= dt; p.atk -= dt; c.hurt -= dt;
+    if (outgoing) return; const g = this.game, inp = g.input, p = this.p, c = this.cur, sfx = g.sfx; this.t += dt; this.pt += dt; this.pen.tick(this.t); if (this.introT < 3) { const a = this.introT; this.introT += dt; for (let i = 0; i < 3; i++) { const th = 0.3 + i * 0.6; if (a < th && this.introT >= th) { this.shake = 26; sfx.play('px.slam'); sfx.play(['px.glitch', 'ink.splat', 'ink.squash'][i]); } } if (a < 0.05) { p.y = -400; p.vy = 0; p.ground = false; } if (this.introT < 2) { p.vy = Math.min(p.vy, 0); p.y = Math.min(p.y, -100); } } this.shake = Math.max(0, this.shake - dt * 40); p.inv -= dt; p.atk -= dt; c.hurt -= dt;
     if (this.ending) return this.updateEnding(dt);
     // form follows the frame
     const form = this.zoneAt(p.x); if (form !== p.form) { p.form = form; p.arm = null; if (p.hold) { p.hold.held = false; p.hold = null; } p.shape = 'blob'; this.burst(p.x, p.y - 60, form === 'pixel' ? TEAL : form === 'ink' ? INK : '#d9a27e'); sfx.play(form === 'pixel' ? 'px.glitch' : form === 'ink' ? 'ink.pop' : 'ink.squash'); p.sx.x = 1.4; p.sy.x = 0.7; }
@@ -94,8 +94,9 @@ export default class Chapter10 {
     const g = this.game, ctx = g.ctx, pen = this.pen, S = Math.min(g.W / VW, g.H / VH), t = this.t, p = this.p, c = this.cur, b = this.bounds(), ch1 = g.director.modules[1];
     ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = '#0d0f1f'; ctx.fillRect(0, 0, g.W, g.H); const sh = this.shake * (g.settings.shake ?? 1); ctx.setTransform(S, 0, 0, S, (g.W - VW * S) / 2 + (Math.random() - 0.5) * sh * S, (g.H - VH * S) / 2 + (Math.random() - 0.5) * sh * S); pen.lw = 6;
     const E = this.ending, zones = E ? [E.k === 'one' ? 'white' : E.k === 'seal' ? 'ink' : 'pixel', E.k === 'one' ? 'white' : E.k === 'seal' ? 'ink' : 'ink', E.k === 'one' ? 'white' : E.k === 'seal' ? 'ink' : 'clay'] : this.order;
+    const IT = this.introT ?? 9; if (IT < 3) { ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, VW, VH); }
     for (let i = 0; i < 3; i++) { // each frame renders its slice of the room in its own language
-      const x0 = b[i], x1 = b[i + 1], z = zones[i]; ctx.save(); ctx.beginPath(); ctx.rect(x0, 0, x1 - x0, VH); ctx.clip();
+      const x0 = b[i], x1 = b[i + 1], z = zones[i], rv = ease.outCubic(clamp((IT - 0.3 - i * 0.6) / 0.7, 0, 1)); ctx.save(); ctx.beginPath(); ctx.rect(x0, 0, x1 - x0, VH * rv); ctx.clip();
       if (z === 'pixel') { ctx.imageSmoothingEnabled = false; ctx.drawImage(ch1.bg.sky, 0, 0, 320, 180, 0, 0, VW, VH); ctx.drawImage(ch1.bg.far, (t * 6) % 160, 0, 320, 100, 0, 380, VW, 600); ctx.drawImage(ch1.bg.near, (t * 14) % 320, 0, 320, 120, 0, 420, VW, 720); ctx.fillStyle = '#2b3040'; ctx.fillRect(0, FLOOR, VW, 200); for (let x = 0; x < VW; x += 80) { ctx.fillStyle = '#98a2bd'; ctx.fillRect(x, FLOOR, 75, 10); ctx.fillStyle = '#454c63'; ctx.fillRect(x, FLOOR + 10, 75, 10); } ctx.imageSmoothingEnabled = true; }
       else if (z === 'ink') { ctx.fillStyle = CREAM; ctx.fillRect(0, 0, VW, VH); for (let k = 0; k < 6; k++) { const gx = 200 + k * 330; ctx.save(); ctx.translate(gx, 380 + (k % 2) * 160); ctx.rotate(t * (k % 2 ? 0.5 : -0.5)); ctx.fillStyle = '#cfd6d9'; ctx.beginPath(); for (let q = 0; q < 16; q++) { const a = (q / 16) * TAU, r = q % 2 ? 120 : 96; ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r); } ctx.fill(); ctx.restore(); pen.eye(ctx, gx - 30, 720, 16, clamp((p.x - gx) / 400, -1, 1), 0, 0, k); pen.eye(ctx, gx + 30, 720, 16, clamp((p.x - gx) / 400, -1, 1), 0, 0, k + 9); } ctx.fillStyle = '#e4dabd'; ctx.fillRect(0, FLOOR, VW, 200); pen.line(ctx, 0, FLOOR, VW, FLOOR, 9, 1); for (let x = 0; x < VW; x += 90) pen.line(ctx, x + 30, FLOOR + 26, x - 10, FLOOR + 80, 3, x); }
       else if (z === 'clay') { const gr = ctx.createLinearGradient(0, 0, 0, VH); gr.addColorStop(0, '#f1dcbc'); gr.addColorStop(1, '#d9a27e'); ctx.fillStyle = gr; ctx.fillRect(0, 0, VW, VH); const st = Math.floor(t * 12); for (let k = 0; k < 9; k++) { ctx.fillStyle = ['#b5c9a0', '#e6c27a', '#c98a6a'][k % 3]; ctx.beginPath(); ctx.ellipse(120 + k * 220, 760 + Math.sin(st + k) * 4, 150, 200 + (k % 3) * 60, 0, 0, TAU); ctx.fill(); } ctx.fillStyle = '#9bbf8a'; ctx.fillRect(0, FLOOR, VW, 200); ctx.strokeStyle = 'rgba(60,40,20,0.18)'; ctx.lineWidth = 3; for (let k = 0; k < 14; k++) for (let q = 1; q < 5; q++) { ctx.beginPath(); ctx.ellipse(70 + k * 140, FLOOR + 90, q * 12, q * 16, 0.4, 0, TAU); ctx.stroke(); } }
