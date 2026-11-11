@@ -92,7 +92,7 @@ export class City {
     if (e.k === 'one') { this.uR.value = damp(this.uR.value, 0, 1.2, dt); this.scene.fog.density = damp(this.scene.fog.density, 0.03, 1, dt); this.scene.fog.color.lerp(new THREE.Color('#ffffff'), 0.03); this.sky.set('#ffffff', '#ffffff', '#f4f4f6', 0.03); this.res.forEach((R) => (R.G.scale.setScalar(Math.max(0.001, 1 - k)))); this.vell.scale.setScalar(Math.max(0.15, 1 - k * 0.85)); }
     else { this.uR.value = 600; this.scene.fog.density = damp(this.scene.fog.density, 0.004, 1, dt); if (e.k === 'seal') this.glass.forEach((m, i) => (m.scale.y = ease.outCubic(clamp(e.t / 4 - i * 0.03, 0.001, 1)))); else { this.sky.set('#2a3a8a', '#c06fc0', '#ffb47a', 0.03); if (Math.random() < 0.7) this.fx.emit(V(this.p.x + (Math.random() - 0.5) * 60, 30, this.p.z + (Math.random() - 0.5) * 60), V(0, -4, 0), new THREE.Color(['#ffd166', '#2fd3c6', '#ff9a3c', '#c06fc0', '#f4f6ff'][Math.floor(Math.random() * 5)]), 4, 2); this.res.forEach((R, i) => { R.G.position.x = R.x * (1 - k) + Math.cos(e.t * 0.6 + i * 2.1) * 5 * k; R.G.position.z = R.z * (1 - k) + (6 + Math.sin(e.t * 0.6 + i * 2.1) * 5) * k; }); } }
     if (e.line < 0 && e.t > 1.5) { e.line = 0; g.sfx.play('pp.chime', { pitch: 0.8 }); this.ch.hud.banner.innerHTML = `<small>${E.sub}</small>${E.name}`; this.ch.hud.banner.style.opacity = '1'; }
-    if (e.t > 7.5 && !e.done) { e.done = true; this.ch.startCascade(e.k); }
+    if (e.t > 7.5 && !e.done) { e.done = true; this.ch.endK = e.k; this.ch.hud.banner.style.opacity = '0'; this.done = true; }
     this.vell.userData.tick(this.t);
   }
   frame(dt) {
