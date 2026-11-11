@@ -27,7 +27,7 @@ All ten chapters are playable start to finish and hand over to the next one. The
 | 7 | Full Resolution | three.js PBR, jointed IK rig | Parkour course: slide, vault/mantle, moving roofs, grapple, Reframer chase. ~4–6 min. |
 | 8 | Clay Heart | three.js clay look, 12 fps posing | Flat / tall / long / mass puzzles, sculptor's hands. ~3–4 min. |
 | 9 | Break the Page | Inked comic, Canvas2D | Four pages of panel-order causality puzzles. ~3–4 min. |
-| 10 | Framebreak | Hybrid: three formats in one arena | Form-switching Curator fight, three playable endings. ~4–6 min. |
+| 10 | Framebreak | three.js, shared post-FX (bloom, grade, MSAA) | Rebuilt as a three-act 3D finale: **The Getaway** (arcade driving with drift-boost through four format districts), **The Courier** (gliding between erased islands and restoring each one), **The Missing City** (exploration by pulse, no combat, then a held choice and three endings). Smoke-tested per act. ~12–15 min. |
 
 Total is roughly 45–60 minutes, not the 80–100 the full design calls for.
 
@@ -40,6 +40,7 @@ Everything is authored in code; there are no external art, audio or texture file
 - **3D models** are assembled from primitives and extruded shapes. Chapter 7's Rin has a full joint hierarchy, IK legs, fingers, eyelids and layered clothing, but it is a stylised primitive-built figure, not a sculpted skinned mesh.
 - **Textures** are procedural canvases (concrete, brushed metal, paper fibre, fingerprints). No scanned PBR materials are used.
 - **Music** is original, written as note data and synthesised live with WebAudio. I could not listen to it in this environment — it was composed by theory and checked only for running without errors.
+- **Lighting/post**: every 3D chapter renders through a shared HDR pipeline (MSAA, bloom, tilt-shift for the dioramas, vignette, grade, grain).
 - **Performance** was only measured under software rendering in headless Chromium. Real-GPU frame rates are untested.
 
 ## Known gaps

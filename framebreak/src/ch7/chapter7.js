@@ -3,6 +3,8 @@
 // slide on rails, cog platforms turn, and the Curator's REFRAMER closes the
 // street behind you. Sprint, slide, vault/mantle, grapple, strike.
 import * as THREE from 'three';
+import { renderFX } from '../fx/post.js';
+
 import { getRenderer } from '../ch3/chapter3.js';
 import { buildRin3D, animateRin } from './rig.js';
 import { clamp, lerp, makeCanvas, rng, ease } from '../core/util.js';
@@ -150,7 +152,7 @@ export default class Chapter7 {
     const rp = this.rainP; for (let i = 0; i < 1400; i++) { rp[i * 6 + 1] -= 34 * dt; rp[i * 6 + 4] -= 34 * dt; if (rp[i * 6 + 4] < -2) { rp[i * 6 + 1] = 38; rp[i * 6 + 4] = 37.1; } } this.rain.geometry.attributes.position.needsUpdate = true; this.rain.position.set(p.pos.x, p.pos.y - 6, p.pos.z);
     // HIGH DETAIL → CLAY: surfaces lose their gloss, pick up fingerprints and warm, matte colour
     if (k > 0) { const clay = new THREE.Color('#d9a27e'); for (const o of this.mats) { o.m.roughness = lerp(o.r, 1, k); o.m.metalness = lerp(o.me, 0, k); o.m.color.copy(o.c).lerp(clay, k * 0.75); if (k > 0.4 && o.m.bumpMap !== this.T.print) { o.m.bumpMap = this.T.print; o.m.bumpScale = 3; o.m.roughnessMap = null; o.m.needsUpdate = true; } if (o.m.emissiveIntensity) o.m.emissiveIntensity *= 1 - 0.02; } this.scene.environmentIntensity = 0.9 * (1 - k); this.rain.material.opacity = 0.35 * (1 - k); this.scene.fog.color.lerp(new THREE.Color('#e9c7a6'), 0.02); this.scene.background = this.scene.fog.color; const st = Math.floor(t * 10); for (const q of this.plats) { q.grp.scale.set(1 + Math.sin(st + q.base.z) * 0.012 * k, 1 + Math.cos(st * 1.3 + q.base.z) * 0.02 * k, 1); } }
-    r.render(this.scene, this.cam);
+    renderFX(g, r, this.scene, this.cam, { bloom: 0.6, vig: 0.42, sat: 1.06, grain: 0.04, con: 1.06 });
     if (this.fin?.snap && !this.fin.done) { this.fin.done = true; g.freezeFrame(); const ok = g.director.handoff(8, { from7: true }); if (!ok) { g.clear2d(); g.save.complete(7); g.audio.muffle(0); g.director.end({ chapter: 7 }); } return; }
     const hud = `<div><kbd>♥</kbd>${'■'.repeat(Math.max(0, p.hp))}${'□'.repeat(5 - Math.max(0, p.hp))}</div>` + (this.sqOn && !this.fin ? `<div class="sel"><kbd>!</kbd>REFRAMER ${Math.round((this.squeeze || 0) * 100)}%</div>` : ''); if (hud !== this._hud) this.hud.innerHTML = this._hud = hud;
     let near = false; for (const a of this.anchors) if (a.p.distanceTo(p.pos) < 30 && a.p.z > p.pos.z - 4 && !p.grap) near = true; this.tip.style.display = near && !this.fin ? 'block' : 'none'; if (near) this.tip.innerHTML = '<kbd>J</kbd>HOLD — GRAPPLE';

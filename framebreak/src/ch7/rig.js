@@ -83,5 +83,8 @@ export function animateRin(root, p) {
   st.blink -= dt; if (st.blink < -0.12) st.blink = 1.5 + Math.random() * 3; const closed = st.blink < 0 || p.hurt > 0; B.lids.forEach((l) => (l.rotation.x = closed ? 0.1 : -0.9 - spr * 0.2));
   const effort = spr > 0.3 || p.climb || p.grapple || p.strike > 0; B.brows.forEach((b, i) => { b.rotation.z = (i ? -1 : 1) * (effort ? -0.35 : p.hurt > 0 ? 0.4 : 0.05); b.position.y = 0.152 + (p.talk ? Math.sin(p.t * 9) * 0.004 : 0); });
   B.mouth.scale.set(effort ? 0.8 : 1, p.talk ? 1 + Math.abs(Math.sin(p.t * 14)) * 3 : effort ? 2.2 : 1, 1);
+  const a = 1 - Math.exp(-16 * dt), JN = (st.J ||= [B.hips, B.spine, B.chest, B.neck, B.head, ...B.arm.flatMap((A) => [A.sh, A.el, A.wr]), ...B.leg.flatMap((L) => [L.hip, L.knee, L.ankle])]);
+  for (const j of JN) { if (!j.userData.q) j.userData.q = j.quaternion.clone(); else { const tq = j.quaternion.clone(); j.quaternion.copy(j.userData.q).slerp(tq, a); j.userData.q.copy(j.quaternion); } }
+  st.hy = st.hy == null ? hipY : st.hy + (hipY - st.hy) * a; B.hips.position.y = st.hy;
   B.scarf.forEach((s, i) => { s.rotation.x = -0.25 - run * 0.5 + Math.sin(p.t * 7 - i * 0.9) * (0.1 + run * 0.12) + (air ? p.vy * 0.03 : 0); s.rotation.y = Math.sin(p.t * 5 - i) * 0.12; });
 }

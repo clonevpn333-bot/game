@@ -3,6 +3,8 @@
 // structural pass that drops anything you cut loose from the ground.
 // Dig (J), build (L), outrun THE LEVELER.
 import * as THREE from 'three';
+import { renderFX } from '../fx/post.js';
+
 import { getRenderer } from '../ch3/chapter3.js';
 import { clamp, lerp, damp, hash2, ease } from '../core/util.js';
 
@@ -138,7 +140,7 @@ export default class Chapter6 {
     this.sun.position.set(p.x - 20, 50, 34); this.sun.target.position.set(p.x + 6, 0, 12);
     const n = Math.min(700, this.debris.length), col = new THREE.Color(); this.deb.count = n; for (let i = 0; i < n; i++) { const d = this.debris[i], s = d.s * (d.t > 2.6 ? (3.2 - d.t) / 0.6 : 1); this.dummy.position.set(d.x, d.y, d.z); this.dummy.rotation.set(d.rx + d.t * 3, d.ry + d.t * 2, 0); this.dummy.scale.setScalar(Math.max(0.01, s)); this.dummy.updateMatrix(); this.deb.setMatrixAt(i, this.dummy.matrix); this.deb.setColorAt(i, col.setRGB(d.c[0], d.c[1], d.c[2])); } this.deb.instanceMatrix.needsUpdate = true; if (this.deb.instanceColor) this.deb.instanceColor.needsUpdate = true;
     if (k > 0) { this.scene.fog.near = lerp(40, 4, k); this.scene.fog.far = lerp(110, 30, k); this.scene.fog.color.lerp(new THREE.Color('#ffffff'), 0.03); this.scene.background = this.scene.fog.color; }
-    r.render(this.scene, this.cam);
+    renderFX(g, r, this.scene, this.cam, { bloom: 0.45, vig: 0.34, sat: 1.1 });
     if (this.fin?.snap && !this.fin.done) { this.fin.done = true; g.freezeFrame(); const ok = g.director.handoff(7, { from6: true }); if (!ok) { g.clear2d(); g.save.complete(6); g.audio.muffle(0); g.director.end({ chapter: 6 }); } return; }
     const hud = `<div><kbd>♥</kbd>${'■'.repeat(Math.max(0, p.hp))}${'□'.repeat(5 - Math.max(0, p.hp))}</div><div class="${p.x - this.lx < 14 ? 'sel' : ''}"><kbd>!</kbd>LEVELER ${Math.max(0, Math.round(p.x - this.lx))} m</div>`; if (hud !== this._hud) { this.hud.innerHTML = this._hud = hud; }
     const d = g.dialogue.current; if (d) { this.dlg.style.display = 'block'; this.dlg.firstChild.textContent = d.speaker.name; this.dlg.firstChild.style.color = d.speaker.color; this.dlg.lastChild.textContent = g.dialogue.visibleText; } else this.dlg.style.display = 'none';

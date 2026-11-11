@@ -4,6 +4,8 @@
 // platforms between layers, unfold an accordion bridge, and finally cross a
 // theater that rearranges itself.
 import * as THREE from 'three';
+import { renderFX } from '../fx/post.js';
+
 import { paper, box, disc, pin, string, cutout, block, foldLine, arrowSign, buildRin, poseRin, buildVell, brass, wood } from './paper.js';
 import { SONG_CH3, STING3 } from '../audio/songs/ch3.js';
 import { clamp, lerp, damp, approach, ease, rng, makeCanvas } from '../core/util.js';
@@ -256,7 +258,7 @@ export default class Chapter3 {
     const want = this.camT.clone().add(off); this.cam.position.lerp(want, this.intro ? 1 : 1 - Math.exp(-5 * dt)); if (this.shake > 0) this.cam.position.y += Math.sin(t * 80) * this.shake * 0.15;
     this.cam.lookAt(this.camT);
     this.sun.position.set(this.camT.x - 9, this.camT.y + 16, 13); this.sun.target.position.set(this.camT.x, this.camT.y, 0);
-    r.render(this.scene, this.cam);
+    renderFX(g, r, this.scene, this.cam, { bloom: 0.35, tilt: 0.55, focus: 0.5, vig: 0.3, sat: 1.1 });
     if (this.fin?.snap && !this.fin.done) { const f = this.fin; f.done = true; g.freezeFrame(); const ok = g.director.handoff(4, { from3: true }); if (!ok) { g.clear2d(); this.ended = true; g.save.complete(3); g.director.end({ chapter: 3 }); } return; }
     // DOM: prompt + dialogue
     const u = this.near; if (u) { const v = new THREE.Vector3(u.x, u.y + 2.6, 0.9).project(this.cam); this.prompt.style.display = 'block'; this.prompt.style.left = ((v.x + 1) / 2) * 100 + '%'; this.prompt.style.top = ((1 - v.y) / 2) * 100 + '%'; const [k, ...rest] = u.label.split(' — '); this.prompt.innerHTML = `<kbd>${k}</kbd>${rest.join(' — ')}`; } else this.prompt.style.display = 'none';

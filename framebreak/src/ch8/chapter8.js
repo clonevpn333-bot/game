@@ -4,6 +4,8 @@
 // reach ledges, stretch long to inchworm across gaps, absorb clay to gain
 // mass, pinch a piece off to leave weight behind.
 import * as THREE from 'three';
+import { renderFX } from '../fx/post.js';
+
 import { getRenderer } from '../ch3/chapter3.js';
 import { clamp, lerp, makeCanvas, rng, Spring, ease, approach } from '../core/util.js';
 
@@ -119,7 +121,7 @@ export default class Chapter8 {
     const k = this.fin?.k || 0, cx = this.fin ? lerp(p.x, 30, k) : p.x + p.face * 1.5; this.camT = (this.camT ?? cx) + (cx - (this.camT ?? cx)) * Math.min(1, dt * 3);
     const sh = this.shake * (g.settings.shake ?? 1); this.cam.position.set(this.camT + 2 + (Math.random() - 0.5) * sh * 0.3, p.y * 0.5 + 5 + k * 8 + (Math.random() - 0.5) * sh * 0.3, 20 + k * 44 + (p.x > 44 ? 8 : 0)); this.cam.lookAt(this.camT, p.y * 0.5 + 2, 0); if (this.introK < 1) { const e = ease.inOutCubic(clamp((this.introK - 0.3) / 0.7, 0, 1)), a = (1 - e) * 1.42, R = lerp(9, 20, e); this.cam.position.set(p.x - Math.sin(a) * R + 2 * e, lerp(3.4, p.y * 0.5 + 5, e), Math.cos(a) * R); this.cam.lookAt(lerp(p.x + 5, this.camT, e), lerp(1.2, p.y * 0.5 + 2, e), 0); const H = this.hands[0].h, d = clamp(this.introK / 0.25, 0, 1), up = clamp((this.introK - 0.3) / 0.5, 0, 1); H.position.set(p.x, 1.9 + (1 - d) * 5 + up * 16, 0); H.rotation.z = 0; } this.cam.aspect = g.W / g.H; this.cam.updateProjectionMatrix();
     this.key.position.set(this.camT - 8, 22, 14); this.key.target.position.set(this.camT, 0, 0);
-    r.render(this.scene, this.cam);
+    renderFX(g, r, this.scene, this.cam, { bloom: 0.3, tilt: 0.6, focus: 0.5, vig: 0.45, sat: 1.1 });
     if (this.fin?.snap && !this.fin.done) { this.fin.done = true; g.freezeFrame(); const ok = g.director.handoff(9, { from8: true }); if (!ok) { g.clear2d(); g.save.complete(8); g.audio.muffle(0); g.director.end({ chapter: 8 }); } return; }
     const hud = `<div><kbd>♥</kbd>${'●'.repeat(Math.max(0, p.hp))}${'○'.repeat(3 - Math.max(0, p.hp))}</div><div><kbd>◍</kbd>MASS ${p.mass} · ${p.long ? 'LONG' : p.shape.toUpperCase()}</div>`; if (hud !== this._hud) this.hud.innerHTML = this._hud = hud;
     const d = g.dialogue.current; if (d) { this.dlg.style.display = 'block'; this.dlg.firstChild.textContent = d.speaker.name; this.dlg.firstChild.style.color = d.speaker.color === '#f4f6ff' ? '#3b2c22' : d.speaker.color; this.dlg.lastChild.textContent = g.dialogue.visibleText; } else this.dlg.style.display = 'none';

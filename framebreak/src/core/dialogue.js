@@ -7,7 +7,7 @@ const SPEAKERS = {
   curator: { name: 'THE CURATOR', color: '#f4f6ff', pitch: 0.6 },
   boss: { name: 'GRIDLOCK', color: '#ffd166', pitch: 0.45 },
   press: { name: 'THE PRESS', color: '#e8642a', pitch: 0.5 },
-  sys: { name: '', color: '#98a2bd', pitch: 1 },
+  sys: { name: 'A DRAFT', color: '#7fa6ea', pitch: 1.4 },
 };
 
 export class Dialogue {

@@ -3,6 +3,8 @@
 // (crane, drum, conveyor, barrel, magnets) and Rin walks wherever the
 // physics opens a path. Real simulation (cannon-es), multiple solutions.
 import * as THREE from 'three';
+import { renderFX } from '../fx/post.js';
+
 import * as C from 'cannon-es';
 import { getRenderer } from '../ch3/chapter3.js';
 import { clamp, lerp, damp, ease, makeCanvas, rng } from '../core/util.js';
@@ -210,7 +212,7 @@ export default class Chapter4 {
       cam.position.lerpVectors(far, eye, ease.inOutCubic(k)); cam.fov = lerp(17, 70, k * k); cam.updateProjectionMatrix();
       const look = new THREE.Vector3().lerpVectors(new THREE.Vector3(cx, 0, 0), new THREE.Vector3(p.x + 6, p.y + 1.4, p.z), k); cam.lookAt(look); this.rin.visible = k < 0.8;
     }
-    r.render(this.scene, cam);
+    renderFX(g, r, this.scene, cam, { bloom: 0.7, tilt: f ? 0 : 0.75, focus: 0.52, vig: 0.34, sat: 1.12 });
     if (f?.snap && !f.done) { f.done = true; g.freezeFrame(); r.setSize(g.W, g.H, false); g.gl.style.imageRendering = ''; const ok = g.director.handoff(5, { from4: true }); if (!ok) { g.clear2d(); g.save.complete(4); g.director.end({ chapter: 4 }); } return; }
     const d = g.dialogue.current; if (d) { this.dlg.style.display = 'block'; this.dlg.firstChild.textContent = d.speaker.name; this.dlg.firstChild.style.color = d.speaker.color; this.dlg.lastChild.textContent = g.dialogue.visibleText; } else this.dlg.style.display = 'none';
   }

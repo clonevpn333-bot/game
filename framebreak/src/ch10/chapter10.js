@@ -1,129 +1,47 @@
-// CHAPTER 10 — FRAMEBREAK. The core of the Framework. Three formats share
-// one arena, divided by drifting frame lines; Rin becomes whatever format he
-// is standing in and each form does something the others cannot:
-//   PIXEL  – fast, double-jump, slash          INK – stretch-arm grab & throw
-//   CLAY   – squash flat / stretch tall
-// Objects cross the lines: voxel blocks thrown by the Curator can be grabbed
-// from the ink zone, slashed in the pixel zone, ducked in clay.
-// The ending is a decision you walk to and make with your hands.
-import { Pen, drawRin, drawVell, INK, CREAM, TEAL, ORANGE, RED, GOLD, PINK } from '../ch2/ink.js';
-import { clamp, lerp, damp, approach, Spring, TAU, hash2, ease } from '../core/util.js';
+// CHAPTER 10 — FRAMEBREAK. The finale, in three acts with three different
+// kinds of play, all in one lit 3D world where every format coexists:
+//   I   THE GETAWAY      — arcade driving down the Framework's spine
+//   II  THE COURIER      — gliding between erased islands, restoring each one
+//   III THE MISSING CITY — exploring the first city by lantern and pulse,
+//                          then a decision you walk to and hold
+import * as THREE from 'three';
+import { getRenderer } from '../ch3/chapter3.js';
+import { renderFX } from '../fx/post.js';
+import { buildVell, buildHud } from './kit.js';
+import { Getaway } from './getaway.js';
+import { Courier } from './courier.js';
+import { City } from './city.js';
 
-const VW = 1920, VH = 1080, FLOOR = 900, GR = 3200;
 const SONG = (() => { const bars = {}, ch = [['A2', 'A3+C4+E4', 'A4 . . E5 . . D5 . C5 . D5 . E5 . . .'], ['F2', 'F3+A3+C4', 'C5 . . A4 . . F4 . A4 . C5 . F5 . E5 .'], ['G2', 'G3+B3+D4', 'D5 . . B4 . . G4 . B4 . D5 . G5 . . .'], ['E2', 'E3+G#3+B3', 'E5 . . C5 . . A4 . B4 . . . G#4 . B4 .']]; const A = ch.map(([b, c, m], i) => { bars['a' + i] = { sub: `${b} . ${b} . ${b} ${b} . ${b} . ${b} ${b} . ${b} . ${b} ${b}`, str: `${c} - - - - - - - - - - - - - - -`, chip: m, brass: m.replace(/5/g, '4').replace(/4 \. \./g, '4 - .'), box: m.replace(/5/g, '6'), horn: i % 2 ? '. . . . . . . . E5 . D5 . C5 . . .' : '. . . . . . . . . . . . . . . .', drums: i === 3 ? 'k . h k s . k k k h s k t t l l' : 'k . h . s . h k . k h . s . h h' }; return 'a' + i; }); return { bpm: 150, gain: 1, reverb: 0.3, start: 'A', tracks: { sub: { inst: 'subbass', vol: 0.9 }, str: { inst: 'strings', vol: 0.8, send: 0.5 }, chip: { inst: 'lead', vol: 0.7, pan: -0.3 }, brass: { inst: 'brass', vol: 0.6, pan: 0.25, layer: 2 }, box: { inst: 'musicbox', vol: 0.5, pan: 0.4, send: 0.5, layer: 1 }, horn: { inst: 'mute', vol: 0.5, layer: 2 }, drums: { kit: 'electro', vol: 0.9, layer: 1 } }, bars, sections: { A }, next: { A: 'A' } }; })();
 export { SONG as SONG_CH10 };
+
 const ENDS = {
   one: { name: 'ONE FRAME', sub: 'the Curator\'s ending', lines: ['Everything becomes one format. Clean lines. No seams.', 'It is very quiet. Rin has one shape, and keeps it.', 'Nobody remembers there were ever other ways to exist. Except Rin.'], text: 'One frame. One format. It is tidy, and Rin is the only one who knows what it cost.' },
   seal: { name: 'SEAL THE FRAMES', sub: 'the Keeper\'s ending', lines: ['The frames close. Every world is whole again, and alone again.', 'Rin fits in none of them now. Neither does a first sketch.', '"I remember you," says Vell. "That\'s the one thing I\'m good at."'], text: 'Every world safe behind its frame. Two things that belong to none of them keep each other company in the gutter between panels.' },
   open: { name: 'LEAVE IT OPEN', sub: 'the framebreak', lines: ['The frames come down. Pixels wander into paper towns. Clay learns to be ink.', 'It is a mess. It is ALIVE. The Curator is given a broom and, eventually, a hobby.', 'Rin never does settle on a shape. Vell says that was always the point.'], text: 'One universe. Too many ways to exist. Rin kept all of them.' },
 };
 
+
+const ACTS = [Getaway, Courier, City], IDS = [null, 'act2', 'act3'];
 export default class Chapter10 {
-  constructor(game) { this.game = game; this.id = 10; this.compositesOutgoing = true; }
-  async load() { this.pen = new Pen(); await this.game.director.preload(1); }
-  controlsHelp() { return '<b>A/D</b> move · <b>SPACE</b> jump · your form follows the frame you stand in:<br><b>PIXEL</b> J slash, double-jump · <b>INK</b> J grab / throw (W aims up) · <b>CLAY</b> hold S flat, hold W tall · <b>E</b> hold: commit to a choice'; }
-  start({ handoff } = {}) {
-    const g = this.game; this.introT = handoff ? 0 : 9; g.show3d(false); g.c2d.style.imageRendering = ''; g.c2d.style.opacity = '1'; g.director.releaseOutgoing();
-    this.t = 0; this.phase = 0; this.pt = 0; this.shake = 0; this.cubes = []; this.fx = []; this.noPause = false; this.ending = null; this.order = ['pixel', 'ink', 'clay']; this.beam = null;
-    this.p = { x: 300, y: FLOOR, vx: 0, vy: 0, face: 1, ground: true, hp: 6, inv: 0, jumps: 1, atk: 0, walk: 0, sx: new Spring(1, 260, 13), sy: new Spring(1, 260, 13), arm: null, hold: null, shape: 'blob', form: 'pixel', hT: 0 };
-    this.cur = { x: 960, y: 300, shield: 3, pins: [true, true, true], cool: 2, hurt: 0, small: 0 }; this.vell = { x: 200, y: 600, t: 0 };
+  constructor(game) { this.game = game; this.id = 10; this.compositesOutgoing = true; this.ENDS = ENDS; }
+  async load() {}
+  controlsHelp() { return this.act?.help() || ''; }
+  start({ checkpoint, handoff } = {}) {
+    const g = this.game; this.r = getRenderer(g); this.r.shadowMap.enabled = g.settings.shadows > 0; this.r.toneMappingExposure = 1.0; g.c2d.style.imageRendering = ''; g.gl.style.imageRendering = '';
+    this.hud = buildHud(g); this.vell = buildVell(); this.noPause = false; this.sting = [{ inst: 'bell', notes: 'A5 E6 D6 C6 E6 - -', step: 0.11, vol: 0.5, send: 0.5 }];
+    this.sw = 0; this.go(Math.max(0, IDS.indexOf(checkpoint || null)));
+    g.show3d(true); if (handoff) g.fadeFrozen(1600, () => g.director.releaseOutgoing()); else g.clear2d();
     g.audio.muffle(0); g.music.play(SONG, { intensity: 1, fade: 1 });
-    g.dialogue.say([{ who: 'curator', text: 'Welcome to the Framework. Every format, in one room. You see why I want it tidied.' }, { who: 'vell', text: "Cross the lines, Rin! You're whatever you're standing in. Use ALL of you." }, { who: 'vell', text: 'He throws blocks. In the INK frame you can grab them — send them back!' }]);
   }
-  stop() {}
-  respawn() { const p = this.p; p.hp = 6; p.x = 300; p.y = FLOOR; p.inv = 2; this.cubes = []; this.beam = null; if (this.phase === 0) this.cur.shield = 3; if (this.phase === 1) this.cur.pins = [true, true, true]; }
-  bounds() { const t = this.t, a = 640 + Math.sin(t * 0.3) * 170, b = 1280 + Math.sin(t * 0.23 + 2) * 170; return [0, a, b, VW]; }
-  zoneAt(x) { const b = this.bounds(); return this.order[x < b[1] ? 0 : x < b[2] ? 1 : 2]; }
-  hurt(n = 1) { const p = this.p; if (p.inv > 0) return; if (this.game.easy && p.hp <= 1) n = 0; p.hp -= n; p.inv = this.game.easy ? 2.4 : 1.3; p.vy = -500; this.shake = 14; this.game.sfx.play(p.form === 'pixel' ? 'px.hurt' : 'ink.hurt'); if (p.hp <= 0) { this.game.save.data.stats.deaths++; this.respawn(); } }
-  burst(x, y, col) { this.fx.push({ x, y, t: 0, col }); }
-
-  update(dt, outgoing) {
-    if (outgoing) return; const g = this.game, inp = g.input, p = this.p, c = this.cur, sfx = g.sfx; this.t += dt; this.pt += dt; this.pen.tick(this.t); if (this.introT < 3) { const a = this.introT; this.introT += dt; for (let i = 0; i < 3; i++) { const th = 0.3 + i * 0.6; if (a < th && this.introT >= th) { this.shake = 26; sfx.play('px.slam'); sfx.play(['px.glitch', 'ink.splat', 'ink.squash'][i]); } } if (a < 0.05) { p.y = -400; p.vy = 0; p.ground = false; } if (this.introT < 2) { p.vy = Math.min(p.vy, 0); p.y = Math.min(p.y, -100); } } this.shake = Math.max(0, this.shake - dt * 40); p.inv -= dt; p.atk -= dt; c.hurt -= dt;
-    if (this.ending) return this.updateEnding(dt);
-    // form follows the frame
-    const form = this.zoneAt(p.x); if (form !== p.form) { p.form = form; p.arm = null; if (p.hold) { p.hold.held = false; p.hold = null; } p.shape = 'blob'; this.burst(p.x, p.y - 60, form === 'pixel' ? TEAL : form === 'ink' ? INK : '#d9a27e'); sfx.play(form === 'pixel' ? 'px.glitch' : form === 'ink' ? 'ink.pop' : 'ink.squash'); p.sx.x = 1.4; p.sy.x = 0.7; }
-    const ix = inp.axisX, F = p.form, sp = F === 'pixel' ? 640 : F === 'ink' ? 500 : p.shape === 'blob' ? 360 : 200;
-    if (F === 'clay') { const want = inp.down.down ? 'flat' : inp.down.up ? 'tall' : 'blob'; if (want !== p.shape) { p.shape = want; sfx.play(want === 'flat' ? 'ink.squash' : 'ink.stretch', { vol: 0.5 }); } }
-    p.vx = approach(p.vx, ix * sp, (p.ground ? 5200 : 2600) * dt); if (Math.abs(ix) > 0.3) p.face = Math.sign(ix); if (p.ground) { p.walk += Math.abs(p.vx) * dt * 0.02; p.jumps = F === 'pixel' ? 1 : 0; }
-    if (inp.pressed.jump && !(F === 'clay' && p.shape !== 'blob')) { if (p.ground) { p.vy = F === 'clay' ? -900 : -1150; p.ground = false; sfx.play(F === 'pixel' ? 'px.jump' : 'ink.jump'); p.sx.x = 0.8; p.sy.x = 1.25; } else if (p.jumps > 0) { p.jumps--; p.vy = -1050; sfx.play('px.djump'); this.burst(p.x, p.y, TEAL); } }
-    p.vy = Math.min(p.vy + GR * dt, 2200); p.x = clamp(p.x + p.vx * dt, 40, VW - 40); p.y += p.vy * dt; if (p.y >= FLOOR) { if (!p.ground && p.vy > 600) { p.sx.x = 1.3; p.sy.x = 0.7; } p.y = FLOOR; p.vy = 0; p.ground = true; } p.sx.update(dt); p.sy.update(dt);
-    const ph = F === 'clay' ? (p.shape === 'flat' ? 44 : p.shape === 'tall' ? 520 : 130) : 130, pw = F === 'clay' && p.shape === 'flat' ? 200 : 70;
-    // actions per form
-    if (inp.pressed.attack) {
-      if (F === 'pixel') { p.atk = 0.22; sfx.play('px.swing'); const bx = p.x + p.face * 90; for (const q of this.cubes) if (!q.held && Math.abs(q.x - bx) < 130 && Math.abs(q.y - (p.y - 70)) < 150) { q.dead = true; this.burst(q.x, q.y, '#fff'); sfx.play('px.hit'); } this.hitPin(bx, p.y - 90, 140, 0); }
-      else if (F === 'ink') { if (p.hold) { const q = p.hold; p.hold = null; q.held = false; q.thrown = true; const dx = c.x - q.x, dy = c.y - q.y, L = Math.hypot(dx, dy); q.vx = (dx / L) * 1900; q.vy = (dy / L) * 1900; sfx.play('ink.throw'); } else if (!p.arm) { let tgt = null, bd = 900; for (const q of this.cubes) { const d = Math.hypot(q.x - p.x, q.y - (p.y - 80)); if (!q.thrown && d < bd) { bd = d; tgt = q; } } const up = inp.down.up; p.arm = { tx: tgt && !up ? tgt.x : p.x + (up ? 0 : p.face * 600), ty: tgt && !up ? tgt.y : p.y - (up ? 620 : 100), k: 0, tgt: up ? null : tgt }; sfx.play('ink.stretch'); } }
-    }
-    if (p.arm) { const a = p.arm; a.k += dt * (a.back ? -4.5 : 4.5); if (a.tgt) { a.tx = a.tgt.x; a.ty = a.tgt.y; } const hx = lerp(p.x, a.tx, a.k), hy = lerp(p.y - 90, a.ty, a.k); if (!a.back) this.hitPin(hx, hy, 70, 1); if (a.k >= 1 && !a.back) { a.back = true; if (a.tgt && !a.tgt.dead) { a.tgt.held = true; a.grab = a.tgt; sfx.play('ink.grab'); } } if (a.grab) { a.grab.x = hx; a.grab.y = hy; } if (a.k <= 0) { if (a.grab) p.hold = a.grab; p.arm = null; } }
-    if (p.hold) { p.hold.x = p.x; p.hold.y = p.y - 210; }
-    if (F === 'clay' && p.shape === 'tall') this.hitPin(p.x, p.y - 500, 90, 2);
-    // ---- the Curator
-    c.x = damp(c.x, 960 + Math.sin(this.t * 0.5) * 300, 2, dt); c.y = 300 + Math.sin(this.t * 0.9) * 30 - (this.phase === 1 ? 60 : 0); c.cool -= dt;
-    if (this.phase === 0 && c.cool <= 0 && this.cubes.length < 6) { c.cool = 1.9; const T = 0.9, tx = p.x + (Math.random() - 0.5) * 200; this.cubes.push({ x: c.x, y: c.y + 80, vx: (tx - c.x) / T, vy: (FLOOR - 40 - c.y - 80) / T - 0.5 * 1800 * T, fly: true, s: 44 }); sfx.play('px.shot', { pitch: 0.4 }); }
-    if (this.phase === 1) { if (!this.beam && c.cool <= 0) { c.cool = 4.2; const d = Math.random() < 0.5 ? 1 : -1; this.beam = { x: d > 0 ? -100 : VW + 100, d, warn: 1 }; sfx.play('px.alarm'); } const b = this.beam; if (b) { if (b.warn > 0) b.warn -= dt; else { b.x += b.d * 1000 * dt; if (Math.abs(p.x - b.x) < 60 + pw / 2 && p.y - ph < 840 && p.y > 760) this.hurt(1); if (b.x < -200 || b.x > VW + 200) this.beam = null; } } }
-    for (const q of this.cubes) {
-      if (q.held) continue; if (q.thrown) { q.x += q.vx * dt; q.y += q.vy * dt; if (Math.hypot(q.x - c.x, q.y - c.y) < 150) { q.dead = true; this.burst(q.x, q.y, '#fff'); if (this.phase === 0) { c.shield--; c.hurt = 0.5; this.shake = 20; sfx.play('px.hitbig'); sfx.play('pp.tear'); if (c.shield <= 0) this.nextPhase(); } } if (q.y < -100 || q.x < -100 || q.x > VW + 100) q.dead = true; continue; }
-      if (q.fly) { q.vy += 1800 * dt; q.x += q.vx * dt; q.y += q.vy * dt; if (Math.abs(q.x - p.x) < q.s + pw / 2 && q.y > p.y - ph - q.s && q.y < p.y) { this.hurt(1); q.dead = true; } if (q.y >= FLOOR - q.s) { q.y = FLOOR - q.s; q.fly = false; sfx.play('pp.thunk', { vol: 0.5 }); } }
-    }
-    this.cubes = this.cubes.filter((q) => !q.dead); for (const f of this.fx) f.t += dt; this.fx = this.fx.filter((f) => f.t < 0.5);
-    const v = this.vell; v.t += dt; v.x = damp(v.x, p.x - p.face * 140, 2.5, dt); v.y = damp(v.y, p.y - 280 + Math.sin(v.t * 2) * 16, 2.5, dt);
-    // ---- the decision: three things to walk to and hold
-    if (this.phase === 2) { let at = null; [['one', 330], ['seal', 960], ['open', 1590]].forEach(([k, x]) => { if (Math.abs(p.x - x) < 130 && p.ground) at = k; }); this.at = at; if (at && inp.down.interact) { p.hT += dt; if (Math.floor(p.hT * 8) !== Math.floor((p.hT - dt) * 8)) sfx.play('pp.crank'); if (p.hT > 2.2) this.choose(at); } else p.hT = Math.max(0, p.hT - dt * 2); }
+  go(i) { this.i = i; this.act = new ACTS[i](this); this.act.build(); if (i) this.game.save.setCheckpoint(10, IDS[i]); }
+  stop() { this.hud?.remove(); this.game.input.exitLock(); this.act = null; }
+  respawn() { this.act?.respawn?.(); }
+  update(dt, outgoing) { if (outgoing || !this.act) return; this.act.update(dt); if (this.act.done && this.i < 2 && !this.swap) this.swap = true; }
+  render(dt) {
+    if (!this.act) return; const g = this.game, r = this.r; if (r.domElement.width !== g.W || r.domElement.height !== g.H) r.setSize(g.W, g.H, false);
+    const f = this.act.frame(dt); renderFX(g, r, f.scene, f.cam, f.fx); this.hud.tick();
+    if (this.swap) { this.swap = false; g.freezeFrame(); g.dialogue.clear(); this.go(this.i + 1); g.fadeFrozen(1300); }
   }
-  hitPin(x, y, r, idx) { if (this.phase !== 1) return; const b = this.bounds(), c = this.cur; for (let i = 0; i < 3; i++) { if (!c.pins[i] || this.order[i] !== ['pixel', 'ink', 'clay'][idx]) continue; const px = (b[i] + b[i + 1]) / 2, py = 400; if (Math.hypot(px - x, py - y) < r + 40) { c.pins[i] = false; c.hurt = 0.5; this.shake = 18; this.burst(px, py, GOLD); this.game.sfx.play('px.hitbig'); this.game.sfx.play('pp.pin'); if (c.pins.every((q) => !q)) this.nextPhase(); } } }
-  nextPhase() {
-    const g = this.game; this.phase++; this.pt = 0; this.cubes = []; this.beam = null; g.sfx.play('fx.boom'); this.shake = 30; g.dialogue.clear();
-    if (this.phase === 1) { this.order = ['clay', 'pixel', 'ink']; this.cur.cool = 3; g.music.setIntensity(2); g.dialogue.say([{ who: 'curator', text: 'You broke my border. I have others. Three pins hold my frame — and you cannot reach them all as ONE thing.' }, { who: 'vell', text: 'So be three things! One pin per frame: slash it, grab it, or stand TALL and bite it. Mind the eraser!' }]); }
-    if (this.phase === 2) { this.cur.small = 0.001; g.music.setIntensity(1); g.dialogue.say([{ who: 'curator', text: '...I only wanted it to hold together. It was all coming apart and nobody was TIDYING.' }, { who: 'vell', text: "He's the Framework's final render. I'm its first sketch — the draft it never deleted. We were always the same machine." }, { who: 'vell', text: "The core is open, Rin. Three ways this ends. Walk to one and hold E. Whatever you pick — I'll remember you." }]); }
-  }
-  choose(k) { const g = this.game; this.ending = { k, t: 0, line: -1 }; this.noPause = true; g.dialogue.clear(); g.sfx.play('fx.boom'); g.sfx.play('fx.shimmer'); this.shake = 30; g.save.flag('ending', k); g.save.complete(10); g.music.setIntensity(k === 'open' ? 2 : 0); this.p.x = 200; }
-  updateEnding(dt) { // a last walk through the world you chose
-    const e = this.ending, g = this.game, p = this.p, inp = g.input; e.t += dt; p.vx = approach(p.vx, inp.axisX * 420, 4000 * dt); if (Math.abs(p.vx) > 10) p.face = Math.sign(p.vx); p.x = clamp(p.x + p.vx * dt, 60, VW - 60); p.walk += Math.abs(p.vx) * dt * 0.02; p.y = FLOOR; p.sx.update(dt); p.sy.update(dt);
-    const want = Math.min(2, Math.floor((p.x - 200) / 520)); if (want > e.line) { e.line = want; g.sfx.play('pp.chime', { pitch: 0.8 + want * 0.15 }); }
-    this.vell.t += dt; this.vell.x = damp(this.vell.x, p.x - p.face * 150, 2, dt); this.vell.y = damp(this.vell.y, FLOOR - 280 + Math.sin(this.vell.t * 2) * 16, 2, dt);
-    if (p.x > VW - 120 && e.line >= 2 && !e.done) { e.done = true; g.director.end({ chapter: 10, final: true, title: ENDS[e.k].name, text: ENDS[e.k].text }); }
-  }
-
-  // ---- render --------------------------------------------------------------------
-  drawRinForm(ctx, p, form) {
-    const pen = this.pen, t = this.t;
-    if (form === 'pixel') { const at = this.game.director.modules[1].atlas, fr = p.atk > 0 ? 'rin_atk1_1' : !p.ground ? (p.vy < 0 ? 'rin_jump0' : 'rin_fall0') : Math.abs(p.vx) > 40 ? 'rin_run' + (Math.floor(p.walk * 1.6) % 8) : 'rin_idle0'; ctx.save(); ctx.imageSmoothingEnabled = false; ctx.translate(Math.round(p.x / 5) * 5, p.y); ctx.scale(5, 5); at.draw(ctx, fr, 0, 0, p.face < 0); if (p.atk > 0) at.draw(ctx, 'fx_s1_' + Math.min(2, Math.floor((0.22 - p.atk) * 14)), 0, 0, p.face < 0); ctx.restore(); ctx.imageSmoothingEnabled = true; }
-    else if (form === 'ink') { const a = p.arm; drawRin(ctx, pen, { x: p.x, y: p.y, face: p.face, sx: p.sx.x, sy: p.sy.x, vx: p.vx, walk: p.walk, ground: p.ground, t, flat: 0, hold: !!p.hold, effort: !!a, armTo: a ? { x: lerp(p.x, a.tx, a.k), y: lerp(p.y - 90, a.ty, a.k) } : null, armTaut: 1, blink: 0 }); }
-    else { const h = p.shape === 'flat' ? 44 : p.shape === 'tall' ? 520 : 130, w = p.shape === 'flat' ? 200 : p.shape === 'tall' ? 70 : 120, st = Math.floor(t * 12), wob = 1 + Math.sin(st * 1.7) * 0.03; ctx.save(); ctx.translate(p.x, p.y); const gr = ctx.createRadialGradient(-w * 0.2, -h * 0.7, 4, 0, -h / 2, Math.max(w, h) * 0.7); gr.addColorStop(0, '#7ff0e0'); gr.addColorStop(1, '#178a86'); ctx.fillStyle = gr; ctx.beginPath(); ctx.ellipse(0, -h / 2, (w / 2) * wob, (h / 2) / wob, 0, 0, TAU); ctx.fill(); ctx.strokeStyle = 'rgba(0,60,60,0.25)'; ctx.lineWidth = 2; for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.ellipse(-w * 0.1, -h * 0.4, 8 + i * 7, 12 + i * 9, 0.5, 0, TAU); ctx.stroke(); } ctx.fillStyle = ORANGE; ctx.fillRect(-w / 2 * 0.9, -h * 0.42, w * 0.9, Math.min(18, h * 0.2)); for (const s of [-1, 1]) { ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(p.face * 14 + s * 16, -h * 0.68, 11, 0, TAU); ctx.fill(); ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(p.face * 18 + s * 16, -h * 0.68, 5, 0, TAU); ctx.fill(); } ctx.restore(); }
-  }
-  render() {
-    const g = this.game, ctx = g.ctx, pen = this.pen, S = Math.min(g.W / VW, g.H / VH), t = this.t, p = this.p, c = this.cur, b = this.bounds(), ch1 = g.director.modules[1];
-    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = '#0d0f1f'; ctx.fillRect(0, 0, g.W, g.H); const sh = this.shake * (g.settings.shake ?? 1); ctx.setTransform(S, 0, 0, S, (g.W - VW * S) / 2 + (Math.random() - 0.5) * sh * S, (g.H - VH * S) / 2 + (Math.random() - 0.5) * sh * S); pen.lw = 6;
-    const E = this.ending, zones = E ? [E.k === 'one' ? 'white' : E.k === 'seal' ? 'ink' : 'pixel', E.k === 'one' ? 'white' : E.k === 'seal' ? 'ink' : 'ink', E.k === 'one' ? 'white' : E.k === 'seal' ? 'ink' : 'clay'] : this.order;
-    const IT = this.introT ?? 9; if (IT < 3) { ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, VW, VH); }
-    for (let i = 0; i < 3; i++) { // each frame renders its slice of the room in its own language
-      const x0 = b[i], x1 = b[i + 1], z = zones[i], rv = ease.outCubic(clamp((IT - 0.3 - i * 0.6) / 0.7, 0, 1)); ctx.save(); ctx.beginPath(); ctx.rect(x0, 0, x1 - x0, VH * rv); ctx.clip();
-      if (z === 'pixel') { ctx.imageSmoothingEnabled = false; ctx.drawImage(ch1.bg.sky, 0, 0, 320, 180, 0, 0, VW, VH); ctx.drawImage(ch1.bg.far, (t * 6) % 160, 0, 320, 100, 0, 380, VW, 600); ctx.drawImage(ch1.bg.near, (t * 14) % 320, 0, 320, 120, 0, 420, VW, 720); ctx.fillStyle = '#2b3040'; ctx.fillRect(0, FLOOR, VW, 200); for (let x = 0; x < VW; x += 80) { ctx.fillStyle = '#98a2bd'; ctx.fillRect(x, FLOOR, 75, 10); ctx.fillStyle = '#454c63'; ctx.fillRect(x, FLOOR + 10, 75, 10); } ctx.imageSmoothingEnabled = true; }
-      else if (z === 'ink') { ctx.fillStyle = CREAM; ctx.fillRect(0, 0, VW, VH); for (let k = 0; k < 6; k++) { const gx = 200 + k * 330; ctx.save(); ctx.translate(gx, 380 + (k % 2) * 160); ctx.rotate(t * (k % 2 ? 0.5 : -0.5)); ctx.fillStyle = '#cfd6d9'; ctx.beginPath(); for (let q = 0; q < 16; q++) { const a = (q / 16) * TAU, r = q % 2 ? 120 : 96; ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r); } ctx.fill(); ctx.restore(); pen.eye(ctx, gx - 30, 720, 16, clamp((p.x - gx) / 400, -1, 1), 0, 0, k); pen.eye(ctx, gx + 30, 720, 16, clamp((p.x - gx) / 400, -1, 1), 0, 0, k + 9); } ctx.fillStyle = '#e4dabd'; ctx.fillRect(0, FLOOR, VW, 200); pen.line(ctx, 0, FLOOR, VW, FLOOR, 9, 1); for (let x = 0; x < VW; x += 90) pen.line(ctx, x + 30, FLOOR + 26, x - 10, FLOOR + 80, 3, x); }
-      else if (z === 'clay') { const gr = ctx.createLinearGradient(0, 0, 0, VH); gr.addColorStop(0, '#f1dcbc'); gr.addColorStop(1, '#d9a27e'); ctx.fillStyle = gr; ctx.fillRect(0, 0, VW, VH); const st = Math.floor(t * 12); for (let k = 0; k < 9; k++) { ctx.fillStyle = ['#b5c9a0', '#e6c27a', '#c98a6a'][k % 3]; ctx.beginPath(); ctx.ellipse(120 + k * 220, 760 + Math.sin(st + k) * 4, 150, 200 + (k % 3) * 60, 0, 0, TAU); ctx.fill(); } ctx.fillStyle = '#9bbf8a'; ctx.fillRect(0, FLOOR, VW, 200); ctx.strokeStyle = 'rgba(60,40,20,0.18)'; ctx.lineWidth = 3; for (let k = 0; k < 14; k++) for (let q = 1; q < 5; q++) { ctx.beginPath(); ctx.ellipse(70 + k * 140, FLOOR + 90, q * 12, q * 16, 0.4, 0, TAU); ctx.stroke(); } }
-      else { ctx.fillStyle = '#fafafa'; ctx.fillRect(0, 0, VW, VH); ctx.fillStyle = '#e8e8e8'; ctx.fillRect(0, FLOOR, VW, 200); ctx.strokeStyle = '#d0d0d0'; ctx.lineWidth = 2; for (let x = 0; x < VW; x += 120) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, VH); ctx.stroke(); } }
-      ctx.restore();
-    }
-    if (!E || E.k !== 'one') for (let i = 1; i < 3; i++) { const x = b[i], open = E && E.k === 'open'; ctx.fillStyle = '#fff'; ctx.globalAlpha = open ? 0.25 : 1; ctx.fillRect(x - 7, 0, 14, VH); ctx.fillStyle = ORANGE; ctx.fillRect(x + 7, 0, 4, VH); ctx.fillStyle = INK; ctx.fillRect(x - 10, 0, 3, VH); ctx.globalAlpha = 1; }
-    if (!E) {
-      // the Curator: the one smoothly-shaded "final render" in the room — and his frame
-      const sm = c.small > 0 ? (c.small = Math.min(1, c.small + 0.01)) : 0, cw = lerp(130, 40, sm), chh = lerp(300, 60, sm), cy = lerp(c.y, FLOOR - 60, ease.inOutCubic(sm));
-      ctx.save(); ctx.translate(c.x + (c.hurt > 0 ? Math.sin(t * 90) * 10 : 0), cy);
-      if (this.phase === 0) { ctx.strokeStyle = INK; ctx.lineWidth = 14; ctx.strokeRect(-150, -210, 300, 420); ctx.fillStyle = 'rgba(255,255,255,0.35)'; for (let y = -200; y < 210; y += 22) for (let x = -140; x < 150; x += 22) { ctx.beginPath(); ctx.arc(x + ((y / 22) % 2) * 11, y, 4, 0, TAU); ctx.fill(); } for (let i = 0; i < 3 - c.shield; i++) { ctx.strokeStyle = INK; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(-150 + i * 110, -210); ctx.lineTo(-100 + i * 90, -60 + i * 40); ctx.lineTo(-140 + i * 120, 80); ctx.stroke(); } }
-      ctx.shadowColor = 'rgba(0,0,0,0.45)'; ctx.shadowBlur = 40; ctx.shadowOffsetY = 20; const gr = ctx.createLinearGradient(-cw / 2, 0, cw / 2, 0); gr.addColorStop(0, '#ffffff'); gr.addColorStop(0.6, '#f2f2f6'); gr.addColorStop(1, '#b9bccb'); ctx.fillStyle = gr; ctx.beginPath(); ctx.roundRect(-cw / 2, -chh / 2, cw, chh, 10); ctx.fill(); ctx.shadowColor = 'transparent';
-      ctx.fillStyle = '#10121c'; const ey = -chh * 0.28; ctx.fillRect(-cw * 0.28, ey, cw * 0.2, sm ? 8 : 6); ctx.fillRect(cw * 0.08, ey, cw * 0.2, sm ? 8 : 6); if (sm > 0.5) { ctx.fillRect(-8, ey + 18, 16, 3); }
-      ctx.restore();
-      if (this.phase === 1) for (let i = 0; i < 3; i++) if (c.pins[i]) { const px = (b[i] + b[i + 1]) / 2; ctx.strokeStyle = '#fff'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(px, 400); ctx.lineTo(c.x, c.y); ctx.stroke(); ctx.fillStyle = GOLD; ctx.strokeStyle = INK; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(px, 400, 34 + Math.sin(t * 6 + i) * 4, 0, TAU); ctx.fill(); ctx.stroke(); pen.text(ctx, ['SLASH', 'GRAB', 'TALL'][['pixel', 'ink', 'clay'].indexOf(this.order[i])], px, 470, 26, INK); }
-      const bm = this.beam; if (bm) { if (bm.warn > 0) { if (Math.floor(t * 10) % 2) { ctx.fillStyle = 'rgba(226,84,58,0.35)'; ctx.fillRect(0, 760, VW, 80); } pen.text(ctx, 'ERASER — DUCK OR JUMP', VW / 2, 720, 36, RED); } else { ctx.fillStyle = '#fff'; ctx.fillRect(bm.x - 60, 760, 120, 80); ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.fillRect(bm.x - bm.d * 400, 772, 400 * bm.d, 56); } }
-      // voxel blocks: the same object, drawn by whichever frame it is in
-      for (const q of this.cubes) { const z = this.zoneAt(q.x), s = q.s; ctx.save(); ctx.translate(q.x, q.y); if (z === 'pixel') { const k = Math.round(s / 10) * 10; ctx.fillStyle = '#f4f6ff'; ctx.fillRect(-k, -k, k * 2, k * 2); ctx.fillStyle = '#98a2bd'; ctx.fillRect(-k, k - 10, k * 2, 10); ctx.fillRect(k - 10, -k, 10, k * 2); ctx.fillStyle = '#0d0f1f'; ctx.fillRect(-k, -k, k * 2, 5); ctx.fillRect(-k, -k, 5, k * 2); } else if (z === 'ink') pen.rect(ctx, -s, -s, s * 2, s * 2, { seed: q.s, fill: '#fff' }); else { ctx.fillStyle = '#f3ece0'; ctx.beginPath(); ctx.roundRect(-s, -s, s * 2, s * 2, 14); ctx.fill(); ctx.fillStyle = 'rgba(0,0,0,0.12)'; ctx.fillRect(-s, s - 12, s * 2, 12); } ctx.restore(); }
-      if (this.phase === 2) [['one', 330, 'ONE FRAME', '#fff'], ['seal', 960, 'SEAL THE FRAMES', TEAL], ['open', 1590, 'LEAVE IT OPEN', ORANGE]].forEach(([k, x, name, col]) => { const on = this.at === k; pen.rect(ctx, x - 90, FLOOR - 260, 180, 260, { seed: x, fill: col }); pen.rect(ctx, x - 60, FLOOR - 230, 120, 170, { seed: x + 1, fill: k === 'open' ? null : '#fff', lw: 8 }); pen.text(ctx, name, x, FLOOR - 300, 34, INK); if (on) { pen.text(ctx, 'HOLD E', x, FLOOR - 350, 30, RED); ctx.fillStyle = RED; ctx.fillRect(x - 90, FLOOR - 20, 180 * clamp(p.hT / 2.2, 0, 1), 14); } });
-    } else { const e = ENDS[E.k]; pen.text(ctx, e.name, VW / 2, 150, 90, E.k === 'one' ? '#999' : INK); pen.text(ctx, e.sub, VW / 2, 230, 30, RED); for (let i = 0; i <= E.line; i++) pen.text(ctx, e.lines[i], VW / 2, 330 + i * 70, 36, INK); if (E.line < 2 || p.x < VW - 300) pen.text(ctx, 'walk on  →', VW - 220, FLOOR - 320, 34, INK); }
-    for (const f of this.fx) { const k = f.t / 0.5; ctx.strokeStyle = f.col; ctx.lineWidth = 8 * (1 - k); for (let i = 0; i < 8; i++) { const a = (i / 8) * TAU; ctx.beginPath(); ctx.moveTo(f.x + Math.cos(a) * 40 * k, f.y + Math.sin(a) * 40 * k); ctx.lineTo(f.x + Math.cos(a) * (60 + 140 * k), f.y + Math.sin(a) * (60 + 140 * k)); ctx.stroke(); } }
-    if (!(E && E.k === 'one')) drawVell(ctx, pen, { x: this.vell.x, y: this.vell.y, t: this.vell.t, look: Math.sign(p.x - this.vell.x) }); else { ctx.globalAlpha = 0.25; drawVell(ctx, pen, { x: this.vell.x, y: this.vell.y, t: this.vell.t, look: 0 }); ctx.globalAlpha = 1; }
-    if (!(p.inv > 0 && Math.floor(p.inv * 20) % 2)) this.drawRinForm(ctx, p, E ? (E.k === 'one' ? 'ink' : E.k === 'seal' ? 'ink' : this.zoneAt(p.x)) : p.form);
-    if (!E) { for (let i = 0; i < 6; i++) { ctx.fillStyle = i < p.hp ? TEAL : 'rgba(255,255,255,0.3)'; ctx.strokeStyle = INK; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(70 + i * 54, 70, 20, 0, TAU); ctx.fill(); ctx.stroke(); } pen.text(ctx, 'FORM: ' + p.form.toUpperCase(), 70, 130, 30, INK, 'left'); for (let i = 0; i < 3; i++) pen.text(ctx, zones[i].toUpperCase(), (b[i] + b[i + 1]) / 2, 40, 24, INK); }
-    const d = g.dialogue.current; if (d) { const lines = wrap(g.dialogue.visibleText, 58), full = wrap(d.text, 58), w = 1150, h = 70 + full.length * 44, x = (VW - w) / 2, y = 150; pen.blob(ctx, VW / 2, y + h / 2, w / 2, h / 2 + 8, { seed: 150, fill: '#fff', wob: 0.015, n: 18 }); pen.text(ctx, d.speaker.name, x + 70, y + 34, 26, d.speaker.color === '#f4f6ff' ? INK : d.speaker.color, 'left'); lines.forEach((ln, i) => pen.text(ctx, ln, VW / 2, y + 76 + i * 44, 32, INK)); }
-  }
+  perfInfo() { const i = this.r.info.render; return `act ${this.i + 1} · calls ${i.calls} · tris ${i.triangles}`; }
 }
-const wrap = (s, n) => { const o = []; let c = ''; for (const w of s.split(' ')) { if ((c + ' ' + w).trim().length > n) { o.push(c); c = w; } else c = (c + ' ' + w).trim(); } if (c) o.push(c); return o; };
-void hash2; void PINK;
