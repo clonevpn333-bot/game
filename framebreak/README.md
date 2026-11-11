@@ -22,11 +22,11 @@ All ten chapters are playable start to finish and hand over to the next one. The
 | 2 | Ink & Violence | Vector cartoon with boiling lines, squash/stretch | Stretch-grab/throw, swing, flatten, punch, The Press boss, ink flood. Smoke-tested. ~5–7 min. |
 | 3 | Fold the World | three.js papercraft, shadow-mapped | Fold tower, turntable, pop-up tabs, accordion bridge, rearranging theater. Smoke-tested. ~5–7 min. |
 | 4 | Domino City | three.js isometric + cannon-es rigid bodies | Three-stage chain-reaction puzzle with several solutions. Dominoes use a constrained hinge model; the train smash is authored. ~3–5 min. |
-| 5 | 1996 | Software raycaster (DDA, sprites, z-buffer) | One level: doors, secret wall, rotating room, key, 3 enemy types. ~3–5 min. |
-| 6 | Block Collapse | Chunked editable voxels | Dig, build, structural collapse, pursuing Leveler, 5 obstacles. ~3–5 min. |
-| 7 | Full Resolution | three.js PBR, jointed IK rig | Parkour course: slide, vault/mantle, moving roofs, grapple, Reframer chase. ~4–6 min. |
-| 8 | Clay Heart | three.js clay look, 12 fps posing | Flat / tall / long / mass puzzles, sculptor's hands. ~3–4 min. |
-| 9 | Break the Page | Inked comic, Canvas2D | Four pages of panel-order causality puzzles. ~3–4 min. |
+| 5 | 1996 | Software raycaster: 64px textures, floor/ceiling casting, lamp-lit banded shading, 10-frame enemies | One level: doors, secret wall, rotating room, key, 3 enemy types. ~3–5 min. |
+| 6 | Block Collapse | Chunked editable voxels with a texture atlas and per-vertex ambient occlusion; voxel-built characters | Dig, build, structural collapse, pursuing Leveler, 5 obstacles. ~3–5 min. |
+| 7 | Full Resolution | three.js PBR with procedural albedo/normal/roughness maps, façade kit, jointed IK rig | Parkour course: slide, vault/mantle, moving roofs, grapple, Reframer chase. ~4–6 min. |
+| 8 | Clay Heart | Sculpted clay meshes with fingerprint normal maps, 12 fps posing, jointed hands | Flat / tall / long / mass puzzles, sculptor's hands. ~3–4 min. |
+| 9 | Break the Page | Inked comic: hatched sets, spot blacks, halftone screen, newsprint, Canvas2D | Four pages of panel-order causality puzzles. ~3–4 min. |
 | 10 | Framebreak | three.js, shared post-FX (bloom, grade, MSAA) | Rebuilt as a three-act 3D finale: **The Getaway** (arcade driving with drift-boost through four format districts), **The Courier** (gliding between erased islands and restoring each one), **The Missing City** (exploration by pulse, no combat, then a held choice and three endings). Smoke-tested per act. ~12–15 min. |
 
 Total is roughly 45–60 minutes, not the 80–100 the full design calls for.
@@ -37,6 +37,7 @@ Everything is authored in code; there are no external art, audio or texture file
 
 - **Pixel art** is real palette-indexed pixel art: hand-typed stamps plus keyframed poses with pixel-exact limbs, baked to atlases at load. It is not painted in an art tool.
 - **Cartoon and comic art** are procedural vector drawings with jittered "boil". Expressive, but not frame-by-frame hand animation.
+- **Textures** in chapters 5–10 are generated in code at load time (pixel-painted 64px tiles for the raycaster; canvas height fields turned into normal and roughness maps for the 3D chapters). They are not photo-sourced or hand-painted in an art tool.
 - **3D models** are assembled from primitives and extruded shapes. Chapter 7's Rin has a full joint hierarchy, IK legs, fingers, eyelids and layered clothing, but it is a stylised primitive-built figure, not a sculpted skinned mesh.
 - **Textures** are procedural canvases (concrete, brushed metal, paper fibre, fingerprints). No scanned PBR materials are used.
 - **Music** is original, written as note data and synthesised live with WebAudio. I could not listen to it in this environment — it was composed by theory and checked only for running without errors.

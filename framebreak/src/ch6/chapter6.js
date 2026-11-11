@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { renderFX } from '../fx/post.js';
 
 import { getRenderer } from '../ch3/chapter3.js';
+import { voxAtlas, buildVoxRin, buildVoxVell, buildVoxTurret, buildLeveler } from './voxmodels.js';
 import { clamp, lerp, damp, hash2, ease } from '../core/util.js';
 
 const SX = 168, SY = 32, SZ = 24, CH = 16, AIR = 0, CONC = 1, BRICK = 2, STEEL = 3, WOOD = 4, GLASS = 5, CRACK = 6, PLANK = 7;
@@ -28,20 +29,15 @@ export default class Chapter6 {
     const S = (this.scene = new THREE.Scene()); S.background = new THREE.Color('#f2b08a'); S.fog = new THREE.Fog('#f2b08a', 40, 110);
     this.cam = new THREE.PerspectiveCamera(50, 16 / 9, 0.3, 300); this.t = 0; this.said = {}; this.fin = null; this.noPause = false; this.shake = 0;
     S.add(new THREE.HemisphereLight('#fff0dc', '#6a5a7a', 1.0)); const sun = (this.sun = new THREE.DirectionalLight('#fff2d8', 2.2)); sun.castShadow = g.settings.shadows > 0; sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -40, right: 40, top: 40, bottom: -40, near: 1, far: 160 }); sun.shadow.bias = -0.001; S.add(sun, sun.target);
-    this.v = new Uint8Array(SX * SY * SZ); this.dirty = new Set(); this.chunks = {}; this.mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9 });
+    this.v = new Uint8Array(SX * SY * SZ); this.dirty = new Set(); this.chunks = {}; this.mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, map: voxAtlas() });
     this.gen(); for (const k of this.dirty) this.mesh(k); this.dirty.clear();
     // debris pool
     this.deb = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ roughness: 0.9 }), 700); this.deb.instanceMatrix.setUsage(THREE.DynamicDrawUsage); this.deb.castShadow = true; this.deb.count = 0; S.add(this.deb); this.debris = []; this.dummy = new THREE.Object3D();
-    // Rin + Vell (voxel forms)
-    const mk = (c) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.8 }), rin = (this.rin = new THREE.Group()), pc = (w, h, d, c, x, y, z = 0) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mk(c)); m.position.set(x, y, z); m.castShadow = true; rin.add(m); return m; };
-    pc(0.6, 0.7, 0.36, '#2fd3c6', 0, 1.0); pc(0.56, 0.5, 0.5, '#ffd0a4', 0, 1.6); pc(0.64, 0.24, 0.58, '#f4f6ff', 0, 1.92); pc(0.62, 0.12, 0.52, '#ff9a3c', 0, 1.74); pc(0.7, 0.16, 0.44, '#ff9a3c', 0, 1.3); pc(0.16, 0.16, 0.6, '#ff9a3c', 0, 1.3, -0.4);
-    this.legs = [pc(0.24, 0.6, 0.28, '#3f5196', -0.17, 0.3), pc(0.24, 0.6, 0.28, '#3f5196', 0.17, 0.3)]; this.arms = [pc(0.2, 0.6, 0.24, '#2fd3c6', -0.42, 1.0), pc(0.2, 0.6, 0.24, '#2fd3c6', 0.42, 1.0)]; S.add(rin);
-    this.vell = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 0.6), new THREE.MeshStandardMaterial({ color: '#c06fc0', emissive: '#5e3a82' })); S.add(this.vell);
-    // THE LEVELER
-    const L = (this.lev = new THREE.Group()); const lm = mk('#2b3040'); const body = new THREE.Mesh(new THREE.BoxGeometry(10, 26, SZ + 4), lm); body.position.set(-7, 13, SZ / 2); L.add(body);
-    this.drums = []; for (let y = 2; y < 26; y += 5) { const d = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.4, SZ + 2, 10), mk(y % 10 ? '#c2362f' : '#ffd166')); d.rotation.x = Math.PI / 2; d.position.set(-1.6, y, SZ / 2); L.add(d); this.drums.push(d); }
-    for (const z of [5, SZ - 5]) { const e = new THREE.Mesh(new THREE.BoxGeometry(0.4, 2, 3), new THREE.MeshStandardMaterial({ color: '#fff', emissive: '#ff5a3c', emissiveIntensity: 3 })); e.position.set(-1.9, 22, z); L.add(e); } S.add(L); this.lx = -26;
-    this.turrets = [[104, 12], [128, 8]].map(([x, z]) => { const m = new THREE.Group(); const b = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.6, 1.6), mk('#52609a')); b.position.y = 0.8; const eye = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 1), new THREE.MeshStandardMaterial({ color: '#fff', emissive: '#ff3c3c', emissiveIntensity: 2 })); eye.position.set(-0.8, 1, 0); m.add(b, eye); m.position.set(x, 3, z); S.add(m); return { m, x, z, cool: 1, dead: false }; });
+    // Rin + Vell (voxel-art models on pivots)
+    const vr = buildVoxRin(); this.rin = vr.group; this.legs = vr.legs; this.arms = vr.arms; S.add(this.rin);
+    this.vell = buildVoxVell(); S.add(this.vell);
+    const lv = buildLeveler(SZ); this.lev = lv.group; this.drums = lv.drums; S.add(this.lev); this.lx = -26;
+    this.turrets = [[104, 12], [128, 8]].map(([x, z]) => { const m = buildVoxTurret(); m.position.set(x, 3, z); S.add(m); return { m, x, z, cool: 1, dead: false }; });
     this.orbs = []; this.orbMesh = new THREE.Mesh(new THREE.SphereGeometry(0.35, 8, 6), new THREE.MeshBasicMaterial({ color: '#ff5a3c' }));
     this.cps = [6, 54, 84, 112]; this.cp = 0; this.introK = handoff ? 0 : 1;
     this.p = { x: 6, y: 3, z: 12, vx: 0, vy: 0, vz: 0, fx: 1, fz: 0, ground: false, hp: 5, cd: 0, walk: 0, inv: 0, swing: 0 };
@@ -54,26 +50,37 @@ export default class Chapter6 {
   stop() { this.game.gl.style.imageRendering = ''; this.ui?.remove(); this.scene = null; }
   respawn() { const p = this.p; p.x = this.cps[this.cp]; p.y = 12; p.z = 12; p.vx = p.vy = p.vz = 0; p.hp = 5; p.inv = 2; this.lx = p.x - 30; this.orbs.forEach((o) => this.scene.remove(o.m)); this.orbs = []; }
   gen() {
+    const R = (a, b) => hash2(a * 7.3 + 1, b * 3.1 + 2);
     this.fill(0, SX - 1, 0, 2, 0, SZ - 1, CONC);
-    // skyline blocks along both edges
-    for (let x = 2; x < SX - 6; x += 9) for (const z0 of [0]) { const h = 6 + Math.floor(hash2(x, z0) * 14), m = hash2(x + 3, z0) > 0.5 ? BRICK : CONC; this.fill(x, x + 5, 3, h, z0, z0 + 3, m); for (let y = 5; y < h; y += 3) this.fill(x + 1, x + 4, y, y, z0 === 0 ? 3 : z0, z0 === 0 ? 3 : z0, GLASS); }
-    this.fill(24, 26, 3, 11, 4, SZ - 5, BRICK);                                   // 1) a brick wall: cut through
-    this.fill(40, 49, 0, 2, 0, SZ - 1, AIR);                                      // 2) a chasm: build across
-    this.fill(68, 70, 3, 13, 4, SZ - 5, STEEL); this.fill(68, 70, 3, 6, 14, 17, CONC); // 3) steel wall with a concrete plug
-    // 4) a tower on wooden stilts above a turret's sight line
-    for (const [x, z] of [[94, 8], [94, 15], [99, 8], [99, 15]]) this.fill(x, x, 3, 9, z, z, WOOD); this.fill(92, 101, 10, 17, 6, 17, BRICK); this.fill(93, 100, 11, 16, 7, 16, AIR); this.fill(92, 101, 10, 10, 6, 17, CONC);
-    this.fill(118, 120, 3, 8, 4, SZ - 5, STEEL);                                  // 5) steel barricade: build over it
+    for (let x = 0; x < SX; x += 6) this.fill(x, x + 2, 2, 2, 11, 12, PLANK);                 // lane markings
+    for (let x = 0; x < SX; x++) { this.set(x, 2, 4, STEEL); this.set(x, 2, 19, STEEL); }      // kerbs
+    // skyline: towers with window bands, ledges, doors, awnings and rooftop kit
+    for (let x = 2; x < SX - 9; x += 9) { const h = 9 + Math.floor(R(x, 1) * 16), m = R(x, 2) > 0.5 ? BRICK : CONC, w = 5 + Math.floor(R(x, 3) * 3);
+      this.fill(x, x + w, 3, h, 0, 3, m); this.fill(x, x + w, h + 1, h + 1, 0, 3, STEEL);
+      for (let y = 6; y < h - 1; y += 3) for (let wx = x + 1; wx < x + w; wx += 2) { this.set(wx, y, 3, GLASS); this.set(wx, y + 1, 3, GLASS); }
+      for (let y = 8; y < h; y += 6) this.fill(x, x + w, y, y, 4, 4, m === BRICK ? CONC : BRICK);
+      this.fill(x + 1, x + 2, 3, 5, 3, 3, WOOD); if (R(x, 6) > 0.45) this.fill(x, x + w, 7, 7, 4, 5, PLANK);
+      if (R(x, 4) > 0.4) this.fill(x + 1, x + 2, h + 2, h + 3 + Math.floor(R(x, 5) * 4), 1, 2, STEEL); if (R(x, 7) > 0.5) this.fill(x + w - 1, x + w - 1, h + 2, h + 7, 2, 2, STEEL); }
+    for (let x = 8; x < SX - 8; x += 14) { this.fill(x, x, 3, 8, 5, 5, STEEL); this.set(x, 8, 6, STEEL); this.set(x, 7, 6, GLASS); }  // lamp posts
+    for (let i = 0; i < 16; i++) { const x = 10 + Math.floor(R(i, 9) * (SX - 30)), z = R(i, 10) > 0.5 ? 6 + Math.floor(R(i, 12) * 3) : 15 + Math.floor(R(i, 12) * 3); this.fill(x, x + 1, 3, 4, z, z + 1, WOOD); if (R(i, 11) > 0.6) this.fill(x, x, 5, 5, z, z, WOOD); } // crates
+    this.fill(24, 26, 3, 11, 4, SZ - 5, BRICK); this.fill(24, 26, 12, 12, 4, SZ - 5, STEEL); for (let z = 6; z < SZ - 6; z += 3) this.fill(24, 26, 8, 9, z, z, GLASS);   // 1) brick wall: cut through
+    this.fill(40, 49, 0, 12, 0, SZ - 1, AIR);                                                                                              // 2) chasm: build across
+    this.fill(68, 70, 3, 13, 4, SZ - 5, STEEL); this.fill(68, 70, 3, 6, 14, 17, CONC);                                                      // 3) steel wall with a concrete plug
+    for (const [x, z] of [[94, 8], [94, 15], [99, 8], [99, 15]]) this.fill(x, x, 3, 9, z, z, WOOD);                                         // 4) tower on stilts
+    this.fill(92, 101, 10, 17, 6, 17, BRICK); this.fill(93, 100, 11, 16, 7, 16, AIR); this.fill(92, 101, 10, 10, 6, 17, CONC); for (let x = 93; x < 101; x += 2) { this.fill(x, x, 13, 14, 6, 6, GLASS); this.fill(x, x, 13, 14, 17, 17, GLASS); } this.fill(92, 101, 18, 18, 6, 17, STEEL);
+    this.fill(118, 120, 3, 8, 4, SZ - 5, STEEL);                                                                                            // 5) steel barricade: build over it
     this.fill(136, 138, 3, 9, 4, SZ - 5, BRICK); this.fill(150, SX - 1, 3, 20, 4, SZ - 5, CONC); this.fill(150, SX - 1, 3, 7, 10, 13, AIR);
   }
-  mesh(key) {
+  mesh(key) { // face-culled chunk mesh with per-vertex ambient occlusion and atlas UVs
     const [cx, cy, cz] = key.split(',').map(Number); if (cx < 0 || cy < 0 || cz < 0 || cx * CH >= SX || cy * CH >= SY || cz * CH >= SZ) return;
-    const pos = [], col = [], nor = [], F = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]], Q = [[[1, 0, 0], [1, 1, 0], [1, 1, 1], [1, 0, 1]], [[0, 0, 1], [0, 1, 1], [0, 1, 0], [0, 0, 0]], [[0, 1, 1], [1, 1, 1], [1, 1, 0], [0, 1, 0]], [[0, 0, 0], [1, 0, 0], [1, 0, 1], [0, 0, 1]], [[1, 0, 1], [1, 1, 1], [0, 1, 1], [0, 0, 1]], [[0, 0, 0], [0, 1, 0], [1, 1, 0], [1, 0, 0]]], LIGHT = [0.8, 0.7, 1, 0.5, 0.9, 0.62];
+    const pos = [], col = [], nor = [], uv = [], F = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]], Q = [[[1, 0, 0], [1, 1, 0], [1, 1, 1], [1, 0, 1]], [[0, 0, 1], [0, 1, 1], [0, 1, 0], [0, 0, 0]], [[0, 1, 1], [1, 1, 1], [1, 1, 0], [0, 1, 0]], [[0, 0, 0], [1, 0, 0], [1, 0, 1], [0, 0, 1]], [[1, 0, 1], [1, 1, 1], [0, 1, 1], [0, 0, 1]], [[0, 0, 0], [0, 1, 0], [1, 1, 0], [1, 0, 0]]], LIGHT = [0.84, 0.72, 1, 0.5, 0.92, 0.64], o = [0, 0, 0], ao = [0, 0, 0, 0];
     for (let y = cy * CH; y < Math.min(SY, cy * CH + CH); y++) for (let z = cz * CH; z < Math.min(SZ, cz * CH + CH); z++) for (let x = cx * CH; x < Math.min(SX, cx * CH + CH); x++) {
-      const m = this.v[x + SX * (z + SZ * y)]; if (!m) continue; const c = COL[m], n = 0.9 + hash2(x * 3 + y, z * 7 + y) * 0.2, mortar = m === BRICK && (y % 2 === 0 ? x % 4 === 0 : x % 4 === 2) ? 0.82 : 1;
-      for (let f = 0; f < 6; f++) { if (this.get(x + F[f][0], y + F[f][1], z + F[f][2])) continue; const q = Q[f], l = LIGHT[f] * n * mortar; for (const i of [0, 1, 2, 0, 2, 3]) { pos.push(x + q[i][0], y + q[i][1], z + q[i][2]); col.push(c[0] * l, c[1] * l, c[2] * l); nor.push(F[f][0], F[f][1], F[f][2]); } }
-    }
+      const m = this.v[x + SX * (z + SZ * y)]; if (!m) continue; const nz = 0.93 + hash2(x * 3 + y, z * 7 + y) * 0.14, tile = m - 1;
+      for (let f = 0; f < 6; f++) { const n = F[f]; if (this.get(x + n[0], y + n[1], z + n[2])) continue; const q = Q[f], ax = f >> 1, ua = (ax + 1) % 3, va = (ax + 2) % 3;
+        for (let i = 0; i < 4; i++) { const c = q[i], su = c[ua] ? 1 : -1, sv = c[va] ? 1 : -1; o[0] = x + n[0]; o[1] = y + n[1]; o[2] = z + n[2]; o[ua] += su; const s1 = this.get(o[0], o[1], o[2]) ? 1 : 0; o[va] += sv; const cc = this.get(o[0], o[1], o[2]) ? 1 : 0; o[ua] -= su; const s2 = this.get(o[0], o[1], o[2]) ? 1 : 0; ao[i] = s1 && s2 ? 0 : 3 - (s1 + s2 + cc); }
+        for (const i of [0, 1, 2, 0, 2, 3]) { const c = q[i], l = LIGHT[f] * nz * (0.52 + ao[i] * 0.16); pos.push(x + c[0], y + c[1], z + c[2]); col.push(l, l, l); nor.push(n[0], n[1], n[2]); const u = ax === 0 ? c[2] : c[0], vv = ax === 1 ? c[2] : c[1]; uv.push((tile + 0.02 + u * 0.96) / 8, vv); } } }
     let me = this.chunks[key]; if (me) { me.geometry.dispose(); this.scene.remove(me); delete this.chunks[key]; } if (!pos.length) return;
-    const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); geo.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+    const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); geo.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
     me = new THREE.Mesh(geo, this.mat); me.castShadow = me.receiveShadow = true; this.scene.add(me); this.chunks[key] = me;
   }
   spawnDebris(x, y, z, m, vx = 0, vy = 0) { if (this.debris.length >= 700 * (this.game.settings.particles ?? 1) * 0.9) return; const c = COL[m] || COL[CONC]; this.debris.push({ x: x + 0.5, y: y + 0.5, z: z + 0.5, vx: vx + (Math.random() - 0.5) * 5, vy: vy + Math.random() * 4, vz: (Math.random() - 0.5) * 5, t: 0, s: 0.45 + Math.random() * 0.4, c, rx: Math.random() * 6, ry: Math.random() * 6 }); }
@@ -133,7 +140,7 @@ export default class Chapter6 {
   render(dt) {
     if (!this.scene) return; const g = this.game, r = this.r, p = this.p, t = this.t; { const px = this.introK < 1 ? [10, 8, 6, 5, 4, 3, 2, 1][Math.min(7, Math.floor(this.introK * 2.4 * 8))] || 1 : 1, w = Math.round(g.W / px), h = Math.round(g.H / px); if (r.domElement.width !== w || r.domElement.height !== h) { r.setSize(w, h, false); g.gl.style.imageRendering = px > 1 ? 'pixelated' : ''; } }
     this.rin.position.set(p.x, p.y, p.z); this.rin.rotation.y = Math.atan2(-p.fz, p.fx) + Math.PI / 2; const mv = Math.hypot(p.vx, p.vz) > 1 && p.ground ? Math.sin(p.walk) * 0.7 : 0; this.legs[0].rotation.x = mv; this.legs[1].rotation.x = -mv; this.arms[0].rotation.x = -mv; this.arms[1].rotation.x = mv - p.swing * 2.2; this.rin.visible = !(p.inv > 0 && Math.floor(p.inv * 14) % 2);
-    this.vell.position.set(p.x - 1.2, p.y + 2.6 + Math.sin(t * 2.4) * 0.3, p.z + 1); this.vell.rotation.y = t;
+    this.vell.position.set(p.x - 1.2, p.y + 2.6 + Math.sin(t * 2.4) * 0.3, p.z + 1); this.vell.rotation.y = Math.sin(t) * 0.6; this.rin.userData.tick?.(t, p);
     this.lev.position.x = this.lx; this.drums.forEach((d, i) => (d.rotation.y = t * (i % 2 ? 7 : -7)));
     const k = this.fin?.k || 0, sh = this.shake * (g.settings.shake ?? 1), tgt = new THREE.Vector3(p.x + 4, p.y + 1.5, lerp(p.z, SZ / 2, 0.5));
     const want = new THREE.Vector3(p.x - 11 + k * 6, p.y + 9 + k * 14, lerp(p.z, SZ / 2, 0.5) + 12); this.cam.position.lerp(want, 1 - Math.exp(-4 * dt)); this.cam.position.x += (Math.random() - 0.5) * sh; this.cam.position.y += (Math.random() - 0.5) * sh; if (this.introK < 1) { const e = ease.inOutCubic(clamp((this.introK - 0.45) / 0.55, 0, 1)); this.cam.position.lerpVectors(new THREE.Vector3(p.x + 0.25, p.y + 1.62, p.z), want, e); tgt.lerpVectors(new THREE.Vector3(p.x + 12, p.y + 1.4, p.z), tgt.clone(), e); this.rin.visible = e > 0.12; this.cam.fov = lerp(72, 50, e); } this.cam.lookAt(tgt); this.cam.aspect = g.W / g.H; this.cam.updateProjectionMatrix();
