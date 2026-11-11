@@ -64,8 +64,8 @@ export class City {
     const g = this.game, inp = g.input, sfx = g.sfx, p = this.p; this.t += dt; this.flash = Math.max(0, this.flash - dt * 1.5);
     if (this.end) return this.updateEnd(dt);
     if (inp.mouse.left && !inp.locked) inp.requestLock();
-    this.cy += ((inp.keys.has('ArrowLeft') ? 1 : 0) - (inp.keys.has('ArrowRight') ? 1 : 0)) * 2.2 * dt - (inp.locked ? inp.mouse.dx * 0.003 : 0); inp.mouse.dx = 0;
-    const iz = (inp.keys.has('KeyW') ? 1 : 0) - (inp.keys.has('KeyS') ? 1 : 0), ix = inp.axisX, fw = V(-Math.sin(this.cy), 0, Math.cos(this.cy)), rt = V(-fw.z, 0, fw.x), want = fw.clone().multiplyScalar(iz).addScaledVector(rt, -ix), mx = inp.down.dash ? 7.5 : 4;
+    this.cy += ((inp.keys.has('ArrowRight') ? 1 : 0) - (inp.keys.has('ArrowLeft') ? 1 : 0)) * 2.2 * dt + (inp.locked ? inp.mouse.dx * 0.003 : 0); inp.mouse.dx = 0;
+    const iz = (inp.keys.has('KeyW') ? 1 : 0) - (inp.keys.has('KeyS') ? 1 : 0), ix = (inp.keys.has('KeyD') ? 1 : 0) - (inp.keys.has('KeyA') ? 1 : 0) || inp.padAxes?.[0] || 0, fw = V(-Math.sin(this.cy), 0, Math.cos(this.cy)), rt = V(-fw.z, 0, fw.x), want = fw.clone().multiplyScalar(iz).addScaledVector(rt, ix), mx = inp.down.dash ? 7.5 : 4;
     if (want.lengthSq() > 0.01) { want.normalize(); this.yaw = Math.atan2(want.x, want.z); this.sp = damp(this.sp, mx, 8, dt); const nx = p.x + want.x * this.sp * dt, nz = p.z + want.z * this.sp * dt; if (!this.blocked(nx, p.z)) p.x = nx; if (!this.blocked(p.x, nz)) p.z = nz; } else this.sp = damp(this.sp, 0, 10, dt);
     // pulse
     this.pulseT += dt; if (inp.pressed.attack && this.pulseT > 3) { this.pulseT = 0; sfx.play('fx.shimmer'); sfx.play('pp.chime', { pitch: 0.5 }); } this.uPulse.value = this.pulseT < 2.6 ? 1 + this.pulseT * 62 : 0;

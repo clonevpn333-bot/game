@@ -36,7 +36,7 @@ export default class Chapter7 {
 
   start({ handoff }) {
     const g = this.game, T = this.T; this.r = getRenderer(g); this.r.shadowMap.enabled = g.settings.shadows > 0; this.r.toneMappingExposure = 0.95;
-    const S = (this.scene = new THREE.Scene()); S.fog = new THREE.FogExp2('#3b4660', 0.012); S.background = new THREE.Color('#3b4660');
+    this.beam = null; const S = (this.scene = new THREE.Scene()); S.fog = new THREE.FogExp2('#3b4660', 0.012); S.background = new THREE.Color('#3b4660');
     this.cam = new THREE.PerspectiveCamera(58, 16 / 9, 0.1, 600); this.t = 0; this.said = {}; this.fin = null; this.noPause = false; this.shake = 0; this.plats = []; this.anchors = []; this.drones = []; this.bolts = []; this.movers = []; this.mats = [];
     // image-based lighting from a small procedural sky
     const sky = new THREE.Scene(), sm = new THREE.Mesh(new THREE.SphereGeometry(50, 16, 12), new THREE.MeshBasicMaterial({ side: THREE.BackSide, vertexColors: true })); const pc = sm.geometry.attributes.position, cols = []; for (let i = 0; i < pc.count; i++) { const h = pc.getY(i) / 50, c = new THREE.Color().lerpColors(new THREE.Color('#2a3350'), new THREE.Color('#ffb47a'), clamp(1 - Math.abs(h - 0.08) * 3, 0, 1)); if (h < -0.1) c.set('#141824'); cols.push(c.r, c.g, c.b); } sm.geometry.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3)); sky.add(sm);
@@ -115,8 +115,8 @@ export default class Chapter7 {
     for (const q of this.plats) { if (q.fn) { const o = q.c.clone(); q.fn(t, q.c); q.d.subVectors(q.c, o); q.grp.position.copy(q.c); } }
     if (this.fin) { this.fin.t += dt; this.fin.k = clamp(this.fin.t / 7, 0, 1); g.audio.muffle(this.fin.k * 0.5); if (this.fin.t > 7.6) this.fin.snap = true; p.vel.multiplyScalar(0.9); }
     if (inp.mouse.left && !inp.locked) inp.requestLock();
-    this.cy += ((inp.keys.has('ArrowLeft') ? 1 : 0) - (inp.keys.has('ArrowRight') ? 1 : 0)) * 2.2 * dt - (inp.locked ? inp.mouse.dx * 0.003 : 0); inp.mouse.dx = 0;
-    const ctl = !this.fin, ix = ctl ? inp.axisX : 0, iz = ctl ? (inp.keys.has('KeyW') ? 1 : 0) - (inp.keys.has('KeyS') ? 1 : 0) : 0, sprint = inp.down.dash, H = p.slide > 0 ? 0.9 : 1.75;
+    this.cy += ((inp.keys.has('ArrowRight') ? 1 : 0) - (inp.keys.has('ArrowLeft') ? 1 : 0)) * 2.2 * dt + (inp.locked ? inp.mouse.dx * 0.003 : 0); inp.mouse.dx = 0;
+    const ctl = !this.fin, ix = ctl ? ((inp.keys.has('KeyD') ? 1 : 0) - (inp.keys.has('KeyA') ? 1 : 0) || inp.padAxes?.[0] || 0) : 0, iz = ctl ? (inp.keys.has('KeyW') ? 1 : 0) - (inp.keys.has('KeyS') ? 1 : 0) : 0, sprint = inp.down.dash, H = p.slide > 0 ? 0.9 : 1.75;
     p.inv -= dt; p.strike = Math.max(0, p.strike - dt * 3);
     if (p.ground) { p.pos.add(p.ground.d); p.coy = 0.12; } else p.coy -= dt; if (inp.pressed.jump) p.buf = 0.12; else p.buf -= dt;
     if (p.climb) { // mantle: pull up onto the ledge
@@ -125,7 +125,7 @@ export default class Chapter7 {
       const a = p.grap.p, d = a.clone().sub(p.pos).add(V(0, -1.4, 0)), L = d.length(); p.vel.add(d.normalize().multiplyScalar(34 * dt)); p.vel.y -= 9 * dt; p.vel.multiplyScalar(1 - 0.5 * dt); p.vel.z += 6 * dt;
       if (!inp.down.attack || L < 2.6 || p.pos.z > a.z + 6) { p.grap = null; p.vel.y = Math.max(p.vel.y, 6); p.vel.z += 5; sfx.play('ink.snap'); }
     } else {
-      const fwd = V(-Math.sin(this.cy), 0, Math.cos(this.cy)), right = V(-fwd.z, 0, fwd.x), want = fwd.multiplyScalar(iz).add(right.multiplyScalar(-ix)), mx = sprint ? 9 : 5.6;
+      const fwd = V(-Math.sin(this.cy), 0, Math.cos(this.cy)), right = V(-fwd.z, 0, fwd.x), want = fwd.multiplyScalar(iz).add(right.multiplyScalar(ix)), mx = sprint ? 9 : 5.6;
       if (want.lengthSq() > 0.01) { want.normalize(); p.yaw = Math.atan2(want.x, want.z); }
       if (p.slide > 0) { p.slide -= dt; p.vel.x *= 1 - 0.6 * dt; p.vel.z *= 1 - 0.6 * dt; if (p.slide <= 0 && this.hitBox(p.pos.clone().setY(p.pos.y + 0.05), 1.75)) p.slide = 0.1; }
       else { const acc = p.ground ? 40 : 12; p.vel.x = lerp(p.vel.x, want.x * mx, Math.min(1, acc * dt / mx)); p.vel.z = lerp(p.vel.z, want.z * mx, Math.min(1, acc * dt / mx)); }
@@ -173,7 +173,13 @@ export default class Chapter7 {
     if (k > 0) { const clay = new THREE.Color('#d9a27e'); for (const o of this.mats) { o.m.roughness = lerp(o.r, 1, k); o.m.metalness = lerp(o.me, 0, k); o.m.color.copy(o.c).lerp(clay, k * 0.75); if (k > 0.4 && o.m.bumpMap !== this.T.print) { o.m.bumpMap = this.T.print; o.m.bumpScale = 3; o.m.roughnessMap = null; o.m.needsUpdate = true; } if (o.m.emissiveIntensity) o.m.emissiveIntensity *= 1 - 0.02; } this.scene.environmentIntensity = 0.9 * (1 - k); this.rain.material.opacity = 0.35 * (1 - k); this.scene.fog.color.lerp(new THREE.Color('#e9c7a6'), 0.02); this.scene.background = this.scene.fog.color; const st = Math.floor(t * 10); for (const q of this.plats) { q.grp.scale.set(1 + Math.sin(st + q.base.z) * 0.012 * k, 1 + Math.cos(st * 1.3 + q.base.z) * 0.02 * k, 1); } }
     renderFX(g, r, this.scene, this.cam, { bloom: 0.6, vig: 0.42, sat: 1.06, grain: 0.04, con: 1.06 });
     if (this.fin?.snap && !this.fin.done) { this.fin.done = true; g.freezeFrame(); const ok = g.director.handoff(8, { from7: true }); if (!ok) { g.clear2d(); g.save.complete(7); g.audio.muffle(0); g.director.end({ chapter: 7 }); } return; }
-    const hud = `<div><kbd>♥</kbd>${'■'.repeat(Math.max(0, p.hp))}${'□'.repeat(5 - Math.max(0, p.hp))}</div>` + (this.sqOn && !this.fin ? `<div class="sel"><kbd>!</kbd>REFRAMER ${Math.round((this.squeeze || 0) * 100)}%</div>` : ''); if (hud !== this._hud) this.hud.innerHTML = this._hud = hud;
+    const OBJ = [[16, 'RUN FORWARD', 'W to run, A / D to steer. Follow the orange beacon.'], [56, 'SLIDE UNDER THE SHUTTER', 'Hold SHIFT to sprint, then tap C to slide.'], [86, 'CLIMB THE RISING ROAD', 'SPACE to jump. Run into a ledge to pull yourself up.'], [136, 'CROSS THE SLIDING ROOFTOPS', 'Wait for a roof to line up, then jump.'], [180, 'SWING ACROSS THE GAP', 'Hold J to grapple. Let go of J on the far side.'], [236, 'REACH THE NEXT ROOFTOP', 'L strikes drones that get close.'], [330, 'OUTRUN THE REFRAMER', 'Sprint. Slide (C) under low beams, run into the rest to vault.'], [1e9, 'GRAPPLE UP THE SPIRE', 'Hold J near the glowing anchor.']], ob = OBJ.find((o) => p.pos.z < o[0]);
+    const WP = [[0, 0.5, 62], [0, 5.5, 132], [0, 6.2, 178], [0, 14.2, 234], [0, 26, 358]], wp = WP.find((w) => w[2] > p.pos.z + 3) || WP[4];
+    if (!this.beam) { this.beam = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 90, 10, 1, true), new THREE.MeshBasicMaterial({ color: '#ff9a3c', transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, side: THREE.DoubleSide })); this.scene.add(this.beam); }
+    this.beam.position.set(wp[0], wp[1] + 45, wp[2]); this.beam.visible = !this.fin; this.beam.material.opacity = 0.22 + Math.sin(t * 4) * 0.08;
+    if (!this.way || this.way.parentNode !== this.ui) { this.way = document.createElement('div'); this.way.style.cssText = 'position:absolute;transform:translate(-50%,-100%);color:#ff9a3c;font:800 calc(var(--u)*13)/1.1 "Trebuchet MS",sans-serif;letter-spacing:.1em;text-align:center;text-shadow:0 0 6px #000,0 2px 0 #000;pointer-events:none'; this.ui.appendChild(this.way); }
+    { const v = V(wp[0], wp[1] + 2.4, wp[2]).project(this.cam), m = Math.round(Math.hypot(wp[0] - p.pos.x, wp[1] - p.pos.y, wp[2] - p.pos.z)), on = v.z < 1 && !this.fin && this.introK >= 1; this.way.style.display = on ? 'block' : 'none'; if (on) { this.way.style.left = clamp(v.x * 50 + 50, 6, 94) + '%'; this.way.style.top = clamp(50 - v.y * 50, 12, 90) + '%'; const txt = '◆<br>' + m + ' m'; if (txt !== this._way) this.way.innerHTML = this._way = txt; } }
+    const hud = (this.fin ? '' : `<div class="sel"><kbd>▶</kbd>${ob[1]}<small>${ob[2]}</small></div>`) + `<div><kbd>♥</kbd>${'■'.repeat(Math.max(0, p.hp))}${'□'.repeat(5 - Math.max(0, p.hp))}</div>` + (this.sqOn && !this.fin ? `<div class="sel"><kbd>!</kbd>REFRAMER ${Math.round((this.squeeze || 0) * 100)}%</div>` : ''); if (hud !== this._hud) this.hud.innerHTML = this._hud = hud;
     let near = false; for (const a of this.anchors) if (a.p.distanceTo(p.pos) < 30 && a.p.z > p.pos.z - 4 && !p.grap) near = true; this.tip.style.display = near && !this.fin ? 'block' : 'none'; if (near) this.tip.innerHTML = '<kbd>J</kbd>HOLD — GRAPPLE';
     const d = g.dialogue.current; if (d) { this.dlg.style.display = 'block'; this.dlg.firstChild.textContent = d.speaker.name; this.dlg.firstChild.style.color = d.speaker.color; this.dlg.lastChild.textContent = g.dialogue.visibleText; } else this.dlg.style.display = 'none';
   }
