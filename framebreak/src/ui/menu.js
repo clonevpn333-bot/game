@@ -79,7 +79,7 @@ export class Menu {
   openChapters() {
     const g = this.game, reached = Math.max(g.save.data.chapter, ...g.save.data.completed, 0);
     this.openPanel('CHAPTER REPLAY', (p) => {
-      for (let i = 1; i <= 10; i++) {
+      for (let i = 1; i < CHAPTERS.length; i++) {
         const c = CHAPTERS[i], built = !!c.load, open = built && (i <= Math.max(1, reached) || g.save.data.completed.includes(i - 1));
         const tag = !built ? '<span class="tag plan">IN DEVELOPMENT</span>' : open ? '<span class="tag ok">PLAY</span>' : '<span class="tag lock">NOT REACHED</span>';
         this.addRow(p, `<span><b>${String(i).padStart(2, '0')} · ${c.title}</b><span class="sub">${c.format}</span></span>${tag}`, { off: !open, act: async () => { this.close(); await g.director.startChapter(i, { replay: true }); } });

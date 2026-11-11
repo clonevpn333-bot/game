@@ -15,7 +15,11 @@ export const CHAPTERS = [
   { id: 7, key: 'ch7', title: 'FULL RESOLUTION', format: 'HIGH-DETAIL 3D', load: () => import('../ch7/chapter7.js'), status: 'playable' },
   { id: 8, key: 'ch8', title: 'CLAY HEART', format: 'STOP-MOTION CLAY', load: () => import('../ch8/chapter8.js'), status: 'playable' },
   { id: 9, key: 'ch9', title: 'BREAK THE PAGE', format: 'INKED COMIC', load: () => import('../ch9/chapter9.js'), status: 'playable' },
-  { id: 10, key: 'ch10', title: 'FRAMEBREAK', format: 'HYBRID', load: () => import('../ch10/chapter10.js'), status: 'playable' },
+  { id: 10, key: 'ch10', title: 'LAMPLIGHT', format: 'SHADOW-PUPPET THEATRE', load: () => import('../ch10/chapter10.js'), status: 'playable' },
+  { id: 11, key: 'ch11', title: 'LEAD & LIGHT', format: 'STAINED GLASS', load: () => import('../ch11/chapter11.js'), status: 'playable' },
+  { id: 12, key: 'ch12', title: 'LOOSE THREADS', format: 'KNITTED WOOL', load: () => import('../ch12/chapter12.js'), status: 'playable' },
+  { id: 13, key: 'ch13', title: 'PHOSPHOR', format: 'VECTOR DISPLAY', load: () => import('../ch13/chapter13.js'), status: 'playable' },
+  { id: 14, key: 'ch14', title: 'FRAMEBREAK', format: 'EVERYTHING AT ONCE', load: () => import('../ch14/chapter14.js'), status: 'playable' },
 ];
 
 export class Director {

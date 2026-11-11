@@ -14,7 +14,7 @@ F3 toggles the performance overlay. Esc pauses and lists the current chapter's c
 
 ## Chapter status (honest)
 
-All ten chapters are playable start to finish and hand over to the next one. They are not equally deep: 1–3 got the most design and verification time; 4–10 were built faster and tested with short scripted smoke runs only.
+All fourteen chapters are playable start to finish and hand over to the next one. They are not equally deep: 1–3 got the most design and verification time; 4–14 were built faster and tested with short scripted smoke runs and simple bots only.
 
 | # | Chapter | Format / renderer | State |
 |---|---------|-------------------|-------|
@@ -27,7 +27,11 @@ All ten chapters are playable start to finish and hand over to the next one. The
 | 7 | Full Resolution | three.js PBR with procedural albedo/normal/roughness maps, façade kit, jointed IK rig | Parkour course: slide, vault/mantle, moving roofs, grapple, Reframer chase. ~4–6 min. |
 | 8 | Clay Heart | Sculpted clay meshes with fingerprint normal maps, 12 fps posing, jointed hands | Flat / tall / long / mass puzzles, sculptor's hands. ~3–4 min. |
 | 9 | Break the Page | Inked comic: hatched sets, spot blacks, halftone screen, newsprint, Canvas2D | Four pages of panel-order causality puzzles. ~3–4 min. |
-| 10 | Framebreak | three.js, shared post-FX (bloom, grade, MSAA) | Rebuilt as a three-act 3D finale: **The Getaway** (arcade driving with drift-boost through four format districts), **The Courier** (gliding between erased islands and restoring each one), **The Missing City** (exploration by pulse, no combat, then a held choice and three endings). Smoke-tested per act. ~12–15 min. |
+| 10 | Lamplight | Shadow-puppet theatre, Canvas2D | Slide the lamp to slide every shadow; shadows are the platforms. Four set-pieces. ~3–4 min. |
+| 11 | Lead & Light | Stained-glass rose window, Canvas2D | Rhythm catcher: walk the rim to catch light thrown on the beat, dodge cracks. Three windows. ~3 min. |
+| 12 | Loose Threads | three.js knitted wool (stitch normal maps, sheen) | Momentum rolling on a ball of wool down a 1 km valley: holes, ramps, pins, wool as a resource. ~2 min. |
+| 13 | Phosphor | Vector display with phosphor persistence, Canvas2D | Inertial arena shooter: three waves of splitting frames and hunting cursors, then a boss. ~3–4 min. |
+| 14 | Framebreak | three.js, shared post-FX (bloom, grade, MSAA) | Rebuilt as a three-act 3D finale: **The Getaway** (arcade driving with drift-boost through four format districts), **The Courier** (gliding between erased islands and restoring each one), **The Missing City** (exploration by pulse, no combat, then a held choice and three endings). Smoke-tested per act. ~12–15 min. | The ending is now **The Cascade**: a mostly-cinematic run redrawn in all thirteen art styles, flickering on the beat and then all at once, with three short playable beats (jump, break, push) before the chosen ending plays out.
 
 Total is roughly 45–60 minutes, not the 80–100 the full design calls for.
 

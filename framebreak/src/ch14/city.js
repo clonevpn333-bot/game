@@ -83,7 +83,7 @@ export class City {
     this.vell.userData.tick(this.t);
   }
   choose(k) {
-    const g = this.game, S = this.scene; this.end = { k, t: 0, line: -1 }; g.dialogue.clear(); g.sfx.play('fx.boom'); g.sfx.play('fx.shimmer'); this.flash = 1; g.save.flag('ending', k); g.save.complete(10); this.ch.noPause = true; this.prompt = '';
+    const g = this.game, S = this.scene; this.end = { k, t: 0, line: -1 }; g.dialogue.clear(); g.sfx.play('fx.boom'); g.sfx.play('fx.shimmer'); this.flash = 1; g.save.flag('ending', k); g.save.complete(14); this.ch.noPause = true; this.prompt = '';
     if (k === 'seal') { this.glass = []; const gm = new THREE.MeshPhysicalMaterial({ color: '#8ff5e3', roughness: 0.05, transmission: 0.7, transparent: true, opacity: 0.35, emissive: '#2fd3c6', emissiveIntensity: 0.35 }); for (let i = 0; i < 8; i++) for (const ns of [0, 1]) { const m = box(ns ? 0.4 : 270, 60, ns ? 270 : 0.4, gm, ns ? (i - 3.5) * CELL : 0, 30, ns ? 0 : (i - 3.5) * CELL, S); m.castShadow = false; m.scale.y = 0.001; this.glass.push(m); } }
     g.music.setIntensity(k === 'open' ? 2 : k === 'seal' ? 1 : 0);
   }
@@ -91,8 +91,8 @@ export class City {
     const e = this.end, g = this.game, E = this.ch.ENDS[e.k]; e.t += dt; const k = clamp(e.t / 6, 0, 1);
     if (e.k === 'one') { this.uR.value = damp(this.uR.value, 0, 1.2, dt); this.scene.fog.density = damp(this.scene.fog.density, 0.03, 1, dt); this.scene.fog.color.lerp(new THREE.Color('#ffffff'), 0.03); this.sky.set('#ffffff', '#ffffff', '#f4f4f6', 0.03); this.res.forEach((R) => (R.G.scale.setScalar(Math.max(0.001, 1 - k)))); this.vell.scale.setScalar(Math.max(0.15, 1 - k * 0.85)); }
     else { this.uR.value = 600; this.scene.fog.density = damp(this.scene.fog.density, 0.004, 1, dt); if (e.k === 'seal') this.glass.forEach((m, i) => (m.scale.y = ease.outCubic(clamp(e.t / 4 - i * 0.03, 0.001, 1)))); else { this.sky.set('#2a3a8a', '#c06fc0', '#ffb47a', 0.03); if (Math.random() < 0.7) this.fx.emit(V(this.p.x + (Math.random() - 0.5) * 60, 30, this.p.z + (Math.random() - 0.5) * 60), V(0, -4, 0), new THREE.Color(['#ffd166', '#2fd3c6', '#ff9a3c', '#c06fc0', '#f4f6ff'][Math.floor(Math.random() * 5)]), 4, 2); this.res.forEach((R, i) => { R.G.position.x = R.x * (1 - k) + Math.cos(e.t * 0.6 + i * 2.1) * 5 * k; R.G.position.z = R.z * (1 - k) + (6 + Math.sin(e.t * 0.6 + i * 2.1) * 5) * k; }); } }
-    const ln = Math.min(2, Math.floor((e.t - 2) / 5.5)); if (ln > e.line && e.t > 2) { e.line = ln; g.sfx.play('pp.chime', { pitch: 0.8 + ln * 0.15 }); this.ch.hud.banner.innerHTML = `<small>${E.name} — ${E.sub}</small><span style="font-size:.5em;letter-spacing:.06em;line-height:1.4;display:block;padding:0 12%">${E.lines[ln]}</span>`; this.ch.hud.banner.style.opacity = '1'; }
-    if (e.t > 20 && !e.done) { e.done = true; g.director.end({ chapter: 10, final: true, title: E.name, text: E.text }); }
+    if (e.line < 0 && e.t > 1.5) { e.line = 0; g.sfx.play('pp.chime', { pitch: 0.8 }); this.ch.hud.banner.innerHTML = `<small>${E.sub}</small>${E.name}`; this.ch.hud.banner.style.opacity = '1'; }
+    if (e.t > 7.5 && !e.done) { e.done = true; this.ch.startCascade(e.k); }
     this.vell.userData.tick(this.t);
   }
   frame(dt) {

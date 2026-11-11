@@ -1,0 +1,14 @@
+// Shared bits for the Canvas2D chapters: a 1920x1080 virtual stage, a dialogue
+// box, a chapter title card and an objective box.
+import { wrapText } from '../core/dialogue.js';
+export const VW = 1920, VH = 1080;
+export function fit(g, bg = '#000') { const ctx = g.ctx, S = Math.min(g.W / VW, g.H / VH); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.shadowBlur = 0; ctx.filter = 'none'; ctx.fillStyle = bg; ctx.fillRect(0, 0, g.W, g.H); ctx.setTransform(S, 0, 0, S, (g.W - VW * S) / 2, (g.H - VH * S) / 2); ctx.beginPath(); return ctx; }
+export function dlg(ctx, g, o = {}) {
+  const d = g.dialogue.current; if (!d) return; const lines = wrapText(g.dialogue.visibleText, 58), full = wrapText(d.text, 58), w = 1180, h = 74 + full.length * 44, x = (VW - w) / 2, y = o.top ? 150 : VH - h - 64;
+  ctx.save(); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.shadowBlur = 0; ctx.fillStyle = o.bg || 'rgba(13,15,31,0.88)'; ctx.strokeStyle = o.line || d.speaker.color; ctx.lineWidth = 4; ctx.beginPath(); ctx.roundRect(x, y, w, h, o.r ?? 14); ctx.fill(); ctx.stroke();
+  ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.font = '800 24px "Trebuchet MS", sans-serif'; ctx.fillStyle = o.who || d.speaker.color; ctx.fillText(d.speaker.name, x + 34, y + 40); ctx.font = o.font || '600 34px Georgia, serif'; ctx.fillStyle = o.fg || '#f4f6ff'; lines.forEach((l, i) => ctx.fillText(l, x + 34, y + 84 + i * 44)); ctx.restore();
+}
+export function titleCard(ctx, t, n, name, col = '#fff', sub = '#ff9a3c') { if (t > 4) return; const a = Math.max(0, Math.min(1, t * 2, (4 - t) * 1.5)); ctx.save(); ctx.globalAlpha = a; ctx.textAlign = 'center'; ctx.font = '800 30px "Trebuchet MS", sans-serif'; ctx.fillStyle = sub; ctx.fillText('C H A P T E R   ' + n, VW / 2, 330); ctx.font = '900 112px "Trebuchet MS", sans-serif'; ctx.fillStyle = col; ctx.fillText(name, VW / 2, 440); ctx.restore(); }
+export function objective(ctx, title, sub, o = {}) { ctx.save(); ctx.globalAlpha = 1; ctx.textAlign = 'left'; ctx.font = '800 26px "Trebuchet MS", sans-serif'; const w = Math.max(ctx.measureText(title).width + 110, sub ? sub.length * 11.6 + 60 : 0), y = o.y ?? 40; ctx.fillStyle = o.bg || 'rgba(13,15,31,0.8)'; ctx.fillRect(40, y, w, sub ? 86 : 54); ctx.fillStyle = o.accent || '#ff9a3c'; ctx.fillRect(40, y, 8, sub ? 86 : 54); ctx.fillStyle = o.fg || '#fff'; ctx.fillText('▶  ' + title, 66, y + 36); if (sub) { ctx.font = '500 21px "Trebuchet MS", sans-serif'; ctx.fillStyle = o.dim || '#b9c2dc'; ctx.fillText(sub, 66, y + 70); } ctx.restore(); }
+// snapshot of the previous chapter, dissolving away over the first seconds
+export function introSnap(ctx, snap, t, dur = 1.6) { if (!snap || t >= dur) return; ctx.save(); ctx.globalAlpha = 1 - t / dur; ctx.drawImage(snap, 0, 0, snap.width, snap.height, 0, 0, VW, VH); ctx.restore(); }
