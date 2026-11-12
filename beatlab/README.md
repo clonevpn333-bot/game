@@ -33,6 +33,20 @@ You can also double-click `index.html`, or run `npm run build` to get one self-c
 * **Export WAV** with an ending: *Just stop*, *Slow-mo final hit* (one last hit that drops into slow motion and fades away) or *Tape stop*. Preview it before you export.
 * **Your work saves itself** in the browser. *Save* writes a `.beatlab.json` project, including your own audio files.
 
+## Look and feel
+
+Styled after Apple's pro apps. It uses the system font (SF Pro on Apple devices, Inter elsewhere) and Apple's system colours, and it follows your device's light or dark appearance. Frosted glass is used only on the navigation bar, menus and toasts.
+
+Motion is spring-based and stays under half a second:
+
+* segmented controls with a sliding thumb, and iOS-style switches
+* hits and notes pop in when you add them
+* tracks and beat cards rise in when they load
+* the play button pulses in time with your BPM, and the logo's level bars bounce while you play
+* hover lifts on cards and pads, and press-down feedback on every button
+
+Turn on *Reduce motion* in your system settings to switch the animations off.
+
 ## Keys
 
 `Space` play/stop · `A`–`L` play notes in key (`Z`/`X` octave; turn on ● Rec while playing to record them) · `1`–`0` play chops in the Sample Lab · `Ctrl+Z` / `Ctrl+Y` undo/redo · `Ctrl+S` save

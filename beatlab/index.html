@@ -6,7 +6,7 @@
   <title>BeatLab</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -43,14 +43,14 @@
     </div>
     <nav class="actions" aria-label="Project">
       <button id="beatsBtn" class="btn btn-accent" data-hint="Browse ready-made beats in every style.">Beats</button>
-      <button id="undoBtn" class="btn icon" aria-label="Undo" data-hint="Undo (Ctrl+Z)">↶</button>
-      <button id="redoBtn" class="btn icon" aria-label="Redo" data-hint="Redo (Ctrl+Y)">↷</button>
+      <button id="undoBtn" class="btn icon" aria-label="Undo" data-hint="Undo (Ctrl+Z)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
+      <button id="redoBtn" class="btn icon" aria-label="Redo" data-hint="Redo (Ctrl+Y)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
       <button id="newBtn" class="btn" data-hint="Start an empty beat.">New</button>
       <button id="openBtn" class="btn" data-hint="Open a saved .beatlab.json project.">Open</button>
       <input id="openFile" type="file" accept=".json,application/json" hidden>
       <button id="saveBtn" class="btn" data-hint="Save your project to a file (Ctrl+S). Your work is also kept in this browser automatically.">Save</button>
       <button id="exportBtn" class="btn btn-strong" data-hint="Bounce your beat to a WAV audio file.">Export WAV</button>
-      <button id="helpBtn" class="btn icon" aria-label="Help" data-hint="How everything works.">?</button>
+      <button id="helpBtn" class="btn icon" aria-label="Help" data-hint="How everything works."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M9.5 9.2a2.6 2.6 0 0 1 5 .9c0 1.7-2.5 2.3-2.5 3.9"/><path d="M12 17.2h.01"/></svg></button>
     </nav>
   </header>
 
@@ -78,10 +78,12 @@
   <main id="rack" class="rack" aria-label="Tracks"></main>
 
   <section id="dock" class="dock">
-    <div class="dock-tabs" role="tablist">
-      <button data-tab="roll" role="tab">Piano Roll</button>
-      <button data-tab="lab" role="tab">Sample Lab</button>
-      <button data-tab="mix" role="tab">Mixer</button>
+    <div class="dock-tabs">
+      <div class="seg" role="tablist" aria-label="Editor">
+        <button data-tab="roll" role="tab">Piano Roll</button>
+        <button data-tab="lab" role="tab">Sample Lab</button>
+        <button data-tab="mix" role="tab">Mixer</button>
+      </div>
     </div>
     <div id="dockBody" class="dock-body"></div>
   </section>

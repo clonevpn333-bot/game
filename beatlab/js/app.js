@@ -35,8 +35,8 @@
     return (S.INSTRUMENTS[track.inst] || {}).bass ? '808' : 'Melody';
   }
   const CAT_COLORS = {
-    Kick: '#ff6b4a', Snare: '#ffa53b', Clap: '#ffc34d', 'Hi-Hat': '#f2e15c', 'Open Hat': '#d9e86a',
-    Perc: '#7bdc8f', FX: '#6fc3ff', Melody: '#b48cff', '808': '#ff5c93', Sample: '#3ee0c8',
+    Kick: '#ff453a', Snare: '#ff9f0a', Clap: '#ffb340', 'Hi-Hat': '#ffd60a', 'Open Hat': '#c7d93a',
+    Perc: '#30d158', FX: '#64d2ff', Melody: '#bf5af2', '808': '#ff375f', Sample: '#40c8e0',
   };
   const colorOf = (t) => CAT_COLORS[catOf(t)] || '#aaa';
 
@@ -160,11 +160,17 @@
     return p;
   }
 
+  let enterTimer = null;
   async function loadProject(p, opts) {
     opts = opts || {};
     if (E.state.playing) E.stop();
     if (opts.undoable && P) snapshot();
     P = p;
+    R.rack.classList.remove('enter');
+    void R.rack.offsetWidth;
+    R.rack.classList.add('enter');
+    clearTimeout(enterTimer);
+    enterTimer = setTimeout(() => R.rack.classList.remove('enter'), 1200);
     await afterLoad(true);
     if (opts.play) E.play();
   }
@@ -209,6 +215,8 @@
     R.swingOut.textContent = Math.round(P.swing * 100) + '%';
     $$('button', R.barsSeg).forEach((b) => b.classList.toggle('is-on', +b.dataset.bars === P.bars));
     R.playBtn.classList.toggle('is-playing', E.state.playing);
+    document.body.classList.toggle('is-playing', E.state.playing);
+    document.documentElement.style.setProperty('--beat', (60 / P.bpm).toFixed(3) + 's');
     R.playBtn.setAttribute('aria-label', E.state.playing ? 'Stop' : 'Play');
     R.playBtn.innerHTML = E.state.playing ? '<span class="ico-stop"></span>' : '<span class="ico-play"></span>';
     R.projName.value = P.name;
@@ -217,7 +225,7 @@
 
   function bindTop() {
     R.keySel.innerHTML = T.NOTE_NAMES.map((n, i) => `<option value="${i}">${n}</option>`).join('');
-    R.scaleSel.innerHTML = Object.entries(T.SCALES).map(([k, s]) => `<option value="${k}">${s.name} — ${s.vibe}</option>`).join('');
+    R.scaleSel.innerHTML = Object.entries(T.SCALES).map(([k, s]) => `<option value="${k}">${s.name} · ${s.vibe.split(',')[0]}</option>`).join('');
     R.playBtn.addEventListener('click', togglePlay);
     const setBpm = (v) => {
       v = Math.max(50, Math.min(220, Math.round(v)));
@@ -339,7 +347,7 @@
     $$('[data-pat]', R.patBtns).forEach((b) => b.addEventListener('click', () => { P.current = +b.dataset.pat; scheduleSave(); renderAll(); }));
     R.songToggle.classList.toggle('is-on', P.songMode);
     R.songToggle.setAttribute('aria-pressed', P.songMode);
-    R.songStrip.innerHTML = P.song.map((pi, i) => `<button class="blk" data-blk="${i}" style="--c:${['#ff7a45', '#b48cff', '#3ee0c8', '#ffd166'][pi]}" data-hint="Click to change which pattern plays here. Right-click (or long-press) to remove.">${LETTERS[pi]}</button>`).join('') +
+    R.songStrip.innerHTML = P.song.map((pi, i) => `<button class="blk" data-blk="${i}" style="--c:${['#0a84ff', '#bf5af2', '#30d158', '#ff9f0a'][pi]}" data-hint="Click to change which pattern plays here. Right-click (or long-press) to remove.">${LETTERS[pi]}</button>`).join('') +
       `<button class="blk blk-add" id="blkAdd" data-hint="Add another block to your song.">+</button>`;
     $$('[data-blk]', R.songStrip).forEach((b) => {
       const i = +b.dataset.blk;
@@ -422,7 +430,7 @@
     const sel = ui.sel === t.id;
     const chopSel = t.type === 'sample' && t.mode === 'chop' ? `<span class="chop-brush" data-hint="The chop you'll place when you click an empty square. Use ◀ ▶ to change it.">
       <button data-act="chopPrev" aria-label="Previous chop">◀</button><b>${(ui.chopBrush[t.id] || 0) + 1}</b><button data-act="chopNext" aria-label="Next chop">▶</button></span>` : '';
-    return `<div class="trk ${sel ? 'is-sel' : ''} ${t.mute ? 'is-mute' : ''}" data-id="${t.id}" style="--c:${colorOf(t)}">
+    return `<div class="trk ${sel ? 'is-sel' : ''} ${t.mute ? 'is-mute' : ''}" data-id="${t.id}" style="--c:${colorOf(t)};--i:${P.tracks.indexOf(t)}">
       <div class="trk-head">
         <div class="trk-top">
           <button class="trk-name" data-act="select" data-hint="Select this track. Double-click to rename it.">${esc(t.name)}</button>
@@ -629,6 +637,7 @@
     const v = d.steps[i], r = d.rolls[i] || 1;
     cell.classList.toggle('on', !!v);
     cell.style.setProperty('--v', v || 0);
+    if (v) { cell.classList.remove('pop'); void cell.offsetWidth; cell.classList.add('pop'); }
     cell.innerHTML = v && r > 1 ? `<i class="rollx">×${r}</i>` : '';
   }
 
@@ -837,13 +846,20 @@
 
   // ---------- dock: piano roll / lab / mixer ----------
   function setTab(tab) {
+    const changedTab = ui.tab !== tab;
     ui.tab = tab;
     renderDock();
+    if (changedTab) {
+      R.dockBody.classList.add('switching');
+      clearTimeout(setTab.t);
+      setTab.t = setTimeout(() => R.dockBody.classList.remove('switching'), 400);
+    }
   }
   function renderDock() {
     $$('[data-tab]').forEach((b) => b.classList.toggle('is-on', b.dataset.tab === ui.tab));
     const body = R.dockBody;
-    body.className = 'dock-body tab-' + ui.tab;
+    const sw = body.classList.contains('switching');
+    body.className = 'dock-body tab-' + ui.tab + (sw ? ' switching' : '');
     if (ui.tab === 'roll') renderRoll(body);
     else if (ui.tab === 'lab') BL.lab.render();
     else renderMixer(body);
@@ -912,7 +928,9 @@
     host.innerHTML = d.notes.map((nt, i) => {
       const r = top - nt.d;
       if (r < 0 || r >= rows.length) return '';
-      return `<div class="note" data-i="${i}" style="left:${nt.s * COL_W + 1}px;top:${r * ROW_H + 1}px;width:${nt.l * COL_W - 2}px;height:${ROW_H - 2}px;--c:${colorOf(t)}"><span class="note-grip"></span></div>`;
+      const fresh = nt._fresh ? ' fresh' : '';
+      if (nt._fresh) delete nt._fresh;
+      return `<div class="note${fresh}" data-i="${i}" style="left:${nt.s * COL_W + 1}px;top:${r * ROW_H + 1}px;width:${nt.l * COL_W - 2}px;height:${ROW_H - 2}px;--c:${colorOf(t)}"><span class="note-grip"></span></div>`;
     }).join('');
   }
 
@@ -960,6 +978,7 @@
         const len = Math.min(ui.brush, nSteps() - p0.step);
         const added = degs.map((dd) => ({ s: p0.step, d: dd, l: len }));
         d.notes.push(...added);
+        added.forEach((x) => { x._fresh = true; });
         degs.forEach((dd) => E.previewNote(t.inst, E.noteMidi(P, tr(P, t), dd), 0.3));
         drag = { mode: 'resize', notes: added, p0, moved: true, created: true };
       }
@@ -1159,18 +1178,26 @@
     toastTimer = setTimeout(() => { R.toast.classList.remove('show'); }, 3600);
   }
   function openModal(html, bind, wide) {
+    clearTimeout(modalTimer);
+    R.modal.classList.remove('closing');
     R.modal.innerHTML = `<div class="modal-card ${wide ? 'wide' : ''}" role="dialog" aria-modal="true"><button class="modal-x" id="modalX" aria-label="Close">×</button>${html}</div>`;
     R.modal.hidden = false;
     $('#modalX').addEventListener('click', closeModal);
     R.modal.onclick = (e) => { if (e.target === R.modal) closeModal(); };
     if (bind) bind(R.modal);
   }
-  function closeModal() { R.modal.hidden = true; R.modal.innerHTML = ''; }
+  let modalTimer = null;
+  function closeModal() {
+    if (R.modal.hidden || R.modal.classList.contains('closing')) return;
+    R.modal.classList.add('closing');
+    clearTimeout(modalTimer);
+    modalTimer = setTimeout(() => { R.modal.hidden = true; R.modal.innerHTML = ''; R.modal.classList.remove('closing'); }, 200);
+  }
   function showLoading(msg) { R.loadingMsg.textContent = msg; R.loading.hidden = false; }
   function hideLoading() { R.loading.hidden = true; }
 
   function openBeats() {
-    const cards = BL.beats.PRESETS.map((pr) => `<button class="beat-card" data-preset="${pr.id}" style="--c:${pr.color}" data-tags="${esc((pr.name + ' ' + pr.tags.join(' ') + ' ' + pr.desc).toLowerCase())}">
+    const cards = BL.beats.PRESETS.map((pr, i) => `<button class="beat-card" data-preset="${pr.id}" style="--c:${pr.color};--i:${i}" data-tags="${esc((pr.name + ' ' + pr.tags.join(' ') + ' ' + pr.desc).toLowerCase())}">
         <span class="beat-name">${pr.name}</span>
         <span class="beat-meta">${pr.bpm} BPM · ${T.keyName(pr.key, pr.scale)}</span>
         <span class="beat-desc">${pr.desc}</span>
@@ -1179,7 +1206,7 @@
     openModal(`<div class="beats-head"><h2>Start from a beat</h2><p>Pick a vibe. It loads and starts playing, then make it yours: change sounds, notes, key or tempo.</p>
         <input type="search" id="beatSearch" placeholder="Search: soul, rage, drill, lo-fi, Kanye-type…" aria-label="Search beats"></div>
       <div class="beat-grid">${cards}
-        <button class="beat-card beat-blank" id="blankBeat"><span class="beat-name">Empty beat</span><span class="beat-desc">Kick, snare, hats, 808 and keys, ready for you to fill in. Every ✦ button writes a part for you.</span></button>
+        <button class="beat-card beat-blank" id="blankBeat" style="--i:${BL.beats.PRESETS.length}"><span class="beat-name">Empty beat</span><span class="beat-desc">Kick, snare, hats, 808 and keys, ready for you to fill in. Every ✦ button writes a part for you.</span></button>
       </div>`, (m) => {
       $$('[data-preset]', m).forEach((b) => b.addEventListener('click', async () => {
         const pr = BL.beats.PRESETS.find((x) => x.id === b.dataset.preset);
@@ -1367,6 +1394,44 @@
     renderDock();
   }
 
+  // ---------- Apple-style control polish ----------
+  /** slide a thumb under the selected option of every segmented control */
+  function updateSegs() {
+    $$('.seg').forEach((seg) => {
+      const on = $('button.is-on', seg);
+      let thumb = $(':scope > .seg-thumb', seg);
+      if (!on) { if (thumb) thumb.style.opacity = '0'; return; }
+      if (!thumb) { thumb = document.createElement('span'); thumb.className = 'seg-thumb'; seg.prepend(thumb); }
+      thumb.style.opacity = '';
+      thumb.style.width = on.offsetWidth + 'px';
+      thumb.style.transform = `translateX(${on.offsetLeft}px)`;
+      if (!thumb.classList.contains('ready')) requestAnimationFrame(() => thumb.classList.add('ready'));
+    });
+  }
+  function paintRange(r) {
+    const min = +r.min || 0, max = r.max === '' ? 100 : +r.max;
+    r.style.setProperty('--fill', (((+r.value - min) / (max - min)) * 100).toFixed(1) + '%');
+  }
+  function polish() { updateSegs(); $$('input[type=range]').forEach(paintRange); }
+  let polishQueued = false;
+  function queuePolish() {
+    if (polishQueued) return;
+    polishQueued = true;
+    requestAnimationFrame(() => { polishQueued = false; polish(); });
+  }
+  function bindPolish() {
+    document.addEventListener('input', (e) => { if (e.target.type === 'range') paintRange(e.target); });
+    new MutationObserver((muts) => {
+      for (const m of muts) {
+        const t = m.target;
+        if (m.type === 'childList' && t.nodeType === 1 && !t.closest('.lane') && !t.classList.contains('roll-notes')) { queuePolish(); return; }
+        if (m.type === 'attributes' && t.parentElement && t.parentElement.classList.contains('seg')) { queuePolish(); return; }
+      }
+    }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+    window.addEventListener('resize', queuePolish);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(queuePolish);
+  }
+
   // ---------- boot ----------
   async function boot() {
     cacheDom();
@@ -1377,6 +1442,7 @@
       rackChanged: () => { renderRack(); },
       addSampleTrack,
     });
+    bindPolish();
     bindTop();
     bindPatBar();
     bindHints();
