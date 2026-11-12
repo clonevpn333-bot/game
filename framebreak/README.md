@@ -35,7 +35,7 @@ All eighteen chapters are playable start to finish and hand over to the next one
 | 15 | Persistence | Pencil flipbook with onion skin, Canvas2D | Flip twelve pages back and forward; the drawings move, Rin does not. Three scenes. ~3 min. |
 | 16 | Cat's Cradle | three.js, two jointed giant hands and string | Walk a string figure; at knots, have the hands re-thread it into another figure. Three figures, three knots. ~3 min. |
 | 17 | Counterweight | Kinetic mobile, flat colour, Canvas2D | Arms tip under Rin's weight; Vell sits as a counterweight. Ring three bells, climb to the hook. ~3 min. |
-| 18 | Framebreak | three.js, shared post-FX, lens render pass | Three acts (**The Getaway**: driving; **The Courier**: gliding; **The Missing City**: exploration and a choice), then the ending, **Forty Thousand Years**: one continuous 3D walk in which every format exists at once in the same lit space, each stretch being made by the same giant hand in a different material; gold frames redraw the same view in another format; it ends at a wall of hand stencils, your handprint, and a blank frame you can draw in. Marks you leave are stored in the browser and appear on the wall on later play-throughs. |
+| 18 | Framebreak | three.js, shared post-FX, lens render pass | Three acts (**The Getaway**: driving; **The Courier**: gliding; **The Missing City**: exploration), then the ending, **Every Way to Exist**: one continuous 3D space in which every format stands at once, each stretch being made by the same giant hand in a different material. Six blank frames bar the way; each wakes when you climb its world's own platforms (shadow slabs on rods, stained-glass panes, bouncing wool, pop-up paper, squashy clay, pixel bricks) and bring it its light. At the end you choose one of three frames — **One Frame**, **Leave It Open**, **Seal the Frames** — and each plays out as its own ending; Leave It Open ends at a wall of hands, your handprint and a blank canvas to draw on. An outro video plays after the ending when the build includes one (see below). |
 
 Total is roughly 45–60 minutes, not the 80–100 the full design calls for.
 
@@ -71,3 +71,7 @@ src/chN      one folder per reality, each with its own renderer, physics and con
 vendor       three.js (MIT), cannon-es (MIT)
 tools        static server, single-file build, headless playtest driver
 ```
+
+### Outro video
+
+The credits can play a short screen recording. It is not stored in the repository: build with `FB_OUTRO=/path/to/video.webm FB_OUT=release node tools/build.mjs` to embed one into `release/framebreak.html` and `release/chapter18.html` (the `release/` folder is git-ignored). Without it the ending goes straight to the end card.

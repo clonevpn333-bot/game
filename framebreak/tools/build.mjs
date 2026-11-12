@@ -13,12 +13,13 @@ const missing = { name: 'missing', setup(b) { b.onResolve({ filter: /^\.\.?\// }
 const out = await esbuild.build({ entryPoints: [resolve(root, 'src/main.js')], bundle: true, format: 'esm', minify: true, write: false, alias: { three: resolve(root, 'vendor/three.module.min.js'), 'cannon-es': resolve(root, 'vendor/cannon-es.js') }, plugins: [missing], logLevel: 'warning' });
 const js = out.outputFiles[0].text.replace(/<\/script/g, '<\\/script').replace(/<!--/g, '<\\!--'), css = readFileSync(resolve(root, 'style.css'), 'utf8');
 const html = readFileSync(resolve(root, 'index.html'), 'utf8');
+const OUT = resolve(root, process.env.FB_OUT || 'dist'), outro = process.env.FB_OUTRO && existsSync(process.env.FB_OUTRO) ? `<script>window.__FB_OUTRO="data:video/webm;base64,${readFileSync(process.env.FB_OUTRO).toString('base64')}"</script>` : '';
 const page = (chapter) => html
   .replace('<link rel="stylesheet" href="style.css">', () => `<style>${css}</style>`)
-  .replace(/<script type="importmap">[\s\S]*?<\/script>/, () => (chapter ? `<script>window.__FB_CHAPTER=${chapter}</script>` : ''))
+  .replace(/<script type="importmap">[\s\S]*?<\/script>/, () => outro + (chapter ? `<script>window.__FB_CHAPTER=${chapter}</script>` : ''))
   .replace('<script type="module" src="src/main.js"></script>', () => `<script type="module">${js}</script>`);
-mkdirSync(resolve(root, 'dist'), { recursive: true });
-writeFileSync(resolve(root, 'dist/framebreak.html'), page(0));
+mkdirSync(OUT, { recursive: true });
+writeFileSync(resolve(OUT, 'framebreak.html'), page(0));
 const built = [];
-for (let i = 1; i <= 18; i++) if (existsSync(resolve(root, `src/ch${i}/chapter${i}.js`))) { writeFileSync(resolve(root, `dist/chapter${i}.html`), page(i)); built.push(i); }
+for (let i = 1; i <= 18; i++) if (existsSync(resolve(root, `src/ch${i}/chapter${i}.js`))) { if (!outro || i === 18) writeFileSync(resolve(OUT, `chapter${i}.html`), page(i)); built.push(i); }
 console.log('built chapters', built.join(','), '·', Math.round(js.length / 1024) + ' KB js');
