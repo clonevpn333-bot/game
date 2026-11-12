@@ -221,6 +221,19 @@ export const INST = {
     setTimeout(() => { try { g.disconnect(); } catch { /* */ } }, (t - E.t + d + 2) * 1000);
   },
   timp: (E, t, f, d, v, out) => { E.osc('sine', f, t, 0.02, out, { vol: 0.5 * v, a: 0.002, d: 1.1, s: 0.02, r: 0.5, slide: 1.07, slideT: 0.07 }); E.osc('sine', f * 1.51, t, 0.02, out, { vol: 0.12 * v, d: 0.45, s: 0.02, r: 0.2 }); E.noise(t, 0.3, out, { vol: 0.1 * v, type: 'lowpass', freq: 800, q: 0.7 }); },
+  // concert grand: three unison strings with a hammer-voiced spectrum (the 7th partial notched, as a hammer
+  // striking at 1/7 of the string does), slightly sharp upper partials, brightness that closes as the note
+  // decays, pitch-dependent sustain, hammer noise, a body thump in the bass, and keyboard-wide stereo.
+  concert: (E, t, f, d, v, out) => {
+    const c = E.ctx, vv = Math.pow(Math.min(1.45, v), 1.35), low = f < 180, dec = f < 110 ? 7 : f < 260 ? 5 : f < 700 ? 3.2 : 1.7, pan = c.createStereoPanner(); pan.pan.value = Math.max(-0.65, Math.min(0.65, Math.log2(f / 261.6) * 0.24)); pan.connect(out);
+    const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 0.4; lp.frequency.setValueAtTime(Math.min(17000, f * (4 + 15 * vv)), t); lp.frequency.exponentialRampToValueAtTime(Math.max(f * 2.4, 500), t + dec * 0.55); lp.connect(pan);
+    const wave = E._pw || (E._pw = (() => { const n = 28, re = new Float32Array(n), im = new Float32Array(n); for (let k = 1; k < n; k++) im[k] = (1 / Math.pow(k, 1.08)) * (k % 7 === 0 ? 0.12 : 1) * (1 + 0.25 * Math.sin(k * 1.9)); return c.createPeriodicWave(re, im); })());
+    const end = t + Math.min(dec * 2.4, Math.max(d, 0.2) * 1.5 + dec * 0.6);
+    for (const dt of [-2.6, 0.3, 2.9]) { const o = c.createOscillator(), g = c.createGain(); o.setPeriodicWave(wave); o.frequency.value = f * E.pitchMul; o.detune.value = dt; g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.075 * vv, t + 0.0025); g.gain.setTargetAtTime(0.03 * vv, t + 0.003, 0.07 + dec * 0.02); g.gain.setTargetAtTime(0, t + 0.15, dec / 3.2); g.gain.setTargetAtTime(0, end - 0.25, 0.09); o.connect(g); g.connect(lp); o.start(t); o.stop(end + 0.1); }
+    for (const [n, a] of [[2.004, 0.03], [3.011, 0.018], [4.021, 0.01], [5.034, 0.006]]) E.osc('sine', f * n, t, 0.01, pan, { vol: a * vv, a: 0.002, d: dec * 0.22, s: 0.01, r: 0.15 });
+    E.noise(t, 0.035, pan, { vol: 0.05 * vv, type: 'bandpass', freq: Math.min(6000, f * 4.5), q: 1.1 }); if (low) E.osc('sine', f, t, 0.02, pan, { vol: 0.14 * vv, a: 0.002, d: 1.2, s: 0.05, r: 0.3 });
+    setTimeout(() => { try { pan.disconnect(); lp.disconnect(); } catch { /* */ } }, (end - E.t + 1) * 1000);
+  },
   // electronic + indie voices for the fusion boss theme
   pump: (E, t, f, d, v, out) => { const fl = E.filt('lowpass', 2000 + 1600 * v, 0.8, out); for (const dt of [-16, -6, 5, 15]) E.osc('sawtooth', f, t, d, fl, { vol: 0.032 * v, a: 0.085, d: 0.14, s: 0.72, r: 0.05, detune: dt }); },
   pluck: (E, t, f, d, v, out) => { const fl = E.filt('lowpass', 1200, 3.5, out); fl.frequency.setValueAtTime(800 + 5200 * Math.min(1.2, v), t); fl.frequency.exponentialRampToValueAtTime(420, t + 0.24); for (const dt of [-7, 7]) E.osc('sawtooth', f, t, 0.03, fl, { vol: 0.11 * v, a: 0.002, d: 0.26, s: 0.04, r: 0.12, detune: dt }); },
