@@ -142,6 +142,7 @@ export class AudioEngine {
 
 // ---- instrument library ---------------------------------------------------
 // signature: (E, t, freq, dur, vel, out, p)
+let _dist = null; const distCurve = () => _dist || (_dist = (() => { const n = 4096, c = new Float32Array(n); for (let i = 0; i < n; i++) { const x = (i / (n - 1)) * 2 - 1; c[i] = Math.tanh(x * 3.2) * 0.95; } return c; })());
 export const INST = {
   // 16-bit console voices
   lead: (E, t, f, d, v, out, p = {}) => E.osc(p.wave || 'p0.25', f, t, d, out, { vol: 0.16 * v, a: 0.004, d: 0.08, s: 0.7, r: 0.06, vib: p.vib ?? 14, vibDelay: 0.14 }),
@@ -199,6 +200,40 @@ export const INST = {
   organ: (E, t, f, d, v, out) => { for (const [m, a] of [[1, 0.1], [2, 0.06], [3, 0.03]]) E.osc('sine', f * m, t, d, out, { vol: a * v, a: 0.01, s: 1, r: 0.05 }); },
   celesta: (E, t, f, d, v, out) => E.fm(f, t, d, out, { ratio: 4, index: 1.2, idxDecay: 0.2, vol: 0.14 * v, d: 0.5, s: 0.03, r: 0.3 }),
   ukulele: (E, t, f, d, v, out) => { const fl = E.filt('lowpass', 3000, 1, out); E.osc('triangle', f, t, 0.02, fl, { vol: 0.2 * v, a: 0.002, d: 0.3, s: 0.03, r: 0.1 }); E.osc('p0.25', f, t, 0.02, fl, { vol: 0.04 * v, d: 0.1, s: 0.01 }); },
+  // concert voices for the finale: a grand piano and a small synthetic orchestra
+  grand: (E, t, f, d, v, out) => {
+    const fl = E.filt('lowpass', Math.min(9000, 1400 + 5200 * Math.min(1.3, v) * (f < 260 ? 0.55 : 1)), 0.4, out), sus = Math.max(d, 0.25);
+    E.fm(f, t, sus, fl, { ratio: 1, index: 1.5 * v, idxDecay: 0.14, vol: 0.17 * v, a: 0.002, d: 1.6, s: 0.1, r: 0.45 });
+    E.fm(f, t, sus, fl, { ratio: 2.003, index: 0.8 * v, idxDecay: 0.07, vol: 0.06 * v, a: 0.002, d: 0.6, s: 0.05, r: 0.25, detune: 3 });
+    E.osc('triangle', f, t, sus, fl, { vol: 0.09 * v, a: 0.003, d: 2.2, s: 0.16, r: 0.5, detune: -4 });
+    if (f < 220) E.osc('sine', f, t, sus, out, { vol: 0.08 * v, a: 0.004, d: 1.8, s: 0.2, r: 0.4 });
+    E.noise(t, 0.025, out, { vol: 0.02 * v, type: 'bandpass', freq: Math.min(7000, f * 7), q: 1.4 });
+  },
+  spic: (E, t, f, d, v, out) => { const fl = E.filt('lowpass', 2000 + 1800 * v, 0.7, out); for (const dt of [-13, 0, 12]) E.osc('sawtooth', f, t, Math.min(d, 0.11), fl, { vol: 0.045 * v, a: 0.006, d: 0.09, s: 0.3, r: 0.08, detune: dt }); },
+  celli: (E, t, f, d, v, out) => { const fl = E.filt('lowpass', 900 + 900 * v, 0.8, out); for (const dt of [-10, 8]) E.osc('sawtooth', f, t, d, fl, { vol: 0.075 * v, a: Math.min(0.1, d * 0.3), d: 0.25, s: 0.85, r: 0.25, detune: dt, vib: 8, vibDelay: 0.3 }); },
+  horns: (E, t, f, d, v, out) => {
+    const fl = E.filt('lowpass', 500, 1.4, out); fl.frequency.setValueAtTime(420, t); fl.frequency.linearRampToValueAtTime(700 + 1500 * v, t + 0.09); fl.frequency.exponentialRampToValueAtTime(900 + 600 * v, t + Math.max(0.2, d));
+    for (const dt of [-7, 0, 6]) E.osc('sawtooth', f, t, d, fl, { vol: 0.07 * v, a: 0.045, d: 0.15, s: 0.85, r: 0.18, detune: dt, vib: 10, vibDelay: 0.35, slide: 0.97, slideT: 0.06 });
+  },
+  choir: (E, t, f, d, v, out) => {
+    const g = E.ctx.createGain(); g.gain.value = 1; g.connect(out); const F = [[740, 5, 1], [1180, 6, 0.75], [2650, 7, 0.3]].map(([fr, q, a]) => [E.filt('bandpass', fr, q, g), a]);
+    for (const dt of [-11, 9]) for (const [fl, a] of F) E.osc('sawtooth', f, t, d, fl, { vol: 0.16 * a * v, a: Math.min(0.35, d * 0.4), d: 0.3, s: 0.9, r: 0.5, detune: dt, vib: 13, vibRate: 5.2, vibDelay: 0.25 });
+    setTimeout(() => { try { g.disconnect(); } catch { /* */ } }, (t - E.t + d + 2) * 1000);
+  },
+  timp: (E, t, f, d, v, out) => { E.osc('sine', f, t, 0.02, out, { vol: 0.5 * v, a: 0.002, d: 1.1, s: 0.02, r: 0.5, slide: 1.07, slideT: 0.07 }); E.osc('sine', f * 1.51, t, 0.02, out, { vol: 0.12 * v, d: 0.45, s: 0.02, r: 0.2 }); E.noise(t, 0.3, out, { vol: 0.1 * v, type: 'lowpass', freq: 800, q: 0.7 }); },
+  // distorted electric guitar: drop-D power chords (one note in, root + fifth + octave out) and a singing lead
+  gtr: (E, t, f, d, v, out) => {
+    const c = E.ctx, pre = c.createGain(), ws = c.createWaveShaper(), post = c.createGain(), hp = c.createBiquadFilter(), cab = E.filt('lowpass', d < 0.12 ? 1700 : 3400, 1.1, out); hp.type = 'highpass'; hp.frequency.value = 85; hp.connect(cab);
+    pre.gain.value = 7; ws.curve = distCurve(); ws.oversample = '2x'; post.gain.value = 0.085 * v; pre.connect(ws); ws.connect(post); post.connect(hp); const mute = d < 0.12;
+    for (const [m, a] of [[1, 1], [1.4983, 0.8], [2, 0.55]]) for (const dt of [-7, 6]) E.osc('sawtooth', f * m, t, d, pre, { vol: 0.12 * a, a: 0.002, d: mute ? 0.07 : 0.6, s: mute ? 0.12 : 0.7, r: mute ? 0.04 : 0.12, detune: dt });
+    setTimeout(() => { for (const n of [pre, ws, post, hp, cab]) try { n.disconnect(); } catch { /* */ } }, (t - E.t + d + 1.5) * 1000);
+  },
+  shred: (E, t, f, d, v, out) => {
+    const c = E.ctx, pre = c.createGain(), ws = c.createWaveShaper(), post = c.createGain(), cab = E.filt('lowpass', 4300, 1.4, out), pk = E.filt('peaking', 1600, 1, cab); pk.gain.value = 5;
+    pre.gain.value = 9; ws.curve = distCurve(); ws.oversample = '2x'; post.gain.value = 0.075 * v; pre.connect(ws); ws.connect(post); post.connect(pk);
+    E.osc('sawtooth', f, t, d, pre, { vol: 0.16, a: 0.003, d: 0.4, s: 0.85, r: 0.14, vib: d > 0.3 ? 24 : 0, vibRate: 6.2, vibDelay: 0.22, slide: d > 0.3 ? 0.944 : 0.985, slideT: d > 0.3 ? 0.12 : 0.03 }); E.osc('square', f * 2, t, d, pre, { vol: 0.035, a: 0.003, d: 0.2, s: 0.6, r: 0.1 });
+    setTimeout(() => { for (const n of [pre, ws, post, cab, pk]) try { n.disconnect(); } catch { /* */ } }, (t - E.t + d + 1.5) * 1000);
+  },
   kazoo: (E, t, f, d, v, out) => E.osc('sawtooth', f, t, d, E.filt('bandpass', 1500, 3, out), { vol: 0.3 * v, a: 0.02, s: 0.9, r: 0.05, vib: 25, vibRate: 7, vibDelay: 0.05 }),
 };
 
@@ -211,6 +246,27 @@ const kick = (E, t, out, v, { f0 = 150, f1 = 42, len = 0.22, click = true } = {}
   if (click) E.noise(t, 0.012, out, { vol: 0.2 * v, type: 'highpass', freq: 2500 });
 };
 export const DRUMS = {
+  // orchestral percussion: T taiko, k gran cassa, l low timpani, s snare, r snare roll, c crash, w cymbal swell, h rim, b big hit
+  rock: {
+    k: (E, t, o, v) => kick(E, t, o, v * 1.05, { f0: 130, f1: 48, len: 0.32, click: true }),
+    s: (E, t, o, v) => { E.noise(t, 0.2, o, { vol: 0.34 * v, type: 'bandpass', freq: 1900, q: 0.7 }); E.osc('triangle', 190, t, 0.04, o, { vol: 0.2 * v, d: 0.09, s: 0.05, slide: 1.3, slideT: 0.03 }); E.noise(t, 0.08, o, { vol: 0.12 * v, type: 'highpass', freq: 5000 }); },
+    h: (E, t, o, v) => E.noise(t, 0.04, o, { vol: 0.1 * v, type: 'highpass', freq: 8500 }),
+    o: (E, t, o, v) => E.noise(t, 0.22, o, { vol: 0.1 * v, type: 'highpass', freq: 7000 }),
+    c: (E, t, o, v) => { E.noise(t, 1.8, o, { vol: 0.22 * v, type: 'highpass', freq: 4500, q: 0.5 }); },
+    t: (E, t, o, v) => E.osc('sine', 150, t, 0.05, o, { vol: 0.4 * v, d: 0.2, s: 0.02, slide: 1.4, slideT: 0.04 }),
+    m: (E, t, o, v) => E.osc('sine', 110, t, 0.05, o, { vol: 0.42 * v, d: 0.24, s: 0.02, slide: 1.4, slideT: 0.04 }),
+  },
+  orch: {
+    T: (E, t, o, v) => { kick(E, t, o, v * 0.95, { f0: 120, f1: 46, len: 0.65, click: false }); E.noise(t, 0.12, o, { vol: 0.22 * v, type: 'lowpass', freq: 600, q: 0.8 }); },
+    k: (E, t, o, v) => kick(E, t, o, v, { f0: 95, f1: 36, len: 1.1, click: false }),
+    l: (E, t, o, v) => { E.osc('sine', 73, t, 0.02, o, { vol: 0.55 * v, a: 0.002, d: 1.2, s: 0.02, r: 0.5, slide: 1.08, slideT: 0.08 }); E.noise(t, 0.35, o, { vol: 0.12 * v, type: 'lowpass', freq: 700 }); },
+    s: (E, t, o, v) => { E.noise(t, 0.22, o, { vol: 0.28 * v, type: 'bandpass', freq: 2200, q: 0.6 }); E.osc('triangle', 210, t, 0.03, o, { vol: 0.12 * v, d: 0.08, s: 0.05 }); },
+    r: (E, t, o, v) => { for (let i = 0; i < 6; i++) E.noise(t + i * 0.025, 0.06, o, { vol: (0.08 + i * 0.02) * v, type: 'bandpass', freq: 2400, q: 0.7 }); },
+    c: (E, t, o, v) => { E.noise(t, 2.2, o, { vol: 0.24 * v, type: 'highpass', freq: 4200, q: 0.5 }); E.noise(t, 0.6, o, { vol: 0.1 * v, type: 'bandpass', freq: 7000, q: 1 }); },
+    w: (E, t, o, v) => E.noise(t, 1.35, o, { vol: 0.2 * v, type: 'highpass', freq: 3000, a: 1.3 }),
+    h: (E, t, o, v) => E.noise(t, 0.05, o, { vol: 0.18 * v, type: 'bandpass', freq: 3200, q: 2 }),
+    b: (E, t, o, v) => { kick(E, t, o, v * 1.2, { f0: 140, f1: 32, len: 1.6, click: true }); E.noise(t, 2.6, o, { vol: 0.28 * v, type: 'highpass', freq: 3500 }); E.noise(t, 0.5, o, { vol: 0.25 * v, type: 'lowpass', freq: 400 }); },
+  },
   chip: {
     k: (E, t, o, v) => { E.osc('triangle', 60, t, 0.05, o, { vol: 0.7 * v, a: 0.001, d: 0.09, s: 0.01, r: 0.02, slide: 4, slideT: 0.06 }); },
     s: (E, t, o, v) => { E.noise(t, 0.13, o, { vol: 0.34 * v, type: 'bandpass', freq: 2200, q: 0.6 }); E.osc('triangle', 190, t, 0.03, o, { vol: 0.25 * v, d: 0.05, s: 0.01, slide: 1.6, slideT: 0.04 }); },

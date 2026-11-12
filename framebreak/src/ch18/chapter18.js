@@ -26,7 +26,7 @@ export default class Chapter18 {
   start({ checkpoint, handoff } = {}) {
     const g = this.game; this.r = getRenderer(g); this.r.shadowMap.enabled = g.settings.shadows > 0; this.r.toneMappingExposure = 1.0; g.c2d.style.imageRendering = ''; g.gl.style.imageRendering = '';
     this.hud = buildHud(g); this.vell = buildVell(); this.noPause = false; this.sting = [{ inst: 'bell', notes: 'A5 E6 D6 C6 E6 - -', step: 0.11, vol: 0.5, send: 0.5 }];
-    this.sw = 0; this.song = SONG; this.go(Math.max(0, IDS.indexOf(checkpoint || null)));
+    this.sw = 0; this.song = SONG; this.snap0 = handoff ? g.snapshot() : null; this.go(Math.max(0, IDS.indexOf(checkpoint || null)));
     g.show3d(true); if (handoff) g.fadeFrozen(1600, () => g.director.releaseOutgoing()); else g.clear2d();
     g.audio.muffle(0);
   }

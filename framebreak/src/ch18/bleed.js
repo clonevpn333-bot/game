@@ -6,18 +6,67 @@
 // world out, and riding it comes the Composite — every old villain glued
 // together wrong — whose every slam reshuffles the floor ahead.
 import * as THREE from 'three';
-import { V, buildVell, bar } from './kit.js';
+import { V, buildVell, bar, Particles } from './kit.js';
 import { buildRin3D, animateRin } from '../ch7/rig.js';
+import { buildHand } from '../fx/hand.js';
+import { JEWEL, hand2d } from './atelierkit.js';
 import { pbr, normalFromHeight } from '../fx/tex.js';
 import { tex, glassTex, stitchTex, goldFrame } from './atelierkit.js';
 import { clamp, lerp, hash2, TAU, ease } from '../core/util.js';
 
+const R1 = (i, s) => hash2(i * 3.7 + 1, s * 1.3 + 2) - 0.5;
 const W = 9, L = 112, TS = 4, END = L * TS - 8, CPS = [6, 110, 220, 330];
 const VOX = 0, CLAY = 1, PAPER = 2, GLASS = 3, WOOL = 4, PIXEL = 5, WIRE = 6, INK = 7, GREY = 8, NF = 9;
 const NAME = ['VOXEL', 'CLAY', 'PAPER', 'GLASS', 'WOOL', 'PIXEL', 'WIREFRAME', 'INK'];
-const SONG = (() => { const bars = {}, bass = ['A1 . A2 . A1 A1 A2 .', 'F1 . F2 . F1 F1 F2 .', 'C2 . C3 . C2 C2 C3 .', 'G1 . G2 . G1 G1 G2 .'], m = ['E5 . D5 E5 . C5 . A4 . C5 . D5 E5 - . .', 'F5 . E5 F5 . A5 . F5 . E5 . C5 A4 - . .', 'G5 . E5 G5 . C6 . G5 . E5 . C5 E5 - . .', 'D5 . B4 D5 . G5 . F5 . D5 . B4 G4 - . .'], who = ['lead', 'kazoo', 'organ', 'brass'];
-  const A = [0, 1, 2, 3, 4, 5, 6, 7].map((i) => { const b = { bass: bass[i % 4] + ' ' + bass[i % 4], drums: i % 4 === 3 ? 'k . h k s . h k k . s k s s t l' : 'k . h . s . h k . k h . s . h h', stab: i % 2 ? '. . A3+E4 . . . . . . . A3+E4 . . . . .' : '. . . . . . F3+C4 . . . . . . . G3+D4 .' }; for (const w of who) b[w] = who[(i + (i >> 2)) % 4] === w ? m[i % 4] : '. . . . . . . . . . . . . . . .'; bars['a' + i] = b; return 'a' + i; });
-  return { bpm: 146, gain: 0.9, reverb: 0.12, start: 'A', tracks: { bass: { inst: 'fmbass', vol: 0.85 }, drums: { kit: 'electro', vol: 0.85 }, stab: { inst: 'stab', vol: 0.5, pan: -0.2 }, lead: { inst: 'lead', vol: 0.7, pan: 0.15 }, kazoo: { inst: 'kazoo', vol: 0.55, pan: 0.15 }, organ: { inst: 'organ', vol: 0.45, pan: 0.15 }, brass: { inst: 'brass', vol: 0.55, pan: 0.15 } }, bars, sections: { A }, next: { A: 'A' } }; })();
+// THE COMPOSITE — the boss theme. Grand piano over a small orchestra, D minor, 148 bpm.
+// intro scores the cinematic (8 bars, lands on the crush); A drives the run; B is the choir bridge.
+const SONG = (() => {
+  const V = { Dm: ['A3', 'D4', 'F4', 'A4'], Bb: ['A#3', 'D4', 'F4', 'A#4'], F: ['A3', 'C4', 'F4', 'A4'], C: ['G3', 'C4', 'E4', 'G4'], Gm: ['G3', 'A#3', 'D4', 'G4'], A: ['A3', 'C#4', 'E4', 'A4'], Eb: ['G3', 'A#3', 'D#4', 'G4'] };
+  const ROOT = { Dm: 'D', Bb: 'A#', F: 'F', C: 'C', Gm: 'G', A: 'A', Eb: 'D#' }, up = (n, k = 1) => n.replace(/\d/, (d) => +d + k), R16 = '. . . . . . . . . . . . . . . .';
+  const arp = (c, o = 0, soft = false) => { const v = V[c].map((n) => up(n, o)); return [3, 1, 2, 1, 3, 1, 2, 1, 3, 1, 2, 1, 3, 2, 1, 2].map((k, i) => v[k] + (i === 0 ? (soft ? '' : '!') : i % 4 === 0 ? '' : '~')).join(' '); };
+  const lh = (c, tres) => { const r = ROOT[c]; return Array.from({ length: 16 }, (_, i) => (tres ? [0, 3, 6, 8, 11, 14] : [0, 8]).includes(i) ? `${r}1+${r}2${i === 0 || i === 8 ? '!' : ''}` : '.').join(' '); };
+  const drive = (c) => { const r = ROOT[c]; return Array.from({ length: 16 }, (_, i) => [0, 3, 6, 8, 11, 14].includes(i) ? `${r}3${i % 8 === 0 ? '!' : ''}` : i % 2 ? '.' : `${r}3~`).join(' '); };
+  const hold = (n) => `${n} ${'- '.repeat(15).trim()}`, chord = (c, o = 1) => V[c].slice(1).map((n) => up(n, o - 1)).join('+');
+  const prog = ['Dm', 'Bb', 'F', 'C', 'Dm', 'Bb', 'Gm', 'A'], bprog = ['Gm', 'Eb', 'Bb', 'F', 'Gm', 'Eb', 'A', 'A'];
+  const MEL = ['D4 - - - - - F4 - E4 - D4 - C4 - D4 -', 'A#3 - - - - - D4 - C4 - A#3 - A3 - - -', 'F4 - - - - - A4 - G4 - F4 - E4 - F4 -', 'G4 - - - - - - - E4 - - - C4 - - -', 'D4 - - - - - F4 - A4 - - - D5 - - -', 'D5 - C5 - A#4 - - - A4 - F4 - D4 - - -', 'G4 - - - A#4 - - - D5 - C5 - A#4 - A4 -', 'A4 - - - - - - - C#5 - - - E5 - - -'];
+  const CHO = ['G4 - - - A#4 - - - D5 - - - - - - -', 'D#5 - - - D5 - - - A#4 - - - G4 - - -', 'F4 - - - A#4 - - - D5 - - - F5 - - -', 'F5 - - - E5 - - - C5 - - - A4 - - -', 'G4 - - - A#4 - - - D5 - - - G5 - - -', 'G5 - - - F5 - - - D#5 - - - D5 - - -', 'C#5 - - - - - - - E5 - - - - - - -', 'A5 - - - - - - - - - - - . . . .'];
+  const GR = { Dm: 'D2', Bb: 'A#2', F: 'F2', C: 'C3', Gm: 'G2', A: 'A2', Eb: 'D#2' }, DRV = [0, 3, 6, 8, 11, 14];
+  const chug = (c) => Array.from({ length: 16 }, (_, i) => GR[c] + (DRV.includes(i) ? '!' : '~')).join(' '), ring = (c) => { const g = GR[c]; return `${g}! - - ${g} - - ${g} - ${g}! - - ${g} - - ${g} -`; };
+  const SOLO = ['G4 A#4 D5 G5 F5 D5 A#4 D5 G5 - - - A#5 - A5 G5', 'D#5 G5 A#5 D#6 D6 A#5 G5 A#5 D#6 - - - D6 C6 A#5 G5', 'F5 - D5 F5 A#5 - - - A5 G5 F5 D5 F5 - G5 A5', 'A5 - - - C6 - A5 - F5 - C5 - F5 G5 A5 C6', 'D6 - - - A#5 - G5 - D5 - G5 - A#5 - D6 -', 'D#6 D6 C6 A#5 G5 A#5 C6 D6 D#6 - - - G6 - - -', 'E6 - - - C#6 - E6 - A6 - - - G6 F6 E6 C#6', 'A5 - - - - - - - - - - - . . . .'];
+  const bars = {}, add = (k, b) => { bars[k] = { rh: R16, lh: R16, spic: R16, celli: R16, horns: R16, choir: R16, timp: R16, bell: R16, drums: R16, gtr: R16, lead: R16, rock: R16, ...b }; return k; };
+  const intro = ['Dm', 'Dm', 'Bb', 'A', 'Dm', 'Bb', 'Gm', 'A'].map((c, i) => add('i' + i, {
+    lh: i < 4 ? `${ROOT[c]}1+${ROOT[c]}2! - - - - - - - - - - - - - - -` : lh(c, i > 5), rh: i < 4 ? R16 : arp(c, 0, true).replace(/!/g, ''), spic: Array.from({ length: 16 }, () => `${ROOT[c]}3~`).join(' '), celli: hold(ROOT[c] + '2'), choir: i < 2 ? R16 : hold(chord(c)),
+    horns: i < 4 ? R16 : hold(['D4', 'F4', 'A4', 'A4'][i - 4]), timp: i % 2 ? R16 : `${ROOT[c]}2 . . . . . . . . . . . . . . .`,
+    drums: i < 4 ? (i % 2 ? '. . . . . . . . . . . . r . r r' : 'l . . . . . . . . . . . . . . .') : i < 6 ? 'T . . . T . . . T . . . T . . .' : i === 6 ? 'T . . . T . . . T . T . T T T T' : 'T . . . w . . . r r r r r r r r',
+    gtr: i === 6 ? `${GR[c]}! - - - - - - - ${GR[c]}! - - - - - - -` : i === 7 ? chug(c) : R16, rock: i === 7 ? 'k . . . k . . . s s s s s s s s' : R16 }));
+  const A1 = prog.map((c, i) => add('a' + i, { rh: arp(c), lh: lh(c, false), spic: drive(c), celli: hold(ROOT[c] + '2'), horns: hold(chord(c, 0)).replace(/^\S+/, (m) => m.split('+')[0]), timp: `${ROOT[c]}2 . . . . . . . ${ROOT[c]}2 . . . . . . .`, drums: (i === 0 ? 'b' : i % 4 === 0 ? 'Tc' : 'T') + ' . . h T . T . T . . h T . h h', choir: i > 3 ? hold(chord(c)) : R16, gtr: chug(c), rock: (i % 4 === 0 ? 'kc' : 'k') + ' . h . s . h k . k h . s . h .' }));
+  const A2 = prog.map((c, i) => add('m' + i, { rh: arp(c, 1), lh: lh(c, true), spic: drive(c), celli: hold(ROOT[c] + '2'), horns: MEL[i], choir: hold(chord(c)), timp: `${ROOT[c]}2 . . ${ROOT[c]}2 . . ${ROOT[c]}2 . ${ROOT[c]}2 . . . . . . .`, bell: `. . . . ${V[c][3].replace('4', '6').replace('3', '5')} . . . . . . . ${V[c][2].replace('4', '6').replace('3', '5')} . . .`, drums: (i % 4 === 0 ? 'Tc' : 'T') + ' . . h T . T . T . . h T ' + (i === 7 ? 'r r r' : '. h h'), gtr: ring(c), lead: MEL[i].replace(/(\D)(\d)/g, (m, a, d) => a + (+d + 1)), rock: (i % 4 === 0 ? 'kc' : 'k') + ' . h k s . h . k k h . s . h ' + (i === 7 ? 's' : 'h') }));
+  const B = bprog.map((c, i) => add('b' + i, { rh: Array.from({ length: 16 }, (_, k) => (k % 2 ? '.' : `${up(V[c][3])}+${up(V[c][3], 2)}${k % 8 === 0 ? '!' : ''}`)).join(' '), lh: lh(c, true), spic: drive(c), celli: hold(ROOT[c] + '2'), choir: hold(chord(c)), horns: CHO[i].replace(/(\D)(\d)/g, (m, a, d) => a + (+d - 1)), gtr: chug(c), lead: SOLO[i], rock: (i === 0 ? 'kc' : 'k') + ' h s h k k s h k h s h k k ' + (i === 7 ? 's s' : 's h'), timp: `${ROOT[c]}2 . . . ${ROOT[c]}2 . . . ${ROOT[c]}2 . . . ${ROOT[c]}2 . ${ROOT[c]}2 .`, drums: (i === 0 ? 'b' : 'T') + ' . T . s . T . T . T . s . ' + (i === 7 ? 'r w' : 'T T') }));
+  return { bpm: 148, gain: 0.95, reverb: 0.4, start: 'intro', tracks: { rh: { inst: 'grand', vol: 0.9, pan: 0.12, send: 0.35 }, lh: { inst: 'grand', vol: 0.85, pan: -0.12, send: 0.3 }, spic: { inst: 'spic', vol: 0.75, pan: -0.25, send: 0.25 }, celli: { inst: 'celli', vol: 0.75, pan: -0.1, send: 0.4 }, timp: { inst: 'timp', vol: 0.8, layer: 1, send: 0.35 }, horns: { inst: 'horns', vol: 0.8, pan: 0.2, layer: 1, send: 0.5 }, choir: { inst: 'choir', vol: 0.8, layer: 2, send: 0.7 }, bell: { inst: 'celesta', vol: 0.5, pan: 0.3, layer: 3, send: 0.6 }, drums: { kit: 'orch', vol: 0.95, send: 0.3 }, gtr: { inst: 'gtr', vol: 0.9, pan: -0.3, layer: 1, send: 0.12 }, lead: { inst: 'shred', vol: 0.85, pan: 0.18, layer: 1, send: 0.4 }, rock: { kit: 'rock', vol: 0.8, layer: 1, send: 0.12 } },
+    bars, sections: { intro, A: [...A1, ...A2], B }, next: { intro: 'A', A: 'B', B: 'A' } };
+})();
+const CARDS = ['PIXEL PANIC', 'INK & VIOLENCE', 'FOLD THE WORLD', 'DOMINO CITY', '1996', 'BLOCK COLLAPSE', 'FULL RESOLUTION', 'CLAY HEART', 'BREAK THE PAGE', 'LAMPLIGHT', 'LEAD & LIGHT', 'LOOSE THREADS', 'PHOSPHOR', 'ONE BREATH', 'PERSISTENCE', "CAT'S CRADLE", 'COUNTERWEIGHT'];
+function card(i) {
+  if (i === 0) return tex(80, 45, (c) => { const g = c.createLinearGradient(0, 0, 0, 45); g.addColorStop(0, '#232a4d'); g.addColorStop(1, '#5876c9'); c.fillStyle = g; c.fillRect(0, 0, 80, 45); for (let k = 0; k < 9; k++) { const h = 10 + hash2(k, 1) * 22; c.fillStyle = '#2f3a6b'; c.fillRect(k * 9, 45 - h, 8, h); c.fillStyle = '#ffd166'; for (let j = 0; j < h / 4; j++) if (hash2(k, j) > 0.5) c.fillRect(k * 9 + 2, 47 - h + j * 4, 2, 2); } c.fillStyle = '#f4f6ff'; c.fillRect(62, 6, 6, 6); c.fillStyle = '#2fd3c6'; c.fillRect(20, 33, 3, 5); c.fillStyle = '#f4f6ff'; c.fillRect(20, 31, 3, 2); }, true);
+  return tex(320, 180, (c) => { const W = 320, H = 180, J = JEWEL;
+    if (i === 1) { c.fillStyle = '#f3ead2'; c.fillRect(0, 0, W, H); c.fillStyle = '#17131f'; for (let k = 0; k < 8; k++) { c.beginPath(); c.arc(40 + k * 36, 130 + Math.sin(k) * 20, 14 + hash2(k, 2) * 14, 0, 7); c.fill(); } c.strokeStyle = '#17131f'; c.lineWidth = 8; c.beginPath(); c.arc(240, 60, 34, 0, 7); c.stroke(); c.fillStyle = '#e8483c'; c.beginPath(); c.arc(240, 60, 14, 0, 7); c.fill(); }
+    else if (i === 2) { c.fillStyle = '#bfe3df'; c.fillRect(0, 0, W, H); ['#f6efe0', '#e8a87c', '#9cc9c0', '#d98b5f'].forEach((col, k) => { c.fillStyle = 'rgba(40,30,20,0.25)'; c.beginPath(); c.moveTo(0, H); c.quadraticCurveTo(160, 40 + k * 30 + 8, W, H); c.fill(); c.fillStyle = col; c.beginPath(); c.moveTo(0, H); c.quadraticCurveTo(160, 40 + k * 30, W, H); c.fill(); }); }
+    else if (i === 3) { c.fillStyle = '#255c40'; c.fillRect(0, 0, W, H); for (let k = 0; k < 9; k++) { c.save(); c.translate(30 + k * 32, 120); c.rotate(k > 5 ? (k - 5) * 0.35 : 0); c.fillStyle = '#f3ead2'; c.fillRect(-9, -50, 18, 50); c.fillStyle = '#17131f'; c.fillRect(-9, -26, 18, 2); c.beginPath(); c.arc(0, -38, 3, 0, 7); c.arc(0, -12, 3, 0, 7); c.fill(); c.restore(); } }
+    else if (i === 4) { c.fillStyle = '#3a2330'; c.fillRect(0, 0, W, H); c.fillStyle = '#8a4a44'; c.beginPath(); c.moveTo(0, 0); c.lineTo(120, 60); c.lineTo(120, 120); c.lineTo(0, H); c.moveTo(W, 0); c.lineTo(200, 60); c.lineTo(200, 120); c.lineTo(W, H); c.fill(); c.fillStyle = '#5c3340'; c.fillRect(120, 60, 80, 60); c.fillStyle = '#2b3040'; c.fillRect(0, 150, W, 30); c.fillStyle = '#3fae4f'; c.font = '700 16px monospace'; c.fillText('100%', 12, 171); c.fillStyle = '#ffd166'; c.fillText('AMMO 40', 90, 171); }
+    else if (i === 5) { const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#f2b08a'); g.addColorStop(1, '#ffd9b0'); c.fillStyle = g; c.fillRect(0, 0, W, H); for (let k = 0; k < 24; k++) { const x = (k % 8) * 40, y = 100 + ((k / 8) | 0) * 26 - (k % 3) * 18; c.fillStyle = ['#8f949f', '#b85c48', '#7fae5a'][k % 3]; c.fillRect(x, y, 40, 26); c.fillStyle = 'rgba(0,0,0,0.25)'; c.fillRect(x, y + 20, 40, 6); } }
+    else if (i === 6) { const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#141a33'); g.addColorStop(1, '#b0603f'); c.fillStyle = g; c.fillRect(0, 0, W, H); for (let k = 0; k < 7; k++) { const h = 60 + hash2(k, 3) * 90, x = k * 48; c.fillStyle = '#1b2238'; c.fillRect(x, H - h, 40, h); c.fillStyle = '#ffd696'; for (let j = 0; j < h / 14; j++) if (hash2(k, j + 9) > 0.5) c.fillRect(x + 8, H - h + 6 + j * 14, 10, 6); } c.fillStyle = '#ff5ad0'; c.fillRect(150, 50, 6, 50); }
+    else if (i === 7) { c.fillStyle = '#f6e6c8'; c.fillRect(0, 0, W, H); ['#e8742a', '#9cc28a', '#c96a8a', '#e3c28f'].forEach((col, k) => { const g = c.createRadialGradient(60 + k * 70 - 10, 110 - 12, 4, 60 + k * 70, 110, 34); g.addColorStop(0, '#fff'); g.addColorStop(0.3, col); g.addColorStop(1, col); c.fillStyle = g; c.beginPath(); c.ellipse(60 + k * 70, 110, 34, 28, 0, 0, 7); c.fill(); c.fillStyle = '#fff'; c.beginPath(); c.arc(52 + k * 70, 104, 6, 0, 7); c.arc(68 + k * 70, 104, 6, 0, 7); c.fill(); c.fillStyle = '#17131f'; c.beginPath(); c.arc(53 + k * 70, 105, 3, 0, 7); c.arc(69 + k * 70, 105, 3, 0, 7); c.fill(); }); }
+    else if (i === 8) { c.fillStyle = '#fff'; c.fillRect(0, 0, W, H); c.strokeStyle = '#17131f'; c.lineWidth = 6; [[8, 8, 140, 80], [156, 8, 156, 80], [8, 96, 304, 76]].forEach(([x, y, w, h]) => c.strokeRect(x, y, w, h)); c.fillStyle = '#17131f'; for (let y = 104; y < 168; y += 9) for (let x = 14; x < 300; x += 9) { c.beginPath(); c.arc(x, y, 2, 0, 7); c.fill(); } c.fillStyle = '#e8483c'; c.font = '900 30px sans-serif'; c.fillText('POW!', 190, 60); }
+    else if (i === 9) { const g = c.createRadialGradient(160, 80, 20, 160, 90, 200); g.addColorStop(0, '#ffe9b0'); g.addColorStop(1, '#8a4a22'); c.fillStyle = g; c.fillRect(0, 0, W, H); c.fillStyle = '#1a110c'; c.fillRect(0, 150, W, 30); hand2d(c, 90, 110, 60, -0.2); c.beginPath(); c.arc(220, 96, 14, 0, 7); c.fill(); c.fillRect(214, 108, 12, 40); }
+    else if (i === 10) { c.fillStyle = '#0d0c14'; c.fillRect(0, 0, W, H); for (let r = 3; r >= 0; r--) for (let k = 0; k < 12; k++) { const a0 = (k * Math.PI * 2) / 12; c.beginPath(); c.arc(160, 90, 20 + r * 22, a0, a0 + Math.PI / 6); c.arc(160, 90, r * 22, a0 + Math.PI / 6, a0, true); c.closePath(); c.fillStyle = J[(k + r) % 7]; c.fill(); c.strokeStyle = '#0b0a0d'; c.lineWidth = 4; c.stroke(); } }
+    else if (i === 11) { for (let y = 0; y < H; y += 12) { c.fillStyle = J[(y / 12) % 7 | 0]; c.fillRect(0, y, W, 12); c.strokeStyle = 'rgba(255,255,255,0.35)'; c.lineWidth = 2; for (let x = 0; x < W; x += 10) { c.beginPath(); c.moveTo(x, y); c.lineTo(x + 5, y + 8); c.lineTo(x + 10, y); c.stroke(); } } }
+    else if (i === 12) { c.fillStyle = '#03080c'; c.fillRect(0, 0, W, H); c.strokeStyle = '#7ff5e6'; c.lineWidth = 3; c.shadowColor = '#7ff5e6'; c.shadowBlur = 8; c.beginPath(); c.moveTo(150, 70); c.lineTo(178, 90); c.lineTo(150, 110); c.lineTo(158, 90); c.closePath(); c.stroke(); c.strokeStyle = '#ffd166'; c.strokeRect(60, 40, 50, 36); c.strokeRect(230, 100, 40, 30); }
+    else if (i === 13) { c.fillStyle = '#ece3cf'; c.fillRect(0, 0, W, H); c.strokeStyle = '#15110f'; c.lineWidth = 16; c.lineCap = 'round'; c.beginPath(); c.arc(160, 90, 52, 0.5, 5.9); c.stroke(); c.fillStyle = '#c83c32'; c.fillRect(256, 132, 30, 30); }
+    else if (i === 14) { c.fillStyle = '#f5f2e9'; c.fillRect(0, 0, W, H); c.strokeStyle = 'rgba(80,110,190,0.5)'; c.lineWidth = 2; c.strokeRect(96, 62, 70, 40); c.strokeStyle = '#26262e'; c.lineWidth = 3; c.strokeRect(110, 56, 70, 40); c.beginPath(); c.moveTo(0, 140); c.lineTo(W, 136); c.stroke(); for (let k = 0; k < 30; k++) { c.beginPath(); c.moveTo(k * 11, 140); c.lineTo(k * 11 + 8, 180); c.stroke(); } }
+    else if (i === 15) { c.fillStyle = '#f1cdbc'; c.fillRect(0, 0, W, H); c.fillStyle = '#e6ab8a'; hand2d(c, 30, 90, 70, 1.57); hand2d(c, 290, 90, 70, -1.57); c.strokeStyle = '#d23a44'; c.lineWidth = 4; c.beginPath(); c.moveTo(60, 50); c.lineTo(260, 120); c.moveTo(60, 130); c.lineTo(260, 60); c.moveTo(60, 90); c.lineTo(260, 90); c.stroke(); }
+    else { c.fillStyle = '#f6f2ea'; c.fillRect(0, 0, W, H); c.strokeStyle = '#17151a'; c.lineWidth = 3; c.beginPath(); c.moveTo(160, 0); c.lineTo(160, 30); c.moveTo(60, 40); c.lineTo(260, 26); c.moveTo(120, 90); c.lineTo(240, 100); c.stroke(); [['#d8362f', 60, 70, 26], ['#f2b61e', 260, 56, 20], ['#1f4fa8', 120, 120, 16], ['#17151a', 240, 130, 12]].forEach(([col, x, y, r]) => { c.fillStyle = col; c.beginPath(); c.ellipse(x, y, r, r * 0.8, 0.3, 0, 7); c.fill(); }); }
+    c.fillStyle = 'rgba(13,15,31,0.6)'; c.fillRect(0, H - 22, W, 22); c.fillStyle = '#fff'; c.font = '700 13px sans-serif'; c.fillText(String(i + 1).padStart(2, '0') + '  ' + CARDS[i], 8, H - 7); });
+}
 
 export class Bleed {
   constructor(ch) { this.ch = ch; this.game = ch.game; this.name = 'THE BLEED'; this.done = false; }
@@ -72,8 +121,49 @@ export class Bleed {
     // ---- Rin and Vell
     this.rin = buildRin3D(pbr('fabric').map); S.add(this.rin); this.vell = buildVell(); S.add(this.vell);
     this.cp = CPS[0]; this.p = { x: 0, y: 0, z: CPS[0], vy: 0, gr: true, jumps: 1, coy: 0, buf: 0, yaw: 0, sp: 0, slow: 1 }; this.camPos = V(0, 7, -6); this.shake = 0;
-    ch.hud.title('FINALE', 'THE BLEED'); g.music.play(SONG, { intensity: 1, fade: 0.4 }); g.save.setCheckpoint(18, null);
-    g.dialogue.say([{ who: 'vell', text: "Rin — the seams are open. Everything we came through is leaking into everything else." }, { who: 'rin', text: 'The floor is about four different things.' }, { who: 'curator', text: 'I am CORRECTING it. Hold still and you will be finished too.' }, { who: 'vell', text: 'Run. Glass cracks, wool comes undone, pixels blink out, the wireframe ones are not there at all — and stay OUT of the ink!' }]);
+    g.music.play(SONG, { intensity: 2, fade: 0.2 }); g.save.setCheckpoint(18, null); this.DROP = new Float32Array(N); this.buildCine();
+  }
+  // ---- THE GRIP: why any of this happens. Every world, framed, hanging in the dark around Rin.
+  // The Curator's two grey hands rise and crush them all together on the downbeat.
+  buildCine() {
+    const g = this.game, S = new THREE.Scene(), C = (this.cine = { S, t: 0, cam: new THREE.PerspectiveCamera(50, g.W / g.H, 0.3, 4000), frames: [], impact: false, said: false, shake: 0 }), M = this.MAT;
+    S.fog = new THREE.FogExp2('#06050c', 0.0028); S.background = new THREE.Color('#06050c');
+    { const n = 1400, p = new Float32Array(n * 3), c = new Float32Array(n * 3), col = new THREE.Color(); for (let i = 0; i < n; i++) { const a = Math.random() * TAU, e = Math.asin(Math.random() * 2 - 1), r = 600 + Math.random() * 600; p.set([Math.cos(a) * Math.cos(e) * r, Math.sin(e) * r, Math.sin(a) * Math.cos(e) * r], i * 3); col.set(JEWEL[i % 7]).lerp(new THREE.Color('#ffffff'), 0.6); c.set([col.r, col.g, col.b], i * 3); } const gg = new THREE.BufferGeometry(); gg.setAttribute('position', new THREE.BufferAttribute(p, 3)); gg.setAttribute('color', new THREE.BufferAttribute(c, 3)); S.add(new THREE.Points(gg, new THREE.PointsMaterial({ size: 2, sizeAttenuation: false, vertexColors: true, fog: false }))); }
+    S.add(new THREE.HemisphereLight('#7a7ab8', '#140a14', 0.7)); const key = new THREE.DirectionalLight('#ffe2c0', 1.6); key.position.set(30, 80, 60); S.add(key); const rim = new THREE.DirectionalLight('#8a7aff', 1.2); rim.position.set(-60, 20, -80); S.add(rim);
+    const tg = new THREE.BoxGeometry(TS - 0.14, 1.2, TS - 0.14); for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) { const m = new THREE.Mesh(tg, M[[VOX, CLAY, PAPER, GLASS, VOX, WOOL, PIXEL, CLAY, VOX][(i + 1) * 3 + j + 1]]); m.position.set(i * TS, -0.6, j * TS); S.add(m); }
+    C.rin = buildRin3D(pbr('fabric').map); S.add(C.rin); C.vell = buildVell(); S.add(C.vell);
+    for (let i = 0; i < 17; i++) { const G = new THREE.Group(), t = i === 16 && this.ch.snap0 ? new THREE.CanvasTexture(this.ch.snap0) : card(i); t.colorSpace = THREE.SRGBColorSpace; const pm = new THREE.MeshBasicMaterial({ map: t, side: THREE.DoubleSide }); pm.color.setScalar(1.3); const pl = new THREE.Mesh(new THREE.PlaneGeometry(16, 9), pm); G.add(pl, goldFrame(16, 9, 0.7)); G.scale.setScalar(1.75); const a = -Math.PI / 2 + ((i - 16) * TAU) / 17, y = i === 16 ? 9 : 12 + Math.sin(i * 1.9) * 14; G.position.set(Math.cos(a) * 84, y, Math.sin(a) * 84); G.lookAt(0, y, 0); S.add(G); C.frames.push({ G, a, y, q: G.quaternion.clone(), spin: V(R1(i, 1), R1(i, 2), R1(i, 3)) }); }
+    const grey = new THREE.MeshStandardMaterial({ map: M[GREY].map, color: '#b4b4bc', metalness: 0.55, roughness: 0.35, emissive: '#3a3a44', emissiveIntensity: 0.6 }); C.hands = [-1, 1].map((sd) => { const h = buildHand(grey, { left: sd < 0 }); h.scale.setScalar(55); h.rotation.y = -sd * Math.PI / 2; h.position.set(sd * 80, -230, -6); h.userData.curl(0.08); h.userData.splay(1.1); S.add(h); return h; });
+    C.sparks = new Particles(S, 900, 1.6); C.sparks.g = 6; const ac = g.audio.ctx; C.a0 = ac && ac.state === 'running' ? ac.currentTime : null; this.ch.noPause = true; C.camPos = this.cineCam(0).p.clone(); C.look = this.cineCam(0).l.clone();
+  }
+  cineCam(t) { const f = this.cine.frames[16].G.position, k1 = ease.inOutCubic(clamp((t - 1.2) / 5, 0, 1)), k2 = ease.inOutCubic(clamp((t - 6.5) / 4.5, 0, 1)), k3 = ease.inCubic(clamp((t - 11) / 2.2, 0, 1));
+    const p = V(f.x, f.y, f.z + 22.5).lerp(V(0, 42, 128), k1).lerp(V(0, 12, 112), k2).lerp(V(0, 6, 42), k3), l = f.clone().lerp(V(0, 8, -10), k1).lerp(V(0, 26, 0), k2).lerp(V(0, 12, 0), k3); return { p, l }; }
+  updateCine(dt) {
+    const g = this.game, C = this.cine, sfx = g.sfx, ac = g.audio.ctx; if (C.a0 != null && ac?.state === 'running') C.t = Math.max(C.t + dt * 0.2, ac.currentTime - C.a0); else C.t += dt; const t = C.t; C.sparks.update(dt);
+    if (!C.said && t > 0.9) { C.said = true; g.dialogue.say([{ who: 'curator', text: 'Seventeen worlds. Not one of them stayed finished.' }, { who: 'rin', text: 'Then leave them unfinished.' }, { who: 'curator', text: 'No. If they will not hold apart, they will hold TOGETHER.' }, { who: 'vell', text: "He's crushing them into ONE — hold on!" }]); }
+    if (t > 6.6 && !C.rose) { C.rose = true; sfx.play('pp.rumble'); sfx.play('px.bossroar', { pitch: 0.6, vol: 0.7 }); }
+    if (t > 10.6 && !C.grip) { C.grip = true; sfx.play('fx.rise'); }
+    C.shake = t > 10.6 ? ease.inCubic(clamp((t - 10.6) / 2.4, 0, 1)) * 1.4 : t > 6.6 && t < 9 ? 0.3 : 0;
+    if (C.grip && Math.random() < dt * 30) { const F = C.frames[(Math.random() * 17) | 0]; C.sparks.emit(F.G.position, V((Math.random() - 0.5) * 30, Math.random() * 20, (Math.random() - 0.5) * 30), new THREE.Color(JEWEL[(Math.random() * 7) | 0]), 1.2, 6); }
+    const cue = g.music.section === 'A' && t > 9, skip = g.input.pressed.confirm && t > 1.5 && !g.input.pressed.jump;
+    if (!C.impact && (cue || t > 13.8 || skip)) this.startRun();
+  }
+  frameCine(dt) {
+    const g = this.game, C = this.cine, t = C.t, u = ease.inCubic(clamp((t - 10.6) / 2.3, 0, 1));
+    C.frames.forEach((F, i) => { const r = lerp(84, 8 + (i % 3) * 2.5, u), a = F.a + u * 1.4 + Math.sin(t * 0.2 + i) * 0.02; F.G.position.set(Math.cos(a) * r, lerp(F.y + Math.sin(t * 0.6 + i) * 0.6, 7 + (i % 5) * 1.5, u), Math.sin(a) * r); F.G.quaternion.copy(F.q); F.G.rotateX(F.spin.x * u * 3 + Math.sin(t * 0.4 + i) * 0.03); F.G.rotateY(F.spin.y * u * 4); F.G.rotateZ(F.spin.z * u * 5); F.G.scale.setScalar(1 - u * 0.4); });
+    const rise = ease.outCubic(clamp((t - 6.6) / 3.6, 0, 1)); C.hands.forEach((h, i) => { const sd = i ? 1 : -1; h.position.set(sd * lerp(80, 44, u), lerp(-230, -48, rise) + u * 6, -6); h.rotation.z = sd * u * 0.25; h.userData.curl(0.08 + u * 1.15); h.userData.thumb(u); });
+    C.rin.position.set(0, 0, 0); C.rin.rotation.y = Math.PI + Math.sin(t * 0.5) * (t > 6 ? 0.6 : 0.2); animateRin(C.rin, { speed: 0, ground: true, vy: 0, slide: false, climb: 0, grapple: false, strike: 0, hurt: t > 11 ? 1 : 0, t, dt, lookAt: t > 6.6 ? C.hands[1].position : C.frames[16].G.position, talk: false });
+    C.vell.position.set(1.4 + Math.sin(t * 3) * 0.1, 2.4 + Math.sin(t * 2.2) * 0.2, 0.6); C.vell.rotation.y = t; C.vell.userData.tick(t);
+    const k = this.cineCam(t), sh = C.shake * (g.settings.shake ?? 1); C.camPos.lerp(k.p, 1 - Math.exp(-5 * dt)); C.look.lerp(k.l, 1 - Math.exp(-5 * dt)); C.cam.position.copy(C.camPos).add(V((Math.random() - 0.5) * sh, (Math.random() - 0.5) * sh, 0)); C.cam.lookAt(C.look); C.cam.fov = 50 + u * 14; C.cam.aspect = g.W / g.H; C.cam.updateProjectionMatrix();
+    this.ch.hud.set(t > 2 && t < 6 ? 'ENTER — skip' : '', []);
+    return { scene: C.S, cam: C.cam, fx: { bloom: 0.6 + u * 1.6, threshold: 1.0, vig: 0.5, sat: 1.1 + u * 0.5, con: 1.08, grain: 0.04 + u * 0.06, tint: u > 0.5 && Math.floor(t * 20) % 3 === 0 ? [1.3, 0.8, 1.2] : [1, 1, 1] } };
+  }
+  startRun() {
+    const g = this.game, C = this.cine, p = this.p; C.impact = true; this.cine = null; this.ch.noPause = false; g.sfx.play('fx.boom'); g.sfx.play('px.explode'); g.sfx.play('px.crumble', { vol: 0.8 }); this.shake = 1.4; this.flash = 1.5; g.dialogue.clear();
+    const o = document.createElement('div'); o.style.cssText = 'position:absolute;inset:0;background:#fff;opacity:1;transition:opacity 1.4s ease-in;pointer-events:none'; this.ch.hud.ui.appendChild(o); requestAnimationFrame(() => requestAnimationFrame(() => (o.style.opacity = '0'))); setTimeout(() => o.remove(), 1600);
+    for (let j = 0; j < Math.min(L, 60); j++) for (let i = 0; i < W; i++) { const k = this.key(i, j), d = Math.hypot((i - 4) * TS - p.x, j * TS + 2 - p.z); this.DROP[k] = d < 3 ? 0 : 14 + d * 0.45 + Math.random() * 6; }
+    this.debris = [GLASS, PAPER, PIXEL, WOOL].map((f) => { const im = new THREE.InstancedMesh(new THREE.BoxGeometry(1.2, 1.2, 1.2), this.MAT[f], 60); im.frustumCulled = false; this.scene.add(im); return { im, b: Array.from({ length: 60 }, () => ({ x: (Math.random() - 0.5) * 50, y: 20 + Math.random() * 70, z: p.z + Math.random() * 90 - 10, vy: -10 - Math.random() * 25, r: Math.random() * 6 })) }; });
+    this.ch.hud.title('FINALE', 'THE BLEED'); g.dialogue.say([{ who: 'vell', text: "Everything's leaking into everything — glass, wool, pixels, INK. Rin, run!" }, { who: 'vell', text: 'Glass cracks, wool comes undone, pixels blink out, wireframe is not there at all. And stay OUT of the ink!' }]);
   }
   buildComposite() {
     const G = new THREE.Group(), M = this.MAT, parts = [];
@@ -92,10 +182,13 @@ export class Bleed {
   set(i, j, f) { const k = this.key(i, j); this.F[k] = f; this.T[k] = 0; this.WALL[k] = 0; this.GONE[k] = 0; this.STOOD[k] = 0; this.Y[k] = 0; this.FOLD[k] = f === PAPER && i !== this.spine[j] && Math.random() < 0.35 ? 1 : 0; }
   gen(j0, j1) { for (let j = Math.max(0, j0); j < Math.min(L, j1); j++) for (let i = 0; i < W; i++) { const start = CPS.some((c) => Math.abs(j * TS + 2 - c) < 7); this.set(i, j, start ? (i % 2 ? VOX : CLAY) : this.pick(i, j, Math.abs(i - this.spine[j]) < 1)); } }
   tileAt(x, z) { const i = Math.round(x / TS) + 4, j = Math.floor(z / TS); return i < 0 || i >= W || j < 0 || j >= L ? -1 : this.key(i, j); }
-  solid(k) { if (k < 0 || this.GONE[k]) return false; const f = this.F[k], t = this.t, i = k % W, j = (k / W) | 0; if (f === WIRE || f === INK) return false; if (f === PIXEL) return (t + i * 0.37 + j * 0.21) % 2.6 < 1.7; if (f === WOOL) return (t * 0.45 + j * 0.11 + i * 0.07) % 1 < 0.72; return true; }
+  solid(k) { if (k < 0 || this.GONE[k] || this.DROP?.[k] > 0.6) return false; const f = this.F[k], t = this.t, i = k % W, j = (k / W) | 0; if (f === WIRE || f === INK) return false; if (f === PIXEL) return (t + i * 0.37 + j * 0.21) % 2.6 < 1.7; if (f === WOOL) return (t * 0.45 + j * 0.11 + i * 0.07) % 1 < 0.72; return true; }
   respawn() { const g = this.game, p = this.p; g.save.data.stats.deaths++; p.x = 0; p.z = this.cp; p.y = 0; p.vy = 0; this.cz = this.cp - 30; const j0 = Math.floor((this.cp - 40) / TS); this.gen(j0, L); this.ripples = []; g.sfx.play('px.die'); this.flash = 0.8; }
   update(dt) {
-    const g = this.game, inp = g.input, p = this.p, sfx = g.sfx; this.t += dt; const t = this.t; this.shake = Math.max(0, this.shake - dt * 2); this.flash = Math.max(0, (this.flash || 0) - dt * 2);
+    if (this.cine) return this.updateCine(dt);
+    const g = this.game, inp = g.input, p = this.p, sfx = g.sfx; this.t += dt; const t = this.t;
+    if (this.debris) { for (const D of this.debris) for (const d of D.b) { d.vy -= 30 * dt; d.y += d.vy * dt; d.r += dt * 4; } if (this.t > 30) { this.debris.forEach((D) => this.scene.remove(D.im)); this.debris = null; } }
+    for (let j = 0; j < Math.min(L, 60); j++) for (let i = 0; i < W; i++) { const k = this.key(i, j); if (this.DROP[k] > 0) this.DROP[k] = Math.max(0, this.DROP[k] - dt * 26); } this.shake = Math.max(0, this.shake - dt * 2); this.flash = Math.max(0, (this.flash || 0) - dt * 2);
     if (this.out) { this.out += dt; p.z += 9 * dt; if (this.out > 1.6) this.done = true; return; }
     // the correction advances; the Composite slams and the floor reshuffles
     const spd = (3.9 + clamp(p.z / END, 0, 1) * 1.9) * (g.easy ? 0.72 : 1); this.cz = Math.max(this.cz + spd * dt, p.z - 70);
@@ -125,11 +218,13 @@ export class Bleed {
     if (p.z > END + 2 && !this.out) { this.out = 0.001; sfx.play('fx.whoosh'); sfx.play('fx.shimmer'); g.dialogue.clear(); }
   }
   frame(dt) {
-    const g = this.game, p = this.p, t = this.t, S = this.scene; this.skyM.uniforms.t.value = t; this.skyM.uniforms.k.value = this.shake; this.voidM.uniforms.t.value = t; this.wave.material.uniforms.t.value = t;
+    if (this.cine) return this.frameCine(dt);
+    const g = this.game, p = this.p, t = this.t, S = this.scene;
+    if (this.debris) { const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), sc = new THREE.Vector3(1, 1, 1), ps = new THREE.Vector3(); for (const D of this.debris) { D.b.forEach((d, i) => { e.set(d.r, d.r * 0.7, 0); q.setFromEuler(e); ps.set(d.x, d.y, d.z); sc.setScalar(d.y < -2 ? 0.001 : 1); m4.compose(ps, q, sc); D.im.setMatrixAt(i, m4); }); D.im.instanceMatrix.needsUpdate = true; } } this.skyM.uniforms.t.value = t; this.skyM.uniforms.k.value = this.shake; this.voidM.uniforms.t.value = t; this.wave.material.uniforms.t.value = t;
     // instances
     const cnt = new Array(NF).fill(0), m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), pos = new THREE.Vector3(), one = new THREE.Vector3(1, 1, 1), sc = new THREE.Vector3();
     for (let j = Math.max(0, Math.floor((p.z - 40) / TS)); j < Math.min(L, Math.floor((p.z + 110) / TS)); j++) for (let i = 0; i < W; i++) { const k = this.key(i, j); if (this.GONE[k] && this.Y[k] < -38) continue; const f = this.F[k], x = (i - 4) * TS, z = j * TS + 2, pop = this.POP[k], on = this.solid(k);
-      let y = this.Y[k] - 0.6 + Math.sin(pop * Math.PI) * 0.8, a = 0; if (f === INK) y -= 0.15; if (f === GLASS && this.STOOD[k] && this.T[k] < 0.75) { x + Math.sin(t * 60) * 0.03; }
+      let y = this.Y[k] - 0.6 + Math.sin(pop * Math.PI) * 0.8 + this.DROP[k], a = 0; if (f === INK) y -= 0.15; if (f === GLASS && this.STOOD[k] && this.T[k] < 0.75) { x + Math.sin(t * 60) * 0.03; }
       sc.set(1, 1, 1); if (f === WOOL) { const u = (t * 0.45 + j * 0.11 + i * 0.07) % 1; const s = u < 0.72 ? 1 : Math.max(0.05, 1 - (u - 0.72) * 8); sc.set(s, 1, s); } if (f === PIXEL && !on) { sc.set(0.001, 0.001, 0.001); } else if (f === PIXEL && (t + i * 0.37 + j * 0.21) % 2.6 > 1.3 && Math.floor(t * 14) % 2) sc.set(0.94, 1, 0.94);
       if (f === PAPER && this.WALL[k] > 0) { a = ease.outBack(this.WALL[k]) * Math.PI / 2; pos.set(x, -0.6 * Math.cos(a) + 2 * Math.sin(a), z + 2 - 0.6 * Math.sin(a) - 2 * Math.cos(a)); } else pos.set(x, y, z);
       e.set(a, 0, f === GREY ? (this.T[k] > 1.1 ? (this.T[k] - 1.1) * (i % 2 ? 0.6 : -0.6) : 0) : 0); q.setFromEuler(e); m4.compose(pos, q, sc); this.IM[f].setMatrixAt(cnt[f]++, m4); }
@@ -151,3 +246,4 @@ export class Bleed {
     const f = this.flash + (this.out || 0) * 0.6; return { scene: S, cam: this.cam, fx: { bloom: 0.75 + this.shake * 0.6 + f, threshold: 1.0, vig: 0.42, sat: 1.15 + this.shake * 0.4, grain: 0.05, con: 1.08, tint: this.slam > 0.5 ? [1.2, 0.85, 1.15] : [1, 1, 1] } };
   }
 }
+export { SONG as SONG_BOSS };
