@@ -8,6 +8,7 @@ import { renderFX } from '../fx/post.js';
 import { getRenderer } from '../ch3/chapter3.js';
 import { voxAtlas, buildVoxRin, buildVoxVell, buildVoxTurret, buildLeveler } from './voxmodels.js';
 import { clamp, lerp, damp, hash2, ease } from '../core/util.js';
+import { buildHand } from '../fx/hand.js';
 
 const SX = 168, SY = 32, SZ = 24, CH = 16, AIR = 0, CONC = 1, BRICK = 2, STEEL = 3, WOOD = 4, GLASS = 5, CRACK = 6, PLANK = 7;
 const COL = { [CONC]: [0.56, 0.58, 0.64], [BRICK]: [0.72, 0.36, 0.28], [STEEL]: [0.3, 0.36, 0.5], [WOOD]: [0.62, 0.42, 0.24], [GLASS]: [0.55, 0.85, 0.9], [CRACK]: [0.42, 0.43, 0.48], [PLANK]: [0.95, 0.72, 0.36] };
@@ -37,6 +38,7 @@ export default class Chapter6 {
     const vr = buildVoxRin(); this.rin = vr.group; this.legs = vr.legs; this.arms = vr.arms; S.add(this.rin);
     this.vell = buildVoxVell(); S.add(this.vell);
     const lv = buildLeveler(SZ); this.lev = lv.group; this.drums = lv.drums; S.add(this.lev); this.lx = -26;
+    { const hm = new THREE.MeshLambertMaterial({ color: '#d9a07a', flatShading: true }); this.pushHand = buildHand(hm); this.pushHand.scale.setScalar(9); this.pushHand.rotation.y = Math.PI / 2; this.pushHand.position.set(-13, 5, SZ / 2); this.lev.add(this.pushHand); this.builder = buildHand(hm, { left: true }); this.builder.scale.setScalar(6); this.builder.rotation.set(Math.PI, 0, 0); this.builder.position.set(0, 80, 12); S.add(this.builder); this.bt = 5; this.bjob = null; }
     this.turrets = [[104, 12], [128, 8]].map(([x, z]) => { const m = buildVoxTurret(); m.position.set(x, 3, z); S.add(m); return { m, x, z, cool: 1, dead: false }; });
     this.orbs = []; this.orbMesh = new THREE.Mesh(new THREE.SphereGeometry(0.35, 8, 6), new THREE.MeshBasicMaterial({ color: '#ff5a3c' }));
     this.cps = [6, 54, 84, 112]; this.cp = 0; this.introK = handoff ? 0 : 1;
@@ -141,7 +143,9 @@ export default class Chapter6 {
     if (!this.scene) return; const g = this.game, r = this.r, p = this.p, t = this.t; { const px = this.introK < 1 ? [10, 8, 6, 5, 4, 3, 2, 1][Math.min(7, Math.floor(this.introK * 2.4 * 8))] || 1 : 1, w = Math.round(g.W / px), h = Math.round(g.H / px); if (r.domElement.width !== w || r.domElement.height !== h) { r.setSize(w, h, false); g.gl.style.imageRendering = px > 1 ? 'pixelated' : ''; } }
     this.rin.position.set(p.x, p.y, p.z); this.rin.rotation.y = Math.atan2(-p.fz, p.fx) + Math.PI / 2; const mv = Math.hypot(p.vx, p.vz) > 1 && p.ground ? Math.sin(p.walk) * 0.7 : 0; this.legs[0].rotation.x = mv; this.legs[1].rotation.x = -mv; this.arms[0].rotation.x = -mv; this.arms[1].rotation.x = mv - p.swing * 2.2; this.rin.visible = !(p.inv > 0 && Math.floor(p.inv * 14) % 2);
     this.vell.position.set(p.x - 1.2, p.y + 2.6 + Math.sin(t * 2.4) * 0.3, p.z + 1); this.vell.rotation.y = Math.sin(t) * 0.6; this.rin.userData.tick?.(t, p);
-    this.lev.position.x = this.lx; this.drums.forEach((d, i) => (d.rotation.y = t * (i % 2 ? 7 : -7)));
+    this.lev.position.x = this.lx; this.pushHand.userData.curl([0, 1, 2, 3].map((i) => 0.12 + Math.max(0, Math.sin(t * 6 - i * 0.9)) * 0.35)); this.pushHand.position.y = 5 + Math.sin(t * 2.2) * 0.4;
+    if (!this.fin && this.introK >= 1) { this.bt -= 1 / 60; if (this.bt <= 0 && !this.bjob) { const bx = Math.min(SX - 6, Math.floor(p.x + 13 + Math.random() * 7)), bz = Math.max(2, Math.min(SZ - 4, Math.floor(p.z))); let top = 0; for (let y = SY - 1; y >= 0; y--) if (this.get(bx, y, bz) !== AIR) { top = y + 1; break; } this.bjob = { x: bx, z: bz, top, t: 0, done: false }; }
+      const J = this.bjob; if (J) { J.t += 1 / 60; const u = J.t < 1 ? ease.inOutCubic(J.t) : J.t < 1.5 ? 1 : 1 - ease.inOutCubic(Math.min(1, (J.t - 1.5) / 1.2)); this.builder.position.set(J.x + 1, lerp(J.top + 34, J.top + 8.5, u), J.z + 1); this.builder.userData.curl(J.t < 1.1 ? 0.75 : 0.1); this.builder.userData.thumb(J.t < 1.1 ? 0.9 : 0.1); if (J.t > 1.05 && !J.done) { J.done = true; if (J.top < SY - 4) for (let dx = 0; dx < 2; dx++) for (let dz = 0; dz < 2; dz++) for (let dy = 0; dy < 2; dy++) this.set(J.x + dx, J.top + dy, J.z + dz, dy ? PLANK : WOOD); g.sfx.play('pp.thunk', { vol: 0.6 }); this.shake = Math.max(this.shake || 0, 0.25); } if (J.t > 2.8) { this.bjob = null; this.bt = 6 + Math.random() * 4; } } } this.drums.forEach((d, i) => (d.rotation.y = t * (i % 2 ? 7 : -7)));
     const k = this.fin?.k || 0, sh = this.shake * (g.settings.shake ?? 1), tgt = new THREE.Vector3(p.x + 4, p.y + 1.5, lerp(p.z, SZ / 2, 0.5));
     const want = new THREE.Vector3(p.x - 11 + k * 6, p.y + 9 + k * 14, lerp(p.z, SZ / 2, 0.5) + 12); this.cam.position.lerp(want, 1 - Math.exp(-4 * dt)); this.cam.position.x += (Math.random() - 0.5) * sh; this.cam.position.y += (Math.random() - 0.5) * sh; if (this.introK < 1) { const e = ease.inOutCubic(clamp((this.introK - 0.45) / 0.55, 0, 1)); this.cam.position.lerpVectors(new THREE.Vector3(p.x + 0.25, p.y + 1.62, p.z), want, e); tgt.lerpVectors(new THREE.Vector3(p.x + 12, p.y + 1.4, p.z), tgt.clone(), e); this.rin.visible = e > 0.12; this.cam.fov = lerp(72, 50, e); } this.cam.lookAt(tgt); this.cam.aspect = g.W / g.H; this.cam.updateProjectionMatrix();
     this.sun.position.set(p.x - 20, 50, 34); this.sun.target.position.set(p.x + 6, 0, 12);

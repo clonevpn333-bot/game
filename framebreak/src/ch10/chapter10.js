@@ -4,6 +4,7 @@
 // flame travel further. Platforms are shadows. So are you.
 import { clamp, lerp, hash2, TAU, makeCanvas } from '../core/util.js';
 import { VW, VH, fit, dlg, titleCard, objective, introSnap } from '../fx/ui2d.js';
+import { hand2d } from '../ch18/atelierkit.js';
 
 const INK = '#1a110c', HOLE = '#f0c684', GY = 860, SH = 260;
 const SONG = (() => { const bars = {}, m = ['D4 . A4 . G4 . E4 . D4 . E4 . G4 . A4 .', 'B4 . A4 . G4 . E4 . G4 . . . E4 . D4 .', 'D4 . E4 . G4 . A4 . B4 . D5 . B4 . A4 .', 'G4 . E4 . D4 . . . E4 . G4 . D4 . . .'], f = ['. . . . . . . . A5 - - - G5 - E5 -', '. . . . D5 - - - . . . . . . . .', '. . . . . . . . D6 - - B5 - - A5 -', 'G5 - - - - - - - . . . . . . . .'];
@@ -91,6 +92,8 @@ export default class Chapter10 {
     this.puppet(ctx, r, t);
     if (k > 0) { // the cloth takes colour: panes of glass bloom outward from the flame
       const cx = 6560 - this.cam, C = ['#c8323c', '#2f6fd0', '#f0b030', '#2fa36a', '#8a4fc0', '#e8642a']; for (let i = 0; i < 90; i++) { const a = hash2(i, 1) * TAU, d = hash2(i, 2) * 1700, u = clamp(k * 2.2 - d / 1100, 0, 1); if (u <= 0) continue; const px = cx + Math.cos(a) * d, py = 420 + Math.sin(a) * d * 0.7, s = 70 + hash2(i, 3) * 130; ctx.globalAlpha = u * 0.85; ctx.fillStyle = C[i % 6]; ctx.strokeStyle = '#0c0808'; ctx.lineWidth = 9; ctx.beginPath(); for (let j = 0; j < 5; j++) { const b = j * TAU / 5 + hash2(i, 4) * 3; ctx.lineTo(px + Math.cos(b) * s * (0.6 + hash2(i * 7 + j, 5) * 0.6), py + Math.sin(b) * s * (0.6 + hash2(i * 7 + j, 6) * 0.6)); } ctx.closePath(); ctx.fill(); ctx.stroke(); } ctx.globalAlpha = 1; }
+    for (const s of [-1, 1]) for (const o of [14, 0]) { ctx.fillStyle = '#2a1408'; ctx.globalAlpha = o ? 0.12 : 0.3; hand2d(ctx, 960 + s * 640 + this.L * 150 + o, 1150 + Math.sin(t * 1.4 + s) * 10 - Math.abs(this.L - this.Lt) * 60, 300 + o, s * 0.2 + (this.L - this.Lt) * 0.6); } ctx.globalAlpha = 1;
+    if (k > 0) { ctx.fillStyle = '#2a1408'; ctx.globalAlpha = 0.5 * Math.min(1, k * 2); hand2d(ctx, 6560 - this.cam + 40, 300 - (1 - Math.min(1, k * 1.4)) * 700, 460, Math.PI - 0.15); ctx.globalAlpha = 1; }
     ctx.drawImage(this.vig, 0, 0);
     if (!this.fin) { const ob = OBJ.find((o) => r.x < o[0]); objective(ctx, ob[1], ob[2], { y: 96, bg: 'rgba(26,17,12,0.82)', accent: '#f0c684', dim: '#e2c79c' }); ctx.fillStyle = 'rgba(26,17,12,0.8)'; ctx.fillRect(760, 1010, 400, 10); ctx.fillStyle = '#ffe9a8'; ctx.beginPath(); ctx.arc(960 + this.L * 190, 1015, 16, 0, TAU); ctx.fill(); ctx.font = '700 20px "Trebuchet MS", sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#f0c684'; ctx.fillText('←  LAMP  →', 960, 1056); }
     titleCard(ctx, t, 10, 'LAMPLIGHT', '#fff1cf', '#f0c684'); introSnap(ctx, this.snap, t, 2); dlg(ctx, g, { bg: 'rgba(26,17,12,0.9)', line: '#f0c684', fg: '#fff1cf' });

@@ -9,6 +9,7 @@ import { getRenderer } from '../ch3/chapter3.js';
 import { canvasTex, normalFromHeight } from '../fx/tex.js';
 import { V, buildVell, buildHud, bar } from '../ch18/kit.js';
 import { clamp, lerp, hash2, TAU } from '../core/util.js';
+import { buildHand } from '../fx/hand.js';
 
 const LEN = 1000, RAMPS = [340, 540, 820], HOLES = [[150, 172, -1], [250, 270, 1], [340, 348, 0], [420, 444, -1], [468, 492, 1], [540, 548, 0], [620, 650, 1], [700, 724, -1], [728, 752, 1], [820, 828, 0], [880, 910, -1]];
 const cxf = (z) => Math.sin(z * 0.017) * 20 + Math.sin(z * 0.006 + 1) * 14;
@@ -67,6 +68,8 @@ export default class Chapter12 {
     this.scarf = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.06, 1.1), this.wool('#ff9a3c')); this.scarf.position.set(0, 0.45, -0.6); rd.add(this.scarf); rd.traverse((m) => (m.castShadow = true)); S.add(rd);
     this.vell = buildVell(); S.add(this.vell);
     this.TN = 300; const rg = new THREE.BufferGeometry(), rp = new Float32Array(this.TN * 6), ri = []; for (let i = 0; i < this.TN - 1; i++) ri.push(i * 2, i * 2 + 1, i * 2 + 2, i * 2 + 1, i * 2 + 3, i * 2 + 2); rg.setAttribute('position', new THREE.BufferAttribute(rp, 3)); rg.setIndex(ri); this.trailM = new THREE.MeshBasicMaterial({ color: '#2fd3c6', side: THREE.DoubleSide }); this.trail = new THREE.Mesh(rg, this.trailM); this.trail.frustumCulled = false; S.add(this.trail); this.pts = [];
+    this.cut = new THREE.Plane(new THREE.Vector3(0, 0, 1), 60); r.localClippingEnabled = true; S.traverse((m) => { if (m.isMesh && m !== this.dome && m.material && !Array.isArray(m.material)) m.material.clippingPlanes = [this.cut]; });
+    this.puller = buildHand(this.wool('#c9605a', { map: this.yarnT, normalMap: this.yarnN })); this.puller.scale.setScalar(7); S.add(this.puller); this.uz = -60;
     this.hud = buildHud(g); this.hud.title('CHAPTER 12', 'LOOSE THREADS');
     this.t = 0; this.fin = null; this.noPause = false; this.said = {}; this.got = 0; this.shake = 0; this.cp = 4; this.p = { x: cxf(4), y: H(cxf(4), 4) + 1.3, z: 4, vx: 0, vy: 0, vz: 4, gr: true, yarn: 1, coy: 0, lx: -99, lz: -99 }; this.camPos = V(this.p.x, this.p.y + 8, this.p.z - 14);
     g.show3d(true); if (handoff) g.fadeFrozen(1700, () => g.director.releaseOutgoing()); else g.clear2d();
@@ -74,8 +77,8 @@ export default class Chapter12 {
     g.dialogue.say([{ who: 'vell', text: "WOOL. Somebody knitted a whole valley. Don't pull anything." }, { who: 'rin', text: 'I am sitting on a ball of it, Vell.' }, { who: 'vell', text: 'Then roll! It unwinds as you go — grab the teal skeins to wind it back up.' }]);
     g.director.preload(13);
   }
-  stop() { this.hud?.remove(); }
-  respawn() { const p = this.p, z = this.cp; p.x = cxf(z); p.z = z; p.y = H(p.x, z) + 2; p.vx = p.vy = 0; p.vz = 3; p.gr = false; p.yarn = Math.max(p.yarn, 0.6); this.pts = []; this.game.sfx.play('pp.hurt'); }
+  stop() { this.hud?.remove(); if (this.r) this.r.localClippingEnabled = false; }
+  respawn() { this.uz = Math.min(this.uz, this.cp - 50); const p = this.p, z = this.cp; p.x = cxf(z); p.z = z; p.y = H(p.x, z) + 2; p.vx = p.vy = 0; p.vz = 3; p.gr = false; p.yarn = Math.max(p.yarn, 0.6); this.pts = []; this.game.sfx.play('pp.hurt'); }
   update(dt, outgoing) {
     if (outgoing || !this.scene) return; const g = this.game, inp = g.input, p = this.p, sfx = g.sfx; this.t += dt; this.shake = Math.max(0, this.shake - dt * 2);
     if (this.fin) { this.fin.t += dt; p.vx *= 0.94; p.vz *= 0.94; g.audio.muffle(clamp(this.fin.t / 6, 0, 0.6)); }
@@ -92,11 +95,12 @@ export default class Chapter12 {
     for (const b of this.buttons) if (b.visible && Math.hypot(p.x - b.position.x, p.y - b.position.y, p.z - b.position.z) < r + 1.1) { b.visible = false; this.got++; sfx.play('px.pickup', { pitch: 1 + (this.got % 5) * 0.08 }); }
     for (const s of this.skeins) if (s.visible && Math.hypot(p.x - s.position.x, p.y - s.position.y, p.z - s.position.z) < r + 1.3) { s.visible = false; p.yarn = Math.min(1, p.yarn + 0.28); sfx.play('pp.chime'); sfx.play('pp.string', { vol: 0.6 }); }
     if (ctl && p.y < -p.z * 0.14 - 26) this.respawn();
+    if (ctl) { this.uz = Math.max(this.uz + (g.easy ? 8.5 : 12.5) * dt, p.z - 75); if (p.z < this.uz + 3) { if (!this.said.pull) { this.said.pull = true; g.dialogue.say('vell', "That's what's behind us — a hand, pulling the thread. Don't let it catch up!"); } this.uz = this.cp - 50; this.respawn(); } }
     if (ctl && p.yarn <= 0.02) { if (!this.said.out) { this.said.out = true; g.dialogue.say('vell', 'All unwound! I wound you back up at the last knot. Grab the skeins.'); } p.yarn = 0.7; this.respawn(); }
     if (p.gr && p.z > this.cp + 90 && !hole(p.x, p.z + 6)) { this.cp = Math.floor(p.z); g.save.setCheckpoint(12, null); }
     if (p.gr && Math.hypot(p.x - p.lx, p.z - p.lz) > 0.5) { p.lx = p.x; p.lz = p.z; const n = sp || 1; this.pts.push([p.x, p.y - r + 0.07, p.z, -p.vz / n, p.vx / n]); if (this.pts.length > this.TN) this.pts.shift(); }
     const say = (k, z, who, text) => { if (!this.said[k] && p.z > z) { this.said[k] = true; g.dialogue.say(who, text); } };
-    say('a', 96, 'vell', 'Pins! Go round them. They take a bite out of your wool.'); say('b', 138, 'rin', 'Half the valley has come unravelled.'); say('c', 322, 'vell', 'A ramp, then nothing. Fast and straight — or SPACE at the lip!'); say('e', 610, 'vell', 'More of it has come loose down here. Keep to the side that still has stitches.'); say('d', LEN - 70, 'rin', 'Needles. This is where it was cast off.');
+    say('p', 44, 'vell', "Don't look back. Something has hold of the loose end and the whole valley is coming off the needles behind us."); say('a', 96, 'vell', 'Pins! Go round them. They take a bite out of your wool.'); say('b', 138, 'rin', 'Half the valley has come unravelled.'); say('c', 322, 'vell', 'A ramp, then nothing. Fast and straight — or SPACE at the lip!'); say('e', 610, 'vell', 'More of it has come loose down here. Keep to the side that still has stitches.'); say('d', LEN - 70, 'rin', 'Needles. This is where it was cast off.');
     if (p.z > LEN - 20 && !this.fin) { this.fin = { t: 0 }; this.noPause = true; sfx.play('fx.rise'); sfx.play('pp.string'); g.dialogue.clear(); g.dialogue.say([{ who: 'rin', text: "It's all coming off the needles." }, { who: 'vell', text: 'Down to one thread. One bright line on a dark screen... oh, I know this one. This one is OLD.' }]); }
   }
   render(dt) {
@@ -109,7 +113,7 @@ export default class Chapter12 {
     { const a = this.trail.geometry.attributes.position, n = this.pts.length; for (let i = 0; i < this.TN; i++) { const q = this.pts[Math.min(i, n - 1)] || [p.x, p.y, p.z, 1, 0], w = 0.11 + k * 0.25; a.setXYZ(i * 2, q[0] + q[3] * w, q[1] + k * i * 0.004, q[2] + q[4] * w); a.setXYZ(i * 2 + 1, q[0] - q[3] * w, q[1] + k * i * 0.004, q[2] - q[4] * w); } a.needsUpdate = true; }
     if (k > 0) { const dk = 1 - k; this.hemi.intensity = 0.75 * dk * dk; this.sun.intensity = 2.2 * dk * dk; this.scene.background.set('#f1d3bd').multiplyScalar(dk * dk); this.scene.fog.color.copy(this.scene.background); this.dome.material.color.copy(this.scene.background); this.trailM.color.set('#2fd3c6').multiplyScalar(1 + k * 9); }
     const cz = p.z - 13 - sp * 0.12, want = V(lerp(p.x, cxf(p.z), 0.35), p.y + 6.5 + k * 9, cz - k * 10); this.camPos.lerp(want, 1 - Math.exp(-6 * dt)); const sh = this.shake * (g.settings.shake ?? 1) * 0.4; this.cam.position.copy(this.camPos).add(V((Math.random() - 0.5) * sh, (Math.random() - 0.5) * sh, 0)); this.cam.lookAt(p.x, p.y + 0.6, p.z + 7); this.cam.fov = 56 + Math.min(14, sp * 0.5); this.cam.aspect = g.W / g.H; this.cam.updateProjectionMatrix();
-    this.dome.position.copy(this.cam.position);
+    this.dome.position.copy(this.cam.position); this.cut.constant = -this.uz; { const hx = cxf(this.uz) + Math.sin(t * 2) * 3; this.puller.position.set(hx, H(hx, this.uz) + 9 + Math.sin(t * 5) * 0.8, this.uz + 5); this.puller.rotation.set(-1.9 + Math.sin(t * 5) * 0.12, 0, Math.sin(t * 2.5) * 0.2); this.puller.userData.curl(0.85 + Math.sin(t * 5) * 0.1); this.puller.userData.thumb(0.9); }
     this.sun.position.set(p.x - 22, p.y + 40, p.z - 16); this.sun.target.position.set(p.x, p.y, p.z + 6);
     renderFX(g, r, this.scene, this.cam, { bloom: 0.25 + k * 1.2, threshold: 1.15, tilt: 0.45 * (1 - k), focus: 0.56, vig: 0.36, sat: 1.18, con: 1.05 });
     if (this.fin && this.fin.t > 5.8 && !this.fin.done) { this.fin.done = true; g.freezeFrame(); const ok = g.director.handoff(13, { from12: true }); if (!ok) { g.clear2d(); g.save.complete(12); g.audio.muffle(0); g.director.end({ chapter: 12 }); } return; }

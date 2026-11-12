@@ -14,7 +14,7 @@ F3 toggles the performance overlay. Esc pauses and lists the current chapter's c
 
 ## Chapter status (honest)
 
-All fourteen chapters are playable start to finish and hand over to the next one. They are not equally deep: 1–3 got the most design and verification time; 4–14 were built faster and tested with short scripted smoke runs and simple bots only.
+All eighteen chapters are playable start to finish and hand over to the next one. They are not equally deep: 1–3 got the most design and verification time; 4–18 were built faster and tested with short scripted smoke runs and simple bots only.
 
 | # | Chapter | Format / renderer | State |
 |---|---------|-------------------|-------|
@@ -31,7 +31,11 @@ All fourteen chapters are playable start to finish and hand over to the next one
 | 11 | Lead & Light | Stained-glass rose window, Canvas2D | Rhythm catcher: walk the rim to catch light thrown on the beat, dodge cracks. Three windows. ~3 min. |
 | 12 | Loose Threads | three.js knitted wool (stitch normal maps, sheen) | Momentum rolling on a ball of wool down a 1 km valley: holes, ramps, pins, wool as a resource. ~2 min. |
 | 13 | Phosphor | Vector display with phosphor persistence, Canvas2D | Inertial arena shooter: three waves of splitting frames and hunting cursors, then a boss. ~3–4 min. |
-| 14 | Framebreak | three.js, shared post-FX (bloom, grade, MSAA) | Rebuilt as a three-act 3D finale: **The Getaway** (arcade driving with drift-boost through four format districts), **The Courier** (gliding between erased islands and restoring each one), **The Missing City** (exploration by pulse, no combat, then a held choice and three endings). Smoke-tested per act. ~12–15 min. | The ending is now **The Cascade**: a mostly-cinematic run redrawn in all thirteen art styles, flickering on the beat and then all at once, with three short playable beats (jump, break, push) before the chosen ending plays out.
+| 14 | One Breath | Ink wash, Canvas2D | Paint walkable strokes with the mouse (or arrows + J). Ink is finite, strokes dry, falling water erases them. Close an enso in one stroke. ~3 min. |
+| 15 | Persistence | Pencil flipbook with onion skin, Canvas2D | Flip twelve pages back and forward; the drawings move, Rin does not. Three scenes. ~3 min. |
+| 16 | Cat's Cradle | three.js, two jointed giant hands and string | Walk a string figure; at knots, have the hands re-thread it into another figure. Three figures, three knots. ~3 min. |
+| 17 | Counterweight | Kinetic mobile, flat colour, Canvas2D | Arms tip under Rin's weight; Vell sits as a counterweight. Ring three bells, climb to the hook. ~3 min. |
+| 18 | Framebreak | three.js, shared post-FX, lens render pass | Three acts (**The Getaway**: driving; **The Courier**: gliding; **The Missing City**: exploration and a choice), then the ending, **Forty Thousand Years**: one continuous 3D walk in which every format exists at once in the same lit space, each stretch being made by the same giant hand in a different material; gold frames redraw the same view in another format; it ends at a wall of hand stencils, your handprint, and a blank frame you can draw in. Marks you leave are stored in the browser and appear on the wall on later play-throughs. |
 
 Total is roughly 45–60 minutes, not the 80–100 the full design calls for.
 
@@ -42,6 +46,7 @@ Everything is authored in code; there are no external art, audio or texture file
 - **Pixel art** is real palette-indexed pixel art: hand-typed stamps plus keyframed poses with pixel-exact limbs, baked to atlases at load. It is not painted in an art tool.
 - **Cartoon and comic art** are procedural vector drawings with jittered "boil". Expressive, but not frame-by-frame hand animation.
 - **Textures** in chapters 5–10 are generated in code at load time (pixel-painted 64px tiles for the raycaster; canvas height fields turned into normal and roughness maps for the 3D chapters). They are not photo-sourced or hand-painted in an art tool.
+- **The hands** (chapters 6, 8, 9, 10, 12, 13, 16, 17 and the ending) are one shared jointed model (`src/fx/hand.js`) or 2D drawings of it. They are built from capsules and spheres, not sculpted.
 - **3D models** are assembled from primitives and extruded shapes. Chapter 7's Rin has a full joint hierarchy, IK legs, fingers, eyelids and layered clothing, but it is a stylised primitive-built figure, not a sculpted skinned mesh.
 - **Textures** are procedural canvases (concrete, brushed metal, paper fibre, fingerprints). No scanned PBR materials are used.
 - **Music** is original, written as note data and synthesised live with WebAudio. I could not listen to it in this environment — it was composed by theory and checked only for running without errors.
