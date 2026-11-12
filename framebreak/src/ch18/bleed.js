@@ -10,6 +10,7 @@ import { V, buildVell, bar, Particles } from './kit.js';
 import { buildRin3D, animateRin } from '../ch7/rig.js';
 import { buildHand } from '../fx/hand.js';
 import { JEWEL, hand2d } from './atelierkit.js';
+import { LastFrame } from './lastframe.js';
 import { pbr, normalFromHeight } from '../fx/tex.js';
 import { tex, glassTex, stitchTex, goldFrame } from './atelierkit.js';
 import { clamp, lerp, hash2, TAU, ease } from '../core/util.js';
@@ -207,6 +208,7 @@ export class Bleed {
   respawn() { const g = this.game, p = this.p; g.save.data.stats.deaths++; p.x = 0; p.z = this.cp; p.y = 0; p.vy = 0; this.cz = this.cp - 30; const j0 = Math.floor((this.cp - 40) / TS); this.gen(j0, L); this.ripples = []; g.sfx.play('px.die'); this.flash = 0.8; }
   update(dt) {
     if (this.cine) return this.updateCine(dt);
+    if (this.last) { this.last.update(dt); if (this.last.done && !this.done) { this.last.dispose(); this.done = true; } return; }
     const g = this.game, inp = g.input, p = this.p, sfx = g.sfx; this.t += dt; const t = this.t;
     if (this.debris) { for (const D of this.debris) for (const d of D.b) { d.vy -= 30 * dt; d.y += d.vy * dt; d.r += dt * 4; } if (this.t > 30) { this.debris.forEach((D) => this.scene.remove(D.im)); this.debris = null; } }
     for (let j = 0; j < Math.min(L, 60); j++) for (let i = 0; i < W; i++) { const k = this.key(i, j); if (this.DROP[k] > 0) this.DROP[k] = Math.max(0, this.DROP[k] - dt * 26); } this.shake = Math.max(0, this.shake - dt * 2); this.flash = Math.max(0, (this.flash || 0) - dt * 2);
@@ -236,10 +238,11 @@ export class Bleed {
     for (const c of CPS) if (p.z > c && c > this.cp && p.gr) { this.cp = c; sfx.play('px.checkpoint'); }
     const say = (key, z, who, text) => { if (!this.said[key] && p.z > z) { this.said[key] = true; g.dialogue.say(who, text); } };
     say('a', 60, 'vell', "That's... every boss we ever beat. Glued together WRONG. It's what you get when nothing matches and you force it to."); say('b', 150, 'rin', 'Every time it slams, the floor changes its mind.'); say('c', 250, 'curator', 'I am trying to HOLD it. It will not hold.'); say('d', 360, 'vell', 'There — a frame! Straight through it!');
-    if (p.z > END + 2 && !this.out) { this.out = 0.001; sfx.play('fx.whoosh'); sfx.play('fx.shimmer'); g.dialogue.clear(); }
+    if (p.z > END + 2 && !this.last) { this.last = new LastFrame(this); this.last.build(); sfx.play('fx.whoosh'); sfx.play('fx.shimmer'); const o = document.createElement('div'); o.style.cssText = 'position:absolute;inset:0;background:#fff;opacity:1;transition:opacity 1s ease-in;pointer-events:none'; this.ch.hud.ui.appendChild(o); requestAnimationFrame(() => requestAnimationFrame(() => (o.style.opacity = '0'))); setTimeout(() => o.remove(), 1200); }
   }
   frame(dt) {
     if (this.cine) return this.frameCine(dt);
+    if (this.last) return this.last.frame(dt);
     const g = this.game, p = this.p, t = this.t, S = this.scene;
     if (this.debris) { const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), sc = new THREE.Vector3(1, 1, 1), ps = new THREE.Vector3(); for (const D of this.debris) { D.b.forEach((d, i) => { e.set(d.r, d.r * 0.7, 0); q.setFromEuler(e); ps.set(d.x, d.y, d.z); sc.setScalar(d.y < -2 ? 0.001 : 1); m4.compose(ps, q, sc); D.im.setMatrixAt(i, m4); }); D.im.instanceMatrix.needsUpdate = true; } } this.skyM.uniforms.t.value = t; this.skyM.uniforms.k.value = this.shake; this.voidM.uniforms.t.value = t; this.wave.material.uniforms.t.value = t;
     // instances

@@ -106,6 +106,7 @@ export class Atelier {
     this.vell = buildVell(); S.add(this.vell); this.fx = new Particles(S, 700, 0.5); this.fx.g = -0.6;
     this.p = { x: 0, y: 0, z: 2.5, vy: 0, gr: true, jumps: 1, coy: 0, buf: 0, on: null, yaw: 0, sp: 0 }; this.choiceHold = 0; this.camPos = V(0, 4, -8); this.look = V(0, 2, 10);
     this.cap = document.createElement('div'); this.cap.style.cssText = 'position:absolute;left:50%;bottom:31%;transform:translateX(-50%);width:76%;text-align:center;color:#fff;font:500 calc(var(--u)*23)/1.4 Georgia,serif;text-shadow:0 2px 14px #000,0 0 3px #000;opacity:0;transition:opacity 1.3s;pointer-events:none'; ch.hud.ui.appendChild(this.cap);
+    if (ch.endK) { this.k = ch.endK; g.save.flag('ending', this.k); g.save.complete(18); this.ch.noPause = true; this.startFinale(this.k === 'open' ? Handoff : this.k === 'one' ? Colonnade : Lanterns); return; }
     ch.hud.title('THE LAST ACT', 'EVERY WAY TO EXIST'); g.music.play(ELEGY, { intensity: 0, fade: 2.5 }); g.dialogue.clear(); this.strokes = []; this.cur = { x: 960, y: 560 };
   }
   tell(html, hold = 5.5) { this.capQ.push([html, hold]); }
