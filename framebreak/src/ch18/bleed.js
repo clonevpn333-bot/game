@@ -18,32 +18,42 @@ const R1 = (i, s) => hash2(i * 3.7 + 1, s * 1.3 + 2) - 0.5;
 const W = 9, L = 112, TS = 4, END = L * TS - 8, CPS = [6, 110, 220, 330];
 const VOX = 0, CLAY = 1, PAPER = 2, GLASS = 3, WOOL = 4, PIXEL = 5, WIRE = 6, INK = 7, GREY = 8, NF = 9;
 const NAME = ['VOXEL', 'CLAY', 'PAPER', 'GLASS', 'WOOL', 'PIXEL', 'WIREFRAME', 'INK'];
-// THE COMPOSITE — the boss theme. Grand piano over a small orchestra, D minor, 148 bpm.
-// intro scores the cinematic (8 bars, lands on the crush); A drives the run; B is the choir bridge.
+// THE COMPOSITE — the boss theme, and the worlds' music mixing the way the worlds do: a Baroque
+// piano prelude and strings (classical), a four-on-the-floor drop with sidechained chords, pluck
+// arps and offbeat sub (electronic), jangly clean guitar, picked bass and a tambourine kit (indie),
+// a pulse-wave lead (chip), and a choir, taiko and one screaming guitar for the climax.
+// D minor, 140 bpm. intro scores the cinematic (8 bars, lands on the crush); then A drop, B indie, C everything.
 const SONG = (() => {
-  const V = { Dm: ['A3', 'D4', 'F4', 'A4'], Bb: ['A#3', 'D4', 'F4', 'A#4'], F: ['A3', 'C4', 'F4', 'A4'], C: ['G3', 'C4', 'E4', 'G4'], Gm: ['G3', 'A#3', 'D4', 'G4'], A: ['A3', 'C#4', 'E4', 'A4'], Eb: ['G3', 'A#3', 'D#4', 'G4'] };
-  const ROOT = { Dm: 'D', Bb: 'A#', F: 'F', C: 'C', Gm: 'G', A: 'A', Eb: 'D#' }, up = (n, k = 1) => n.replace(/\d/, (d) => +d + k), R16 = '. . . . . . . . . . . . . . . .';
-  const arp = (c, o = 0, soft = false) => { const v = V[c].map((n) => up(n, o)); return [3, 1, 2, 1, 3, 1, 2, 1, 3, 1, 2, 1, 3, 2, 1, 2].map((k, i) => v[k] + (i === 0 ? (soft ? '' : '!') : i % 4 === 0 ? '' : '~')).join(' '); };
-  const lh = (c, tres) => { const r = ROOT[c]; return Array.from({ length: 16 }, (_, i) => (tres ? [0, 3, 6, 8, 11, 14] : [0, 8]).includes(i) ? `${r}1+${r}2${i === 0 || i === 8 ? '!' : ''}` : '.').join(' '); };
-  const drive = (c) => { const r = ROOT[c]; return Array.from({ length: 16 }, (_, i) => [0, 3, 6, 8, 11, 14].includes(i) ? `${r}3${i % 8 === 0 ? '!' : ''}` : i % 2 ? '.' : `${r}3~`).join(' '); };
-  const hold = (n) => `${n} ${'- '.repeat(15).trim()}`, chord = (c, o = 1) => V[c].slice(1).map((n) => up(n, o - 1)).join('+');
-  const prog = ['Dm', 'Bb', 'F', 'C', 'Dm', 'Bb', 'Gm', 'A'], bprog = ['Gm', 'Eb', 'Bb', 'F', 'Gm', 'Eb', 'A', 'A'];
-  const MEL = ['D4 - - - - - F4 - E4 - D4 - C4 - D4 -', 'A#3 - - - - - D4 - C4 - A#3 - A3 - - -', 'F4 - - - - - A4 - G4 - F4 - E4 - F4 -', 'G4 - - - - - - - E4 - - - C4 - - -', 'D4 - - - - - F4 - A4 - - - D5 - - -', 'D5 - C5 - A#4 - - - A4 - F4 - D4 - - -', 'G4 - - - A#4 - - - D5 - C5 - A#4 - A4 -', 'A4 - - - - - - - C#5 - - - E5 - - -'];
-  const CHO = ['G4 - - - A#4 - - - D5 - - - - - - -', 'D#5 - - - D5 - - - A#4 - - - G4 - - -', 'F4 - - - A#4 - - - D5 - - - F5 - - -', 'F5 - - - E5 - - - C5 - - - A4 - - -', 'G4 - - - A#4 - - - D5 - - - G5 - - -', 'G5 - - - F5 - - - D#5 - - - D5 - - -', 'C#5 - - - - - - - E5 - - - - - - -', 'A5 - - - - - - - - - - - . . . .'];
-  const GR = { Dm: 'D2', Bb: 'A#2', F: 'F2', C: 'C3', Gm: 'G2', A: 'A2', Eb: 'D#2' }, DRV = [0, 3, 6, 8, 11, 14];
-  const chug = (c) => Array.from({ length: 16 }, (_, i) => GR[c] + (DRV.includes(i) ? '!' : '~')).join(' '), ring = (c) => { const g = GR[c]; return `${g}! - - ${g} - - ${g} - ${g}! - - ${g} - - ${g} -`; };
-  const SOLO = ['G4 A#4 D5 G5 F5 D5 A#4 D5 G5 - - - A#5 - A5 G5', 'D#5 G5 A#5 D#6 D6 A#5 G5 A#5 D#6 - - - D6 C6 A#5 G5', 'F5 - D5 F5 A#5 - - - A5 G5 F5 D5 F5 - G5 A5', 'A5 - - - C6 - A5 - F5 - C5 - F5 G5 A5 C6', 'D6 - - - A#5 - G5 - D5 - G5 - A#5 - D6 -', 'D#6 D6 C6 A#5 G5 A#5 C6 D6 D#6 - - - G6 - - -', 'E6 - - - C#6 - E6 - A6 - - - G6 F6 E6 C#6', 'A5 - - - - - - - - - - - . . . .'];
-  const bars = {}, add = (k, b) => { bars[k] = { rh: R16, lh: R16, spic: R16, celli: R16, horns: R16, choir: R16, timp: R16, bell: R16, drums: R16, gtr: R16, lead: R16, rock: R16, ...b }; return k; };
-  const intro = ['Dm', 'Dm', 'Bb', 'A', 'Dm', 'Bb', 'Gm', 'A'].map((c, i) => add('i' + i, {
-    lh: i < 4 ? `${ROOT[c]}1+${ROOT[c]}2! - - - - - - - - - - - - - - -` : lh(c, i > 5), rh: i < 4 ? R16 : arp(c, 0, true).replace(/!/g, ''), spic: Array.from({ length: 16 }, () => `${ROOT[c]}3~`).join(' '), celli: hold(ROOT[c] + '2'), choir: i < 2 ? R16 : hold(chord(c)),
-    horns: i < 4 ? R16 : hold(['D4', 'F4', 'A4', 'A4'][i - 4]), timp: i % 2 ? R16 : `${ROOT[c]}2 . . . . . . . . . . . . . . .`,
-    drums: i < 4 ? (i % 2 ? '. . . . . . . . . . . . r . r r' : 'l . . . . . . . . . . . . . . .') : i < 6 ? 'T . . . T . . . T . . . T . . .' : i === 6 ? 'T . . . T . . . T . T . T T T T' : 'T . . . w . . . r r r r r r r r',
-    gtr: i === 6 ? `${GR[c]}! - - - - - - - ${GR[c]}! - - - - - - -` : i === 7 ? chug(c) : R16, rock: i === 7 ? 'k . . . k . . . s s s s s s s s' : R16 }));
-  const A1 = prog.map((c, i) => add('a' + i, { rh: arp(c), lh: lh(c, false), spic: drive(c), celli: hold(ROOT[c] + '2'), horns: hold(chord(c, 0)).replace(/^\S+/, (m) => m.split('+')[0]), timp: `${ROOT[c]}2 . . . . . . . ${ROOT[c]}2 . . . . . . .`, drums: (i === 0 ? 'b' : i % 4 === 0 ? 'Tc' : 'T') + ' . . h T . T . T . . h T . h h', choir: i > 3 ? hold(chord(c)) : R16, gtr: chug(c), rock: (i % 4 === 0 ? 'kc' : 'k') + ' . h . s . h k . k h . s . h .' }));
-  const A2 = prog.map((c, i) => add('m' + i, { rh: arp(c, 1), lh: lh(c, true), spic: drive(c), celli: hold(ROOT[c] + '2'), horns: MEL[i], choir: hold(chord(c)), timp: `${ROOT[c]}2 . . ${ROOT[c]}2 . . ${ROOT[c]}2 . ${ROOT[c]}2 . . . . . . .`, bell: `. . . . ${V[c][3].replace('4', '6').replace('3', '5')} . . . . . . . ${V[c][2].replace('4', '6').replace('3', '5')} . . .`, drums: (i % 4 === 0 ? 'Tc' : 'T') + ' . . h T . T . T . . h T ' + (i === 7 ? 'r r r' : '. h h'), gtr: ring(c), lead: MEL[i].replace(/(\D)(\d)/g, (m, a, d) => a + (+d + 1)), rock: (i % 4 === 0 ? 'kc' : 'k') + ' . h k s . h . k k h . s . h ' + (i === 7 ? 's' : 'h') }));
-  const B = bprog.map((c, i) => add('b' + i, { rh: Array.from({ length: 16 }, (_, k) => (k % 2 ? '.' : `${up(V[c][3])}+${up(V[c][3], 2)}${k % 8 === 0 ? '!' : ''}`)).join(' '), lh: lh(c, true), spic: drive(c), celli: hold(ROOT[c] + '2'), choir: hold(chord(c)), horns: CHO[i].replace(/(\D)(\d)/g, (m, a, d) => a + (+d - 1)), gtr: chug(c), lead: SOLO[i], rock: (i === 0 ? 'kc' : 'k') + ' h s h k k s h k h s h k k ' + (i === 7 ? 's s' : 's h'), timp: `${ROOT[c]}2 . . . ${ROOT[c]}2 . . . ${ROOT[c]}2 . . . ${ROOT[c]}2 . ${ROOT[c]}2 .`, drums: (i === 0 ? 'b' : 'T') + ' . T . s . T . T . T . s . ' + (i === 7 ? 'r w' : 'T T') }));
-  return { bpm: 148, gain: 0.95, reverb: 0.4, start: 'intro', tracks: { rh: { inst: 'grand', vol: 0.9, pan: 0.12, send: 0.35 }, lh: { inst: 'grand', vol: 0.85, pan: -0.12, send: 0.3 }, spic: { inst: 'spic', vol: 0.75, pan: -0.25, send: 0.25 }, celli: { inst: 'celli', vol: 0.75, pan: -0.1, send: 0.4 }, timp: { inst: 'timp', vol: 0.8, layer: 1, send: 0.35 }, horns: { inst: 'horns', vol: 0.8, pan: 0.2, layer: 1, send: 0.5 }, choir: { inst: 'choir', vol: 0.8, layer: 2, send: 0.7 }, bell: { inst: 'celesta', vol: 0.5, pan: 0.3, layer: 3, send: 0.6 }, drums: { kit: 'orch', vol: 0.95, send: 0.3 }, gtr: { inst: 'gtr', vol: 0.9, pan: -0.3, layer: 1, send: 0.12 }, lead: { inst: 'shred', vol: 0.85, pan: 0.18, layer: 1, send: 0.4 }, rock: { kit: 'rock', vol: 0.8, layer: 1, send: 0.12 } },
-    bars, sections: { intro, A: [...A1, ...A2], B }, next: { intro: 'A', A: 'B', B: 'A' } };
+  const R16 = '. . . . . . . . . . . . . . . .', up = (n, k = 1) => n.replace(/-?\d/, (d) => +d + k), hold = (n) => `${n} ${'- '.repeat(15).trim()}`;
+  // prelude voicings: bass, then four upper voices (the BWV 846 figure: b t1 t2 t3 t4 t2 t3 t4, twice)
+  const PV = { Dm: ['D3', 'A3', 'D4', 'F4', 'A4'], GmD: ['D3', 'G3', 'D4', 'G4', 'A#4'], AC: ['C#3', 'A3', 'C#4', 'E4', 'A4'], Dm2: ['D3', 'A3', 'D4', 'F4', 'D5'], Bb: ['A#2', 'F3', 'A#3', 'D4', 'F4'], Gm: ['G2', 'D3', 'G3', 'A#3', 'D4'], Asus: ['A2', 'E3', 'A3', 'D4', 'E4'], A: ['A2', 'E3', 'A3', 'C#4', 'E4'], F: ['F2', 'C3', 'F3', 'A3', 'C4'], C: ['C3', 'G3', 'C4', 'E4', 'G4'] };
+  const prel = (c, o = 0) => { const v = PV[c].map((n) => up(n, o)); return [0, 1, 2, 3, 4, 2, 3, 4, 0, 1, 2, 3, 4, 2, 3, 4].map((k, i) => v[k] + (i === 0 ? '!' : i % 4 ? '~' : '')).join(' '); };
+  const T = { Dm: ['D', 'F', 'A'], Bb: ['A#', 'D', 'F'], F: ['F', 'A', 'C'], C: ['C', 'E', 'G'], Gm: ['G', 'A#', 'D'], A: ['A', 'C#', 'E'] }, root = (c) => T[c][0];
+  const pump = (c) => { const ch = `${T[c][0]}3+${T[c][1]}4+${T[c][2]}4`.replace('A#3', 'A#3'); return `${ch} - - - ${ch} - - - ${ch} - - - ${ch} - - -`; };
+  const arp = (c) => { const n = [`${T[c][0]}5`, `${T[c][1]}5`, `${T[c][2]}5`, `${T[c][0]}6`]; return [0, 2, 1, 3, 2, 1, 0, 2, 1, 3, 2, 1, 0, 2, 3, 1].map((k, i) => n[k] + (i % 4 === 0 ? '' : '~')).join(' '); };
+  const offsub = (c) => Array.from({ length: 16 }, (_, i) => (i % 4 === 2 ? `${root(c)}2` : '.')).join(' ');
+  const jangle = (c) => { const n = [`${T[c][0]}4`, `${T[c][2]}4`, `${T[c][1]}5`, `${T[c][2]}4`]; return Array.from({ length: 16 }, (_, i) => (i % 2 ? '.' : n[(i / 2) % 4] + (i % 8 === 0 ? '!' : '~'))).join(' '); };
+  const pbass = (c) => { const r = root(c), f = T[c][2]; return `${r}2! . ${r}2 . ${f}2 . ${r}2 . ${r}2! . ${r}2 . ${f}2 . ${r}3 .`; }, chord = (c, o = 4) => `${T[c][0]}${o}+${T[c][1]}${o}+${T[c][2]}${o}`;
+  const MEL = ['A4 - - - D5 - - - E5 - F5 - E5 - D5 -', 'D5 - - - - - - - C5 - A#4 - A4 - - -', 'A4 - - - C5 - - - F5 - - - E5 - D5 -', 'E5 - - - - - - - G5 - - - - - - -', 'A5 - - - G5 - F5 - E5 - - - D5 - - -', 'F5 - - - E5 - D5 - C5 - - - A#4 - A4 -', 'C5 - - - D5 - - - F5 - - - A5 - G5 -', 'G5 - - - - - - - E5 - - - . . . .'];
+  const CHIP = ['D5 - A#4 - G4 - A#4 - D5 - - - C5 - A#4 -', 'A4 - - - F4 - - - A#4 - C5 - D5 - - -', 'C5 - A4 - F4 - A4 - C5 - - - D5 - C5 -', 'C#5 - - - E5 - - - A5 - - - G5 - E5 -', 'D5 - A#4 - G4 - A#4 - D5 - - - F5 - D5 -', 'F5 - - - D5 - - - A#4 - C5 - D5 - - -', 'E5 - - - G5 - - - C6 - - - A#5 - G5 -', 'A5 - - - - - - - E5 - C#5 - A4 - - -'];
+  const EDM = 'k . h . kc . h . k . h . kc . h o', EDMF = 'k . h . kc . h . k . h . kc s s s', IND = 'kt . t . st . t k kt . t . st . t .';
+  const bars = {}, add = (k, b) => { bars[k] = { pno: R16, str: R16, cel: R16, cho: R16, pump: R16, arp: R16, sub: R16, edm: R16, gtr: R16, bas: R16, ind: R16, chip: R16, glk: R16, lead: R16, taiko: R16, ...b }; return k; };
+  const IP = ['Dm', 'GmD', 'AC', 'Dm2', 'Bb', 'Gm', 'Asus', 'A'], IR = ['D', 'D', 'C#', 'D', 'A#', 'G', 'A', 'A'];
+  const intro = IP.map((c, i) => add('i' + i, { pno: prel(c), cel: i > 1 ? hold(IR[i] + '2') : R16, str: i > 3 ? hold(PV[c].slice(2).map((n) => up(n)).join('+')) : R16, pump: i > 5 ? pump(i === 6 ? 'Gm' : 'A') : R16, arp: i === 7 ? arp('A') : R16, edm: i === 6 ? '. . . . . . . . . . . . . . . w' : i === 7 ? 'k . . . k . . . k . k . s s s s' : R16, taiko: i === 7 ? 'T . . . . . . . T . T . T T T T' : R16 }));
+  const AP = ['Dm', 'Bb', 'F', 'C', 'Dm', 'Bb', 'F', 'C'], APV = ['Dm2', 'Bb', 'F', 'C', 'Dm2', 'Bb', 'F', 'C'];
+  const A1 = AP.map((c, i) => add('a' + i, { pno: prel(APV[i], 1), cel: hold(root(c) + '2'), pump: pump(c), arp: arp(c), sub: offsub(c), edm: (i === 0 ? 'b' : 'k') + EDM.slice(1).replace(/^ \. h/, ' . h'), taiko: i === 0 ? 'b . . . . . . . . . . . . . . .' : R16 }));
+  bars.a0.edm = 'b . h . kc . h . k . h . kc . h o';
+  const A2 = AP.map((c, i) => add('m' + i, { pno: prel(APV[i], 1), str: MEL[i], cel: hold(root(c) + '2'), pump: pump(c), arp: arp(c), sub: offsub(c), edm: i === 7 ? EDMF : EDM, gtr: jangle(c), glk: MEL[i].replace(/(\D)(\d)/g, (m, a, d) => a + (+d + 1)).split(' ').map((k, j) => (j % 4 === 0 && k !== '-' ? k : '.')).join(' '), cho: i > 3 ? hold(chord(c)) : R16 }));
+  const BP = ['Gm', 'Bb', 'F', 'A', 'Gm', 'Bb', 'C', 'A'];
+  const B = BP.map((c, i) => add('b' + i, { pno: `${chord(c)}! - - - - - - - . . . . ${chord(c, 5)}~ - - -`, gtr: jangle(c), bas: pbass(c), ind: i === 7 ? 'kt . t . st . t k s s s s s s s s' : IND, chip: CHIP[i], str: hold(chord(c, 3)), glk: i % 2 ? `. . . . . . . . ${T[c][2]}6 . . . . . . .` : R16, edm: i === 7 ? 'k . . . k . . . k . k . k k k w' : i > 3 ? 'k . . . k . . . k . . . k . . .' : R16 }));
+  const CP = ['Dm', 'Bb', 'F', 'C', 'Dm', 'Bb', 'Gm', 'A'], CPV = ['Dm2', 'Bb', 'F', 'C', 'Dm2', 'Bb', 'Gm', 'A'];
+  const C = CP.map((c, i) => add('c' + i, { pno: prel(CPV[i], 1), str: MEL[i].replace(/(\D)(\d)/g, (m, a, d) => a + (+d + 1)), cel: hold(root(c) + '2'), cho: hold(chord(c)), pump: pump(c), arp: arp(c), sub: offsub(c), edm: i === 7 ? EDMF : EDM, gtr: jangle(c), bas: pbass(c), lead: MEL[i], taiko: (i === 0 ? 'b' : 'T') + ' . . . . . . . T . T . . . . .', ind: '. . t . . . t . . . t . . . t .' }));
+  return { bpm: 140, gain: 0.95, reverb: 0.35, start: 'intro', tracks: {
+      pno: { inst: 'grand', vol: 0.95, pan: 0.05, send: 0.35 }, str: { inst: 'strings', vol: 0.9, pan: -0.15, send: 0.55 }, cel: { inst: 'celli', vol: 0.7, pan: -0.2, send: 0.4 }, cho: { inst: 'choir', vol: 0.7, send: 0.7 },
+      pump: { inst: 'pump', vol: 0.75, pan: 0.1, send: 0.2 }, arp: { inst: 'pluck', vol: 0.6, pan: 0.3, send: 0.3 }, sub: { inst: 'subbass', vol: 0.85 }, edm: { kit: 'edm', vol: 0.9, send: 0.1 },
+      gtr: { inst: 'jangle', vol: 0.8, pan: -0.35, send: 0.35 }, bas: { inst: 'pbass', vol: 0.8 }, ind: { kit: 'indie', vol: 0.85, send: 0.25 }, chip: { inst: 'lead', vol: 0.75, pan: 0.2, send: 0.2 },
+      glk: { inst: 'bell', vol: 0.6, pan: 0.35, send: 0.6 }, lead: { inst: 'shred', vol: 0.6, pan: 0.25, send: 0.45 }, taiko: { kit: 'orch', vol: 0.8, send: 0.3 } },
+    bars, sections: { intro, A: [...A1, ...A2], B, C }, next: { intro: 'A', A: 'B', B: 'C', C: 'A' } };
 })();
 const CARDS = ['PIXEL PANIC', 'INK & VIOLENCE', 'FOLD THE WORLD', 'DOMINO CITY', '1996', 'BLOCK COLLAPSE', 'FULL RESOLUTION', 'CLAY HEART', 'BREAK THE PAGE', 'LAMPLIGHT', 'LEAD & LIGHT', 'LOOSE THREADS', 'PHOSPHOR', 'ONE BREATH', 'PERSISTENCE', "CAT'S CRADLE", 'COUNTERWEIGHT'];
 function card(i) {
@@ -146,7 +156,7 @@ export class Bleed {
     C.shake = t > 10.6 ? ease.inCubic(clamp((t - 10.6) / 2.4, 0, 1)) * 1.4 : t > 6.6 && t < 9 ? 0.3 : 0;
     if (C.grip && Math.random() < dt * 30) { const F = C.frames[(Math.random() * 17) | 0]; C.sparks.emit(F.G.position, V((Math.random() - 0.5) * 30, Math.random() * 20, (Math.random() - 0.5) * 30), new THREE.Color(JEWEL[(Math.random() * 7) | 0]), 1.2, 6); }
     const cue = g.music.section === 'A' && t > 9, skip = g.input.pressed.confirm && t > 1.5 && !g.input.pressed.jump;
-    if (!C.impact && (cue || t > 13.8 || skip)) this.startRun();
+    if (!C.impact && (cue || t > 14.2 || skip)) this.startRun();
   }
   frameCine(dt) {
     const g = this.game, C = this.cine, t = C.t, u = ease.inCubic(clamp((t - 10.6) / 2.3, 0, 1));
