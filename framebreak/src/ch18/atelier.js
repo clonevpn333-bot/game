@@ -13,6 +13,7 @@ import { buildHand } from '../fx/hand.js';
 import { pbr, normalFromHeight } from '../fx/tex.js';
 import { tex, JEWEL, buildWall, puppetTex, glassTex, sunTex, stitchTex, pixelTex, pixelAspect, gridTex, lensMat, goldFrame } from './atelierkit.js';
 import { VW, VH, fit } from '../fx/ui2d.js';
+import { Handoff, Colonnade, Lanterns } from './finales.js';
 import { clamp, lerp, hash2, TAU, ease } from '../core/util.js';
 
 const ZL = 56, END = 8 * ZL - 6, CZ = END - 13, MARKS = 'framebreak.marks';
@@ -112,8 +113,8 @@ export class Atelier {
     const g = this.game, S = this.scene; this.k = k; this.at = null; g.save.flag('ending', k); g.save.complete(18); g.dialogue.clear(); g.sfx.play('fx.boom'); g.sfx.play('fx.shimmer'); this.flash = 1; this.capQ = []; this.capT = 0;
     if (k === 'open') { g.dialogue.say([{ who: 'vell', text: 'Then the frames come down. All of them.' }, { who: 'rin', text: 'One more thing first. There is a wall.' }]); this.tell('<span style="letter-spacing:.3em">LEAVE IT OPEN</span>', 4); return; }
     this.stage = k; this.st = 0; this.ch.noPause = true; this.camFrom = this.camPos.clone(); g.music.setIntensity(k === 'one' ? 0 : 1);
-    if (k === 'one') { this.oneM = new THREE.MeshStandardMaterial({ color: '#f2efe8', roughness: 0.85 }); this.tell('<span style="letter-spacing:.3em">ONE FRAME</span>', 4); this.tell('Everything matches now. Nothing is missing. Nothing is new.', 6); this.tell('It is very, very quiet.', 6); }
-    else { this.walls = this.gates.map((G) => { const w = new THREE.Mesh(new THREE.BoxGeometry(90, 46, 1.2), new THREE.MeshStandardMaterial({ color: '#0d0f1f', roughness: 0.6, metalness: 0.3 })); w.position.set(0, 0, G.z + 0.8); w.scale.y = 0.001; S.add(w); return w; }); this.tell('<span style="letter-spacing:.3em">SEAL THE FRAMES</span>', 4); this.tell('Every world safe behind its own glass. Every world alone.', 6); this.tell('Two things that fit in none of them keep each other company in the gap.', 6); }
+    if (k === 'one') { this.oneM = new THREE.MeshStandardMaterial({ color: '#f2efe8', roughness: 0.85 });  }
+    else { this.walls = this.gates.map((G) => { const w = new THREE.Mesh(new THREE.BoxGeometry(90, 46, 1.2), new THREE.MeshStandardMaterial({ color: '#0d0f1f', roughness: 0.6, metalness: 0.3 })); w.position.set(0, 0, G.z + 0.8); w.scale.y = 0.001; S.add(w); return w; });  }
   }
   outro() {
     if (this.stage === 'outro') return; this.stage = 'outro'; this.st = 0; this.cap.style.opacity = '0'; this.capQ = []; const g = this.game, o = document.createElement('div'), src = window.__FB_OUTRO; g.clear2d();
@@ -124,6 +125,7 @@ export class Atelier {
   update(dt) {
     const g = this.game, inp = g.input, p = this.p, sfx = g.sfx; this.t += dt; this.st += dt; const t = this.t; this.fx.update(dt); this.flash = Math.max(0, this.flash - dt * 0.7);
     this.capT -= dt; if (this.capT <= 0) { if (this.cap.style.opacity !== '0' && this.capShown) { this.cap.style.opacity = '0'; this.capShown = false; this.capT = 1.4; } else if (this.capQ.length) { const [h, hold] = this.capQ.shift(); this.cap.innerHTML = h; this.cap.style.opacity = '1'; this.capShown = true; this.capT = hold; } }
+    if (this.fin2) { this.fin2.update(dt); return; }
     if (this.stage === 'walk' || this.stage === 'wall') {
       const iz = (inp.keys.has('KeyW') || inp.keys.has('ArrowUp') ? 1 : 0) - (inp.keys.has('KeyS') || inp.keys.has('ArrowDown') ? 1 : 0), ix = (inp.keys.has('KeyD') || inp.keys.has('ArrowRight') ? 1 : 0) - (inp.keys.has('KeyA') || inp.keys.has('ArrowLeft') ? 1 : 0), sp = inp.down.dash ? 8.6 : 5.2, vz = iz * sp, vx = -ix * 4.2;
       for (const P of this.plats) { const ox = P.x; if (P.move) P.x = P.bx + Math.sin(t * 0.8 + P.j * 1.7) * P.move; if (P.pop) P.y = lerp(0.05, P.y0, ease.outBack(clamp((p.z - P.z + 15) / 6, 0, 1))); P.dx = P.x - ox; P.sq = Math.max(0, P.sq - dt * 3); } for (const G of this.gates) G.sp.position.set(G.top.x, G.top.y + 1.5 + Math.sin(t * 3 + G.zi) * 0.15, G.top.z);
@@ -140,10 +142,10 @@ export class Atelier {
       if (!this.k) { if (p.z > CZ - 20 && !this.saidChoice) { this.saidChoice = true; g.dialogue.say([{ who: 'curator', text: 'Three frames. Whichever one you hold, I will abide by.' }, { who: 'vell', text: "Walk into one and hold E. Whatever you pick — I'll remember you." }]); } this.at = this.choices.find((c) => Math.hypot(p.x - c.x, p.z - CZ) < 2); if (this.at && inp.down.interact) { this.choiceHold += dt; if (Math.floor(this.choiceHold * 6) !== Math.floor((this.choiceHold - dt) * 6)) sfx.play('pp.crank', { pitch: 0.6 + this.choiceHold * 0.3, vol: 0.5 }); if (this.choiceHold > 2.4) this.choose(this.at.k); } else this.choiceHold = Math.max(0, this.choiceHold - dt * 2); }
       if (p.z > 7 * ZL + 20 && !this.saidWall) { this.saidWall = true; g.dialogue.say([{ who: 'vell', text: "I know this wall. I'm FROM this wall. Bottom corner — the smudge. That's me. Somebody's first try." }, { who: 'curator', text: 'I only ever wanted it finished. Finished things do not get lost.' }, { who: 'rin', text: 'Finished things do not get continued, either.' }]); }
       if (this.k === 'open' && p.z > END - 5) { this.stage = 'wall'; if (inp.down.interact) { this.hold += dt; if (Math.floor(this.hold * 6) !== Math.floor((this.hold - dt) * 6)) sfx.play('pp.crank', { pitch: 0.6 + this.hold * 0.3, vol: 0.5 }); } else this.hold = Math.max(0, this.hold - dt * 1.5); if (this.hold > 2.6) { this.stage = 'lit'; this.st = 0; this.wallT.stamp(); this.ch.noPause = true; g.dialogue.clear(); sfx.play('fx.boom'); sfx.play('fx.shimmer'); g.music.setIntensity(3); this.capQ = []; this.capT = 0; this.tell('<span style="font-size:1.7em;letter-spacing:.08em">I was here.</span>', 5); this.tell('So were you.', 6); } } else if (this.stage === 'wall') this.stage = 'walk';
-    } else if (this.stage === 'lit') { p.sp = lerp(p.sp, 0, dt * 6); p.yaw = 0; if (Math.random() < dt * 40) { const c = new THREE.Color(JEWEL[(Math.random() * 7) | 0]); this.fx.emit(V((Math.random() - 0.5) * 60, Math.random() * 28, END - 0.6), V(0, 0.6, -1.4), c, 3.5, 1.2); } if (this.st > 16) { this.stage = 'pull'; this.st = 0; this.camFrom = this.camPos.clone(); this.tell('Not one of them finished it.', 5); this.tell('They were handing it on.', 6); } }
+    } else if (this.stage === 'lit') { p.sp = lerp(p.sp, 0, dt * 6); p.yaw = 0; if (Math.random() < dt * 40) { const c = new THREE.Color(JEWEL[(Math.random() * 7) | 0]); this.fx.emit(V((Math.random() - 0.5) * 60, Math.random() * 28, END - 0.6), V(0, 0.6, -1.4), c, 3.5, 1.2); } if (this.st > 10) { this.startFinale(Handoff); } }
     else if (this.stage === 'pull') { if (this.st > 19) { this.stage = 'canvas'; this.st = 0; this.cap.style.opacity = '0'; this.capQ = []; g.sfx.play('pp.fold'); } }
     else if (this.stage === 'canvas') this.updateCanvas(dt);
-    else if (this.stage === 'one' || this.stage === 'seal') { if (this.st > 18) this.outro(); }
+    else if (this.stage === 'one' || this.stage === 'seal') { if (this.st > 6.5) this.startFinale(this.stage === 'one' ? Colonnade : Lanterns); }
     else if (this.stage === 'outro') { const done = !this.vid || this.vidEnd > 2.5 || this.st > 60; if (this.vid?.ended) this.vidEnd = (this.vidEnd || 0) + dt; if ((done || (inp.keys.has('Enter') && this.st > 3)) && !this.over2) { this.over2 = true; const E = this.ch.ENDS[this.k]; g.director.end({ chapter: 18, final: true, title: E.name, text: E.text }); } }
     this.vell.userData.tick(t);
   }
@@ -153,7 +155,11 @@ export class Atelier {
     const down = (m.left && !c.key) || inp.keys.has('Space'), inside = c.x > 512 && c.x < 1408 && c.y > 302 && c.y < 818; if (down && inside) { if (!this.stroke) { this.stroke = []; this.strokes.push(this.stroke); } const L = this.stroke.length; if (!L || Math.hypot(c.x - this.stroke[L - 2], c.y - this.stroke[L - 1]) > 3) { this.stroke.push(c.x, c.y); if (L % 12 === 0) g.sfx.play('ink.squash', { vol: 0.12, pitch: 1.6 }); } } else this.stroke = null;
     if (inp.keys.has('Enter') && this.st > 7) { const pts = this.strokes.reduce((a, s) => a + s.length, 0); this.drew = pts > 6; if (this.drew) { try { const all = this.marks.concat([{ s: this.strokes.filter((s) => s.length > 3).map((s) => s.filter((_, i) => i % 4 < 2).slice(0, 240).map((v, i) => +(i % 2 ? (v - 300) / 520 : (v - 510) / 900).toFixed(3))), t: Date.now() }]).slice(-12); localStorage.setItem(MARKS, JSON.stringify(all)); } catch { /* storage unavailable: the mark still happened */ } } this.fin = 0.001; g.sfx.play('pp.pin'); g.sfx.play('pp.chime', { pitch: 1.2 }); }
   }
+  startFinale(C) { const g = this.game; this.whiteout(this.k === 'seal' ? '#05070f' : '#fffaf0', 2200); g.clear2d(); g.dialogue.clear(); this.capQ = []; this.capT = 0; this.cap.style.opacity = '0'; this.fin2 = new C(this); this.fin2.build(); }
+  finaleDone() { const g = this.game; this.fin2 = null; this.ch.r.toneMappingExposure = 1; this.capQ = []; this.cap.style.opacity = '0'; if (this.k === 'open') { this.whiteout('#efe6cf', 2000); this.stage = 'canvas'; this.st = 0; this.camFrom = this.camPos.clone(); g.sfx.play('pp.fold'); } else this.outro(); }
+  whiteout(col, ms) { const o = document.createElement('div'); o.style.cssText = `position:absolute;inset:0;background:${col};opacity:1;transition:opacity ${ms}ms ease-in;pointer-events:none`; this.ch.hud.ui.appendChild(o); requestAnimationFrame(() => requestAnimationFrame(() => (o.style.opacity = '0'))); setTimeout(() => o.remove(), ms + 100); }
   frame(dt) {
+    if (this.fin2) return this.fin2.frame(dt);
     const g = this.game, r = this.ch.r, p = this.p, t = this.t, S = this.scene, st = this.st, stage = this.stage; r.getDrawingBufferSize(this.res); const rw = Math.max(2, this.res.x >> 1), rh = Math.max(2, this.res.y >> 1); if (this.rt.width !== rw || this.rt.height !== rh) this.rt.setSize(rw, rh);
     for (const f of this.anim) f(t, p.z);
     // hands at work

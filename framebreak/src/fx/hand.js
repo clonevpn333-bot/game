@@ -12,6 +12,6 @@ export function buildHand(mat, { left = false } = {}) {
   g.userData.curl = (c) => fingers.forEach((js, i) => { const k = Array.isArray(c) ? c[i] : c; js.forEach((j, n) => (j.rotation.x = k * [1.1, 1.35, 1.0][n])); });
   g.userData.thumb = (c) => { th[0].rotation.x = c * 0.7; th[1].rotation.x = c * 0.9; th[0].rotation.z = s * (0.95 - c * 0.45); };
   const FX = [-0.33, -0.11, 0.11, 0.32]; g.userData.splay = (a) => fingers.forEach((js, i) => (js[0].rotation.z = -s * FX[i] * 1.3 * a));
-  g.userData.tips = tips;
+  g.userData.tips = tips; g.userData.fingers = fingers;
   return g;
 }
