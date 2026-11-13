@@ -1910,6 +1910,32 @@
     }
   }
 
+  // ---------- vocal clean-up (auto-tune to the key + vocal chain) ----------
+  async function cleanLaneVocals(laneId) {
+    const ids = [...new Set(P.clips.filter((c) => c.lane === laneId && c.kind === 'audio').map((c) => c.audio))];
+    if (!ids.length) { toast('Put a vocal on this track first, then clean it up.'); return; }
+    showLoading('Cleaning up your vocal: tuning to ' + T.keyName(P.key, P.scale) + ', removing noise, polishing…');
+    try {
+      const swap = {};
+      for (const id of ids) {
+        const buf = await MD.ensureAudio(id);
+        if (!buf) continue;
+        const r = await BL.vocal.clean(buf, { key: P.key, scale: P.scale, tune: 0.8 });
+        const bytes = BL.dsp.encodeWAV(r.channels, r.sampleRate);
+        const name = ((P.audio[id] || {}).name || 'Vocal').replace(/ \(clean\)$/, '') + ' (clean)';
+        const meta = await MD.importAudioBytes(bytes.buffer || bytes, name);
+        swap[id] = meta;
+      }
+      edit((p) => {
+        for (const [old, meta] of Object.entries(swap)) {
+          p.audio[meta.id] = meta;
+          p.clips.forEach((c) => { if (c.lane === laneId && c.audio === old) c.audio = meta.id; });
+        }
+      });
+      toast('Vocal cleaned: tuned to the key, de-noised, EQ’d, compressed, a touch of reverb. Undo (⌘Z) brings the original back.');
+    } catch (e) { toast('Could not clean that audio: ' + (e.message || e)); } finally { hideLoading(); }
+  }
+
   // ---------- files ----------
   function pickFile(accept, multiple, cb, folder) {
     const inp = R.filePick;

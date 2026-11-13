@@ -69,6 +69,7 @@
                 <span class="pl-lname" data-act="rename" data-hint="Double-click to rename.">${esc(l.name)}</span>
                 <button class="mini ${l.mute ? 'is-on' : ''}" data-act="mute" data-hint="Mute this Playlist track.">M</button>
                 <button class="mini ${l.solo ? 'is-on' : ''}" data-act="solo" data-hint="Solo this Playlist track.">S</button>
+                ${p.clips.some((c) => c.lane === l.id && c.kind === 'audio') ? '<button class="mini mini-clean" data-act="clean" data-hint="Clean Vocal: tunes it to your key, removes noise, EQ, compression and a touch of reverb. Undo brings the original back.">✨</button>' : ''}
               </div>
               <div class="pl-grid" style="width:${bars * bw}px"></div>
             </div>`).join('')}
@@ -184,6 +185,8 @@
       const lane = () => P().lanes.find((l) => l.id === id);
       $('[data-act="mute"]', row).addEventListener('click', () => A.edit(() => { lane().mute = !lane().mute; }));
       $('[data-act="solo"]', row).addEventListener('click', () => A.edit(() => { lane().solo = !lane().solo; }));
+      const cl = $('[data-act="clean"]', row);
+      if (cl) cl.addEventListener('click', () => A.cleanLaneVocals(id));
       $('[data-act="rename"]', row).addEventListener('dblclick', (e) => A.inlineRename(e.currentTarget, lane().name, (v) => A.edit(() => { lane().name = v; })));
       $('.pl-lhead', row).addEventListener('contextmenu', (e) => { e.preventDefault(); laneMenu(id, e.currentTarget); });
     });
@@ -323,10 +326,11 @@
   }
 
   function laneMenu(id, anchor) {
-    A.openPop(anchor, `<div class="menu"><button data-m="up">Move Up</button><button data-m="down">Move Down</button><button data-m="clear">Clear Track</button><hr><button data-m="del" class="danger">Delete Track</button></div>`, (pop) => {
+    A.openPop(anchor, `<div class="menu"><button data-m="up">Move Up</button><button data-m="down">Move Down</button><button data-m="clean">✨ Clean Up Vocal</button><button data-m="clear">Clear Track</button><hr><button data-m="del" class="danger">Delete Track</button></div>`, (pop) => {
       const on = (k, fn) => $(`[data-m="${k}"]`, pop).addEventListener('click', () => { A.closePop(); fn(); });
       on('up', () => A.edit((p) => { const i = p.lanes.findIndex((l) => l.id === id); if (i > 0) p.lanes.splice(i - 1, 0, p.lanes.splice(i, 1)[0]); }));
       on('down', () => A.edit((p) => { const i = p.lanes.findIndex((l) => l.id === id); if (i < p.lanes.length - 1) p.lanes.splice(i + 1, 0, p.lanes.splice(i, 1)[0]); }));
+      on('clean', () => A.cleanLaneVocals(id));
       on('clear', () => A.edit((p) => { p.clips = p.clips.filter((c) => c.lane !== id); }));
       on('del', () => A.edit((p) => { if (p.lanes.length > 1) { p.lanes = p.lanes.filter((l) => l.id !== id); p.clips = p.clips.filter((c) => c.lane !== id); } }));
     });

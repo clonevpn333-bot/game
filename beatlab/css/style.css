@@ -822,3 +822,7 @@ button.cell:active { transform: scale(0.9); transition-duration: 0.08s; }
   .song-play { width: 52px; height: 52px; }
   .song-actions { grid-column: 1 / -1; flex-direction: row; }
 }
+
+/* ✨ Clean Vocal button on playlist tracks that hold audio */
+.mini-clean { font-size: 11px; }
+.mini-clean:hover { background: linear-gradient(135deg, #8e6bff, #64d2ff); color: #fff; }

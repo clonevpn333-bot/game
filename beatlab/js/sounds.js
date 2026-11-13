@@ -824,6 +824,49 @@
         return { node: amp, end };
       },
     },
+    strobe: {
+      name: 'Strobe Arp', cat: 'Synths', base: 72,
+      play(ctx, out, f, t, dur, v) {
+        // flashing-lights arp: a glassy pluck that jumps left/right every note, with a bright glint on top
+        const step = Math.round(t * 8);
+        const pan = ctx.createStereoPanner ? ctx.createStereoPanner() : gain(ctx, 1);
+        if (pan.pan) pan.pan.value = [-0.75, 0.75, -0.35, 0.35][step % 4];
+        const amp = gain(ctx, 0);
+        decay(amp.gain, t, v * 0.16, Math.min(0.32, dur + 0.12), 0.002);
+        const lp = filter(ctx, 'lowpass', 1200, 4);
+        lp.frequency.setValueAtTime(Math.min(12000, f * 10), t);
+        lp.frequency.exponentialRampToValueAtTime(Math.max(600, f * 1.5), t + 0.18);
+        chain(lp, amp, pan, out);
+        [[-6, 'square', 0.6], [6, 'sawtooth', 0.5]].forEach(([det, type, lvl]) => { const o = osc(ctx, type, f, t, 0.5); o.detune.value = det; chain(o, gain(ctx, lvl), lp); });
+        const gl = gain(ctx, 0); decay(gl.gain, t, v * 0.05, 0.08, 0.001);
+        chain(osc(ctx, 'sine', f * 4, t, 0.2), gl, pan);
+        return { node: amp, end: t + 0.5 };
+      },
+    },
+    velvet: {
+      name: 'Velvet Night Pad', cat: 'Pads', base: 60,
+      play(ctx, out, f, t, dur, v) {
+        // dark, slow-breathing pad: detuned saws through a resonant low-pass that drifts open and shut (purple/blue)
+        const amp = gain(ctx, 0);
+        const end = adsr(amp.gain, t, dur, 0.6, 0.4, 0.85, 1.2, v * 0.11);
+        const lp = filter(ctx, 'lowpass', 900, 5);
+        lp.frequency.setValueAtTime(500, t);
+        lp.frequency.linearRampToValueAtTime(1600, t + Math.min(2, dur));
+        const lfo = osc(ctx, 'sine', 0.18, t, end - t + 0.1), lg = gain(ctx, 450);
+        lfo.connect(lg); lg.connect(lp.frequency);
+        const hp = filter(ctx, 'highpass', 220, 0.7);
+        chain(lp, hp, amp, out);
+        [-14, -5, 5, 14].forEach((det, i) => {
+          const o = osc(ctx, 'sawtooth', f, t, end - t + 0.1);
+          o.detune.value = det;
+          const p = ctx.createStereoPanner ? ctx.createStereoPanner() : gain(ctx, 1);
+          if (p.pan) p.pan.value = [-0.8, -0.3, 0.3, 0.8][i];
+          chain(o, p, lp);
+        });
+        chain(osc(ctx, 'triangle', f / 2, t, end - t + 0.1), gain(ctx, 0.5), lp);
+        return { node: amp, end };
+      },
+    },
     squarelead: {
       name: 'Square Glide Lead', cat: 'Leads', base: 60,
       play(ctx, out, f, t, dur, v) {
