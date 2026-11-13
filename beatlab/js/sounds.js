@@ -772,7 +772,7 @@
         // the Fever "vwow": every note swells in (~110 ms) while its filter and an "ow" vowel open, then the
         // filter sinks back while the note holds. Written on quarter notes it pumps once per beat like the record.
         const amp = gain(ctx, 0);
-        const end = adsr(amp.gain, t, dur, 0.02, 0.3, 0.6, 0.06, v * 0.42);
+        const end = adsr(amp.gain, t, dur, 0.004, 0.15, 0.85, 0.03, v * 0.42);
         const lp = filter(ctx, 'lowpass', 200, 4);
         lp.frequency.setValueAtTime(Math.max(140, f * 1.5), t);
         lp.frequency.exponentialRampToValueAtTime(Math.min(4500, f * 11), t + 0.12);
@@ -785,7 +785,7 @@
         chain(lp, amp, out);
         chain(ow, owg, amp);
         // the swoop: every oscillator starts ~17 semitones up and dives onto the note (Fever: ~125 Hz -> 44 Hz in 0.15 s)
-        const swoop = (o) => { o.frequency.setValueAtTime(f * 2.7, t); o.frequency.exponentialRampToValueAtTime(f * 1.15, t + 0.07); o.frequency.exponentialRampToValueAtTime(f, t + 0.16); return o; };
+        const swoop = (o) => { o.frequency.setValueAtTime(f * 3.3, t); o.frequency.exponentialRampToValueAtTime(f * 1.3, t + 0.035); o.frequency.exponentialRampToValueAtTime(f, t + 0.09); return o; };
         [-9, 9].forEach((det) => {
           const o = swoop(osc(ctx, 'sawtooth', f, t, end - t));
           o.detune.value = det;
@@ -793,11 +793,12 @@
         });
         chain(swoop(osc(ctx, 'square', f, t, end - t)), gain(ctx, 0.3), lp);
         const body = gain(ctx, 0);
-        decay(body.gain, t, 1.3, 0.22, 0.004);
+        decay(body.gain, t, 0.9, 0.12, 0.003);
         body.gain.setValueAtTime(0.0001, end);
         chain(swoop(osc(ctx, 'sine', f, t, end - t)), body, amp);
         chain(swoop(osc(ctx, 'sine', f, t, end - t)), gain(ctx, 0.5), amp);
-        if (f > 70) chain(swoop(osc(ctx, 'sine', f / 2, t, end - t)), gain(ctx, 0.9), amp);
+        if (f > 70) chain(swoop(osc(ctx, 'sine', f / 2, t, end - t)), gain(ctx, 0.5), amp);
+        chain(swoop(osc(ctx, 'sine', f * 2, t, end - t)), gain(ctx, 0.8), amp);
         return { node: amp, end };
       },
     },
@@ -820,6 +821,29 @@
           o.detune.setValueAtTime(det, t);
           o.detune.linearRampToValueAtTime(det - 25, end);
         });
+        return { node: amp, end };
+      },
+    },
+    squarelead: {
+      name: 'Square Glide Lead', cat: 'Leads', base: 60,
+      play(ctx, out, f, t, dur, v) {
+        // hollow square lead (strong odd harmonics, weak even ones, as measured) that slides from the previous note
+        const me = INSTRUMENTS.squarelead;
+        const prev = me._last && t - me._last.end < 0.04 && t >= me._last.t ? me._last.f : 0;
+        const amp = gain(ctx, 0);
+        const end = adsr(amp.gain, t, dur, prev ? 0.002 : 0.01, 0.2, 0.8, 0.05, v * 0.17);
+        const lp = filter(ctx, 'lowpass', Math.min(9000, f * 7), 0.7);
+        chain(lp, amp, out);
+        [[-5, 'square', 1], [5, 'square', 0.8], [0, 'triangle', 0.6]].forEach(([det, type, lvl]) => {
+          const o = osc(ctx, type, f, t, end - t);
+          o.detune.value = det;
+          if (prev) { o.frequency.setValueAtTime(prev, t); o.frequency.exponentialRampToValueAtTime(f, t + 0.06); }
+          const og = gain(ctx, lvl);
+          o.connect(og); og.connect(lp);
+        });
+        // slight late vibrato on held notes
+        if (dur > 0.4) { const l = osc(ctx, 'sine', 5.5, t, end - t); const lg = gain(ctx, 0); lg.gain.setValueAtTime(0, t + 0.25); lg.gain.linearRampToValueAtTime(f * 0.006, t + 0.5); l.connect(lg); }
+        me._last = { f, t, end: t + dur };
         return { node: amp, end };
       },
     },

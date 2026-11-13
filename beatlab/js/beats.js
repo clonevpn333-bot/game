@@ -249,7 +249,7 @@
     { id: 'jbx', name: 'A$AP Rocky Pack', inspired: 'Jukebox Joints · A$AP Rocky & Kanye West', color: '#ffb340', preset: 'kit-jbx',
       blurb: 'A sped-up soul record with horns and an “ooh” vocal, bass guitar instead of 808, dusty swung drums, scratches. 74 BPM.' },
     { id: 'fev', name: 'Fever Pack', inspired: 'Fever · fakemink', color: '#64d2ff', preset: 'kit-fev',
-      blurb: 'The “vwow”: an 808 that swoops down onto every beat, sinking chord stabs and a sliding drop synth over C, F, F–E, Am. 115 BPM.' },
+      blurb: 'The “vwow”: an 808 that dives onto every beat and holds, a hollow sliding square lead, Am–C–Dm/F–E. 120 BPM.' },
   ];
 
   // big bell parts: fewer, heavier hits that ring under the beat
@@ -331,19 +331,19 @@
     {
       id: 'kit-fev', name: 'Fever Mode', color: '#64d2ff', kit: 'fev',
       tags: ['fakemink-type', 'Fever type', 'jerk', 'airy', 'BeatLab Pack'],
-      desc: 'Built from “Fever”: 115 BPM, C | F | F–E | Am (one chord a bar, as measured), an 808 that swoops down ~17 semitones onto every beat (the “vwow”), sinking chord stabs, a sliding 16th-note drop synth.',
-      bpm: 115, key: 0, scale: 'major', swing: 0, bars: 4, song: 'AABBAB',
-      mix: { low: 2, high: 6, width: 2, drive: 0.2, loud: 0.4 },
+      desc: 'Built from the reference beat you sent: 120 BPM, Am | C | Dm–F | F–E, an 808 that dives ~20 semitones onto every beat and holds flat (the “vwow”), a hollow square lead that slides between notes.',
+      bpm: 120, key: 0, scale: 'major', swing: 0, bars: 4, song: 'AABBAB',
+      mix: { low: 2, high: 4, width: 1.8, drive: 0.25, loud: 0.1 },
       tracks: [
-        { type: 'drum', sound: 'fev_kick', name: 'Kick', A: 'X...X...X...X.X.|X...X...X...X...' },
-        { type: 'drum', sound: 'fev_snare', name: 'Snare', A: '....X.......X...|....X.......X..x' },
-        { type: 'drum', sound: 'fev_hat', name: 'Hats', vol: 1.15, A: 'x.xxx.x.x.xxx.x.|x.xxx.x.x.x.3.x.' },
-        { type: 'drum', sound: 'fev_ohat', name: 'Air Hat', vol: 0.4, A: '..............x.|..............x.' },
-        { type: 'drum', sound: 'fev_vox', name: 'Vox Chop', vol: 0.4, A: '................|................', B: '......x.......x.|..x...x.........' },
-        { type: 'synth', inst: 'airpad', name: 'Air Pad', vol: 0.4, rev: 0.6, A: [C(0, 0, 16, 3), C(16, 3, 16, 3), C(32, 3, 8, 3), C(40, 2, 8, 3), C(48, 5, 16, 3)] },
-        { type: 'synth', inst: 'vwowlead', name: 'Vwow Chords', vol: 0.5, rev: 0.3, A: [[0, 0, 3], [0, 4, 3], [0, 9, 3], [0, 11, 3], [4, 0, 3], [4, 4, 3], [4, 9, 3], [4, 11, 3], [8, 0, 3], [8, 4, 3], [8, 9, 3], [8, 11, 3], [12, 0, 3], [12, 4, 3], [12, 9, 3], [12, 11, 3], [16, 3, 3], [16, 7, 3], [16, 12, 3], [20, 3, 3], [20, 7, 3], [20, 12, 3], [24, 3, 3], [24, 7, 3], [24, 12, 3], [28, 3, 3], [28, 7, 3], [28, 12, 3], [32, 3, 3], [32, 7, 3], [32, 12, 3], [36, 3, 3], [36, 7, 3], [36, 12, 3], [40, 2, 3], [40, 6, 3], [40, 9, 3], [44, 2, 3], [44, 6, 3], [44, 9, 3], [48, -2, 3], [48, 2, 3], [48, 9, 3], [52, -2, 3], [52, 2, 3], [52, 9, 3], [56, -2, 3], [56, 2, 3], [56, 9, 3], [60, -2, 3], [60, 2, 3], [60, 9, 3]] },
-        { type: 'synth', inst: 'droplead', name: 'Drop Synth', vol: 0.45, rev: 0.25, A: [], B: [[0, 5, 1], [1, 5, 1], [2, 5, 1], [3, 5, 1], [4, 5, 1], [5, 5, 1], [6, 5, 1], [7, 5, 1], [8, 5, 1], [9, 5, 1], [10, 5, 1], [11, 5, 1], [12, 5, 1], [13, 5, 1], [16, 5, 1], [17, 5, 1], [18, 5, 1], [19, 5, 1], [20, 5, 1], [21, 5, 1], [22, 5, 1], [23, 5, 1], [24, 5, 1], [25, 5, 1], [26, 5, 1], [27, 5, 1], [28, 5, 1], [29, 5, 1], [32, 5, 1], [33, 5, 1], [34, 5, 1], [35, 5, 1], [36, 5, 1], [37, 5, 1], [38, 5, 1], [39, 5, 1], [40, 5, 1], [41, 5, 1], [42, 5, 1], [43, 5, 1], [44, 5, 1], [45, 5, 1], [48, 4, 1], [49, 4, 1], [50, 4, 1], [51, 4, 1], [52, 4, 1], [53, 4, 1], [54, 4, 1], [55, 4, 1], [56, 4, 1], [57, 4, 1], [58, 4, 1], [59, 4, 1], [60, 4, 1], [61, 4, 1]] },
-        { type: 'synth', inst: 'vwow', name: 'Vwow Bass', vol: 0.45, A: [[0, 0, 4], [4, 0, 4], [8, 0, 4], [12, 0, 4], [16, 3, 4], [20, 3, 4], [24, 3, 4], [28, 3, 4], [32, 3, 4], [36, 3, 4], [40, 2, 4], [44, 2, 4], [48, -2, 4], [52, -2, 4], [56, -2, 4], [60, -2, 4]] },
+        { type: 'drum', sound: 'fev_kick', name: 'Kick', vol: 0.45, A: 'X...X...X...X...', B: 'X...X...X...X...' },
+        { type: 'drum', sound: 'fev_snare', name: 'Snare', vol: 0.4, A: '................', B: '....x.......x...' },
+        { type: 'drum', sound: 'fev_hat', name: 'Hats', vol: 1.6, A: '................|................', B: '....x.x.x.xx....|...........xx.xx' },
+        { type: 'drum', sound: 'fev_ohat', name: 'Air Hat', vol: 0.35, A: '................', B: '..............x.|..............x.' },
+        { type: 'synth', inst: 'airpad', name: 'Air Pad', vol: 0.7, octave: -1, rev: 0.6, A: [...C(0, 5, 16, 3), ...C(16, 0, 16, 4), ...C(32, 1, 8, 3), ...C(40, 3, 8, 3), ...C(48, 3, 8, 3), ...C(56, 2, 8, 3)] },
+        { type: 'synth', inst: 'squarelead', name: 'Square Lead', vol: 0.5, rev: 0.4, A: [[0, 12, 9], [10, 9, 2], [12, 7, 1], [13, 9, 3], [16, 7, 1], [17, 9, 1], [18, 7, 1], [19, 9, 2], [21, 11, 1], [22, 7, 1], [23, 9, 1], [24, 11, 8], [32, 12, 9], [42, 9, 2], [44, 7, 1], [45, 9, 3], [48, 9, 4], [52, 11, 4], [56, 9, 8]], B: [[0, 8, 3], [3, 11, 1], [4, 8, 3], [7, 7, 1], [8, 8, 8], [16, 8, 6], [22, 12, 2], [24, 8, 4], [28, 9, 1], [29, 11, 2], [31, 9, 1], [32, 8, 4], [36, 7, 4], [40, 8, 4], [44, 7, 4], [48, 7, 4], [52, 9, 4], [56, 7, 2], [58, 9, 6]] },
+        { type: 'synth', inst: 'vwow', name: 'Vwow 808', vol: 0.5,
+          A: [[0, -2, 4], [8, -2, 4], [16, 0, 4], [20, 0, 4], [24, 0, 4], [28, 0, 3], [33, 1, 3], [36, 1, 4], [40, -4, 4], [44, -4, 4], [48, -4, 4], [52, -4, 4], [56, 2, 4], [60, 2, 4]],
+          B: [[0, -2, 4], [4, -2, 4], [8, -2, 4], [12, -2, 4], [16, 0, 4], [20, 0, 4], [24, 0, 4], [28, 0, 4], [32, 1, 4], [36, 1, 4], [40, -4, 4], [44, -4, 4], [48, -4, 4], [52, -4, 4], [56, 2, 4], [60, 2, 4]] },
       ],
     },
   );
@@ -374,7 +374,7 @@
     songFrom('kit-drake', 'song-sixside', 'Six Side', 'Drake Pack (Plan Mode): muted keys and pad intro, snaps and a dirty 808 on the hook, vox pad on top.'),
     songFrom('kit-drake2', 'song-nightrun', 'Night Run', 'Drake Pack (Nonstop Mode): dark bell over off-beat hats and a long, loud 808.'),
     songFrom('kit-jbx', 'song-coinslot', 'Coin Slot Soul', 'A$AP Rocky Pack: the soul record alone, then swung drums, horns and scratches on the hook.'),
-    songFrom('kit-fev', 'song-staticheat', 'Static Heat', 'Fever Pack: air pad intro, bouncing hook with vox chops and glass bells, sliding bass.'),
+    songFrom('kit-fev', 'song-staticheat', 'Static Heat', 'Fever Pack: stuttering intro, then the diving 808 on every beat under the sliding square lead.'),
   ];
 
   BL.beats = { PRESETS, KITS, SONGS, drumRow, chopRow, notes, rep, clean };
