@@ -772,7 +772,7 @@
         // the Fever "vwow": every note swells in (~110 ms) while its filter and an "ow" vowel open, then the
         // filter sinks back while the note holds. Written on quarter notes it pumps once per beat like the record.
         const amp = gain(ctx, 0);
-        const end = adsr(amp.gain, t, dur, 0.11, 0.25, 0.7, 0.06, v * 0.42);
+        const end = adsr(amp.gain, t, dur, 0.02, 0.3, 0.6, 0.06, v * 0.42);
         const lp = filter(ctx, 'lowpass', 200, 4);
         lp.frequency.setValueAtTime(Math.max(140, f * 1.5), t);
         lp.frequency.exponentialRampToValueAtTime(Math.min(4500, f * 11), t + 0.12);
@@ -784,24 +784,62 @@
         const owg = gain(ctx, 1.4);
         chain(lp, amp, out);
         chain(ow, owg, amp);
+        // the swoop: every oscillator starts ~17 semitones up and dives onto the note (Fever: ~125 Hz -> 44 Hz in 0.15 s)
+        const swoop = (o) => { o.frequency.setValueAtTime(f * 2.7, t); o.frequency.exponentialRampToValueAtTime(f * 1.15, t + 0.07); o.frequency.exponentialRampToValueAtTime(f, t + 0.16); return o; };
         [-9, 9].forEach((det) => {
-          const o = osc(ctx, 'sawtooth', f, t, end - t);
+          const o = swoop(osc(ctx, 'sawtooth', f, t, end - t));
           o.detune.value = det;
-          o.frequency.setValueAtTime(f * 0.985, t);
-          o.frequency.exponentialRampToValueAtTime(f, t + 0.1);
           o.connect(lp); o.connect(ow);
         });
-        chain(osc(ctx, 'square', f, t, end - t), gain(ctx, 0.3), lp);
-        chain(osc(ctx, 'sine', f, t, end - t), gain(ctx, 0.5), amp);
+        chain(swoop(osc(ctx, 'square', f, t, end - t)), gain(ctx, 0.3), lp);
+        const body = gain(ctx, 0);
+        decay(body.gain, t, 1.3, 0.22, 0.004);
+        body.gain.setValueAtTime(0.0001, end);
+        chain(swoop(osc(ctx, 'sine', f, t, end - t)), body, amp);
+        chain(swoop(osc(ctx, 'sine', f, t, end - t)), gain(ctx, 0.5), amp);
+        if (f > 70) chain(swoop(osc(ctx, 'sine', f / 2, t, end - t)), gain(ctx, 0.9), amp);
         return { node: amp, end };
       },
     },
     vwowlead: {
       name: 'Vwow Chords', cat: 'Synths', base: 60,
       play(ctx, out, f, t, dur, v) {
-        const g2 = gain(ctx, 0.55);
-        g2.connect(out);
-        return INSTRUMENTS.vwow.play(ctx, g2, f, t, dur, v);
+        // bright detuned stab that swells in and sinks a little in pitch while it holds
+        const amp = gain(ctx, 0);
+        const end = adsr(amp.gain, t, dur, 0.04, 0.2, 0.55, 0.08, v * 0.3);
+        const lp = filter(ctx, 'lowpass', 900, 3);
+        lp.frequency.setValueAtTime(700, t);
+        lp.frequency.exponentialRampToValueAtTime(Math.min(5000, f * 5), t + 0.08);
+        lp.frequency.exponentialRampToValueAtTime(Math.max(450, f * 2), t + 0.4);
+        chain(lp, amp, out);
+        // mostly clean triangle tone (the record's stabs are thin, not buzzy), a little saw for edge
+        [[-6, 'triangle', 1], [6, 'triangle', 1], [0, 'sawtooth', 0.25]].forEach(([det, type, lvl]) => {
+          const o = osc(ctx, type, f, t, end - t);
+          const og = gain(ctx, lvl);
+          o.connect(og); og.connect(lp);
+          o.detune.setValueAtTime(det, t);
+          o.detune.linearRampToValueAtTime(det - 25, end);
+        });
+        return { node: amp, end };
+      },
+    },
+    droplead: {
+      name: 'Drop Synth', cat: 'Synths', base: 60,
+      play(ctx, out, f, t, dur, v) {
+        // the breakdown synth in Fever: every note slides straight down ~19 semitones a second
+        const amp = gain(ctx, 0);
+        const end = adsr(amp.gain, t, dur, 0.005, 0.1, 0.75, 0.04, v * 0.22);
+        const lp = filter(ctx, 'lowpass', Math.min(6000, f * 8), 1.5);
+        chain(lp, amp, out);
+        const len = end - t;
+        [-8, 8].forEach((det) => {
+          const o = osc(ctx, det < 0 ? 'sawtooth' : 'square', f, t, len);
+          o.detune.value = det;
+          o.frequency.setValueAtTime(f, t);
+          o.frequency.exponentialRampToValueAtTime(f * Math.pow(2, (-19 * len) / 12), end);
+          o.connect(lp);
+        });
+        return { node: amp, end };
       },
     },
     yeatbell: {
