@@ -183,9 +183,8 @@ export class Bleed {
   startRun() {
     const g = this.game, C = this.cine, p = this.p; C.impact = true; this.cine = null; this.ch.noPause = false; g.sfx.play('fx.boom'); g.sfx.play('px.explode'); g.sfx.play('px.crumble', { vol: 0.8 }); this.shake = 1.4; this.flash = 1.5; g.dialogue.clear();
     const o = document.createElement('div'); o.style.cssText = 'position:absolute;inset:0;background:#fff;opacity:1;transition:opacity 1.4s ease-in;pointer-events:none'; this.ch.hud.ui.appendChild(o); requestAnimationFrame(() => requestAnimationFrame(() => (o.style.opacity = '0'))); setTimeout(() => o.remove(), 1600);
-    for (let j = 0; j < Math.min(L, 60); j++) for (let i = 0; i < W; i++) { const k = this.key(i, j), d = Math.hypot((i - 4) * TS - p.x, j * TS + 2 - p.z); this.DROP[k] = d < 3 ? 0 : 14 + d * 0.45 + Math.random() * 6; }
-    this.debris = [GLASS, PAPER, PIXEL, WOOL].map((f) => { const im = new THREE.InstancedMesh(new THREE.BoxGeometry(1.2, 1.2, 1.2), this.MAT[f], 60); im.frustumCulled = false; this.scene.add(im); return { im, b: Array.from({ length: 60 }, () => ({ x: (Math.random() - 0.5) * 50, y: 20 + Math.random() * 70, z: p.z + Math.random() * 90 - 10, vy: -10 - Math.random() * 25, r: Math.random() * 6 })) }; });
-    this.ch.hud.title('FINALE', 'THE BLEED'); g.dialogue.say([{ who: 'vell', text: "Everything's leaking into everything — glass, wool, pixels, INK. Rin, run!" }, { who: 'vell', text: 'Glass cracks, wool comes undone, pixels blink out, wireframe is not there at all. And stay OUT of the ink!' }]);
+    // no run across the floor any more: the grip lands and Rin is straight in front of the hand
+    this.last = new LastFrame(this); this.last.build(); this.ch.hud.title('FINALE', 'THE LAST FRAME');
   }
   buildComposite() {
     const G = new THREE.Group(), M = this.MAT, parts = [];
