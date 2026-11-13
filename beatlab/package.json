@@ -51,12 +51,25 @@
     "dmg": {
       "title": "BeatLab",
       "contents": [
-        { "x": 140, "y": 190 },
-        { "x": 400, "y": 190, "type": "link", "path": "/Applications" }
+        {
+          "x": 140,
+          "y": 190
+        },
+        {
+          "x": 400,
+          "y": 190,
+          "type": "link",
+          "path": "/Applications"
+        }
       ]
     },
     "fileAssociations": [
-      { "ext": "beatlab", "name": "BeatLab Project", "role": "Editor" }
-    ]
+      {
+        "ext": "beatlab",
+        "name": "BeatLab Project",
+        "role": "Editor"
+      }
+    ],
+    "publish": null
   }
 }
