@@ -175,6 +175,7 @@
   function projectFromPreset(pr) {
     const p = newProject({ name: pr.name, bpm: pr.bpm, key: pr.key, scale: pr.scale, swing: pr.swing || 0, bars: pr.bars || 2 });
     p.master.lofi = !!pr.lofi;
+    if (pr.mix) { p.master.color = Object.assign({}, pr.mix); if (pr.mix.vol) p.master.vol = pr.mix.vol; }
     const LETTERS = ['A', 'B', 'C', 'D'].filter((L, i) => i < 2 || (pr.song || '').includes(L));
     p.patterns = LETTERS.map((L, i) => { const pt = newPattern(i); if (pr.patternNames && pr.patternNames[L]) pt.name = pr.patternNames[L]; return pt; });
     if (pr.patternNames) p.songOf = pr.id;
@@ -196,7 +197,7 @@
     const n = p.bars * 16;
     const fit = (arr, fill) => Array.from({ length: n }, (_, i) => (i < arr.length ? arr[i] : arr.length ? arr[i % arr.length] : fill));
     for (const t0 of pr.tracks) {
-      const t = makeTrack(t0.type, { sound: t0.sound, inst: t0.inst, name: t0.name, vol: t0.vol || 0.8, rev: t0.rev || 0, octave: t0.octave || 0, mode: t0.mode });
+      const t = makeTrack(t0.type, { sound: t0.sound, inst: t0.inst, name: t0.name, vol: t0.vol || 0.8, rev: t0.rev || 0, octave: t0.octave || 0, mode: t0.mode, tone: t0.tone, drive: t0.drive, lowcut: t0.lowcut, pan: t0.pan || 0 });
       if (t0.type === 'sample') t.sampleId = smap[t0.sample];
       p.tracks.push(t);
       LETTERS.forEach((L, pi) => {
@@ -630,7 +631,7 @@
           <span class="dz-ico">${icon('import')}</span>
           <b>Drop a beat pack here</b>
           <small>A .zip, a folder, or a handful of WAV / MP3 files. BeatLab sorts them into kicks, snares, hats, 808s, percs, FX and loops.</small>
-          <span class="dz-buttons"><button class="tbtn tbtn-primary" data-pick="files">Choose Files…</button><button class="tbtn" data-pick="folder">Choose Folder…</button></span>
+          <span class="dz-buttons"><button class="tbtn tbtn-primary" data-pick="files">Choose Files…</button><button class="tbtn" data-pick="folder">Choose Folder…</button>${canLinkFolders() ? '<button class="tbtn" data-pick="link">Add Folder to Browser…</button>' : ''}</span>
         </label>
         <h2 class="snd-h">BeatLab Packs <small>Made for the sound of specific songs</small></h2>
         <div class="kit-grid">${kits.map((k) => `<div class="kit" style="--c:${k.color}">
@@ -652,7 +653,8 @@
     dz.addEventListener('drop', () => dz.classList.remove('is-over'));
     $$('[data-pick]', dz).forEach((b) => b.addEventListener('click', (e) => {
       e.preventDefault();
-      if (b.dataset.pick === 'folder') pickFile('', true, importPack, true);
+      if (b.dataset.pick === 'link') linkFolder();
+      else if (b.dataset.pick === 'folder') pickFile('', true, importPack, true);
       else pickFile('.zip,audio/*,.wav,.mp3,.aif,.aiff,.flac,.ogg,.m4a', true, importPack);
     }));
     $$('[data-kitbeat]', body).forEach((b) => b.addEventListener('click', () => loadPreset(b.dataset.kitbeat)));
@@ -987,18 +989,22 @@
         cn.addEventListener('click', () => { ui.chopBrush[t.id] = ((ui.chopBrush[t.id] || 0) + 1) % n(); renderRack(); previewChop(t, ui.chopBrush[t.id]); });
       }
       // drop a Browser sound on a channel to swap it
-      row.addEventListener('dragover', (e) => { if (t.type === 'drum' && e.dataTransfer.types.includes('text/beatlab')) { e.preventDefault(); row.classList.add('is-drop'); } });
+      row.addEventListener('dragover', (e) => { if (t.type === 'drum' && (e.dataTransfer.types.includes('text/beatlab') || e.dataTransfer.types.includes('Files'))) { e.preventDefault(); row.classList.add('is-drop'); } });
       row.addEventListener('dragleave', () => row.classList.remove('is-drop'));
       row.addEventListener('drop', async (e) => {
         row.classList.remove('is-drop');
+        if (t.type !== 'drum') return;
+        const files = [...(e.dataTransfer.files || [])];
+        if (files.length) { e.preventDefault(); e.stopPropagation(); document.body.classList.remove('dropping'); await dropFilesOnRack(files, t); return; }
         const raw = e.dataTransfer.getData('text/beatlab');
-        if (!raw || t.type !== 'drum') return;
+        if (!raw) return;
         const item = JSON.parse(raw);
-        if (item.kind !== 'drum' && item.kind !== 'pack') return;
+        if (!['drum', 'pack', 'disk'].includes(item.kind)) return;
         e.preventDefault();
         e.stopPropagation();
-        await MD.ensureSound(item.id);
-        setChannelSound(t, item.id);
+        const sid = item.kind === 'disk' ? await diskSound(item.id) : item.id;
+        await MD.ensureSound(sid);
+        setChannelSound(t, sid);
       });
       const lane = $('.lane', row);
       if (t.type === 'drum') bindDrumLane(lane, t);
@@ -1009,14 +1015,17 @@
         lane.addEventListener('dblclick', () => { ui.labSample = t.sampleId; setTab('lab'); });
       }
     });
-    rk.addEventListener('dragover', (e) => { if (e.dataTransfer.types.includes('text/beatlab')) e.preventDefault(); });
+    rk.addEventListener('dragover', (e) => { if (e.dataTransfer.types.includes('text/beatlab') || e.dataTransfer.types.includes('Files')) e.preventDefault(); });
     rk.addEventListener('drop', async (e) => {
+      const files = [...(e.dataTransfer.files || [])];
+      if (files.length) { e.preventDefault(); e.stopPropagation(); document.body.classList.remove('dropping'); await dropFilesOnRack(files, null); return; }
       const raw = e.dataTransfer.getData('text/beatlab');
       if (!raw) return;
       e.preventDefault();
       e.stopPropagation();
       const item = JSON.parse(raw);
-      if (item.kind === 'drum' || item.kind === 'pack') { await MD.ensureSound(item.id); addChannel('drum', item.id); }
+      if (item.kind === 'disk') addChannel('drum', await diskSound(item.id));
+      else if (item.kind === 'drum' || item.kind === 'pack') { await MD.ensureSound(item.id); addChannel('drum', item.id); }
       else if (item.kind === 'inst') addChannel('synth', item.id);
     });
     $$('[data-add]', rk).forEach((b) => b.addEventListener('click', (e) => addTrackMenu(b.dataset.add, e.currentTarget)));
@@ -1669,6 +1678,7 @@
       case 'importProject': return pickFile('.beatlab,.json,application/json', false, (f) => openProjectFile(f[0]));
       case 'importAudio': return pickAudioFiles();
       case 'importPack': return pickPack();
+      case 'linkFolder': return linkFolder();
       case 'undo': return undo();
       case 'redo': return redo();
       case 'play': return togglePlay();
@@ -1821,6 +1831,82 @@
     renderStatus();
     BL.browser.refreshProjects();
     toast(`Saved “${P.name}”.`);
+  }
+
+  // ---------- FL-style sample folders (Mac app) + dropping files on channels ----------
+  const linked = []; // [{path, name, files:[{rel,size}]}]
+  const canLinkFolders = () => !!(NATIVE && NATIVE.pickFolder);
+  function saveLinked() { try { localStorage.setItem('beatlab.linked.v1', JSON.stringify(linked.map((l) => ({ path: l.path, name: l.name })))); } catch (e) { /* ignore */ } }
+  async function loadLinked() {
+    if (!canLinkFolders()) return;
+    let list = [];
+    try { list = JSON.parse(localStorage.getItem('beatlab.linked.v1') || '[]'); } catch (e) { list = []; }
+    for (const l of list) {
+      try { linked.push({ path: l.path, name: l.name, files: await NATIVE.listFolder(l.path) }); } catch (e) { linked.push({ path: l.path, name: l.name, files: [] }); }
+    }
+  }
+  async function linkFolder() {
+    if (!canLinkFolders()) { pickPack(); return; }
+    const path = await NATIVE.pickFolder();
+    if (!path || linked.some((l) => l.path === path)) return;
+    showLoading('Reading your folder…');
+    try {
+      const files = await NATIVE.listFolder(path);
+      linked.push({ path, name: path.split(/[\\/]/).filter(Boolean).pop(), files });
+      saveLinked();
+      ui.open.linked = true;
+      ui.open['lf-' + path] = true;
+      savePrefs();
+      toast(`Added “${linked[linked.length - 1].name}” to the Browser: ${files.length} sounds.`);
+      if (ui.tab === 'sounds') renderEditor(); else setTab('sounds');
+    } finally { hideLoading(); }
+  }
+  async function refreshLinked(path) {
+    const l = linked.find((x) => x.path === path);
+    if (!l) return;
+    l.files = await NATIVE.listFolder(path);
+    if (ui.tab === 'sounds') renderEditor();
+  }
+  function unlinkFolder(path) {
+    const i = linked.findIndex((x) => x.path === path);
+    if (i >= 0) linked.splice(i, 1);
+    saveLinked();
+    if (ui.tab === 'sounds') renderEditor();
+  }
+  const diskCache = {};
+  async function diskBytes(path) { return NATIVE.readFile(path).then((u8) => u8.buffer.slice(u8.byteOffset, u8.byteOffset + u8.byteLength)); }
+  async function diskBuffer(path) {
+    if (!diskCache[path]) diskCache[path] = MD.decode(await diskBytes(path)).catch(() => null);
+    return diskCache[path];
+  }
+  /** a file from a linked folder becomes a sound BeatLab keeps (so projects still open if the folder moves) */
+  async function diskSound(path) {
+    const name = path.split(/[\\/]/).pop();
+    const folderName = (linked.find((l) => path.startsWith(l.path)) || {}).name || 'My Folders';
+    return MD.importSingleSound(await diskBytes(path), name, folderName);
+  }
+  async function useDiskFile(path) {
+    const buf = await diskBuffer(path);
+    if (buf && buf.duration > 2.5) { const meta = await importAudioFile(new File([await diskBytes(path)], path.split(/[\\/]/).pop())); if (meta) BL.playlist.placeAudio(meta.id, firstFreeLane(), P.pos || 0); return; }
+    addChannel('drum', await diskSound(path));
+  }
+  async function audioFromDisk(path) {
+    const meta = await importAudioFile(new File([await diskBytes(path)], path.split(/[\\/]/).pop()));
+    return meta && meta.id;
+  }
+  /** one-shots dropped from Finder onto Beat: on a row it replaces that sound, elsewhere each becomes a channel */
+  async function dropFilesOnRack(files, track) {
+    const audio = files.filter((f) => MD.AUDIO_EXT.test(f.name));
+    if (!audio.length) return;
+    if (track) {
+      const sid = await MD.importSingleSound(await audio[0].arrayBuffer(), audio[0].name);
+      setChannelSound(track, sid);
+      toast(`${track.name} now plays “${MD.soundName(sid)}”.`);
+      return;
+    }
+    for (const f of audio) {
+      try { addChannel('drum', await MD.importSingleSound(await f.arrayBuffer(), f.name)); } catch (e) { toast(`“${f.name}” isn't audio this computer can read.`); }
+    }
   }
 
   // ---------- files ----------
@@ -2185,6 +2271,7 @@
     labHost: () => (ui.tab === 'lab' ? R.edBody : null),
     rackChanged: () => { if (ui.tab === 'rack') renderRack(); else drawLanes(); BL.playlist.drawClips(); },
     addSampleTrack,
+    canLinkFolders, linkedFolders: () => linked, linkFolder, refreshLinked, unlinkFolder, diskBuffer, useDiskFile, audioFromDisk,
   };
 
   // ---------- boot ----------
@@ -2210,7 +2297,7 @@
     window.addEventListener('resize', () => { clearTimeout(rsz); rsz = setTimeout(() => { sizeSteps(); drawLanes(); BL.lab.drawWave(); BL.playlist.drawClips(); }, 120); });
     window.addEventListener('beforeunload', () => { try { localStorage.setItem(STORE_KEY, JSON.stringify(P)); } catch (e) { /* ignore */ } });
     showLoading('Building the drum kits…');
-    await Promise.all([S.renderDrums(), MD.loadPacks()]);
+    await Promise.all([S.renderDrums(), MD.loadPacks(), loadLinked()]);
     let saved = null;
     try { saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null'); } catch (e) { saved = null; }
     hideLoading();

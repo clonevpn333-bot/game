@@ -45,14 +45,17 @@
     return f;
   }
   const curveCache = {};
-  function shaper(ctx, amount) {
-    const k = Math.round(amount * 100);
+  function shaper(ctx, amount, asym) {
+    asym = asym || 0;
+    const k = Math.round(amount * 100) + ':' + Math.round(asym * 100);
     if (!curveCache[k]) {
       const n = 2048, c = new Float32Array(n);
       const a = amount * 50 + 1;
       for (let i = 0; i < n; i++) {
         const x = (i / (n - 1)) * 2 - 1;
-        c[i] = Math.tanh(a * x) / Math.tanh(a);
+        // asym > 0 bends the positive half harder: adds 2nd/4th harmonics (warm), on top of tanh's 3rd/5th (gritty)
+        const y = Math.tanh(a * x) / Math.tanh(a);
+        c[i] = x >= 0 ? y : y * (1 - asym * 0.75);
       }
       curveCache[k] = c;
     }
@@ -365,8 +368,52 @@
     ['jbx_hat', 'Jukebox Hat', 'Hi-Hat', hat({ decay: 0.07, hp: 4500, metal: 0.35, lp: 8000, level: 0.5 }), 0.15, false, 'jbx'],
     ['jbx_rim', 'Jukebox Rim', 'Perc', tom({ f0: 1500, f1: 1400, decay: 0.04, level: 0.55, type: 'triangle', click: 0.4 }), 0.1, false, 'jbx'],
     ['jbx_tamb', 'Jukebox Tambourine', 'Perc', shaker({ decay: 0.14, bp: 8000, jingle: true, attack: 0.004 }), 0.25, false, 'jbx'],
+    // Yeat pack extras
+    ['yeat_kick', 'Rage Kick (Yeat)', 'Kick', kick({ f0: 230, f1: 50, decay: 0.32, pitchDecay: 0.03, click: 1, drive: 0.9 }), 0.45, false, 'msb'],
+    ['yeat_zap', 'Laser Zap', 'FX', (ctx, out, t) => { const o = osc(ctx, 'square', 3200, t, 0.2); o.frequency.exponentialRampToValueAtTime(140, t + 0.14); const g = gain(ctx, 0); decay(g.gain, t, 0.5, 0.15, 0.001); chain(o, filter(ctx, 'lowpass', 6000), g, out); }, 0.25, false, 'msb'],
+    ['yeat_ad', 'Ad-lib "Yeah"', 'FX', (ctx, out, t) => { const g = gain(ctx, 0); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(1, t + 0.02); g.gain.setValueAtTime(1, t + 0.18); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.4); chain(g, filter(ctx, 'highpass', 250), out); const s = osc(ctx, 'sawtooth', 210, t, 0.45); s.frequency.linearRampToValueAtTime(260, t + 0.12); s.frequency.linearRampToValueAtTime(180, t + 0.4); [[400, 1600, 1], [780, 1150, 0.6], [2500, 2800, 0.3]].forEach(([f0, f1, a]) => { const bp = filter(ctx, 'bandpass', f0, 7); bp.frequency.linearRampToValueAtTime(f1, t + 0.15); chain(s, bp, gain(ctx, a * 4), g); }); }, 0.45, false, 'msb'],
+    // Drake pack: soft, dark, roomy drums
+    ['dk_kick', 'OVO Kick', 'Kick', kick({ f0: 120, f1: 44, decay: 0.42, pitchDecay: 0.06, click: 0.15, lp: 1200, body: 0.2 }), 0.55, false, 'drake'],
+    ['dk_snap', 'OVO Snap', 'Snare', layer(snap, tom({ f0: 1650, f1: 1550, decay: 0.03, level: 0.35, type: 'triangle' })), 0.15, false, 'drake'],
+    ['dk_clap', 'OVO Clap', 'Clap', clap({ decay: 0.3, bp: 1150, spread: 0.013, lp: 6000 }), 0.45, false, 'drake'],
+    ['dk_hat', 'OVO Hat', 'Hi-Hat', hat({ decay: 0.04, hp: 7000, metal: 0.3, lp: 11000, level: 0.45 }), 0.1, false, 'drake'],
+    ['dk_shaker', 'OVO Shaker', 'Hi-Hat', shaker({ decay: 0.09, bp: 6500, attack: 0.02, level: 0.45 }), 0.15, false, 'drake'],
+    ['dk_perc', 'Wood Tick', 'Perc', tom({ f0: 780, f1: 740, decay: 0.06, level: 0.5, type: 'triangle', click: 0.2 }), 0.12, false, 'drake'],
+    ['dk_rev', 'Reverse Swell', 'FX', crash({ decay: 1.1, hp: 2500, tune: 0.9 }), 1.2, true, 'drake'],
+    // A$AP pack extra
+    ['jbx_scratch', 'Vinyl Scratch', 'FX', (ctx, out, t) => { const n = noiseSrc(ctx, t, 0.4); const bp = filter(ctx, 'bandpass', 900, 3); [0, 0.07, 0.14, 0.21].forEach((d, i) => bp.frequency.setValueAtTime(i % 2 ? 2600 : 700, t + d)); [0.07, 0.14, 0.21, 0.28].forEach((d, i) => bp.frequency.linearRampToValueAtTime(i % 2 ? 700 : 2600, t + d)); const g = gain(ctx, 0); decay(g.gain, t, 0.9, 0.3, 0.01); chain(n, bp, gain(ctx, 3), g, out); }, 0.4, false, 'jbx'],
     ['jbx_crash', 'Jukebox Dusty Crash', 'FX', crash({ decay: 1.3, hp: 3000, tune: 1.1 }), 1.5, false, 'jbx'],
   ].map(([id, name, cat, fn, len, rev, kit]) => ({ id, name, cat, fn, len, rev: !!rev, kit: kit || null }));
+
+  // Pack variations: every BeatLab Pack gets a full kit of alternates (punchier, longer, darker, brighter...)
+  const KIT_FAMILIES = {
+    msb: { label: 'Yeat', kick: { f0: 230, f1: 50, decay: 0.32, pitchDecay: 0.03, click: 1, drive: 0.9 }, snare: { tone: 220, toneGain: 0.6, toneDecay: 0.08, noiseGain: 0.9, noiseDecay: 0.15, hp: 1800, peak: 5500, drive: 0.7 },
+      clap: { decay: 0.17, bp: 1600, spread: 0.009 }, hat: { decay: 0.03, hp: 9000, metal: 0.9, tune: 1.4, level: 0.65 }, perc: { f0: 1320, f1: 1300, decay: 0.2, type: 'square' } },
+    drake: { label: 'OVO', kick: { f0: 120, f1: 44, decay: 0.42, pitchDecay: 0.06, click: 0.15, lp: 1200, body: 0.2 }, snare: { tone: 260, toneGain: 0.3, toneDecay: 0.05, noiseGain: 0.5, noiseDecay: 0.09, hp: 2500, peak: 6000, lp: 9000 },
+      clap: { decay: 0.3, bp: 1150, spread: 0.013, lp: 6000 }, hat: { decay: 0.04, hp: 7000, metal: 0.3, lp: 11000, level: 0.45 }, perc: { f0: 780, f1: 740, decay: 0.06, type: 'triangle' } },
+    jbx: { label: 'Dusty', kick: { f0: 135, f1: 50, decay: 0.34, pitchDecay: 0.05, click: 0.3, drive: 0.4, lp: 2200, body: 0.45 }, snare: { tone: 175, toneGain: 0.75, toneDecay: 0.14, noiseGain: 0.75, noiseDecay: 0.26, hp: 800, peak: 2800, drive: 0.45, lp: 5500 },
+      clap: { decay: 0.22, bp: 1000, lp: 3000 }, hat: { decay: 0.07, hp: 4500, metal: 0.35, lp: 8000, level: 0.5 }, perc: { f0: 420, f1: 330, decay: 0.18, type: 'sine' } },
+    fev: { label: 'Fever', kick: { f0: 140, f1: 46, decay: 0.5, pitchDecay: 0.07, click: 0.35 }, snare: { tone: 280, toneGain: 0.35, toneDecay: 0.05, noiseGain: 0.7, noiseDecay: 0.1, hp: 3000, peak: 8000 },
+      clap: { decay: 0.2, bp: 1500, spread: 0.01 }, hat: { decay: 0.022, hp: 10000, metal: 0.25, noise: 0.9, level: 0.6 }, perc: { f0: 1100, f1: 1050, decay: 0.08, type: 'sine' } },
+  };
+  const clamp01 = (v) => Math.max(0, Math.min(1, v));
+  Object.entries(KIT_FAMILIES).forEach(([kit, f]) => {
+    const add = (id, name, cat, fn, len, rev) => DRUMS.push({ id: `${kit}_${id}`, name: `${f.label} ${name}`, cat, fn, len, rev: !!rev, kit });
+    [['Kick Punch', 1.15, 0.8, 0.15], ['Kick Long', 0.95, 1.5, 0], ['Kick Dirty', 1.05, 1, 0.35], ['Kick Soft', 0.85, 1.1, -0.3]].forEach(([n, fm, dm, drv], i) =>
+      add('kv' + i, n, 'Kick', kick(Object.assign({}, f.kick, { f0: f.kick.f0 * fm, decay: f.kick.decay * dm, drive: clamp01((f.kick.drive || 0) + drv) })), f.kick.decay * dm + 0.25));
+    [['Snare Tight', 1.15, 0.7], ['Snare Fat', 0.85, 1.4], ['Snare Crack', 1.3, 0.9]].forEach(([n, tm, dm], i) =>
+      add('sv' + i, n, 'Snare', snare(Object.assign({}, f.snare, { tone: f.snare.tone * tm, noiseDecay: f.snare.noiseDecay * dm, toneDecay: f.snare.toneDecay * dm })), f.snare.noiseDecay * dm + 0.2));
+    [['Clap Short', 0.7], ['Clap Big', 1.6]].forEach(([n, dm], i) => add('cv' + i, n, 'Clap', clap(Object.assign({}, f.clap, { decay: f.clap.decay * dm })), f.clap.decay * dm + 0.2));
+    add('cv2', 'Clap + Snare', 'Clap', layer(clap(f.clap), snare(f.snare)), 0.4);
+    [['Hat Tick', 0.6, 1.1], ['Hat Bright', 1, 1.25], ['Hat Dark', 1.3, 0.8]].forEach(([n, dm, tm], i) =>
+      add('hv' + i, n, 'Hi-Hat', hat(Object.assign({}, f.hat, { decay: f.hat.decay * dm, tune: (f.hat.tune || 1) * tm })), 0.12));
+    [['Open Hat', 8], ['Open Hat Long', 16]].forEach(([n, dm], i) => add('ov' + i, n, 'Open Hat', hat(Object.assign({}, f.hat, { decay: f.hat.decay * dm, level: 0.45 })), f.hat.decay * dm + 0.1));
+    [['Perc High', 1.5], ['Perc', 1], ['Perc Low', 0.6]].forEach(([n, pm], i) =>
+      add('pv' + i, n, 'Perc', tom({ f0: f.perc.f0 * pm, f1: f.perc.f1 * pm, decay: f.perc.decay, level: 0.6, type: f.perc.type, click: 0.25 }), f.perc.decay + 0.1));
+    add('fx0', 'Riser', 'FX', riser({ from: 400, to: 10000, dur: 1.6 }), 1.7);
+    add('fx1', 'Down Sweep', 'FX', riser({ from: 9000, to: 200, dur: 1 }), 1.1);
+    add('fx2', 'Reverse Crash', 'FX', crash({ decay: 1.2, hp: 3500 }), 1.3, true);
+  });
 
   const DRUM_BY_ID = Object.fromEntries(DRUMS.map((d) => [d.id, d]));
   const DRUM_CATS = ['Kick', 'Snare', 'Clap', 'Hi-Hat', 'Open Hat', 'Perc', 'FX'];
@@ -688,11 +735,154 @@
         return { node: amp, end };
       },
     },
+    yeatbell: {
+      name: 'Tonka Bell', cat: 'Bells', base: 72,
+      play(ctx, out, f, t, dur, v) {
+        // struck bell: harmonic FM body + tubular-bell partials (2.76x, 5.4x, 8.93x) that die faster,
+        // a metal strike, two voices detuned +-7 cents and spread L/R, tone rolled off at ~4.5 kHz like the record
+        const len = Math.max(dur, 0.5);
+        const amp = gain(ctx, 0);
+        const end = decayingAdsr(amp.gain, t, len, 0.0015, 2.8, 1.1, v * 0.42);
+        const tone = filter(ctx, 'lowpass', 4600, 0.5);
+        chain(amp, tone, out);
+        [[-7, -0.55], [7, 0.55]].forEach(([det, pan]) => {
+          const p = ctx.createStereoPanner ? ctx.createStereoPanner() : gain(ctx, 1);
+          if (p.pan) p.pan.value = pan;
+          const bus = gain(ctx, 0.5);
+          chain(bus, p, amp);
+          const car = osc(ctx, 'sine', f, t, end - t);
+          car.detune.value = det;
+          const mod = osc(ctx, 'sine', f, t, end - t);
+          mod.detune.value = det;
+          const idx = gain(ctx, f * 1.6);
+          idx.gain.setValueAtTime(f * 1.6, t);
+          idx.gain.setTargetAtTime(f * 0.35, t, 0.25);
+          chain(mod, idx, car.frequency);
+          chain(car, bus);
+        });
+        [[2.76, 0.42, 0.7], [5.4, 0.22, 0.32], [8.93, 0.1, 0.16], [2, 0.18, 1.6]].forEach(([r, a, d]) => {
+          const o = osc(ctx, 'sine', f * r, t, d * 3 + 0.1);
+          const og = gain(ctx, 0);
+          decay(og.gain, t, a, d, 0.001);
+          chain(o, og, amp);
+        });
+        const n = noiseSrc(ctx, t, 0.04);
+        const ng = gain(ctx, 0);
+        decay(ng.gain, t, 0.25, 0.02, 0.0005);
+        chain(n, filter(ctx, 'bandpass', Math.min(9000, f * 4), 2), ng, amp);
+        return { node: amp, end };
+      },
+    },
+    trumpet: {
+      name: 'Trumpet', cat: 'Brass', base: 60,
+      play(ctx, out, f, t, dur, v) {
+        // brass: two saws through a swelling filter, a lip "scoop" into the note, delayed vibrato, breath noise
+        const amp = gain(ctx, 0);
+        const end = adsr(amp.gain, t, dur, 0.035, 0.15, 0.78, 0.12, v * 0.24);
+        const lp = filter(ctx, 'lowpass', f * 2, 1.4);
+        lp.frequency.setValueAtTime(f * 1.5, t);
+        lp.frequency.exponentialRampToValueAtTime(Math.min(7000, f * 8), t + 0.07);
+        lp.frequency.setTargetAtTime(Math.min(5000, f * 5), t + 0.08, 0.15);
+        chain(lp, filter(ctx, 'peaking', 1250, 1.2), filter(ctx, 'peaking', 2600, 1.5), amp, out);
+        const vib = osc(ctx, 'sine', 5.6, t, end - t);
+        const vg = gain(ctx, 0);
+        vg.gain.setValueAtTime(0, t);
+        vg.gain.setValueAtTime(0, t + 0.25);
+        vg.gain.linearRampToValueAtTime(f * 0.006, t + 0.6);
+        vib.connect(vg);
+        [0, 6].forEach((det) => {
+          const o = osc(ctx, 'sawtooth', f, t, end - t);
+          o.detune.value = det;
+          o.frequency.setValueAtTime(f * 0.94, t);
+          o.frequency.exponentialRampToValueAtTime(f, t + 0.06);
+          vg.connect(o.frequency);
+          o.connect(lp);
+        });
+        const n = noiseSrc(ctx, t, end - t);
+        const ng = gain(ctx, 0);
+        adsr(ng.gain, t, dur, 0.02, 0.1, 0.4, 0.1, 0.05);
+        chain(n, filter(ctx, 'bandpass', 2300, 2), ng, amp);
+        return { node: amp, end };
+      },
+    },
+    hornsec: {
+      name: 'Horn Section', cat: 'Brass', base: 60,
+      play(ctx, out, f, t, dur, v) {
+        // three trumpets a few cents apart, spread across the stereo field, plus a trombone an octave down
+        const bus = gain(ctx, 1);
+        bus.connect(out);
+        let last = null;
+        [[-9, -0.5, 1], [0, 0, 1], [8, 0.5, 1], [0, 0, 0.5]].forEach(([det, pan, oct], i) => {
+          const p = ctx.createStereoPanner ? ctx.createStereoPanner() : gain(ctx, 1);
+          if (p.pan) p.pan.value = pan;
+          const g2 = gain(ctx, i === 3 ? 0.55 : 0.5);
+          chain(g2, p, bus);
+          const ff = f * oct * Math.pow(2, det / 1200);
+          last = INSTRUMENTS.trumpet.play(ctx, g2, ff, t + i * 0.004, dur, v);
+        });
+        return { node: bus, end: last.end };
+      },
+    },
+    darkpad: {
+      name: 'OVO Pad', cat: 'Pads', base: 60,
+      play(ctx, out, f, t, dur, v) {
+        // dark, underwater pad: detuned saws behind a low, slowly moving filter, plus a sub octave
+        const amp = gain(ctx, 0);
+        const end = adsr(amp.gain, t, dur, 0.6, 0.5, 0.85, 1.4, v * 0.17);
+        const lp = filter(ctx, 'lowpass', 700, 0.9);
+        const lfo = osc(ctx, 'sine', 0.13, t, end - t);
+        const lg = gain(ctx, 260);
+        chain(lfo, lg, lp.frequency);
+        chain(lp, amp, out);
+        [[-8, -0.6], [0, 0], [8, 0.6]].forEach(([det, pan]) => {
+          const p = ctx.createStereoPanner ? ctx.createStereoPanner() : gain(ctx, 1);
+          if (p.pan) p.pan.value = pan;
+          const o = osc(ctx, 'sawtooth', f, t, end - t);
+          o.detune.value = det;
+          chain(o, p, lp);
+        });
+        chain(osc(ctx, 'sine', f / 2, t, end - t), gain(ctx, 0.7), lp);
+        return { node: amp, end };
+      },
+    },
+    mutedkeys: {
+      name: 'Muted Keys', cat: 'Keys', base: 60,
+      play(ctx, out, f, t, dur, v) {
+        // electric piano heard through a wall: the Rhodes, filtered low, with a slow tremolo
+        const lp = filter(ctx, 'lowpass', 1300, 0.6);
+        const g2 = gain(ctx, 1.3);
+        chain(g2, lp, out);
+        return INSTRUMENTS.rhodes.play(ctx, g2, f, t, dur, v);
+      },
+    },
+    bassgtr: {
+      name: 'Bass Guitar', cat: '808 & Bass', base: 36,
+      play(ctx, out, f, t, dur, v) {
+        // electric bass: plucked, round, no sub rumble; lives around 70-250 Hz like a soul record
+        const amp = gain(ctx, 0);
+        const end = decayingAdsr(amp.gain, t, dur, 0.004, 1.4, 0.08, v * 0.55);
+        const lp = filter(ctx, 'lowpass', 400, 1.2);
+        lp.frequency.setValueAtTime(f * 7, t);
+        lp.frequency.setTargetAtTime(f * 2.5, t, 0.09);
+        chain(lp, amp, out);
+        chain(osc(ctx, 'triangle', f, t, end - t), lp);
+        chain(osc(ctx, 'sawtooth', f, t, end - t), gain(ctx, 0.35), lp);
+        const n = noiseSrc(ctx, t, 0.02);
+        const ng = gain(ctx, 0);
+        decay(ng.gain, t, 0.3, 0.012, 0.0005);
+        chain(n, filter(ctx, 'bandpass', f * 6, 2), ng, amp);
+        return { node: amp, end };
+      },
+    },
     // ---- 808s: mono, with glide; handled specially by the engine ----
     b808: { name: '808 Clean', cat: '808 & Bass', base: 36, bass: true, drive: 0.05, punch: 1.4, len: 1.6 },
     b808punch: { name: '808 Punchy', cat: '808 & Bass', base: 36, bass: true, drive: 0.35, punch: 2.2, len: 1.1 },
     b808dist: { name: '808 Distorted', cat: '808 & Bass', base: 36, bass: true, drive: 0.9, punch: 2, len: 1.5 },
-    b808long: { name: '808 Long', cat: '808 & Bass', base: 36, bass: true, drive: 0.15, punch: 1.3, len: 3 },
+    b808longold: { name: '808 Long (Soft)', cat: '808 & Bass', base: 36, bass: true, drive: 0.15, punch: 1.3, len: 3 },
+    b808yeat: { name: '808 Rage (Yeat)', cat: '808 & Bass', base: 36, bass: true, drive: 0.85, asym: 0, punch: 2.4, len: 0.6, click: 0.35, warm: 0.25 },
+    b808gods: { name: '808 Short & Dirty', cat: '808 & Bass', base: 36, bass: true, drive: 1, asym: 0.9, punch: 1.8, len: 0.42, lp: 2600, warm: 0.7 },
+    b808long: { name: '808 Long Warm', cat: '808 & Bass', base: 36, bass: true, drive: 0.8, asym: 0.9, punch: 1.6, len: 2.1, warm: 0.6 },
+    feverbass: { name: 'Sliding Bass', cat: '808 & Bass', base: 36, bass: true, sustain: true, drive: 0.25, asym: 0.4, punch: 1, len: 0, warm: 0.1, lp: 1600 },
     b808hard: { name: '808 Blown Out', cat: '808 & Bass', base: 36, bass: true, drive: 1, punch: 2.6, len: 1.2 },
     sub: { name: 'Smooth Sub', cat: '808 & Bass', base: 36, bass: true, drive: 0, punch: 1, len: 0, sustain: true },
     reese: { name: 'Reese Bass', cat: '808 & Bass', base: 36, bass: true, drive: 0.3, punch: 1, len: 0, sustain: true, reese: true },
@@ -711,11 +901,18 @@
       amp.gain.setTargetAtTime(0.0001, t + 0.05, inst.len / 3.5);
       amp.gain.setTargetAtTime(0.0001, t + dur, 0.04);
     }
-    const lp = filter(ctx, 'lowpass', inst.reese ? 900 : 5000, 0.6);
+    const lp = filter(ctx, 'lowpass', inst.reese ? 900 : inst.lp || 5000, 0.6);
     const pre = gain(ctx, 1);
-    if (inst.drive > 0) chain(pre, shaper(ctx, inst.drive), gain(ctx, 1 - inst.drive * 0.35), lp);
+    if (inst.drive > 0) chain(pre, shaper(ctx, inst.drive, inst.asym), filter(ctx, 'highpass', 22, 0.7), gain(ctx, 1 - inst.drive * 0.35), lp);
     else chain(pre, lp);
     chain(lp, amp, out);
+    if (inst.warm) chain(osc(ctx, 'triangle', f * 2, t, Math.max(dur, 0.1) + 0.3), gain(ctx, inst.warm), lp);
+    if (inst.click) {
+      const n = noiseSrc(ctx, t, 0.03);
+      const ng = gain(ctx, 0);
+      decay(ng.gain, t, inst.click * v, 0.012, 0.0005);
+      chain(n, filter(ctx, 'bandpass', 1800, 1), ng, out);
+    }
     const stopT = end + (inst.sustain ? 0.05 : inst.len + 0.2);
     const types = inst.reese ? [['sawtooth', -12], ['sawtooth', 12]] : [['sine', 0]];
     for (const [type, det] of types) {
@@ -860,22 +1057,24 @@
       },
     },
     {
-      id: 'jukebox_soul', name: 'Jukebox Soul', desc: 'Warm soul keys with a high "ooh" vocal, made to be sped up', bpm: 70, root: 2, scale: 'dorian', bars: 2,
+      id: 'jukebox_soul', name: 'Jukebox Soul', desc: 'A soul record: Rhodes, a horn section and a high "ooh" vocal, made to be sped up', bpm: 60, root: 7, scale: 'minor', bars: 2,
       build(ctx, out, s) {
-        const lp = chain(filter(ctx, 'lowpass', 4200, 0.6), gain(ctx, 1));
+        const lp = chain(filter(ctx, 'lowpass', 5200, 0.6), filter(ctx, 'highpass', 90, 0.7), gain(ctx, 1));
         lp.connect(out);
-        progressionRender(ctx, lp, { bpm: s.bpm, root: s.root, scale: s.scale, base: 48, inst: 'rhodes',
-          events: [...chordEvents([0, 3, 1, 4], 2, true), [0, 4, [-7], 0.6, 'sub'], [4, 4, [-6], 0.6, 'sub']] });
+        progressionRender(ctx, lp, { bpm: s.bpm, root: s.root, scale: s.scale, base: 60, inst: 'rhodes',
+          events: chordEvents([0, 3, 1, 4], 2, true) });
+        progressionRender(ctx, lp, { bpm: s.bpm, root: s.root, scale: s.scale, base: 60, inst: 'hornsec',
+          events: [[1.5, 0.4, [4, 6, 9], 0.8], [3.5, 0.4, [3, 5, 7], 0.8], [5.5, 0.4, [4, 6, 8], 0.8], [6.5, 1.2, [4, 7, 9], 0.9]] });
         const beat = 60 / s.bpm;
-        [[0.5, 1.5, 4, 'o'], [2, 1, 3, 'u'], [3, 1, 2, 'o'], [4.5, 1.5, 4, 'a'], [6, 2, 5, 'o']].forEach(([b, l, d, vw]) => {
-          const f = BL.theory.midiToFreq(67 + s.root + BL.theory.degreeToSemi(d, s.scale));
-          const tt = 0.02 + b * beat;
+        [[0.25, 1.25, 4, 'o'], [2, 1, 3, 'u'], [3, 0.75, 2, 'o'], [4.25, 1.5, 4, 'a'], [6, 2, 5, 'o']].forEach(([bb, l, d, vw]) => {
+          const f = BL.theory.midiToFreq(67 + s.root + BL.theory.degreeToSemi(d, s.scale) - 12);
+          const tt = 0.02 + bb * beat;
           const g = gain(ctx, 0);
-          adsr(g.gain, tt, l * beat * 0.9, 0.08, 0.1, 0.85, 0.2, 0.7);
+          adsr(g.gain, tt, l * beat * 0.9, 0.08, 0.1, 0.85, 0.2, 0.75);
           g.connect(lp);
           formantVoice(ctx, g, f, tt, l * beat + 0.25, vw, 0.5, true);
         });
-        vinyl(ctx, out, 7.5, 1.1);
+        vinyl(ctx, out, 8.2, 1.2);
       },
     },
     {

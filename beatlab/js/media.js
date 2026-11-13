@@ -147,13 +147,19 @@
         const id = uid('s');
         await store.put('files', id, bytes);
         const cat = classify(f.name, buf.duration);
-        pack.sounds.push({ id, name: cleanName(f.name), cat, dur: Math.round(buf.duration * 100) / 100 });
+        // keep the pack's own folder structure (like FL Studio's Browser shows it)
+        const parts = f.name.split('/').filter(Boolean);
+        const dir = parts.slice(0, -1).filter((p, i) => !(i === 0 && parts.length > 2 && p === pack.name)).join('/');
+        pack.sounds.push({ id, name: cleanName(f.name), cat, dur: Math.round(buf.duration * 100) / 100, dir });
         soundBuffers['u:' + id] = buf;
         BL.sounds.drumBuffers['u:' + id] = buf;
         soundMeta['u:' + id] = { name: cleanName(f.name), cat, pack: pack.name, dur: buf.duration };
       } catch (e) { /* skip files the browser can't decode */ }
     }
     if (!pack.sounds.length) throw new Error('No playable audio was found in that pack.');
+    // drop a single wrapping folder ("Pack Name/Drums/..." -> "Drums/...")
+    const firsts = new Set(pack.sounds.map((x) => (x.dir || '').split('/')[0]));
+    if (firsts.size === 1 && pack.sounds.every((x) => (x.dir || '').includes('/'))) pack.sounds.forEach((x) => { x.dir = x.dir.split('/').slice(1).join('/'); });
     pack.sounds.sort((a, b) => CATS.indexOf(a.cat) - CATS.indexOf(b.cat) || a.name.localeCompare(b.name));
     await store.put('packs', pack.id, pack);
     packs.push(pack);
@@ -178,6 +184,23 @@
     }
     if (!entries.length) throw new Error('No audio files found. Packs can be a .zip, a folder, or a few WAV/MP3 files.');
     return importPack(name || (entries.length === 1 ? cleanName(entries[0].name) : 'My Pack'), entries, progress);
+  }
+
+  /** a single dropped one-shot: goes into a "Dropped Sounds" pack and returns its sound id */
+  async function importSingleSound(bytes, fileName, packName) {
+    const buf = await decode(bytes);
+    const name = packName || 'Dropped Sounds';
+    let pack = packs.find((p) => p.name === name);
+    if (!pack) { pack = { id: uid('p'), name, created: Date.now(), sounds: [] }; packs.push(pack); }
+    const id = uid('s');
+    await store.put('files', id, bytes);
+    const cat = classify(fileName, buf.duration);
+    pack.sounds.push({ id, name: cleanName(fileName), cat, dur: Math.round(buf.duration * 100) / 100, dir: '' });
+    await store.put('packs', pack.id, pack);
+    soundBuffers['u:' + id] = buf;
+    BL.sounds.drumBuffers['u:' + id] = buf;
+    soundMeta['u:' + id] = { name: cleanName(fileName), cat, pack: name, dur: buf.duration };
+    return 'u:' + id;
   }
 
   async function deletePack(id) {
@@ -255,7 +278,7 @@
 
   BL.media = {
     store, decode, unzip, classify, CATS, AUDIO_EXT,
-    packs, loadPacks, importPack, importPackFiles, deletePack, ensureSound, soundName, soundCat, soundMeta,
+    packs, loadPacks, importPack, importPackFiles, importSingleSound, deletePack, ensureSound, soundName, soundCat, soundMeta,
     importAudio, importAudioBytes, ensureAudio, audioBuffer: (id) => audioBuffers[id] || null,
     listProjects, saveProject, loadProject, deleteProject,
   };

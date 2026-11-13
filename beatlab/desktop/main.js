@@ -37,6 +37,7 @@ function buildMenu() {
         { type: 'separator' },
         item('Import Audio…', 'importAudio', 'CmdOrCtrl+I'),
         item('Import Sound Pack…', 'importPack', 'CmdOrCtrl+Shift+I'),
+        item('Add Folder to Browser…', 'linkFolder', 'CmdOrCtrl+Shift+F'),
         { type: 'separator' },
         item('Export Mixdown…', 'export', 'CmdOrCtrl+E'),
         item('Export Stems…', 'exportStems', 'CmdOrCtrl+Shift+E'),
@@ -135,6 +136,38 @@ ipcMain.handle('save-file', async (_e, { name, bytes }) => {
   if (res.canceled || !res.filePath) return { saved: false };
   await fs.writeFile(res.filePath, Buffer.from(bytes));
   return { saved: true, name: path.basename(res.filePath) };
+});
+
+const AUDIO_RE = /\.(wav|wave|mp3|aif|aiff|flac|ogg|m4a|aac|caf)$/i;
+const linkedRoots = new Set();
+ipcMain.handle('pick-folder', async () => {
+  const res = await dialog.showOpenDialog(win, { properties: ['openDirectory'], message: 'Choose a folder of sounds to show in the BeatLab Browser' });
+  if (res.canceled || !res.filePaths[0]) return null;
+  linkedRoots.add(res.filePaths[0]);
+  return res.filePaths[0];
+});
+ipcMain.handle('list-folder', async (_e, root) => {
+  linkedRoots.add(root);
+  const out = [];
+  async function walk(dir, rel, depth) {
+    if (depth > 8 || out.length > 5000) return;
+    let entries = [];
+    try { entries = await fs.readdir(dir, { withFileTypes: true }); } catch (e) { return; }
+    for (const ent of entries) {
+      if (ent.name.startsWith('.')) continue;
+      const full = path.join(dir, ent.name), r = rel ? rel + '/' + ent.name : ent.name;
+      if (ent.isDirectory()) await walk(full, r, depth + 1);
+      else if (AUDIO_RE.test(ent.name)) { const st = await fs.stat(full).catch(() => null); out.push({ rel: r, size: st ? st.size : 0 }); }
+    }
+  }
+  await walk(root, '', 0);
+  return out;
+});
+ipcMain.handle('read-file', async (_e, file) => {
+  // only audio inside folders the user picked
+  const ok = [...linkedRoots].some((r) => path.resolve(file).startsWith(path.resolve(r) + path.sep)) && AUDIO_RE.test(file);
+  if (!ok) throw new Error('Not an audio file in a linked folder');
+  return new Uint8Array(await fs.readFile(file));
 });
 
 ipcMain.on('set-title', (_e, title) => {

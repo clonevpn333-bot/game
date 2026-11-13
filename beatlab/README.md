@@ -46,20 +46,29 @@ Channel lights flash on every hit, and the per-row buttons stay hidden until you
 
 ## BeatLab Packs
 
-Original kits and starter beats in the style of three songs. The sounds are synthesized by BeatLab, and the drums and melodies are newly written; nothing is sampled or copied from the records. Tempo and key are style estimates, not measured from the songs.
+Four packs built by measuring each reference song (official 30-second previews, used for analysis only):
+tempo by grid-matching onsets, key from a pitch-class profile, the kick/snare/hat grid per frequency band,
+the 808's pitch, length and overtones, the tonal balance in six bands, stereo width and loudness.
+Each starter beat was then rendered and measured the same way, and tuned until the low end, width,
+loudness and 808 behaviour landed near the reference. Every sound is synthesized by BeatLab and every melody
+is newly written; nothing is sampled or copied from the records.
 
-| Pack | Inspired by | What's in it |
+| Pack | Reference | What was measured → what's in the pack |
 |---|---|---|
-| **Big Money** | “Money So Big”, Yeat | Blown-out kick and 808, bright clap, crispy hats, metal ping, rage riser, a shiny **Rage Bell** synth. 150 BPM |
-| **Fever** | “Fever”, fakemink | Round kick, snap snare, ticking hats, air hat, vox chop, reverse air, an **Air Pad**, glass bells, sliding 808. 155 BPM |
-| **Jukebox** | “Jukebox Joints”, A$AP Rocky & Kanye West | Dusty kick and snare, hats, rim, tambourine, crash, and a **Jukebox Soul** record (keys + high “ooh” vocal) that gets sped up like a chipmunk-soul flip. 90 BPM |
+| **Yeat Pack** | “Monëy so big” | 138 BPM, C#, clipped 808 that rings ~0.3 s with odd overtones, dark and nearly mono → **Tonka Bell** (struck FM bell with tubular partials and stereo detune), 808 Rage, rage kick/clap/hats, laser zap, “yeah” ad-lib, ~30 sounds |
+| **Drake Pack** | “God’s Plan”, “Nonstop” | 77 BPM with a short, heavily saturated 808 at C1; 155 BPM with a long warm 808, off-beat hats, very loud and mono → **Muted Keys**, **OVO Pad**, soft snaps/claps/shakers, 808 Short & Dirty, 808 Long Warm, two starter beats |
+| **A$AP Rocky Pack** | “Jukebox Joints” | 74 BPM, G minor, no sub (bass guitar around A2–D2), mid-heavy soul sample → **Jukebox Soul** record (Rhodes + horn section + “ooh” vocal), **Trumpet**, **Horn Section**, **Bass Guitar**, dusty swung drums, vinyl scratch |
+| **Fever Pack** | “Fever”, fakemink | 115 BPM, C major, a long bass that slides up into notes, warm low-mids, wide and airy → **Sliding Bass**, Air Pad, glass bells, bouncy drums, vox chops |
 
-## Your own sounds
+## Your own sounds (works like FL Studio's Browser)
 
-* **Audio tracks:** use *Import Audio* in the Playlist, ⌘I, or drag WAV/MP3/AIFF/FLAC/M4A files onto the Playlist. Each one becomes a clip on its own track with its own mixer strip.
-* **Sound packs:** use the import button next to *Sound Packs* in the Browser. Import a `.zip`, a folder, or a handful of files. BeatLab sorts them into Kick, Snare, Clap, Hi-Hat, Open Hat, 808, Perc, FX and Loops from their names and lengths. One-shots work like any drum, and loops go on the Playlist or into the Sample Lab.
-
-Your audio and packs are stored inside the app on your Mac, so they're there next time.
+* **Add Folder to Browser** (Mac app: Sounds tab, File menu or ⌘⇧F): link any folder of samples. It appears under **My Folders** with its real subfolders, nothing is copied, and right-click → Refresh picks up new files.
+* **Import a pack** (.zip, folder or files): it keeps its own folder structure and is stored inside BeatLab.
+* **Drag sounds anywhere:** from the Browser or straight from Finder.
+  * Onto a row in **Beat** → that row plays the sound.
+  * Onto empty space in **Beat** → a new channel per file.
+  * Onto the **Song** timeline → an audio track.
+  * Long loops become audio tracks automatically.
 
 ## Saving
 

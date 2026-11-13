@@ -7,4 +7,7 @@ contextBridge.exposeInMainWorld('beatlabNative', {
   onOpenFile: (cb) => ipcRenderer.on('open-file', (_e, file) => cb(file)),
   saveFile: (name, bytes) => ipcRenderer.invoke('save-file', { name, bytes }),
   setTitle: (title) => ipcRenderer.send('set-title', title),
+  pickFolder: () => ipcRenderer.invoke('pick-folder'),
+  listFolder: (path) => ipcRenderer.invoke('list-folder', path),
+  readFile: (path) => ipcRenderer.invoke('read-file', path),
 });

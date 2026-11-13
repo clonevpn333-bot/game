@@ -278,7 +278,10 @@
       const raw = e.dataTransfer.getData('text/beatlab');
       if (raw) {
         const item = JSON.parse(raw);
-        if (item.kind === 'audio' || item.kind === 'packloop') {
+        if (item.kind === 'disk') {
+          const aid = await A.audioFromDisk(item.id);
+          if (aid) placeAudio(aid, pos.li, snapFloor(pos.bar));
+        } else if (item.kind === 'audio' || item.kind === 'packloop') {
           let aid = item.id;
           if (item.kind === 'packloop') aid = await A.audioFromPackSound(item.id);
           if (aid) placeAudio(aid, pos.li, snapFloor(pos.bar));

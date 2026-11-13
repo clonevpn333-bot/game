@@ -21,7 +21,7 @@
 
   function item(kind, id, name, meta, color, opts) {
     opts = opts || {};
-    const draggable = ['drum', 'pack', 'audio', 'packloop', 'inst'].includes(kind);
+    const draggable = ['drum', 'pack', 'audio', 'packloop', 'inst', 'disk'].includes(kind);
     return `<div class="bi" role="button" tabindex="0" data-kind="${kind}" data-id="${esc(id)}" ${draggable ? 'draggable="true"' : ''} data-hint="${esc(opts.hint || '')}">
       <i class="bi-dot" style="--c:${color || 'var(--muted)'}"></i><span class="bi-name">${esc(name)}</span>${meta ? `<span class="bi-meta">${esc(meta)}</span>` : ''}
       ${opts.add ? `<button class="bi-add" data-add aria-label="Add" tabindex="-1">${A.icon('plus')}</button>` : ''}${opts.del ? `<button class="bi-add bi-del" data-del aria-label="Delete" tabindex="-1">${A.icon('trash')}</button>` : ''}</div>`;
@@ -83,9 +83,32 @@
       auds.length ? auds.map((a) => item('audio', a.id, a.name, fmtDur(a.duration), '#5ac8fa', { add: true, hint: 'Your audio. Drag it onto the Playlist, or press + to add it at the start.' })).join('') : '<p class="bf-empty">Import songs, vocals or stems, or drop audio files on the Playlist.</p>',
       { open: true, action: 'importAudio', actionIcon: 'import', actionHint: 'Import audio tracks' }));
 
+    // folders on your computer, linked like FL Studio's Browser (Mac app)
+    const linked = (A.linkedFolders && A.linkedFolders()) || [];
+    if (A.canLinkFolders && A.canLinkFolders()) {
+      const body = linked.map((lf) => {
+        const files = (lf.files || []).filter((f) => match(f.rel + ' ' + lf.name));
+        if (!files.length && query) return '';
+        const entries = files.map((f) => {
+          const parts = f.rel.split('/');
+          const nm = parts.pop().replace(BL.media.AUDIO_EXT, '');
+          const cat = BL.media.classify(f.rel, f.size > 600000 ? 4 : 0.5);
+          return { dir: parts.join('/'), html: item('disk', lf.path + '/' + f.rel, nm, '', CAT_COLORS[cat] || '#8e8e93', { add: true, hint: 'From your folder. Click to hear it, double-click or + to add it as a channel, or drag it onto a row in Beat or onto the Song timeline.' }) };
+        });
+        return `<div class="pack-wrap" data-linked="${esc(lf.path)}">${folder('lf-' + lf.path, esc(lf.name), files.length, treeHtml('lf-' + lf.path, entries) || '<p class="bf-empty">No audio files in this folder.</p>')}</div>`;
+      }).join('');
+      parts.push(folder('linked', 'My Folders', linked.length, body || '<p class="bf-empty">Add your sample folders, like FL Studio’s Browser. Nothing is copied: BeatLab reads them straight from your Mac.</p>',
+        { open: true, action: 'linkFolder', actionIcon: 'plus', actionHint: 'Add a folder from your computer to the Browser' }));
+    }
+
     const packBody = BL.media.packs.map((pk) => {
       const sounds = pk.sounds.filter((s) => match(s.name + ' ' + s.cat + ' ' + pk.name));
       if (!sounds.length) return '';
+      if (sounds.some((s) => s.dir)) {
+        // show the pack exactly as it was organised on disk
+        const entries = sounds.map((s) => ({ dir: s.dir || '', html: item(s.cat === 'Loops' ? 'packloop' : 'pack', 'u:' + s.id, s.name, s.cat === 'Loops' ? fmtDur(s.dur) : '', CAT_COLORS[s.cat], { add: true, hint: s.cat + '. Click to hear it. Double-click or + adds it. Drag onto a row in Beat to swap sounds.' }) }));
+        return `<div class="pack-wrap" data-pack="${pk.id}">${folder('pk-' + pk.id, esc(pk.name), sounds.length, treeHtml('pk-' + pk.id, entries))}</div>`;
+      }
       const byCat = BL.media.CATS.map((c) => {
         const list = sounds.filter((s) => s.cat === c);
         if (!list.length) return '';
@@ -100,6 +123,19 @@
     host.innerHTML = `<div class="br-search"><span class="br-search-ico">${A.icon('search')}</span><input id="brSearch" type="search" placeholder="Search sounds, beats, packs" value="${esc(query)}" aria-label="Search the browser"></div>
       <div class="br-tree">${parts.join('') || '<p class="bf-empty">Nothing matches.</p>'}</div>`;
     bind();
+  }
+
+  /** nested folders from "a/b/c" paths */
+  function treeHtml(key, entries) {
+    const root = { dirs: {}, items: [] };
+    entries.forEach((e) => {
+      let node = root;
+      (e.dir ? e.dir.split('/') : []).forEach((d) => { node = node.dirs[d] = node.dirs[d] || { dirs: {}, items: [] }; });
+      node.items.push(e.html);
+    });
+    const count = (n) => n.items.length + Object.values(n.dirs).reduce((a, d) => a + count(d), 0);
+    const render = (n, k) => Object.keys(n.dirs).sort().map((d) => folder(k + '/' + d, esc(d), count(n.dirs[d]), render(n.dirs[d], k + '/' + d))).join('') + n.items.join('');
+    return render(root, key);
   }
 
   function ago(t) {
@@ -137,6 +173,7 @@
       const a = b.dataset.action;
       if (a === 'importAudio') A.pickAudioFiles();
       else if (a === 'importPack') A.pickPack(e.currentTarget);
+      else if (a === 'linkFolder') A.linkFolder();
       else if (a === 'save') A.saveToLibrary(false);
     }));
     $$('.bi', host).forEach((el) => {
@@ -157,7 +194,16 @@
       });
       el.addEventListener('dragend', () => document.body.classList.remove('is-dragging-item'));
     });
-    $$('.pack-wrap', host).forEach((w) => {
+    $$('.pack-wrap[data-linked]', host).forEach((w) => {
+      $('.bf-head', w).addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        A.openPop(e.currentTarget, '<div class="menu"><button data-m="refresh">Refresh</button><button data-m="unlink" class="danger">Remove from Browser</button></div>', (pop) => {
+          $('[data-m="refresh"]', pop).addEventListener('click', () => { A.closePop(); A.refreshLinked(w.dataset.linked); });
+          $('[data-m="unlink"]', pop).addEventListener('click', () => { A.closePop(); A.unlinkFolder(w.dataset.linked); });
+        });
+      });
+    });
+    $$('.pack-wrap[data-pack]', host).forEach((w) => {
       $('.bf-head', w).addEventListener('contextmenu', (e) => {
         e.preventDefault();
         A.openPop(e.currentTarget, '<div class="menu"><button data-m="del" class="danger">Delete Pack</button></div>', (pop) => {
@@ -179,6 +225,9 @@
     } else if (kind === 'audio') {
       const buf = await BL.media.ensureAudio(id);
       if (buf) E.previewBuffer(buf, 0, Math.min(buf.duration, 10));
+    } else if (kind === 'disk') {
+      const buf = await A.diskBuffer(id);
+      if (buf) E.previewBuffer(buf, 0, Math.min(buf.duration, 10));
     } else if (kind === 'record') {
       A.openRecord(id);
     } else if (kind === 'preset') {
@@ -195,6 +244,7 @@
     } else if (kind === 'inst') A.addChannel('synth', id);
     else if (kind === 'audio') BL.playlist.placeAudio(id, A.firstFreeLane(), A.project().pos || 0);
     else if (kind === 'packloop') A.openPackLoopInLab(id);
+    else if (kind === 'disk') A.useDiskFile(id);
     else if (kind === 'record') A.openRecord(id);
     else if (kind === 'preset') A.loadPreset(id);
     else if (kind === 'project') A.openSaved(id);

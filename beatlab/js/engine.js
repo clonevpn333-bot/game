@@ -22,31 +22,62 @@
     return ctx;
   }
 
-  function makeIR(c, secs, decayPow) {
-    const len = Math.floor(c.sampleRate * secs);
-    const b = c.createBuffer(2, len, c.sampleRate);
+  /** stereo hall: 18 ms pre-delay, decorrelated L/R, highs die faster than lows (like a real room) */
+  function makeIR(c, secs) {
+    const sr = c.sampleRate, len = Math.floor(sr * secs), pre = Math.floor(sr * 0.018);
+    const b = c.createBuffer(2, len, sr);
     for (let ch = 0; ch < 2; ch++) {
       const d = b.getChannelData(ch);
-      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decayPow);
+      let lp = 0;
+      for (let i = pre; i < len; i++) {
+        const t = (i - pre) / (len - pre);
+        const n = Math.random() * 2 - 1;
+        const k = 0.15 + 0.8 * t; // one-pole damping that closes over time
+        lp += (n - lp) * (1 - k);
+        const early = i < pre + sr * 0.06 && Math.random() < 0.004 ? (Math.random() * 2 - 1) * 0.8 : 0;
+        d[i] = (lp * 1.6 + early) * Math.pow(1 - t, 2.4);
+      }
     }
     return b;
   }
 
+  const clipCurves = {};
+  function softClip(c, amount) {
+    const key = Math.round(amount * 100);
+    if (!clipCurves[key]) {
+      const n = 2048, cv = new Float32Array(n), a = 1 + amount * 6;
+      for (let i = 0; i < n; i++) { const x = (i / (n - 1)) * 2 - 1; cv[i] = Math.tanh(a * x) / Math.tanh(a); }
+      clipCurves[key] = cv;
+    }
+    const w = c.createWaveShaper();
+    w.curve = clipCurves[key];
+    w.oversample = '4x';
+    return w;
+  }
+
   function createGraph(c, realtime) {
     const p = getProject() || {};
-    const m = p.master || {};
     const master = c.createGain();
-    master.gain.value = m.vol == null ? 0.85 : m.vol;
+    // master colour chain: low shelf -> high shelf -> low cut -> tone -> saturation -> width -> glue -> limiter
+    const lowShelf = c.createBiquadFilter(); lowShelf.type = 'lowshelf'; lowShelf.frequency.value = 110;
+    const highShelf = c.createBiquadFilter(); highShelf.type = 'highshelf'; highShelf.frequency.value = 4200;
+    const hp = c.createBiquadFilter(); hp.type = 'highpass'; hp.Q.value = 0.7;
+    const lofi = c.createBiquadFilter(); lofi.type = 'lowpass'; lofi.Q.value = 0.6;
+    const drive = c.createWaveShaper(); drive.oversample = '4x';
+    const driveGain = c.createGain();
+    // stereo width (mid/side): L' = L(1+w)/2 + R(1-w)/2
+    const split = c.createChannelSplitter(2), merge = c.createChannelMerger(2);
+    const ll = c.createGain(), lr = c.createGain(), rl = c.createGain(), rr = c.createGain();
+    split.connect(ll, 0); split.connect(lr, 0); split.connect(rl, 1); split.connect(rr, 1);
+    ll.connect(merge, 0, 0); rl.connect(merge, 0, 0); lr.connect(merge, 0, 1); rr.connect(merge, 0, 1);
     const comp = c.createDynamicsCompressor();
-    comp.knee.value = 8; comp.attack.value = 0.006; comp.release.value = 0.16;
+    comp.knee.value = 8; comp.attack.value = 0.008; comp.release.value = 0.16;
+    const loud = c.createGain();
     const limiter = c.createDynamicsCompressor();
-    limiter.threshold.value = -1; limiter.knee.value = 0; limiter.ratio.value = 20;
-    limiter.attack.value = 0.001; limiter.release.value = 0.06;
-    const lofi = c.createBiquadFilter();
-    lofi.type = 'lowpass';
-    master.connect(lofi);
-    lofi.connect(comp);
-    comp.connect(limiter);
+    limiter.threshold.value = -1.2; limiter.knee.value = 0; limiter.ratio.value = 20;
+    limiter.attack.value = 0.001; limiter.release.value = 0.05;
+    master.connect(lowShelf); lowShelf.connect(highShelf); highShelf.connect(hp); hp.connect(lofi);
+    lofi.connect(drive); drive.connect(driveGain); driveGain.connect(split); merge.connect(comp); comp.connect(loud); loud.connect(limiter);
     let analyser = null;
     if (realtime) {
       analyser = c.createAnalyser();
@@ -55,44 +86,65 @@
     }
     limiter.connect(c.destination);
     const revIn = c.createGain();
+    const revHp = c.createBiquadFilter(); revHp.type = 'highpass'; revHp.frequency.value = 220;
     const conv = c.createConvolver();
-    conv.buffer = makeIR(c, 2.4, 3);
+    conv.buffer = makeIR(c, 2.8);
     const revOut = c.createGain();
-    revOut.gain.value = 0.8;
-    revIn.connect(conv); conv.connect(revOut); revOut.connect(master);
+    revOut.gain.value = 0.85;
+    revIn.connect(revHp); revHp.connect(conv); conv.connect(revOut); revOut.connect(master);
     const preview = c.createGain();
     preview.gain.value = 0.9;
     preview.connect(master);
-    const g = { ctx: c, master, comp, lofi, limiter, analyser, revIn, preview, strips: {}, voices: {} };
+    const g = { ctx: c, master, lowShelf, highShelf, hp, lofi, drive, driveGain, width: { ll, lr, rl, rr }, comp, loud, limiter, analyser, revIn, preview, strips: {}, voices: {} };
     applyMaster(g, p);
     return g;
   }
 
+  /** p.master.color: { low, high (dB shelves), hp, lp (Hz), drive 0-1, width 0-1.6, loud 0-1 } */
   function applyMaster(g, p) {
     const m = (p && p.master) || {};
+    const col = m.color || {};
     const punch = m.punch == null ? 0.5 : m.punch;
     g.master.gain.value = m.vol == null ? 0.85 : m.vol;
     g.comp.threshold.value = -6 - punch * 22;
     g.comp.ratio.value = 1.5 + punch * 5;
-    g.lofi.frequency.value = m.lofi ? 3800 : 20000;
+    g.lowShelf.gain.value = col.low || 0;
+    g.highShelf.gain.value = col.high || 0;
+    g.hp.frequency.value = col.hp || 18;
+    g.lofi.frequency.value = m.lofi ? 3800 : col.lp || 20000;
+    const dr = col.drive || 0;
+    g.drive.curve = dr > 0.01 ? softClip(g.ctx, dr).curve : null;
+    g.driveGain.gain.value = dr > 0.01 ? 1 / (1 + dr * 0.8) : 1;
+    const w = col.width == null ? 1 : col.width;
+    g.width.ll.gain.value = (1 + w) / 2; g.width.rr.gain.value = (1 + w) / 2;
+    g.width.lr.gain.value = (1 - w) / 2; g.width.rl.gain.value = (1 - w) / 2;
+    g.loud.gain.value = Math.pow(10, ((col.loud || 0) * 9) / 20);
   }
 
+  /** each channel: drive -> tone (low-pass) -> low-cut -> pan, plus a reverb send */
   function stripFor(g, track, anySolo) {
     let s = g.strips[track.id];
     const c = g.ctx;
     if (!s) {
       const input = c.createGain();
-      const pan = c.createStereoPanner ? c.createStereoPanner() : null;
+      const drive = c.createWaveShaper(); drive.oversample = '2x';
+      const tone = c.createBiquadFilter(); tone.type = 'lowpass'; tone.Q.value = 0.5;
+      const lowcut = c.createBiquadFilter(); lowcut.type = 'highpass'; lowcut.Q.value = 0.6;
+      const pan = c.createStereoPanner ? c.createStereoPanner() : c.createGain();
       const send = c.createGain();
-      if (pan) { input.connect(pan); pan.connect(g.master); } else input.connect(g.master);
-      input.connect(send);
+      input.connect(drive); drive.connect(tone); tone.connect(lowcut); lowcut.connect(pan); pan.connect(g.master);
+      lowcut.connect(send);
       send.connect(g.revIn);
-      s = g.strips[track.id] = { input, pan, send };
+      s = g.strips[track.id] = { input, drive, tone, lowcut, pan, send, dk: -1 };
     }
     const audible = !track.mute && (!anySolo || track.solo);
     const vol = track.vol == null ? 0.8 : track.vol;
-    s.input.gain.value = audible ? vol * vol * 1.4 : 0;
-    if (s.pan) s.pan.pan.value = track.pan || 0;
+    const dr = track.drive || 0;
+    s.input.gain.value = audible ? (vol * vol * 1.4) / (1 + dr * 0.6) : 0;
+    if (s.dk !== dr) { s.drive.curve = dr > 0.01 ? softClip(c, dr).curve : null; s.dk = dr; }
+    s.tone.frequency.value = track.tone || 20000;
+    s.lowcut.frequency.value = track.lowcut || 10;
+    if (s.pan.pan) s.pan.pan.value = track.pan || 0;
     s.send.gain.value = (track.rev || 0) * 0.9;
     s.audible = audible;
     return s;
