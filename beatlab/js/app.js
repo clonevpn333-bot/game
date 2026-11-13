@@ -176,7 +176,7 @@
     const p = newProject({ name: pr.name, bpm: pr.bpm, key: pr.key, scale: pr.scale, swing: pr.swing || 0, bars: pr.bars || 2 });
     p.master.lofi = !!pr.lofi;
     if (pr.mix) { p.master.color = Object.assign({}, pr.mix); if (pr.mix.vol) p.master.vol = pr.mix.vol; }
-    const LETTERS = ['A', 'B', 'C', 'D'].filter((L, i) => i < 2 || (pr.song || '').includes(L));
+    const LETTERS = 'ABCDEF'.slice(0, Math.max(2, ...(pr.song || 'A').split('').map((ch) => 'ABCDEF'.indexOf(ch) + 1))).split('');
     p.patterns = LETTERS.map((L, i) => { const pt = newPattern(i); if (pr.patternNames && pr.patternNames[L]) pt.name = pr.patternNames[L]; return pt; });
     if (pr.patternNames) p.songOf = pr.id;
     const prev = P;
@@ -211,7 +211,7 @@
       });
     }
     p.lanes[0].name = 'Beat';
-    (pr.song || 'A').split('').forEach((ch, i) => p.clips.push({ id: uid('c'), kind: 'pattern', pat: 'ABCD'.indexOf(ch), lane: p.lanes[0].id, start: i * p.bars, len: p.bars }));
+    (pr.song || 'A').split('').forEach((ch, i) => p.clips.push({ id: uid('c'), kind: 'pattern', pat: 'ABCDEF'.indexOf(ch), lane: p.lanes[0].id, start: i * p.bars, len: p.bars }));
     P = prev;
     return p;
   }

@@ -843,6 +843,27 @@
         return { node: amp, end: t + 0.5 };
       },
     },
+    euphoria: {
+      name: 'Euphoria Supersaw', cat: 'Leads', base: 60,
+      play(ctx, out, f, t, dur, v) {
+        // seven detuned saws spread across the stereo field: the big, rushing, euphoric layer
+        const amp = gain(ctx, 0);
+        const end = adsr(amp.gain, t, dur, 0.015, 0.25, 0.75, 0.35, v * 0.075);
+        const lp = filter(ctx, 'lowpass', 3000, 0.8);
+        lp.frequency.setValueAtTime(Math.min(14000, f * 14), t);
+        lp.frequency.exponentialRampToValueAtTime(Math.min(9000, Math.max(1500, f * 6)), t + 0.3);
+        const hp = filter(ctx, 'highpass', 180, 0.7);
+        chain(lp, hp, amp, out);
+        [-28, -17, -8, 0, 8, 17, 28].forEach((det, i) => {
+          const o = osc(ctx, 'sawtooth', f, t, end - t + 0.05);
+          o.detune.value = det;
+          const p = ctx.createStereoPanner ? ctx.createStereoPanner() : gain(ctx, 1);
+          if (p.pan) p.pan.value = (i - 3) / 3.4;
+          chain(o, p, lp);
+        });
+        return { node: amp, end };
+      },
+    },
     velvet: {
       name: 'Velvet Night Pad', cat: 'Pads', base: 60,
       play(ctx, out, f, t, dur, v) {

@@ -55,7 +55,7 @@
     return w;
   }
 
-  function createGraph(c, realtime) {
+  function createGraph(c, realtime, dry) {
     const p = getProject() || {};
     const master = c.createGain();
     // master colour chain: low shelf -> high shelf -> low cut -> tone -> saturation -> width -> glue -> limiter
@@ -84,7 +84,7 @@
       analyser.fftSize = 2048;
       limiter.connect(analyser);
     }
-    limiter.connect(c.destination);
+    if (dry) master.connect(c.destination); else limiter.connect(c.destination);
     const revIn = c.createGain();
     const revHp = c.createBiquadFilter(); revHp.type = 'highpass'; revHp.frequency.value = 220;
     const conv = c.createConvolver();
@@ -461,6 +461,7 @@
     const songLen = song ? songSteps(p) * sd : order.length * steps * sd;
     const total = songLen + (ending === 'slowmo' ? 7 : 3);
     const OAC = root.OfflineAudioContext || root.webkitOfflineAudioContext;
+    if (song && songSteps(p) > 128) return renderChunked(p, opts, OAC);
     const oc = new OAC(2, Math.ceil(total * 44100), 44100);
     const prevGet = getProject;
     getProject = () => p;
@@ -503,6 +504,75 @@
     let end = L.length - 1;
     while (end > 0 && Math.abs(L[end]) < 1e-4 && Math.abs(R[end]) < 1e-4) end--;
     return { channels: [L.slice(0, end + 1), R.slice(0, end + 1)], sampleRate: 44100, finalT };
+  }
+
+  /**
+   * Long songs: one giant offline graph gets slower than real time (every scheduled voice stays in the graph), so render
+   * the song a few bars at a time without the master chain, add the pieces up, then run the master chain once over the mix.
+   */
+  async function renderChunked(p, opts, OAC) {
+    const ending = opts.ending || 'none';
+    const sd = stepDuration(p), n = songSteps(p), SR = 44100;
+    const CH = 64, TAIL = 6;
+    const songLen = n * sd;
+    const total = songLen + (ending === 'slowmo' ? 7 : 3);
+    let lastClip = 0;
+    for (const c of p.clips || []) lastClip = Math.max(lastClip, (c.start + c.len) * 16 * sd + 1);
+    const mixL = new Float32Array(Math.ceil((Math.max(total, lastClip) + TAIL) * SR)), mixR = new Float32Array(mixL.length);
+    const prevGet = getProject;
+    const finalT = 0.05 + n * sd;
+    for (let k0 = 0; k0 < n + (ending === 'slowmo' ? 1 : 0); k0 += CH) {
+      const k1 = Math.min(n, k0 + CH);
+      const base = 0.05 + k0 * sd; // where this chunk starts on the song timeline
+      // an audio clip (vocal, loop) only starts in the chunk where it begins, so that chunk runs until the clip ends
+      let len = (k1 - k0) * sd + TAIL + (k1 === n && ending === 'slowmo' ? 4 : 0);
+      for (const c of p.clips || []) {
+        const s0 = Math.round(c.start * 16);
+        if (c.kind === 'audio' && s0 >= k0 && s0 < k1) len = Math.max(len, (Math.round((c.start + c.len) * 16) - k0) * sd + 1);
+      }
+      const oc = new OAC(2, Math.ceil(len * SR), SR);
+      getProject = () => p;
+      const g = createGraph(oc, false, true);
+      getProject = prevGet;
+      for (let abs = k0; abs < k1; abs++) scheduleAbs(g, p, abs, (abs - k0) * sd, sd, -1);
+      if (k1 === n && ending === 'slowmo') {
+        const first = ((p.clips || []).filter((c) => c.kind === 'pattern').sort((a, b) => a.start - b.start)[0] || { pat: p.current }).pat;
+        const t = finalT - base;
+        scheduleStep(g, p, p.patterns[first], 0, t, sd, 0);
+        const boom = BL.sounds.drumBuffers.impact;
+        if (boom) playBuffer(oc, g.master, boom, t, { vel: 0.55 });
+        const crash = BL.sounds.drumBuffers.crash;
+        if (crash) playBuffer(oc, g.master, crash, t, { vel: 0.45 });
+      }
+      const buf = await oc.startRendering();
+      const off = Math.round(base * SR), L = buf.getChannelData(0), R = buf.getChannelData(1);
+      for (let i = 0; i < L.length && off + i < mixL.length; i++) { mixL[off + i] += L[i]; mixR[off + i] += R[i]; }
+      if (k1 === n) break;
+    }
+    // the master chain, once, over the whole mix
+    const oc = new OAC(2, mixL.length, SR);
+    getProject = () => p;
+    const g = createGraph(oc, false);
+    getProject = prevGet;
+    const mb = oc.createBuffer(2, mixL.length, SR);
+    mb.getChannelData(0).set(mixL); mb.getChannelData(1).set(mixR);
+    const src = oc.createBufferSource();
+    src.buffer = mb;
+    src.connect(g.lowShelf);
+    src.start(0);
+    const out = await oc.startRendering();
+    let chs = [out.getChannelData(0), out.getChannelData(1)];
+    if (ending === 'slowmo') {
+      const D = 4.5;
+      chs = varispeed(chs, SR, finalT, D, (x) => 0.5 - 0.12 * (x / D), (x) => Math.pow(1 - x / D, 1.6));
+    } else if (ending === 'tapestop') {
+      const D = Math.min(1.6, sd * 8 * 1.3);
+      chs = varispeed(chs, SR, finalT - sd * 8, D, (x) => Math.pow(Math.max(0, 1 - x / D), 1.4), (x) => (x > D * 0.92 ? (D - x) / (D * 0.08) : 1));
+    }
+    const L = chs[0], R = chs[1];
+    let end = L.length - 1;
+    while (end > 0 && Math.abs(L[end]) < 1e-4 && Math.abs(R[end]) < 1e-4) end--;
+    return { channels: [L.slice(0, end + 1), R.slice(0, end + 1)], sampleRate: SR, finalT };
   }
 
   /** render the last pattern + the ending so people can hear it before exporting */
