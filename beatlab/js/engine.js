@@ -216,7 +216,7 @@
         const buf = BL.sounds.drumBuffers[track.sound];
         if (!buf) continue;
         const r = (d.rolls && d.rolls[step]) || 1;
-        const rate = Math.pow(2, (track.pitch || 0) / 12);
+        const rate = Math.pow(2, ((track.pitch || 0) + ((d.pitches && d.pitches[step]) || 0)) / 12);
         for (let i = 0; i < r; i++) {
           playBuffer(c, s.input, buf, t + (i * stepDur) / r, { vel: v * (i ? 0.75 + 0.25 * (i / r) : 1), rate });
         }

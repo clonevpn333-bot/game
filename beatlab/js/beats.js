@@ -243,25 +243,25 @@
   // Every sound is synthesized here and every melody is newly written: nothing is sampled or copied.
   const KITS = [
     { id: 'msb', name: 'Yeat Pack', inspired: 'Monëy so big · Yeat', color: '#ff375f', preset: 'kit-msb',
-      blurb: 'Tonka bell, gritty clipped 808, rage drums, zaps and ad-libs. 138 BPM, dark and mono like the record.' },
+      blurb: 'Big Tonka Bell (a low, ringing BONG), gritty clipped 808, rage drums, zaps and ad-libs. 138 BPM, dark and mono.' },
     { id: 'drake', name: 'Drake Pack', inspired: 'God’s Plan & Nonstop · Drake', color: '#a2845e', preset: 'kit-drake',
       blurb: 'Muted keys, OVO pad, soft snaps, a short dirty 808 (77 BPM) and a long warm one (155 BPM).' },
     { id: 'jbx', name: 'A$AP Rocky Pack', inspired: 'Jukebox Joints · A$AP Rocky & Kanye West', color: '#ffb340', preset: 'kit-jbx',
       blurb: 'A sped-up soul record with horns and an “ooh” vocal, bass guitar instead of 808, dusty swung drums, scratches. 74 BPM.' },
     { id: 'fev', name: 'Fever Pack', inspired: 'Fever · fakemink', color: '#64d2ff', preset: 'kit-fev',
-      blurb: 'Long sliding bass, warm low-mids, wide air pads and glass bells over bouncy drums. 115 BPM.' },
+      blurb: 'The “vwow”: a bass and lead whose filter swells open and shut on every 8th, over an air pad and bouncy drums. 115 BPM.' },
   ];
 
-  const BELL_A = [[0, 7, 2], [2, 4, 2], [4, 6, 2], [6, 4, 2], [8, 7, 2], [10, 4, 2], [12, 3, 2], [14, 2, 2], [16, 7, 2], [18, 4, 2], [20, 6, 2], [22, 4, 2], [24, 9, 3], [27, 7, 2], [29, 6, 3]];
-  const BELL_B = [[0, 7, 2], [2, 4, 2], [4, 6, 2], [6, 4, 2], [8, 7, 2], [10, 4, 2], [12, 3, 2], [14, 2, 2], [16, 9, 2], [18, 7, 2], [20, 6, 2], [22, 4, 2], [24, 3, 3], [27, 2, 2], [29, 0, 3]];
-
+  // big bell parts: fewer, heavier hits that ring under the beat
+  const BELL_A = [[0, 0, 6], [6, 2, 4], [10, 0, 6], [16, -1, 6], [22, 0, 4], [26, 2, 6]];
+  const BELL_B = [[0, 0, 6], [6, 2, 4], [10, 4, 6], [16, 3, 4], [20, 2, 4], [24, 0, 4], [28, -1, 4]];
   PRESETS.push(
     {
       id: 'kit-msb', name: 'Yeat — Money Mode', color: '#ff375f', kit: 'msb',
       tags: ['Yeat-type', 'Money So Big type', 'rage', 'tonka bell', 'BeatLab Pack'],
       desc: 'Built from “Monëy so big”: 138 BPM, C# minor, the measured kick pattern, half-time clap, clipped 808 that rings ~0.3 s, a Tonka bell lead, dark and almost mono.',
       bpm: 138, key: 1, scale: 'minor', swing: 0, bars: 2, song: 'AABBAB',
-      mix: { low: 1, high: -3, lp: 12000, drive: 0.3, width: 0.5, loud: 0, vol: 0.85 },
+      mix: { low: 1, high: -1, lp: 12000, drive: 0.3, width: 0.5, loud: 0, vol: 0.58 },
       tracks: [
         { type: 'drum', sound: 'yeat_kick', name: 'Kick', A: 'X.....x.....x...|..x.....x....o.o', B: 'X.....x.....x...|..x.....x..x.x.x' },
         { type: 'drum', sound: 'msb_clap', name: 'Clap', A: '........X.......|........X.......' },
@@ -269,7 +269,7 @@
         { type: 'drum', sound: 'msb_ohat', name: 'Open Hat', vol: 0.4, A: '................|................', B: '..............x.|..............x.' },
         { type: 'drum', sound: 'yeat_zap', name: 'Zap', vol: 0.4, A: '................|................', B: '................|............x...' },
         { type: 'drum', sound: 'yeat_ad', name: 'Ad-lib', vol: 0.5, A: '................|................', B: '....x...........|................' },
-        { type: 'synth', inst: 'yeatbell', name: 'Tonka Bell', vol: 0.7, rev: 0.45, A: BELL_A, B: BELL_B },
+        { type: 'synth', inst: 'bigbell', name: 'Big Tonka Bell', vol: 0.8, rev: 0.4, A: BELL_A, B: BELL_B },
         { type: 'synth', inst: 'darkpad', name: 'Pad', vol: 0.35, octave: -1, rev: 0.5, A: [C(0, 0, 16), C(16, 5, 16)] },
         { type: 'synth', inst: 'b808yeat', name: '808', vol: 0.85,
           A: [[0, 0, 6], [6, 0, 6], [12, 0, 4], [18, -2, 6], [24, -3, 5], [29, -4, 2], [31, -4, 1]],
@@ -331,19 +331,19 @@
     {
       id: 'kit-fev', name: 'Fever Mode', color: '#64d2ff', kit: 'fev',
       tags: ['fakemink-type', 'Fever type', 'jerk', 'airy', 'BeatLab Pack'],
-      desc: 'Built from “Fever”: 115 BPM, C major, a long bass that slides up into each note, warm low-mids, wide airy pads and bells.',
+      desc: 'Built from “Fever”: 115 BPM, C major, a held bass on F whose filter opens and closes every 8th note (the “vwow”), a vwow lead, wide air pad.',
       bpm: 115, key: 0, scale: 'major', swing: 0, bars: 2, song: 'AABBAB',
-      mix: { low: 1, high: 8, width: 1.6, drive: 0.2, loud: 0 },
+      mix: { low: 1, high: 8, width: 1.6, drive: 0.2, loud: 0.25 },
       tracks: [
         { type: 'drum', sound: 'fev_kick', name: 'Kick', A: 'X...X...X...X.X.|X...X...X...X...' },
         { type: 'drum', sound: 'fev_snare', name: 'Snare', A: '....X.......X...|....X.......X..x' },
-        { type: 'drum', sound: 'fev_hat', name: 'Hats', vol: 0.9, A: 'x.xxx.x.x.xxx.x.|x.xxx.x.x.x.3.x.' },
+        { type: 'drum', sound: 'fev_hat', name: 'Hats', vol: 1.25, A: 'x.xxx.x.x.xxx.x.|x.xxx.x.x.x.3.x.' },
         { type: 'drum', sound: 'fev_ohat', name: 'Air Hat', vol: 0.35, A: '..............x.|..............x.' },
         { type: 'drum', sound: 'fev_vox', name: 'Vox Chop', vol: 0.4, A: '................|................', B: '......x.......x.|..x...x.........' },
-        { type: 'synth', inst: 'airpad', name: 'Air Pad', vol: 0.85, octave: -1, rev: 0.6, A: [C(0, 3, 8, 4), C(8, 4, 8, 4), C(16, 0, 8, 4), C(24, 5, 8, 4)] },
-        { type: 'synth', inst: 'musicbox', name: 'Glass Bells', vol: 0.6, rev: 0.5, A: [],
-          B: [[0, 9, 2], [3, 11, 2], [6, 12, 2], [8, 11, 4], [16, 9, 2], [19, 8, 2], [22, 7, 2], [24, 9, 6]] },
-        { type: 'synth', inst: 'feverbass', name: 'Sliding Bass', vol: 0.38, A: [[0, 3, 8], [7, 4, 9], [15, 0, 9], [23, 5, 9]] },
+        { type: 'synth', inst: 'airpad', name: 'Air Pad', vol: 0.55, octave: -1, rev: 0.6, A: [C(0, 3, 8, 4), C(8, 4, 8, 4), C(16, 0, 8, 4), C(24, 5, 8, 4)] },
+        { type: 'synth', inst: 'vwowlead', name: 'Vwow Lead', vol: 0.55, rev: 0.35, A: [],
+          B: [[0, 7, 2], [2, 7, 2], [4, 9, 2], [6, 7, 2], [8, 11, 2], [10, 11, 2], [12, 9, 2], [14, 7, 2], [16, 7, 2], [18, 7, 2], [20, 9, 2], [22, 11, 2], [24, 12, 2], [26, 11, 2], [28, 9, 4]] },
+        { type: 'synth', inst: 'vwow', name: 'Vwow Bass', vol: 0.4, A: [[0, 3, 2], [2, 3, 2], [4, 3, 2], [6, 3, 2], [8, 4, 2], [10, 4, 2], [12, 4, 2], [14, 4, 2], [16, 0, 2], [18, 0, 2], [20, 0, 2], [22, 0, 2], [24, 5, 2], [26, 5, 2], [28, 5, 2], [30, 5, 2]] },
       ],
     },
   );

@@ -1303,7 +1303,8 @@
   // ---------- piano roll ----------
   const ROW_H = 18;
   let COL_W = 26;
-  const rollRange = (t) => ((S.INSTRUMENTS[t.inst] || {}).bass ? [-7, 10] : [-7, 14]);
+  // two octaves above and below the key, so one bass note can sit way under another
+  const rollRange = (t) => ((S.INSTRUMENTS[t.inst] || {}).bass ? [-14, 14] : [-14, 21]);
   function rollRows(t) { const [lo, hi] = rollRange(t); const rows = []; for (let d = hi; d >= lo; d--) rows.push(d); return rows; }
   function renderRoll(body) {
     const t = P.tracks.find((x) => x.id === ui.sel && x.type === 'synth') || P.tracks.find((x) => x.type === 'synth');

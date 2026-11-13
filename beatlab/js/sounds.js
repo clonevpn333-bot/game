@@ -735,8 +735,77 @@
         return { node: amp, end };
       },
     },
+    bigbell: {
+      name: 'Big Tonka Bell', cat: 'Bells', base: 60,
+      play(ctx, out, f, t, dur, v) {
+        // a big cast bell: hum an octave under the note, prime, the minor-third "tierce" that makes it sound like a
+        // bell, quint, nominal and upper partials, each ringing for its own time, with slow beating; a heavy low strike.
+        const amp = gain(ctx, v * 0.5);
+        const tone = filter(ctx, 'lowpass', 6000, 0.4);
+        chain(amp, tone, out);
+        const partials = [[0.5, 0.7, 5.5], [1, 0.6, 3.6], [1.2, 0.45, 2.6], [1.5, 0.28, 2], [2, 0.6, 2.8], [2.5, 0.2, 1.2], [3, 0.32, 1.3], [4.2, 0.22, 0.8], [5.4, 0.12, 0.5]];
+        const ringEnd = t + Math.max(5.6, dur + 1);
+        partials.forEach(([r, a, d], i) => {
+          const p = ctx.createStereoPanner ? ctx.createStereoPanner() : gain(ctx, 1);
+          if (p.pan) p.pan.value = ((i % 3) - 1) * 0.45;
+          const g = gain(ctx, 0);
+          decay(g.gain, t, a, d, 0.002);
+          chain(g, p, amp);
+          // two sines a hair apart per partial = the slow "wah-wah" beating of a real bell
+          [-0.6, 0.6].forEach((beat) => chain(osc(ctx, 'sine', f * r + beat * r, t, d * 2.2 + 0.1), gain(ctx, 0.5), g));
+        });
+        const th = osc(ctx, 'sine', f * 2, t, 0.25);
+        th.frequency.exponentialRampToValueAtTime(f * 0.5, t + 0.08);
+        const tg = gain(ctx, 0);
+        decay(tg.gain, t, 0.9, 0.12, 0.001);
+        chain(th, tg, amp);
+        const n = noiseSrc(ctx, t, 0.06);
+        const ng = gain(ctx, 0);
+        decay(ng.gain, t, 0.35, 0.03, 0.0005);
+        chain(n, filter(ctx, 'bandpass', 1800, 1.2), ng, amp);
+        return { node: amp, end: ringEnd };
+      },
+    },
+    vwow: {
+      name: 'Vwow Bass', cat: 'Synths', base: 36,
+      play(ctx, out, f, t, dur, v) {
+        // the Fever "vwow": a fat saw bass whose filter snaps open (~50 ms) and closes (~180 ms) on every note,
+        // with an "ow" vowel sweep on top; write it on 8th notes for the pumping wah
+        const amp = gain(ctx, 0);
+        const end = adsr(amp.gain, t, dur, 0.03, 0.12, 0.8, 0.08, v * 0.42);
+        const lp = filter(ctx, 'lowpass', 260, 5);
+        lp.frequency.setValueAtTime(220, t);
+        lp.frequency.exponentialRampToValueAtTime(Math.min(4000, f * 14), t + 0.05);
+        lp.frequency.exponentialRampToValueAtTime(Math.max(180, f * 2.4), t + 0.23);
+        const ow = filter(ctx, 'bandpass', 450, 2.5);
+        ow.frequency.setValueAtTime(300, t);
+        ow.frequency.exponentialRampToValueAtTime(700, t + 0.06);
+        ow.frequency.exponentialRampToValueAtTime(330, t + 0.25);
+        const owg = gain(ctx, 1.6);
+        chain(lp, amp, out);
+        chain(ow, owg, amp);
+        [-7, 7].forEach((det) => {
+          const o = osc(ctx, 'sawtooth', f, t, end - t);
+          o.detune.value = det;
+          o.frequency.setValueAtTime(f * 0.97, t);
+          o.frequency.exponentialRampToValueAtTime(f, t + 0.05);
+          o.connect(lp); o.connect(ow);
+        });
+        chain(osc(ctx, 'square', f, t, end - t), gain(ctx, 0.3), lp);
+        chain(osc(ctx, 'sine', f, t, end - t), gain(ctx, 0.8), amp);
+        return { node: amp, end };
+      },
+    },
+    vwowlead: {
+      name: 'Vwow Lead', cat: 'Synths', base: 60,
+      play(ctx, out, f, t, dur, v) {
+        const g2 = gain(ctx, 0.7);
+        g2.connect(out);
+        return INSTRUMENTS.vwow.play(ctx, g2, f, t, dur, v);
+      },
+    },
     yeatbell: {
-      name: 'Tonka Bell', cat: 'Bells', base: 72,
+      name: 'Tonka Bell (small)', cat: 'Bells', base: 72,
       play(ctx, out, f, t, dur, v) {
         // struck bell: harmonic FM body + tubular-bell partials (2.76x, 5.4x, 8.93x) that die faster,
         // a metal strike, two voices detuned +-7 cents and spread L/R, tone rolled off at ~4.5 kHz like the record
