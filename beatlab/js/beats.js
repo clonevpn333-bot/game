@@ -300,5 +300,82 @@
     },
   );
 
-  BL.beats = { PRESETS, KITS, drumRow, chopRow, notes, rep, clean };
+  // Test songs: complete, original arrangements made with the BeatLab Packs.
+  // Same mood as the songs that inspired each pack; every melody and pattern here is newly written.
+  const SONGS = [
+    {
+      id: 'song-bankroll', name: 'Bankroll Bells', kit: 'msb', color: '#ff375f',
+      tags: ['test song', 'Big Money Pack', 'rage'],
+      desc: 'A rage song in the Big Money style: bell intro, hard hook, stripped verse, bell outro.',
+      bpm: 150, key: 1, scale: 'minor', swing: 0, bars: 2,
+      patternNames: { A: 'Intro', B: 'Hook', C: 'Verse', D: 'Outro' },
+      song: 'AABBBBCCCCBBDD',
+      tracks: [
+        { type: 'drum', sound: 'msb_kick', name: 'Kick', A: '', B: 'x.......x.x.....|x.....x...x.....', C: 'x.........x.....|x.......x.......', D: '' },
+        { type: 'drum', sound: 'msb_clap', name: 'Clap', A: '', B: '........x.......|........x.......', C: '........x.......|........x.......', D: '' },
+        { type: 'drum', sound: 'msb_hat', name: 'Hats', A: '', B: 'x.x.x3x.x.x.x.x.|x.x.x.x.x.4.x.3.', C: 'x.x.x.x.x.x.x.x.|x.x.x.x.x.x.x2x.', D: '' },
+        { type: 'drum', sound: 'msb_ohat', name: 'Open Hat', vol: 0.45, A: '', B: '......x.......x.|......x.......x.', C: '', D: '' },
+        { type: 'drum', sound: 'msb_ping', name: 'Ping', vol: 0.4, A: '', B: '...x......x.....|...x.........x..', C: '...x............|...x............', D: '' },
+        { type: 'drum', sound: 'msb_riser', name: 'Riser', vol: 0.5, A: '................|x...............', B: '', C: '................|......x.........', D: '' },
+        { type: 'synth', inst: 'tonka', name: 'Rage Bell', vol: 0.6, rev: 0.35,
+          A: [[0, 4, 2], [2, 7, 2], [4, 9, 2], [6, 7, 2], [8, 11, 2], [10, 9, 2], [12, 7, 4], [16, 4, 2], [18, 7, 2], [20, 9, 2], [22, 10, 2], [24, 9, 2], [26, 7, 2], [28, 6, 4]],
+          B: [[0, 4, 2], [2, 7, 2], [4, 9, 2], [6, 7, 2], [8, 11, 2], [10, 9, 2], [12, 7, 4], [16, 4, 2], [18, 7, 2], [20, 9, 2], [22, 10, 2], [24, 9, 2], [26, 7, 2], [28, 6, 4]],
+          C: [[0, 7, 6], [8, 6, 6], [16, 4, 6], [24, 2, 8]],
+          D: [[0, 4, 2], [2, 7, 2], [4, 9, 2], [6, 7, 2], [8, 11, 8], [16, 4, 16]] },
+        { type: 'synth', inst: 'b808hard', name: '808', vol: 0.8,
+          A: [], B: [[0, 0, 6], [8, 0, 2], [10, 0, 4], [16, -3, 6], [22, -2, 2], [24, -2, 4], [28, -1, 4]],
+          C: [[0, 0, 8], [10, 0, 6], [16, -3, 8], [26, -2, 6]], D: [[0, 0, 16]] },
+      ],
+    },
+    {
+      id: 'song-staticheat', name: 'Static Heat', kit: 'fev', color: '#64d2ff',
+      tags: ['test song', 'Fever Pack', 'jerk', 'plugg'],
+      desc: 'An airy jerk/plugg song in the Fever style: pad intro, bouncing hook, half-empty verse.',
+      bpm: 155, key: 8, scale: 'major', swing: 0, bars: 2,
+      patternNames: { A: 'Intro', B: 'Hook', C: 'Verse', D: 'Outro' },
+      song: 'AABBCCBBBBDD',
+      tracks: [
+        { type: 'drum', sound: 'fev_kick', name: 'Kick', A: '', B: 'x.........x.....|x.....x.........', C: 'x...............|x.........x.....', D: '' },
+        { type: 'drum', sound: 'fev_snare', name: 'Snare', A: '', B: '........x.......|........x.......', C: '........x.......|........x.......', D: '' },
+        { type: 'drum', sound: 'fev_hat', name: 'Hats', A: '', B: 'x.xxx.x.x.xxx.x.|x.xxx.x.x.x.3.x.', C: 'x.x.x.x.x.x.x.x.|x.x.x.x.x.x.x.x.', D: '' },
+        { type: 'drum', sound: 'fev_ohat', name: 'Air Hat', vol: 0.4, A: '', B: '..............x.|..............x.', C: '', D: '' },
+        { type: 'drum', sound: 'fev_vox', name: 'Vox Chop', vol: 0.45, A: '', B: '......x.......x.|..x...x.........', C: '', D: '..........x.....|................' },
+        { type: 'drum', sound: 'fev_rev', name: 'Reverse Air', vol: 0.5, A: '................|........x.......', B: '', C: '................|........x.......', D: '' },
+        { type: 'synth', inst: 'airpad', name: 'Air Pad', vol: 0.5, octave: -1, rev: 0.6,
+          A: [C(0, 3, 8, 4), C(8, 4, 8, 4), C(16, 5, 8, 4), C(24, 0, 8, 4)],
+          B: [C(0, 3, 8, 4), C(8, 4, 8, 4), C(16, 5, 8, 4), C(24, 0, 8, 4)],
+          C: [C(0, 5, 16, 4), C(16, 3, 16, 4)],
+          D: [C(0, 3, 16, 4), C(16, 0, 16, 4)] },
+        { type: 'synth', inst: 'musicbox', name: 'Glass Bells', vol: 0.45, rev: 0.5,
+          A: [[0, 9, 4], [8, 11, 4], [16, 12, 4], [24, 14, 8]],
+          B: [[0, 9, 2], [2, 11, 2], [4, 12, 3], [7, 11, 1], [8, 9, 4], [12, 7, 4], [16, 8, 2], [18, 9, 2], [20, 11, 2], [22, 12, 2], [24, 14, 6], [30, 12, 2]],
+          C: [], D: [[0, 14, 8], [8, 12, 8], [16, 11, 8], [24, 7, 8]] },
+        { type: 'synth', inst: 'b808', name: '808 (slides)', vol: 0.85,
+          A: [], B: [[0, 3, 7], [6, 3, 4], [8, 4, 6], [14, 4, 4], [16, 5, 6], [22, 5, 4], [24, 0, 8]],
+          C: [[0, 5, 10], [10, 5, 8], [16, 3, 12], [26, 4, 6]], D: [] },
+      ],
+    },
+    {
+      id: 'song-coinslot', name: 'Coin Slot Soul', kit: 'jbx', color: '#ffb340',
+      tags: ['test song', 'Jukebox Pack', 'soul sample', 'boom bap'],
+      desc: 'A soul-sample song in the Jukebox style: record intro, swung verse, chopped-up hook.',
+      bpm: 90, key: 9, scale: 'dorian', swing: 0.3, bars: 2,
+      patternNames: { A: 'Intro', B: 'Verse', C: 'Hook', D: 'Outro' },
+      song: 'AABBBBCCBBCCDD',
+      samples: { soul: { builtin: 'jukebox_soul', fit: true, autoKey: true, chops: 8 } },
+      tracks: [
+        { type: 'drum', sound: 'jbx_kick', name: 'Kick', A: '', B: 'x.........x.....|x......x..x.....', C: 'x......x..x.....|x.x.......x..x..', D: '' },
+        { type: 'drum', sound: 'jbx_snare', name: 'Snare', A: '', B: '....x.......x...|....x.......x...', C: '....x.......x...|....x.......x..o', D: '' },
+        { type: 'drum', sound: 'jbx_hat', name: 'Hats', A: '', B: 'X.o.x.o.X.o.x.o.|X.o.x.o.X.o.x.xo', C: 'X.o.x.o.X.o.x.o.|X.o.x.o.X.o.x.xo', D: '' },
+        { type: 'drum', sound: 'jbx_rim', name: 'Rim', vol: 0.5, A: '', B: '', C: '', D: '..x.......x.....|..x.......x...x.' },
+        { type: 'drum', sound: 'jbx_tamb', name: 'Tambourine', vol: 0.4, A: '', B: '', C: '....x.......x...|....x.......x.x.', D: '' },
+        { type: 'drum', sound: 'jbx_crash', name: 'Crash', vol: 0.5, A: '', B: '', C: 'x...............|................', D: '' },
+        { type: 'sample', sample: 'soul', mode: 'loop', name: 'Soul Record', vol: 0.75, A: true, B: true, C: false, D: true },
+        { type: 'sample', sample: 'soul', mode: 'chop', name: 'Soul Chops', vol: 0.75, A: '', B: '', C: '0...0.1.....3...|4...4.5...6.7...', D: '' },
+        { type: 'synth', inst: 'sub', name: 'Bass', vol: 0.7, A: [], B: [[0, 0, 7], [8, 3, 7], [16, 1, 7], [24, 4, 7]], C: [[0, 0, 3], [4, 0, 3], [8, 3, 7], [16, 1, 3], [20, 1, 3], [24, 4, 7]], D: [] },
+      ],
+    },
+  ];
+
+  BL.beats = { PRESETS, KITS, SONGS, drumRow, chopRow, notes, rep, clean };
 })(typeof window !== 'undefined' ? window : globalThis);

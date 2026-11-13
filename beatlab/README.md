@@ -29,7 +29,7 @@ npm run mac          # build dist/BeatLab-2.0.0-mac.dmg
 
 ## The window
 
-Six big tabs, one job each, so you never see everything at once:
+Big tabs, one job each, so you never see everything at once:
 
 | Tab | What you do there |
 |---|---|
@@ -39,6 +39,7 @@ Six big tabs, one job each, so you never see everything at once:
 | **Sample** (F8) | Speed and pitch sliders, Match my tempo / key, chop into pads |
 | **Song** (F5) | Paint patterns and audio along the timeline. Play plays the whole song here |
 | **Mix** (F9) | Volume, pan and reverb per sound, then Export |
+| **Test** (F10) | Three finished demo songs made with the BeatLab Packs: *Bankroll Bells* (Big Money), *Static Heat* (Fever), *Coin Slot Soul* (Jukebox). Play them, open them to see how they're built, or export them |
 
 The top bar has play, record and an LCD showing what Play plays (LOOP or SONG), the position, tempo and key, plus a live spectrum.
 Channel lights flash on every hit, and the per-row buttons stay hidden until you hover a row.

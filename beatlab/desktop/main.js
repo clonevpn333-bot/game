@@ -71,6 +71,7 @@ function buildMenu() {
         item('Sample', 'lab', 'F8'),
         item('Song', 'song', 'F5'),
         item('Mix', 'mix', 'F9'),
+        item('Test Songs', 'test', 'F10'),
         { type: 'separator' },
         { role: 'resetZoom' }, { role: 'zoomIn' }, { role: 'zoomOut' },
         { type: 'separator' },

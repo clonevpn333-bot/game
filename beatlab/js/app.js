@@ -50,6 +50,7 @@
     tabSample: '<path d="M3 12h2l2-6 3 12 3-15 3 15 2-6h3"/>',
     tabSong: '<rect x="3" y="5" width="8" height="4" rx="1.2"/><rect x="9" y="11" width="9" height="4" rx="1.2"/><rect x="5" y="17" width="12" height="3" rx="1.2"/><path d="M3 3v18"/>',
     tabMix: '<path d="M6 4v16M12 4v16M18 4v16"/><rect x="4" y="13" width="4" height="3" rx="1" fill="currentColor"/><rect x="10" y="7" width="4" height="3" rx="1" fill="currentColor"/><rect x="16" y="11" width="4" height="3" rx="1" fill="currentColor"/>',
+    tabTest: '<path d="M9.5 3.5h5"/><path d="M10.5 3.5v5.2L5 18.2a1.6 1.6 0 0 0 1.4 2.3h11.2a1.6 1.6 0 0 0 1.4-2.3l-5.5-9.5V3.5"/><path d="M7.6 14h8.8"/>',
     folder: '<path d="M3.5 7a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/>',
   };
   const icon = (n) => `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n] || ''}</svg>`;
@@ -174,7 +175,9 @@
   function projectFromPreset(pr) {
     const p = newProject({ name: pr.name, bpm: pr.bpm, key: pr.key, scale: pr.scale, swing: pr.swing || 0, bars: pr.bars || 2 });
     p.master.lofi = !!pr.lofi;
-    p.patterns = [newPattern(0), newPattern(1)];
+    const LETTERS = ['A', 'B', 'C', 'D'].filter((L, i) => i < 2 || (pr.song || '').includes(L));
+    p.patterns = LETTERS.map((L, i) => { const pt = newPattern(i); if (pr.patternNames && pr.patternNames[L]) pt.name = pr.patternNames[L]; return pt; });
+    if (pr.patternNames) p.songOf = pr.id;
     const prev = P;
     P = p;
     const smap = {};
@@ -196,13 +199,13 @@
       const t = makeTrack(t0.type, { sound: t0.sound, inst: t0.inst, name: t0.name, vol: t0.vol || 0.8, rev: t0.rev || 0, octave: t0.octave || 0, mode: t0.mode });
       if (t0.type === 'sample') t.sampleId = smap[t0.sample];
       p.tracks.push(t);
-      ['A', 'B'].forEach((L, pi) => {
+      LETTERS.forEach((L, pi) => {
         const src = t0[L] != null ? t0[L] : t0.A;
         let d;
         if (t0.type === 'drum') { const row = BL.beats.drumRow(src || ''); d = { steps: fit(row.steps, 0), rolls: fit(row.rolls, 1) }; }
         else if (t0.type === 'synth') d = BL.beats.notes(src || []);
         else if (t0.mode === 'chop') d = { steps: fit(BL.beats.chopRow(src || '').steps, -1), on: true };
-        else d = { steps: new Array(n).fill(-1), on: t0[L] !== false };
+        else d = { steps: new Array(n).fill(-1), on: (t0[L] != null ? t0[L] : t0.A) !== false };
         p.patterns[pi].data[t.id] = d;
       });
     }
@@ -464,6 +467,8 @@
       help: 'Paint your patterns and audio along the timeline to build the full song.' },
     { id: 'mix', label: 'Mix', sub: 'Levels & export', icon: 'tabMix', color: '#30d158', key: 'F9',
       help: 'Balance how loud each sound is, then export your beat.' },
+    { id: 'test', label: 'Test', sub: 'Demo songs', icon: 'tabTest', color: '#ff375f', key: 'F10',
+      help: 'Full songs made with the BeatLab Packs. Press play to hear one, or open it to see how it was built.' },
   ];
   function renderTabs() {
     R.bigTabs.innerHTML = TABS.map((t) => `<button role="tab" class="bigtab ${ui.tab === t.id ? 'is-on' : ''}" data-tab="${t.id}" style="--tc:${t.color}" aria-selected="${ui.tab === t.id}" data-hint="${t.label}: ${t.sub} (${t.key})">
@@ -479,7 +484,7 @@
       lab: '',
       song: `<button class="tbtn tbtn-primary big" data-ph="audio">${icon('import')}<span>Import Audio</span></button>`,
       mix: `<button class="tbtn tbtn-primary big" data-ph="export">${icon('export')}<span>Export</span></button>`,
-    }[t.id];
+    }[t.id] || '';
     R.panelHead.style.setProperty('--tc', t.color);
     R.panelHead.innerHTML = `<span class="ph-ico">${icon(t.icon)}</span><div class="ph-text"><h1>${t.label}</h1><p>${t.help}</p></div><span class="ph-spacer"></span>${action}`;
     const b = $('[data-ph]', R.panelHead);
@@ -533,7 +538,81 @@
     else if (ui.tab === 'lab') BL.lab.render();
     else if (ui.tab === 'song') BL.playlist.render(body);
     else if (ui.tab === 'sounds') renderSounds(body);
+    else if (ui.tab === 'test') renderTest(body);
     else renderMixer(body);
+  }
+
+  // ---------- test tab: complete demo songs ----------
+  function songSections(pr) {
+    const secs = [];
+    (pr.song || '').split('').forEach((L) => {
+      const name = (pr.patternNames || {})[L] || L;
+      const last = secs[secs.length - 1];
+      if (last && last.name === name) last.len += pr.bars; else secs.push({ name, L, len: pr.bars });
+    });
+    return secs;
+  }
+  const SECTION_COLORS = { Intro: '#64d2ff', Hook: '#ff375f', Verse: '#bf5af2', Outro: '#30d158' };
+  function renderTest(body) {
+    const songs = BL.beats.SONGS;
+    body.innerHTML = `<div class="test">
+      <p class="test-note">Three short songs written for testing BeatLab, one per BeatLab Pack. Each is an original track in the mood of the song that inspired its pack, arranged into an intro, hooks, verses and an outro.</p>
+      <div class="song-list">${songs.map((pr) => {
+        const kit = BL.beats.KITS.find((k) => k.id === pr.kit) || {};
+        const secs = songSections(pr);
+        const total = secs.reduce((a, s) => a + s.len, 0);
+        const secsLen = Math.round((total * 4 * 60) / pr.bpm);
+        return `<div class="song-card" data-song="${pr.id}" style="--c:${pr.color}">
+          <button class="song-play" data-act="play" aria-label="Play ${esc(pr.name)}">${icon('play')}</button>
+          <div class="song-info">
+            <div class="song-title"><b>${esc(pr.name)}</b><small>${esc(kit.name || '')} · in the mood of ${esc(kit.inspired || '')}</small></div>
+            <div class="song-meta">${pr.bpm} BPM · ${T.keyName(pr.key, pr.scale)} · ${Math.floor(secsLen / 60)}:${String(secsLen % 60).padStart(2, '0')} · ${total} bars</div>
+            <div class="song-strip" data-total="${total}">${secs.map((s) => `<span style="flex:${s.len};--sc:${SECTION_COLORS[s.name] || '#8e8e93'}"><i>${s.name}</i></span>`).join('')}<em class="song-head"></em></div>
+            <p class="song-desc">${esc(pr.desc)}</p>
+          </div>
+          <div class="song-actions">
+            <button class="tbtn" data-act="open">${icon('tabSong')}<span>Open in Song</span></button>
+            <button class="tbtn" data-act="export">${icon('export')}<span>Export</span></button>
+          </div>
+        </div>`;
+      }).join('')}</div></div>`;
+    $$('.song-card', body).forEach((card) => {
+      const id = card.dataset.song;
+      $('[data-act="play"]', card).addEventListener('click', () => playTestSong(id));
+      $('[data-act="open"]', card).addEventListener('click', async () => { await loadTestSong(id); setTab('song'); });
+      $('[data-act="export"]', card).addEventListener('click', async () => { await loadTestSong(id); openExport(); });
+    });
+    syncTestCards();
+  }
+  async function loadTestSong(id) {
+    if (P.songOf === id) return;
+    const pr = BL.beats.SONGS.find((x) => x.id === id);
+    await loadProject(projectFromPreset(pr), { undoable: true });
+    P.songMode = true;
+    P.pos = 0;
+    renderTransport();
+  }
+  async function playTestSong(id) {
+    if (P.songOf === id && E.state.playing) { stopAll(); syncTestCards(); return; }
+    if (E.state.playing) E.stop();
+    await loadTestSong(id);
+    P.songMode = true;
+    E.play(0);
+    renderTransport();
+    syncTestCards();
+    toast(`Playing “${P.name}”.`);
+  }
+  function syncTestCards(abs) {
+    if (ui.tab !== 'test') return;
+    $$('.song-card', R.edBody).forEach((card) => {
+      const on = P.songOf === card.dataset.song && E.state.playing;
+      card.classList.toggle('is-playing', on);
+      $('[data-act="play"]', card).innerHTML = icon(on ? 'stop' : 'play');
+      const head = $('.song-head', card);
+      const total = +$('.song-strip', card).dataset.total * 16;
+      if (on && abs != null) { head.style.opacity = 1; head.style.left = Math.min(100, (abs / total) * 100) + '%'; }
+      else if (!on) head.style.opacity = 0;
+    });
   }
 
   // ---------- sounds tab ----------
@@ -1435,6 +1514,7 @@
     if (lastCol >= 0 && columns[lastCol]) columns[lastCol].forEach((c) => c.classList.remove('now'));
     const head = $('#rollHead');
     if (!ev) {
+      if (ui.tab === 'test') setTimeout(() => syncTestCards(), 0);
       lastCol = -1;
       if (head) head.hidden = true;
       BL.playlist.playhead(null);
@@ -1443,6 +1523,7 @@
     }
     ui.lastEv = ev;
     setLcdPos(ev.abs);
+    if (ui.tab === 'test') syncTestCards(ev.abs);
     let step = -1;
     if (ev.song) {
       BL.playlist.playhead(ev.abs);
@@ -1540,7 +1621,7 @@
       return;
     }
     if (typing || !R.modal.hidden) return;
-    const fmap = { F4: 'sounds', F5: 'song', F6: 'rack', F7: 'roll', F8: 'lab', F9: 'mix' };
+    const fmap = { F10: 'test', F4: 'sounds', F5: 'song', F6: 'rack', F7: 'roll', F8: 'lab', F9: 'mix' };
     if (fmap[e.key]) { e.preventDefault(); command(fmap[e.key]); return; }
     if (e.code === 'Space') { e.preventDefault(); togglePlay(); return; }
     if (e.key === 'Enter') { goToStart(); return; }
@@ -1595,7 +1676,7 @@
       case 'start': return goToStart();
       case 'browser': return toggleBrowser();
       case 'playlist': return setTab('song');
-      case 'sounds': case 'song': case 'rack': case 'roll': case 'lab': case 'mix': return setTab(cmd);
+      case 'test': case 'sounds': case 'song': case 'rack': case 'roll': case 'lab': case 'mix': return setTab(cmd);
       case 'patternMode': return setMode(false);
       case 'songMode': return setMode(true);
       case 'help': return openHelp();
@@ -1604,7 +1685,7 @@
   }
 
   // ---------- hints, toast, modal, loading ----------
-  const DEFAULT_HINT = `Space play · Return to start · B Browser · F6 Channel Rack · F7 Piano Roll · F9 Mixer · ${CMD}S save · ${CMD}E export`;
+  const DEFAULT_HINT = `Space play · Return to start · F4 Sounds · F6 Beat · F7 Melody · F8 Sample · F5 Song · F9 Mix · ${CMD}S save · ${CMD}E export`;
   function bindHints() {
     document.addEventListener('pointerover', (e) => {
       const h = e.target.closest && e.target.closest('[data-hint]');
