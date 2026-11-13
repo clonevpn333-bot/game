@@ -12,90 +12,26 @@
 <body>
 <!--APP-->
 <div id="app">
-  <header class="top">
-    <div class="brand"><span class="brand-mark" aria-hidden="true"></span><span class="brand-name">BeatLab</span></div>
-    <input id="projName" class="proj-name" aria-label="Beat name" data-hint="Name your beat. It's used for the file name when you export.">
-    <div class="transport">
-      <button id="playBtn" class="play" aria-label="Play" data-hint="Play / stop. Shortcut: Space."><span class="ico-play"></span></button>
-      <div class="field" data-hint="Tempo in beats per minute. Hip-hop is usually 80–100, trap and drill 130–160.">
-        <span class="field-label">BPM</span>
-        <div class="bpm">
-          <button id="bpmDown" aria-label="Slower">−</button>
-          <input id="bpm" type="number" min="50" max="220" aria-label="BPM">
-          <button id="bpmUp" aria-label="Faster">+</button>
-        </div>
-        <button id="tapBtn" class="tap" data-hint="Tap along to a song to find its tempo.">Tap</button>
-      </div>
-      <div class="field" data-hint="The key of your beat. Change it and every note, 808 and matched sample moves with it.">
-        <span class="field-label">Key</span>
-        <select id="keySel" aria-label="Key"></select>
-        <select id="scaleSel" aria-label="Scale" class="scale-sel"></select>
-      </div>
-      <div class="field" data-hint="Swing pushes every other hi-hat a little late. That's the bounce in boom bap and lo-fi.">
-        <span class="field-label">Swing</span>
-        <input id="swing" type="range" min="0" max="0.6" step="0.01" aria-label="Swing">
-        <output id="swingOut" class="mono"></output>
-      </div>
-      <div class="field" data-hint="How long each pattern is. Making it longer copies what you have to fill the space.">
-        <span class="field-label">Length</span>
-        <div class="seg" id="barsSeg"><button data-bars="1">1</button><button data-bars="2">2</button><button data-bars="4">4</button><span class="seg-label">bars</span></div>
-      </div>
+  <header id="toolbar" class="toolbar"></header>
+  <div id="workspace" class="workspace">
+    <aside id="browser" class="browser" aria-label="Browser"></aside>
+    <div id="main" class="main">
+      <section id="playlist" class="playlist" aria-label="Playlist"></section>
+      <div id="splitter" class="splitter" role="separator" aria-orientation="horizontal" data-hint="Drag to resize. Double-click to reset."></div>
+      <section id="editor" class="editor" aria-label="Editor">
+        <div class="pane-head ed-head"><div id="edTabs"></div></div>
+        <div id="edBody" class="ed-body"></div>
+      </section>
     </div>
-    <nav class="actions" aria-label="Project">
-      <button id="beatsBtn" class="btn btn-accent" data-hint="Browse ready-made beats in every style.">Beats</button>
-      <button id="undoBtn" class="btn icon" aria-label="Undo" data-hint="Undo (Ctrl+Z)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
-      <button id="redoBtn" class="btn icon" aria-label="Redo" data-hint="Redo (Ctrl+Y)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
-      <button id="newBtn" class="btn" data-hint="Start an empty beat.">New</button>
-      <button id="openBtn" class="btn" data-hint="Open a saved .beatlab.json project.">Open</button>
-      <input id="openFile" type="file" accept=".json,application/json" hidden>
-      <button id="saveBtn" class="btn" data-hint="Save your project to a file (Ctrl+S). Your work is also kept in this browser automatically.">Save</button>
-      <button id="exportBtn" class="btn btn-strong" data-hint="Bounce your beat to a WAV audio file.">Export WAV</button>
-      <button id="helpBtn" class="btn icon" aria-label="Help" data-hint="How everything works."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M9.5 9.2a2.6 2.6 0 0 1 5 .9c0 1.7-2.5 2.3-2.5 3.9"/><path d="M12 17.2h.01"/></svg></button>
-    </nav>
-  </header>
-
-  <section class="patbar">
-    <div class="patbar-group">
-      <span class="field-label">Pattern</span>
-      <div id="patBtns" class="pats"></div>
-      <button id="copyPat" class="btn small" data-hint="Copy this pattern to another slot, then change it up for a hook or a verse.">Copy to…</button>
-      <button id="clearPat" class="btn small" data-hint="Clear everything in this pattern.">Clear</button>
-    </div>
-    <div class="patbar-group" id="toolSeg" role="group" aria-label="Drum tool">
-      <span class="field-label">Tool</span>
-      <div class="seg">
-        <button data-tool="draw" data-hint="Draw: click or drag across squares to add or remove hits.">Draw</button>
-        <button data-tool="roll" data-hint="Rolls: click a hit to turn it into a ×2, ×3 or ×4 roll. Perfect for trap hi-hats.">Rolls</button>
-        <button data-tool="vel" data-hint="Loudness: click a hit to make it soft, normal or loud.">Loudness</button>
-      </div>
-    </div>
-    <div class="patbar-group song-group">
-      <button id="songToggle" class="btn small toggle" aria-pressed="false" data-hint="Song mode plays the blocks below in order. Off = loop the pattern you're editing.">Song mode</button>
-      <div id="songStrip" class="song-strip"></div>
-    </div>
-  </section>
-
-  <main id="rack" class="rack" aria-label="Tracks"></main>
-
-  <section id="dock" class="dock">
-    <div class="dock-tabs">
-      <div class="seg" role="tablist" aria-label="Editor">
-        <button data-tab="roll" role="tab">Piano Roll</button>
-        <button data-tab="lab" role="tab">Sample Lab</button>
-        <button data-tab="mix" role="tab">Mixer</button>
-      </div>
-    </div>
-    <div id="dockBody" class="dock-body"></div>
-  </section>
-
-  <footer id="hint" class="hint" aria-live="polite"></footer>
+  </div>
+  <footer id="status" class="statusbar"><span id="hint" class="hint"></span><span id="saveState" class="save-state"></span></footer>
 </div>
-
+<input id="filePick" type="file" hidden>
 <div id="pop" class="pop" hidden></div>
 <div id="modal" class="modal" hidden></div>
 <div id="toast" class="toast" role="status" hidden></div>
 <div id="loading" class="loading"><div class="loading-card"><span class="spinner" aria-hidden="true"></span><span id="loadingMsg">Loading…</span></div></div>
-<div class="drop-hint" aria-hidden="true">Drop audio to sample it</div>
+<div class="drop-hint" aria-hidden="true"><span>Drop audio to import it</span><small>Single files become Playlist tracks · zips and folders become sound packs</small></div>
 <!--/APP-->
 
 <script src="js/theory.js"></script>
@@ -104,7 +40,10 @@
 <script src="js/engine.js"></script>
 <script src="js/beats.js"></script>
 <script src="js/magic.js"></script>
+<script src="js/media.js"></script>
 <script src="js/lab.js"></script>
+<script src="js/playlist.js"></script>
+<script src="js/browser.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

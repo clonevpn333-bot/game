@@ -1,14 +1,62 @@
 {
   "name": "beatlab",
-  "version": "1.0.0",
+  "productName": "BeatLab",
+  "version": "2.0.0",
   "private": true,
   "description": "BeatLab — a beat maker that's easy to learn: step drums, in-key piano roll, one-click sampling",
+  "author": "BeatLab",
+  "main": "desktop/main.js",
   "scripts": {
     "start": "node scripts/serve.mjs",
     "test": "node --test test/*.test.mjs",
-    "build": "node scripts/build-single.mjs"
+    "build": "node scripts/build-single.mjs",
+    "app": "electron .",
+    "mac": "electron-builder --mac dmg zip --universal --publish never"
   },
   "engines": {
     "node": ">=18"
+  },
+  "devDependencies": {
+    "electron": "33.2.1",
+    "electron-builder": "25.1.8"
+  },
+  "build": {
+    "appId": "app.beatlab.studio",
+    "productName": "BeatLab",
+    "copyright": "BeatLab",
+    "files": [
+      "index.html",
+      "css/**/*",
+      "js/**/*",
+      "desktop/main.js",
+      "desktop/preload.js",
+      "package.json"
+    ],
+    "directories": {
+      "output": "dist",
+      "buildResources": "desktop/build"
+    },
+    "afterPack": "desktop/adhoc-sign.js",
+    "mac": {
+      "category": "public.app-category.music",
+      "icon": "desktop/build/icon.png",
+      "identity": null,
+      "hardenedRuntime": false,
+      "darkModeSupport": true,
+      "artifactName": "BeatLab-${version}-mac.${ext}",
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "BeatLab uses the microphone when you press Record with mic in the Sample Lab."
+      }
+    },
+    "dmg": {
+      "title": "BeatLab",
+      "contents": [
+        { "x": 140, "y": 190 },
+        { "x": 400, "y": 190, "type": "link", "path": "/Applications" }
+      ]
+    },
+    "fileAssociations": [
+      { "ext": "beatlab", "name": "BeatLab Project", "role": "Editor" }
+    ]
   }
 }

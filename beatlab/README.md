@@ -1,67 +1,79 @@
-# BeatLab — make a beat in 10 seconds
+# BeatLab
 
-A beat maker in the spirit of FL Studio, built so you can use it the first time you open it.
-It runs in the browser with nothing to install: every drum, instrument and sample is synthesized in code, so it works offline.
+A beat maker for Mac that's laid out like Logic Pro and works like FL Studio, built so you can use it the first time you open it.
+Every drum, instrument and record in the library is synthesized in code, so it works offline. You can also import your own audio and sound packs.
+
+## Get the Mac app
+
+**Download it:** open the repository's **Actions** tab → **BeatLab Mac app** → the latest run → *Artifacts* → **BeatLab-mac**.
+Unzip it, open `BeatLab-2.0.0-mac.dmg` and drag BeatLab into Applications.
+It is a universal app for both Apple Silicon and Intel Macs.
+
+The app isn't notarized by Apple (that needs a paid Developer ID), so the first time you open it, right-click BeatLab → **Open** → **Open**.
+If macOS says the app "is damaged", run this once in Terminal:
+
+```bash
+xattr -cr /Applications/BeatLab.app
+```
+
+**Or build it yourself** on a Mac (Node 18+):
 
 ```bash
 cd beatlab
-npm start            # http://localhost:5174   (Node 18+, no install needed)
+npm install
+npm run app          # run it
+npm run mac          # build dist/BeatLab-2.0.0-mac.dmg
 ```
 
-You can also double-click `index.html`, or run `npm run build` to get one self-contained file at `dist/beatlab.html`.
+**Or use it in a browser** with nothing installed: run `npm start` (then open http://localhost:5174), or double-click `index.html`.
 
-## What's in the box
+## The window
 
 | | |
 |---|---|
-| **12 ready-made beats** | Chipmunk Soul, Rage, Dark Trap, Drill, 90s Boom Bap, Lo-Fi Study, Pluggnb, Pain Piano, Sunday Gospel, Jersey Club, Afrobeats, Villain Strings. Search by vibe or "type beat" tags (Kanye-type, Yeat-type, Carti-type, Future-type, Pop Smoke-type…). Each one loads and starts playing. |
-| **38 drum sounds** | 7 kicks, 7 snares, 5 claps, 5 hats, 3 open hats, 7 percs (cowbell, congas, tambourine, vox "hey"…), 5 FX (crash, reverse crash, riser, down sweep, impact) |
-| **20 instruments** | Grand Keys, Soul Rhodes, Gospel Organ, Nylon Guitar, Dark Pad, Movie Strings, Soul Choir, Pluck, Pluggnb Keys, Dark Bell, Music Box, Drill Flute, Rage Lead, Soul Horns, plus 808 Clean / Punchy / Distorted / Long, Smooth Sub and Reese |
-| **10 records to sample** | Dusty Soul Keys, Soul Choir "Ooh", Vintage Strings, Church Organ, Soul Horn Stabs, Lo-Fi Guitar, Dark Bells, Rage Synth Arp, Drill Flute, Vocal "Ahh". Or load your own file, drag one in, or record with the mic. |
+| **Control bar** | Transport (to start, play, stop, record), an LCD with position, tempo (drag, type or tap), key and scale, the Pattern/Song switch, master volume, Save and Export |
+| **Browser** (B) | Templates, My Projects, Drums, Instruments, Records, your Audio Tracks and Sound Packs. Click to hear, double-click or **+** to use, drag onto a channel or the Playlist |
+| **Playlist** | Arrange your song: paint patterns into the timeline and drop in audio tracks (songs, vocals, stems). Drag clips to move them, drag the right edge to lengthen, right-click to delete. Click the ruler to set where Song mode starts |
+| **Channel Rack** (F6) | The step sequencer. Each channel has an on/off light, solo, ✦ "write it for me", options, sound picker and volume. Up to 32 patterns |
+| **Piano Roll** (F7) | Notes locked to your key; chord mode; overlap 808 notes to slide; play your computer keyboard (A–L) and record |
+| **Sample Lab** (F8) | Speed and pitch sliders, Match my tempo, Match my key, chop into 4/8/16 pads, reverse, record with the mic |
+| **Mixer** (F9) | A vertical strip for every channel and audio track (volume, pan, reverb, mute, solo), plus master punch and lo-fi |
 
-## Why it's easy
+## Your own sounds
 
-* **You can't play a wrong note.** The piano roll only shows notes in your key. Change the key or scale and every melody, 808 and matched sample moves with it.
-* **Sampling is two sliders.** *Speed* (record-player style, so faster also means higher; tick *Keep pitch* to change only the tempo) and *Pitch*. **✦ Match my tempo** and **✦ Match my key** detect the sample's BPM and key and fit it to your beat. New samples are matched automatically.
-* **Chop with one click.** Cut into 4 / 8 / 16 even pieces or *on the hits*, play them as pads (keys 1–0), then add them to the beat as a loop or as chops on the grid.
-* **✦ on every track** writes a part for you: drum patterns for that sound, 9 chord progressions (Sad, Dark Trap, Heavenly, Soul Classic, Drill Menace…), a melody over your chords, an 808 that follows your kick, a fresh chop flip.
-* **Trap-ready drums.** The Rolls tool turns a hit into a ×2 / ×3 / ×4 roll; Loudness makes hits soft or hard; Swing adds bounce.
-* **808 slides.** Overlap two 808 notes and it glides between them.
-* **Chord mode** places a whole in-key chord with one click.
-* **A hint line** at the bottom explains whatever you point at. Undo/redo everything.
-* **Song mode.** Four patterns (A–D), arranged in a strip of blocks.
-* **Export WAV** with an ending: *Just stop*, *Slow-mo final hit* (one last hit that drops into slow motion and fades away) or *Tape stop*. Preview it before you export.
-* **Your work saves itself** in the browser. *Save* writes a `.beatlab.json` project, including your own audio files.
+* **Audio tracks:** use *Import Audio* in the Playlist, ⌘I, or drag WAV/MP3/AIFF/FLAC/M4A files onto the Playlist. Each one becomes a clip on its own track with its own mixer strip.
+* **Sound packs:** use the import button next to *Sound Packs* in the Browser. Import a `.zip`, a folder, or a handful of files. BeatLab sorts them into Kick, Snare, Clap, Hi-Hat, Open Hat, 808, Perc, FX and Loops from their names and lengths. One-shots work like any drum, and loops go on the Playlist or into the Sample Lab.
 
-## Look and feel
+Your audio and packs are stored inside the app on your Mac, so they're there next time.
 
-Styled after Apple's pro apps. It uses the system font (SF Pro on Apple devices, Inter elsewhere) and Apple's system colours, and it follows your device's light or dark appearance. Frosted glass is used only on the navigation bar, menus and toasts.
+## Saving
 
-Motion is spring-based and stays under half a second:
+* **Save** (⌘S) keeps the project in **My Projects** (in the Browser and under File → Open). The status bar and window title show whether there are unsaved changes.
+* **Save Project File…** writes a single `.beatlab` file that includes your audio tracks, samples and pack sounds, so you can back it up or move it to another Mac. Double-click it in Finder to open it.
+* Your last session also restores itself when you reopen the app.
 
-* segmented controls with a sliding thumb, and iOS-style switches
-* hits and notes pop in when you add them
-* tracks and beat cards rise in when they load
-* the play button pulses in time with your BPM, and the logo's level bars bounce while you play
-* hover lifts on cards and pads, and press-down feedback on every button
+## Export
 
-Turn on *Reduce motion* in your system settings to switch the animations off.
+* **Mixdown:** one 44.1 kHz, 16-bit stereo WAV of the pattern (×4) or the whole song.
+* **Stems** (⌘⇧E): one WAV per channel and per audio track, all the same length, in a zip, ready for any DAW.
+* **Endings:** *Just stop*, *Slow-mo final hit* or *Tape stop*, with a preview.
 
 ## Keys
 
-`Space` play/stop · `A`–`L` play notes in key (`Z`/`X` octave; turn on ● Rec while playing to record them) · `1`–`0` play chops in the Sample Lab · `Ctrl+Z` / `Ctrl+Y` undo/redo · `Ctrl+S` save
+`Space` play/stop · `Return` to start · `B` Browser · `F6` `F7` `F8` `F9` editors · `A`–`L` notes in key (`Z`/`X` octave) · `1`–`0` chops in the Sample Lab · `Delete` removes the selected Playlist clip · ⌘Z / ⌘⇧Z undo/redo · ⌘S save · ⌘O open · ⌘I import audio · ⌘E export
 
 ## Code map
 
 | File | What it does |
 |---|---|
-| `js/theory.js` | scales, chords, progressions, key detection (Krumhansl profiles), key matching |
-| `js/dsp.js` | FFT, phase-vocoder time stretch, resampling, speed/pitch, tempo + onset detection, WAV/ZIP encoders |
-| `js/sounds.js` | synthesized drum kit (rendered once), live instruments, 808s with glide, the built-in records |
-| `js/engine.js` | mixer, look-ahead scheduler, swing, rolls, sample loops/chops, offline bounce and endings |
-| `js/beats.js` | the beat library |
-| `js/magic.js` | the ✦ generators |
-| `js/lab.js` | Sample Lab |
-| `js/app.js` | the studio UI |
+| `js/theory.js` | scales, chords, progressions, key detection, key matching |
+| `js/dsp.js` | FFT, phase-vocoder time stretch, resampling, tempo and onset detection, WAV/ZIP encoders |
+| `js/sounds.js` | synthesized drums, instruments, 808s with glide, the built-in records |
+| `js/engine.js` | mixer, look-ahead scheduler, Playlist playback, offline bounce, endings |
+| `js/media.js` | IndexedDB storage: audio tracks, sound packs (zip reader, auto-sorting), project library |
+| `js/playlist.js` · `js/browser.js` · `js/lab.js` | Playlist, Browser, Sample Lab |
+| `js/beats.js` · `js/magic.js` | template library, the ✦ generators |
+| `js/app.js` | control bar, Channel Rack, Piano Roll, Mixer, saving, export, Mac menu bridge |
+| `desktop/` | the Mac app: Electron window, menu bar, Save dialogs, file opening, icon |
 
-`npm test` checks the theory/DSP code: key detection, pitch shift, time stretch, tempo detection and the encoders.
+`npm test` checks the theory and DSP code. `.github/workflows/beatlab-mac.yml` builds the Mac app on every push.

@@ -98,11 +98,16 @@
     return s;
   }
 
+  function soloing(p) {
+    return p.tracks.some((t) => t.solo) || (p.lanes || []).some((l) => l.solo);
+  }
+
   function refreshMix() {
     const p = getProject();
     if (!graph || !p) return;
-    const anySolo = p.tracks.some((t) => t.solo);
+    const anySolo = soloing(p);
     for (const t of p.tracks) stripFor(graph, t, anySolo);
+    for (const l of p.lanes || []) stripFor(graph, l, anySolo);
     applyMaster(graph, p);
   }
 
@@ -147,7 +152,7 @@
     if (absStep == null) absStep = step;
     if (!pat) return;
     const c = g.ctx;
-    const anySolo = p.tracks.some((tr) => tr.solo);
+    const anySolo = soloing(p);
     for (const track of p.tracks) {
       const s = stripFor(g, track, anySolo);
       if (!s.audible) continue;
@@ -223,29 +228,68 @@
     return step % 2 === 1 ? (p.swing || 0) * stepDuration(p) * 0.66 : 0;
   }
 
+  /** length of the arrangement in steps (end of the last clip, at least one bar) */
+  function songSteps(p) {
+    let end = 16;
+    for (const c of p.clips || []) end = Math.max(end, Math.round((c.start + c.len) * 16));
+    return end;
+  }
+
+  /** play one 16th-note step of the Playlist: every clip that covers it */
+  function scheduleAbs(g, p, abs, t, sd, startAbs) {
+    const patSteps = p.bars * 16;
+    const anySolo = soloing(p);
+    for (const c of p.clips || []) {
+      const s0 = Math.round(c.start * 16), s1 = Math.round((c.start + c.len) * 16);
+      if (abs < s0 || abs >= s1) continue;
+      const lane = (p.lanes || []).find((l) => l.id === c.lane);
+      if (lane) { const st = stripFor(g, lane, anySolo); if (!st.audible) continue; }
+      if (c.kind === 'pattern') {
+        const local = abs - s0;
+        const step = local % patSteps;
+        scheduleStep(g, p, p.patterns[c.pat], step, t + swingOffset(p, step), sd, local);
+      } else if (c.kind === 'audio') {
+        if (abs !== s0 && abs !== startAbs) continue;
+        const buf = BL.media && BL.media.audioBuffer(c.audio);
+        if (!buf || !lane) continue;
+        const offset = (c.offset || 0) + (abs - s0) * sd;
+        if (offset >= buf.duration - 0.01) continue;
+        const dur = Math.min((s1 - abs) * sd, buf.duration - offset);
+        const ch = chokeNode(g.ctx, stripFor(g, lane, anySolo).input);
+        playBuffer(g.ctx, ch, buf, t, { offset, dur, vel: 1 });
+        g.voices['clip:' + c.id] = { choke: ch, end: t + dur };
+      }
+    }
+  }
+
   function tick() {
     const p = getProject();
     if (!p || !state.playing) return;
     const ahead = 0.14;
     while (state.nextTime < ctx.currentTime + ahead) {
       const sd = stepDuration(p);
-      const steps = p.bars * 16;
-      if (state.step >= steps) state.step = 0;
-      let patIdx = state.patIdx;
-      if (p.songMode && p.song.length) {
-        state.songIdx %= p.song.length;
-        patIdx = p.song[state.songIdx];
-      } else patIdx = p.current;
-      const t = state.nextTime + swingOffset(p, state.step);
-      scheduleStep(graph, p, p.patterns[patIdx], state.step, t, sd, state.abs);
-      state.abs++;
-      uiQueue.push({ time: state.nextTime, step: state.step, patIdx, songIdx: state.songIdx });
-      state.nextTime += sd;
-      state.step++;
-      if (state.step >= steps) {
-        state.step = 0;
-        if (p.songMode && p.song.length) state.songIdx = (state.songIdx + 1) % p.song.length;
+      if (p.songMode) {
+        const total = songSteps(p);
+        if (state.abs >= total) {
+          state.abs = 0;
+          Object.values(graph.voices).forEach((v) => choke(v, state.nextTime));
+          graph.voices = {};
+          state.startAbs = 0;
+        }
+        scheduleAbs(graph, p, state.abs, state.nextTime, sd, state.startAbs);
+        uiQueue.push({ time: state.nextTime, abs: state.abs, song: true });
+        state.abs++;
+      } else {
+        const steps = p.bars * 16;
+        if (state.step >= steps) state.step = 0;
+        const t = state.nextTime + swingOffset(p, state.step);
+        scheduleStep(graph, p, p.patterns[p.current], state.step, t, sd, state.abs);
+        uiQueue.push({ time: state.nextTime, step: state.step, abs: state.abs, song: false });
+        state.abs++;
+        state.step++;
+        if (state.step >= steps) state.step = 0;
       }
+      state.nextTime += sd;
     }
   }
 
@@ -258,14 +302,14 @@
     requestAnimationFrame(uiLoop);
   }
 
-  function play(fromSongIdx) {
+  function play(fromStep) {
     audio();
     if (state.playing) return;
     refreshMix();
     state.playing = true;
     state.step = 0;
-    state.abs = 0;
-    state.songIdx = fromSongIdx || 0;
+    state.abs = fromStep || 0;
+    state.startAbs = state.abs;
     state.nextTime = ctx.currentTime + 0.06;
     uiQueue.length = 0;
     graph.voices = {};
@@ -357,11 +401,12 @@
 
   // ---------- offline bounce ----------
   async function render(p, opts) {
-    const order = opts.song && p.song.length ? p.song.slice() : new Array(opts.loops || 4).fill(p.current);
+    const song = !!opts.song;
+    const order = new Array(opts.loops || 4).fill(p.current);
     const ending = opts.ending || 'none';
     const sd = stepDuration(p);
     const steps = p.bars * 16;
-    const songLen = order.length * steps * sd;
+    const songLen = song ? songSteps(p) * sd : order.length * steps * sd;
     const total = songLen + (ending === 'slowmo' ? 7 : 3);
     const OAC = root.OfflineAudioContext || root.webkitOfflineAudioContext;
     const oc = new OAC(2, Math.ceil(total * 44100), 44100);
@@ -370,16 +415,22 @@
     const g = createGraph(oc, false);
     getProject = prevGet;
     let t = 0.05, abs = 0;
-    for (const idx of order) {
-      for (let st = 0; st < steps; st++) {
-        scheduleStep(g, p, p.patterns[idx], st, t + swingOffset(p, st), sd, abs++);
-        t += sd;
+    if (song) {
+      const n = songSteps(p);
+      for (abs = 0; abs < n; abs++) { scheduleAbs(g, p, abs, t, sd, 0); t += sd; }
+    } else {
+      for (const idx of order) {
+        for (let st = 0; st < steps; st++) {
+          scheduleStep(g, p, p.patterns[idx], st, t + swingOffset(p, st), sd, abs++);
+          t += sd;
+        }
       }
     }
     const finalT = t;
     if (ending === 'slowmo') {
       // one last downbeat (kick, 808, chord, sample) plus a boom, which then gets slowed right down
-      scheduleStep(g, p, p.patterns[order[0]], 0, finalT, sd, 0);
+      const first = song ? ((p.clips || []).filter((c) => c.kind === 'pattern').sort((a, b) => a.start - b.start)[0] || { pat: p.current }).pat : order[0];
+      scheduleStep(g, p, p.patterns[first], 0, finalT, sd, 0);
       const boom = BL.sounds.drumBuffers.impact;
       if (boom) playBuffer(oc, g.master, boom, finalT, { vel: 0.55 });
       const crash = BL.sounds.drumBuffers.crash;
@@ -414,7 +465,7 @@
   }
 
   BL.engine = {
-    audio, play, stop, state, refreshMix, scheduleStep, render, renderEndingPreview, ENDINGS, varispeed, noteMidi,
+    audio, play, stop, state, refreshMix, scheduleStep, scheduleAbs, songSteps, render, renderEndingPreview, ENDINGS, varispeed, noteMidi,
     previewDrum, previewNote, previewBuffer, stopPreviewBuffer, previewPosition,
     onStep(fn) { listeners.add(fn); },
     setProjectGetter(fn) { getProject = fn; },

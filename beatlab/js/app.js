@@ -1,54 +1,110 @@
-/* BeatLab — the studio UI: transport, step sequencer, piano roll, mixer, song mode, presets, save/export. */
+/* BeatLab — the studio: toolbar + LCD, Browser, Playlist, Channel Rack, Piano Roll, Sample Lab, Mixer,
+ * project library, export (mixdown / stems) and the Mac app bridge. */
 (function () {
   const BL = window.BL;
-  const T = BL.theory, S = BL.sounds, E = BL.engine, M = BL.magic;
+  const T = BL.theory, S = BL.sounds, E = BL.engine, M = BL.magic, MD = BL.media;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  const LETTERS = 'ABCD';
   const STORE_KEY = 'beatlab.project.v1';
+  const PREFS_KEY = 'beatlab.prefs.v1';
+  const NATIVE = window.beatlabNative || null;
+  const IS_MAC = NATIVE ? NATIVE.platform === 'darwin' : /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+  const CMD = IS_MAC ? '⌘' : 'Ctrl+';
 
   const ui = {
-    tab: 'roll', sel: null, tool: 'draw', brush: 2, chordMode: false, kbOct: 0,
-    recording: false, labSample: null, labAuto: true, labCrop: false, playStep: -1, lastEv: null,
-    chopBrush: {},
+    tab: 'rack', sel: null, tool: 'draw', brush: null, noteLen: 2, chordMode: false, kbOct: 0,
+    recording: false, labSample: null, labAuto: true, labCrop: false, lastEv: null,
+    chopBrush: {}, barW: 56, snap: 1, open: {}, browser: true, plH: 0, ending: 'none', dirty: false,
   };
   let P = null;
   const undoStack = [], redoStack = [];
 
-  // ---------- project model ----------
-  const uid = () => 't' + Math.random().toString(36).slice(2, 9);
-  const nSteps = () => P.bars * 16;
-  const curPat = () => P.patterns[P.current];
+  // ---------- icons (SF Symbols-like line icons) ----------
+  const ICONS = {
+    play: '<path d="M7 4.5v15l12.5-7.5z" fill="currentColor" stroke="none"/>',
+    stop: '<rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor" stroke="none"/>',
+    rec: '<circle cx="12" cy="12" r="6" fill="currentColor" stroke="none"/>',
+    tostart: '<path d="M6 5v14" /><path d="M19 5.5v13L9 12z" fill="currentColor" stroke="none"/>',
+    sidebar: '<rect x="3" y="4.5" width="18" height="15" rx="2.5"/><path d="M9 4.5v15"/>',
+    grid: '<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>',
+    undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
+    redo: '<path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/>',
+    plus: '<path d="M12 5v14M5 12h14"/>',
+    minus: '<path d="M5 12h14"/>',
+    import: '<path d="M12 4v11"/><path d="m7.5 10.5 4.5 4.5 4.5-4.5"/><path d="M5 19h14"/>',
+    export: '<path d="M12 15V4"/><path d="m7.5 8.5 4.5-4.5 4.5 4.5"/><path d="M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/>',
+    save: '<path d="M5 4h11l3 3v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1z"/><path d="M8 4v5h7V4"/><rect x="8" y="13" width="8" height="5" rx="1"/>',
+    chev: '<path d="m9 6 6 6-6 6"/>',
+    search: '<circle cx="11" cy="11" r="6"/><path d="m20 20-4.5-4.5"/>',
+    trash: '<path d="M5 7h14"/><path d="M10 11v6M14 11v6"/><path d="M6.5 7l1 12a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1l1-12"/><path d="M9.5 7V4.5h5V7"/>',
+    help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.3a2.6 2.6 0 0 1 5 .9c0 1.7-2.5 2.2-2.5 3.8"/><path d="M12 17.2h.01"/>',
+    volume: '<path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z" fill="currentColor" stroke="none"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/>',
+    sparkle: '<path d="M12 3.5l1.8 5.2 5.2 1.8-5.2 1.8L12 17.5l-1.8-5.2-5.2-1.8 5.2-1.8z" fill="currentColor" stroke="none"/>',
+    more: '<circle cx="6" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="18" cy="12" r="1.4" fill="currentColor" stroke="none"/>',
+    left: '<path d="m15 6-6 6 6 6"/>',
+    right: '<path d="m9 6 6 6-6 6"/>',
+    folder: '<path d="M3.5 7a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/>',
+  };
+  const icon = (n) => `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n] || ''}</svg>`;
 
+  // ---------- model ----------
+  const uid = (p) => (p || 't') + Math.random().toString(36).slice(2, 9);
+  const nSteps = () => P.bars * 16;
+  const curPat = () => P.patterns[P.current] || P.patterns[0];
+  const PAT_COLORS = ['#5e9cff', '#bf5af2', '#30d158', '#ff9f0a', '#ff453a', '#64d2ff', '#ffd60a', '#ff6ab3', '#a2845e', '#7d7aff'];
+  const newPattern = (i) => ({ name: 'Pattern ' + (i + 1), color: PAT_COLORS[i % PAT_COLORS.length], data: {} });
+  function newLane(p) {
+    return { id: uid('L'), name: 'Track ' + (p.lanes.length + 1), vol: 0.8, pan: 0, rev: 0, mute: false, solo: false };
+  }
   function newProject(o) {
-    return Object.assign({
-      v: 1, name: 'My beat', bpm: 140, key: 0, scale: 'minor', swing: 0, bars: 2, current: 0,
-      songMode: false, song: [0], master: { vol: 0.85, punch: 0.5, lofi: false },
-      tracks: [], patterns: LETTERS.split('').map((n) => ({ name: n, data: {} })), samples: {},
+    const p = Object.assign({
+      v: 2, name: 'Untitled', bpm: 140, key: 0, scale: 'minor', swing: 0, bars: 2, current: 0, songMode: false, pos: 0,
+      master: { vol: 0.85, punch: 0.5, lofi: false }, tracks: [], patterns: [newPattern(0)], samples: {}, audio: {}, lanes: [], clips: [],
     }, o || {});
+    while (p.lanes.length < 6) p.lanes.push(newLane(p));
+    return p;
+  }
+  /** bring older saves up to date (v1 had 4 lettered patterns and a song strip) */
+  function migrate(raw) {
+    const p = Object.assign(newProject(), raw);
+    if (!p.lanes || !p.lanes.length) { p.lanes = []; while (p.lanes.length < 6) p.lanes.push(newLane(p)); }
+    p.audio = p.audio || {};
+    p.clips = p.clips || [];
+    p.samples = p.samples || {};
+    p.master = Object.assign({ vol: 0.85, punch: 0.5, lofi: false }, p.master || {});
+    if (!p.v || p.v < 2) {
+      p.patterns.forEach((pt, i) => { pt.name = 'Pattern ' + (i + 1); pt.color = PAT_COLORS[i % PAT_COLORS.length]; });
+      if (Array.isArray(p.song)) p.song.forEach((pi, i) => p.clips.push({ id: uid('c'), kind: 'pattern', pat: pi, lane: p.lanes[0].id, start: i * p.bars, len: p.bars }));
+      const used = (i) => Object.values(p.patterns[i].data).some((d) => (d.notes && d.notes.length) || (d.steps && d.steps.some((v) => v > 0)));
+      while (p.patterns.length > 1 && !used(p.patterns.length - 1) && !p.clips.some((c) => c.pat === p.patterns.length - 1)) p.patterns.pop();
+      delete p.song;
+      p.v = 2;
+    }
+    p.patterns.forEach((pt, i) => { pt.color = pt.color || PAT_COLORS[i % PAT_COLORS.length]; pt.name = pt.name || 'Pattern ' + (i + 1); });
+    if (p.current >= p.patterns.length) p.current = 0;
+    return p;
   }
 
   function catOf(track) {
-    if (track.type === 'drum') return (S.DRUM_BY_ID[track.sound] || {}).cat || 'Perc';
+    if (track.type === 'drum') return MD.soundCat(track.sound);
     if (track.type === 'sample') return 'Sample';
     return (S.INSTRUMENTS[track.inst] || {}).bass ? '808' : 'Melody';
   }
   const CAT_COLORS = {
     Kick: '#ff453a', Snare: '#ff9f0a', Clap: '#ffb340', 'Hi-Hat': '#ffd60a', 'Open Hat': '#c7d93a',
-    Perc: '#30d158', FX: '#64d2ff', Melody: '#bf5af2', '808': '#ff375f', Sample: '#40c8e0',
+    Perc: '#30d158', FX: '#64d2ff', Loops: '#40c8e0', Melody: '#bf5af2', '808': '#ff375f', Sample: '#40c8e0',
   };
-  const colorOf = (t) => CAT_COLORS[catOf(t)] || '#aaa';
+  const colorOf = (t) => CAT_COLORS[catOf(t)] || '#8e8e93';
 
   function makeTrack(type, o) {
-    const t = Object.assign({ id: uid(), type, name: '', vol: 0.8, pan: 0, rev: 0, mute: false, solo: false }, o || {});
-    if (type === 'drum') { t.sound = t.sound || 'kick_trap'; t.pitch = t.pitch || 0; t.name = t.name || S.DRUM_BY_ID[t.sound].name; }
+    const t = Object.assign({ id: uid('t'), type, name: '', vol: 0.8, pan: 0, rev: 0, mute: false, solo: false }, o || {});
+    if (type === 'drum') { t.sound = t.sound || 'kick_trap'; t.pitch = t.pitch || 0; t.name = t.name || MD.soundName(t.sound); }
     if (type === 'synth') { t.inst = t.inst || 'piano'; t.octave = t.octave || 0; t.name = t.name || S.INSTRUMENTS[t.inst].name; }
     if (type === 'sample') { t.mode = t.mode || 'loop'; t.name = t.name || 'Sample'; }
     return t;
   }
 
-  /** get (and lazily create / resize) a track's data in a pattern */
   function patData(pat, t) {
     const n = nSteps();
     let d = pat.data[t.id];
@@ -66,24 +122,23 @@
     if (t.type === 'sample' && !d.steps) d.steps = new Array(n).fill(-1);
     return d;
   }
+  const tr = (p, t) => p.tracks.find((x) => x.id === t.id);
 
-  // ---------- edits, undo, save ----------
+  // ---------- edits, undo, autosave ----------
   function snapshot() {
     undoStack.push(JSON.stringify(P));
-    if (undoStack.length > 100) undoStack.shift();
+    if (undoStack.length > 120) undoStack.shift();
     redoStack.length = 0;
   }
   function changed(opts) {
     opts = opts || {};
-    scheduleSave();
+    ui.dirty = true;
+    autosave();
     E.refreshMix();
+    renderStatus();
     if (!opts.noRender) renderAll();
   }
-  function edit(fn, opts) {
-    snapshot();
-    fn(P);
-    changed(opts);
-  }
+  function edit(fn, opts) { snapshot(); fn(P); changed(opts); }
   function undo() {
     if (!undoStack.length) return toast('Nothing to undo.');
     redoStack.push(JSON.stringify(P));
@@ -97,19 +152,25 @@
     afterLoad(false);
   }
   let saveTimer = null;
-  function scheduleSave() {
+  function autosave() {
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => {
-      try { localStorage.setItem(STORE_KEY, JSON.stringify(P)); } catch (e) { /* storage blocked */ }
-    }, 400);
+    saveTimer = setTimeout(() => { try { localStorage.setItem(STORE_KEY, JSON.stringify(P)); } catch (e) { /* storage blocked */ } }, 400);
+  }
+  function savePrefs() {
+    try { localStorage.setItem(PREFS_KEY, JSON.stringify({ open: ui.open, browser: ui.browser, barW: ui.barW, plH: ui.plH, tab: ui.tab })); } catch (e) { /* ignore */ }
+  }
+  function loadPrefs() {
+    try { Object.assign(ui, JSON.parse(localStorage.getItem(PREFS_KEY) || '{}')); } catch (e) { /* ignore */ }
+    if (window.innerWidth < 900) ui.browser = false;
   }
 
   // ---------- presets ----------
   function projectFromPreset(pr) {
     const p = newProject({ name: pr.name, bpm: pr.bpm, key: pr.key, scale: pr.scale, swing: pr.swing || 0, bars: pr.bars || 2 });
     p.master.lofi = !!pr.lofi;
+    p.patterns = [newPattern(0), newPattern(1)];
     const prev = P;
-    P = p; // helpers below read P
+    P = p;
     const smap = {};
     for (const [k, sc] of Object.entries(pr.samples || {})) {
       const meta = S.SAMPLE_BY_ID[sc.builtin];
@@ -125,35 +186,29 @@
     }
     const n = p.bars * 16;
     const fit = (arr, fill) => Array.from({ length: n }, (_, i) => (i < arr.length ? arr[i] : arr.length ? arr[i % arr.length] : fill));
-    for (const tr of pr.tracks) {
-      const t = makeTrack(tr.type, { sound: tr.sound, inst: tr.inst, name: tr.name, vol: tr.vol || 0.8, rev: tr.rev || 0, octave: tr.octave || 0, mode: tr.mode });
-      if (tr.type === 'sample') t.sampleId = smap[tr.sample];
+    for (const t0 of pr.tracks) {
+      const t = makeTrack(t0.type, { sound: t0.sound, inst: t0.inst, name: t0.name, vol: t0.vol || 0.8, rev: t0.rev || 0, octave: t0.octave || 0, mode: t0.mode });
+      if (t0.type === 'sample') t.sampleId = smap[t0.sample];
       p.tracks.push(t);
       ['A', 'B'].forEach((L, pi) => {
-        const src = tr[L] != null ? tr[L] : tr.A;
+        const src = t0[L] != null ? t0[L] : t0.A;
         let d;
-        if (tr.type === 'drum') {
-          const row = BL.beats.drumRow(src || '');
-          d = { steps: fit(row.steps, 0), rolls: fit(row.rolls, 1) };
-        } else if (tr.type === 'synth') {
-          d = BL.beats.notes(src || []);
-        } else if (tr.mode === 'chop') {
-          d = { steps: fit(BL.beats.chopRow(src || '').steps, -1), on: true };
-        } else {
-          d = { steps: new Array(n).fill(-1), on: tr[L] === false ? false : true };
-        }
+        if (t0.type === 'drum') { const row = BL.beats.drumRow(src || ''); d = { steps: fit(row.steps, 0), rolls: fit(row.rolls, 1) }; }
+        else if (t0.type === 'synth') d = BL.beats.notes(src || []);
+        else if (t0.mode === 'chop') d = { steps: fit(BL.beats.chopRow(src || '').steps, -1), on: true };
+        else d = { steps: new Array(n).fill(-1), on: t0[L] !== false };
         p.patterns[pi].data[t.id] = d;
       });
     }
-    p.song = (pr.song || 'A').split('').map((c) => LETTERS.indexOf(c));
+    p.lanes[0].name = 'Beat';
+    (pr.song || 'A').split('').forEach((ch, i) => p.clips.push({ id: uid('c'), kind: 'pattern', pat: 'ABCD'.indexOf(ch), lane: p.lanes[0].id, start: i * p.bars, len: p.bars }));
     P = prev;
     return p;
   }
 
   function blankProject() {
-    const p = newProject({ name: 'New beat', bpm: 140, key: 0, scale: 'minor' });
-    P = p;
-    [['drum', { sound: 'kick_trap', name: 'Kick' }], ['drum', { sound: 'snare_trap', name: 'Snare' }], ['drum', { sound: 'clap_trap', name: 'Clap' }],
+    const p = newProject({ name: 'Untitled' });
+    [['drum', { sound: 'kick_trap', name: 'Kick' }], ['drum', { sound: 'clap_trap', name: 'Clap' }], ['drum', { sound: 'snare_trap', name: 'Snare' }],
       ['drum', { sound: 'hat_trap', name: 'Hi-Hat' }], ['drum', { sound: 'ohat', name: 'Open Hat' }],
       ['synth', { inst: 'b808', name: '808' }], ['synth', { inst: 'piano', name: 'Keys', rev: 0.3 }]]
       .forEach(([type, o]) => p.tracks.push(makeTrack(type, o)));
@@ -165,17 +220,20 @@
     opts = opts || {};
     if (E.state.playing) E.stop();
     if (opts.undoable && P) snapshot();
-    P = p;
-    R.rack.classList.remove('enter');
-    void R.rack.offsetWidth;
-    R.rack.classList.add('enter');
+    P = migrate(p);
+    ui.dirty = !!opts.dirty;
+    ui.brush = null;
+    document.body.classList.remove('enter');
+    void document.body.offsetWidth;
+    document.body.classList.add('enter');
     clearTimeout(enterTimer);
-    enterTimer = setTimeout(() => R.rack.classList.remove('enter'), 1200);
+    enterTimer = setTimeout(() => document.body.classList.remove('enter'), 900);
     await afterLoad(true);
-    if (opts.play) E.play();
+    if (opts.play) { E.play(P.songMode ? (P.pos || 0) * 16 : 0); renderTransport(); }
   }
 
   async function afterLoad(full) {
+    P = migrate(P);
     if (!P.tracks.find((t) => t.id === ui.sel)) {
       const synths = P.tracks.filter((t) => t.type === 'synth');
       const busy = synths.find((t) => { const d = curPat().data[t.id]; return d && d.notes && d.notes.length; });
@@ -183,102 +241,197 @@
     }
     if (ui.labSample && !P.samples[ui.labSample]) ui.labSample = null;
     if (!ui.labSample) ui.labSample = Object.keys(P.samples)[0] || null;
+    if (!ui.brush || (ui.brush.kind === 'pattern' && !P.patterns[ui.brush.pat])) ui.brush = { kind: 'pattern', pat: P.current };
     E.refreshMix();
     renderAll();
-    scheduleSave();
-    const ids = Object.keys(P.samples);
-    if (ids.length && full) {
-      showLoading('Spinning up the records…');
-      await Promise.all(ids.map((id) => BL.lab.ensure(P, id).catch(() => null)));
-      hideLoading();
-      renderAll();
-    } else if (ids.length) {
-      ids.forEach((id) => BL.lab.ensure(P, id).then(() => { drawLanes(); BL.lab.drawWave(); }));
-    }
+    autosave();
+    const loads = [
+      ...Object.keys(P.samples).map((id) => BL.lab.ensure(P, id).catch(() => null)),
+      ...Object.keys(P.audio).map((id) => MD.ensureAudio(id)),
+      ...P.tracks.filter((t) => t.type === 'drum' && /^u:/.test(t.sound)).map((t) => MD.ensureSound(t.sound)),
+    ];
+    if (!loads.length) return;
+    if (full) showLoading('Loading sounds…');
+    await Promise.all(loads);
+    if (full) hideLoading();
+    renderAll();
   }
 
-  // ---------- DOM refs ----------
+  // ---------- DOM ----------
   const R = {};
-  function cacheDom() {
-    ['playBtn', 'bpm', 'bpmDown', 'bpmUp', 'tapBtn', 'keySel', 'scaleSel', 'swing', 'swingOut', 'barsSeg', 'undoBtn', 'redoBtn',
-      'beatsBtn', 'newBtn', 'saveBtn', 'openBtn', 'openFile', 'exportBtn', 'helpBtn', 'patBtns', 'songToggle', 'songStrip',
-      'rack', 'addBar', 'dock', 'dockBody', 'hint', 'toast', 'modal', 'pop', 'loading', 'loadingMsg', 'projName', 'toolSeg', 'copyPat', 'clearPat']
+  function buildShell() {
+    $('#toolbar').innerHTML = `
+      <div class="tb-group tb-left">
+        <button class="tbtn icon" id="tbBrowser" aria-label="Show Browser" data-hint="Show or hide the Browser (B).">${icon('sidebar')}</button>
+        <button class="tbtn icon" id="tbTemplates" aria-label="Templates" data-hint="New project from a template (${CMD}N).">${icon('grid')}</button>
+        <span class="tb-sep"></span>
+        <button class="tbtn icon" id="tbUndo" aria-label="Undo" data-hint="Undo (${CMD}Z)">${icon('undo')}</button>
+        <button class="tbtn icon" id="tbRedo" aria-label="Redo" data-hint="Redo (${CMD}⇧Z)">${icon('redo')}</button>
+        <span class="tb-title" id="tbTitle" data-hint="Your project. Save with ${CMD}S."></span>
+      </div>
+      <div class="tb-group tb-center">
+        <div class="transport" role="group" aria-label="Transport">
+          <button class="tp" id="tpStart" aria-label="Go to start" data-hint="Back to the start (Return).">${icon('tostart')}</button>
+          <button class="tp tp-play" id="tpPlay" aria-label="Play" data-hint="Play / stop (Space).">${icon('play')}</button>
+          <button class="tp" id="tpStop" aria-label="Stop" data-hint="Stop.">${icon('stop')}</button>
+          <button class="tp tp-rec" id="tpRec" aria-label="Record" data-hint="Record notes from your computer keyboard (A S D F G H J K L) into the Piano Roll.">${icon('rec')}</button>
+        </div>
+        <div class="lcd" id="lcd">
+          <div class="lcd-cell lcd-pos" data-hint="Where the playhead is: bar, beat, sixteenth."><b id="lcdPos">1  1  1</b><small>BAR · BEAT</small></div>
+          <div class="lcd-cell lcd-tempo" data-hint="Tempo. Drag up or down, type a number, or tap TAP along to a song.">
+            <input id="bpm" inputmode="numeric" aria-label="Tempo" autocomplete="off"><small><button id="tapBtn" class="lcd-tap">TAP</button> TEMPO</small></div>
+          <div class="lcd-cell lcd-key" data-hint="Key and scale. Change them and every note, 808 and matched sample follows.">
+            <div class="lcd-selects"><select id="keySel" aria-label="Key"></select><select id="scaleSel" aria-label="Scale"></select></div><small>KEY</small></div>
+          <div class="lcd-cell lcd-sig"><b>4/4</b><small>TIME</small></div>
+        </div>
+        <div class="seg mode-seg" id="modeSeg" role="group" aria-label="Play mode" data-hint="Pattern loops the pattern you're editing. Song plays your Playlist.">
+          <button data-mode="pattern">Pattern</button><button data-mode="song">Song</button>
+        </div>
+      </div>
+      <div class="tb-group tb-right">
+        <label class="mvol" data-hint="Master volume.">${icon('volume')}<input type="range" id="masterVol" min="0" max="1.2" step="0.01" aria-label="Master volume"></label>
+        <button class="tbtn" id="tbSave" data-hint="Save to My Projects (${CMD}S).">${icon('save')}<span>Save</span></button>
+        <button class="tbtn tbtn-primary" id="tbExport" data-hint="Export a WAV mixdown or stems (${CMD}E).">${icon('export')}<span>Export</span></button>
+        <button class="tbtn icon" id="tbHelp" aria-label="Help" data-hint="How BeatLab works.">${icon('help')}</button>
+      </div>`;
+    ['tbBrowser', 'tbTemplates', 'tbUndo', 'tbRedo', 'tpStart', 'tpPlay', 'tpStop', 'tpRec', 'lcdPos', 'bpm', 'tapBtn', 'keySel', 'scaleSel', 'modeSeg',
+      'masterVol', 'tbTitle', 'tbSave', 'tbExport', 'tbHelp', 'browser', 'playlist', 'splitter', 'editor', 'edTabs', 'edBody', 'status', 'hint', 'saveState',
+      'toast', 'modal', 'pop', 'loading', 'loadingMsg', 'workspace', 'main', 'filePick']
       .forEach((id) => { R[id] = document.getElementById(id); });
   }
 
-  // ---------- top bar ----------
-  function renderTop() {
-    R.bpm.value = P.bpm;
+  // ---------- toolbar ----------
+  function renderTransport() {
+    if (!P) return;
+    if (document.activeElement !== R.bpm) R.bpm.value = P.bpm;
     R.keySel.value = P.key;
     R.scaleSel.value = P.scale;
-    R.swing.value = P.swing;
-    R.swingOut.textContent = Math.round(P.swing * 100) + '%';
-    $$('button', R.barsSeg).forEach((b) => b.classList.toggle('is-on', +b.dataset.bars === P.bars));
-    R.playBtn.classList.toggle('is-playing', E.state.playing);
+    R.masterVol.value = P.master.vol;
+    $$('button', R.modeSeg).forEach((b) => b.classList.toggle('is-on', (b.dataset.mode === 'song') === !!P.songMode));
+    R.tpPlay.classList.toggle('is-on', E.state.playing);
+    R.tpPlay.innerHTML = icon(E.state.playing ? 'stop' : 'play');
+    R.tpPlay.setAttribute('aria-label', E.state.playing ? 'Stop' : 'Play');
+    R.tpRec.classList.toggle('is-on', ui.recording);
+    R.tbBrowser.classList.toggle('is-on', ui.browser);
     document.body.classList.toggle('is-playing', E.state.playing);
-    document.documentElement.style.setProperty('--beat', (60 / P.bpm).toFixed(3) + 's');
-    R.playBtn.setAttribute('aria-label', E.state.playing ? 'Stop' : 'Play');
-    R.playBtn.innerHTML = E.state.playing ? '<span class="ico-stop"></span>' : '<span class="ico-play"></span>';
-    R.projName.value = P.name;
-    $$('button', R.toolSeg).forEach((b) => b.classList.toggle('is-on', b.dataset.tool === ui.tool));
+    document.body.classList.toggle('no-browser', !ui.browser);
+    if (!E.state.playing) setLcdPos(P.songMode ? (P.pos || 0) * 16 : 0);
+    R.tbTitle.innerHTML = `${esc(P.name)}${ui.dirty || !P.libId ? '<em> — Edited</em>' : ''}`;
+    if (NATIVE && NATIVE.setTitle) NATIVE.setTitle(P.name + (ui.dirty ? ' — Edited' : ''));
+    document.title = P.name + ' — BeatLab';
+  }
+  function setLcdPos(abs) {
+    const bar = Math.floor(abs / 16) + 1, beat = Math.floor((abs % 16) / 4) + 1, six = (abs % 4) + 1;
+    R.lcdPos.textContent = `${bar}  ${beat}  ${six}`;
   }
 
-  function bindTop() {
+  function setBpm(v) {
+    v = Math.max(50, Math.min(220, Math.round(v)));
+    if (v === P.bpm) { R.bpm.value = v; return; }
+    const followers = samplesInSync();
+    edit((p) => { p.bpm = v; }, { noRender: true });
+    renderTransport();
+    resyncSamples(followers, true);
+    BL.playlist.render();
+  }
+
+  function bindToolbar() {
     R.keySel.innerHTML = T.NOTE_NAMES.map((n, i) => `<option value="${i}">${n}</option>`).join('');
-    R.scaleSel.innerHTML = Object.entries(T.SCALES).map(([k, s]) => `<option value="${k}">${s.name} · ${s.vibe.split(',')[0]}</option>`).join('');
-    R.playBtn.addEventListener('click', togglePlay);
-    const setBpm = (v) => {
-      v = Math.max(50, Math.min(220, Math.round(v)));
-      if (v === P.bpm) return;
-      const followers = samplesInSync();
-      edit((p) => { p.bpm = v; }, { noRender: true });
-      renderTop();
-      resyncSamples(followers, true);
-    };
+    R.scaleSel.innerHTML = Object.entries(T.SCALES).map(([k, s]) => `<option value="${k}">${s.name}</option>`).join('');
+    R.tpPlay.addEventListener('click', togglePlay);
+    R.tpStop.addEventListener('click', stopAll);
+    R.tpStart.addEventListener('click', goToStart);
+    R.tpRec.addEventListener('click', () => {
+      ui.recording = !ui.recording;
+      if (ui.recording) {
+        if (P.songMode) setMode(false);
+        if (ui.tab !== 'roll') setTab('roll');
+        if (!E.state.playing) togglePlay();
+        toast('Recording: play notes with A S D F G H J K L.');
+      }
+      renderTransport();
+    });
+    // tempo: type it, or drag up/down like Logic's LCD
+    let drag = null;
+    R.bpm.addEventListener('pointerdown', (e) => { drag = { y: e.clientY, v: P.bpm, moved: false }; R.bpm.setPointerCapture(e.pointerId); });
+    R.bpm.addEventListener('pointermove', (e) => {
+      if (!drag) return;
+      const dy = drag.y - e.clientY;
+      if (Math.abs(dy) > 3) drag.moved = true;
+      if (drag.moved) { e.preventDefault(); R.bpm.value = Math.max(50, Math.min(220, Math.round(drag.v + dy / 3))); }
+    });
+    R.bpm.addEventListener('pointerup', () => { if (drag && drag.moved) { setBpm(+R.bpm.value); R.bpm.blur(); } else R.bpm.select(); drag = null; });
     R.bpm.addEventListener('change', () => setBpm(+R.bpm.value || P.bpm));
-    R.bpmDown.addEventListener('click', () => setBpm(P.bpm - 1));
-    R.bpmUp.addEventListener('click', () => setBpm(P.bpm + 1));
+    R.bpm.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { setBpm(+R.bpm.value || P.bpm); R.bpm.blur(); }
+      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); setBpm(P.bpm + (e.key === 'ArrowUp' ? 1 : -1)); }
+    });
     let taps = [];
     R.tapBtn.addEventListener('click', () => {
       const now = performance.now();
       taps = taps.filter((t) => now - t < 2500);
       taps.push(now);
-      if (taps.length >= 3) {
-        const iv = (taps[taps.length - 1] - taps[0]) / (taps.length - 1);
-        setBpm(60000 / iv);
-      } else toast('Keep tapping along…');
+      if (taps.length >= 3) setBpm(60000 / ((taps[taps.length - 1] - taps[0]) / (taps.length - 1)));
+      else toast('Keep tapping along…');
     });
     R.keySel.addEventListener('change', () => {
-      const followers = samplesInSync();
+      const f = samplesInSync();
       edit((p) => { p.key = +R.keySel.value; });
-      resyncSamples(followers, false);
-      toast(`Everything moved to ${T.keyName(P.key, P.scale)}. Notes stay in key automatically.`);
+      resyncSamples(f, false);
+      toast(`Everything moved to ${T.keyName(P.key, P.scale)}.`);
     });
     R.scaleSel.addEventListener('change', () => {
-      const followers = samplesInSync();
+      const f = samplesInSync();
       edit((p) => { p.scale = R.scaleSel.value; });
-      resyncSamples(followers, false);
+      resyncSamples(f, false);
     });
-    R.swing.addEventListener('input', () => { R.swingOut.textContent = Math.round(R.swing.value * 100) + '%'; });
-    R.swing.addEventListener('change', () => edit((p) => { p.swing = +R.swing.value; }, { noRender: true }));
-    $$('button', R.barsSeg).forEach((b) => b.addEventListener('click', () => setBars(+b.dataset.bars)));
-    R.undoBtn.addEventListener('click', undo);
-    R.redoBtn.addEventListener('click', redo);
-    R.beatsBtn.addEventListener('click', openBeats);
-    R.newBtn.addEventListener('click', () => {
-      loadProject(blankProject(), { undoable: true });
-      toast('Fresh start. Click the squares to add drums, or use ✦ on any track.');
-    });
-    R.saveBtn.addEventListener('click', saveProjectFile);
-    R.openBtn.addEventListener('click', () => R.openFile.click());
-    R.openFile.addEventListener('change', () => { if (R.openFile.files[0]) openProjectFile(R.openFile.files[0]); R.openFile.value = ''; });
-    R.exportBtn.addEventListener('click', openExport);
-    R.helpBtn.addEventListener('click', openHelp);
-    R.projName.addEventListener('change', () => edit((p) => { p.name = R.projName.value.trim() || 'My beat'; }, { noRender: true }));
-    $$('button', R.toolSeg).forEach((b) => b.addEventListener('click', () => { ui.tool = b.dataset.tool; renderTop(); }));
+    $$('button', R.modeSeg).forEach((b) => b.addEventListener('click', () => setMode(b.dataset.mode === 'song')));
+    R.masterVol.addEventListener('input', () => { P.master.vol = +R.masterVol.value; E.refreshMix(); autosave(); });
+    R.tbBrowser.addEventListener('click', toggleBrowser);
+    R.tbTemplates.addEventListener('click', openTemplates);
+    R.tbUndo.addEventListener('click', undo);
+    R.tbRedo.addEventListener('click', redo);
+    R.tbSave.addEventListener('click', () => saveToLibrary(false));
+    R.tbExport.addEventListener('click', () => openExport());
+    R.tbHelp.addEventListener('click', openHelp);
   }
 
-  /** samples that currently match tempo / key, so they can keep matching after a change */
+  function setMode(song) {
+    if (!!P.songMode === song) return;
+    const was = E.state.playing;
+    if (was) E.stop();
+    edit((p) => { p.songMode = song; }, { noRender: true });
+    renderTransport();
+    BL.playlist.render();
+    if (song && !P.clips.length) toast('Song mode plays the Playlist. Paint some patterns into it first.');
+    if (was) { E.play(song ? (P.pos || 0) * 16 : 0); renderTransport(); }
+  }
+  function togglePlay() {
+    if (E.state.playing) stopAll();
+    else { E.play(P.songMode ? (P.pos || 0) * 16 : 0); renderTransport(); }
+  }
+  function stopAll() {
+    E.stop();
+    ui.recording = false;
+    renderTransport();
+    BL.playlist.playhead(null);
+  }
+  function goToStart() {
+    P.pos = 0;
+    autosave();
+    if (E.state.playing) { E.stop(); E.play(0); }
+    renderTransport();
+    BL.playlist.render();
+  }
+  function toggleBrowser() {
+    ui.browser = !ui.browser;
+    savePrefs();
+    renderTransport();
+    if (ui.browser) BL.browser.render(R.browser);
+    setTimeout(() => { sizeSteps(); drawLanes(); BL.playlist.drawClips(); }, 220);
+  }
+
+  /** samples that currently match tempo / key, so they keep matching after a change */
   function samplesInSync() {
     return Object.values(P.samples).map((c) => ({
       id: c.id,
@@ -298,10 +451,194 @@
         if (f.key || f.tempo) { c.semis = BL.lab.autoKeySemis(c, P); any = true; }
       });
       if (!any) return;
-      scheduleSave();
+      autosave();
       Object.keys(P.samples).forEach((id) => BL.lab.ensure(P, id).then(() => { drawLanes(); if (ui.tab === 'lab') BL.lab.render(); }));
     };
     if (delay) resyncTimer = setTimeout(run, 350); else run();
+  }
+
+  // ---------- editor tabs ----------
+  const TABS = [['rack', 'Channel Rack', 'F6'], ['roll', 'Piano Roll', 'F7'], ['lab', 'Sample Lab', 'F8'], ['mix', 'Mixer', 'F9']];
+  function renderTabs() {
+    R.edTabs.innerHTML = `<div class="seg" role="tablist" aria-label="Editor">${TABS.map(([k, l, f]) => `<button role="tab" data-tab="${k}" class="${ui.tab === k ? 'is-on' : ''}" data-hint="${l} (${f})">${l}</button>`).join('')}</div>`;
+    $$('[data-tab]', R.edTabs).forEach((b) => b.addEventListener('click', () => setTab(b.dataset.tab)));
+  }
+  function setTab(tab) {
+    const changedTab = ui.tab !== tab;
+    ui.tab = tab;
+    savePrefs();
+    $$('[data-tab]', R.edTabs).forEach((b) => b.classList.toggle('is-on', b.dataset.tab === tab));
+    renderEditor();
+    if (changedTab) {
+      R.edBody.classList.remove('switching');
+      void R.edBody.offsetWidth;
+      R.edBody.classList.add('switching');
+    }
+  }
+  function renderEditor() {
+    const body = R.edBody;
+    const sw = body.classList.contains('switching');
+    body.className = 'ed-body tab-' + ui.tab + (sw ? ' switching' : '');
+    if (ui.tab === 'rack') renderRack();
+    else if (ui.tab === 'roll') renderRoll(body);
+    else if (ui.tab === 'lab') BL.lab.render();
+    else renderMixer(body);
+  }
+
+  // ---------- channel rack ----------
+  function soundOptions(t) {
+    if (t.type === 'drum') {
+      let h = S.DRUM_CATS.map((c) => `<optgroup label="${c}">${S.DRUMS.filter((d) => d.cat === c).map((d) => `<option value="${d.id}" ${d.id === t.sound ? 'selected' : ''}>${d.name}</option>`).join('')}</optgroup>`).join('');
+      MD.packs.forEach((pk) => {
+        const list = pk.sounds.filter((s) => s.cat !== 'Loops' || 'u:' + s.id === t.sound);
+        if (list.length) h += `<optgroup label="${esc(pk.name)}">${list.map((s) => `<option value="u:${s.id}" ${'u:' + s.id === t.sound ? 'selected' : ''}>${esc(s.cat + ' · ' + s.name)}</option>`).join('')}</optgroup>`;
+      });
+      if (/^u:/.test(t.sound) && !MD.packs.some((pk) => pk.sounds.some((s) => 'u:' + s.id === t.sound))) h += `<option value="${t.sound}" selected>${esc(MD.soundName(t.sound))}</option>`;
+      return h;
+    }
+    if (t.type === 'synth') {
+      const cats = [...new Set(Object.values(S.INSTRUMENTS).map((i) => i.cat))];
+      return cats.map((c) => `<optgroup label="${c}">${Object.entries(S.INSTRUMENTS).filter(([, i]) => i.cat === c).map(([k, i]) => `<option value="${k}" ${k === t.inst ? 'selected' : ''}>${i.name}</option>`).join('')}</optgroup>`).join('');
+    }
+    return Object.values(P.samples).map((s) => `<option value="${s.id}" ${s.id === t.sampleId ? 'selected' : ''}>${esc(s.name)}</option>`).join('');
+  }
+
+  function laneHtml(t) {
+    const n = nSteps();
+    const d = patData(curPat(), t);
+    const cls = (i) => `${i % 4 === 0 ? 'b4' : ''} ${i % 16 === 0 ? 'b16' : ''} ${Math.floor(i / 4) % 2 ? 'odd' : ''}`;
+    if (t.type === 'drum') {
+      let h = '';
+      for (let i = 0; i < n; i++) {
+        const v = d.steps[i], r = d.rolls[i] || 1;
+        h += `<button class="cell ${cls(i)} ${v ? 'on' : ''}" data-step="${i}" style="--v:${v || 0}" aria-label="Step ${i + 1}">${v && r > 1 ? `<i class="rollx">×${r}</i>` : ''}</button>`;
+      }
+      return `<div class="lane lane-steps">${h}</div>`;
+    }
+    if (t.type === 'synth') {
+      let h = '';
+      for (let i = 0; i < n; i++) h += `<span class="cell ghost ${cls(i)}" data-step="${i}"></span>`;
+      return `<div class="lane lane-notes" data-hint="Click to edit these notes in the Piano Roll.">${h}<canvas class="lane-canvas"></canvas></div>`;
+    }
+    if (t.mode === 'chop') {
+      let h = '';
+      for (let i = 0; i < n; i++) {
+        const v = d.steps[i];
+        h += `<button class="cell chop ${cls(i)} ${v >= 0 ? 'on' : ''}" data-step="${i}" style="--h:${v >= 0 ? (v * 37) % 360 : 0}">${v >= 0 ? v + 1 : ''}</button>`;
+      }
+      return `<div class="lane lane-steps">${h}</div>`;
+    }
+    let h = '';
+    for (let i = 0; i < n; i++) h += `<span class="cell ghost ${cls(i)}" data-step="${i}"></span>`;
+    const rt = BL.lab.runtime(t.sampleId);
+    return `<div class="lane lane-loop ${d.on === false ? 'off' : ''}">${h}<canvas class="lane-canvas"></canvas>
+      <button class="loop-toggle" data-hint="Turn this loop on or off in this pattern.">${d.on === false ? 'Off in this pattern' : esc((P.samples[t.sampleId] || {}).name || 'Sample') + (rt && rt.processed ? '' : ' · loading')}</button></div>`;
+  }
+
+  function trackRow(t, i) {
+    const sel = ui.sel === t.id;
+    const chopSel = t.type === 'sample' && t.mode === 'chop' ? `<span class="chop-brush" data-hint="Which chop a click places. ◀ ▶ to change.">
+      <button data-act="chopPrev" aria-label="Previous chop">${icon('left')}</button><b>${(ui.chopBrush[t.id] || 0) + 1}</b><button data-act="chopNext" aria-label="Next chop">${icon('right')}</button></span>` : '';
+    return `<div class="trk ${sel ? 'is-sel' : ''} ${t.mute ? 'is-mute' : ''}" data-id="${t.id}" style="--c:${colorOf(t)};--i:${i}">
+      <div class="trk-head">
+        <button class="led ${t.mute ? '' : 'on'}" data-act="mute" aria-label="Mute ${esc(t.name)}" data-hint="Channel on / off."></button>
+        <div class="trk-main">
+          <div class="trk-top">
+            <button class="trk-name" data-act="select" data-hint="Select. Double-click to rename.">${esc(t.name)}</button>
+            <button class="mini ${t.solo ? 'is-on' : ''}" data-act="solo" aria-pressed="${t.solo}" data-hint="Solo: hear only this channel.">S</button>
+            <button class="mini magic" data-act="magic" aria-label="Write it for me" data-hint="Write a part for this channel.">${icon('sparkle')}</button>
+            <button class="mini" data-act="menu" aria-label="Channel options" data-hint="Pitch, octave, pan, reverb, clear, duplicate, delete.">${icon('more')}</button>
+          </div>
+          <div class="trk-bot">
+            <select class="trk-sound" data-act="sound" aria-label="Sound">${soundOptions(t)}</select>
+            ${chopSel || `<input type="range" class="trk-vol" data-act="vol" min="0" max="1" step="0.01" value="${t.vol}" aria-label="Volume" data-hint="Volume for ${esc(t.name)}.">`}
+          </div>
+        </div>
+      </div>
+      ${laneHtml(t)}
+    </div>`;
+  }
+
+  function rackEl() { return $('#rack', R.edBody); }
+
+  function renderRack() {
+    if (ui.tab !== 'rack') return;
+    const body = R.edBody;
+    const old = rackEl();
+    const sl = old ? old.scrollLeft : 0, st = old ? old.scrollTop : 0;
+    body.innerHTML = `
+      <div class="ed-tools">
+        <div class="patsel" data-hint="The pattern you're editing. Each pattern is a loop you can paint into the Playlist.">
+          <button class="tbtn icon" id="patPrev" aria-label="Previous pattern">${icon('left')}</button>
+          <i class="pat-swatch" style="--c:${curPat().color}"></i>
+          <select id="patSel" aria-label="Pattern">${P.patterns.map((pt, i) => `<option value="${i}" ${i === P.current ? 'selected' : ''}>${esc(pt.name)}</option>`).join('')}</select>
+          <button class="tbtn icon" id="patNext" aria-label="Next pattern">${icon('right')}</button>
+          <button class="tbtn icon" id="patNew" aria-label="New pattern" data-hint="New empty pattern.">${icon('plus')}</button>
+          <button class="tbtn icon" id="patMore" aria-label="Pattern options" data-hint="Rename, duplicate, clear or delete this pattern.">${icon('more')}</button>
+        </div>
+        <span class="tb-sep"></span>
+        <div class="seg seg-sm" id="barsSeg" role="group" aria-label="Pattern length" data-hint="Pattern length. Longer copies what you have.">
+          ${[1, 2, 4].map((b) => `<button data-bars="${b}" class="${P.bars === b ? 'is-on' : ''}">${b} bar${b > 1 ? 's' : ''}</button>`).join('')}
+        </div>
+        <label class="ph-field" data-hint="Swing pushes every other 16th late for bounce.">Swing <input type="range" id="swing" min="0" max="0.6" step="0.01" value="${P.swing}"><output id="swingOut">${Math.round(P.swing * 100)}%</output></label>
+        <span class="ph-spacer"></span>
+        <div class="seg seg-sm" id="toolSeg" role="group" aria-label="Step tool">
+          <button data-tool="draw" class="${ui.tool === 'draw' ? 'is-on' : ''}" data-hint="Draw: click or drag to add or remove hits.">Draw</button>
+          <button data-tool="roll" class="${ui.tool === 'roll' ? 'is-on' : ''}" data-hint="Rolls: click a hit for ×2, ×3, ×4 rolls.">Rolls</button>
+          <button data-tool="vel" class="${ui.tool === 'vel' ? 'is-on' : ''}" data-hint="Velocity: click a hit to make it soft, normal or loud.">Velocity</button>
+        </div>
+      </div>
+      <div class="rack" id="rack">
+        ${P.tracks.map(trackRow).join('')}
+        <div class="add-row">
+          <button class="tbtn" data-add="drum" data-hint="Add a drum channel.">${icon('plus')}<span>Drum</span></button>
+          <button class="tbtn" data-add="synth" data-hint="Add an instrument channel.">${icon('plus')}<span>Instrument</span></button>
+          <button class="tbtn" data-add="bass" data-hint="Add an 808 or bass channel.">${icon('plus')}<span>808 / Bass</span></button>
+          <button class="tbtn" data-add="sample" data-hint="Flip a sample in the Sample Lab.">${icon('plus')}<span>Sample</span></button>
+          <span class="add-tip">Drag sounds from the Browser onto a channel to swap them.</span>
+        </div>
+      </div>`;
+    const rk = rackEl();
+    rk.scrollLeft = sl; rk.scrollTop = st;
+    sizeSteps();
+    bindRackTools();
+    bindRack();
+    cacheColumns();
+    drawLanes();
+  }
+
+  function sizeSteps() {
+    const rk = rackEl();
+    if (!rk) return;
+    const n = nSteps();
+    const head = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--head-w')) || 230;
+    const avail = rk.clientWidth - head - 28;
+    const gaps = (n - 1) * 2 + (n / 4 - 1) * 3 + (n / 16 - 1) * 6;
+    const w = Math.max(20, Math.min(46, Math.floor((avail - gaps) / n)));
+    rk.style.setProperty('--step-w', w + 'px');
+  }
+
+  function bindRackTools() {
+    const sel = $('#patSel');
+    sel.addEventListener('change', () => openPattern(+sel.value));
+    $('#patPrev').addEventListener('click', () => openPattern((P.current - 1 + P.patterns.length) % P.patterns.length));
+    $('#patNext').addEventListener('click', () => openPattern((P.current + 1) % P.patterns.length));
+    $('#patNew').addEventListener('click', () => {
+      if (P.patterns.length >= 32) return toast('That’s the maximum of 32 patterns.');
+      edit((p) => { p.patterns.push(newPattern(p.patterns.length)); p.current = p.patterns.length - 1; });
+      ui.brush = { kind: 'pattern', pat: P.current };
+      BL.playlist.render();
+      toast(`${curPat().name} is ready. Paint it into the Playlist when you like it.`);
+    });
+    $('#patMore').addEventListener('click', (e) => patternMenu(e.currentTarget));
+    $$('[data-bars]').forEach((b) => b.addEventListener('click', () => setBars(+b.dataset.bars)));
+    const sw = $('#swing');
+    sw.addEventListener('input', () => { $('#swingOut').textContent = Math.round(sw.value * 100) + '%'; });
+    sw.addEventListener('change', () => edit((p) => { p.swing = +sw.value; }, { noRender: true }));
+    $$('[data-tool]').forEach((b) => b.addEventListener('click', () => {
+      ui.tool = b.dataset.tool;
+      $$('[data-tool]').forEach((x) => x.classList.toggle('is-on', x === b));
+    }));
   }
 
   function setBars(n) {
@@ -329,159 +666,64 @@
         }
       }
     });
-    toast(n * 16 > old ? `Loop is now ${n} bars. Your pattern was copied to fill it.` : `Loop is now ${n} bar${n > 1 ? 's' : ''}.`);
+    toast(n * 16 > old ? `Patterns are now ${n} bars. What you had was copied to fill them.` : `Patterns are now ${n} bar${n > 1 ? 's' : ''}.`);
   }
 
-  function togglePlay() {
-    if (E.state.playing) E.stop(); else E.play(P.songMode ? songStartIdx() : 0);
-    renderTop();
+  function openPattern(i) {
+    P.current = i;
+    ui.brush = { kind: 'pattern', pat: i };
+    autosave();
+    if (ui.tab !== 'rack' && ui.tab !== 'roll') ui.tab = 'rack';
+    renderTabs();
+    renderEditor();
+    BL.playlist.render();
   }
-  function songStartIdx() { return 0; }
 
-  // ---------- pattern bar & song ----------
-  function renderPatBar() {
-    R.patBtns.innerHTML = LETTERS.split('').map((L, i) => {
-      const used = Object.values(P.patterns[i].data).some((d) => (d.notes && d.notes.length) || (d.steps && d.steps.some((v) => v > 0)));
-      return `<button class="pat ${P.current === i ? 'is-on' : ''} ${used ? 'has' : ''}" data-pat="${i}" data-hint="Pattern ${L}. Each pattern is its own loop. Click to edit it.">${L}</button>`;
-    }).join('');
-    $$('[data-pat]', R.patBtns).forEach((b) => b.addEventListener('click', () => { P.current = +b.dataset.pat; scheduleSave(); renderAll(); }));
-    R.songToggle.classList.toggle('is-on', P.songMode);
-    R.songToggle.setAttribute('aria-pressed', P.songMode);
-    R.songStrip.innerHTML = P.song.map((pi, i) => `<button class="blk" data-blk="${i}" style="--c:${['#0a84ff', '#bf5af2', '#30d158', '#ff9f0a'][pi]}" data-hint="Click to change which pattern plays here. Right-click (or long-press) to remove.">${LETTERS[pi]}</button>`).join('') +
-      `<button class="blk blk-add" id="blkAdd" data-hint="Add another block to your song.">+</button>`;
-    $$('[data-blk]', R.songStrip).forEach((b) => {
-      const i = +b.dataset.blk;
-      b.addEventListener('click', () => edit((p) => { p.song[i] = (p.song[i] + 1) % 4; }));
-      b.addEventListener('contextmenu', (e) => { e.preventDefault(); if (P.song.length > 1) edit((p) => { p.song.splice(i, 1); }); });
-      let lp = null;
-      b.addEventListener('touchstart', () => { lp = setTimeout(() => { if (P.song.length > 1) edit((p) => { p.song.splice(i, 1); }); }, 600); }, { passive: true });
-      b.addEventListener('touchend', () => clearTimeout(lp));
-    });
-    $('#blkAdd').addEventListener('click', () => edit((p) => { p.song.push(p.song.length ? p.song[p.song.length - 1] : 0); }));
-  }
-  function bindPatBar() {
-    R.songToggle.addEventListener('click', () => {
-      edit((p) => { p.songMode = !p.songMode; });
-      toast(P.songMode ? 'Song mode: plays your blocks in order, left to right.' : 'Pattern mode: loops the pattern you are editing.');
-      if (E.state.playing) { E.stop(); E.play(); renderTop(); }
-    });
-    R.copyPat.addEventListener('click', (e) => {
-      openPop(e.currentTarget, `<div class="menu"><div class="menu-head">Copy pattern ${LETTERS[P.current]} to…</div>${LETTERS.split('').map((L, i) => i === P.current ? '' : `<button data-copyto="${i}">Pattern ${L}</button>`).join('')}</div>`, (pop) => {
-        $$('[data-copyto]', pop).forEach((b) => b.addEventListener('click', () => {
-          const to = +b.dataset.copyto;
-          edit((p) => { p.patterns[to].data = JSON.parse(JSON.stringify(p.patterns[p.current].data)); p.current = to; });
-          closePop();
-          toast(`Copied. You are now editing pattern ${LETTERS[to]}, so change it up.`);
-        }));
+  function patternMenu(anchor) {
+    openPop(anchor, `<div class="menu"><div class="menu-head">${esc(curPat().name)}</div>
+      <button data-m="rename">Rename…</button><button data-m="dup">Duplicate</button><button data-m="clear">Clear</button>
+      <button data-m="color">Change Color</button><hr><button data-m="del" class="danger" ${P.patterns.length < 2 ? 'disabled' : ''}>Delete Pattern</button></div>`, (pop) => {
+      const on = (k, fn) => $(`[data-m="${k}"]`, pop).addEventListener('click', () => { closePop(); fn(); });
+      on('rename', () => inlineRename($('#patSel'), curPat().name, (v) => edit((p) => { p.patterns[p.current].name = v; })));
+      on('dup', () => {
+        if (P.patterns.length >= 32) return toast('That’s the maximum of 32 patterns.');
+        edit((p) => {
+          const src = p.patterns[p.current];
+          p.patterns.push({ name: src.name + ' copy', color: PAT_COLORS[p.patterns.length % PAT_COLORS.length], data: JSON.parse(JSON.stringify(src.data)) });
+          p.current = p.patterns.length - 1;
+        });
+        ui.brush = { kind: 'pattern', pat: P.current };
+        BL.playlist.render();
+        toast('Duplicated. Change it up for a hook or a verse.');
+      });
+      on('clear', () => { edit((p) => { p.patterns[p.current].data = {}; }); toast('Pattern cleared. Undo with ' + CMD + 'Z.'); });
+      on('color', () => edit((p) => { const pt = p.patterns[p.current]; pt.color = PAT_COLORS[(PAT_COLORS.indexOf(pt.color) + 1) % PAT_COLORS.length]; }));
+      on('del', () => {
+        if (P.patterns.length < 2) return;
+        edit((p) => {
+          const i = p.current;
+          p.patterns.splice(i, 1);
+          p.clips = p.clips.filter((c) => !(c.kind === 'pattern' && c.pat === i));
+          p.clips.forEach((c) => { if (c.kind === 'pattern' && c.pat > i) c.pat -= 1; });
+          p.current = Math.max(0, i - 1);
+        });
+        ui.brush = { kind: 'pattern', pat: P.current };
       });
     });
-    R.clearPat.addEventListener('click', () => {
-      edit((p) => { p.patterns[p.current].data = {}; });
-      toast(`Pattern ${LETTERS[P.current]} cleared. Undo with Ctrl+Z.`);
-    });
-  }
-
-  // ---------- rack ----------
-  function soundOptions(t) {
-    if (t.type === 'drum') {
-      return S.DRUM_CATS.map((c) => `<optgroup label="${c}">${S.DRUMS.filter((d) => d.cat === c).map((d) => `<option value="${d.id}" ${d.id === t.sound ? 'selected' : ''}>${d.name}</option>`).join('')}</optgroup>`).join('');
-    }
-    if (t.type === 'synth') {
-      const cats = [...new Set(Object.values(S.INSTRUMENTS).map((i) => i.cat))];
-      return cats.map((c) => `<optgroup label="${c}">${Object.entries(S.INSTRUMENTS).filter(([, i]) => i.cat === c).map(([k, i]) => `<option value="${k}" ${k === t.inst ? 'selected' : ''}>${i.name}</option>`).join('')}</optgroup>`).join('');
-    }
-    return Object.values(P.samples).map((s) => `<option value="${s.id}" ${s.id === t.sampleId ? 'selected' : ''}>${esc(s.name)}</option>`).join('');
-  }
-
-  function laneHtml(t) {
-    const n = nSteps();
-    const pat = curPat();
-    const d = patData(pat, t);
-    const cls = (i) => `${i % 4 === 0 ? 'b4' : ''} ${i % 16 === 0 ? 'b16' : ''} ${Math.floor(i / 4) % 2 ? 'odd' : ''}`;
-    if (t.type === 'drum') {
-      let h = '';
-      for (let i = 0; i < n; i++) {
-        const v = d.steps[i], r = d.rolls[i] || 1;
-        h += `<button class="cell ${cls(i)} ${v ? 'on' : ''}" data-step="${i}" style="--v:${v || 0}" aria-label="Step ${i + 1}">${v && r > 1 ? `<i class="rollx">×${r}</i>` : ''}</button>`;
-      }
-      return `<div class="lane lane-steps" style="--n:${n}">${h}</div>`;
-    }
-    if (t.type === 'synth') {
-      let h = '';
-      for (let i = 0; i < n; i++) h += `<span class="cell ghost ${cls(i)}" data-step="${i}"></span>`;
-      return `<div class="lane lane-notes" style="--n:${n}" data-hint="Click to open this track in the piano roll below.">${h}<canvas class="lane-canvas"></canvas></div>`;
-    }
-    if (t.mode === 'chop') {
-      let h = '';
-      for (let i = 0; i < n; i++) {
-        const v = d.steps[i];
-        h += `<button class="cell chop ${cls(i)} ${v >= 0 ? 'on' : ''}" data-step="${i}" style="--h:${v >= 0 ? (v * 37) % 360 : 0}">${v >= 0 ? v + 1 : ''}</button>`;
-      }
-      return `<div class="lane lane-steps" style="--n:${n}">${h}</div>`;
-    }
-    let h = '';
-    for (let i = 0; i < n; i++) h += `<span class="cell ghost ${cls(i)}" data-step="${i}"></span>`;
-    const rt = BL.lab.runtime(t.sampleId);
-    return `<div class="lane lane-loop ${d.on === false ? 'off' : ''}" style="--n:${n}">${h}<canvas class="lane-canvas"></canvas>
-      <button class="loop-toggle" data-hint="Turn this loop on or off in this pattern.">${d.on === false ? 'Loop off in this pattern — click to turn on' : esc((P.samples[t.sampleId] || {}).name || 'Sample') + (rt && rt.processed ? '' : ' (loading…)')}</button></div>`;
-  }
-
-  function trackRow(t) {
-    const sel = ui.sel === t.id;
-    const chopSel = t.type === 'sample' && t.mode === 'chop' ? `<span class="chop-brush" data-hint="The chop you'll place when you click an empty square. Use ◀ ▶ to change it.">
-      <button data-act="chopPrev" aria-label="Previous chop">◀</button><b>${(ui.chopBrush[t.id] || 0) + 1}</b><button data-act="chopNext" aria-label="Next chop">▶</button></span>` : '';
-    return `<div class="trk ${sel ? 'is-sel' : ''} ${t.mute ? 'is-mute' : ''}" data-id="${t.id}" style="--c:${colorOf(t)};--i:${P.tracks.indexOf(t)}">
-      <div class="trk-head">
-        <div class="trk-top">
-          <button class="trk-name" data-act="select" data-hint="Select this track. Double-click to rename it.">${esc(t.name)}</button>
-          <button class="mini ${t.mute ? 'is-on' : ''}" data-act="mute" aria-pressed="${t.mute}" data-hint="Mute: silence this track.">M</button>
-          <button class="mini ${t.solo ? 'is-on' : ''}" data-act="solo" aria-pressed="${t.solo}" data-hint="Solo: hear only this track (and other soloed ones).">S</button>
-          <button class="mini magic" data-act="magic" data-hint="✦ Let BeatLab write a part for this track.">✦</button>
-          <button class="mini more" data-act="menu" aria-label="Track options" data-hint="More options: pitch, octave, reverb, clear, duplicate, delete.">⋯</button>
-        </div>
-        <div class="trk-bot">
-          <select class="trk-sound" data-act="sound" aria-label="Sound" data-hint="${t.type === 'drum' ? 'Pick a different drum sound. You hear it right away.' : t.type === 'synth' ? 'Pick an instrument. Your notes stay the same.' : 'Which sample this track plays.'}">${soundOptions(t)}</select>
-          ${chopSel || `<input type="range" class="trk-vol" data-act="vol" min="0" max="1" step="0.01" value="${t.vol}" aria-label="Volume" data-hint="Volume for ${esc(t.name)}.">`}
-        </div>
-      </div>
-      ${laneHtml(t)}
-    </div>`;
-  }
-
-  function renderRack() {
-    const sl = R.rack.scrollLeft;
-    R.rack.innerHTML = P.tracks.map(trackRow).join('') +
-      `<div class="add-row">
-        <button class="btn" data-add="drum" data-hint="Add a drum sound: kick, snare, hat, perc or FX.">+ Drum sound</button>
-        <button class="btn" data-add="synth" data-hint="Add a melody instrument: piano, keys, bells, strings, synths…">+ Instrument</button>
-        <button class="btn" data-add="bass" data-hint="Add an 808 or bass line.">+ 808 / Bass</button>
-        <button class="btn" data-add="sample" data-hint="Open the Sample Lab to flip a record or your own audio.">+ Sample</button>
-      </div>`;
-    R.rack.scrollLeft = sl;
-    sizeSteps();
-    bindRack();
-    cacheColumns();
-    drawLanes();
-  }
-
-  /** stretch the step squares to fill wide screens; keep them tappable on phones */
-  function sizeSteps() {
-    const n = nSteps();
-    const head = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--head-w')) || 236;
-    const avail = R.rack.clientWidth - head - 30;
-    const gaps = (n - 1) * 3 + (n / 4 - 1) * 3 + (n / 16 - 1) * 6;
-    const w = Math.max(24, Math.min(64, Math.floor((avail - gaps) / n)));
-    R.rack.style.setProperty('--step-w', w + 'px');
   }
 
   let columns = [];
   function cacheColumns() {
     columns = [];
-    $$('.lane [data-step]', R.rack).forEach((c) => { const i = +c.dataset.step; (columns[i] = columns[i] || []).push(c); });
+    const rk = rackEl();
+    if (!rk) return;
+    $$('.lane [data-step]', rk).forEach((c) => { const i = +c.dataset.step; (columns[i] = columns[i] || []).push(c); });
   }
 
   function drawLanes() {
-    $$('.trk', R.rack).forEach((row) => {
+    const rk = rackEl();
+    if (!rk) return;
+    $$('.trk', rk).forEach((row) => {
       const t = P.tracks.find((x) => x.id === row.dataset.id);
       const cv = $('.lane-canvas', row);
       if (!t || !cv) return;
@@ -494,7 +736,6 @@
       cv.style.width = w + 'px'; cv.style.height = h + 'px';
       const g = cv.getContext('2d');
       g.setTransform(dpr, 0, 0, dpr, 0, 0);
-      g.clearRect(0, 0, w, h);
       const color = colorOf(t);
       const xOf = (i) => (i < cells.length ? cells[i].offsetLeft : cells[cells.length - 1].offsetLeft + cells[cells.length - 1].offsetWidth);
       if (t.type === 'synth') {
@@ -503,13 +744,12 @@
         let mn = Infinity, mx = -Infinity;
         d.notes.forEach((n) => { mn = Math.min(mn, n.d); mx = Math.max(mx, n.d); });
         const range = Math.max(6, mx - mn + 1);
-        const nh = Math.max(3, Math.min(8, (h - 10) / range));
+        const nh = Math.max(3, Math.min(5, (h - 10) / range));
         g.fillStyle = color;
         d.notes.forEach((n) => {
           const x0 = xOf(n.s), x1 = xOf(Math.min(cells.length, n.s + n.l)) - 2;
           const y = h - 5 - ((n.d - mn + 1) / range) * (h - 10);
-          g.globalAlpha = 0.9;
-          roundRect(g, x0 + 1, y, Math.max(3, x1 - x0 - 1), nh, 2);
+          g.fillRect(x0 + 1, y, Math.max(3, x1 - x0 - 1), nh);
         });
       } else if (t.type === 'sample') {
         const rt = BL.lab.runtime(t.sampleId);
@@ -517,9 +757,9 @@
         const sd = 60 / P.bpm / 4;
         const steps = Math.min(cells.length, rt.processed.duration / sd);
         const x1 = xOf(Math.floor(steps)) + (steps % 1) * cells[0].offsetWidth;
-        const buf = rt.processed, data = buf.getChannelData(0);
+        const data = rt.processed.getChannelData(0);
         g.fillStyle = color;
-        g.globalAlpha = 0.55;
+        g.globalAlpha = 0.6;
         const cols = Math.max(1, Math.floor(x1));
         const per = Math.max(1, Math.floor(data.length / cols));
         for (let x = 0; x < cols; x += 2) {
@@ -531,42 +771,29 @@
       }
     });
   }
-  function roundRect(g, x, y, w, h, r) {
-    g.beginPath();
-    g.moveTo(x + r, y); g.lineTo(x + w - r, y); g.quadraticCurveTo(x + w, y, x + w, y + r);
-    g.lineTo(x + w, y + h - r); g.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-    g.lineTo(x + r, y + h); g.quadraticCurveTo(x, y + h, x, y + h - r);
-    g.lineTo(x, y + r); g.quadraticCurveTo(x, y, x + r, y);
-    g.fill();
-  }
 
-  let paint = null; // drag-painting state for drum steps
+  let paint = null;
   function bindRack() {
-    $$('.trk', R.rack).forEach((row) => {
+    const rk = rackEl();
+    $$('.trk', rk).forEach((row) => {
       const t = P.tracks.find((x) => x.id === row.dataset.id);
       const act = (a) => $(`[data-act="${a}"]`, row);
       act('select').addEventListener('click', () => selectTrack(t.id, true));
-      act('select').addEventListener('dblclick', () => renameTrack(t));
+      act('select').addEventListener('dblclick', (e) => inlineRename(e.currentTarget, t.name, (v) => edit((p) => { tr(p, t).name = v; })));
       act('mute').addEventListener('click', () => edit((p) => { tr(p, t).mute = !tr(p, t).mute; }));
       act('solo').addEventListener('click', () => edit((p) => { tr(p, t).solo = !tr(p, t).solo; }));
       act('menu').addEventListener('click', (e) => openTrackMenu(t, e.currentTarget));
       act('magic').addEventListener('click', (e) => openMagic(t, e.currentTarget));
       const snd = act('sound');
-      snd.addEventListener('change', () => {
+      snd.addEventListener('change', async () => {
         const v = snd.value;
-        edit((p) => {
-          const x = tr(p, t);
-          if (x.type === 'drum') { const old = S.DRUM_BY_ID[x.sound]; if (!x.name || (old && x.name === old.name)) x.name = S.DRUM_BY_ID[v].name; x.sound = v; }
-          else if (x.type === 'synth') { const old = S.INSTRUMENTS[x.inst]; if (old && x.name === old.name) x.name = S.INSTRUMENTS[v].name; x.inst = v; }
-          else x.sampleId = v;
-        });
-        if (t.type === 'drum') E.previewDrum(v, t.pitch);
-        else if (t.type === 'synth') E.previewNote(v, E.noteMidi(P, tr(P, t), 0), 0.5);
+        if (t.type === 'drum') await MD.ensureSound(v);
+        setChannelSound(t, v);
       });
       const vol = act('vol');
       if (vol) {
         vol.addEventListener('pointerdown', () => snapshot());
-        vol.addEventListener('input', () => { tr(P, t).vol = +vol.value; E.refreshMix(); scheduleSave(); });
+        vol.addEventListener('input', () => { tr(P, t).vol = +vol.value; E.refreshMix(); autosave(); });
       }
       const cp = act('chopPrev'), cn = act('chopNext');
       if (cp) {
@@ -574,6 +801,20 @@
         cp.addEventListener('click', () => { ui.chopBrush[t.id] = ((ui.chopBrush[t.id] || 0) - 1 + n()) % n(); renderRack(); previewChop(t, ui.chopBrush[t.id]); });
         cn.addEventListener('click', () => { ui.chopBrush[t.id] = ((ui.chopBrush[t.id] || 0) + 1) % n(); renderRack(); previewChop(t, ui.chopBrush[t.id]); });
       }
+      // drop a Browser sound on a channel to swap it
+      row.addEventListener('dragover', (e) => { if (t.type === 'drum' && e.dataTransfer.types.includes('text/beatlab')) { e.preventDefault(); row.classList.add('is-drop'); } });
+      row.addEventListener('dragleave', () => row.classList.remove('is-drop'));
+      row.addEventListener('drop', async (e) => {
+        row.classList.remove('is-drop');
+        const raw = e.dataTransfer.getData('text/beatlab');
+        if (!raw || t.type !== 'drum') return;
+        const item = JSON.parse(raw);
+        if (item.kind !== 'drum' && item.kind !== 'pack') return;
+        e.preventDefault();
+        e.stopPropagation();
+        await MD.ensureSound(item.id);
+        setChannelSound(t, item.id);
+      });
       const lane = $('.lane', row);
       if (t.type === 'drum') bindDrumLane(lane, t);
       else if (t.type === 'synth') lane.addEventListener('click', () => { selectTrack(t.id, true); });
@@ -583,10 +824,29 @@
         lane.addEventListener('dblclick', () => { ui.labSample = t.sampleId; setTab('lab'); });
       }
     });
-    $$('[data-add]', R.rack).forEach((b) => b.addEventListener('click', (e) => addTrackMenu(b.dataset.add, e.currentTarget)));
+    rk.addEventListener('dragover', (e) => { if (e.dataTransfer.types.includes('text/beatlab')) e.preventDefault(); });
+    rk.addEventListener('drop', async (e) => {
+      const raw = e.dataTransfer.getData('text/beatlab');
+      if (!raw) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const item = JSON.parse(raw);
+      if (item.kind === 'drum' || item.kind === 'pack') { await MD.ensureSound(item.id); addChannel('drum', item.id); }
+      else if (item.kind === 'inst') addChannel('synth', item.id);
+    });
+    $$('[data-add]', rk).forEach((b) => b.addEventListener('click', (e) => addTrackMenu(b.dataset.add, e.currentTarget)));
   }
 
-  const tr = (p, t) => p.tracks.find((x) => x.id === t.id);
+  function setChannelSound(t, v) {
+    edit((p) => {
+      const x = tr(p, t);
+      if (x.type === 'drum') { const oldName = MD.soundName(x.sound); if (!x.name || x.name === oldName) x.name = MD.soundName(v); x.sound = v; }
+      else if (x.type === 'synth') { const old = S.INSTRUMENTS[x.inst]; if (old && x.name === old.name) x.name = S.INSTRUMENTS[v].name; x.inst = v; }
+      else x.sampleId = v;
+    });
+    if (t.type === 'drum') E.previewDrum(v, t.pitch);
+    else if (t.type === 'synth') E.previewNote(v, E.noteMidi(P, tr(P, t), 0), 0.5);
+  }
 
   function bindDrumLane(lane, t) {
     lane.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -598,25 +858,22 @@
       const d = patData(curPat(), tr(P, t));
       snapshot();
       if (e.button === 2 || ui.tool === 'vel') {
-        // cycle loudness: soft → normal → loud
         const v = d.steps[i];
         d.steps[i] = !v ? 0.8 : v < 0.6 ? 0.8 : v < 0.95 ? 1 : 0.45;
         paint = null;
       } else if (ui.tool === 'roll') {
-        if (!d.steps[i]) { d.steps[i] = 0.75; d.rolls[i] = 2; }
-        else d.rolls[i] = (d.rolls[i] || 1) >= 4 ? 1 : (d.rolls[i] || 1) + 1;
+        if (!d.steps[i]) { d.steps[i] = 0.75; d.rolls[i] = 2; } else d.rolls[i] = (d.rolls[i] || 1) >= 4 ? 1 : (d.rolls[i] || 1) + 1;
         paint = null;
       } else {
         const turnOn = !d.steps[i];
         d.steps[i] = turnOn ? 0.8 : 0;
         d.rolls[i] = 1;
-        paint = { t, on: turnOn };
-        if (e.pointerType !== 'mouse') paint = null;
+        paint = e.pointerType === 'mouse' ? { t, on: turnOn } : null;
       }
       if (d.steps[i]) E.previewDrum(t.sound, t.pitch);
       updateCell(cell, d, i);
       changed({ noRender: true });
-      renderPatBar();
+      if (!paint) BL.playlist.drawClips();
     });
     lane.addEventListener('pointerover', (e) => {
       if (!paint || paint.t.id !== t.id || !(e.buttons & 1)) return;
@@ -631,13 +888,12 @@
       changed({ noRender: true });
     });
   }
-  window.addEventListener('pointerup', () => { paint = null; });
+  window.addEventListener('pointerup', () => { if (paint) { paint = null; BL.playlist.drawClips(); } });
 
   function updateCell(cell, d, i) {
     const v = d.steps[i], r = d.rolls[i] || 1;
     cell.classList.toggle('on', !!v);
     cell.style.setProperty('--v', v || 0);
-    if (v) { cell.classList.remove('pop'); void cell.offsetWidth; cell.classList.add('pop'); }
     cell.innerHTML = v && r > 1 ? `<i class="rollx">×${r}</i>` : '';
   }
 
@@ -669,33 +925,48 @@
     ui.sel = id;
     const t = P.tracks.find((x) => x.id === id);
     if (openEditor && t) {
-      if (t.type === 'synth') ui.tab = 'roll';
-      else if (t.type === 'sample') { ui.tab = 'lab'; ui.labSample = t.sampleId; }
+      if (t.type === 'synth') return setTab('roll');
+      if (t.type === 'sample') { ui.labSample = t.sampleId; return setTab('lab'); }
     }
-    $$('.trk', R.rack).forEach((r) => r.classList.toggle('is-sel', r.dataset.id === id));
-    renderDock();
+    $$('.trk', rackEl() || document).forEach((r) => r.classList.toggle('is-sel', r.dataset.id === id));
   }
 
-  function renameTrack(t) {
-    const btn = $(`.trk[data-id="${t.id}"] .trk-name`, R.rack);
+  function inlineRename(el, value, done) {
     const input = document.createElement('input');
-    input.className = 'trk-rename';
-    input.value = t.name;
-    btn.replaceWith(input);
+    input.className = 'rename';
+    input.value = value;
+    const r = el.getBoundingClientRect();
+    input.style.cssText = `position:fixed;left:${r.left}px;top:${r.top}px;width:${Math.max(140, r.width)}px;height:${Math.max(22, r.height)}px;z-index:100`;
+    document.body.appendChild(input);
     input.focus();
     input.select();
-    const done = () => edit((p) => { tr(p, t).name = input.value.trim() || t.name; });
-    input.addEventListener('blur', done);
-    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') input.blur(); if (e.key === 'Escape') { input.value = t.name; input.blur(); } });
+    let finished = false;
+    const finish = (keep) => {
+      if (finished) return;
+      finished = true;
+      const v = input.value.trim();
+      input.remove();
+      if (keep && v && v !== value) done(v);
+    };
+    input.addEventListener('blur', () => finish(true));
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') finish(true); if (e.key === 'Escape') finish(false); e.stopPropagation(); });
+  }
+
+  function addChannel(type, id) {
+    const inst = type === 'synth' ? S.INSTRUMENTS[id] : null;
+    const t = type === 'drum' ? makeTrack('drum', { sound: id }) : makeTrack('synth', { inst: id, rev: inst && inst.bass ? 0 : 0.25 });
+    edit((p) => { p.tracks.push(t); }, { noRender: true });
+    ui.sel = t.id;
+    if (type === 'synth') setTab('roll'); else setTab('rack');
+    toast(type === 'drum' ? `Added ${t.name}. Click the steps to place hits.` : `Added ${t.name}. Draw notes in the Piano Roll.`);
   }
 
   function addTrackMenu(kind, anchor) {
-    if (kind === 'sample') { setTab('lab'); toast('Pick a record (or load your own), then press “Add to beat”.'); return; }
+    if (kind === 'sample') { setTab('lab'); toast('Pick a record or load your own, then press “Add to beat”.'); return; }
     let html = '<div class="menu menu-scroll">';
     if (kind === 'drum') {
-      S.DRUM_CATS.forEach((c) => {
-        html += `<div class="menu-head">${c}</div>` + S.DRUMS.filter((d) => d.cat === c).map((d) => `<button data-pick="${d.id}">${d.name}</button>`).join('');
-      });
+      S.DRUM_CATS.forEach((c) => { html += `<div class="menu-head">${c}</div>` + S.DRUMS.filter((d) => d.cat === c).map((d) => `<button data-pick="${d.id}">${d.name}</button>`).join(''); });
+      MD.packs.forEach((pk) => { const l = pk.sounds.filter((s) => s.cat !== 'Loops'); if (l.length) html += `<div class="menu-head">${esc(pk.name)}</div>` + l.map((s) => `<button data-pick="u:${s.id}">${esc(s.name)} <small>${s.cat}</small></button>`).join(''); });
     } else {
       Object.entries(S.INSTRUMENTS).filter(([, i]) => (kind === 'bass' ? i.bass : !i.bass)).forEach(([k, i], idx, arr) => {
         if (!idx || arr[idx - 1][1].cat !== i.cat) html += `<div class="menu-head">${i.cat}</div>`;
@@ -705,13 +976,11 @@
     html += '</div>';
     openPop(anchor, html, (pop) => {
       $$('[data-pick]', pop).forEach((b) => {
-        b.addEventListener('mouseenter', () => { if (kind === 'drum') E.previewDrum(b.dataset.pick); });
-        b.addEventListener('click', () => {
-          const t = kind === 'drum' ? makeTrack('drum', { sound: b.dataset.pick }) : makeTrack('synth', { inst: b.dataset.pick, rev: kind === 'bass' ? 0 : 0.25 });
-          edit((p) => { p.tracks.push(t); });
+        b.addEventListener('mouseenter', async () => { if (kind === 'drum') { await MD.ensureSound(b.dataset.pick); E.previewDrum(b.dataset.pick); } });
+        b.addEventListener('click', async () => {
           closePop();
-          selectTrack(t.id, t.type === 'synth');
-          toast(t.type === 'drum' ? `Added ${t.name}. Click squares to place hits, or press ✦.` : `Added ${t.name}. Draw notes in the piano roll below, or press ✦.`);
+          if (kind === 'drum') await MD.ensureSound(b.dataset.pick);
+          addChannel(kind === 'drum' ? 'drum' : 'synth', b.dataset.pick);
         });
       });
     });
@@ -722,14 +991,12 @@
     const t = makeTrack('sample', { sampleId, mode, name: cfg.name + (mode === 'chop' ? ' chops' : ''), vol: 0.75 });
     edit((p) => {
       p.tracks.push(t);
-      for (const pat of p.patterns) {
-        const d = patData(pat, t);
-        if (mode === 'chop' && pat === p.patterns[p.current]) d.steps = M.chopPattern(cfg.chops || 8, nSteps());
-      }
-    });
-    toast(mode === 'chop' ? 'Chops added. Click squares to place chops; ◀ ▶ picks which one.' : 'Loop added under your beat. Press play!');
+      const d = patData(p.patterns[p.current], t);
+      if (mode === 'chop') d.steps = M.chopPattern(cfg.chops || 8, nSteps());
+    }, { noRender: true });
     ui.sel = t.id;
-    renderAll();
+    setTab('rack');
+    toast(mode === 'chop' ? 'Chops added. Click steps to place chops; ◀ ▶ picks which one.' : 'Loop added under your beat. Press play.');
   }
 
   // ---------- popovers & menus ----------
@@ -739,16 +1006,15 @@
     R.pop.innerHTML = html;
     R.pop.hidden = false;
     const r = anchor.getBoundingClientRect();
-    const pw = Math.min(280, window.innerWidth - 24);
+    const pw = Math.min(260, window.innerWidth - 24);
     R.pop.style.width = pw + 'px';
-    let left = Math.min(window.innerWidth - pw - 12, Math.max(12, r.left));
-    R.pop.style.left = left + 'px';
+    R.pop.style.left = Math.min(window.innerWidth - pw - 12, Math.max(12, r.left)) + 'px';
     const below = window.innerHeight - r.bottom;
-    R.pop.style.maxHeight = Math.max(200, Math.max(below, r.top) - 24) + 'px';
-    if (below > 260 || below > r.top) { R.pop.style.top = r.bottom + 6 + 'px'; R.pop.style.bottom = ''; }
-    else { R.pop.style.bottom = window.innerHeight - r.top + 6 + 'px'; R.pop.style.top = ''; }
+    R.pop.style.maxHeight = Math.max(180, Math.max(below, r.top) - 24) + 'px';
+    if (below > 240 || below > r.top) { R.pop.style.top = r.bottom + 4 + 'px'; R.pop.style.bottom = ''; }
+    else { R.pop.style.bottom = window.innerHeight - r.top + 4 + 'px'; R.pop.style.top = ''; }
     if (bind) bind(R.pop);
-    const h = (e) => { if (!R.pop.contains(e.target) && e.target !== anchor) closePop(); };
+    const h = (e) => { if (!R.pop.contains(e.target) && !anchor.contains(e.target)) closePop(); };
     setTimeout(() => document.addEventListener('pointerdown', h), 0);
     popClose = () => document.removeEventListener('pointerdown', h);
   }
@@ -766,9 +1032,9 @@
     h += `<label class="menu-row">Pan<input type="range" min="-1" max="1" step="0.05" value="${t.pan || 0}" data-m="pan"></label>`;
     h += `<label class="menu-row">Reverb<input type="range" min="0" max="1" step="0.05" value="${t.rev || 0}" data-m="rev"></label>`;
     if (isBass) h += `<label class="menu-row check"><input type="checkbox" data-m="glide" ${t.glide !== false ? 'checked' : ''}> Slide when notes overlap</label>`;
-    if (t.type === 'sample') h += `<button data-m="mode">${t.mode === 'chop' ? 'Switch to loop' : 'Switch to chops'}</button><button data-m="lab">Open in Sample Lab</button>`;
-    h += `<button data-m="clear">Clear in this pattern</button><button data-m="dup">Duplicate track</button>
-      <button data-m="up">Move up</button><button data-m="down">Move down</button><button data-m="del" class="danger">Delete track</button></div>`;
+    if (t.type === 'sample') h += `<button data-m="mode">${t.mode === 'chop' ? 'Play as Loop' : 'Play as Chops'}</button><button data-m="lab">Open in Sample Lab</button>`;
+    h += `<hr><button data-m="clear">Clear in This Pattern</button><button data-m="dup">Duplicate Channel</button>
+      <button data-m="up">Move Up</button><button data-m="down">Move Down</button><hr><button data-m="del" class="danger">Delete Channel</button></div>`;
     openPop(anchor, h, (pop) => {
       $$('[data-step-btn]', pop).forEach((b) => b.addEventListener('click', () => {
         const [k, dir] = b.dataset.stepBtn.split(':');
@@ -776,11 +1042,10 @@
         const x = tr(P, t);
         $(`[data-val="${k}"]`, pop).textContent = k === 'pitch' ? (x.pitch > 0 ? '+' : '') + x.pitch + ' st' : (x.octave > 0 ? '+' : '') + x.octave;
         if (t.type === 'drum') E.previewDrum(x.sound, x.pitch); else E.previewNote(x.inst, E.noteMidi(P, x, 0), 0.4);
-        renderRack();
       }));
       $$('input[type=range][data-m]', pop).forEach((inp) => {
         inp.addEventListener('pointerdown', () => snapshot());
-        inp.addEventListener('input', () => { tr(P, t)[inp.dataset.m] = +inp.value; E.refreshMix(); scheduleSave(); });
+        inp.addEventListener('input', () => { tr(P, t)[inp.dataset.m] = +inp.value; E.refreshMix(); autosave(); });
       });
       const gl = $('[data-m="glide"]', pop);
       if (gl) gl.addEventListener('change', () => edit((p) => { tr(p, t).glide = gl.checked; }, { noRender: true }));
@@ -791,7 +1056,7 @@
       on('dup', () => edit((p) => {
         const x = tr(p, t);
         const c = JSON.parse(JSON.stringify(x));
-        c.id = uid(); c.name = x.name + ' 2';
+        c.id = uid('t'); c.name = x.name + ' 2';
         p.tracks.splice(p.tracks.indexOf(x) + 1, 0, c);
         p.patterns.forEach((pat) => { if (pat.data[x.id]) pat.data[c.id] = JSON.parse(JSON.stringify(pat.data[x.id])); });
       }));
@@ -799,7 +1064,7 @@
       on('down', () => edit((p) => { const i = p.tracks.findIndex((x) => x.id === t.id); if (i < p.tracks.length - 1) p.tracks.splice(i + 1, 0, p.tracks.splice(i, 1)[0]); }));
       on('del', () => {
         edit((p) => { p.tracks = p.tracks.filter((x) => x.id !== t.id); p.patterns.forEach((pat) => delete pat.data[t.id]); });
-        toast(`Deleted ${t.name}. Changed your mind? Ctrl+Z.`);
+        toast(`Deleted ${t.name}. ${CMD}Z brings it back.`);
       });
     });
   }
@@ -809,14 +1074,12 @@
 
   function openMagic(t, anchor) {
     const isBass = t.type === 'synth' && (S.INSTRUMENTS[t.inst] || {}).bass;
-    let h = '<div class="menu"><div class="menu-head">✦ Write it for me</div>';
+    let h = '<div class="menu"><div class="menu-head">Write It for Me</div>';
     if (t.type === 'drum') h += `<button data-g="drum">New ${esc(catOf(t).toLowerCase())} pattern</button><button data-g="drum">Another one</button>`;
-    else if (isBass) h += `<button data-g="bass">808 follows the kick and chords</button>` + T.PROGRESSIONS.slice(0, 4).map((pr) => `<button data-g="bassprog" data-prog="${pr.id}">Root notes: ${pr.name}</button>`).join('');
-    else if (t.type === 'synth') {
-      h += `<button data-g="melody">Write a melody over my chords</button><div class="menu-head">Chord progressions</div>` +
-        T.PROGRESSIONS.map((pr) => `<button data-g="chords" data-prog="${pr.id}">${pr.name} <small>${T.SCALES[pr.scale].name}</small></button>`).join('');
-    } else if (t.mode === 'chop') h += '<button data-g="chop">Flip the chops for me</button>';
-    else h += '<p class="menu-note">Loops play the whole sample. Switch this track to chops (⋯ menu) to rearrange it.</p>';
+    else if (isBass) h += '<button data-g="bass">808 follows the kick and chords</button>' + T.PROGRESSIONS.slice(0, 4).map((pr) => `<button data-g="bassprog" data-prog="${pr.id}">Root notes: ${pr.name}</button>`).join('');
+    else if (t.type === 'synth') h += '<button data-g="melody">Melody over my chords</button><div class="menu-head">Chord Progressions</div>' + T.PROGRESSIONS.map((pr) => `<button data-g="chords" data-prog="${pr.id}">${pr.name} <small>${T.SCALES[pr.scale].name}</small></button>`).join('');
+    else if (t.mode === 'chop') h += '<button data-g="chop">Flip the chops</button>';
+    else h += '<p class="menu-note">Loops play the whole sample. Switch to chops in the ⋯ menu to rearrange it.</p>';
     h += '</div>';
     openPop(anchor, h, (pop) => {
       $$('[data-g]', pop).forEach((b) => b.addEventListener('click', () => {
@@ -828,81 +1091,59 @@
           const d = patData(pat, x);
           if (g === 'drum') Object.assign(d, M.drumPattern(catOf(x), p.bpm, nSteps()));
           else if (g === 'melody') d.notes = M.melody(p, pat, nSteps(), x.id);
-          else if (g === 'chords') { d.notes = M.progressionNotes(prog, nSteps(), prog.id === 'soul' || prog.id === 'smooth' ? 4 : 3); if (p.scale !== prog.scale) p.scale = prog.scale; }
+          else if (g === 'chords') { d.notes = M.progressionNotes(prog, nSteps(), prog.id === 'soul' || prog.id === 'smooth' ? 4 : 3); p.scale = prog.scale; }
           else if (g === 'bassprog') { const block = nSteps() / 4; d.notes = prog.degs.map((dd, i) => ({ s: i * block, d: dd > 3 ? dd - 7 : dd, l: block })); }
           else if (g === 'bass') {
             const kick = p.tracks.find((k) => k.type === 'drum' && catOf(k) === 'Kick');
             d.notes = kick ? M.bassFromKick(p, pat, kick, nSteps(), x.id) : [{ s: 0, d: 0, l: 8 }];
           } else if (g === 'chop') d.steps = M.chopPattern((p.samples[x.sampleId] || {}).chops || 8, nSteps());
         });
-        if (g === 'chords' && prog) toast(`${prog.name} — scale set to ${T.SCALES[prog.scale].name}. Every track follows.`);
-        if (g === 'bass' && !P.tracks.some((k) => k.type === 'drum' && catOf(k) === 'Kick')) toast('Add a kick first so the 808 has something to follow.');
-        if (!E.state.playing) E.play();
-        renderTop();
+        if (g === 'chords' && prog) toast(`${prog.name}: scale set to ${T.SCALES[prog.scale].name}.`);
+        if (!E.state.playing) togglePlay();
         closePop();
       }));
     });
   }
 
-  // ---------- dock: piano roll / lab / mixer ----------
-  function setTab(tab) {
-    const changedTab = ui.tab !== tab;
-    ui.tab = tab;
-    renderDock();
-    if (changedTab) {
-      R.dockBody.classList.add('switching');
-      clearTimeout(setTab.t);
-      setTab.t = setTimeout(() => R.dockBody.classList.remove('switching'), 400);
-    }
-  }
-  function renderDock() {
-    $$('[data-tab]').forEach((b) => b.classList.toggle('is-on', b.dataset.tab === ui.tab));
-    const body = R.dockBody;
-    const sw = body.classList.contains('switching');
-    body.className = 'dock-body tab-' + ui.tab + (sw ? ' switching' : '');
-    if (ui.tab === 'roll') renderRoll(body);
-    else if (ui.tab === 'lab') BL.lab.render();
-    else renderMixer(body);
-  }
-
-  const ROW_H = 20;
-  let COL_W = 28;
-  function rollRange(t) {
-    return (S.INSTRUMENTS[t.inst] || {}).bass ? [-7, 10] : [-7, 14];
-  }
+  // ---------- piano roll ----------
+  const ROW_H = 18;
+  let COL_W = 26;
+  const rollRange = (t) => ((S.INSTRUMENTS[t.inst] || {}).bass ? [-7, 10] : [-7, 14]);
+  function rollRows(t) { const [lo, hi] = rollRange(t); const rows = []; for (let d = hi; d >= lo; d--) rows.push(d); return rows; }
   function renderRoll(body) {
     const t = P.tracks.find((x) => x.id === ui.sel && x.type === 'synth') || P.tracks.find((x) => x.type === 'synth');
     if (!t) {
-      body.innerHTML = `<div class="empty-dock"><h3>No melody tracks yet</h3><p>Add an instrument or an 808 to start writing notes. Every note you place is locked to your key, so nothing sounds wrong.</p>
-        <button class="btn btn-accent" id="emptyAddSynth">+ Add an instrument</button></div>`;
-      $('#emptyAddSynth').addEventListener('click', (e) => addTrackMenu('synth', e.currentTarget));
+      body.innerHTML = `<div class="empty-ed"><h3>No instrument channels yet</h3><p>Add an instrument or an 808. Every note you place is locked to your key.</p>
+        <button class="tbtn tbtn-primary" id="emptyAdd">${icon('plus')}<span>Add Instrument</span></button></div>`;
+      $('#emptyAdd').addEventListener('click', (e) => addTrackMenu('synth', e.currentTarget));
       return;
     }
     ui.sel = t.id;
-    COL_W = Math.max(18, Math.min(48, Math.floor((body.clientWidth - 100) / nSteps())));
-    const [lo, hi] = rollRange(t);
-    const rows = [];
-    for (let d = hi; d >= lo; d--) rows.push(d);
+    COL_W = Math.max(16, Math.min(44, Math.floor((body.clientWidth - 90) / nSteps())));
+    const rows = rollRows(t);
     const n = nSteps();
     const inst = S.INSTRUMENTS[t.inst];
-    const lens = [[1, '1/16'], [2, '1/8'], [4, '1/4'], [8, '1/2'], [16, '1 bar']];
+    const lens = [[1, '1/16'], [2, '1/8'], [4, '1/4'], [8, '1/2'], [16, '1']];
     const scaleLen = T.SCALES[P.scale].steps.length;
+    const synths = P.tracks.filter((x) => x.type === 'synth');
     body.innerHTML = `
-      <div class="roll-tools">
-        <span class="roll-title" style="--c:${colorOf(t)}">${esc(t.name)}</span>
-        <select id="rollInst" aria-label="Instrument">${soundOptions(t)}</select>
-        <div class="seg" role="group" aria-label="Note length"><span class="seg-label">Note</span>${lens.map(([v, l]) => `<button class="${ui.brush === v ? 'is-on' : ''}" data-brush="${v}">${l}</button>`).join('')}</div>
-        ${inst.bass ? '' : `<button class="btn ${ui.chordMode ? 'is-on' : ''}" id="chordMode" aria-pressed="${ui.chordMode}" data-hint="Chord mode: one click places a full chord that fits your key.">Chord mode</button>`}
-        <button class="btn btn-magic" id="rollMagic" data-hint="✦ Chords, melodies and 808 lines written for you.">✦ Write it for me</button>
-        <button class="btn ${ui.recording ? 'is-rec' : ''}" id="recBtn" data-hint="Record: press play, then play notes on your keyboard (A S D F G H J K L). They land on the grid.">● Rec</button>
-        <span class="roll-keys" data-hint="Your computer keyboard is a piano that can only play notes in your key. Z / X change octave.">Keys: A S D F G H J K L · Z/X octave ${ui.kbOct > 0 ? '+' + ui.kbOct : ui.kbOct}</span>
+      <div class="ed-tools">
+        <i class="pat-swatch" style="--c:${colorOf(t)}"></i>
+        <select id="rollTrack" aria-label="Channel" data-hint="Which channel you're editing.">${synths.map((x) => `<option value="${x.id}" ${x.id === t.id ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select>
+        <select id="rollInst" aria-label="Instrument" data-hint="The instrument this channel plays.">${soundOptions(t)}</select>
+        <span class="tb-sep"></span>
+        <div class="seg seg-sm" role="group" aria-label="Note length"><span class="seg-label">Note</span>${lens.map(([v, l]) => `<button class="${ui.noteLen === v ? 'is-on' : ''}" data-len="${v}">${l}</button>`).join('')}</div>
+        ${inst.bass ? '' : `<button class="tbtn ${ui.chordMode ? 'is-on' : ''}" id="chordMode" aria-pressed="${ui.chordMode}" data-hint="One click places a whole chord that fits your key.">Chords</button>`}
+        <button class="tbtn tbtn-magic" id="rollMagic" data-hint="Chords, melodies and 808 lines written for you.">${icon('sparkle')}<span>Write It for Me</span></button>
+        <span class="ph-spacer"></span>
+        <span class="roll-keys" data-hint="Your keyboard is a piano that only plays notes in your key. Z / X change octave.">Keys A–L · Octave ${ui.kbOct > 0 ? '+' + ui.kbOct : ui.kbOct}</span>
       </div>
       <div class="roll" id="roll">
-        <div class="roll-keyscol">${rows.map((d) => {
+        <div class="roll-keyscol" id="rollKeys"><div>${rows.map((d) => {
           const midi = E.noteMidi(P, t, d);
           const isRoot = ((d % scaleLen) + scaleLen) % scaleLen === 0;
           return `<button class="rk ${isRoot ? 'root' : ''}" data-deg="${d}" style="height:${ROW_H}px">${T.noteName(midi)}</button>`;
-        }).join('')}</div>
+        }).join('')}</div></div>
         <div class="roll-scroll" id="rollScroll">
           <div class="roll-grid" id="rollGrid" style="width:${n * COL_W}px;height:${rows.length * ROW_H}px;--cw:${COL_W}px;--rh:${ROW_H}px">
             ${rows.map((d, i) => `<div class="rrow ${((d % scaleLen) + scaleLen) % scaleLen === 0 ? 'root' : ''}" style="top:${i * ROW_H}px"></div>`).join('')}
@@ -911,13 +1152,14 @@
           </div>
         </div>
       </div>
-      <p class="roll-help">Click to add a note · drag a note to move it · drag its right edge to make it longer · click a note to delete it${inst.bass ? ' · overlap two notes to make the 808 slide' : ''}</p>`;
+      <p class="roll-help">Click to add · drag to move · drag the right edge to lengthen · click a note to delete${inst.bass ? ' · overlap two notes to make the 808 slide' : ''}</p>`;
     drawRollNotes(t, rows);
     bindRoll(t, rows);
     const sc = $('#rollScroll');
-    // scroll so the root area is visible
+    const keys = $('#rollKeys');
+    sc.addEventListener('scroll', () => { keys.scrollTop = sc.scrollTop; });
     const rootRow = rows.indexOf(0);
-    if (sc && rootRow >= 0) sc.scrollTop = Math.max(0, rootRow * ROW_H - sc.clientHeight / 2);
+    if (rootRow >= 0) { sc.scrollTop = Math.max(0, rootRow * ROW_H - sc.clientHeight / 2); keys.scrollTop = sc.scrollTop; }
   }
 
   function drawRollNotes(t, rows) {
@@ -928,28 +1170,17 @@
     host.innerHTML = d.notes.map((nt, i) => {
       const r = top - nt.d;
       if (r < 0 || r >= rows.length) return '';
-      const fresh = nt._fresh ? ' fresh' : '';
-      if (nt._fresh) delete nt._fresh;
-      return `<div class="note${fresh}" data-i="${i}" style="left:${nt.s * COL_W + 1}px;top:${r * ROW_H + 1}px;width:${nt.l * COL_W - 2}px;height:${ROW_H - 2}px;--c:${colorOf(t)}"><span class="note-grip"></span></div>`;
+      return `<div class="note" data-i="${i}" style="left:${nt.s * COL_W + 1}px;top:${r * ROW_H + 1}px;width:${nt.l * COL_W - 2}px;height:${ROW_H - 2}px;--c:${colorOf(t)}"><span class="note-grip"></span></div>`;
     }).join('');
   }
 
   function bindRoll(t, rows) {
-    $('#rollInst').addEventListener('change', (e) => {
-      const v = e.target.value;
-      edit((p) => { const x = tr(p, t); const old = S.INSTRUMENTS[x.inst]; if (old && x.name === old.name) x.name = S.INSTRUMENTS[v].name; x.inst = v; });
-      E.previewNote(v, E.noteMidi(P, tr(P, t), 0), 0.5);
-    });
-    $$('[data-brush]').forEach((b) => b.addEventListener('click', () => { ui.brush = +b.dataset.brush; renderDock(); }));
+    $('#rollTrack').addEventListener('change', (e) => { ui.sel = e.target.value; renderEditor(); });
+    $('#rollInst').addEventListener('change', (e) => setChannelSound(t, e.target.value));
+    $$('[data-len]').forEach((b) => b.addEventListener('click', () => { ui.noteLen = +b.dataset.len; $$('[data-len]').forEach((x) => x.classList.toggle('is-on', x === b)); }));
     const cm = $('#chordMode');
-    if (cm) cm.addEventListener('click', () => { ui.chordMode = !ui.chordMode; renderDock(); });
+    if (cm) cm.addEventListener('click', () => { ui.chordMode = !ui.chordMode; cm.classList.toggle('is-on', ui.chordMode); });
     $('#rollMagic').addEventListener('click', (e) => openMagic(tr(P, t), e.currentTarget));
-    $('#recBtn').addEventListener('click', () => {
-      ui.recording = !ui.recording;
-      if (ui.recording && !E.state.playing) { E.play(); renderTop(); }
-      toast(ui.recording ? 'Recording. Play notes with A S D F G H J K L.' : 'Recording stopped.');
-      renderDock();
-    });
     $$('.rk').forEach((k) => k.addEventListener('pointerdown', () => E.previewNote(t.inst, E.noteMidi(P, t, +k.dataset.deg), 0.4)));
     const grid = $('#rollGrid');
     const top = rows[0];
@@ -967,18 +1198,15 @@
       snapshot();
       const noteEl = e.target.closest('.note');
       if (noteEl) {
-        const i = +noteEl.dataset.i;
-        const nt = d.notes[i];
-        const right = (nt.s + nt.l) * COL_W;
-        const resize = right - p0.x < 10 || e.target.classList.contains('note-grip');
+        const nt = d.notes[+noteEl.dataset.i];
+        const resize = (nt.s + nt.l) * COL_W - p0.x < 9 || e.target.classList.contains('note-grip');
         drag = { mode: resize ? 'resize' : 'move', notes: [nt], orig: [{ s: nt.s, d: nt.d }], p0, moved: false };
       } else {
         const instNow = S.INSTRUMENTS[tr(P, t).inst];
         const degs = ui.chordMode && !instNow.bass ? T.chordDegrees(p0.deg) : [p0.deg];
-        const len = Math.min(ui.brush, nSteps() - p0.step);
+        const len = Math.min(ui.noteLen, nSteps() - p0.step);
         const added = degs.map((dd) => ({ s: p0.step, d: dd, l: len }));
         d.notes.push(...added);
-        added.forEach((x) => { x._fresh = true; });
         degs.forEach((dd) => E.previewNote(t.inst, E.noteMidi(P, tr(P, t), dd), 0.3));
         drag = { mode: 'resize', notes: added, p0, moved: true, created: true };
       }
@@ -1007,56 +1235,57 @@
       if (drag.mode === 'move' && !drag.moved) {
         const d = patData(curPat(), tr(P, t));
         d.notes = d.notes.filter((x) => x !== drag.notes[0]);
-      } else if (drag.created && drag.notes[0]) ui.brush = Math.min(16, drag.notes[0].l) || ui.brush;
+      } else if (drag.created && drag.notes[0]) ui.noteLen = Math.min(16, drag.notes[0].l) || ui.noteLen;
       drag = null;
       drawRollNotes(tr(P, t), rows);
       changed({ noRender: true });
-      drawLanes();
+      BL.playlist.drawClips();
     };
     grid.addEventListener('pointerup', end);
     grid.addEventListener('pointercancel', end);
   }
 
+  // ---------- mixer ----------
   function renderMixer(body) {
     const m = P.master;
+    const audioLanes = P.lanes.filter((l) => P.clips.some((c) => c.lane === l.id && c.kind === 'audio'));
+    const strip = (o, kind, n) => `<div class="mx-strip" data-kind="${kind}" data-id="${o.id}" style="--c:${kind === 'lane' ? '#5ac8fa' : colorOf(o)}">
+        <div class="mx-num">${n}</div>
+        <label class="mx-knob" data-hint="Reverb send.">Verb<input type="range" min="0" max="1" step="0.05" value="${o.rev || 0}" data-k="rev"></label>
+        <label class="mx-knob" data-hint="Pan left / right.">Pan<input type="range" min="-1" max="1" step="0.05" value="${o.pan || 0}" data-k="pan"></label>
+        <div class="mx-btns"><button class="mini ${o.mute ? 'is-on mute' : ''}" data-k="mute">M</button><button class="mini ${o.solo ? 'is-on' : ''}" data-k="solo">S</button></div>
+        <div class="mx-fader-wrap"><input type="range" class="mx-fader" min="0" max="1" step="0.01" value="${o.vol}" data-k="vol" aria-label="${esc(o.name)} volume"></div>
+        <div class="mx-name" title="${esc(o.name)}">${esc(o.name)}</div>
+      </div>`;
     body.innerHTML = `<div class="mixer">
-      <div class="mix-master">
-        <div class="mix-title">Master</div>
-        <canvas id="meter" class="meter" width="240" height="60" aria-label="Level meter"></canvas>
-        <label class="mix-row">Volume<input type="range" min="0" max="1.2" step="0.01" value="${m.vol}" data-master="vol"></label>
-        <label class="mix-row" data-hint="Glues the mix together and makes it louder. More = harder hitting.">Punch<input type="range" min="0" max="1" step="0.01" value="${m.punch}" data-master="punch"></label>
-        <label class="check" data-hint="Muffles the whole beat like an old tape. Great for lo-fi."><input type="checkbox" data-master="lofi" ${m.lofi ? 'checked' : ''}> Lo-fi tape filter</label>
+      <div class="mx-strips">
+        ${P.tracks.map((t, i) => strip(t, 'track', i + 1)).join('')}
+        ${audioLanes.map((l, i) => strip(l, 'lane', 'A' + (i + 1))).join('')}
       </div>
-      <div class="mix-strips">
-        <div class="mix-strip mix-headrow"><span>Track</span><span>Volume</span><span>Pan</span><span>Reverb</span><span></span></div>
-        ${P.tracks.map((t) => `<div class="mix-strip" data-id="${t.id}" style="--c:${colorOf(t)}">
-          <span class="mix-name">${esc(t.name)}</span>
-          <input type="range" min="0" max="1" step="0.01" value="${t.vol}" data-k="vol" aria-label="${esc(t.name)} volume">
-          <input type="range" min="-1" max="1" step="0.05" value="${t.pan || 0}" data-k="pan" aria-label="${esc(t.name)} pan">
-          <input type="range" min="0" max="1" step="0.05" value="${t.rev || 0}" data-k="rev" aria-label="${esc(t.name)} reverb">
-          <span class="mix-btns"><button class="mini ${t.mute ? 'is-on' : ''}" data-k="mute">M</button><button class="mini ${t.solo ? 'is-on' : ''}" data-k="solo">S</button></span>
-        </div>`).join('')}
+      <div class="mx-master">
+        <div class="mx-num">Out</div>
+        <canvas id="meter" class="meter" width="44" height="150" aria-label="Level meter"></canvas>
+        <label class="mx-knob" data-hint="Glues the mix together and makes it louder.">Punch<input type="range" min="0" max="1" step="0.01" value="${m.punch}" data-master="punch"></label>
+        <label class="check" data-hint="Muffles the whole beat like old tape."><input type="checkbox" data-master="lofi" ${m.lofi ? 'checked' : ''}> Lo-fi</label>
+        <div class="mx-fader-wrap"><input type="range" class="mx-fader" min="0" max="1.2" step="0.01" value="${m.vol}" data-master="vol" aria-label="Master volume"></div>
+        <div class="mx-name">Stereo Out</div>
       </div></div>`;
     $$('[data-master]', body).forEach((inp) => {
       inp.addEventListener('pointerdown', () => snapshot());
       inp.addEventListener(inp.type === 'checkbox' ? 'change' : 'input', () => {
         P.master[inp.dataset.master] = inp.type === 'checkbox' ? inp.checked : +inp.value;
-        E.refreshMix(); scheduleSave();
+        E.refreshMix(); autosave(); renderTransport();
       });
     });
-    $$('.mix-strip[data-id]', body).forEach((row) => {
-      const t = P.tracks.find((x) => x.id === row.dataset.id);
+    $$('.mx-strip', body).forEach((row) => {
+      const o = row.dataset.kind === 'lane' ? P.lanes.find((x) => x.id === row.dataset.id) : P.tracks.find((x) => x.id === row.dataset.id);
       $$('input', row).forEach((inp) => {
         inp.addEventListener('pointerdown', () => snapshot());
-        inp.addEventListener('input', () => { t[inp.dataset.k] = +inp.value; E.refreshMix(); scheduleSave(); if (inp.dataset.k === 'vol') renderRackVol(t); });
+        inp.addEventListener('input', () => { o[inp.dataset.k] = +inp.value; E.refreshMix(); autosave(); });
       });
-      $$('button', row).forEach((b) => b.addEventListener('click', () => { edit((p) => { tr(p, t)[b.dataset.k] = !tr(p, t)[b.dataset.k]; }); }));
+      $$('button', row).forEach((b) => b.addEventListener('click', () => edit(() => { o[b.dataset.k] = !o[b.dataset.k]; })));
     });
     meterLoop();
-  }
-  function renderRackVol(t) {
-    const v = $(`.trk[data-id="${t.id}"] .trk-vol`, R.rack);
-    if (v) v.value = t.vol;
   }
   let meterRaf = 0;
   function meterLoop() {
@@ -1065,28 +1294,29 @@
     if (!cv) return;
     const g = cv.getContext('2d');
     const buf = new Float32Array(2048);
-    const css = getComputedStyle(document.documentElement);
-    let peakHold = 0;
+    let hold = 0, lvl = 0;
     const loop = () => {
       if (!document.body.contains(cv)) return;
       const an = E.analyser();
       let rms = 0, peak = 0;
-      if (an) {
+      if (an && E.state.playing) {
         an.getFloatTimeDomainData(buf);
         for (let i = 0; i < buf.length; i++) { rms += buf[i] * buf[i]; peak = Math.max(peak, Math.abs(buf[i])); }
         rms = Math.sqrt(rms / buf.length);
       }
-      peakHold = Math.max(peak, peakHold * 0.96);
+      lvl = Math.max(rms * 3, lvl * 0.9);
+      hold = Math.max(peak, hold * 0.97);
       const w = cv.width, h = cv.height;
-      g.fillStyle = css.getPropertyValue('--well').trim();
-      g.fillRect(0, 0, w, h);
-      const lvl = Math.min(1, rms * 3.2);
-      const grad = g.createLinearGradient(0, 0, w, 0);
-      grad.addColorStop(0, '#3ee0c8'); grad.addColorStop(0.7, '#ffd166'); grad.addColorStop(1, '#ff5c5c');
-      g.fillStyle = grad;
-      g.fillRect(0, 12, lvl * w, h - 24);
-      g.fillStyle = peakHold > 0.98 ? '#ff5c5c' : css.getPropertyValue('--text').trim();
-      g.fillRect(Math.min(w - 2, peakHold * w), 8, 2, h - 16);
+      g.clearRect(0, 0, w, h);
+      const segs = 28;
+      for (let i = 0; i < segs; i++) {
+        const frac = (i + 1) / segs;
+        const on = frac <= Math.min(1, lvl);
+        g.fillStyle = on ? (frac > 0.9 ? '#ff453a' : frac > 0.72 ? '#ffd60a' : '#30d158') : '#26262a';
+        g.fillRect(w / 2 - 7, h - (i + 1) * (h / segs) + 1, 14, h / segs - 2);
+      }
+      g.fillStyle = hold > 0.98 ? '#ff453a' : '#e5e5ea';
+      g.fillRect(w / 2 - 9, h - Math.min(1, hold) * h, 18, 2);
       meterRaf = requestAnimationFrame(loop);
     };
     loop();
@@ -1098,68 +1328,104 @@
     if (lastCol >= 0 && columns[lastCol]) columns[lastCol].forEach((c) => c.classList.remove('now'));
     const head = $('#rollHead');
     if (!ev) {
-      lastCol = -1; ui.playStep = -1;
+      lastCol = -1;
       if (head) head.hidden = true;
-      $$('.blk.now').forEach((b) => b.classList.remove('now'));
-      renderTop();
+      BL.playlist.playhead(null);
+      renderTransport();
       return;
     }
     ui.lastEv = ev;
-    if (P.songMode && ev.patIdx !== P.current) {
-      P.current = ev.patIdx;
-      renderRack();
-      renderPatBar();
-      if (ui.tab === 'roll') renderDock();
-    }
-    ui.playStep = ev.step;
-    lastCol = ev.step;
-    if (columns[ev.step]) columns[ev.step].forEach((c) => c.classList.add('now'));
-    if (head) { head.hidden = false; head.style.left = ev.step * COL_W + 'px'; }
-    if (P.songMode) $$('.blk[data-blk]').forEach((b) => b.classList.toggle('now', +b.dataset.blk === ev.songIdx));
+    setLcdPos(ev.abs);
+    let step = -1;
+    if (ev.song) {
+      BL.playlist.playhead(ev.abs);
+      const c = P.clips.find((x) => x.kind === 'pattern' && x.pat === P.current && ev.abs >= Math.round(x.start * 16) && ev.abs < Math.round((x.start + x.len) * 16));
+      if (c) step = (ev.abs - Math.round(c.start * 16)) % nSteps();
+    } else step = ev.step;
+    lastCol = step;
+    if (step >= 0 && columns[step]) columns[step].forEach((c) => c.classList.add('now'));
+    if (head) { head.hidden = step < 0; head.style.transform = `translateX(${step * COL_W}px)`; }
   });
 
   // ---------- keyboard ----------
   const KB = 'asdfghjkl;';
   document.addEventListener('keydown', (e) => {
     const tag = (e.target.tagName || '').toLowerCase();
-    if (tag === 'input' && e.target.type !== 'range' && e.target.type !== 'checkbox') return;
-    if (tag === 'textarea' || tag === 'select') return;
-    if (!R.modal.hidden && e.key !== 'Escape') return;
+    const typing = (tag === 'input' && !['range', 'checkbox', 'radio'].includes(e.target.type)) || tag === 'textarea' || tag === 'select';
+    const mod = e.metaKey || e.ctrlKey;
     if (e.key === 'Escape') { closeModal(); closePop(); return; }
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') { e.preventDefault(); redo(); return; }
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); saveProjectFile(); return; }
-    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (mod) {
+      const k = e.key.toLowerCase();
+      const map = { z: e.shiftKey ? 'redo' : 'undo', y: 'redo', s: e.shiftKey ? 'saveAs' : 'save', o: 'open', e: e.shiftKey ? 'exportStems' : 'export', n: 'new', i: 'importAudio' };
+      if (map[k] && !(typing && (k === 'z' || k === 'y'))) { e.preventDefault(); command(map[k]); }
+      return;
+    }
+    if (typing || !R.modal.hidden) return;
+    const fmap = { F5: 'playlist', F6: 'rack', F7: 'roll', F8: 'lab', F9: 'mix' };
+    if (fmap[e.key]) { e.preventDefault(); command(fmap[e.key]); return; }
     if (e.code === 'Space') { e.preventDefault(); togglePlay(); return; }
-    if (e.repeat) return;
+    if (e.key === 'Enter') { goToStart(); return; }
+    if ((e.key === 'Delete' || e.key === 'Backspace') && BL.playlist.deleteSelected()) { e.preventDefault(); return; }
+    if (e.repeat || e.altKey) return;
     if (BL.lab.keyPad(e.key)) return;
     const k = e.key.toLowerCase();
-    if (k === 'z') { ui.kbOct = Math.max(-2, ui.kbOct - 1); toast('Keyboard octave ' + ui.kbOct); if (ui.tab === 'roll') renderDock(); return; }
-    if (k === 'x') { ui.kbOct = Math.min(2, ui.kbOct + 1); toast('Keyboard octave +' + ui.kbOct); if (ui.tab === 'roll') renderDock(); return; }
+    if (k === 'b') { toggleBrowser(); return; }
+    if (k === 'z' || k === 'x') {
+      ui.kbOct = Math.max(-2, Math.min(2, ui.kbOct + (k === 'x' ? 1 : -1)));
+      toast('Keyboard octave ' + (ui.kbOct > 0 ? '+' : '') + ui.kbOct);
+      if (ui.tab === 'roll') renderEditor();
+      return;
+    }
     const idx = KB.indexOf(k);
     if (idx < 0) return;
     const t = P.tracks.find((x) => x.id === ui.sel && x.type === 'synth') || P.tracks.find((x) => x.type === 'synth');
     if (!t) return;
-    const scaleLen = T.SCALES[P.scale].steps.length;
-    const deg = idx + ui.kbOct * scaleLen;
+    const deg = idx + ui.kbOct * T.SCALES[P.scale].steps.length;
     E.previewNote(t.inst, E.noteMidi(P, t, deg), 0.4);
-    if (ui.recording && E.state.playing && ui.lastEv) {
+    if (ui.recording && E.state.playing && ui.lastEv && !ui.lastEv.song) {
       const sd = 60 / P.bpm / 4;
-      const frac = (E.ctx.currentTime - ui.lastEv.time) / sd;
-      const s = (ui.lastEv.step + Math.round(frac)) % nSteps();
+      const s = (ui.lastEv.step + Math.round((E.ctx.currentTime - ui.lastEv.time) / sd)) % nSteps();
       const d = patData(curPat(), t);
       if (!d.notes.some((n) => n.s === s && n.d === deg)) {
         snapshot();
-        d.notes.push({ s, d: deg, l: Math.min(ui.brush, nSteps() - s) });
+        d.notes.push({ s, d: deg, l: Math.min(ui.noteLen, nSteps() - s) });
         changed({ noRender: true });
-        if (ui.tab === 'roll') { const [lo, hi] = rollRange(t); const rows = []; for (let x = hi; x >= lo; x--) rows.push(x); drawRollNotes(t, rows); }
+        if (ui.tab === 'roll') drawRollNotes(t, rollRows(t));
         drawLanes();
       }
     }
   });
 
+  /** every command (toolbar, shortcuts, the Mac menu bar) goes through here */
+  function command(cmd) {
+    switch (cmd) {
+      case 'new': return openTemplates();
+      case 'open': return openProjects();
+      case 'save': return saveToLibrary(false);
+      case 'saveAs': return saveToLibrary(true);
+      case 'export': return openExport();
+      case 'exportStems': return openExport('stems');
+      case 'exportProject': return downloadProjectFile();
+      case 'importProject': return pickFile('.beatlab,.json,application/json', false, (f) => openProjectFile(f[0]));
+      case 'importAudio': return pickAudioFiles();
+      case 'importPack': return pickPack();
+      case 'undo': return undo();
+      case 'redo': return redo();
+      case 'play': return togglePlay();
+      case 'stop': return stopAll();
+      case 'start': return goToStart();
+      case 'browser': return toggleBrowser();
+      case 'playlist': return R.playlist.scrollIntoView({ block: 'nearest' });
+      case 'rack': case 'roll': case 'lab': case 'mix': return setTab(cmd);
+      case 'patternMode': return setMode(false);
+      case 'songMode': return setMode(true);
+      case 'help': return openHelp();
+      default: return null;
+    }
+  }
+
   // ---------- hints, toast, modal, loading ----------
-  const DEFAULT_HINT = 'Space = play/stop · Click squares to add drums · Right-click a square to change how loud it is · Ctrl+Z = undo';
+  const DEFAULT_HINT = `Space play · Return to start · B Browser · F6 Channel Rack · F7 Piano Roll · F9 Mixer · ${CMD}S save · ${CMD}E export`;
   function bindHints() {
     document.addEventListener('pointerover', (e) => {
       const h = e.target.closest && e.target.closest('[data-hint]');
@@ -1167,6 +1433,13 @@
     });
     R.hint.textContent = DEFAULT_HINT;
   }
+  function renderStatus() {
+    if (!P) return;
+    if (R.tbTitle) renderTitle();
+    R.saveState.textContent = P.libId ? (ui.dirty ? 'Edited' : 'Saved') : 'Not saved';
+    R.saveState.classList.toggle('is-dirty', ui.dirty || !P.libId);
+  }
+  function renderTitle() { R.tbTitle.innerHTML = `${esc(P.name)}${ui.dirty || !P.libId ? '<em> — Edited</em>' : ''}`; }
   let toastTimer = null;
   function toast(msg) {
     R.toast.textContent = msg;
@@ -1175,91 +1448,218 @@
     void R.toast.offsetWidth;
     R.toast.classList.add('show');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => { R.toast.classList.remove('show'); }, 3600);
-  }
-  function openModal(html, bind, wide) {
-    clearTimeout(modalTimer);
-    R.modal.classList.remove('closing');
-    R.modal.innerHTML = `<div class="modal-card ${wide ? 'wide' : ''}" role="dialog" aria-modal="true"><button class="modal-x" id="modalX" aria-label="Close">×</button>${html}</div>`;
-    R.modal.hidden = false;
-    $('#modalX').addEventListener('click', closeModal);
-    R.modal.onclick = (e) => { if (e.target === R.modal) closeModal(); };
-    if (bind) bind(R.modal);
+    toastTimer = setTimeout(() => R.toast.classList.remove('show'), 3400);
   }
   let modalTimer = null;
+  function openModal(html, bind, cls) {
+    clearTimeout(modalTimer);
+    R.modal.classList.remove('closing');
+    R.modal.innerHTML = `<div class="sheet ${cls || ''}" role="dialog" aria-modal="true">${html}</div>`;
+    R.modal.hidden = false;
+    R.modal.onclick = (e) => { if (e.target === R.modal) closeModal(); };
+    $$('[data-close]', R.modal).forEach((b) => b.addEventListener('click', closeModal));
+    if (bind) bind(R.modal);
+    const f = $('[autofocus]', R.modal);
+    if (f) setTimeout(() => f.focus(), 30);
+  }
   function closeModal() {
     if (R.modal.hidden || R.modal.classList.contains('closing')) return;
     R.modal.classList.add('closing');
     clearTimeout(modalTimer);
-    modalTimer = setTimeout(() => { R.modal.hidden = true; R.modal.innerHTML = ''; R.modal.classList.remove('closing'); }, 200);
+    modalTimer = setTimeout(() => { R.modal.hidden = true; R.modal.innerHTML = ''; R.modal.classList.remove('closing'); }, 160);
   }
   function showLoading(msg) { R.loadingMsg.textContent = msg; R.loading.hidden = false; }
   function hideLoading() { R.loading.hidden = true; }
 
-  function openBeats() {
-    const cards = BL.beats.PRESETS.map((pr, i) => `<button class="beat-card" data-preset="${pr.id}" style="--c:${pr.color};--i:${i}" data-tags="${esc((pr.name + ' ' + pr.tags.join(' ') + ' ' + pr.desc).toLowerCase())}">
-        <span class="beat-name">${pr.name}</span>
-        <span class="beat-meta">${pr.bpm} BPM · ${T.keyName(pr.key, pr.scale)}</span>
-        <span class="beat-desc">${pr.desc}</span>
-        <span class="beat-tags">${pr.tags.slice(0, 3).map((t) => `<i>${t}</i>`).join('')}</span>
-      </button>`).join('');
-    openModal(`<div class="beats-head"><h2>Start from a beat</h2><p>Pick a vibe. It loads and starts playing, then make it yours: change sounds, notes, key or tempo.</p>
-        <input type="search" id="beatSearch" placeholder="Search: soul, rage, drill, lo-fi, Kanye-type…" aria-label="Search beats"></div>
-      <div class="beat-grid">${cards}
-        <button class="beat-card beat-blank" id="blankBeat" style="--i:${BL.beats.PRESETS.length}"><span class="beat-name">Empty beat</span><span class="beat-desc">Kick, snare, hats, 808 and keys, ready for you to fill in. Every ✦ button writes a part for you.</span></button>
-      </div>`, (m) => {
-      $$('[data-preset]', m).forEach((b) => b.addEventListener('click', async () => {
-        const pr = BL.beats.PRESETS.find((x) => x.id === b.dataset.preset);
-        closeModal();
-        await loadProject(projectFromPreset(pr), { undoable: true, play: true });
-        renderTop();
-        toast(`${pr.name} loaded. Try changing the Key or BPM up top. Everything follows.`);
-      }));
-      $('#blankBeat', m).addEventListener('click', () => { closeModal(); loadProject(blankProject(), { undoable: true }); });
-      const s = $('#beatSearch', m);
+  // ---------- templates / projects ----------
+  async function openTemplates() {
+    const recents = (await MD.listProjects()).slice(0, 6);
+    const tpl = BL.beats.PRESETS.map((pr) => `<button class="tpl" data-preset="${pr.id}" style="--c:${pr.color}">
+        <span class="tpl-art"><i></i><i></i><i></i><i></i></span>
+        <span class="tpl-text"><b>${pr.name}</b><small>${pr.bpm} BPM · ${T.keyName(pr.key, pr.scale)}</small><em>${pr.tags.slice(0, 3).join(' · ')}</em></span></button>`).join('');
+    openModal(`<header class="sheet-head"><h2>New Project</h2><input type="search" id="tplSearch" placeholder="Search: soul, rage, drill, Kanye-type…" aria-label="Search templates" autofocus></header>
+      <div class="sheet-body">
+        ${recents.length ? `<div class="sheet-label">Recent</div><div class="recent-row">${recents.map((r) => `<button class="recent" data-open="${r.id}"><b>${esc(r.name)}</b><small>${new Date(r.updated).toLocaleDateString()} · ${r.bpm} BPM</small></button>`).join('')}</div>` : ''}
+        <div class="sheet-label">Templates</div>
+        <div class="tpl-grid">
+          <button class="tpl tpl-empty" id="tplEmpty"><span class="tpl-art">${icon('plus')}</span><span class="tpl-text"><b>Empty Project</b><small>Kick, clap, snare, hats, 808, keys</small><em>Start from scratch</em></span></button>
+          ${tpl}
+        </div>
+      </div>
+      <footer class="sheet-foot"><button class="tbtn" data-act="openfile">${icon('folder')}<span>Open File…</span></button><span class="ph-spacer"></span><button class="tbtn" data-close>Cancel</button></footer>`, (m) => {
+      $$('[data-preset]', m).forEach((b) => b.addEventListener('click', () => { closeModal(); loadPreset(b.dataset.preset); }));
+      $$('[data-open]', m).forEach((b) => b.addEventListener('click', () => { closeModal(); openSaved(b.dataset.open); }));
+      $('#tplEmpty', m).addEventListener('click', () => { closeModal(); loadProject(blankProject(), { undoable: true }); toast('Empty project. Click steps to add drums, or use the ✦ buttons.'); });
+      $('[data-act="openfile"]', m).addEventListener('click', () => { closeModal(); command('importProject'); });
+      const s = $('#tplSearch', m);
       s.addEventListener('input', () => {
         const q = s.value.trim().toLowerCase();
-        $$('[data-preset]', m).forEach((b) => { b.hidden = q && !b.dataset.tags.includes(q); });
+        $$('[data-preset]', m).forEach((b) => {
+          const pr = BL.beats.PRESETS.find((x) => x.id === b.dataset.preset);
+          b.hidden = q && !(pr.name + ' ' + pr.tags.join(' ') + ' ' + pr.desc).toLowerCase().includes(q);
+        });
       });
-    }, true);
+    }, 'sheet-wide');
   }
 
-  function openHelp() {
-    openModal(`<h2>How BeatLab works</h2>
-      <ol class="help-list">
-        <li><b>Drums.</b> Each row is one sound. Click squares to add hits. Right-click (or the Loudness tool) changes how loud a hit is. The Rolls tool turns a hi-hat into a ×2 / ×3 / ×4 roll.</li>
-        <li><b>Melody & 808.</b> Click an instrument row and draw notes in the piano roll. You can only place notes in your key, so it always sounds right. Chord mode places a whole chord with one click. Overlap two 808 notes to make it slide.</li>
-        <li><b>Key & tempo.</b> Change the Key or BPM at the top and every note, 808 and matched sample follows on its own.</li>
-        <li><b>Sampling.</b> Open the Sample Lab, pick a record or load your own audio. Speed and Pitch are plain sliders. “Match my tempo” and “Match my key” do it for you. Chop it into pieces and play them like pads.</li>
-        <li><b>Song.</b> Make up to four patterns (A–D), then line them up in the Song strip and turn on Song mode.</li>
-        <li><b>✦ buttons.</b> On any track, ✦ writes a part for you: drum patterns, chord progressions, melodies, 808s that follow your kick, chop flips.</li>
-        <li><b>Export.</b> Saves a WAV file of your beat. Save project keeps everything so you can come back later.</li>
-      </ol>
-      <h3>Keyboard</h3>
-      <table class="keys"><tbody>
-        <tr><td><kbd>Space</kbd></td><td>Play / stop</td></tr>
-        <tr><td><kbd>A</kbd>–<kbd>L</kbd></td><td>Play notes in key on the selected instrument (<kbd>Z</kbd>/<kbd>X</kbd> octave)</td></tr>
-        <tr><td><kbd>1</kbd>–<kbd>0</kbd></td><td>Play sample chops (in the Sample Lab)</td></tr>
-        <tr><td><kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Y</kbd></td><td>Undo / redo</td></tr>
-        <tr><td><kbd>Ctrl</kbd>+<kbd>S</kbd></td><td>Save project file</td></tr>
-      </tbody></table>`);
+  async function loadPreset(id) {
+    const pr = BL.beats.PRESETS.find((x) => x.id === id);
+    await loadProject(projectFromPreset(pr), { undoable: true, play: true });
+    toast(`${pr.name} loaded. Change the key or tempo up top and everything follows.`);
   }
 
-  // ---------- save / open / export ----------
+  async function openSaved(id) {
+    const data = await MD.loadProject(id);
+    if (!data) return toast('That project could not be found.');
+    await loadProject(data, { undoable: true });
+    toast(`Opened ${P.name}.`);
+  }
+
+  async function openProjects() {
+    const list = await MD.listProjects();
+    openModal(`<header class="sheet-head"><h2>Open Project</h2></header>
+      <div class="sheet-body">${list.length ? `<div class="proj-list">${list.map((r) => `<div class="proj-row" data-id="${r.id}">
+          <span class="proj-ico">${icon('folder')}</span><span class="proj-text"><b>${esc(r.name)}</b><small>${new Date(r.updated).toLocaleString()} · ${r.bpm} BPM</small></span>
+          <button class="tbtn" data-open>Open</button><button class="tbtn icon" data-del aria-label="Delete">${icon('trash')}</button></div>`).join('')}</div>`
+        : `<p class="sheet-empty">No saved projects yet. Press Save (${CMD}S) to keep one here.</p>`}</div>
+      <footer class="sheet-foot"><button class="tbtn" data-act="file">${icon('folder')}<span>Open File…</span></button><span class="ph-spacer"></span><button class="tbtn" data-close>Cancel</button></footer>`, (m) => {
+      $$('.proj-row', m).forEach((row) => {
+        $('[data-open]', row).addEventListener('click', () => { closeModal(); openSaved(row.dataset.id); });
+        row.addEventListener('dblclick', () => { closeModal(); openSaved(row.dataset.id); });
+        $('[data-del]', row).addEventListener('click', async () => { await MD.deleteProject(row.dataset.id); row.remove(); BL.browser.refreshProjects(); });
+      });
+      $('[data-act="file"]', m).addEventListener('click', () => { closeModal(); command('importProject'); });
+    });
+  }
+
+  async function saveToLibrary(asNew) {
+    if (!P.libId || asNew) {
+      openModal(`<header class="sheet-head"><h2>${asNew ? 'Save As' : 'Save Project'}</h2></header>
+        <div class="sheet-body"><label class="field-row">Name<input id="saveName" value="${esc(asNew ? P.name + ' copy' : P.name)}" autofocus></label>
+        <p class="sheet-note">Saved projects live on this computer under My Projects in the Browser. “Download File” makes one .beatlab file with your audio and pack sounds inside, so you can back it up or move it to another computer.</p></div>
+        <footer class="sheet-foot"><button class="tbtn" data-act="dl">${icon('import')}<span>Download File</span></button><span class="ph-spacer"></span><button class="tbtn" data-close>Cancel</button><button class="tbtn tbtn-primary" data-act="save">Save</button></footer>`, (m) => {
+        const go = async () => {
+          P.name = $('#saveName', m).value.trim() || 'Untitled';
+          if (asNew) delete P.libId;
+          closeModal();
+          await doSave();
+        };
+        $('[data-act="save"]', m).addEventListener('click', go);
+        $('#saveName', m).addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
+        $('[data-act="dl"]', m).addEventListener('click', () => { P.name = $('#saveName', m).value.trim() || P.name; closeModal(); downloadProjectFile(); });
+      });
+      return;
+    }
+    await doSave();
+  }
+  async function doSave() {
+    await MD.saveProject(P);
+    ui.dirty = false;
+    autosave();
+    renderTransport();
+    renderStatus();
+    BL.browser.refreshProjects();
+    toast(`Saved “${P.name}”.`);
+  }
+
+  // ---------- files ----------
+  function pickFile(accept, multiple, cb, folder) {
+    const inp = R.filePick;
+    inp.value = '';
+    inp.accept = accept || '';
+    inp.multiple = !!multiple;
+    if (folder) inp.setAttribute('webkitdirectory', ''); else inp.removeAttribute('webkitdirectory');
+    inp.onchange = () => { if (inp.files && inp.files.length) cb([...inp.files]); };
+    inp.click();
+  }
+  function pickAudioFiles() {
+    pickFile('audio/*,.wav,.mp3,.aif,.aiff,.flac,.ogg,.m4a', true, async (files) => {
+      for (const f of files) {
+        const meta = await importAudioFile(f);
+        if (meta) BL.playlist.placeAudio(meta.id, firstFreeLane(), P.pos || 0);
+      }
+    });
+  }
+  async function importAudioFile(file) {
+    showLoading(`Importing ${file.name}…`);
+    try {
+      const meta = await MD.importAudio(file);
+      edit((p) => { p.audio[meta.id] = meta; }, { noRender: true });
+      return meta;
+    } catch (e) {
+      toast(`“${file.name}” isn't audio this computer can read. Try WAV or MP3.`);
+      return null;
+    } finally { hideLoading(); }
+  }
+  function pickPack(anchor) {
+    const choose = (kind) => {
+      if (kind === 'folder') pickFile('', true, importPack, true);
+      else pickFile('.zip,audio/*,.wav,.mp3,.aif,.aiff,.flac,.ogg,.m4a', true, importPack);
+    };
+    if (!anchor) return choose('files');
+    openPop(anchor, `<div class="menu"><div class="menu-head">Import Sound Pack</div><button data-k="files">Zip or Audio Files…</button><button data-k="folder">Folder…</button></div>`, (pop) => {
+      $$('[data-k]', pop).forEach((b) => b.addEventListener('click', () => { closePop(); choose(b.dataset.k); }));
+    });
+  }
+  async function importPack(files) {
+    showLoading('Importing sound pack…');
+    try {
+      const pack = await MD.importPackFiles(files, (i, n) => { R.loadingMsg.textContent = `Importing sound pack… ${i} of ${n}`; });
+      const counts = {};
+      pack.sounds.forEach((s) => { counts[s.cat] = (counts[s.cat] || 0) + 1; });
+      ui.browser = true;
+      ui.open.packs = true;
+      ui.open['pk-' + pack.id] = true;
+      savePrefs();
+      renderTransport();
+      BL.browser.render(R.browser);
+      if (ui.tab === 'rack') renderRack();
+      toast(`Imported “${pack.name}”: ${Object.entries(counts).map(([c, n]) => `${n} ${c.toLowerCase()}`).join(', ')}.`);
+    } catch (e) {
+      toast(e.message || 'That pack could not be imported.');
+    } finally { hideLoading(); }
+  }
+  async function audioFromPackSound(sid) {
+    const existing = Object.values(P.audio).find((a) => a.src === sid);
+    if (existing) return existing.id;
+    const bytes = await MD.store.get('files', sid.slice(2));
+    if (!bytes) return null;
+    const meta = await MD.importAudioBytes(bytes, MD.soundName(sid));
+    meta.src = sid;
+    edit((p) => { p.audio[meta.id] = meta; }, { noRender: true });
+    return meta.id;
+  }
+  async function openPackLoopInLab(sid) {
+    const bytes = await MD.store.get('files', sid.slice(2));
+    if (!bytes) return;
+    setTab('lab');
+    await BL.lab.importBytes(bytes, MD.soundName(sid));
+  }
+  function openRecord(id) {
+    setTab('lab');
+    BL.lab.pickBuiltin(id);
+  }
+  function firstFreeLane() {
+    const used = new Set(P.clips.map((c) => c.lane));
+    let i = P.lanes.findIndex((l) => !used.has(l.id));
+    if (i < 0) { P.lanes.push(newLane(P)); i = P.lanes.length - 1; }
+    return i;
+  }
+
   async function saveFile(filename, bytes) {
-    const inClaude = !!(window.claude && typeof window.claude.use === 'function');
-    if (inClaude) {
+    if (NATIVE && NATIVE.saveFile) {
+      const res = await NATIVE.saveFile(filename, bytes);
+      if (res && res.saved) toast(`Saved ${res.name || filename}.`);
+      return;
+    }
+    if (window.claude && typeof window.claude.use === 'function') {
       let dl = null;
       try { dl = await window.claude.use('downloads'); } catch (e) { dl = null; }
       if (dl) {
         let name = filename, data = bytes;
         if (/\.wav$/i.test(filename)) { data = BL.dsp.makeZip([{ name: filename, bytes }]); name = filename.replace(/\.wav$/i, '.zip'); }
-        try {
-          await dl.save({ filename: name, data: new Blob([data]) });
-          toast(`Saved ${name}${name !== filename ? ' (your WAV is inside)' : ''}.`);
-        } catch (e) {
-          if (!e || e.code !== 'declined') toast('Saving is not available in this view.');
-        }
+        if (/\.beatlab$/i.test(filename)) name = filename + '.json';
+        try { await dl.save({ filename: name, data: new Blob([data]) }); toast(`Saved ${name}.`); } catch (e) { if (!e || e.code !== 'declined') toast('Saving files is not available here.'); }
         return;
       }
     }
@@ -1270,21 +1670,10 @@
     document.body.appendChild(a);
     a.click();
     a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
     toast(`Saved ${filename}.`);
   }
   const fileSafe = (s) => (s || 'beat').replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-').toLowerCase() || 'beat';
-
-  async function saveProjectFile() {
-    const out = JSON.parse(JSON.stringify(P));
-    out.audio = {};
-    for (const s of Object.values(P.samples)) {
-      if (s.builtin) continue;
-      const bytes = BL.lab.memBytes[s.id] || (await BL.lab.idb.get(s.id));
-      if (bytes) out.audio[s.id] = b64(new Uint8Array(bytes));
-    }
-    await saveFile(fileSafe(P.name) + '.beatlab.json', new TextEncoder().encode(JSON.stringify(out)));
-  }
   function b64(u8) {
     let s = '';
     for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
@@ -1296,109 +1685,220 @@
     for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i);
     return u.buffer;
   }
+  /** one self-contained file: includes your audio tracks, samples and pack sounds */
+  async function downloadProjectFile() {
+    showLoading('Packing project…');
+    try {
+      const out = JSON.parse(JSON.stringify(P));
+      delete out.libId;
+      out.media = { samples: {}, files: {}, packSounds: {} };
+      for (const s of Object.values(P.samples)) {
+        if (s.builtin) continue;
+        const bytes = BL.lab.memBytes[s.id] || (await MD.store.get('samples', s.id));
+        if (bytes) out.media.samples[s.id] = b64(new Uint8Array(bytes));
+      }
+      for (const id of Object.keys(P.audio)) { const b = await MD.store.get('files', id); if (b) out.media.files[id] = b64(new Uint8Array(b)); }
+      for (const t of P.tracks) {
+        if (t.type === 'drum' && /^u:/.test(t.sound)) {
+          const b = await MD.store.get('files', t.sound.slice(2));
+          if (b) out.media.packSounds[t.sound] = { name: MD.soundName(t.sound), cat: MD.soundCat(t.sound), data: b64(new Uint8Array(b)) };
+        }
+      }
+      hideLoading();
+      await saveFile(fileSafe(P.name) + '.beatlab', new TextEncoder().encode(JSON.stringify(out)));
+    } finally { hideLoading(); }
+  }
   async function openProjectFile(file) {
+    showLoading('Opening project…');
     try {
       const data = JSON.parse(await file.text());
       if (!data || !Array.isArray(data.tracks) || !Array.isArray(data.patterns)) throw new Error('bad');
-      for (const [id, str] of Object.entries(data.audio || {})) {
-        const bytes = unb64(str);
-        BL.lab.memBytes[id] = bytes;
-        BL.lab.forget(id);
-        await BL.lab.idb.put(id, bytes);
+      const legacy = data.audio && Object.values(data.audio).some((v) => typeof v === 'string');
+      const media = data.media || { samples: legacy ? data.audio : {} };
+      for (const [id, str] of Object.entries(media.samples || {})) { const bytes = unb64(str); BL.lab.memBytes[id] = bytes; BL.lab.forget(id); await MD.store.put('samples', id, bytes); }
+      for (const [id, str] of Object.entries(media.files || {})) await MD.store.put('files', id, unb64(str));
+      for (const [sid, o] of Object.entries(media.packSounds || {})) {
+        await MD.store.put('files', sid.slice(2), unb64(o.data));
+        MD.soundMeta[sid] = MD.soundMeta[sid] || { name: o.name, cat: o.cat, pack: 'From project' };
       }
-      delete data.audio;
-      await loadProject(Object.assign(newProject(), data), { undoable: true });
-      toast(`Opened ${data.name || 'project'}.`);
+      delete data.media;
+      if (legacy) data.audio = {};
+      delete data.libId;
+      hideLoading();
+      await loadProject(data, { undoable: true, dirty: true });
+      toast(`Opened ${P.name}. Press Save to keep it in My Projects.`);
     } catch (e) {
+      hideLoading();
       toast("That file isn't a BeatLab project.");
     }
   }
 
-  function openExport() {
-    const songLen = P.song.length;
-    if (!ui.ending) ui.ending = 'none';
-    openModal(`<h2>Export your beat</h2>
-      <p>Makes a WAV audio file you can upload, send to an artist, or drop into any other app.</p>
-      <div class="export-opts">
-        <label class="radio"><input type="radio" name="exp" value="loop" ${P.songMode ? '' : 'checked'}> Pattern ${LETTERS[P.current]}, looped 4 times</label>
-        <label class="radio"><input type="radio" name="exp" value="song" ${P.songMode ? 'checked' : ''}> The whole song (${songLen} block${songLen > 1 ? 's' : ''}: ${P.song.map((i) => LETTERS[i]).join(' ')})</label>
+  function openExport(mode) {
+    const what = mode === 'stems' ? 'stems' : 'mix';
+    const hasSong = P.clips.length > 0;
+    openModal(`<header class="sheet-head"><h2>Export</h2></header>
+      <div class="sheet-body">
+        <div class="form-grid">
+          <span class="form-label">Export</span>
+          <div class="seg" id="expWhat"><button data-what="mix" class="${what === 'mix' ? 'is-on' : ''}">Mixdown</button><button data-what="stems" class="${what === 'stems' ? 'is-on' : ''}">Stems</button></div>
+          <span class="form-label">Range</span>
+          <div class="seg" id="expRange"><button data-range="pattern" class="${!P.songMode || !hasSong ? 'is-on' : ''}">${esc(curPat().name)} ×4</button><button data-range="song" class="${P.songMode && hasSong ? 'is-on' : ''}" ${hasSong ? '' : 'disabled'}>Whole Song</button></div>
+          <span class="form-label">Ending</span>
+          <div class="ending-row"><div class="seg" id="expEnd">${Object.entries(E.ENDINGS).map(([k, v]) => `<button data-ending="${k}" class="${ui.ending === k ? 'is-on' : ''}">${v.name}</button>`).join('')}</div>
+            <button class="tbtn" id="hearEnding">${icon('play')}<span>Preview</span></button></div>
+        </div>
+        <p class="sheet-note" id="expNote"></p>
       </div>
-      <h3>Ending</h3>
-      <div class="ending-row">
-        <div class="seg" role="group" aria-label="Ending">${Object.entries(E.ENDINGS).map(([k, v]) => `<button data-ending="${k}" class="${ui.ending === k ? 'is-on' : ''}">${v.name}</button>`).join('')}</div>
-        <button class="btn" id="hearEnding">▶ Hear the ending</button>
-      </div>
-      <p class="ending-note" id="endingNote"></p>
-      <div class="modal-actions"><button class="btn btn-accent" id="doExport">Export WAV</button><span id="expStatus" class="muted"></span></div>`, (m) => {
+      <footer class="sheet-foot"><span id="expStatus" class="muted"></span><span class="ph-spacer"></span><button class="tbtn" data-close>Cancel</button><button class="tbtn tbtn-primary" id="doExport">Export</button></footer>`, (m) => {
+      const st = { what, range: !P.songMode || !hasSong ? 'pattern' : 'song' };
       const notes = {
-        none: 'The beat ends on the last step, with the reverb ringing out.',
-        slowmo: 'One last hit (kick, 808, chord and a boom) that drops into slow motion and fades away.',
-        tapestop: 'The beat winds down to a halt, like someone stopped the record with their hand.',
+        none: 'Ends on the last step with the reverb ringing out.',
+        slowmo: 'One last hit (kick, 808, chord and a boom) drops into slow motion and fades away.',
+        tapestop: 'The beat winds down to a halt, like a hand stopping the record.',
       };
-      const setNote = () => { $('#endingNote', m).textContent = notes[ui.ending]; };
-      setNote();
-      $$('[data-ending]', m).forEach((b) => b.addEventListener('click', () => {
-        ui.ending = b.dataset.ending;
-        $$('[data-ending]', m).forEach((x) => x.classList.toggle('is-on', x === b));
-        setNote();
-      }));
+      const note = () => {
+        $('#expNote', m).textContent = (st.what === 'stems' ? 'Stems: every channel and audio track as its own WAV, all the same length, in one .zip, ready for any DAW. ' : 'A 44.1 kHz, 16-bit stereo WAV. ') + notes[ui.ending];
+      };
+      note();
+      const segs = (sel, key, fn) => $$(`${sel} button`, m).forEach((b) => b.addEventListener('click', () => { if (b.disabled) return; $$(`${sel} button`, m).forEach((x) => x.classList.toggle('is-on', x === b)); fn(b.dataset[key]); note(); }));
+      segs('#expWhat', 'what', (v) => { st.what = v; });
+      segs('#expRange', 'range', (v) => { st.range = v; });
+      segs('#expEnd', 'ending', (v) => { ui.ending = v; });
       $('#hearEnding', m).addEventListener('click', async () => {
-        $('#expStatus', m).textContent = 'Rendering the ending…';
-        await Promise.all(Object.keys(P.samples).map((id) => BL.lab.ensure(P, id)));
-        if (E.state.playing) { E.stop(); renderTop(); }
+        $('#expStatus', m).textContent = 'Rendering…';
+        await ensureAllMedia();
+        if (E.state.playing) stopAll();
         const buf = await E.renderEndingPreview(P, ui.ending);
         $('#expStatus', m).textContent = '';
         E.previewBuffer(buf, 0, buf.duration);
       });
       $('#doExport', m).addEventListener('click', async () => {
-        const song = $('input[name=exp]:checked', m).value === 'song';
-        $('#expStatus', m).textContent = 'Rendering…';
-        $('#doExport', m).disabled = true;
+        const btn = $('#doExport', m);
+        btn.disabled = true;
         E.stopPreviewBuffer();
+        const status = (s) => { $('#expStatus', m).textContent = s; };
         try {
-          await Promise.all(Object.keys(P.samples).map((id) => BL.lab.ensure(P, id)));
-          const out = await E.render(P, { song, loops: 4, ending: ui.ending });
-          const wav = BL.dsp.encodeWAV(out.channels, out.sampleRate);
-          closeModal();
-          await saveFile(fileSafe(P.name) + '.wav', wav);
+          await ensureAllMedia();
+          const opts = { song: st.range === 'song', loops: 4, ending: ui.ending };
+          if (st.what === 'mix') {
+            status('Rendering mixdown…');
+            const out = await E.render(P, opts);
+            closeModal();
+            await saveFile(fileSafe(P.name) + '.wav', BL.dsp.encodeWAV(out.channels, out.sampleRate));
+          } else {
+            const audioLanes = opts.song ? P.lanes.filter((l) => P.clips.some((c) => c.lane === l.id && c.kind === 'audio')) : [];
+            const parts = [...P.tracks.map((t) => ({ kind: 'track', o: t })), ...audioLanes.map((l) => ({ kind: 'lane', o: l }))];
+            const rendered = [];
+            let len = 0;
+            for (let i = 0; i < parts.length; i++) {
+              status(`Rendering stem ${i + 1} of ${parts.length}…`);
+              const q = JSON.parse(JSON.stringify(P));
+              const part = parts[i];
+              // each stem holds exactly one channel or one audio track
+              q.tracks.forEach((t) => { t.solo = false; t.mute = !(part.kind === 'track' && t.id === part.o.id); });
+              q.lanes.forEach((l) => { l.solo = false; l.mute = false; });
+              q.clips = q.clips.filter((c) => (part.kind === 'track' ? c.kind === 'pattern' : c.kind === 'audio' && c.lane === part.o.id));
+              const out = await E.render(q, opts);
+              len = Math.max(len, out.channels[0].length);
+              rendered.push({ name: part.o.name, out });
+            }
+            const files = rendered.map((r, i) => {
+              const pad = (c) => { const x = new Float32Array(len); x.set(c); return x; };
+              return { name: `${String(i + 1).padStart(2, '0')} ${r.name.replace(/[^\w\- ]+/g, '').trim() || 'Track'}.wav`, bytes: BL.dsp.encodeWAV(r.out.channels.map(pad), r.out.sampleRate) };
+            });
+            status('Zipping…');
+            closeModal();
+            await saveFile(fileSafe(P.name) + '-stems.zip', BL.dsp.makeZip(files));
+          }
         } catch (e) {
-          $('#expStatus', m).textContent = 'Export failed: ' + (e && e.message ? e.message : e);
-          $('#doExport', m).disabled = false;
+          status('Export failed: ' + (e && e.message ? e.message : e));
+          btn.disabled = false;
         }
       });
     });
   }
+  async function ensureAllMedia() {
+    await Promise.all([
+      ...Object.keys(P.samples).map((id) => BL.lab.ensure(P, id)),
+      ...Object.keys(P.audio).map((id) => MD.ensureAudio(id)),
+      ...P.tracks.filter((t) => t.type === 'drum' && /^u:/.test(t.sound)).map((t) => MD.ensureSound(t.sound)),
+    ]);
+  }
 
-  // ---------- drag & drop audio anywhere ----------
+  function openHelp() {
+    openModal(`<header class="sheet-head"><h2>How BeatLab Works</h2></header>
+      <div class="sheet-body help">
+        <dl class="help-grid">
+          <dt>Channel Rack</dt><dd>Each row is a sound. Click steps to add hits. Right-click (or Velocity) makes a hit softer or louder; Rolls turns a hat into ×2, ×3 or ×4. Drag any sound from the Browser onto a row to swap it.</dd>
+          <dt>Piano Roll</dt><dd>Draw notes for instruments and 808s. Only notes in your key are shown, so nothing sounds wrong. Chords places a whole chord per click. Overlap two 808 notes to slide.</dd>
+          <dt>Playlist</dt><dd>Paint patterns into the timeline to build your song, and drop in audio tracks such as songs, vocals or stems. Right-click a clip to delete it; drag its right edge to make it longer. Switch the toolbar to Song to play the Playlist.</dd>
+          <dt>Sample Lab</dt><dd>Pick a record or load your own audio. Speed and Pitch are sliders; Match my tempo and Match my key do it for you. Chop it and place the chops on the grid.</dd>
+          <dt>Sound Packs</dt><dd>Import a .zip, a folder or loose files from the Browser. BeatLab sorts them into kicks, snares, hats, 808s, percs, FX and loops.</dd>
+          <dt>Saving</dt><dd>Save (${CMD}S) keeps the project in My Projects on this computer. Download File makes one .beatlab file with all your audio inside.</dd>
+          <dt>Export</dt><dd>A WAV mixdown or stems (one WAV per channel), with an optional slow-mo or tape-stop ending.</dd>
+        </dl>
+        <table class="keys"><tbody>
+          <tr><td><kbd>Space</kbd></td><td>Play / stop</td><td><kbd>Return</kbd></td><td>Back to start</td></tr>
+          <tr><td><kbd>A</kbd>–<kbd>L</kbd></td><td>Play notes in key</td><td><kbd>Z</kbd> <kbd>X</kbd></td><td>Octave down / up</td></tr>
+          <tr><td><kbd>B</kbd></td><td>Browser</td><td><kbd>F6</kbd>–<kbd>F9</kbd></td><td>Rack, Piano Roll, Lab, Mixer</td></tr>
+          <tr><td><kbd>${CMD}S</kbd></td><td>Save</td><td><kbd>${CMD}E</kbd></td><td>Export</td></tr>
+          <tr><td><kbd>${CMD}O</kbd></td><td>Open</td><td><kbd>${CMD}I</kbd></td><td>Import audio</td></tr>
+        </tbody></table>
+      </div>
+      <footer class="sheet-foot"><span class="ph-spacer"></span><button class="tbtn tbtn-primary" data-close>Done</button></footer>`);
+  }
+
+  // ---------- drag & drop from the desktop ----------
   function bindDrop() {
     let depth = 0;
-    window.addEventListener('dragenter', (e) => { if (e.dataTransfer && [...e.dataTransfer.types].includes('Files')) { depth++; document.body.classList.add('dropping'); } });
-    window.addEventListener('dragleave', () => { depth = Math.max(0, depth - 1); if (!depth) document.body.classList.remove('dropping'); });
+    const isFiles = (e) => e.dataTransfer && [...e.dataTransfer.types].includes('Files');
+    window.addEventListener('dragenter', (e) => { if (isFiles(e)) { depth++; document.body.classList.add('dropping'); } });
+    window.addEventListener('dragleave', (e) => { if (isFiles(e)) { depth = Math.max(0, depth - 1); if (!depth) document.body.classList.remove('dropping'); } });
     window.addEventListener('dragover', (e) => e.preventDefault());
     window.addEventListener('drop', async (e) => {
       e.preventDefault();
       depth = 0;
       document.body.classList.remove('dropping');
-      const f = e.dataTransfer.files && e.dataTransfer.files[0];
-      if (!f) return;
-      if (/\.json$/i.test(f.name)) return openProjectFile(f);
-      setTab('lab');
-      await BL.lab.importFile(f);
+      const files = [...(e.dataTransfer.files || [])];
+      if (!files.length) return;
+      if (files.length === 1 && /\.(json|beatlab)$/i.test(files[0].name)) return openProjectFile(files[0]);
+      const overBrowser = e.target.closest && e.target.closest('#browser');
+      const overLab = e.target.closest && e.target.closest('.tab-lab');
+      if (files.some((f) => /\.zip$/i.test(f.name)) || overBrowser || files.length > 4) return importPack(files);
+      if (overLab) return BL.lab.importFile(files[0]);
+      for (const f of files) {
+        const meta = await importAudioFile(f);
+        if (meta) BL.playlist.placeAudio(meta.id, firstFreeLane(), P.pos || 0);
+      }
     });
   }
 
-  function renderAll() {
-    renderTop();
-    renderPatBar();
-    renderRack();
-    renderDock();
+  // ---------- splitter between Playlist and editor ----------
+  function bindSplitter() {
+    const apply = () => { if (ui.plH) R.main.style.setProperty('--pl-h', ui.plH + 'px'); };
+    apply();
+    let drag = null;
+    R.splitter.addEventListener('pointerdown', (e) => { drag = { y: e.clientY, h: R.playlist.getBoundingClientRect().height }; R.splitter.setPointerCapture(e.pointerId); document.body.classList.add('is-resizing'); });
+    R.splitter.addEventListener('pointermove', (e) => {
+      if (!drag) return;
+      const max = R.main.clientHeight - 200;
+      ui.plH = Math.max(110, Math.min(max, drag.h + (e.clientY - drag.y)));
+      apply();
+    });
+    R.splitter.addEventListener('pointerup', () => {
+      if (!drag) return;
+      drag = null;
+      document.body.classList.remove('is-resizing');
+      savePrefs();
+      if (ui.tab === 'roll') renderEditor(); else { sizeSteps(); drawLanes(); }
+    });
+    R.splitter.addEventListener('dblclick', () => { ui.plH = 0; R.main.style.removeProperty('--pl-h'); savePrefs(); });
   }
 
-  // ---------- Apple-style control polish ----------
-  /** slide a thumb under the selected option of every segmented control */
+  // ---------- control polish: sliding segment thumbs + slider fills ----------
   function updateSegs() {
     $$('.seg').forEach((seg) => {
-      const on = $('button.is-on', seg);
+      const on = $(':scope > button.is-on', seg);
       let thumb = $(':scope > .seg-thumb', seg);
       if (!on) { if (thumb) thumb.style.opacity = '0'; return; }
       if (!thumb) { thumb = document.createElement('span'); thumb.className = 'seg-thumb'; seg.prepend(thumb); }
@@ -1412,19 +1912,18 @@
     const min = +r.min || 0, max = r.max === '' ? 100 : +r.max;
     r.style.setProperty('--fill', (((+r.value - min) / (max - min)) * 100).toFixed(1) + '%');
   }
-  function polish() { updateSegs(); $$('input[type=range]').forEach(paintRange); }
   let polishQueued = false;
   function queuePolish() {
     if (polishQueued) return;
     polishQueued = true;
-    requestAnimationFrame(() => { polishQueued = false; polish(); });
+    requestAnimationFrame(() => { polishQueued = false; updateSegs(); $$('input[type=range]').forEach(paintRange); });
   }
   function bindPolish() {
     document.addEventListener('input', (e) => { if (e.target.type === 'range') paintRange(e.target); });
     new MutationObserver((muts) => {
       for (const m of muts) {
         const t = m.target;
-        if (m.type === 'childList' && t.nodeType === 1 && !t.closest('.lane') && !t.classList.contains('roll-notes')) { queuePolish(); return; }
+        if (m.type === 'childList' && t.nodeType === 1 && !t.closest('.lane') && !t.closest('#plClips') && t.id !== 'rollNotes' && t.id !== 'lcdPos') { queuePolish(); return; }
         if (m.type === 'attributes' && t.parentElement && t.parentElement.classList.contains('seg')) { queuePolish(); return; }
       }
     }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
@@ -1432,38 +1931,68 @@
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(queuePolish);
   }
 
+  function renderAll() {
+    if (!P) return;
+    renderTransport();
+    renderStatus();
+    renderTabs();
+    if (ui.browser) BL.browser.render(R.browser);
+    BL.playlist.render(R.playlist);
+    renderEditor();
+  }
+
+  // ---------- API for the Browser, Playlist and Sample Lab ----------
+  const api = {
+    project: () => P, ui, edit, changed, snapshot, toast, icon, uid, newLane,
+    autosave, savePrefs, openPop, closePop, inlineRename, engine: E,
+    renderTransport, openPattern, pickAudioFiles, importAudioFile, audioFromPackSound, pickPack,
+    addChannel, firstFreeLane, openPackLoopInLab, openRecord, loadPreset, openSaved, saveToLibrary,
+    labHost: () => (ui.tab === 'lab' ? R.edBody : null),
+    rackChanged: () => { if (ui.tab === 'rack') renderRack(); else drawLanes(); BL.playlist.drawClips(); },
+    addSampleTrack,
+  };
+
   // ---------- boot ----------
+  let booted = false, pendingFile = null;
   async function boot() {
-    cacheDom();
+    buildShell();
+    loadPrefs();
     E.setProjectGetter(() => P);
-    BL.lab.init({
-      project: () => P, edit, toast, ui,
-      labHost: () => (ui.tab === 'lab' ? R.dockBody : null),
-      rackChanged: () => { renderRack(); },
-      addSampleTrack,
-    });
+    BL.lab.init(api);
+    BL.browser.init(api);
+    BL.playlist.init(api);
     bindPolish();
-    bindTop();
-    bindPatBar();
+    bindToolbar();
     bindHints();
     bindDrop();
-    $$('[data-tab]').forEach((b) => b.addEventListener('click', () => setTab(b.dataset.tab)));
+    bindSplitter();
+    if (NATIVE) {
+      document.body.classList.add('native', 'native-' + (NATIVE.platform || 'darwin'));
+      if (NATIVE.onMenu) NATIVE.onMenu((cmd) => command(cmd));
+      if (NATIVE.onOpenFile) NATIVE.onOpenFile((f) => { const file = new File([f.data], f.name); if (booted) openProjectFile(file); else pendingFile = file; });
+    }
     let rsz = null;
-    window.addEventListener('resize', () => { clearTimeout(rsz); rsz = setTimeout(() => { sizeSteps(); drawLanes(); BL.lab.drawWave(); if (ui.tab === 'roll') renderDock(); }, 120); });
+    window.addEventListener('resize', () => { clearTimeout(rsz); rsz = setTimeout(() => { sizeSteps(); drawLanes(); BL.lab.drawWave(); BL.playlist.drawClips(); }, 120); });
+    window.addEventListener('beforeunload', () => { try { localStorage.setItem(STORE_KEY, JSON.stringify(P)); } catch (e) { /* ignore */ } });
     showLoading('Building the drum kits…');
-    await S.renderDrums();
+    await Promise.all([S.renderDrums(), MD.loadPacks()]);
     let saved = null;
     try { saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null'); } catch (e) { saved = null; }
     hideLoading();
+    BL.browser.refreshProjects();
     if (saved && saved.tracks) {
-      await loadProject(Object.assign(newProject(), saved));
-      toast('Welcome back. Your last beat is right where you left it.');
+      await loadProject(saved, { dirty: false });
+      toast('Welcome back. Your last session is right where you left it.');
     } else {
-      await loadProject(projectFromPreset(BL.beats.PRESETS[0]));
-      openBeats();
+      if (!pendingFile) {
+        await loadProject(projectFromPreset(BL.beats.PRESETS[0]));
+        openTemplates();
+      }
     }
+    booted = true;
+    if (pendingFile) { const f = pendingFile; pendingFile = null; await openProjectFile(f); }
   }
 
-  window.BL.app = { get project() { return P; }, ui, toast, renderAll, loadProject, projectFromPreset };
+  window.BL.app = { get project() { return P; }, ui, toast, renderAll, loadProject, projectFromPreset, command, api };
   boot();
 })();

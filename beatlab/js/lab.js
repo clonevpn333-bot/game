@@ -10,30 +10,8 @@
 
   // ---------- storage for your own audio files ----------
   const idb = {
-    _db: null,
-    open() {
-      if (this._db) return Promise.resolve(this._db);
-      return new Promise((res, rej) => {
-        try {
-          const r = indexedDB.open('beatlab', 1);
-          r.onupgradeneeded = () => r.result.createObjectStore('samples');
-          r.onsuccess = () => { this._db = r.result; res(r.result); };
-          r.onerror = () => rej(r.error);
-        } catch (e) { rej(e); }
-      });
-    },
-    async put(k, v) {
-      try {
-        const db = await this.open();
-        await new Promise((res, rej) => { const tx = db.transaction('samples', 'readwrite'); tx.objectStore('samples').put(v, k); tx.oncomplete = res; tx.onerror = () => rej(tx.error); });
-      } catch (e) { /* storage unavailable: sample lives for this session only */ }
-    },
-    async get(k) {
-      try {
-        const db = await this.open();
-        return await new Promise((res, rej) => { const r = db.transaction('samples').objectStore('samples').get(k); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
-      } catch (e) { return null; }
-    },
+    put: (k, v) => BL.media.store.put('samples', k, v),
+    get: (k) => BL.media.store.get('samples', k),
   };
   const memBytes = {}; // fallback when IndexedDB is blocked
 
@@ -160,8 +138,12 @@
   }
 
   async function importFile(file) {
+    return importBytes(await file.arrayBuffer(), file.name);
+  }
+
+  async function importBytes(bytes, fileName) {
     const p = A.project();
-    const bytes = await file.arrayBuffer();
+    const file = { name: fileName || 'Sample' };
     const ctx = null;
     let raw;
     try {
@@ -613,7 +595,7 @@
   }
 
   BL.lab = {
-    init, render, ensure, runtime: (id) => rts[id], fitSpeed, autoKeySemis, importFile, keyPad,
+    init, render, ensure, runtime: (id) => rts[id], fitSpeed, autoKeySemis, importFile, importBytes, pickBuiltin, keyPad,
     drawWave, idb, memBytes, forget(id) { delete rts[id]; },
   };
 })(typeof window !== 'undefined' ? window : globalThis);
