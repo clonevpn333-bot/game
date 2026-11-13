@@ -29,15 +29,29 @@ npm run mac          # build dist/BeatLab-2.0.0-mac.dmg
 
 ## The window
 
-| | |
+Six big tabs, one job each, so you never see everything at once:
+
+| Tab | What you do there |
 |---|---|
-| **Control bar** | Transport (to start, play, stop, record), an LCD with position, tempo (drag, type or tap), key and scale, the Pattern/Song switch, master volume, Save and Export |
-| **Browser** (B) | Templates, My Projects, Drums, Instruments, Records, your Audio Tracks and Sound Packs. Click to hear, double-click or **+** to use, drag onto a channel or the Playlist |
-| **Playlist** | Arrange your song: paint patterns into the timeline and drop in audio tracks (songs, vocals, stems). Drag clips to move them, drag the right edge to lengthen, right-click to delete. Click the ruler to set where Song mode starts |
-| **Channel Rack** (F6) | The step sequencer. Each channel has an on/off light, solo, ✦ "write it for me", options, sound picker and volume. Up to 32 patterns |
-| **Piano Roll** (F7) | Notes locked to your key; chord mode; overlap 808 notes to slide; play your computer keyboard (A–L) and record |
-| **Sample Lab** (F8) | Speed and pitch sliders, Match my tempo, Match my key, chop into 4/8/16 pads, reverse, record with the mic |
-| **Mixer** (F9) | A vertical strip for every channel and audio track (volume, pan, reverb, mute, solo), plus master punch and lo-fi |
+| **Sounds** (F4) | Drop in a beat pack, start from a BeatLab Pack or a template, browse every sound |
+| **Beat** (F6) | Click squares to place drums. **Write Drums for Me** fills in a pattern |
+| **Melody** (F7) | Draw notes, chords and 808s; only notes in your key are shown |
+| **Sample** (F8) | Speed and pitch sliders, Match my tempo / key, chop into pads |
+| **Song** (F5) | Paint patterns and audio along the timeline. Play plays the whole song here |
+| **Mix** (F9) | Volume, pan and reverb per sound, then Export |
+
+The top bar has play, record and an LCD showing what Play plays (LOOP or SONG), the position, tempo and key, plus a live spectrum.
+Channel lights flash on every hit, and the per-row buttons stay hidden until you hover a row.
+
+## BeatLab Packs
+
+Original kits and starter beats in the style of three songs. The sounds are synthesized by BeatLab, and the drums and melodies are newly written; nothing is sampled or copied from the records. Tempo and key are style estimates, not measured from the songs.
+
+| Pack | Inspired by | What's in it |
+|---|---|---|
+| **Big Money** | “Money So Big”, Yeat | Blown-out kick and 808, bright clap, crispy hats, metal ping, rage riser, a shiny **Rage Bell** synth. 150 BPM |
+| **Fever** | “Fever”, fakemink | Round kick, snap snare, ticking hats, air hat, vox chop, reverse air, an **Air Pad**, glass bells, sliding 808. 155 BPM |
+| **Jukebox** | “Jukebox Joints”, A$AP Rocky & Kanye West | Dusty kick and snare, hats, rim, tambourine, crash, and a **Jukebox Soul** record (keys + high “ooh” vocal) that gets sped up like a chipmunk-soul flip. 90 BPM |
 
 ## Your own sounds
 

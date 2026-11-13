@@ -65,12 +65,12 @@ function buildMenu() {
     {
       label: 'View',
       submenu: [
-        item('Show / Hide Browser', 'browser', 'CmdOrCtrl+Alt+B'),
-        { type: 'separator' },
-        item('Channel Rack', 'rack', 'F6'),
-        item('Piano Roll', 'roll', 'F7'),
-        item('Sample Lab', 'lab', 'F8'),
-        item('Mixer', 'mix', 'F9'),
+        item('Sounds', 'sounds', 'F4'),
+        item('Beat', 'rack', 'F6'),
+        item('Melody', 'roll', 'F7'),
+        item('Sample', 'lab', 'F8'),
+        item('Song', 'song', 'F5'),
+        item('Mix', 'mix', 'F9'),
         { type: 'separator' },
         { role: 'resetZoom' }, { role: 'zoomIn' }, { role: 'zoomOut' },
         { type: 'separator' },

@@ -13,17 +13,11 @@
 <!--APP-->
 <div id="app">
   <header id="toolbar" class="toolbar"></header>
-  <div id="workspace" class="workspace">
-    <aside id="browser" class="browser" aria-label="Browser"></aside>
-    <div id="main" class="main">
-      <section id="playlist" class="playlist" aria-label="Playlist"></section>
-      <div id="splitter" class="splitter" role="separator" aria-orientation="horizontal" data-hint="Drag to resize. Double-click to reset."></div>
-      <section id="editor" class="editor" aria-label="Editor">
-        <div class="pane-head ed-head"><div id="edTabs"></div></div>
-        <div id="edBody" class="ed-body"></div>
-      </section>
-    </div>
-  </div>
+  <nav id="bigTabs" class="bigtabs" role="tablist" aria-label="Studio"></nav>
+  <main id="panel" class="panel">
+    <div id="panelHead" class="panel-head"></div>
+    <div id="edBody" class="ed-body"></div>
+  </main>
   <footer id="status" class="statusbar"><span id="hint" class="hint"></span><span id="saveState" class="save-state"></span></footer>
 </div>
 <input id="filePick" type="file" hidden>
@@ -31,7 +25,7 @@
 <div id="modal" class="modal" hidden></div>
 <div id="toast" class="toast" role="status" hidden></div>
 <div id="loading" class="loading"><div class="loading-card"><span class="spinner" aria-hidden="true"></span><span id="loadingMsg">Loading…</span></div></div>
-<div class="drop-hint" aria-hidden="true"><span>Drop audio to import it</span><small>Single files become Playlist tracks · zips and folders become sound packs</small></div>
+<div class="drop-hint" aria-hidden="true"><span>Drop to import</span><small>Single audio files become Song tracks · zips, folders and groups of files become beat packs</small></div>
 <!--/APP-->
 
 <script src="js/theory.js"></script>

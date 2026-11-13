@@ -343,7 +343,30 @@
     ['riser', 'Riser', 'FX', riser({ from: 300, to: 9000, dur: 1.8 }), 1.9],
     ['downsweep', 'Down Sweep', 'FX', riser({ from: 8000, to: 150, dur: 1.2 }), 1.3],
     ['impact', 'Impact Boom', 'FX', impact, 1.7],
-  ].map(([id, name, cat, fn, len, rev]) => ({ id, name, cat, fn, len, rev: !!rev }));
+
+    // ---- BeatLab Packs: original kits built for specific vibes ----
+    // "Money So Big" kit: blown-out rage drums
+    ['msb_kick', 'Big Money Kick', 'Kick', kick({ f0: 260, f1: 47, decay: 0.42, pitchDecay: 0.035, click: 1, drive: 0.95, body: 0.2 }), 0.55, false, 'msb'],
+    ['msb_clap', 'Big Money Clap', 'Clap', layer(clap({ decay: 0.16, bp: 1600, spread: 0.009 }), snare({ tone: 230, toneGain: 0.5, toneDecay: 0.06, noiseGain: 0.8, noiseDecay: 0.12, hp: 2200, peak: 6000, drive: 0.7 })), 0.35, false, 'msb'],
+    ['msb_hat', 'Big Money Hat', 'Hi-Hat', hat({ decay: 0.03, hp: 9000, metal: 0.9, tune: 1.4, level: 0.7 }), 0.08, false, 'msb'],
+    ['msb_ohat', 'Big Money Open Hat', 'Open Hat', hat({ decay: 0.22, hp: 8000, metal: 0.8, tune: 1.4, level: 0.5 }), 0.3, false, 'msb'],
+    ['msb_ping', 'Metal Ping', 'Perc', tom({ f0: 1320, f1: 1300, decay: 0.25, level: 0.5, type: 'square', click: 0.2 }), 0.3, false, 'msb'],
+    ['msb_riser', 'Rage Riser', 'FX', riser({ from: 500, to: 12000, dur: 1.4 }), 1.5, false, 'msb'],
+    // "Fever" kit: airy, glossy underground plugg/jerk drums
+    ['fev_kick', 'Fever Kick', 'Kick', kick({ f0: 140, f1: 46, decay: 0.5, pitchDecay: 0.07, click: 0.35 }), 0.6, false, 'fev'],
+    ['fev_snare', 'Fever Snap Snare', 'Snare', layer(snap, snare({ tone: 280, toneGain: 0.35, toneDecay: 0.05, noiseGain: 0.7, noiseDecay: 0.1, hp: 3000, peak: 8000 })), 0.25, false, 'fev'],
+    ['fev_hat', 'Fever Tick Hat', 'Hi-Hat', hat({ decay: 0.022, hp: 10000, metal: 0.25, noise: 0.9, level: 0.6 }), 0.06, false, 'fev'],
+    ['fev_ohat', 'Fever Air Hat', 'Open Hat', shaker({ decay: 0.25, bp: 9500, q: 0.8, attack: 0.03, level: 0.5 }), 0.35, false, 'fev'],
+    ['fev_vox', 'Fever Vox Chop', 'Perc', (ctx, out, t) => { const g = gain(ctx, 0); decay(g.gain, t, 1, 0.22, 0.01); g.connect(out); formantVoice(ctx, g, 523, t, 0.3, 'a', 0.9, false); }, 0.3, false, 'fev'],
+    ['fev_rev', 'Fever Reverse Air', 'FX', riser({ from: 2000, to: 9000, dur: 0.9 }), 1, false, 'fev'],
+    // "Jukebox Joints" kit: dusty soul-sample boom bap
+    ['jbx_kick', 'Jukebox Kick', 'Kick', kick({ f0: 135, f1: 50, decay: 0.34, pitchDecay: 0.05, click: 0.3, drive: 0.4, lp: 2200, body: 0.45 }), 0.45, false, 'jbx'],
+    ['jbx_snare', 'Jukebox Snare', 'Snare', snare({ tone: 175, toneGain: 0.75, toneDecay: 0.14, noiseGain: 0.75, noiseDecay: 0.26, hp: 800, peak: 2800, drive: 0.45, lp: 5500 }), 0.45, false, 'jbx'],
+    ['jbx_hat', 'Jukebox Hat', 'Hi-Hat', hat({ decay: 0.07, hp: 4500, metal: 0.35, lp: 8000, level: 0.5 }), 0.15, false, 'jbx'],
+    ['jbx_rim', 'Jukebox Rim', 'Perc', tom({ f0: 1500, f1: 1400, decay: 0.04, level: 0.55, type: 'triangle', click: 0.4 }), 0.1, false, 'jbx'],
+    ['jbx_tamb', 'Jukebox Tambourine', 'Perc', shaker({ decay: 0.14, bp: 8000, jingle: true, attack: 0.004 }), 0.25, false, 'jbx'],
+    ['jbx_crash', 'Jukebox Dusty Crash', 'FX', crash({ decay: 1.3, hp: 3000, tune: 1.1 }), 1.5, false, 'jbx'],
+  ].map(([id, name, cat, fn, len, rev, kit]) => ({ id, name, cat, fn, len, rev: !!rev, kit: kit || null }));
 
   const DRUM_BY_ID = Object.fromEntries(DRUMS.map((d) => [d.id, d]));
   const DRUM_CATS = ['Kick', 'Snare', 'Clap', 'Hi-Hat', 'Open Hat', 'Perc', 'FX'];
@@ -629,11 +652,48 @@
         return { node: amp, end };
       },
     },
+    tonka: {
+      name: 'Rage Bell', cat: 'Leads', base: 72,
+      play(ctx, out, f, t, dur, v) {
+        // bright FM bell with a detuned saw body: the shiny rage "bell synth"
+        const amp = gain(ctx, 0);
+        const end = decayingAdsr(amp.gain, t, Math.max(dur, 0.35), 0.002, 1.6, 0.35, v * 0.3);
+        amp.connect(out);
+        const car = osc(ctx, 'sine', f, t, end - t);
+        const mod = osc(ctx, 'sine', f * 2, t, end - t);
+        const idx = gain(ctx, f * 3);
+        idx.gain.setValueAtTime(f * 3, t);
+        idx.gain.setTargetAtTime(f * 0.6, t, 0.12);
+        chain(mod, idx, car.frequency);
+        chain(car, amp);
+        const body = gain(ctx, 0.18);
+        chain(body, filter(ctx, 'lowpass', Math.min(9000, f * 6), 0.7), amp);
+        [-9, 9].forEach((d) => { const o = osc(ctx, 'sawtooth', f, t, end - t); o.detune.value = d; o.connect(body); });
+        return { node: amp, end };
+      },
+    },
+    airpad: {
+      name: 'Air Pad', cat: 'Pads', base: 60,
+      play(ctx, out, f, t, dur, v) {
+        const amp = gain(ctx, 0);
+        const end = adsr(amp.gain, t, dur, 0.25, 0.3, 0.8, 0.8, v * 0.13);
+        const lp = filter(ctx, 'lowpass', Math.min(7000, f * 8), 0.4);
+        chain(lp, amp, out);
+        const lfo = osc(ctx, 'sine', 0.3, t, end - t);
+        const lg = gain(ctx, 6);
+        lfo.connect(lg);
+        [-14, -5, 5, 14].forEach((d) => { const o = osc(ctx, 'triangle', f * (d > 10 ? 2 : 1), t, end - t); o.detune.value = d; lg.connect(o.detune); o.connect(lp); });
+        const n = noiseSrc(ctx, t, end - t);
+        chain(n, filter(ctx, 'bandpass', f * 4, 3), gain(ctx, 0.25), lp);
+        return { node: amp, end };
+      },
+    },
     // ---- 808s: mono, with glide; handled specially by the engine ----
     b808: { name: '808 Clean', cat: '808 & Bass', base: 36, bass: true, drive: 0.05, punch: 1.4, len: 1.6 },
     b808punch: { name: '808 Punchy', cat: '808 & Bass', base: 36, bass: true, drive: 0.35, punch: 2.2, len: 1.1 },
     b808dist: { name: '808 Distorted', cat: '808 & Bass', base: 36, bass: true, drive: 0.9, punch: 2, len: 1.5 },
     b808long: { name: '808 Long', cat: '808 & Bass', base: 36, bass: true, drive: 0.15, punch: 1.3, len: 3 },
+    b808hard: { name: '808 Blown Out', cat: '808 & Bass', base: 36, bass: true, drive: 1, punch: 2.6, len: 1.2 },
     sub: { name: 'Smooth Sub', cat: '808 & Bass', base: 36, bass: true, drive: 0, punch: 1, len: 0, sustain: true },
     reese: { name: 'Reese Bass', cat: '808 & Bass', base: 36, bass: true, drive: 0.3, punch: 1, len: 0, sustain: true, reese: true },
   };
@@ -797,6 +857,25 @@
         const mel = [[0, 1, 4], [1, 0.5, 5], [1.5, 1.5, 6], [3, 1, 4], [4, 1, 2], [5, 0.5, 3], [5.5, 0.5, 2], [6, 2, 0]];
         progressionRender(ctx, out, { bpm: s.bpm, root: s.root, scale: s.scale, base: 72, inst: 'flute',
           events: mel.map(([b, l, d]) => [b, l, [d]]) });
+      },
+    },
+    {
+      id: 'jukebox_soul', name: 'Jukebox Soul', desc: 'Warm soul keys with a high "ooh" vocal, made to be sped up', bpm: 70, root: 2, scale: 'dorian', bars: 2,
+      build(ctx, out, s) {
+        const lp = chain(filter(ctx, 'lowpass', 4200, 0.6), gain(ctx, 1));
+        lp.connect(out);
+        progressionRender(ctx, lp, { bpm: s.bpm, root: s.root, scale: s.scale, base: 48, inst: 'rhodes',
+          events: [...chordEvents([0, 3, 1, 4], 2, true), [0, 4, [-7], 0.6, 'sub'], [4, 4, [-6], 0.6, 'sub']] });
+        const beat = 60 / s.bpm;
+        [[0.5, 1.5, 4, 'o'], [2, 1, 3, 'u'], [3, 1, 2, 'o'], [4.5, 1.5, 4, 'a'], [6, 2, 5, 'o']].forEach(([b, l, d, vw]) => {
+          const f = BL.theory.midiToFreq(67 + s.root + BL.theory.degreeToSemi(d, s.scale));
+          const tt = 0.02 + b * beat;
+          const g = gain(ctx, 0);
+          adsr(g.gain, tt, l * beat * 0.9, 0.08, 0.1, 0.85, 0.2, 0.7);
+          g.connect(lp);
+          formantVoice(ctx, g, f, tt, l * beat + 0.25, vw, 0.5, true);
+        });
+        vinyl(ctx, out, 7.5, 1.1);
       },
     },
     {

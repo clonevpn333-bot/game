@@ -44,6 +44,12 @@
     more: '<circle cx="6" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="18" cy="12" r="1.4" fill="currentColor" stroke="none"/>',
     left: '<path d="m15 6-6 6 6 6"/>',
     right: '<path d="m9 6 6 6-6 6"/>',
+    tabSounds: '<rect x="3.5" y="5" width="7" height="14" rx="1.5"/><rect x="13.5" y="5" width="7" height="14" rx="1.5" transform="rotate(-12 17 12)"/><path d="M6 9h2M6 12h2"/>',
+    tabBeat: '<rect x="3.5" y="3.5" width="7" height="7" rx="1.8"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.8" fill="currentColor"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.8" fill="currentColor"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.8"/>',
+    tabMelody: '<path d="M9 18V6l11-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/>',
+    tabSample: '<path d="M3 12h2l2-6 3 12 3-15 3 15 2-6h3"/>',
+    tabSong: '<rect x="3" y="5" width="8" height="4" rx="1.2"/><rect x="9" y="11" width="9" height="4" rx="1.2"/><rect x="5" y="17" width="12" height="3" rx="1.2"/><path d="M3 3v18"/>',
+    tabMix: '<path d="M6 4v16M12 4v16M18 4v16"/><rect x="4" y="13" width="4" height="3" rx="1" fill="currentColor"/><rect x="10" y="7" width="4" height="3" rx="1" fill="currentColor"/><rect x="16" y="11" width="4" height="3" rx="1" fill="currentColor"/>',
     folder: '<path d="M3.5 7a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/>',
   };
   const icon = (n) => `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n] || ''}</svg>`;
@@ -262,41 +268,37 @@
   function buildShell() {
     $('#toolbar').innerHTML = `
       <div class="tb-group tb-left">
-        <button class="tbtn icon" id="tbBrowser" aria-label="Show Browser" data-hint="Show or hide the Browser (B).">${icon('sidebar')}</button>
-        <button class="tbtn icon" id="tbTemplates" aria-label="Templates" data-hint="New project from a template (${CMD}N).">${icon('grid')}</button>
-        <span class="tb-sep"></span>
-        <button class="tbtn icon" id="tbUndo" aria-label="Undo" data-hint="Undo (${CMD}Z)">${icon('undo')}</button>
-        <button class="tbtn icon" id="tbRedo" aria-label="Redo" data-hint="Redo (${CMD}⇧Z)">${icon('redo')}</button>
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
         <span class="tb-title" id="tbTitle" data-hint="Your project. Save with ${CMD}S."></span>
       </div>
       <div class="tb-group tb-center">
         <div class="transport" role="group" aria-label="Transport">
           <button class="tp" id="tpStart" aria-label="Go to start" data-hint="Back to the start (Return).">${icon('tostart')}</button>
           <button class="tp tp-play" id="tpPlay" aria-label="Play" data-hint="Play / stop (Space).">${icon('play')}</button>
-          <button class="tp" id="tpStop" aria-label="Stop" data-hint="Stop.">${icon('stop')}</button>
-          <button class="tp tp-rec" id="tpRec" aria-label="Record" data-hint="Record notes from your computer keyboard (A S D F G H J K L) into the Piano Roll.">${icon('rec')}</button>
+          <button class="tp tp-rec" id="tpRec" aria-label="Record" data-hint="Record notes from your computer keyboard (A S D F G H J K L) into the Melody tab.">${icon('rec')}</button>
         </div>
         <div class="lcd" id="lcd">
+          <button class="lcd-cell lcd-mode" id="lcdMode" data-hint="What Play plays: the pattern you're editing on a loop, or your whole song. Click to switch."><b id="lcdModeVal">LOOP</b><small>PLAYS</small></button>
           <div class="lcd-cell lcd-pos" data-hint="Where the playhead is: bar, beat, sixteenth."><b id="lcdPos">1  1  1</b><small>BAR · BEAT</small></div>
           <div class="lcd-cell lcd-tempo" data-hint="Tempo. Drag up or down, type a number, or tap TAP along to a song.">
-            <input id="bpm" inputmode="numeric" aria-label="Tempo" autocomplete="off"><small><button id="tapBtn" class="lcd-tap">TAP</button> TEMPO</small></div>
+            <input id="bpm" inputmode="numeric" aria-label="Tempo" autocomplete="off"><small><button id="tapBtn" class="lcd-tap">TAP</button> BPM</small></div>
           <div class="lcd-cell lcd-key" data-hint="Key and scale. Change them and every note, 808 and matched sample follows.">
             <div class="lcd-selects"><select id="keySel" aria-label="Key"></select><select id="scaleSel" aria-label="Scale"></select></div><small>KEY</small></div>
-          <div class="lcd-cell lcd-sig"><b>4/4</b><small>TIME</small></div>
-        </div>
-        <div class="seg mode-seg" id="modeSeg" role="group" aria-label="Play mode" data-hint="Pattern loops the pattern you're editing. Song plays your Playlist.">
-          <button data-mode="pattern">Pattern</button><button data-mode="song">Song</button>
+          <canvas class="lcd-viz" id="viz" width="150" height="34" aria-hidden="true"></canvas>
         </div>
       </div>
       <div class="tb-group tb-right">
-        <label class="mvol" data-hint="Master volume.">${icon('volume')}<input type="range" id="masterVol" min="0" max="1.2" step="0.01" aria-label="Master volume"></label>
+        <button class="tbtn icon" id="tbUndo" aria-label="Undo" data-hint="Undo (${CMD}Z)">${icon('undo')}</button>
+        <button class="tbtn icon" id="tbRedo" aria-label="Redo" data-hint="Redo (${CMD}⇧Z)">${icon('redo')}</button>
+        <span class="tb-sep"></span>
+        <button class="tbtn" id="tbTemplates" data-hint="Start a new beat (${CMD}N).">${icon('plus')}<span>New</span></button>
         <button class="tbtn" id="tbSave" data-hint="Save to My Projects (${CMD}S).">${icon('save')}<span>Save</span></button>
-        <button class="tbtn tbtn-primary" id="tbExport" data-hint="Export a WAV mixdown or stems (${CMD}E).">${icon('export')}<span>Export</span></button>
+        <button class="tbtn tbtn-primary" id="tbExport" data-hint="Export a WAV or stems (${CMD}E).">${icon('export')}<span>Export</span></button>
         <button class="tbtn icon" id="tbHelp" aria-label="Help" data-hint="How BeatLab works.">${icon('help')}</button>
       </div>`;
-    ['tbBrowser', 'tbTemplates', 'tbUndo', 'tbRedo', 'tpStart', 'tpPlay', 'tpStop', 'tpRec', 'lcdPos', 'bpm', 'tapBtn', 'keySel', 'scaleSel', 'modeSeg',
-      'masterVol', 'tbTitle', 'tbSave', 'tbExport', 'tbHelp', 'browser', 'playlist', 'splitter', 'editor', 'edTabs', 'edBody', 'status', 'hint', 'saveState',
-      'toast', 'modal', 'pop', 'loading', 'loadingMsg', 'workspace', 'main', 'filePick']
+    ['tbTemplates', 'tbUndo', 'tbRedo', 'tpStart', 'tpPlay', 'tpRec', 'lcdPos', 'lcdMode', 'lcdModeVal', 'viz', 'bpm', 'tapBtn', 'keySel', 'scaleSel',
+      'tbTitle', 'tbSave', 'tbExport', 'tbHelp', 'bigTabs', 'panel', 'panelHead', 'edBody', 'status', 'hint', 'saveState',
+      'toast', 'modal', 'pop', 'loading', 'loadingMsg', 'filePick']
       .forEach((id) => { R[id] = document.getElementById(id); });
   }
 
@@ -306,15 +308,14 @@
     if (document.activeElement !== R.bpm) R.bpm.value = P.bpm;
     R.keySel.value = P.key;
     R.scaleSel.value = P.scale;
-    R.masterVol.value = P.master.vol;
-    $$('button', R.modeSeg).forEach((b) => b.classList.toggle('is-on', (b.dataset.mode === 'song') === !!P.songMode));
+    R.lcdModeVal.textContent = P.songMode ? 'SONG' : 'LOOP';
+    R.lcdMode.classList.toggle('is-song', !!P.songMode);
     R.tpPlay.classList.toggle('is-on', E.state.playing);
     R.tpPlay.innerHTML = icon(E.state.playing ? 'stop' : 'play');
     R.tpPlay.setAttribute('aria-label', E.state.playing ? 'Stop' : 'Play');
     R.tpRec.classList.toggle('is-on', ui.recording);
-    R.tbBrowser.classList.toggle('is-on', ui.browser);
     document.body.classList.toggle('is-playing', E.state.playing);
-    document.body.classList.toggle('no-browser', !ui.browser);
+    document.documentElement.style.setProperty('--beat', (60 / P.bpm).toFixed(3) + 's');
     if (!E.state.playing) setLcdPos(P.songMode ? (P.pos || 0) * 16 : 0);
     R.tbTitle.innerHTML = `${esc(P.name)}${ui.dirty || !P.libId ? '<em> — Edited</em>' : ''}`;
     if (NATIVE && NATIVE.setTitle) NATIVE.setTitle(P.name + (ui.dirty ? ' — Edited' : ''));
@@ -332,14 +333,13 @@
     edit((p) => { p.bpm = v; }, { noRender: true });
     renderTransport();
     resyncSamples(followers, true);
-    BL.playlist.render();
+    songRefresh();
   }
 
   function bindToolbar() {
     R.keySel.innerHTML = T.NOTE_NAMES.map((n, i) => `<option value="${i}">${n}</option>`).join('');
     R.scaleSel.innerHTML = Object.entries(T.SCALES).map(([k, s]) => `<option value="${k}">${s.name}</option>`).join('');
     R.tpPlay.addEventListener('click', togglePlay);
-    R.tpStop.addEventListener('click', stopAll);
     R.tpStart.addEventListener('click', goToStart);
     R.tpRec.addEventListener('click', () => {
       ui.recording = !ui.recording;
@@ -385,9 +385,7 @@
       edit((p) => { p.scale = R.scaleSel.value; });
       resyncSamples(f, false);
     });
-    $$('button', R.modeSeg).forEach((b) => b.addEventListener('click', () => setMode(b.dataset.mode === 'song')));
-    R.masterVol.addEventListener('input', () => { P.master.vol = +R.masterVol.value; E.refreshMix(); autosave(); });
-    R.tbBrowser.addEventListener('click', toggleBrowser);
+    R.lcdMode.addEventListener('click', () => setMode(!P.songMode));
     R.tbTemplates.addEventListener('click', openTemplates);
     R.tbUndo.addEventListener('click', undo);
     R.tbRedo.addEventListener('click', redo);
@@ -402,7 +400,7 @@
     if (was) E.stop();
     edit((p) => { p.songMode = song; }, { noRender: true });
     renderTransport();
-    BL.playlist.render();
+    songRefresh();
     if (song && !P.clips.length) toast('Song mode plays the Playlist. Paint some patterns into it first.');
     if (was) { E.play(song ? (P.pos || 0) * 16 : 0); renderTransport(); }
   }
@@ -421,15 +419,10 @@
     autosave();
     if (E.state.playing) { E.stop(); E.play(0); }
     renderTransport();
-    BL.playlist.render();
+    songRefresh();
   }
-  function toggleBrowser() {
-    ui.browser = !ui.browser;
-    savePrefs();
-    renderTransport();
-    if (ui.browser) BL.browser.render(R.browser);
-    setTimeout(() => { sizeSteps(); drawLanes(); BL.playlist.drawClips(); }, 220);
-  }
+  function toggleBrowser() { setTab(ui.tab === 'sounds' ? 'rack' : 'sounds'); }
+  function songRefresh() { if (ui.tab === 'song') renderEditor(); }
 
   /** samples that currently match tempo / key, so they keep matching after a change */
   function samplesInSync() {
@@ -458,16 +451,72 @@
   }
 
   // ---------- editor tabs ----------
-  const TABS = [['rack', 'Channel Rack', 'F6'], ['roll', 'Piano Roll', 'F7'], ['lab', 'Sample Lab', 'F8'], ['mix', 'Mixer', 'F9']];
+  const TABS = [
+    { id: 'sounds', label: 'Sounds', sub: 'Packs & templates', icon: 'tabSounds', color: '#64d2ff', key: 'F4',
+      help: 'Pick a pack or drop in your own. Click any sound to hear it, then drag it onto a row in Beat.' },
+    { id: 'rack', label: 'Beat', sub: 'Drums & patterns', icon: 'tabBeat', color: '#ff9f0a', key: 'F6',
+      help: 'Click the squares to place hits. Each row is one sound. Press Space to hear it.' },
+    { id: 'roll', label: 'Melody', sub: 'Notes, chords & 808s', icon: 'tabMelody', color: '#bf5af2', key: 'F7',
+      help: 'Click to draw notes. Only notes in your key are shown, so nothing sounds wrong.' },
+    { id: 'lab', label: 'Sample', sub: 'Flip any sound', icon: 'tabSample', color: '#40c8e0', key: 'F8',
+      help: 'Pick a record or load your own audio, then change its speed and pitch and chop it up.' },
+    { id: 'song', label: 'Song', sub: 'Arrange the track', icon: 'tabSong', color: '#0a84ff', key: 'F5',
+      help: 'Paint your patterns and audio along the timeline to build the full song.' },
+    { id: 'mix', label: 'Mix', sub: 'Levels & export', icon: 'tabMix', color: '#30d158', key: 'F9',
+      help: 'Balance how loud each sound is, then export your beat.' },
+  ];
   function renderTabs() {
-    R.edTabs.innerHTML = `<div class="seg" role="tablist" aria-label="Editor">${TABS.map(([k, l, f]) => `<button role="tab" data-tab="${k}" class="${ui.tab === k ? 'is-on' : ''}" data-hint="${l} (${f})">${l}</button>`).join('')}</div>`;
-    $$('[data-tab]', R.edTabs).forEach((b) => b.addEventListener('click', () => setTab(b.dataset.tab)));
+    R.bigTabs.innerHTML = TABS.map((t) => `<button role="tab" class="bigtab ${ui.tab === t.id ? 'is-on' : ''}" data-tab="${t.id}" style="--tc:${t.color}" aria-selected="${ui.tab === t.id}" data-hint="${t.label}: ${t.sub} (${t.key})">
+      <span class="bt-ico">${icon(t.icon)}</span><span class="bt-text"><b>${t.label}</b><small>${t.sub}</small></span></button>`).join('');
+    $$('[data-tab]', R.bigTabs).forEach((b) => b.addEventListener('click', () => setTab(b.dataset.tab)));
+  }
+  function renderPanelHead() {
+    const t = TABS.find((x) => x.id === ui.tab) || TABS[1];
+    const action = {
+      sounds: `<button class="tbtn tbtn-primary big" data-ph="pack">${icon('import')}<span>Import a Beat Pack</span></button>`,
+      rack: `<button class="tbtn tbtn-magic big" data-ph="drums">${icon('sparkle')}<span>Write Drums for Me</span></button>`,
+      roll: `<button class="tbtn tbtn-magic big" data-ph="melody">${icon('sparkle')}<span>Write It for Me</span></button>`,
+      lab: '',
+      song: `<button class="tbtn tbtn-primary big" data-ph="audio">${icon('import')}<span>Import Audio</span></button>`,
+      mix: `<button class="tbtn tbtn-primary big" data-ph="export">${icon('export')}<span>Export</span></button>`,
+    }[t.id];
+    R.panelHead.style.setProperty('--tc', t.color);
+    R.panelHead.innerHTML = `<span class="ph-ico">${icon(t.icon)}</span><div class="ph-text"><h1>${t.label}</h1><p>${t.help}</p></div><span class="ph-spacer"></span>${action}`;
+    const b = $('[data-ph]', R.panelHead);
+    if (!b) return;
+    b.addEventListener('click', (e) => {
+      const k = b.dataset.ph;
+      if (k === 'pack') pickPack(e.currentTarget);
+      else if (k === 'drums') magicDrums();
+      else if (k === 'melody') { const t2 = P.tracks.find((x) => x.id === ui.sel && x.type === 'synth') || P.tracks.find((x) => x.type === 'synth'); if (t2) openMagic(t2, e.currentTarget); else toast('Add an instrument first.'); }
+      else if (k === 'audio') pickAudioFiles();
+      else if (k === 'export') openExport();
+    });
+  }
+  function magicDrums() {
+    edit((p) => {
+      const pat = p.patterns[p.current];
+      p.tracks.filter((t) => t.type === 'drum').forEach((t) => Object.assign(patData(pat, t), M.drumPattern(catOf(t), p.bpm, nSteps())));
+    });
+    if (!E.state.playing) togglePlay();
+    toast('Fresh drums written. Press it again for another idea, or ' + CMD + 'Z to go back.');
   }
   function setTab(tab) {
     const changedTab = ui.tab !== tab;
     ui.tab = tab;
     savePrefs();
-    $$('[data-tab]', R.edTabs).forEach((b) => b.classList.toggle('is-on', b.dataset.tab === tab));
+    // Play follows what you're looking at: the Song tab plays the song, the editors loop the pattern
+    const wantSong = tab === 'song' ? true : ['rack', 'roll', 'lab'].includes(tab) ? false : null;
+    if (wantSong !== null && !!P.songMode !== wantSong && (!wantSong || P.clips.length)) {
+      const was = E.state.playing;
+      if (was) E.stop();
+      P.songMode = wantSong;
+      autosave();
+      if (was) E.play(wantSong ? (P.pos || 0) * 16 : 0);
+      renderTransport();
+    }
+    $$('[data-tab]', R.bigTabs).forEach((b) => { b.classList.toggle('is-on', b.dataset.tab === tab); b.setAttribute('aria-selected', b.dataset.tab === tab); });
+    renderPanelHead();
     renderEditor();
     if (changedTab) {
       R.edBody.classList.remove('switching');
@@ -482,13 +531,70 @@
     if (ui.tab === 'rack') renderRack();
     else if (ui.tab === 'roll') renderRoll(body);
     else if (ui.tab === 'lab') BL.lab.render();
+    else if (ui.tab === 'song') BL.playlist.render(body);
+    else if (ui.tab === 'sounds') renderSounds(body);
     else renderMixer(body);
+  }
+
+  // ---------- sounds tab ----------
+  function renderSounds(body) {
+    const kits = BL.beats.KITS;
+    const packCard = (pk) => {
+      const counts = {};
+      pk.sounds.forEach((x) => { counts[x.cat] = (counts[x.cat] || 0) + 1; });
+      return `<div class="kit kit-user" style="--c:#8e8e93"><span class="kit-art">${icon('folder')}</span><div class="kit-text"><b>${esc(pk.name)}</b><small>${pk.sounds.length} sounds · ${Object.entries(counts).slice(0, 4).map(([c, n]) => n + ' ' + c.toLowerCase()).join(', ')}</small></div>
+        <div class="kit-actions"><button class="tbtn" data-showpack="${pk.id}">Show Sounds</button></div></div>`;
+    };
+    body.innerHTML = `<div class="sounds">
+      <div class="snd-main">
+        <label class="dropzone" id="packDrop" data-hint="Drop a beat pack (.zip or folder) or audio files here.">
+          <span class="dz-ico">${icon('import')}</span>
+          <b>Drop a beat pack here</b>
+          <small>A .zip, a folder, or a handful of WAV / MP3 files. BeatLab sorts them into kicks, snares, hats, 808s, percs, FX and loops.</small>
+          <span class="dz-buttons"><button class="tbtn tbtn-primary" data-pick="files">Choose Files…</button><button class="tbtn" data-pick="folder">Choose Folder…</button></span>
+        </label>
+        <h2 class="snd-h">BeatLab Packs <small>Made for the sound of specific songs</small></h2>
+        <div class="kit-grid">${kits.map((k) => `<div class="kit" style="--c:${k.color}">
+          <span class="kit-art"><i></i><i></i><i></i><i></i></span>
+          <div class="kit-text"><b>${k.name}</b><small>Inspired by ${esc(k.inspired)}</small><em>${k.blurb}</em></div>
+          <div class="kit-actions"><button class="tbtn tbtn-primary" data-kitbeat="${k.preset}">${icon('play')}<span>Start a Beat</span></button><button class="tbtn" data-showkit="${k.id}">Show Sounds</button></div></div>`).join('')}</div>
+        <h2 class="snd-h">Your Packs</h2>
+        ${MD.packs.length ? `<div class="kit-grid">${MD.packs.map(packCard).join('')}</div>` : '<p class="snd-empty">Packs you import show up here, and in the list on the right.</p>'}
+        <h2 class="snd-h">Templates <small>Finished beats to start from</small></h2>
+        <div class="tpl-grid">${BL.beats.PRESETS.filter((pr) => !pr.kit).map((pr) => `<button class="tpl" data-preset="${pr.id}" style="--c:${pr.color}">
+          <span class="tpl-art"><i></i><i></i><i></i><i></i></span><span class="tpl-text"><b>${pr.name}</b><small>${pr.bpm} BPM · ${T.keyName(pr.key, pr.scale)}</small><em>${pr.tags.slice(0, 3).join(' · ')}</em></span></button>`).join('')}</div>
+      </div>
+      <aside class="snd-browser browser" id="browserHost" aria-label="All sounds"></aside>
+    </div>`;
+    BL.browser.render($('#browserHost', body));
+    const dz = $('#packDrop', body);
+    dz.addEventListener('dragover', (e) => { e.preventDefault(); dz.classList.add('is-over'); });
+    dz.addEventListener('dragleave', () => dz.classList.remove('is-over'));
+    dz.addEventListener('drop', () => dz.classList.remove('is-over'));
+    $$('[data-pick]', dz).forEach((b) => b.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (b.dataset.pick === 'folder') pickFile('', true, importPack, true);
+      else pickFile('.zip,audio/*,.wav,.mp3,.aif,.aiff,.flac,.ogg,.m4a', true, importPack);
+    }));
+    $$('[data-kitbeat]', body).forEach((b) => b.addEventListener('click', () => loadPreset(b.dataset.kitbeat)));
+    $$('[data-preset]', body).forEach((b) => b.addEventListener('click', () => loadPreset(b.dataset.preset)));
+    const reveal = (keys) => {
+      ui.open.kits = true;
+      keys.forEach((k) => { ui.open[k] = true; });
+      savePrefs();
+      BL.browser.render($('#browserHost', body));
+      const el = $(`[data-folder="${keys[keys.length - 1]}"]`, body);
+      if (el) { el.scrollIntoView({ block: 'start', behavior: 'smooth' }); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 900); }
+    };
+    $$('[data-showkit]', body).forEach((b) => b.addEventListener('click', () => reveal(['kits', 'kit-' + b.dataset.showkit])));
+    $$('[data-showpack]', body).forEach((b) => b.addEventListener('click', () => reveal(['packs', 'pk-' + b.dataset.showpack])));
   }
 
   // ---------- channel rack ----------
   function soundOptions(t) {
     if (t.type === 'drum') {
-      let h = S.DRUM_CATS.map((c) => `<optgroup label="${c}">${S.DRUMS.filter((d) => d.cat === c).map((d) => `<option value="${d.id}" ${d.id === t.sound ? 'selected' : ''}>${d.name}</option>`).join('')}</optgroup>`).join('');
+      let h = S.DRUM_CATS.map((c) => `<optgroup label="${c}">${S.DRUMS.filter((d) => d.cat === c && !d.kit).map((d) => `<option value="${d.id}" ${d.id === t.sound ? 'selected' : ''}>${d.name}</option>`).join('')}</optgroup>`).join('');
+      BL.beats.KITS.forEach((k) => { h += `<optgroup label="${k.name}">${S.DRUMS.filter((d) => d.kit === k.id).map((d) => `<option value="${d.id}" ${d.id === t.sound ? 'selected' : ''}>${d.name}</option>`).join('')}</optgroup>`; });
       MD.packs.forEach((pk) => {
         const list = pk.sounds.filter((s) => s.cat !== 'Loops' || 'u:' + s.id === t.sound);
         if (list.length) h += `<optgroup label="${esc(pk.name)}">${list.map((s) => `<option value="u:${s.id}" ${'u:' + s.id === t.sound ? 'selected' : ''}>${esc(s.cat + ' · ' + s.name)}</option>`).join('')}</optgroup>`;
@@ -627,7 +733,7 @@
       if (P.patterns.length >= 32) return toast('That’s the maximum of 32 patterns.');
       edit((p) => { p.patterns.push(newPattern(p.patterns.length)); p.current = p.patterns.length - 1; });
       ui.brush = { kind: 'pattern', pat: P.current };
-      BL.playlist.render();
+      songRefresh();
       toast(`${curPat().name} is ready. Paint it into the Playlist when you like it.`);
     });
     $('#patMore').addEventListener('click', (e) => patternMenu(e.currentTarget));
@@ -676,7 +782,7 @@
     if (ui.tab !== 'rack' && ui.tab !== 'roll') ui.tab = 'rack';
     renderTabs();
     renderEditor();
-    BL.playlist.render();
+    songRefresh();
   }
 
   function patternMenu(anchor) {
@@ -693,7 +799,7 @@
           p.current = p.patterns.length - 1;
         });
         ui.brush = { kind: 'pattern', pat: P.current };
-        BL.playlist.render();
+        songRefresh();
         toast('Duplicated. Change it up for a hook or a verse.');
       });
       on('clear', () => { edit((p) => { p.patterns[p.current].data = {}; }); toast('Pattern cleared. Undo with ' + CMD + 'Z.'); });
@@ -965,7 +1071,8 @@
     if (kind === 'sample') { setTab('lab'); toast('Pick a record or load your own, then press “Add to beat”.'); return; }
     let html = '<div class="menu menu-scroll">';
     if (kind === 'drum') {
-      S.DRUM_CATS.forEach((c) => { html += `<div class="menu-head">${c}</div>` + S.DRUMS.filter((d) => d.cat === c).map((d) => `<button data-pick="${d.id}">${d.name}</button>`).join(''); });
+      S.DRUM_CATS.forEach((c) => { html += `<div class="menu-head">${c}</div>` + S.DRUMS.filter((d) => d.cat === c && !d.kit).map((d) => `<button data-pick="${d.id}">${d.name}</button>`).join(''); });
+      BL.beats.KITS.forEach((k) => { html += `<div class="menu-head">${k.name}</div>` + S.DRUMS.filter((d) => d.kit === k.id).map((d) => `<button data-pick="${d.id}">${d.name} <small>${d.cat}</small></button>`).join(''); });
       MD.packs.forEach((pk) => { const l = pk.sounds.filter((s) => s.cat !== 'Loops'); if (l.length) html += `<div class="menu-head">${esc(pk.name)}</div>` + l.map((s) => `<button data-pick="u:${s.id}">${esc(s.name)} <small>${s.cat}</small></button>`).join(''); });
     } else {
       Object.entries(S.INSTRUMENTS).filter(([, i]) => (kind === 'bass' ? i.bass : !i.bass)).forEach(([k, i], idx, arr) => {
@@ -1344,8 +1451,80 @@
     } else step = ev.step;
     lastCol = step;
     if (step >= 0 && columns[step]) columns[step].forEach((c) => c.classList.add('now'));
+    if (step >= 0) flashHits(step);
     if (head) { head.hidden = step < 0; head.style.transform = `translateX(${step * COL_W}px)`; }
   });
+
+  // ---------- passive motion: channel lights that flash on hits + a live spectrum ----------
+  function flashHits(step) {
+    const rk = rackEl();
+    if (!rk) return;
+    const pat = curPat();
+    for (const t of P.tracks) {
+      const d = pat.data[t.id];
+      if (!d || t.mute) continue;
+      let hit = false;
+      if (t.type === 'drum') hit = d.steps[step] > 0;
+      else if (t.type === 'synth') hit = d.notes.some((n) => n.s === step);
+      else if (t.mode === 'chop') hit = d.steps[step] >= 0;
+      else hit = step === 0 && d.on !== false;
+      if (!hit) continue;
+      const row = rk.querySelector(`.trk[data-id="${t.id}"]`);
+      if (!row) continue;
+      row.classList.remove('hit');
+      void row.offsetWidth;
+      row.classList.add('hit');
+    }
+  }
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function vizLoop() {
+    const cv = R.viz;
+    if (!cv) return;
+    const g = cv.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const W = cv.clientWidth || 150, H = cv.clientHeight || 34;
+    cv.width = W * dpr; cv.height = H * dpr;
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const N = 24;
+    const lv = new Float32Array(N), peak = new Float32Array(N);
+    let data = null;
+    const edges = [...Array(N + 1)].map((_, i) => 40 * Math.pow(14000 / 40, i / N));
+    const frame = (time) => {
+      if (document.hidden) { requestAnimationFrame(frame); return; }
+      const an = E.analyser();
+      const live = an && E.state.playing;
+      if (live) {
+        if (!data || data.length !== an.frequencyBinCount) data = new Uint8Array(an.frequencyBinCount);
+        an.getByteFrequencyData(data);
+      }
+      g.clearRect(0, 0, W, H);
+      const bw = W / N;
+      for (let i = 0; i < N; i++) {
+        let v = 0;
+        if (live) {
+          const nyq = an.context.sampleRate / 2;
+          const a = Math.floor((edges[i] / nyq) * data.length), b = Math.max(a + 1, Math.floor((edges[i + 1] / nyq) * data.length));
+          for (let k = a; k < b; k++) v = Math.max(v, data[k] / 255);
+          v = Math.pow(v, 1.6);
+        } else if (!reduceMotion) {
+          v = 0.05 + 0.035 * Math.sin(time / 900 + i * 0.5); // idle "breathing" floor
+        }
+        lv[i] = v > lv[i] ? v : lv[i] * 0.86 + v * 0.14;
+        peak[i] = Math.max(lv[i], peak[i] - 0.012);
+        const h = Math.max(1.5, lv[i] * (H - 4));
+        const x = i * bw + 1;
+        const grad = g.createLinearGradient(0, H, 0, 0);
+        grad.addColorStop(0, '#0a84ff'); grad.addColorStop(0.6, '#64d2ff'); grad.addColorStop(1, '#e8f6ff');
+        g.fillStyle = grad;
+        g.globalAlpha = live ? 0.95 : 0.45;
+        g.fillRect(x, H - 2 - h, bw - 2, h);
+        if (live) { g.globalAlpha = 0.9; g.fillStyle = '#e8f6ff'; g.fillRect(x, H - 3 - peak[i] * (H - 4), bw - 2, 1.5); }
+      }
+      g.globalAlpha = 1;
+      requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+  }
 
   // ---------- keyboard ----------
   const KB = 'asdfghjkl;';
@@ -1361,7 +1540,7 @@
       return;
     }
     if (typing || !R.modal.hidden) return;
-    const fmap = { F5: 'playlist', F6: 'rack', F7: 'roll', F8: 'lab', F9: 'mix' };
+    const fmap = { F4: 'sounds', F5: 'song', F6: 'rack', F7: 'roll', F8: 'lab', F9: 'mix' };
     if (fmap[e.key]) { e.preventDefault(); command(fmap[e.key]); return; }
     if (e.code === 'Space') { e.preventDefault(); togglePlay(); return; }
     if (e.key === 'Enter') { goToStart(); return; }
@@ -1415,8 +1594,8 @@
       case 'stop': return stopAll();
       case 'start': return goToStart();
       case 'browser': return toggleBrowser();
-      case 'playlist': return R.playlist.scrollIntoView({ block: 'nearest' });
-      case 'rack': case 'roll': case 'lab': case 'mix': return setTab(cmd);
+      case 'playlist': return setTab('song');
+      case 'sounds': case 'song': case 'rack': case 'roll': case 'lab': case 'mix': return setTab(cmd);
       case 'patternMode': return setMode(false);
       case 'songMode': return setMode(true);
       case 'help': return openHelp();
@@ -1505,6 +1684,7 @@
   async function loadPreset(id) {
     const pr = BL.beats.PRESETS.find((x) => x.id === id);
     await loadProject(projectFromPreset(pr), { undoable: true, play: true });
+    if (ui.tab === 'sounds') setTab('rack');
     toast(`${pr.name} loaded. Change the key or tempo up top and everything follows.`);
   }
 
@@ -1607,13 +1787,10 @@
       const pack = await MD.importPackFiles(files, (i, n) => { R.loadingMsg.textContent = `Importing sound pack… ${i} of ${n}`; });
       const counts = {};
       pack.sounds.forEach((s) => { counts[s.cat] = (counts[s.cat] || 0) + 1; });
-      ui.browser = true;
       ui.open.packs = true;
       ui.open['pk-' + pack.id] = true;
       savePrefs();
-      renderTransport();
-      BL.browser.render(R.browser);
-      if (ui.tab === 'rack') renderRack();
+      if (ui.tab === 'sounds') renderEditor(); else setTab('sounds');
       toast(`Imported “${pack.name}”: ${Object.entries(counts).map(([c, n]) => `${n} ${c.toLowerCase()}`).join(', ')}.`);
     } catch (e) {
       toast(e.message || 'That pack could not be imported.');
@@ -1862,7 +2039,7 @@
       const files = [...(e.dataTransfer.files || [])];
       if (!files.length) return;
       if (files.length === 1 && /\.(json|beatlab)$/i.test(files[0].name)) return openProjectFile(files[0]);
-      const overBrowser = e.target.closest && e.target.closest('#browser');
+      const overBrowser = e.target.closest && e.target.closest('.sounds');
       const overLab = e.target.closest && e.target.closest('.tab-lab');
       if (files.some((f) => /\.zip$/i.test(f.name)) || overBrowser || files.length > 4) return importPack(files);
       if (overLab) return BL.lab.importFile(files[0]);
@@ -1871,28 +2048,6 @@
         if (meta) BL.playlist.placeAudio(meta.id, firstFreeLane(), P.pos || 0);
       }
     });
-  }
-
-  // ---------- splitter between Playlist and editor ----------
-  function bindSplitter() {
-    const apply = () => { if (ui.plH) R.main.style.setProperty('--pl-h', ui.plH + 'px'); };
-    apply();
-    let drag = null;
-    R.splitter.addEventListener('pointerdown', (e) => { drag = { y: e.clientY, h: R.playlist.getBoundingClientRect().height }; R.splitter.setPointerCapture(e.pointerId); document.body.classList.add('is-resizing'); });
-    R.splitter.addEventListener('pointermove', (e) => {
-      if (!drag) return;
-      const max = R.main.clientHeight - 200;
-      ui.plH = Math.max(110, Math.min(max, drag.h + (e.clientY - drag.y)));
-      apply();
-    });
-    R.splitter.addEventListener('pointerup', () => {
-      if (!drag) return;
-      drag = null;
-      document.body.classList.remove('is-resizing');
-      savePrefs();
-      if (ui.tab === 'roll') renderEditor(); else { sizeSteps(); drawLanes(); }
-    });
-    R.splitter.addEventListener('dblclick', () => { ui.plH = 0; R.main.style.removeProperty('--pl-h'); savePrefs(); });
   }
 
   // ---------- control polish: sliding segment thumbs + slider fills ----------
@@ -1936,8 +2091,7 @@
     renderTransport();
     renderStatus();
     renderTabs();
-    if (ui.browser) BL.browser.render(R.browser);
-    BL.playlist.render(R.playlist);
+    renderPanelHead();
     renderEditor();
   }
 
@@ -1963,9 +2117,9 @@
     BL.playlist.init(api);
     bindPolish();
     bindToolbar();
+    vizLoop();
     bindHints();
     bindDrop();
-    bindSplitter();
     if (NATIVE) {
       document.body.classList.add('native', 'native-' + (NATIVE.platform || 'darwin'));
       if (NATIVE.onMenu) NATIVE.onMenu((cmd) => command(cmd));

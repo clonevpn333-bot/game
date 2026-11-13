@@ -46,19 +46,27 @@
     const parts = [];
 
     const presets = BL.beats.PRESETS.filter((pr) => match(pr.name + ' ' + pr.tags.join(' ')));
-    if (presets.length) parts.push(folder('tpl', 'Templates', presets.length, presets.map((pr) => item('preset', pr.id, pr.name, pr.bpm + ' BPM', pr.color, { hint: pr.desc + ' Tags: ' + pr.tags.join(', ') })).join(''), { open: true }));
+    if (presets.length) parts.push(folder('tpl', 'Templates', presets.length, presets.map((pr) => item('preset', pr.id, pr.name, pr.bpm + ' BPM', pr.color, { hint: pr.desc + ' Tags: ' + pr.tags.join(', ') })).join('')));
 
     const projs = projects.filter((x) => match(x.name));
     if (!query || projs.length) parts.push(folder('proj', 'My Projects', projs.length,
       projs.length ? projs.map((x) => item('project', x.id, x.name, ago(x.updated), 'var(--accent)', { del: true, hint: 'Open this saved project.' })).join('') : '<p class="bf-empty">Projects you save (⌘S) show up here.</p>',
       { open: true, action: 'save', actionIcon: 'save', actionHint: 'Save the current project' }));
 
+    const kitBody = BL.beats.KITS.map((k) => {
+      const list = S.DRUMS.filter((d) => d.kit === k.id && match(d.name + ' ' + d.cat + ' ' + k.name + ' ' + k.inspired));
+      if (!list.length) return '';
+      return folder('kit-' + k.id, k.name, list.length, item('preset', k.preset, 'Start a beat with this pack', '', k.color, { hint: 'Loads a starter beat built from this pack.' }) +
+        list.map((d) => item('drum', d.id, d.name, d.cat, CAT_COLORS[d.cat] || k.color, { add: true, hint: 'Click to hear it. Double-click or + adds it as a channel. Drag it onto a row in Beat to swap sounds.' })).join(''));
+    }).join('');
+    if (kitBody) parts.push(folder('kits', 'BeatLab Packs', BL.beats.KITS.length, kitBody, { open: true }));
+
     const drumBody = S.DRUM_CATS.map((c) => {
-      const list = S.DRUMS.filter((d) => d.cat === c && match(d.name + ' ' + c));
+      const list = S.DRUMS.filter((d) => d.cat === c && !d.kit && match(d.name + ' ' + c));
       if (!list.length) return '';
       return folder('d-' + c, c, list.length, list.map((d) => item('drum', d.id, d.name, '', CAT_COLORS[c] || '#888', { add: true, hint: 'Click to hear it. Double-click or + adds it as a channel. Drag it onto a channel to swap sounds.' })).join(''));
     }).join('');
-    if (drumBody) parts.push(folder('drums', 'Drums', S.DRUMS.length, drumBody, { open: true }));
+    if (drumBody) parts.push(folder('drums', 'Drums', S.DRUMS.filter((d) => !d.kit).length, drumBody, { open: true }));
 
     const instBody = [...new Set(Object.values(S.INSTRUMENTS).map((i) => i.cat))].map((c) => {
       const list = Object.entries(S.INSTRUMENTS).filter(([k, i]) => i.cat === c && match(i.name + ' ' + c));
