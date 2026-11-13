@@ -834,13 +834,35 @@
         const amp = gain(ctx, 0);
         decay(amp.gain, t, v * 0.16, Math.min(0.32, dur + 0.12), 0.002);
         const lp = filter(ctx, 'lowpass', 1200, 4);
-        lp.frequency.setValueAtTime(Math.min(12000, f * 10), t);
-        lp.frequency.exponentialRampToValueAtTime(Math.max(600, f * 1.5), t + 0.18);
+        lp.frequency.setValueAtTime(Math.min(4000, f * 5), t);
+        lp.frequency.exponentialRampToValueAtTime(Math.max(500, f * 1.3), t + 0.15);
         chain(lp, amp, pan, out);
-        [[-6, 'square', 0.6], [6, 'sawtooth', 0.5]].forEach(([det, type, lvl]) => { const o = osc(ctx, type, f, t, 0.5); o.detune.value = det; chain(o, gain(ctx, lvl), lp); });
-        const gl = gain(ctx, 0); decay(gl.gain, t, v * 0.05, 0.08, 0.001);
+        [[-6, 'triangle', 0.8], [6, 'sawtooth', 0.3]].forEach(([det, type, lvl]) => { const o = osc(ctx, type, f, t, 0.5); o.detune.value = det; chain(o, gain(ctx, lvl), lp); });
+        const gl = gain(ctx, 0); decay(gl.gain, t, v * 0.015, 0.06, 0.001);
         chain(osc(ctx, 'sine', f * 4, t, 0.2), gl, pan);
         return { node: amp, end: t + 0.5 };
+      },
+    },
+    hum: {
+      name: 'Warm Hum Lead', cat: 'Leads', base: 60,
+      play(ctx, out, f, t, dur, v) {
+        // a warm, closed-mouth "mmm": strong fundamental, soft rounded overtones, a nasal glow around 300 Hz,
+        // gentle vibrato, and a short release so notes never drag
+        const amp = gain(ctx, 0);
+        const end = adsr(amp.gain, t, dur, 0.025, 0.18, 0.72, 0.12, v * 0.3);
+        const lp = filter(ctx, 'lowpass', Math.min(2400, f * 5), 0.5);
+        const nasal = filter(ctx, 'peaking', 300, 1.4, 4);
+        chain(lp, nasal, amp, out);
+        const vib = osc(ctx, 'sine', 5.2, t, end - t + 0.05), vg = gain(ctx, 0);
+        vg.gain.setValueAtTime(0, t); vg.gain.linearRampToValueAtTime(f * 0.005, t + Math.min(0.5, dur));
+        vib.connect(vg);
+        [['sine', 1, 1, 0], ['triangle', 1, 0.45, 4], ['sine', 2, 0.18, -3], ['sawtooth', 1, 0.07, -6]].forEach(([type, mul, lvl, det]) => {
+          const o = osc(ctx, type, f * mul, t, end - t + 0.05);
+          o.detune.value = det;
+          vg.connect(o.frequency);
+          chain(o, gain(ctx, lvl), lp);
+        });
+        return { node: amp, end };
       },
     },
     euphoria: {
@@ -848,10 +870,10 @@
       play(ctx, out, f, t, dur, v) {
         // seven detuned saws spread across the stereo field: the big, rushing, euphoric layer
         const amp = gain(ctx, 0);
-        const end = adsr(amp.gain, t, dur, 0.015, 0.25, 0.75, 0.35, v * 0.075);
-        const lp = filter(ctx, 'lowpass', 3000, 0.8);
-        lp.frequency.setValueAtTime(Math.min(14000, f * 14), t);
-        lp.frequency.exponentialRampToValueAtTime(Math.min(9000, Math.max(1500, f * 6)), t + 0.3);
+        const end = adsr(amp.gain, t, dur, 0.04, 0.25, 0.7, 0.2, v * 0.075);
+        const lp = filter(ctx, 'lowpass', 2000, 0.6);
+        lp.frequency.setValueAtTime(Math.min(4200, f * 6), t);
+        lp.frequency.exponentialRampToValueAtTime(Math.min(2600, Math.max(900, f * 3)), t + 0.3);
         const hp = filter(ctx, 'highpass', 180, 0.7);
         chain(lp, hp, amp, out);
         [-28, -17, -8, 0, 8, 17, 28].forEach((det, i) => {
@@ -875,7 +897,7 @@
         lp.frequency.linearRampToValueAtTime(1600, t + Math.min(2, dur));
         const lfo = osc(ctx, 'sine', 0.18, t, end - t + 0.1), lg = gain(ctx, 450);
         lfo.connect(lg); lg.connect(lp.frequency);
-        const hp = filter(ctx, 'highpass', 220, 0.7);
+        const hp = filter(ctx, 'highpass', 120, 0.7);
         chain(lp, hp, amp, out);
         [-14, -5, 5, 14].forEach((det, i) => {
           const o = osc(ctx, 'sawtooth', f, t, end - t + 0.1);
