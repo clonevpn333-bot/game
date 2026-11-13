@@ -843,6 +843,54 @@
         return { node: amp, end: t + 0.5 };
       },
     },
+    dream: {
+      name: 'Dream Synth', cat: 'Leads', base: 60,
+      play(ctx, out, f, t, dur, v) {
+        // lush, blurry lead: detuned saw pairs spread wide, a slow seasick wobble plus vibrato, glides from the last note
+        // (or a small scoop up into it), and a long tail so the notes melt together
+        const me = INSTRUMENTS.dream;
+        const prev = me._last && t - me._last.end < 0.06 && t >= me._last.t ? me._last.f : 0;
+        const amp = gain(ctx, 0);
+        const end = adsr(amp.gain, t, dur, prev ? 0.02 : 0.035, 0.35, 0.8, 0.65, v * 0.085);
+        const lp = filter(ctx, 'lowpass', 2600, 0.9);
+        lp.frequency.setValueAtTime(Math.min(5000, f * 7), t);
+        lp.frequency.exponentialRampToValueAtTime(Math.min(3200, Math.max(1400, f * 4)), t + 0.4);
+        chain(lp, amp, out);
+        const wob = osc(ctx, 'sine', 0.35, t, end - t + 0.1), wg = gain(ctx, 9); wob.connect(wg);
+        const vib = osc(ctx, 'sine', 5, t, end - t + 0.1), vg = gain(ctx, 0); vg.gain.setValueAtTime(0, t); vg.gain.linearRampToValueAtTime(9, t + 0.45); vib.connect(vg);
+        const voices = [[-11, -0.85, 'sawtooth', 0.5], [11, 0.85, 'sawtooth', 0.5], [-4, -0.35, 'sawtooth', 0.45], [4, 0.35, 'sawtooth', 0.45], [0, 0, 'triangle', 0.9]];
+        voices.forEach(([det, pn, type, lvl]) => {
+          const o = osc(ctx, type, f, t, end - t + 0.1);
+          o.detune.value = det;
+          wg.connect(o.detune); vg.connect(o.detune);
+          if (prev) { o.frequency.setValueAtTime(prev, t); o.frequency.exponentialRampToValueAtTime(f, t + 0.09); }
+          else { o.frequency.setValueAtTime(f * 0.944, t); o.frequency.exponentialRampToValueAtTime(f, t + 0.07); }
+          const p = ctx.createStereoPanner ? ctx.createStereoPanner() : gain(ctx, 1);
+          if (p.pan) p.pan.value = pn;
+          chain(o, gain(ctx, lvl), p, lp);
+        });
+        me._last = { f, t, end: t + dur };
+        return { node: amp, end };
+      },
+    },
+    glow: {
+      name: 'Glow Pluck', cat: 'Keys', base: 60,
+      play(ctx, out, f, t, dur, v) {
+        // a glowing chord pluck that keeps ringing (~1.5 s) and alternates sides: the shimmer under the melody
+        const step = Math.round(t * 4);
+        const pan = ctx.createStereoPanner ? ctx.createStereoPanner() : gain(ctx, 1);
+        if (pan.pan) pan.pan.value = step % 2 ? 0.55 : -0.55;
+        const amp = gain(ctx, 0);
+        decay(amp.gain, t, v * 0.11, 1.5, 0.004);
+        const lp = filter(ctx, 'lowpass', 2000, 1.2);
+        lp.frequency.setValueAtTime(Math.min(7000, f * 9), t);
+        lp.frequency.exponentialRampToValueAtTime(Math.max(700, f * 2), t + 0.6);
+        chain(lp, amp, pan, out);
+        [[-7, 'sawtooth', 0.45], [7, 'sawtooth', 0.45], [0, 'triangle', 0.8]].forEach(([det, type, lvl]) => { const o = osc(ctx, type, f, t, 1.9); o.detune.value = det; chain(o, gain(ctx, lvl), lp); });
+        chain(osc(ctx, 'sine', f * 2, t, 1.2), gain(ctx, 0.25), lp);
+        return { node: amp, end: t + 1.9 };
+      },
+    },
     hum: {
       name: 'Warm Hum Lead', cat: 'Leads', base: 60,
       play(ctx, out, f, t, dur, v) {

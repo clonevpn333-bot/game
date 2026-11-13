@@ -198,6 +198,7 @@
     const fit = (arr, fill) => Array.from({ length: n }, (_, i) => (i < arr.length ? arr[i] : arr.length ? arr[i % arr.length] : fill));
     for (const t0 of pr.tracks) {
       const t = makeTrack(t0.type, { sound: t0.sound, inst: t0.inst, name: t0.name, vol: t0.vol || 0.8, rev: t0.rev || 0, octave: t0.octave || 0, mode: t0.mode, tone: t0.tone, drive: t0.drive, lowcut: t0.lowcut, pan: t0.pan || 0 });
+      if (t0.pump) t.pump = t0.pump;
       if (t0.type === 'sample') t.sampleId = smap[t0.sample];
       p.tracks.push(t);
       LETTERS.forEach((L, pi) => {

@@ -132,10 +132,11 @@
       const lowcut = c.createBiquadFilter(); lowcut.type = 'highpass'; lowcut.Q.value = 0.6;
       const pan = c.createStereoPanner ? c.createStereoPanner() : c.createGain();
       const send = c.createGain();
-      input.connect(drive); drive.connect(tone); tone.connect(lowcut); lowcut.connect(pan); pan.connect(g.master);
-      lowcut.connect(send);
+      const pump = c.createGain(); // sidechain-style pump: ducks on every beat, swells back (track.pump = depth 0-1)
+      input.connect(drive); drive.connect(tone); tone.connect(lowcut); lowcut.connect(pump); pump.connect(pan); pan.connect(g.master);
+      pump.connect(send); // the reverb hears the pump too, so the whole layer breathes
       send.connect(g.revIn);
-      s = g.strips[track.id] = { input, drive, tone, lowcut, pan, send, dk: -1 };
+      s = g.strips[track.id] = { input, drive, tone, lowcut, pump, pan, send, dk: -1 };
     }
     const audible = !track.mute && (!anySolo || track.solo);
     const vol = track.vol == null ? 0.8 : track.vol;
@@ -208,6 +209,13 @@
     for (const track of p.tracks) {
       const s = stripFor(g, track, anySolo);
       if (!s.audible) continue;
+      if (track.pump && step % 4 === 0) {
+        // duck right after the kick, then swell back up through the beat (measured off dreamy club records: ~5 dB)
+        const beat = stepDur * 4, gp = s.pump.gain;
+        gp.cancelScheduledValues(t);
+        gp.setTargetAtTime(1 - track.pump, t, 0.012);
+        gp.setTargetAtTime(1, t + beat * 0.3, beat * 0.2);
+      }
       const d = pat.data[track.id];
       if (!d) continue;
       if (track.type === 'drum') {
