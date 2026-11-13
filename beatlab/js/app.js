@@ -176,6 +176,7 @@
     const p = newProject({ name: pr.name, bpm: pr.bpm, key: pr.key, scale: pr.scale, swing: pr.swing || 0, bars: pr.bars || 2 });
     p.master.lofi = !!pr.lofi;
     if (pr.mix) { p.master.color = Object.assign({}, pr.mix); if (pr.mix.vol) p.master.vol = pr.mix.vol; }
+    if (pr.human) p.human = pr.human;
     const LETTERS = 'ABCDEFG'.slice(0, Math.max(2, ...(pr.song || 'A').split('').map((ch) => 'ABCDEFG'.indexOf(ch) + 1))).split('');
     p.patterns = LETTERS.map((L, i) => { const pt = newPattern(i); if (pr.patternNames && pr.patternNames[L]) pt.name = pr.patternNames[L]; return pt; });
     if (pr.patternNames) p.songOf = pr.id;
@@ -199,6 +200,7 @@
     for (const t0 of pr.tracks) {
       const t = makeTrack(t0.type, { sound: t0.sound, inst: t0.inst, name: t0.name, vol: t0.vol || 0.8, rev: t0.rev || 0, octave: t0.octave || 0, mode: t0.mode, tone: t0.tone, drive: t0.drive, lowcut: t0.lowcut, pan: t0.pan || 0 });
       if (t0.pump) t.pump = t0.pump;
+      if (t0.strum) t.strum = t0.strum;
       if (t0.type === 'sample') t.sampleId = smap[t0.sample];
       p.tracks.push(t);
       LETTERS.forEach((L, pi) => {

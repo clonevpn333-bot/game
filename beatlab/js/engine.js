@@ -76,7 +76,21 @@
     const limiter = c.createDynamicsCompressor();
     limiter.threshold.value = -1.2; limiter.knee.value = 0; limiter.ratio.value = 20;
     limiter.attack.value = 0.001; limiter.release.value = 0.05;
-    master.connect(lowShelf); lowShelf.connect(highShelf); highShelf.connect(hp); hp.connect(lofi);
+    // tape: a slowly wobbling delay (wow + flutter) gives every note that warm, slightly seasick record warble
+    const tapeIn = c.createDelay(0.05); tapeIn.delayTime.value = 0.008;
+    const wow = c.createOscillator(); wow.frequency.value = 0.42; const wowG = c.createGain(); wowG.gain.value = 0;
+    const flut = c.createOscillator(); flut.frequency.value = 5.6; const flutG = c.createGain(); flutG.gain.value = 0;
+    wow.connect(wowG); wowG.connect(tapeIn.delayTime); flut.connect(flutG); flutG.connect(tapeIn.delayTime);
+    wow.start(); flut.start();
+    let hissG = null;
+    if (!realtime) {
+      const nb = c.createBuffer(1, c.sampleRate * 2, c.sampleRate), nd = nb.getChannelData(0);
+      let b0 = 0; for (let i = 0; i < nd.length; i++) { b0 = 0.97 * b0 + 0.03 * (Math.random() * 2 - 1); nd[i] = b0 * 3; }
+      const hiss = c.createBufferSource(); hiss.buffer = nb; hiss.loop = true;
+      hissG = c.createGain(); hissG.gain.value = 0;
+      hiss.connect(hissG); hissG.connect(lowShelf); hiss.start();
+    }
+    master.connect(tapeIn); tapeIn.connect(lowShelf); lowShelf.connect(highShelf); highShelf.connect(hp); hp.connect(lofi);
     lofi.connect(drive); drive.connect(driveGain); driveGain.connect(split); merge.connect(comp); comp.connect(loud); loud.connect(limiter);
     let analyser = null;
     if (realtime) {
@@ -95,7 +109,7 @@
     const preview = c.createGain();
     preview.gain.value = 0.9;
     preview.connect(master);
-    const g = { ctx: c, master, lowShelf, highShelf, hp, lofi, drive, driveGain, width: { ll, lr, rl, rr }, comp, loud, limiter, analyser, revIn, preview, strips: {}, voices: {} };
+    const g = { ctx: c, master, tapeIn, wowG, flutG, hissG, lowShelf, highShelf, hp, lofi, drive, driveGain, width: { ll, lr, rl, rr }, comp, loud, limiter, analyser, revIn, preview, strips: {}, voices: {} };
     applyMaster(g, p);
     return g;
   }
@@ -108,6 +122,9 @@
     g.master.gain.value = m.vol == null ? 0.85 : m.vol;
     g.comp.threshold.value = -6 - punch * 22;
     g.comp.ratio.value = 1.5 + punch * 5;
+    const tape = col.tape || 0;
+    if (g.wowG) { g.wowG.gain.value = tape * 0.0024; g.flutG.gain.value = tape * 0.00016; }
+    if (g.hissG) g.hissG.gain.value = tape * 0.004;
     g.lowShelf.gain.value = col.low || 0;
     g.highShelf.gain.value = col.high || 0;
     g.hp.frequency.value = col.hp || 18;
@@ -201,6 +218,14 @@
     return src;
   }
 
+  function rnd(a, id, k) {
+    let h = 2166136261 ^ (a * 374761393) ^ (k * 668265263);
+    const str = String(id);
+    for (let i = 0; i < str.length; i++) h = Math.imul(h ^ str.charCodeAt(i), 16777619);
+    h = Math.imul(h ^ (h >>> 15), 2246822507); h = Math.imul(h ^ (h >>> 13), 3266489909);
+    return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+  }
+
   function scheduleStep(g, p, pat, step, t, stepDur, absStep) {
     if (absStep == null) absStep = step;
     if (!pat) return;
@@ -225,26 +250,33 @@
         if (!buf) continue;
         const r = (d.rolls && d.rolls[step]) || 1;
         const rate = Math.pow(2, ((track.pitch || 0) + ((d.pitches && d.pitches[step]) || 0)) / 12);
+        const hu = p.human || 0, jt = hu ? hu * 0.007 * rnd(absStep, track.id, 0) : 0, hv = hu ? 1 - hu * 0.14 * rnd(absStep, track.id, 1) : 1;
         for (let i = 0; i < r; i++) {
-          playBuffer(c, s.input, buf, t + (i * stepDur) / r, { vel: v * (i ? 0.75 + 0.25 * (i / r) : 1), rate });
+          playBuffer(c, s.input, buf, t + jt + (i * stepDur) / r, { vel: v * hv * (i ? 0.75 + 0.25 * (i / r) : 1), rate });
         }
       } else if (track.type === 'synth') {
         const inst = INSTRUMENTS[track.inst] || INSTRUMENTS.piano;
-        for (const n of d.notes) {
-          if (n.s !== step) continue;
+        const hu = p.human || 0;
+        // notes that start together are rolled low to high like fingers on keys (track.strum seconds apart)
+        const here = d.notes.filter((n) => n.s === step).sort((a, b) => a.d - b.d);
+        here.forEach((n, ni) => {
           const midi = noteMidi(p, track, n.d);
           const dur = n.l * stepDur;
+          const t0 = t;
+          t = t0 + (track.strum || 0) * ni + (hu ? hu * 0.009 * rnd(absStep, track.id, ni + 2) : 0);
+          const vel = (n.v || (inst.bass ? 0.9 : 0.8)) * (hu ? 1 - hu * 0.16 * rnd(absStep, track.id, ni + 9) : 1);
           if (inst.bass) {
             const prev = g.voices[track.id];
             const glide = track.glide !== false && prev && prev.noteEnd > t + 0.005 && prev.midi !== midi ? prev.midi : null;
             if (prev && prev.end > t) choke(prev, t);
             const ch = chokeNode(c, s.input);
-            const v = playNote(c, ch, track.inst, midi, t, dur, n.v || 0.9, glide);
+            const v = playNote(c, ch, track.inst, midi, t, dur, vel, glide);
             g.voices[track.id] = { choke: ch, end: v.end, noteEnd: t + dur, midi };
           } else {
-            playNote(c, s.input, track.inst, midi, t, dur, n.v || 0.8);
+            playNote(c, s.input, track.inst, midi, t, dur, vel);
           }
-        }
+          t = t0;
+        });
       } else if (track.type === 'sample') {
         const rt = BL.lab && BL.lab.runtime(track.sampleId);
         if (!rt || !rt.processed) continue;
@@ -566,7 +598,7 @@
     mb.getChannelData(0).set(mixL); mb.getChannelData(1).set(mixR);
     const src = oc.createBufferSource();
     src.buffer = mb;
-    src.connect(g.lowShelf);
+    src.connect(g.tapeIn);
     src.start(0);
     const out = await oc.startRendering();
     let chs = [out.getChannelData(0), out.getChannelData(1)];

@@ -464,6 +464,82 @@
     return end + r;
   }
 
+  // ---------- physically modelled instruments (rendered per pitch, cached) ----------
+  const modelCache = new Map();
+  function pianoBuffer(ctx, f) {
+    const sr = ctx.sampleRate, key = 'p' + sr + ':' + f.toFixed(2);
+    if (modelCache.has(key)) return modelCache.get(key);
+    const T0 = Math.max(1.6, Math.min(9, 6 * Math.pow(261.6 / f, 0.45)));
+    const secs = Math.min(5.5, T0 + 0.8), len = Math.floor(sr * secs);
+    const L = new Float32Array(len), R = new Float32Array(len);
+    const B = 0.00028 * Math.pow(f / 261.6, 0.6); // string stiffness: upper partials run a little sharp, like a real piano
+    const nMax = Math.min(28, Math.floor((sr * 0.45) / f));
+    for (let n = 1; n <= nMax; n++) {
+      const fn = n * f * Math.sqrt(1 + B * n * n);
+      if (fn > 9000) break;
+      const a = Math.pow(n, -1.15) * Math.exp(-fn / 2600) * (n === 1 ? 1 : 0.9);
+      const Tn = T0 / (1 + 0.45 * (n - 1));
+      for (const [cents, pan] of [[-0.9, -0.35], [0.9, 0.35]]) {
+        const w = (2 * Math.PI * fn * Math.pow(2, cents / 1200)) / sr;
+        let c = Math.cos(w), sn = Math.sin(w), x = 1, y = 0;
+        const d1 = Math.exp(-1 / (Tn * 0.22 * sr)), d2 = Math.exp(-1 / (Tn * sr));
+        let e1 = a * 0.65, e2 = a * 0.35;
+        const gl = 0.5 - pan * 0.5, gr = 0.5 + pan * 0.5;
+        for (let i = 0; i < len; i++) {
+          const val = y * (e1 + e2);
+          L[i] += val * gl; R[i] += val * gr;
+          const nx = x * c - y * sn; y = x * sn + y * c; x = nx;
+          e1 *= d1; e2 *= d2;
+          if ((i & 4095) === 0) { const m = Math.hypot(x, y); x /= m; y /= m; }
+        }
+      }
+    }
+    // felt hammer: a short, dark thump
+    let lp = 0;
+    for (let i = 0; i < Math.min(len, sr * 0.04); i++) { lp += 0.08 * ((Math.random() * 2 - 1) - lp); const e = Math.exp(-i / (sr * 0.008)) * 0.5; L[i] += lp * e; R[i] += lp * e; }
+    // fade the very end, normalise
+    let pk = 0; for (let i = 0; i < len; i++) pk = Math.max(pk, Math.abs(L[i]), Math.abs(R[i]));
+    const fadeN = Math.floor(sr * 0.3);
+    for (let i = 0; i < len; i++) { const g = (0.45 / (pk || 1)) * (i > len - fadeN ? (len - i) / fadeN : 1); L[i] *= g; R[i] *= g; }
+    const buf = ctx.createBuffer(2, len, sr);
+    buf.getChannelData(0).set(L); buf.getChannelData(1).set(R);
+    modelCache.set(key, buf);
+    return buf;
+  }
+  function stringBuffer(ctx, f) {
+    const sr = ctx.sampleRate, key = 's' + sr + ':' + f.toFixed(2);
+    if (modelCache.has(key)) return modelCache.get(key);
+    const secs = Math.max(1.5, Math.min(4, 3.2 * Math.pow(196 / f, 0.5))), len = Math.floor(sr * secs);
+    const out = new Float32Array(len);
+    const P = sr / f - 0.5; // the averaging filter adds half a sample of delay
+    const N = Math.ceil(P) + 2, line = new Float32Array(N + 4);
+    // a soft pluck: low-passed noise with a pluck-position notch
+    const burst = new Float32Array(N); let lp = 0;
+    for (let i = 0; i < N; i++) { lp += 0.45 * ((Math.random() * 2 - 1) - lp); burst[i] = lp; }
+    const pos = Math.max(1, Math.round(N * 0.18));
+    for (let i = 0; i < N; i++) line[i] = burst[i] - 0.6 * (burst[(i + pos) % N]);
+    const T60 = secs * 1.4, loss = Math.pow(10, -3 / (T60 * f)); // per round trip
+    const size = line.length;
+    let w = N % size, prev = 0;
+    const frac = P - Math.floor(P);
+    for (let i = 0; i < len; i++) {
+      const r1 = (w - Math.floor(P) + size * 4) % size, r0 = (r1 - 1 + size) % size;
+      const delayed = line[r1] * (1 - frac) + line[r0] * frac;
+      const yv = loss * 0.5 * (delayed + prev);
+      prev = delayed;
+      line[w] = yv; out[i] = yv;
+      w = (w + 1) % size;
+    }
+    // first period comes straight from the pluck
+    let pk = 0; for (let i = 0; i < len; i++) pk = Math.max(pk, Math.abs(out[i]));
+    const fadeN = Math.floor(sr * 0.2);
+    for (let i = 0; i < len; i++) out[i] *= (0.5 / (pk || 1)) * (i > len - fadeN ? (len - i) / fadeN : 1);
+    const buf = ctx.createBuffer(1, len, sr);
+    buf.getChannelData(0).set(out);
+    modelCache.set(key, buf);
+    return buf;
+  }
+
   const INSTRUMENTS = {
     piano: {
       name: 'Grand Keys', cat: 'Keys', base: 60,
@@ -841,6 +917,44 @@
         const gl = gain(ctx, 0); decay(gl.gain, t, v * 0.015, 0.06, 0.001);
         chain(osc(ctx, 'sine', f * 4, t, 0.2), gl, pan);
         return { node: amp, end: t + 0.5 };
+      },
+    },
+    feltpiano: {
+      name: 'Felt Piano', cat: 'Keys', base: 60,
+      // a piano built like one: struck strings with slightly stretched overtones, two strings per note beating against each
+      // other, a quick first decay then a long singing tail, a soft felt hammer thump. Rendered once per pitch, then cached.
+      play(ctx, out, f, t, dur, v) {
+        const buf = pianoBuffer(ctx, f);
+        const src = ctx.createBufferSource(); src.buffer = buf;
+        const amp = gain(ctx, 0);
+        amp.gain.setValueAtTime(v * 0.9, t);
+        const off = t + dur + 0.05;
+        amp.gain.setValueAtTime(v * 0.9, off);
+        amp.gain.setTargetAtTime(0, off, 0.35); // the damper comes down gently (soft pedal feel)
+        const tone = filter(ctx, 'lowpass', 900 + v * 3800, 0.5); // softer touch = darker, like real felt
+        chain(src, tone, amp, out);
+        src.start(t);
+        const end = Math.min(t + buf.duration, off + 1.6);
+        src.stop(end);
+        return { node: amp, end };
+      },
+    },
+    nylon: {
+      name: 'Nylon Guitar', cat: 'Keys', base: 48,
+      // plucked-string model (Karplus-Strong): a soft pluck travels up and down a string that loses its brightness as it rings
+      play(ctx, out, f, t, dur, v) {
+        const buf = stringBuffer(ctx, f);
+        const src = ctx.createBufferSource(); src.buffer = buf;
+        const amp = gain(ctx, v * 0.8);
+        const body = filter(ctx, 'peaking', 190, 1.2, 5), body2 = filter(ctx, 'peaking', 420, 1.5, 2.5);
+        const off = t + Math.max(dur, 0.6);
+        amp.gain.setValueAtTime(v * 0.8, off);
+        amp.gain.setTargetAtTime(0, off, 0.3);
+        chain(src, body, body2, amp, out);
+        src.start(t);
+        const end = Math.min(t + buf.duration, off + 1.2);
+        src.stop(end);
+        return { node: amp, end };
       },
     },
     dream: {
