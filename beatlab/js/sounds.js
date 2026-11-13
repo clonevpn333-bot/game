@@ -769,37 +769,37 @@
     vwow: {
       name: 'Vwow Bass', cat: 'Synths', base: 36,
       play(ctx, out, f, t, dur, v) {
-        // the Fever "vwow": a fat saw bass whose filter snaps open (~50 ms) and closes (~180 ms) on every note,
-        // with an "ow" vowel sweep on top; write it on 8th notes for the pumping wah
+        // the Fever "vwow": every note swells in (~110 ms) while its filter and an "ow" vowel open, then the
+        // filter sinks back while the note holds. Written on quarter notes it pumps once per beat like the record.
         const amp = gain(ctx, 0);
-        const end = adsr(amp.gain, t, dur, 0.03, 0.12, 0.8, 0.08, v * 0.42);
-        const lp = filter(ctx, 'lowpass', 260, 5);
-        lp.frequency.setValueAtTime(220, t);
-        lp.frequency.exponentialRampToValueAtTime(Math.min(4000, f * 14), t + 0.05);
-        lp.frequency.exponentialRampToValueAtTime(Math.max(180, f * 2.4), t + 0.23);
-        const ow = filter(ctx, 'bandpass', 450, 2.5);
-        ow.frequency.setValueAtTime(300, t);
-        ow.frequency.exponentialRampToValueAtTime(700, t + 0.06);
-        ow.frequency.exponentialRampToValueAtTime(330, t + 0.25);
-        const owg = gain(ctx, 1.6);
+        const end = adsr(amp.gain, t, dur, 0.11, 0.25, 0.7, 0.06, v * 0.42);
+        const lp = filter(ctx, 'lowpass', 200, 4);
+        lp.frequency.setValueAtTime(Math.max(140, f * 1.5), t);
+        lp.frequency.exponentialRampToValueAtTime(Math.min(4500, f * 11), t + 0.12);
+        lp.frequency.exponentialRampToValueAtTime(Math.max(200, f * 3), t + 0.45);
+        const ow = filter(ctx, 'bandpass', 400, 2.5);
+        ow.frequency.setValueAtTime(260, t);
+        ow.frequency.exponentialRampToValueAtTime(640, t + 0.12);
+        ow.frequency.exponentialRampToValueAtTime(340, t + 0.45);
+        const owg = gain(ctx, 1.4);
         chain(lp, amp, out);
         chain(ow, owg, amp);
-        [-7, 7].forEach((det) => {
+        [-9, 9].forEach((det) => {
           const o = osc(ctx, 'sawtooth', f, t, end - t);
           o.detune.value = det;
-          o.frequency.setValueAtTime(f * 0.97, t);
-          o.frequency.exponentialRampToValueAtTime(f, t + 0.05);
+          o.frequency.setValueAtTime(f * 0.985, t);
+          o.frequency.exponentialRampToValueAtTime(f, t + 0.1);
           o.connect(lp); o.connect(ow);
         });
         chain(osc(ctx, 'square', f, t, end - t), gain(ctx, 0.3), lp);
-        chain(osc(ctx, 'sine', f, t, end - t), gain(ctx, 0.8), amp);
+        chain(osc(ctx, 'sine', f, t, end - t), gain(ctx, 0.5), amp);
         return { node: amp, end };
       },
     },
     vwowlead: {
-      name: 'Vwow Lead', cat: 'Synths', base: 60,
+      name: 'Vwow Chords', cat: 'Synths', base: 60,
       play(ctx, out, f, t, dur, v) {
-        const g2 = gain(ctx, 0.7);
+        const g2 = gain(ctx, 0.55);
         g2.connect(out);
         return INSTRUMENTS.vwow.play(ctx, g2, f, t, dur, v);
       },

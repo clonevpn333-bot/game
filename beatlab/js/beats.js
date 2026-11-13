@@ -249,7 +249,7 @@
     { id: 'jbx', name: 'A$AP Rocky Pack', inspired: 'Jukebox Joints · A$AP Rocky & Kanye West', color: '#ffb340', preset: 'kit-jbx',
       blurb: 'A sped-up soul record with horns and an “ooh” vocal, bass guitar instead of 808, dusty swung drums, scratches. 74 BPM.' },
     { id: 'fev', name: 'Fever Pack', inspired: 'Fever · fakemink', color: '#64d2ff', preset: 'kit-fev',
-      blurb: 'The “vwow”: a bass and lead whose filter swells open and shut on every 8th, over an air pad and bouncy drums. 115 BPM.' },
+      blurb: 'The “vwow”: bass and chords that swell on every beat over C, F, F–E, Am, with an air pad and bouncy drums. 115 BPM.' },
   ];
 
   // big bell parts: fewer, heavier hits that ring under the beat
@@ -331,19 +331,18 @@
     {
       id: 'kit-fev', name: 'Fever Mode', color: '#64d2ff', kit: 'fev',
       tags: ['fakemink-type', 'Fever type', 'jerk', 'airy', 'BeatLab Pack'],
-      desc: 'Built from “Fever”: 115 BPM, C major, a held bass on F whose filter opens and closes every 8th note (the “vwow”), a vwow lead, wide air pad.',
-      bpm: 115, key: 0, scale: 'major', swing: 0, bars: 2, song: 'AABBAB',
+      desc: 'Built from “Fever”: 115 BPM, C | F | F–E | Am (one chord a bar, as measured), a bass and chord synth that swell “vwow” on every beat, wide air pad.',
+      bpm: 115, key: 0, scale: 'major', swing: 0, bars: 4, song: 'AABBAB',
       mix: { low: 1, high: 8, width: 1.6, drive: 0.2, loud: 0.25 },
       tracks: [
         { type: 'drum', sound: 'fev_kick', name: 'Kick', A: 'X...X...X...X.X.|X...X...X...X...' },
         { type: 'drum', sound: 'fev_snare', name: 'Snare', A: '....X.......X...|....X.......X..x' },
-        { type: 'drum', sound: 'fev_hat', name: 'Hats', vol: 1.25, A: 'x.xxx.x.x.xxx.x.|x.xxx.x.x.x.3.x.' },
-        { type: 'drum', sound: 'fev_ohat', name: 'Air Hat', vol: 0.35, A: '..............x.|..............x.' },
+        { type: 'drum', sound: 'fev_hat', name: 'Hats', vol: 1.6, A: 'x.xxx.x.x.xxx.x.|x.xxx.x.x.x.3.x.' },
+        { type: 'drum', sound: 'fev_ohat', name: 'Air Hat', vol: 0.55, A: '..............x.|..............x.' },
         { type: 'drum', sound: 'fev_vox', name: 'Vox Chop', vol: 0.4, A: '................|................', B: '......x.......x.|..x...x.........' },
-        { type: 'synth', inst: 'airpad', name: 'Air Pad', vol: 0.55, octave: -1, rev: 0.6, A: [C(0, 3, 8, 4), C(8, 4, 8, 4), C(16, 0, 8, 4), C(24, 5, 8, 4)] },
-        { type: 'synth', inst: 'vwowlead', name: 'Vwow Lead', vol: 0.55, rev: 0.35, A: [],
-          B: [[0, 7, 2], [2, 7, 2], [4, 9, 2], [6, 7, 2], [8, 11, 2], [10, 11, 2], [12, 9, 2], [14, 7, 2], [16, 7, 2], [18, 7, 2], [20, 9, 2], [22, 11, 2], [24, 12, 2], [26, 11, 2], [28, 9, 4]] },
-        { type: 'synth', inst: 'vwow', name: 'Vwow Bass', vol: 0.4, A: [[0, 3, 2], [2, 3, 2], [4, 3, 2], [6, 3, 2], [8, 4, 2], [10, 4, 2], [12, 4, 2], [14, 4, 2], [16, 0, 2], [18, 0, 2], [20, 0, 2], [22, 0, 2], [24, 5, 2], [26, 5, 2], [28, 5, 2], [30, 5, 2]] },
+        { type: 'synth', inst: 'airpad', name: 'Air Pad', vol: 0.4, rev: 0.6, A: [C(0, 0, 16, 3), C(16, 3, 16, 3), C(32, 3, 8, 3), C(40, 2, 8, 3), C(48, 5, 16, 3)] },
+        { type: 'synth', inst: 'vwowlead', name: 'Vwow Chords', vol: 0.7, octave: -1, rev: 0.3, A: [[0, 0, 4], [0, 4, 4], [0, 9, 4], [4, 0, 4], [4, 4, 4], [4, 9, 4], [8, 0, 4], [8, 4, 4], [8, 9, 4], [12, 0, 4], [12, 4, 4], [12, 9, 4], [16, 3, 4], [16, 7, 4], [16, 10, 4], [20, 3, 4], [20, 7, 4], [20, 10, 4], [24, 3, 4], [24, 7, 4], [24, 10, 4], [28, 3, 4], [28, 7, 4], [28, 10, 4], [32, 3, 4], [32, 7, 4], [32, 10, 4], [36, 3, 4], [36, 7, 4], [36, 10, 4], [40, 2, 4], [40, 6, 4], [40, 9, 4], [44, 2, 4], [44, 6, 4], [44, 9, 4], [48, -2, 4], [48, 2, 4], [48, 9, 4], [52, -2, 4], [52, 2, 4], [52, 9, 4], [56, -2, 4], [56, 2, 4], [56, 9, 4], [60, -2, 4], [60, 2, 4], [60, 9, 4]] },
+        { type: 'synth', inst: 'vwow', name: 'Vwow Bass', vol: 0.45, A: [[0, 0, 4], [4, 0, 4], [8, 0, 4], [12, 0, 4], [16, 3, 4], [20, 3, 4], [24, 3, 4], [28, 3, 4], [32, 3, 4], [36, 3, 4], [40, 2, 4], [44, 2, 4], [48, -2, 4], [52, -2, 4], [56, -2, 4], [60, -2, 4]] },
       ],
     },
   );
