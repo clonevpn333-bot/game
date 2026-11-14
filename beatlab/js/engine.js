@@ -106,10 +106,17 @@
     const revOut = c.createGain();
     revOut.gain.value = 0.85;
     revIn.connect(revHp); revHp.connect(conv); conv.connect(revOut); revOut.connect(master);
+    // stereo ping-pong delay (a dotted 8th, darker each repeat), fed by track.delay
+    const dlyIn = c.createGain(), dL = c.createDelay(2), dR = c.createDelay(2), fbL = c.createGain(), fbR = c.createGain();
+    const dTone = c.createBiquadFilter(); dTone.type = 'lowpass'; dTone.frequency.value = 4200;
+    const dMerge = c.createChannelMerger(2), dOut = c.createGain();
+    fbL.gain.value = 0.32; fbR.gain.value = 0.32; dOut.gain.value = 0.9;
+    dlyIn.connect(dTone); dTone.connect(dL); dL.connect(fbL); fbL.connect(dR); dR.connect(fbR); fbR.connect(dL);
+    dL.connect(dMerge, 0, 0); dR.connect(dMerge, 0, 1); dMerge.connect(dOut); dOut.connect(master);
     const preview = c.createGain();
     preview.gain.value = 0.9;
     preview.connect(master);
-    const g = { ctx: c, master, revOut, tapeIn, wowG, flutG, hissG, lowShelf, highShelf, hp, lofi, drive, driveGain, width: { ll, lr, rl, rr }, comp, loud, limiter, analyser, revIn, preview, strips: {}, voices: {} };
+    const g = { ctx: c, master, revOut, dlyIn, dL, dR, tapeIn, wowG, flutG, hissG, lowShelf, highShelf, hp, lofi, drive, driveGain, width: { ll, lr, rl, rr }, comp, loud, limiter, analyser, revIn, preview, strips: {}, voices: {} };
     applyMaster(g, p);
     return g;
   }
@@ -122,6 +129,7 @@
     g.master.gain.value = m.vol == null ? 0.85 : m.vol;
     g.comp.threshold.value = -6 - punch * 22;
     g.comp.ratio.value = 1.5 + punch * 5;
+    if (g.dL) { const dt = Math.min(1.9, (60 / ((p && p.bpm) || 120)) * 0.75); g.dL.delayTime.value = dt; g.dR.delayTime.value = dt; }
     const tape = col.tape || 0;
     if (g.wowG) { g.wowG.gain.value = tape * 0.0024; g.flutG.gain.value = tape * 0.00016; }
     if (g.hissG) g.hissG.gain.value = tape * 0.004;
@@ -153,8 +161,9 @@
       const haze = c.createBiquadFilter(); haze.type = 'lowpass'; haze.Q.value = 0.6; haze.frequency.value = 20000; // section haze (pattern.haze)
       input.connect(drive); drive.connect(tone); tone.connect(haze); haze.connect(lowcut); lowcut.connect(pump); pump.connect(pan); pan.connect(g.master);
       pump.connect(send); // the reverb hears the pump too, so the whole layer breathes
+      const dsend = c.createGain(); dsend.gain.value = 0; pump.connect(dsend); if (g.dlyIn) dsend.connect(g.dlyIn);
       send.connect(g.revIn);
-      s = g.strips[track.id] = { input, drive, tone, haze, lowcut, pump, pan, send, dk: -1 };
+      s = g.strips[track.id] = { input, drive, tone, haze, lowcut, pump, pan, send, dsend, dk: -1 };
     }
     const audible = !track.mute && (!anySolo || track.solo);
     const vol = track.vol == null ? 0.8 : track.vol;
@@ -165,6 +174,7 @@
     s.lowcut.frequency.value = track.lowcut || 10;
     if (s.pan.pan) s.pan.pan.value = track.pan || 0;
     s.send.gain.value = (track.rev || 0) * 0.9;
+    if (s.dsend) s.dsend.gain.value = track.delay || 0;
     s.audible = audible;
     return s;
   }
@@ -280,7 +290,7 @@
         // notes that start together are rolled low to high like fingers on keys (track.strum seconds apart)
         const here = d.notes.filter((n) => n.s === step).sort((a, b) => a.d - b.d);
         here.forEach((n, ni) => {
-          const midi = noteMidi(p, track, n.d);
+          const midi = noteMidi(p, track, n.d) + (n.a || 0);
           const dur = n.l * stepDur;
           const t0 = t;
           t = t0 + (track.strum || 0) * ni + (hu ? hu * 0.009 * rnd(absStep, track.id, ni + 2) : 0);

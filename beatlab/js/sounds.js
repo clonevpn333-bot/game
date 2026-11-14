@@ -919,6 +919,65 @@
         return { node: amp, end: t + 0.5 };
       },
     },
+    springbass: {
+      name: 'Spring Bass', cat: '808 & Bass', base: 36,
+      // subtractive: buzzy saw + square with a rounded sine sub; a resonant filter that snaps shut on every note
+      // (A 2 ms, D 150 ms, S 0.45, R 60 ms; filter 3.2 kHz -> 320 Hz in 140 ms, Q 7) plus a tiny downward pitch blip = springy
+      play(ctx, out, f, t, dur, v) {
+        const amp = gain(ctx, 0);
+        const end = adsr(amp.gain, t, dur, 0.002, 0.15, 0.45, 0.06, v * 0.34);
+        const lp = filter(ctx, 'lowpass', 400, 7);
+        lp.frequency.setValueAtTime(Math.min(3200, f * 40), t);
+        lp.frequency.exponentialRampToValueAtTime(Math.max(260, f * 4), t + 0.14);
+        chain(lp, amp, out);
+        const blip = (o) => { o.frequency.setValueAtTime(f * 1.06, t); o.frequency.exponentialRampToValueAtTime(f, t + 0.03); return o; };
+        chain(blip(osc(ctx, 'sawtooth', f, t, end - t)), gain(ctx, 0.5), lp);
+        const sq = blip(osc(ctx, 'square', f, t, end - t)); sq.detune.value = 7;
+        chain(sq, gain(ctx, 0.35), lp);
+        chain(blip(osc(ctx, 'sine', f, t, end - t)), gain(ctx, 0.9), amp); // rounded low end, unfiltered
+        return { node: amp, end };
+      },
+    },
+    rubber: {
+      name: 'Rubber Voice Lead', cat: 'Leads', base: 72,
+      // subtractive + formants: square and saw (detuned +-6 cents) through two vowel bandpasses ("oo" opening to "ah"),
+      // each note scoops up a semitone (rubbery), delayed vibrato. A 8 ms, D 220 ms, S 0.55, R 110 ms.
+      play(ctx, out, f, t, dur, v) {
+        const amp = gain(ctx, 0);
+        const end = adsr(amp.gain, t, dur, 0.008, 0.22, 0.55, 0.11, v * 0.2);
+        const lp = filter(ctx, 'lowpass', Math.min(6500, f * 6), 0.7);
+        const f1 = filter(ctx, 'bandpass', 420, 3), f2 = filter(ctx, 'bandpass', 900, 4);
+        f1.frequency.setValueAtTime(380, t); f1.frequency.exponentialRampToValueAtTime(760, t + 0.09);
+        f2.frequency.setValueAtTime(850, t); f2.frequency.exponentialRampToValueAtTime(1250, t + 0.09);
+        const g1 = gain(ctx, 1.4), g2 = gain(ctx, 1.1), dry = gain(ctx, 0.45);
+        chain(f1, g1, lp); chain(f2, g2, lp); chain(dry, lp);
+        chain(lp, amp, out);
+        const vib = osc(ctx, 'sine', 5.8, t, end - t + 0.05), vg = gain(ctx, 0);
+        vg.gain.setValueAtTime(0, t + 0.12); vg.gain.linearRampToValueAtTime(14, t + 0.3); vib.connect(vg);
+        [[-6, 'square', 0.55], [6, 'sawtooth', 0.45]].forEach(([det, type, lvl]) => {
+          const o = osc(ctx, type, f, t, end - t + 0.05);
+          o.detune.value = det; vg.connect(o.detune);
+          o.frequency.setValueAtTime(f * 0.944, t); o.frequency.exponentialRampToValueAtTime(f, t + 0.045);
+          const og = gain(ctx, lvl); o.connect(og); og.connect(f1); og.connect(f2); og.connect(dry);
+        });
+        return { node: amp, end };
+      },
+    },
+    softpluck: {
+      name: 'Soft Round Pluck', cat: 'Keys', base: 60,
+      // round pluck: triangle + sine octave, low-pass 2.4 kHz falling to 700 Hz; A 2 ms, D 380 ms, S 0, R 100 ms
+      play(ctx, out, f, t, dur, v) {
+        const amp = gain(ctx, 0);
+        decay(amp.gain, t, v * 0.22, 0.38, 0.002);
+        const lp = filter(ctx, 'lowpass', 2400, 0.8);
+        lp.frequency.setValueAtTime(Math.min(4000, f * 6), t);
+        lp.frequency.exponentialRampToValueAtTime(Math.max(700, f * 1.6), t + 0.3);
+        chain(lp, amp, out);
+        chain(osc(ctx, 'triangle', f, t, 0.9), gain(ctx, 0.9), lp);
+        chain(osc(ctx, 'sine', f * 2, t, 0.5), gain(ctx, 0.25), lp);
+        return { node: amp, end: t + 0.9 };
+      },
+    },
     feltpiano: {
       name: 'Felt Piano', cat: 'Keys', base: 60,
       // a piano built like one: struck strings with slightly stretched overtones, two strings per note beating against each
