@@ -326,11 +326,12 @@
   }
 
   function laneMenu(id, anchor) {
-    A.openPop(anchor, `<div class="menu"><button data-m="up">Move Up</button><button data-m="down">Move Down</button><button data-m="clean">✨ Clean Up Vocal</button><button data-m="clear">Clear Track</button><hr><button data-m="del" class="danger">Delete Track</button></div>`, (pop) => {
+    A.openPop(anchor, `<div class="menu"><button data-m="up">Move Up</button><button data-m="down">Move Down</button><button data-m="clean">✨ Clean Up Vocal</button><button data-m="film">🎞 Old Movie Voice</button><button data-m="clear">Clear Track</button><hr><button data-m="del" class="danger">Delete Track</button></div>`, (pop) => {
       const on = (k, fn) => $(`[data-m="${k}"]`, pop).addEventListener('click', () => { A.closePop(); fn(); });
       on('up', () => A.edit((p) => { const i = p.lanes.findIndex((l) => l.id === id); if (i > 0) p.lanes.splice(i - 1, 0, p.lanes.splice(i, 1)[0]); }));
       on('down', () => A.edit((p) => { const i = p.lanes.findIndex((l) => l.id === id); if (i < p.lanes.length - 1) p.lanes.splice(i + 1, 0, p.lanes.splice(i, 1)[0]); }));
       on('clean', () => A.cleanLaneVocals(id));
+      on('film', () => A.cleanLaneVocals(id, 'film'));
       on('clear', () => A.edit((p) => { p.clips = p.clips.filter((c) => c.lane !== id); }));
       on('del', () => A.edit((p) => { if (p.lanes.length > 1) { p.lanes = p.lanes.filter((l) => l.id !== id); p.clips = p.clips.filter((c) => c.lane !== id); } }));
     });

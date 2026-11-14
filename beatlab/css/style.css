@@ -826,3 +826,12 @@ button.cell:active { transform: scale(0.9); transition-duration: 0.08s; }
 /* ✨ Clean Vocal button on playlist tracks that hold audio */
 .mini-clean { font-size: 11px; }
 .mini-clean:hover { background: linear-gradient(135deg, #8e6bff, #64d2ff); color: #fff; }
+
+/* Sing It / Beatbox It */
+.vt-legend { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 12px 0; }
+.vt-legend span { background: var(--raised); border-radius: 10px; padding: 10px; text-align: center; font-size: 13px; }
+.vt-legend i { display: block; font-style: normal; color: var(--muted, #8e8e93); font-size: 12px; margin-top: 3px; }
+.vt-status { min-height: 26px; margin: 8px 0; font-size: 14px; }
+.vt-live b { font-size: 18px; color: var(--accent, #ff375f); }
+.small { font-size: 12px; }
+.sheet-voice { width: min(560px, 100%); }

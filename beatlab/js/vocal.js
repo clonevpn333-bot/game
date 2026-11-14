@@ -183,5 +183,40 @@
     return { channels: [L, R], sampleRate: sr, detune };
   }
 
-  BL.vocal = { clean, trackPitch, targets, psola, gate };
+  /** make any dialogue sound like a 1950s film: band-limited mono, a little saturation, projector crackle and hiss, small room */
+  async function oldFilm(buffer) {
+    const sr = buffer.sampleRate, n = buffer.length + Math.floor(sr * 0.8);
+    const ctx = new OfflineAudioContext(2, n, sr);
+    const src = ctx.createBufferSource(); src.buffer = buffer;
+    const toMono = ctx.createGain(); toMono.channelCount = 1; toMono.channelCountMode = 'explicit';
+    const f = (type, freq, q, g) => { const x = ctx.createBiquadFilter(); x.type = type; x.frequency.value = freq; if (q != null) x.Q.value = q; if (g != null) x.gain.value = g; return x; };
+    const hp = f('highpass', 330, 0.8), lp = f('lowpass', 3300, 0.9), mid = f('peaking', 1500, 0.9, 4), lp2 = f('lowpass', 4200, 0.7);
+    const sat = ctx.createWaveShaper(); const cv = new Float32Array(1024);
+    for (let i = 0; i < 1024; i++) { const x = (i / 511.5) - 1; cv[i] = Math.tanh(x * 2.2) / Math.tanh(2.2); }
+    sat.curve = cv;
+    const vol = ctx.createGain(); vol.gain.value = 0.9;
+    src.connect(toMono); toMono.connect(hp); hp.connect(mid); mid.connect(lp); lp.connect(sat); sat.connect(lp2); lp2.connect(vol);
+    const room = ctx.createConvolver(); room.buffer = plateIR(ctx, 0.6);
+    const wet = ctx.createGain(); wet.gain.value = 0.16;
+    vol.connect(ctx.destination); vol.connect(wet); wet.connect(room); room.connect(ctx.destination);
+    // projector: hiss + random crackles
+    const nb = ctx.createBuffer(1, n, sr), nd = nb.getChannelData(0);
+    let b0 = 0;
+    for (let i = 0; i < n; i++) {
+      b0 = 0.9 * b0 + 0.1 * (Math.random() * 2 - 1);
+      nd[i] = b0 * 0.012 + (Math.random() < 9 / sr ? (Math.random() * 2 - 1) * 0.35 : 0);
+    }
+    const ns = ctx.createBufferSource(); ns.buffer = nb;
+    const nf = f('bandpass', 2200, 0.6);
+    ns.connect(nf); nf.connect(ctx.destination);
+    src.start(0); ns.start(0);
+    const r = await ctx.startRendering();
+    const L = r.getChannelData(0), R = r.getChannelData(1);
+    let pk = 0; for (let i = 0; i < L.length; i++) pk = Math.max(pk, Math.abs(L[i]), Math.abs(R[i]));
+    const k = pk > 0 ? 0.89 / pk : 1;
+    for (let i = 0; i < L.length; i++) { L[i] *= k; R[i] *= k; }
+    return { channels: [L, R], sampleRate: sr };
+  }
+
+  BL.vocal = { clean, oldFilm, trackPitch, targets, psola, gate };
 })(typeof window !== 'undefined' ? window : globalThis);

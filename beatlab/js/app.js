@@ -22,6 +22,7 @@
 
   // ---------- icons (SF Symbols-like line icons) ----------
   const ICONS = {
+    mic: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0"/><path d="M12 17.5V21"/>',
     play: '<path d="M7 4.5v15l12.5-7.5z" fill="currentColor" stroke="none"/>',
     stop: '<rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor" stroke="none"/>',
     rec: '<circle cx="12" cy="12" r="6" fill="currentColor" stroke="none"/>',
@@ -483,24 +484,23 @@
     const t = TABS.find((x) => x.id === ui.tab) || TABS[1];
     const action = {
       sounds: `<button class="tbtn tbtn-primary big" data-ph="pack">${icon('import')}<span>Import a Beat Pack</span></button>`,
-      rack: `<button class="tbtn tbtn-magic big" data-ph="drums">${icon('sparkle')}<span>Write Drums for Me</span></button>`,
-      roll: `<button class="tbtn tbtn-magic big" data-ph="melody">${icon('sparkle')}<span>Write It for Me</span></button>`,
+      rack: `<button class="tbtn big" data-ph="beatbox" data-hint="Beatbox your drums: boom = kick, pff/ka = snare, ts = hi-hat.">${icon('mic')}<span>Beatbox It</span></button><button class="tbtn tbtn-magic big" data-ph="drums">${icon('sparkle')}<span>Write Drums for Me</span></button>`,
+      roll: `<button class="tbtn big" data-ph="sing" data-hint="Sing or hum your melody. It is auto-tuned to your key and placed as notes.">${icon('mic')}<span>Sing It</span></button><button class="tbtn tbtn-magic big" data-ph="melody">${icon('sparkle')}<span>Write It for Me</span></button>`,
       lab: '',
       song: `<button class="tbtn tbtn-primary big" data-ph="audio">${icon('import')}<span>Import Audio</span></button>`,
       mix: `<button class="tbtn tbtn-primary big" data-ph="export">${icon('export')}<span>Export</span></button>`,
     }[t.id] || '';
     R.panelHead.style.setProperty('--tc', t.color);
     R.panelHead.innerHTML = `<span class="ph-ico">${icon(t.icon)}</span><div class="ph-text"><h1>${t.label}</h1><p>${t.help}</p></div><span class="ph-spacer"></span>${action}`;
-    const b = $('[data-ph]', R.panelHead);
-    if (!b) return;
-    b.addEventListener('click', (e) => {
+    $$('[data-ph]', R.panelHead).forEach((b) => b.addEventListener('click', (e) => {
       const k = b.dataset.ph;
+      if (k === 'sing' || k === 'beatbox') { voiceTake(k); return; }
       if (k === 'pack') pickPack(e.currentTarget);
       else if (k === 'drums') magicDrums();
       else if (k === 'melody') { const t2 = P.tracks.find((x) => x.id === ui.sel && x.type === 'synth') || P.tracks.find((x) => x.type === 'synth'); if (t2) openMagic(t2, e.currentTarget); else toast('Add an instrument first.'); }
       else if (k === 'audio') pickAudioFiles();
       else if (k === 'export') openExport();
-    });
+    }));
   }
   function magicDrums() {
     edit((p) => {
@@ -1913,19 +1913,126 @@
     }
   }
 
+  // ---------- your voice as the input: Sing It (melody) and Beatbox It (drums) ----------
+  function voiceTarget() {
+    return P.tracks.find((x) => x.id === ui.sel && x.type === 'synth') || P.tracks.find((x) => x.type === 'synth' && !(S.INSTRUMENTS[x.inst] || {}).bass) || P.tracks.find((x) => x.type === 'synth');
+  }
+  function voiceTake(kind) {
+    const sing = kind === 'sing';
+    const t = sing ? voiceTarget() : null;
+    if (sing && !t) { toast('Add an instrument channel first, then sing into it.'); return; }
+    const canMic = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
+    const keyN = T.keyName(P.key, P.scale);
+    openModal(`
+      <header class="sheet-head"><h2>${sing ? 'Sing It' : 'Beatbox It'}</h2></header>
+      <div class="sheet-body">
+      <p class="sheet-note">${sing
+        ? `Sing or hum your melody. Every note gets <b>auto-tuned to ${esc(keyN)}</b>, snapped to the beat and placed on <b>${esc(t.name || 'your instrument')}</b> in “${esc(curPat().name)}”.`
+        : `Beatbox your drums and BeatLab places every hit on the right row in “${esc(curPat().name)}”.`}</p>
+      ${sing ? '' : '<div class="vt-legend"><span><b>“boom”</b> or “b”<i>Kick</i></span><span><b>“pff”</b>, “ka”, “ch”<i>Snare</i></span><span><b>“ts”</b> or “t”<i>Hi-hat</i></span></div>'}
+      <p class="sheet-note">You get one bar of clicks to count you in, then ${P.bars} bar${P.bars > 1 ? 's' : ''} at ${P.bpm} BPM. Headphones help.</p>
+      <div class="vt-status" id="vtStatus"></div>
+      </div>
+      <div class="sheet-foot">
+        <button class="tbtn" data-close>Cancel</button><span class="ph-spacer"></span>
+        <button class="tbtn" id="vtFile">Use an Audio File…</button>
+        ${canMic ? `<button class="tbtn tbtn-primary" id="vtRec">${icon('mic')}<span>Record</span></button>` : ''}
+      </div>`, (m) => {
+      const status = (h) => { const el = $('#vtStatus', m); if (el) el.innerHTML = h; };
+      const finish = async (buffer, offset) => {
+        status('Listening to your take…');
+        await new Promise((r) => setTimeout(r, 30));
+        try { applyVoice(kind, t, buffer, offset); closeModal(); } catch (e) { status('Could not read that take: ' + esc(e.message || String(e))); }
+      };
+      $('#vtFile', m).addEventListener('click', () => pickFile('audio/*,.wav,.mp3,.m4a,.aif,.aiff,.flac,.ogg', false, async (files) => {
+        try { const buf = await MD.decode(await files[0].arrayBuffer()); finish(buf, 0); } catch (e) { status('That file isn’t audio this computer can read.'); }
+      }));
+      const rb = $('#vtRec', m);
+      if (rb) rb.addEventListener('click', async () => {
+        rb.disabled = true;
+        try {
+          const take = await recordTake(status);
+          finish(take.buffer, take.offset);
+        } catch (e) { status('The microphone isn’t available: ' + esc(e.message || String(e))); rb.disabled = false; }
+      });
+    }, 'sheet-voice');
+  }
+  /** count-in + one pass of the pattern over a click; returns the take and where step 0 sits in it */
+  async function recordTake(status) {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+    if (E.state.playing) stopAll();
+    E.audio();
+    const ac = E.ctx;
+    const beat = 60 / P.bpm, lead = 0.25, clicks = 4 + P.bars * 4;
+    const rec = new MediaRecorder(stream);
+    const chunks = [];
+    rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+    const started = new Promise((r) => { rec.onstart = r; });
+    const stopped = new Promise((r) => { rec.onstop = r; });
+    rec.start();
+    await started;
+    for (let i = 0; i < clicks; i++) {
+      setTimeout(() => {
+        E.previewDrum(i % 4 === 0 ? 'rim' : 'perc_rim');
+        status(i < 4 ? `<span class="vt-live">Count-in: <b>${4 - i}</b></span>` : `<span class="vt-live">Recording… bar <b>${Math.floor((i - 4) / 4) + 1}</b> of ${P.bars}</span>`);
+      }, (lead + i * beat) * 1000);
+    }
+    await new Promise((r) => setTimeout(r, (lead + clicks * beat + 0.4) * 1000));
+    rec.stop();
+    await stopped;
+    stream.getTracks().forEach((tr) => tr.stop());
+    status('Listening to your take…');
+    const blob = new Blob(chunks, { type: rec.mimeType || 'audio/webm' });
+    const buffer = await MD.decode(await blob.arrayBuffer());
+    // step 0 sits after the count-in, plus the time the click takes to leave the speakers
+    const lat = ac ? (ac.baseLatency || 0) + (ac.outputLatency || 0) : 0.02;
+    return { buffer, offset: lead + beat * 4 + lat };
+  }
+  function applyVoice(kind, t, buffer, offset) {
+    const x = BL.voice.mono(buffer), sr = buffer.sampleRate, steps = nSteps();
+    if (kind === 'sing') {
+      const r = BL.voice.toNotes(x, { sr, bpm: P.bpm, steps, offset, key: P.key, scale: P.scale, midiOf: (d) => E.noteMidi(P, t, d) });
+      if (!r.notes.length) { toast('I couldn’t hear a melody in that take. Try singing a little louder, closer to the mic.'); return; }
+      edit((p) => { const d = patData(p.patterns[p.current], t); d.notes = r.notes; });
+      toast(`Placed ${r.notes.length} notes on ${t.name}, auto-tuned to ${T.keyName(P.key, P.scale)}. ⌘Z to undo.`);
+      if (ui.tab !== 'roll') setTab('roll');
+      return;
+    }
+    const r = BL.voice.toDrums(x, { sr, bpm: P.bpm, steps, offset });
+    if (!r.hits.length) { toast('I couldn’t hear any hits in that take. Try louder, sharper sounds.'); return; }
+    const want = { kick: ['Kick'], snare: ['Snare', 'Clap'], hat: ['Hi-Hat', 'Hat'] };
+    const fallback = { kick: 'kick_trap', snare: 'snare_trap', hat: 'hat_trap' };
+    edit((p) => {
+      const pat = p.patterns[p.current];
+      for (const kindName of ['kick', 'snare', 'hat']) {
+        const hits = r.hits.filter((h) => h.kind === kindName);
+        if (!hits.length) continue;
+        let tr = p.tracks.find((x) => x.type === 'drum' && want[kindName].includes(MD.soundCat(x.sound)));
+        if (!tr) { tr = makeTrack('drum', { sound: fallback[kindName] }); p.tracks.push(tr); }
+        const d = patData(pat, tr);
+        d.steps = new Array(steps).fill(0); d.rolls = new Array(steps).fill(1);
+        hits.forEach((h) => { d.steps[h.s] = h.v > 0.85 ? 1 : 0.8; });
+      }
+    });
+    const c = (k) => r.hits.filter((h) => h.kind === k).length;
+    toast(`Placed ${c('kick')} kicks, ${c('snare')} snares and ${c('hat')} hi-hats from your beatbox. ⌘Z to undo.`);
+    if (!E.state.playing) togglePlay();
+  }
+
   // ---------- vocal clean-up (auto-tune to the key + vocal chain) ----------
-  async function cleanLaneVocals(laneId) {
+  async function cleanLaneVocals(laneId, mode) {
+    const film = mode === 'film';
     const ids = [...new Set(P.clips.filter((c) => c.lane === laneId && c.kind === 'audio').map((c) => c.audio))];
-    if (!ids.length) { toast('Put a vocal on this track first, then clean it up.'); return; }
-    showLoading('Cleaning up your vocal: tuning to ' + T.keyName(P.key, P.scale) + ', removing noise, polishing…');
+    if (!ids.length) { toast(film ? 'Put a dialogue clip on this track first.' : 'Put a vocal on this track first, then clean it up.'); return; }
+    showLoading(film ? 'Turning it into an old movie…' : 'Cleaning up your vocal: tuning to ' + T.keyName(P.key, P.scale) + ', removing noise, polishing…');
     try {
       const swap = {};
       for (const id of ids) {
         const buf = await MD.ensureAudio(id);
         if (!buf) continue;
-        const r = await BL.vocal.clean(buf, { key: P.key, scale: P.scale, tune: 0.8 });
+        const r = film ? await BL.vocal.oldFilm(buf) : await BL.vocal.clean(buf, { key: P.key, scale: P.scale, tune: 0.8 });
         const bytes = BL.dsp.encodeWAV(r.channels, r.sampleRate);
-        const name = ((P.audio[id] || {}).name || 'Vocal').replace(/ \(clean\)$/, '') + ' (clean)';
+        const name = ((P.audio[id] || {}).name || 'Vocal').replace(/ \((clean|old movie)\)$/, '') + (film ? ' (old movie)' : ' (clean)');
         const meta = await MD.importAudioBytes(bytes.buffer || bytes, name);
         swap[id] = meta;
       }
@@ -1935,7 +2042,7 @@
           p.clips.forEach((c) => { if (c.lane === laneId && c.audio === old) c.audio = meta.id; });
         }
       });
-      toast('Vocal cleaned: tuned to the key, de-noised, EQ’d, compressed, a touch of reverb. Undo (⌘Z) brings the original back.');
+      toast(film ? 'Now it sounds like an old movie: narrow, mono, crackle and a small room. ⌘Z brings the original back.' : 'Vocal cleaned: tuned to the key, de-noised, EQ’d, compressed, a touch of reverb. Undo (⌘Z) brings the original back.');
     } catch (e) { toast('Could not clean that audio: ' + (e.message || e)); } finally { hideLoading(); }
   }
 
@@ -2300,7 +2407,8 @@
     addChannel, firstFreeLane, openPackLoopInLab, openRecord, loadPreset, openSaved, saveToLibrary,
     labHost: () => (ui.tab === 'lab' ? R.edBody : null),
     rackChanged: () => { if (ui.tab === 'rack') renderRack(); else drawLanes(); BL.playlist.drawClips(); },
-    addSampleTrack,
+    addSampleTrack, cleanLaneVocals, voiceTake,
+    applyVoice: (kind, buffer, offset) => applyVoice(kind, kind === 'sing' ? voiceTarget() : null, buffer, offset),
     canLinkFolders, linkedFolders: () => linked, linkFolder, refreshLinked, unlinkFolder, diskBuffer, useDiskFile, audioFromDisk,
   };
 
