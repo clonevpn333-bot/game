@@ -957,6 +957,40 @@
         return { node: amp, end };
       },
     },
+    drunk: {
+      name: 'Drunk Synth', cat: 'Leads', base: 60,
+      play(ctx, out, f, t, dur, v) {
+        // half-conscious lead: uneven wobble (two slow LFOs that never line up), slurred glides between notes,
+        // held notes sag flat as they fade, a slow left/right swirl, all under a warm filter so it never gets whiny
+        const me = INSTRUMENTS.drunk;
+        const prev = me._last && t - me._last.end < 0.08 && t >= me._last.t ? me._last.f : 0;
+        const amp = gain(ctx, 0);
+        const end = adsr(amp.gain, t, dur, prev ? 0.04 : 0.09, 0.4, 0.82, 0.8, v * 0.09);
+        const lp = filter(ctx, 'lowpass', 1900, 1.1);
+        lp.frequency.setValueAtTime(Math.min(3200, f * 5), t);
+        lp.frequency.exponentialRampToValueAtTime(Math.min(2200, Math.max(1000, f * 3)), t + 0.5);
+        const swirl = ctx.createStereoPanner ? ctx.createStereoPanner() : gain(ctx, 1);
+        chain(lp, amp, swirl, out);
+        const life = end - t + 0.15;
+        if (swirl.pan) { const sp = osc(ctx, 'sine', 0.13, t, life), sg = gain(ctx, 0.55); sp.connect(sg); sg.connect(swirl.pan); }
+        const w1 = osc(ctx, 'sine', 0.23, t, life), w1g = gain(ctx, 22); w1.connect(w1g);
+        const w2 = osc(ctx, 'sine', 0.37, t, life), w2g = gain(ctx, 14); w2.connect(w2g);
+        const sag = Math.min(dur, 0.45);
+        [[-12, 'sawtooth', 0.45], [12, 'sawtooth', 0.45], [0, 'triangle', 0.9], [-1200, 'sine', 0.35]].forEach(([det, type, lvl]) => {
+          const o = osc(ctx, type, f, t, life);
+          o.detune.value = det;
+          w1g.connect(o.detune); w2g.connect(o.detune);
+          if (prev) { o.frequency.setValueAtTime(prev, t); o.frequency.exponentialRampToValueAtTime(f, t + 0.16); }
+          else { o.frequency.setValueAtTime(f * 0.97, t); o.frequency.exponentialRampToValueAtTime(f, t + 0.1); }
+          // the sag: as the note lets go it slides ~40 cents flat, like it's slipping away
+          o.frequency.setValueAtTime(f, Math.max(t + 0.17, t + dur - sag));
+          o.frequency.exponentialRampToValueAtTime(f * 0.977, end);
+          chain(o, gain(ctx, lvl), lp);
+        });
+        me._last = { f, t, end: t + dur };
+        return { node: amp, end };
+      },
+    },
     dream: {
       name: 'Dream Synth', cat: 'Leads', base: 60,
       play(ctx, out, f, t, dur, v) {

@@ -150,10 +150,11 @@
       const pan = c.createStereoPanner ? c.createStereoPanner() : c.createGain();
       const send = c.createGain();
       const pump = c.createGain(); // sidechain-style pump: ducks on every beat, swells back (track.pump = depth 0-1)
-      input.connect(drive); drive.connect(tone); tone.connect(lowcut); lowcut.connect(pump); pump.connect(pan); pan.connect(g.master);
+      const haze = c.createBiquadFilter(); haze.type = 'lowpass'; haze.Q.value = 0.6; haze.frequency.value = 20000; // section haze (pattern.haze)
+      input.connect(drive); drive.connect(tone); tone.connect(haze); haze.connect(lowcut); lowcut.connect(pump); pump.connect(pan); pan.connect(g.master);
       pump.connect(send); // the reverb hears the pump too, so the whole layer breathes
       send.connect(g.revIn);
-      s = g.strips[track.id] = { input, drive, tone, lowcut, pump, pan, send, dk: -1 };
+      s = g.strips[track.id] = { input, drive, tone, haze, lowcut, pump, pan, send, dk: -1 };
     }
     const audible = !track.mute && (!anySolo || track.solo);
     const vol = track.vol == null ? 0.8 : track.vol;
@@ -234,6 +235,13 @@
     for (const track of p.tracks) {
       const s = stripFor(g, track, anySolo);
       if (!s.audible) continue;
+      if (step === 0) {
+        // section haze: the whole section heard through a drink (muffled), or snapping into focus
+        const hz = pat.haze || 20000;
+        s.haze.frequency.cancelScheduledValues(t);
+        s.haze.frequency.setTargetAtTime(hz, t, hz < (s.hazeAt || 20000) ? 0.6 : 0.08);
+        s.hazeAt = hz;
+      }
       if (track.pump && step % 4 === 0) {
         // duck right after the kick, then swell back up through the beat (measured off dreamy club records: ~5 dB)
         const beat = stepDur * 4, gp = s.pump.gain;

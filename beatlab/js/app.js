@@ -178,7 +178,7 @@
     if (pr.mix) { p.master.color = Object.assign({}, pr.mix); if (pr.mix.vol) p.master.vol = pr.mix.vol; }
     if (pr.human) p.human = pr.human;
     const LETTERS = 'ABCDEFG'.slice(0, Math.max(2, ...(pr.song || 'A').split('').map((ch) => 'ABCDEFG'.indexOf(ch) + 1))).split('');
-    p.patterns = LETTERS.map((L, i) => { const pt = newPattern(i); if (pr.patternNames && pr.patternNames[L]) pt.name = pr.patternNames[L]; return pt; });
+    p.patterns = LETTERS.map((L, i) => { const pt = newPattern(i); if (pr.patternNames && pr.patternNames[L]) pt.name = pr.patternNames[L]; if (pr.haze && pr.haze[L]) pt.haze = pr.haze[L]; return pt; });
     if (pr.patternNames) p.songOf = pr.id;
     const prev = P;
     P = p;
