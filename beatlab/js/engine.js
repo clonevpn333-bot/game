@@ -109,7 +109,7 @@
     const preview = c.createGain();
     preview.gain.value = 0.9;
     preview.connect(master);
-    const g = { ctx: c, master, tapeIn, wowG, flutG, hissG, lowShelf, highShelf, hp, lofi, drive, driveGain, width: { ll, lr, rl, rr }, comp, loud, limiter, analyser, revIn, preview, strips: {}, voices: {} };
+    const g = { ctx: c, master, revOut, tapeIn, wowG, flutG, hissG, lowShelf, highShelf, hp, lofi, drive, driveGain, width: { ll, lr, rl, rr }, comp, loud, limiter, analyser, revIn, preview, strips: {}, voices: {} };
     applyMaster(g, p);
     return g;
   }
@@ -227,11 +227,16 @@
     return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
   }
 
+  const stepsIn = (p) => (p.bars || 1) * 16;
   function scheduleStep(g, p, pat, step, t, stepDur, absStep) {
     if (absStep == null) absStep = step;
     if (!pat) return;
     const c = g.ctx;
     const anySolo = soloing(p);
+    if (pat.cut != null && step === pat.cut && g.revOut) {
+      const gap = (stepsIn(p) - step) * stepDur, rg = g.revOut.gain;
+      rg.cancelScheduledValues(t); rg.setTargetAtTime(0, t, 0.004); rg.setValueAtTime(0, t + gap - 0.004); rg.linearRampToValueAtTime(0.85, t + gap);
+    }
     for (const track of p.tracks) {
       const s = stripFor(g, track, anySolo);
       if (!s.audible) continue;
@@ -242,7 +247,14 @@
         s.haze.frequency.setTargetAtTime(hz, t, hz < (s.hazeAt || 20000) ? 0.6 : 0.08);
         s.hazeAt = hz;
       }
-      if (track.pump && step % 4 === 0) {
+      if (pat.cut != null && step === pat.cut) {
+        // the edit cut: this track (and its reverb send) chokes to silence until the pattern turns over
+        const gp = s.pump.gain, gap = (stepsIn(p) - step) * stepDur;
+        gp.cancelScheduledValues(t);
+        gp.setTargetAtTime(0, t, 0.004);
+        gp.setValueAtTime(0, t + gap - 0.004);
+        gp.linearRampToValueAtTime(1, t + gap);
+      } else if (track.pump && step % 4 === 0) {
         // duck right after the kick, then swell back up through the beat (measured off dreamy club records: ~5 dB)
         const beat = stepDur * 4, gp = s.pump.gain;
         gp.cancelScheduledValues(t);
