@@ -872,9 +872,9 @@
         decay(body.gain, t, 0.9, 0.12, 0.003);
         body.gain.setValueAtTime(0.0001, end);
         chain(swoop(osc(ctx, 'sine', f, t, end - t)), body, amp);
-        chain(swoop(osc(ctx, 'sine', f, t, end - t)), gain(ctx, 0.5), amp);
+        chain(swoop(osc(ctx, 'sine', f, t, end - t)), gain(ctx, 0.7), amp);
         if (f > 70) chain(swoop(osc(ctx, 'sine', f / 2, t, end - t)), gain(ctx, 0.5), amp);
-        chain(swoop(osc(ctx, 'sine', f * 2, t, end - t)), gain(ctx, 0.8), amp);
+        chain(swoop(osc(ctx, 'sine', f * 2, t, end - t)), gain(ctx, 0.3), amp);
         return { node: amp, end };
       },
     },
@@ -1069,7 +1069,7 @@
         const end = adsr(amp.gain, t, dur, 0.04, 0.25, 0.7, 0.2, v * 0.075);
         const lp = filter(ctx, 'lowpass', 2000, 0.6);
         lp.frequency.setValueAtTime(Math.min(4200, f * 6), t);
-        lp.frequency.exponentialRampToValueAtTime(Math.min(2600, Math.max(900, f * 3)), t + 0.3);
+        lp.frequency.exponentialRampToValueAtTime(Math.min(3600, Math.max(1100, f * 5)), t + 0.3);
         const hp = filter(ctx, 'highpass', 180, 0.7);
         chain(lp, hp, amp, out);
         [-28, -17, -8, 0, 8, 17, 28].forEach((det, i) => {
