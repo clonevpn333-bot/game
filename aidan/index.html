@@ -2658,13 +2658,13 @@ async function sleepover(){
  A_.sean.phone=1;you.facing='down';const chair=prop({t:'chair',x:634,y:158,floor:1});
  cam.x=cam.tx=330;await card('11:58 PM','One room. One door. Guard shifts.',2000);await tw(view,{fade:0},600);
  await N('The game room. Eight sleeping bags, one door, and a chair wedged under the handle that Omer tested three times.');
- let offer=shuffle(Object.keys(ACTS)).slice(0,3);
- for(let n=0;n<2;n++){
-  await say(n?'Hasan':'Arjun',n?'One more. I’m not tired. I’m never tired.':'We are NOT letting him ruin the sleepover. What are we doing?');
+ let offer=shuffle(Object.keys(ACTS)).slice(0,5);
+ for(let n=0;n<3;n++){
+  await say(n?'Hasan':'Arjun',n>1?'Last one. Make it count. Make it STUPID.':n?'One more. I’m not tired. I’m never tired.':'We are NOT letting him ruin the sleepover. What are we doing?');
   const c=await choose(offer.map(k=>ACTS[k][0]));const key=offer.splice(c,1)[0];
   await card(ACTS[key][0],'',1100);await ACTS[key][1]();
   await Promise.all(pals.map(id=>marchTo(A_[id],1,A_[id].bag.x)));calmAll();
-  if(n===0){
+  if(n<2){
    await say('Hasan','Give it a minute before the next game. Some of us still have a terrible plan to deal with.');
    await say('Nivaan','And if you hear my phone recording by itself, tell me. Immediately.');
    await cameraBack();A_.you.sit=false;
@@ -4573,9 +4573,9 @@ const CHAOS={
   await talk([['','Corey and Sean are on the roof. You don’t know how. Your window’s open.'],['Sean',rom()?'STELLAAAA! I’M GOING TO SAY HI ON MONDAY! I PRACTISED!':'I CAN SEE MY HOUSE! IT’S SHIT FROM HERE TOO!'],['Corey','He’s had one sip of David’s energy drink. One.']]);
   fx(.4,'');await talk([['','Then Corey stops laughing. He’s looking at next door’s tree. There’s someone in it. Sitting on a branch, level with the roof, swinging his legs.'],['Aidan','(from the tree) Is this the sleepover now? Up here?'],['Corey','Inside. INSIDE.']])}}};
 let chaosT=0;
-function chaosTick(dt){if(!socialRoam()||!S.play||busy||D||textOpen)return;S.chaosDone??={};if(S.chaos||S.chaosDone[S.phase]||S.phase==='r1'){chaosT=0;return}chaosT+=dt;if(chaosT<22||S.subT>0)return;
+function chaosTick(dt){if(!socialRoam()||!S.play||busy||D||textOpen)return;S.chaosDone??={};if(S.chaos||S.chaosDone[S.phase+(S.brk|0)]||S.phase==='r1'){chaosT=0;return}chaosT+=dt;if(chaosT<22||S.subT>0)return;
  const seen=store.seenChaos??={},keys=Object.keys(CHAOS).filter(k=>CHAOS[k].ok()),k=one(keys.filter(k=>!seen[k]).length?keys.filter(k=>!seen[k]):keys);if(!k)return;
- seen[k]=1;save();S.chaos=k;S.chaosDone[S.phase]=1;chaosT=0;SFX.sting();S.shake=.3;sub('!! '+CHAOS[k].t)}
+ seen[k]=1;save();S.chaos=k;S.chaosDone[S.phase+(S.brk|0)]=1;chaosT=0;SFX.sting();S.shake=.3;sub('!! '+CHAOS[k].t)}
 /* ---------- story twists ---------- */
 Object.assign(TWIST,{inside:['HE’S ALREADY HERE','He got in before the first call. He has been in the house all night.'],armed:['TOOLED UP','Arjun raided the garage. Everybody’s holding something.'],dad:['DAD’S HOME EARLY','The cruise was cancelled. Your dad is on his way back. Tonight.']});
 const INSIDE=['Upstairs, a wardrobe door clicks shut. Nobody is upstairs.','There are nine glasses on the side. You put out eight.','The toilet flushes. Everyone is in this room.','Someone has made the spare bed. Hospital corners.','A small wet handprint on the fridge. At about your shoulder.'];
@@ -4626,6 +4626,120 @@ async function monsterDeath(){
  AI.dead=true;await wait(700);await N('What’s left of him folds down into the blue jacket, and the jacket is very small.');
  mode=back;fx(.6,'');
 }
+
+/* ================= PASS 8: two more stories, longer night, goals, more chaos ================= */
+function drawUnder(m){
+ if(m.kind==='tunnel'){R(0,0,W,H,'#120c0a');for(let i=0;i<60;i++)R(hsh(i)*W,hsh(i+5)*H,3+hsh(i+2)*6,2,'#2a1c14');R(0,62,W,90,'#1c130f');for(let x=20;x<W;x+=62){R(x,58,5,94,'#4a3524');R(x-7,58,19,4,'#5a4130')}R(0,150,W,30,'#241811');
+  if(m.prints)for(let i=0;i<14;i++)R(60+i*17,84+hsh(i)*40,3,4,'#3d2a1e');if(m.bed){R(236,140,36,6,'#5a6080');R(236,134,8,6,'#ddd');R(268,128,2,12,'#4a3524')}if(m.spoon)R(176,147,7,2,'#c9c9d0')}
+ else if(m.kind==='lounge'){R(0,0,W,H,'#0d0c14');const fl=Math.sin(T*9)>0?'#9ad0ff':'#7ab8f0';R(40,88,56,38,'#111');R(43,91,50,32,fl);g.fillStyle='rgba(150,200,255,.06)';g.fillRect(0,60,W,100);R(0,150,W,30,'#1a1418');
+  R(196,104,58,48,'#3a2a30');R(190,118,10,34,'#2e2026');R(250,118,10,34,'#2e2026');R(214,94,22,12,'#8a8a90');R(216,92,18,4,'#6a6a70');R(206,128,20,4,'#ddd');R(208,126,16,2,'#9a9a70')}
+ else{R(0,0,W,H,'#2a3350');for(let x=0;x<W;x+=14)R(x,20,6,130,'#26304a');R(0,150,W,30,'#4a3a30');R(18,126,74,24,'#2456c8');R(18,120,20,8,'#eee');R(36,121,12,5,'#c9a56a');
+  R(116,74,160,3,'#5a4130');['you',...pals,'aidan'].forEach((id,i)=>{if(m.gone===i)return;g.save();g.translate(126+i*17,74);g.scale(.5,.5);drawKid(K[id],0,0,{still:1});g.restore()});
+  R(36,40,54,44,'#eee9d4');for(let i=0;i<8;i++)R(40+i*6,78-(10+hsh(i)*22),3,10+hsh(i)*22,'#c23b3b');R(284,66,34,84,'#3a2a20');R(300,66,2,84,'#22160f');R(100,132,8,10,'#9ad');R(102,124,1,9,'#e33');R(105,124,1,9,'#2a4a8a')}
+ for(const c of m.cast||[]){if(c.hidden)continue;drawKid(K[c.id],Math.round(c.x),c.y,{dir:c.dir,still:!c.moving,moving:c.moving,walk:T*13,pose:c.pose,sit:c.sit,scared:c.scared,weapon:c.weapon,punchT:c.punchT})}
+ if(m.kind!=='room'){const c=(m.cast||[])[0],v=g.createRadialGradient(c?c.x:160,120,18,c?c.x:160,120,150);v.addColorStop(0,'#0000');v.addColorStop(1,'#000e');g.fillStyle=v;g.fillRect(0,0,W,H)}
+ R(0,0,W,10,'#100d18');R(0,H-10,W,10,'#100d18');
+}
+{const _dm=drawMemory;drawMemory=function(){if(MEM.scene==='under')drawUnder(MEM);else _dm()}}
+const toUnder=o=>toMemory(Object.assign({scene:'under',cast:[]},o));
+{const _ds=drawStage;drawStage=function(m){_ds(m);if(m.car){const x=Math.round(m.car.x),y=158+(m.car.bump>T?-2:0);R(x-2,y+13,52,3,'#0008');R(x,y,48,12,'#3d6ea8');R(x+8,y-9,30,10,'#3d6ea8');R(x+11,y-7,11,7,'#bfe8ff');R(x+25,y-7,11,7,'#bfe8ff');R(x+6,y+10,9,5,'#111');R(x+33,y+10,9,5,'#111');R(x+46,y+3,3,3,'#ffe9a0');
+  if(m.car.back){R(x+13,y-6,6,6,K.aidan.skin);R(x+12,y-7,8,3,K.aidan.hair);R(x+14,y-4,1,1,'#fff');R(x+17,y-4,1,1,'#fff')}if(m.car.wet)R(x-6,y+12,60,6,'#2a4a6a')}
+  if(m.road)drawKid(K.aidan,m.road,166,{dir:-1,still:1,horror:1})}}
+/* ---------- STORY 4: OMER'S BUNKER ---------- */
+FRIEND_STORIES.bunker={title:'Omer’s bunker',cast:['omer','sean'],lead:'omer',meet:[[0,110],[0,85],[0,85],[0,85]],places:['the garage','the garage','the garage','the garage'],needs:{},
+ invite:['“I need to show you something. Do not tell my mum.”','“The tunnel is longer than I dug it. Garage.”','“It comes up somewhere. I need a witness.”','“We have to decide what to do with the hole.”']};
+FRIEND_SCENES.bunker=[
+ async q=>{await talk([['','Omer kicks the oil-stained rug aside. Under it there’s a trapdoor with a combination lock. 2-4-6-8.'],['Omer','Panic bunker. Eleven months. Every “study session” at your house.'],['Sean','You dug a HOLE under his GARAGE?'],['Omer','A structurally sound hole.'],
+   ['','Tins. A camp bed. A laminated rota for the end of the world with all eight of your names on it. “DAVID — morale / ballast.” “ARJUN — bait.”'],['Sean','Why am I “spare”?'],['Omer','Every team needs a spare.']]);q.outcome='There’s a hole under your garage'},
+ async q=>{const prev=scoreName,om={id:'omer',x:30,y:150,dir:1,pose:'torch'},you={id:'you',x:14,y:152,dir:1},se={id:'sean',x:0,y:150,dir:1};
+  await toUnder({kind:'tunnel',cast:[om,you,se]});cue('sneak');mvc(se,70);mvc(you,90);await mvc(om,110);
+  await talk([['Omer','I dug six metres. Six. I have a spreadsheet.'],['','The tunnel carries on past his last support beam. No beams after that. Just clay, scraped smooth, by something small.']]);MEM.prints=true;MEM.spoon=true;fx(.3,'');
+  await talk([['Sean','Are those handprints?'],['','There’s a tool on the floor. It’s a dessert spoon. It’s been worn down to half a dessert spoon.']]);
+  if(await choose(['Keep going.','Back. Now.'])){await say('Omer','Agreed. We know enough. We know too much.');q.back=true}
+  else{mvc(se,170);mvc(you,190);await mvc(om,210);MEM.bed=true;SFX.sting();await talk([['','An alcove. A second camp bed, child-sized, with a folded blue jacket for a pillow. It’s directly under your living room.'],['Omer','He’s been lying here. Listening. Two metres below us. For MONTHS.'],['Sean','There’s a mark on the wall for every time we laughed.']])}
+  await fromMemory();cue(prev);q.outcome='Somebody else has been digging'},
+ async q=>{const prev=scoreName,om={id:'omer',x:296,y:150,dir:-1},you={id:'you',x:284,y:152,dir:-1},se={id:'sean',x:306,y:150,dir:-1};
+  await N('The tunnel ends in a ladder. The ladder ends in the back of a wardrobe. You know whose before you open it.');
+  await toUnder({kind:'room',cast:[om,you,se]});cue('reveal');mvc(se,250);mvc(om,230);await mvc(you,200);
+  await talk([['','Aidan’s bedroom. Nine plushies on a shelf, each one sewn out of real clothes. One of them is wearing Omer’s missing polo.'],['Omer','That’s my SHIRT. I thought my mum shrank it.'],['','A height chart on the wall. Eight columns. He’s been measuring you. Your toothbrush is in a cup next to his.'],['','Downstairs, a television is on.']]);
+  const c=await choose(['Take the plushie of you.','Read the diary on the pillow.','Go and look downstairs.']);
+  if(c===0){MEM.gone=0;SFX.pick();store.run.plush=true;await talk([['','It’s warm. It has hair. It’s your hair — you can tell by the colour, and by the way your scalp goes cold.'],['Sean','Put it back. Or don’t. I don’t know which is worse.']])}
+  else if(c===1){store.run.diary=true;await talk([['','Last entry, tonight’s date: “THEY CALLED!!! They called ME. I did the drumsticks one.”'],['','Underneath, a list. “Allergic to: dust, lilies, cats, hops, being left out.” Then: “Bring gel. Bring the spoon. Smile at the right bits.”'],['Omer','He’s written down his own weaknesses. In ORDER. I respect it and I’m going to use it.']])}
+  else{MEM.kind='lounge';you.x=120;om.hidden=se.hidden=true;store.run.sawMum=true;fx(.5,'');await talk([['','His mum is in the armchair facing the shopping channel. She’s very still. There’s a dinner on her lap under clingfilm. The date on the clingfilm is from March.'],['','Her phone is in her hand. Forty missed calls: SCHOOL. On the shelf behind her there’s a tenth plushie. It’s wearing her cardigan.'],['','You go back up the stairs without making a sound, and you will never be able to say why you were so careful.']])}
+  SFX.creak();await say('Omer','Front door. Someone’s home. GO.');await fromMemory();cue(prev);save();q.outcome=c===0?'You took yourself back':c===1?'You read his diary':'You saw his mum'},
+ async q=>{await talk([['Omer','So. The hole. It’s a way in for him and a way out for us. I have eleven garden fireworks and a theory about load-bearing clay.']]);
+  const c=await choose(['Blow the tunnel.','Leave it open. It’s an escape route.','Wait down there with a wrench.']);
+  if(c===0){for(let i=0;i<3;i++){SFX.power();noise(.4,.5,200,.6);S.shake=.7;fx(.15,'');await wait(350)}await talk([['','The garage floor drops four inches and stays there. Your dad’s car is now on a slope.'],['Omer','Structurally, that’s a success.']]);q.outcome='Tunnel collapsed'}
+  else if(c===1){store.run.tunnel=true;await talk([['Sean','And if he comes UP it?'],['Omer','Then at least we’ll know where he is.'],['','Nobody finds that as comforting as Omer does.']]);q.outcome='The tunnel is open'}
+  else{store.run.ambush=true;await tw(view,{fade:1},500);await N('Forty minutes in the dark. Then humming, getting closer. Then a small hand on the bottom rung.');SFX.smack();SFX.squelch();S.shake=.6;await tw(view,{fade:0},400);
+   await talk([['','You hit him so hard the wrench rings. He goes back down the ladder without a sound.'],['Aidan','(from below, cheerful) Okay! I’ll use the door!'],['Sean','…He’s not even annoyed. Why isn’t he annoyed?']]);q.outcome='You got the first hit in'}save()}];
+/* ---------- STORY 5: DAD'S CAR ---------- */
+FRIEND_STORIES.joyride={title:'Dad’s car',cast:['arjun','sean'],lead:'arjun',meet:[[0,85],[0,85],[0,85],[0,85]],places:['the garage','the garage','the garage','the garage'],needs:{},
+ invite:['“Your dad left his car keys on the hook. I’m just saying.”','“Slushies. Four minutes away. I’ve driven a go-kart.”','“He’s still in the back seat. We have to do something.”','“We need a story for the car. A really good one.”']};
+FRIEND_SCENES.joyride=[
+ async q=>{await talk([['Arjun','The twenty-four-hour garage does blue slushies. It’s four minutes by car. I’ve driven a go-kart, twice.'],['Sean','Who’s tallest? Tallest drives. That’s the law.'],['','Your dad’s car sits there, gleaming, with eleven months of no-claims bonus.']]);
+  const c=await choose(['“I’ll drive.”','“Arjun drives.”','“Nobody is touching that car.”']);q.driver=c===0?'You':c===1?'Arjun':null;
+  await say('Arjun',q.driver?'After the next call. Bring coins.':'It’ll still be here later. So will I.');q.outcome=q.driver?'Keys in hand':'Car stays put'},
+ async q=>{if(!q.driver){await N('Arjun is sitting in the driver’s seat making engine noises. He’s very good at them.');q.driver=(await choose(['“Fine. Go.”','“Out.”']))?null:'Arjun';if(!q.driver){q.outcome='Still parked';return}}
+  const prev=scoreName;await toStage({cast:[],car:{x:-60}});cue('tipsy');
+  for(let i=0;i<3;i++){SFX.creak();MEM.car.bump=T+.2;await tw(MEM.car,{x:-60+i*30+30},500);await wait(250)}
+  await talk([[q.driver,'It’s FINE. It stalls when it’s happy.'],['','You take out two wheelie bins and somebody’s wing mirror. It might be yours.']]);await tw(MEM.car,{x:150},1600);
+  const o=await choose(['Order “one of everything”.','Moon the cashier.','Ask if they’re hiring.']);await N(o===0?'It comes to £214. Arjun pays £3.40 in coppers and you leave at speed.':o===1?'The cashier doesn’t look up. “Seen better. Pump four.” Sean has never recovered.':'They are. Arjun starts Monday. He’s furious.');store.run.biryani=true;
+  await tw(MEM.car,{x:60},1400);MEM.road=20;MEM.car.x=120;fx(.4,'');SFX.sting();await N('On the way back there’s somebody standing in the middle of your road. Blue jacket. Not moving. Not squinting at the headlights.');
+  const c=await choose(['Brake.','Swerve.','Floor it.']);
+  if(c===1){SFX.smack();noise(.6,.6,300,.6);S.shake=.8;await tw(MEM.car,{x:230},400);MEM.car.wet=true;MEM.road=null;await talk([['','Through Mr. Okafor’s hedge, across his lawn, and into his pond, where the car sits down like a tired dog.'],['Sean','My slushie’s fine.']]);q.car='pond';store.run.carGone=true}
+  else{if(c===2){await tw(MEM.car,{x:10},500);SFX.smack();SFX.squelch();S.shake=.6;MEM.car.bump=T+.4;MEM.road=null;await N('Thump. Thump. Front wheels, back wheels. In the mirror the road is empty.')}
+   else{await tw(MEM.car,{x:50},700);await N('He walks round to the back door. He knocks on the window, very gently, with one knuckle.');MEM.road=null}
+   MEM.car.back=true;fx(.5,'');await talk([['Aidan',c===2?'You went over my leg. It’s okay. I’ve got others.':'Room for one more?'],['','He’s in the back seat. The door didn’t open. His seatbelt is already on.']]);q.car='aidan'}
+  await fromMemory();cue(prev);save();q.outcome=q.car==='pond'?'The car is in a pond':'He’s in the back seat'},
+ async q=>{if(!q.car){await N('The car is exactly where your dad left it. Arjun looks at it the way David looks at a closed fridge.');q.outcome='Nothing happened';return}
+  if(q.car==='pond'){await talk([['','Plan: rope, the tow bar, and David as a counterweight.'],['David','Why am I always the counterweight.'],['','The rope snaps. David sits down in the pond. The car sinks another foot and its alarm starts, underwater, like a whale.']]);q.outcome='Still in the pond';return}
+  const prev=scoreName;await toStage({cast:[],car:{x:120,back:true}});cue('call');
+  await talk([['Aidan','Can I pick the music?'],['','The stereo comes on by itself. It’s your own answerphone. Every message he’s ever left you, in order, starting in Year 7.'],['Arjun','So, uh. Aidan. Why did the chicken join a—'],['Aidan','Ha. Ha. Ha.'],['','He laughed before the punchline. The child locks click down.']]);
+  const c=await choose(['Crash it on purpose.','Drive him home.','Jump out at the lights.']);
+  if(c===0){await tw(MEM.car,{x:70},350);SFX.smack();noise(.6,.6,300,.6);S.shake=.9;MEM.car.back=false;await talk([['','You put your dad’s car through your dad’s garage door. When the airbags go down, the back seat is empty.'],['','The seatbelt is still done up.']]);store.run.carGone=true;q.outcome='Car: garage door. Aidan: gone'}
+  else if(c===1){await tw(MEM.car,{x:330},1800);await talk([['','You pull up outside his house. He doesn’t get out.'],['Aidan','This isn’t where the sleepover is.'],['','You leave the keys in it and run. He waves from the back seat the whole way down the road.']]);store.run.carGone=true;q.outcome='You left him the car'}
+  else{await talk([['','You all go out of your doors at once at the red light. The car rolls on, slowly, driverless, through the junction.'],['','He’s turned round in his seat to wave. He’s still waving when it goes over the hill.']]);tw(MEM.car,{x:360},3000);await wait(1800);store.run.carGone=true;q.outcome='The car drove off without you'}
+  await fromMemory();cue(prev);save()},
+ async q=>{if(!store.run.carGone){await N('Arjun returns the keys to the hook. He pats the bonnet. “Next week.”');q.outcome=q.outcome||'Car survived';return}
+  await talk([['Sean','Your dad’s going to ask where his car is.'],['Arjun','We need a story. A really, really good one.']]);
+  const c=await choose(['“Aidan took it.”','Push what’s left onto Mr. Okafor’s drive.','Leave Dad a note and own it.']);
+  await N(c===0?'It isn’t even a lie. That’s the worst thing about it.':c===1?'It takes six of you. Mr. Okafor watches from his window the entire time, eating toast.':'“Dear Dad. The car is gone. I am sorry. There is also a hole under the garage. Love you.”');
+  SFX.creak();fx(.3,'');await talk([['','On the garage floor where the car was, there’s a small neat pile. Nine seatbelt buckles. Cut out. Polished.'],['Arjun','…We’ve only got five seats.']]);q.outcome='Dad’s car is gone'}];
+/* ---------- three more upstairs games ---------- */
+ACTS.floor=['THE FLOOR IS AIDAN',async()=>{await talk([['Arjun','The floor is Aidan. Touch the carpet and he gets you. GO.']]);for(const id of pals){A_[id].sit=false;A_[id].pose='up'}
+ for(let i=0;i<5;i++){const id=one(pals);A_[id].laughT=T+.6;SFX.smack();S.shake=.25;await wait(260)}
+ await talk([['','David is on the bookcase. The bookcase is not on board with this. Corey crosses the whole room on two cushions without looking down.'],['Hasan','I’m slipping— I’m SLIPPING—']]);A_.hasan.lie=1;SFX.smack();S.shake=.4;laugh(1200,['arjun','nivaan','david']);
+ fx(.4,'');SFX.sting();await talk([['Hasan','Something’s got my ankle.'],['Arjun','Yeah, yeah, “Aidan’s got you”—'],['Hasan','NO. SOMETHING HAS GOT MY ANKLE.'],['','It takes three of you to pull him out from under the bed. There are five small bruises on his shin, in a row, like fingertips.']]);A_.hasan.lie=0;setPose(pals,null)}];
+ACTS.call=['PRANK CALL HIS MUM',async()=>{await talk([['Nivaan','We prank call Aidan’s house. His mum answers, we say he’s won a holiday. Speaker on.']]);SFX.ring();await wait(900);SFX.blip(200);
+ await talk([['','It picks up on the first ring.'],['Arjun','Hello, madam! Is this the mother of Aidan? He’s won a—'],['','Breathing. Then a voice, high and careful, like somebody doing an impression of a woman they’ve only heard through a wall.'],['Aidan','“Hello. Yes. This is Aidan’s mum. He’s a lovely boy. You should have invited him.”']]);fx(.5,'');
+ const c=await choose(['Hang up.','“Aidan. We know it’s you.”']);if(c)await talk([['Aidan','“Aidan isn’t here. Aidan is at a sleepover.”'],['','The line goes dead. Then, from downstairs, the house phone gives one cheerful ring.']]);else await N('You hang up. The call timer keeps counting. 0:41. 0:42. Nivaan puts the phone in a drawer and it carries on in there.')}];
+ACTS.clip=['CLIPPER ROULETTE',async()=>{const v=one(pals.filter(id=>!A_[id].dead)),a=A_[v];
+ await talk([['David','Your dad’s clippers. No guard. We spin the bottle. Whoever it lands on gets whatever Arjun feels like.'],['Omer','That’s how cults start.']]);SFX.blip(500);a.pose='cover';laugh(1500);
+ await talk([['','It lands on '+K[v].n+'.'],[K[v].n,'Not the sides. NOT THE— do NOT—']]);for(let i=0;i<4;i++){noise(.25,.2,3000,3);await wait(300)}a.pose=null;a.bowl=true;a.noG=false;SFX.sting();fx(.3,'');
+ await talk([['Arjun','I didn’t do that.'],['Arjun','I was doing a fade. I swear on my LIFE I was doing a fade.'],['','Everybody looks at '+K[v].n+'’s head. It’s a bowl. A perfect one. The clippers are still buzzing in Arjun’s hand, and they’re warm, and they’re not plugged in.']])}];
+/* ---------- more chaos ---------- */
+Object.assign(CHAOS,{
+ ouija:{x:520,f:0,t:'Chanting from the living room. That’s never good.',ok:()=>!A_.hasan.dead,go:async()=>{await talk([['','Hasan and Nivaan have made a ouija board out of a pizza box. The planchette is a bottle cap.'],['Nivaan','Is anybody there?'],['','The cap moves. H. I.'],['Hasan','You’re pushing it.'],['Nivaan','YOU’RE pushing it.']]);fx(.4,'');SFX.sting();
+  await talk([['','Nobody is touching it now. I. M. U. P. S. T. A. I. R. S.'],['','Above your heads, one floorboard creaks, exactly once, like someone shifting their weight to read along.']])}},
+ listing:{x:240,f:1,t:'David is shouting about “five stars” in the study.',ok:()=>!A_.david.dead,go:async()=>{await talk([['David','I listed your house as a holiday let. As a joke. “Sleeps eight. Ample snacks.”'],['You','WHY.'],['David','It’s already got a review.'],['','★★★★★ “cosy. great hosts. i never left.” — A. Posted four minutes ago. From this wifi.']]);fx(.4,'')}},
+ tattoo:{x:800,f:1,t:'Buzzing from the upstairs bathroom. And swearing.',ok:()=>!A_.sean.dead&&!A_.arjun.dead,go:async()=>{await talk([['','Arjun is giving Sean a stick-and-poke with a compass and a biro.'],['Sean','It’s romantic. It’s permanent. She’ll know I mean it.'],['Arjun','Done. Beautiful. S-T-E-L-A.'],['Sean','…There’s two Ls.'],['Arjun','Not any more there isn’t.']]);store.run.stela=true;laugh(1500)}},
+ fryer:{x:60,f:0,t:'A WHOOMPH from the garage. The window lights up orange.',ok:()=>!A_.david.dead,go:async()=>{noise(.6,.6,300,.6);S.shake=.6;fx(.2,'');await talk([['','David has your dad’s turkey fryer going. In it, whole, is a twelve-inch pizza.'],['David','Deep-fried pizza. They do it in Scotland. It’s CULTURE.'],['','The fireball takes his fringe and most of a shelf. The pizza is perfect. He eats it standing in the smoke, eyes closed, at peace.']])}}});
+/* ---------- wiring: story subset, longer night, tonight's dares, medals ---------- */
+{const _sr=storyReady;storyReady=function(k){const on=store.run.stories;return (!on||on.includes(k))&&!A_[FRIEND_STORIES[k].lead].dead&&_sr(k)}}
+const GOALS={clean:['Get all seven friends out alive.',(r,n)=>n===7],solo:['Be the only one who walks out.',(r,n)=>n===0],hit2:['Cross out two names.',r=>r.hitman===2],fire:['Burn a house down.',r=>r.houseBurned],freezer:['Fill the freezer.',r=>r.murder],live:['Still be live at sunrise.',r=>r.stream],
+ mum:['Get Auntie’s biryani.',r=>r.biryani],love:['Get Corey to her door.',r=>r.crushDone],room:['Bring something back from his bedroom.',r=>r.plush||r.diary||r.sawMum],car:['Lose your dad’s car.',r=>r.carGone],tidy:['Kill nobody and burn nothing.',r=>!r.hitman&&!r.murder&&!r.houseBurned],drunk:['Finish the night drunk.',r=>r.drunk>0]};
+{const _t=title;title=async function(){const ch=await _t();if(ch===0){const keys=Object.keys(FRIEND_STORIES),seen=store.storySeen??={};
+  store.run.stories=shuffle(keys).sort((a,b)=>(seen[a]||0)-(seen[b]||0)).slice(0,3);for(const k of store.run.stories)seen[k]=(seen[k]||0)+1;
+  store.run.goals=shuffle(Object.keys(GOALS)).slice(0,3);save();
+  await N('TONIGHT: '+store.run.stories.map(k=>FRIEND_STORIES[k].title).join(' · ')+'.');await N('DARES FOR TONIGHT — '+store.run.goals.map(g=>GOALS[g][0]).join('  /  '));
+  if(Object.keys(store.medals||{}).length>=4&&!(await choose(['Pick tonight’s twist yourself.','Keep it: '+TWIST[twist()][0]]))){const ks=Object.keys(TWIST);store.run.twist=ks[await choose(ks.map(k=>TWIST[k][0]))];if(twist()==='tipsy')store.run.drunk=1;save()}}return ch}}
+{const _sp=stagePlay;stagePlay=function(p,o){S.brk=(S.brk|0)+1;return _sp(p,o)}}
+{const _sh=setupHunt;setupHunt=function(m){_sh(m);const r=store.run;if(!m&&(r.diary||r.ambush))S.hp=Math.min(S.hp,2);if(m&&r.plush)S.monsterHP=Math.max(6,S.monsterHP-4)}}
+{const _th=things;things=function(){const l=_th();if(store.run.tunnel&&S.aidanIn&&!S.floor&&!S.hiddenAt&&!S.errand)l.push(hide(85,'Omer’s bunker'));return l}}
+{const _m=menu;menu=async function(html,btns){if(/THE CALL<br>ENDED/.test(html)){const r=store.run,n=livingFriends().length,md=store.medals??={};let h='';
+  for(const g of r.goals||[]){const ok=!!GOALS[g][1](r,n);if(ok)md[g]=1;h+=(ok?'★ ':'☆ ')+GOALS[g][0]+'<br>'}save();
+  html+='<p>'+h+'</p><p>MEDALS '+Object.keys(md).length+'/'+Object.keys(GOALS).length+(Object.keys(md).length>=4?' — you can pick the twist now.':' — earn 4 to pick your own twist.')+'</p><p>Tomorrow night: different stories, different dares.</p>'}return _m(html,btns)}}
 
 const sceneText=$('scene-text'),textInk=sceneText.getContext('2d');
 let sceneLetters=[];
