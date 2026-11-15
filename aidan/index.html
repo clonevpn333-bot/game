@@ -2446,7 +2446,7 @@ function ambient(dt){
  if(BN.q&&T>=BN.q.at&&S.subT<=.3){sub(BN.q.text);BN.q=null}
  if(S.phase==='r1'||S.phase==='r2'){
   BN.t-=dt;if(BN.t>0||S.subT>0||BN.q)return;BN.t=rnd(9,15);
-  const b=BANTER[BN.i++%BANTER.length];sub(K[b[0]].n+': '+b[1]);BN.q={text:K[b[2]].n+': '+b[3]+(b[4]?'   '+K[b[4]].n+': '+b[5]:''),at:T+3.7};
+  const b=BANTER[BN.i++%BANTER.length];sub(K[b[0]].n+': '+b[1]);BN.q={text:K[b[2]].n+': '+b[3]+(b[4]?'   '+K[b[4]].n+': '+b[5]:'')+(b[6]?'   '+K[b[6]].n+': '+b[7]:''),at:T+3.7};
  }else if(S.aidanIn&&(S.phase==='allergens'||S.phase==='hunt')&&!AI.dead){
   BN.scare-=dt;if(BN.scare>0||S.subT>0)return;BN.scare=rnd(15,27);
   const dead=pals.filter(id=>A_[id].dead),live=livingFriends(),r=Math.random();
@@ -4983,6 +4983,31 @@ DARKTALK.push(
 calmLines.arjun.push('I’m not saying I’ve done it. I’m saying I’ve read EXTENSIVELY.');
 calmLines.david.push('If anyone asks, that folder on my laptop is “homework”. All four gigabytes.');
 calmLines.hasan.push('Arjun says my head’s shaped like a gear stick. Then he says a second thing it’s shaped like. I prefer the gear stick.');
+
+/* ================= PASS 13: nastier mouths ================= */
+BANTER.push(
+ ['arjun','Hasan, your mum’s so nice to me. Suspiciously nice. She calls me “the tall one”.','hasan','She calls you “the one with the face”. I’ve read the group chat.'],
+ ['hasan','Arjun, you’ve got the body count of a vegan abattoir.','arjun','And you’ve got the head of a bollard. We all carry something.'],
+ ['david','I’d let Aidan kill me if it meant no PE on Monday.','omer','You’d let Aidan kill you for a Twix.','david','A multipack. I have standards.'],
+ ['sean','Do I text her “goodnight” or is that too much?','arjun','Mate, you’ve got the rizz of a wet bus seat. Send it. It can’t get worse.'],
+ ['nivaan','Omer, be honest, have you ever done a single bad thing?','omer','I once watched four minutes of something and then cleared the router logs. From the roof.'],
+ ['corey','You lot talk about girls like they’re a rumour.','arjun','To us they ARE, you beautiful prick.'],
+ ['arjun','David, you’re built like a wardrobe that’s given up.','david','And you’re built like the “before” photo. Next.'],
+ ['hasan','If I die a virgin tonight I’m haunting all of you.','nivaan','You’d haunt us either way. That’s not the variable.'],
+ ['david','Why’s Arjun been in the bathroom for twenty minutes.','sean','Don’t.','david','I’m just saying, he took his phone.','arjun','(through the door) IT’S A LONG LEVEL.'],
+ ['omer','Statistically one of us peaks in school.','arjun','It’s Corey. The rest of us are the cautionary tale.'],
+ ['nivaan','Aidan’s never sworn. Not once. Ever noticed?','hasan','That’s the most fucked up thing you’ve said all night.'],
+ ['arjun','Your mum.','david','My mum’s in Tenerife.','arjun','Not last night she wasn’t.','david','She’s been there since TUESDAY, you melt.']);
+BANTER.sort(()=>Math.random()-.5);
+Object.assign(BARK,{david:BARK.david.concat(['If he eats me, at least somebody finally will.','I’m too pretty to die. Shut up. I am.']),arjun:BARK.arjun.concat(['I’m going to die without ever having touched a boob. Write that on the stone.','Tell my search history I love it.']),
+ hasan:BARK.hasan.concat(['If he goes for the head I’m at LEAST taking a finger.','I’m not dying in a house with one crunchy sock in it.']),nivaan:BARK.nivaan.concat(['Delete my camera roll. ALL of it. Don’t look. Just delete.']),sean:BARK.sean.concat(['I never even got to hold her hand, you bowl-cut bastard.']),omer:BARK.omer.concat(['My last words are going to be “fuck”. I had a speech and it’s going to be “fuck”.']),corey:BARK.corey.concat(['Not the face. Seriously. It’s all I’ve got.'])});
+GRIEFBARK.push('He’s— there’s bits of {n} on my SHOES—','{n} owed me a tenner. I know that’s not the point. I KNOW.','We were literally just taking the piss out of {n}. Like ten minutes ago.');
+DARKTALK.push(
+ async()=>{await talk([['Arjun','Shag, marry, kill. Mr. Okafor, Hasan’s mum, Aidan.'],['Hasan','You’re not doing my mum.'],['Arjun','Marry your mum. Obviously. The biryani.'],['David','Kill Aidan.'],['Omer','So that leaves—'],['Arjun','We don’t talk about what that leaves.']])},
+ async()=>{await talk([['David','What’s the actual worst thing in your camera roll. Honest.'],['Nivaan','Four hundred photos of my own hairline from above.'],['Sean','A screenshot of Stella’s “seen” tick.'],['Arjun','Pass.'],['Hasan','You can’t PASS.'],['Arjun','I’m passing so hard I’m graduating.']])});
+calmLines.corey.push('Arjun asked me for “tips”. I said wash. He wrote it down.');
+calmLines.sean.push('She liked my story at 1am. That’s either love or insomnia.');
+calmLines.omer.push('I know everyone’s browser history. I set up the wifi. I say nothing. That’s called power.');
 
 const sceneText=$('scene-text'),textInk=sceneText.getContext('2d');
 let sceneLetters=[];
