@@ -4801,6 +4801,73 @@ ACTS.florida=['FLORIDA MAN BIRTHDAYS',async()=>{const H=[['david','“Florida ma
  await say('You','Mine’s— hang on.');SFX.blip(200);fx(.4,'');await N('“Florida man found living in friends’ attic for six months: ‘I just wanted to be included.’” The photo is blurry. The hair isn’t.')}];
 delete ACTS.rankOld;
 
+/* ================= PASS 10: three more side stories ================= */
+Object.assign(K,{shop:{n:'Mr. Bains',skin:'#b9835c',hair:'#ddd',hs:'short',top:'#3a6a4a',pants:'#333',glasses:1,seed:41},dada:{n:'Dada-ji',skin:'#b8c8d8',hair:'#eef4ff',hs:'short',top:'#9ab0c8',pants:'#8aa0b8',seed:42}});
+Object.assign(NCOL,{'Mr. Bains':'#3a6a4a','Dada-ji':'#6a8ab0',Ziggy:'#8d6246','Lava Lamp':'#c040c0',Jay:'#555'});
+{const _ds=drawStage;drawStage=function(m){_ds(m);if(m.shop){R(150,52,140,12,'#c23b3b');g.fillStyle='#fff';g.font='6px KenPixel,monospace';g.fillText('BAINS 24HR · BOOZE · NEWS · VAPES',156,60);R(186,74,26,20,'#bfe8ff');R(252,82,18,14,'#bfe8ff')}}}
+/* ---------- STORY 6: THE TIN ---------- */
+FRIEND_STORIES.tin={title:'Jay’s brownies',cast:['corey','david'],lead:'corey',meet:[[0,250],[0,250],[1,480],[1,480]],places:['the kitchen','the kitchen','the game room','the game room'],needs:{},
+ invite:['“My brother left a tin in my bag. It says DO NOT.”','“David ate four. Something’s happening to David.”','“Everyone’s had some. Everyone. Come upstairs.”','“My brother’s calling. About the tin.”']};
+FRIEND_SCENES.tin=[
+ async q=>{await talk([['Corey','My brother Jay left this in my bag. The lid says “DO NOT. — J.” in Sharpie. He’s nineteen and he has a lava lamp, so.'],['','It’s brownies. Dense ones. They smell like a garden centre.'],['David','(mouth full) They’re really good.'],['Corey','How many have you—'],['David','Four. Was that the wrong number?']]);
+  q.ate=!(await choose(['Eat one. For science.','“I’m the host. Somebody has to be able to dial 999.”']));await N(q.ate?'It tastes like a hedge that’s been to university.':'David takes yours. “Waste not.”');if(q.ate)store.run.high=1;q.outcome='The tin is open'},
+ async q=>{store.run.high=2;save();await talk([['David','My hands are ENORMOUS. Have they always been this enormous? How have I been opening doors?'],['Corey','I can hear colours. They’re fine. Blue’s a bit needy.'],['David','I think I can feel my own skeleton. He’s in there. He’s been in there the WHOLE TIME.']]);
+  const c=await choose(['Ask the lava lamp for advice.','Ask Ziggy who’s a good boy.','Lie on the kitchen floor.']);
+  if(c===0)await talk([['Lava Lamp','You’re all going to die in this house.'],['Lava Lamp','Also, text her back. Life’s short. Tonight especially.'],['Corey','The lamp’s got a point.']]);
+  else if(c===1)await talk([['Ziggy','It’s me. Obviously it’s me. Why do you people keep ASKING.'],['Ziggy','Listen. The wet kid’s in your walls. I’ve been barking about it for a month. Anyway. Biscuit.'],['David','The dog said biscuit.']]);
+  else await talk([['','The lino is cool. The fridge hums in a key you’ve never noticed. Under the hum, very faintly, someone under the floor is humming along.'],['David','The house has got a little guy in it.']]);q.outcome='Things are talking'},
+ async q=>{store.run.high=3;save();await talk([['','Somebody crumbled the rest into the popcorn. So now it’s everyone.'],['Omer','I’ve solved time. It’s not a line. It’s just a really long now.'],['Hasan','My head’s changing gear. Can you hear that? It’s in third. IT’S IN THIRD.'],['Arjun','(crying) Jokes are just sad facts with timing. That’s all they’ve ever been.']]);fx(.4,'');
+  await talk([['','There are nine of you sitting in the circle. The ninth is eating a brownie in small, careful bites. He’s very damp.'],['David','Is… is he real? Or is that the tin?']]);
+  const c=await choose(['Poke him.','Offer him another brownie.','“He’s not real. Ignore him.”']);
+  if(c===0){SFX.squelch();await talk([['','Cold. Wet. Gives slightly, like a peach.'],['Aidan','Ow. Ha. Ha.'],['','Nobody runs. That’s the tin. You all just sort of lean away.']])}
+  else if(c===1){store.run.fedAidan=true;await talk([['Aidan','For me? Nobody’s ever— thank you.'],['','He eats it. He eats three more. His pupils go the size of dinner plates and he lies down on the rug and says “the ceiling’s my friend.”'],['Omer','We’ve sedated it. We’ve sedated the problem.']])}
+  else await talk([['','He takes David’s hand.'],['David','The hallucination is holding my hand. It’s sweating. Why’s it sweating.'],['Aidan','Because I’m so happy.']]);q.outcome='Nine in the circle'},
+ async q=>{SFX.ring();await talk([['Jay','Corey. Did you eat my tin.'],['Corey','We ALL ate your tin, Jay. We’ve been off our faces for three hours. Omer solved time.'],['Jay','…Off your faces? On what? They’re brownies. For my food tech resit. I wrote DO NOT because they’re MINE.'],['','Nobody says anything.'],['Hasan','So my head ISN’T in third.'],['Omer','So the lamp didn’t talk. And the dog didn’t talk. And the kid in the circle—']]);fx(.6,'');SFX.sting();
+  await talk([['Ziggy','No, that was all real. You just finally shut up long enough to notice.'],['Ziggy','Biscuit.']]);store.run.high=0;save();q.outcome='They were just brownies'}];
+/* ---------- STORY 7: REGINALD PEMBERTON, 43 ---------- */
+FRIEND_STORIES.fakeid={title:'Sean’s fake ID',cast:['sean','david'],lead:'sean',meet:[[0,720],[0,720],[0,720],[0,720]],places:['the front door','the front door','the front door','the front door'],needs:{},
+ invite:['“I made something on your dad’s printer. Don’t be mad.”','“Bains’ is open till four. Coat on.”','“SCRATCH IT. SCRATCH IT NOW.”','“David’s still got it. Inside him. We need a plan.”']};
+FRIEND_SCENES.fakeid=[
+ async q=>{await talk([['Sean','Fake ID. Laminated it with your mum’s hair straighteners. Bains’ sells scratch cards and I’m feeling lucky.'],['David','It’s still warm.'],['Sean','I just need a name. A man’s name. A grown man.']]);
+  q.name=['Reginald Pemberton','Chad Mortgage','Graham (Dentist)'][await choose(['“Reginald Pemberton, 43.”','“Chad Mortgage, 38.”','“Graham. He’s a dentist.”'])];await say('Sean','“'+q.name+'.” Yeah. I FEEL like a '+q.name.split(' ')[0]+'.');q.outcome='You have a fake ID'},
+ async q=>{const prev=scoreName,sh={id:'shop',x:204,y:142,dir:-1},se={id:'sean',x:-20,y:160,dir:1},dv={id:'david',x:-34,y:160,dir:1},you={id:'you',x:-6,y:162,dir:1};
+  await toStage({shop:true,cast:[sh,dv,se,you]});cue('sneak');mvc(dv,120);mvc(you,150);await mvc(se,176);
+  await talk([['Mr. Bains','ID.'],['Sean','(deep voice) Certainly, my good man.'],['Mr. Bains','“'+q.name+'.” You’re forty-three.'],['Sean','I moisturise.'],['Mr. Bains','Sean. I’ve sold your mum her Lambert & Butler since before you could walk.']]);
+  const c=await choose(['“Reginald is Sean’s uncle.”','Send in David on Sean’s shoulders in a trench coat.','Slide him a fiver.']);
+  await N(c===1?'It’s seven foot tall and it sways. Mr. Bains watches it knock over the Pringles. “That’s the best thing I’ve seen in this shop since 2011. What do you want.”':c===0?'“His uncle. Who’s also you. In a school tie.” A long look. “…I respect the hustle.”':'He takes the fiver. He holds it to the light. “This is from Monopoly.” He sells it you anyway. He’s tired.');
+  SFX.pick();store.run.biryani=true;await say('Mr. Bains','One scratch card. Six Monsters. And tell the little wet lad outside he still owes me for the hair gel.');fx(.3,'');MEM.aidan=true;await wait(700);
+  mvc(you,-20,1500);mvc(se,-20,1600);await mvc(dv,-30,1700);await fromMemory();cue(prev);q.outcome='One scratch card'},
+ async q=>{for(let i=0;i<3;i++){noise(.15,.2,5000,4);await wait(300)}SFX.good();S.shake=.4;await talk([['Sean','Two hundred and— two hundred and FIFTY THOUSAND—'],['David','WE’RE RICH. I’M BUYING A SECOND FRIDGE. FOR THE FIRST FRIDGE.'],['Sean','You’ve got to be eighteen to claim it.'],['','The doorbell goes.']]);fx(.4,'');
+  await talk([['Aidan','(through the letterbox) I heard you won! Can I see?'],['','David looks at the ticket. David looks at the door. David makes a decision.']]);SFX.squelch();A_.david.pose='eat';await wait(800);A_.david.pose=null;
+  await talk([['Sean','Did you just EAT a quarter of a million pounds?'],['David','It’s SAFE. It’s the safest place in the house.']]);q.outcome='The ticket is inside David'},
+ async q=>{const c=await choose(['Wait for nature.','Let Omer use the hoover.','Punch him in the stomach.']);
+  if(c===1){noise(1,.5,400,1);S.shake=.4;await N('You will never unsee it. The hoover will never be the same. Neither will Omer, who says “I have the item” in a voice like a war veteran.')}
+  else if(c===2){hurt('david');await N('It comes back up with half a samosa and a Lego head from 2014.');A_.david.pose=null}
+  else await N('Ninety minutes. A lot of coffee. David emerges from the bathroom holding it in salad tongs, like a man who has seen the face of God and it was disappointed.');
+  await talk([['Sean','Give it. Give it. …Hang on.'],['Sean','That’s a decimal point.'],['','£2.50. You have won two pounds and fifty pence.'],['David','So I did all that—'],['Sean','For a meal deal. Yeah.']]);laugh(2000);q.outcome='£2.50'}];
+/* ---------- STORY 8: DADA-JI ---------- */
+FRIEND_STORIES.ashes={title:'Hasan’s grandad',cast:['hasan','david'],lead:'hasan',meet:[[0,250],[0,250],[0,250],[1,930]],places:['the kitchen','the kitchen','the kitchen','your bedroom window'],needs:{},
+ invite:['“I brought my grandad. Don’t make it weird.”','“Where’s the urn. WHERE IS THE URN.”','“The kitchen’s gone cold. He’s here.”','“It’s nearly midnight. Roof. All of him that’s left.”']};
+FRIEND_SCENES.ashes=[
+ async q=>{await talk([['Hasan','That’s my grandad. Dada-ji. In the tin.'],['Hasan','He made me promise. “Scatter me at midnight, from somewhere high, at a party. I want to see young idiots one last time.”'],['David','That’s beautiful.'],['Hasan','Just don’t touch it. I’ve put it on the counter. Next to the protein powder.'],['','You look at the two tins. They’re the same tin.']]);q.outcome='Dada-ji is on the counter'},
+ async q=>{await talk([['David','PANCAKES! High-protein! I used the vanilla stuff, the whole tub, they’ve come out a bit grey but—'],['','Everyone has eaten at least two. Arjun’s had six. There’s one tin left on the counter and it says WHEY.'],['David','…Why are you looking at me like that.']]);fx(.5,'');SFX.sting();
+  const c=await choose(['Tell Hasan the truth.','Refill the urn with cat litter.','Refill it with the hoover bag.']);q.told=c===0;
+  if(q.told)await talk([['Hasan','You ATE him? You ate my GRANDAD? In a PANCAKE?'],['David','In fairness he was delicious.'],['Hasan','HE HAD DIABETES.']]);
+  else await talk([['','It’s the right weight. It’s the wrong smell.'],['David','We take this to our graves.'],['Arjun','(burp) Sorry. That was him.']]);q.outcome=q.told?'You ate him and said so':'You ate him and lied'},
+ async q=>{S.dark=Math.max(S.dark,.5);fx(.6,'');const g_=A_.david;await talk([['','The kitchen light goes blue. There’s an old man by the fridge, see-through, arms folded, very unimpressed.'],['Dada-ji','Seventy-nine years. A war. Two heart attacks. And I end up in a PANCAKE.'],['Dada-ji','It was dry, by the way. You, the wide one. You cook like a punishment.'],['Dada-ji','And you. Spots. You make jokes like a man apologising.'],['Arjun','…He’s better than me. The dead guy’s BETTER than me.']]);
+  await talk([['Dada-ji','Hasan. Come here. Let me look at the head.'],['Hasan','Don’t.'],['Dada-ji','It’s a magnificent head. It’s a head for a HELMET. I told your mother — this one drives.'],['','Hasan doesn’t say anything for a while.']]);
+  await talk([['Dada-ji','One more thing. Who’s the wet one in your walls? He’s not dead. He’s not alive. He’s RUDE. He walked straight through me.']]);S.dark=Math.max(0,S.dark-.2);q.outcome='He’s back and he’s got notes'},
+ async q=>{await talk([['','Your bedroom window. Midnight. Hasan holds the tin out over the garden — what’s left of his grandad, plus '+(q.told?'an apology':'about a kilo of cat litter')+'.'],['Hasan','Goodbye, Dada-ji. See some idiots.']]);noise(1,.3,800,.6);S.shake=.3;
+  await talk([['','The wind changes.'],['David','It’s in my mouth. AGAIN.'],['Arjun','He’s in my EYES.'],['Dada-ji','(fading, delighted) Ha! Good enough. I’ve been in worse.'],['Dada-ji','Hasan. If the rude one comes for you — I’ve got one slap left in me. I’ve been saving it since 1971.']]);store.run.dadaji=true;save();q.outcome='Scattered. Mostly on you'}];
+/* ---------- wiring ---------- */
+const TRIP=[['Ziggy','Don’t look at me. Look at the WALL.'],['Lava Lamp','Left. No, your other left. Never mind, you’re dead.'],['Ziggy','He’s under the stairs. Has been since half nine. Biscuit.'],['Lava Lamp','I’ve seen eight of you come in. I’ve seen nine shadows.']];
+let tripT=18;
+{const _pu=playUpdate;playUpdate=function(dt){_pu(dt);if(store.run.high>=2&&socialRoam()){tripT-=dt;if(tripT<=0&&S.subT<=0){tripT=rnd(16,28);const [n,t]=one(TRIP);sub(n+': “'+t+'”')}}}}
+{const _d=draw;draw=function(){_d();const h=store.run&&store.run.high;if(h>=2&&mode!=='call'&&!S.fatal){g.fillStyle='hsla('+((T*50)%360)+',90%,55%,'+(.06*h)+')';g.fillRect(0,0,W,H)}}}
+{const _sh=setupHunt;setupHunt=function(m){_sh(m);store.run.high=0;if(!m&&store.run.fedAidan){S.hp=Math.min(S.hp,2);sub('Aidan ate four of Jay’s brownies. He’s moving like he’s underwater.')}}}
+{const _h=harm;harm=function(){const p=A_.you;if(S.monster&&store.run.dadaji&&!(p.guard>0)){store.run.dadaji=false;save();p.guard=2.5;AI.state='stun';AI.timer=4;SFX.smack();S.shake=.7;fx(.3,'');sub('A see-through old man steps out of the wall and backhands Aidan across the room. “RUDE.”');return}_h()}}
+Object.assign(GOALS,{tin:['Find out what was in the tin.',r=>r.fedAidan!==undefined||r.high===0&&socialState().tin.step>=4],slap:['Earn Dada-ji’s slap.',r=>r.dadaji!==undefined]});
+
 const sceneText=$('scene-text'),textInk=sceneText.getContext('2d');
 let sceneLetters=[];
 g.fillText=function(text,x,y,maxWidth){
