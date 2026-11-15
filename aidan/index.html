@@ -2446,7 +2446,7 @@ function ambient(dt){
  if(BN.q&&T>=BN.q.at&&S.subT<=.3){sub(BN.q.text);BN.q=null}
  if(S.phase==='r1'||S.phase==='r2'){
   BN.t-=dt;if(BN.t>0||S.subT>0||BN.q)return;BN.t=rnd(9,15);
-  const b=BANTER[BN.i++%BANTER.length];sub(K[b[0]].n+': '+b[1]);BN.q={text:K[b[2]].n+': '+b[3],at:T+3.7};
+  const b=BANTER[BN.i++%BANTER.length];sub(K[b[0]].n+': '+b[1]);BN.q={text:K[b[2]].n+': '+b[3]+(b[4]?'   '+K[b[4]].n+': '+b[5]:''),at:T+3.7};
  }else if(S.aidanIn&&(S.phase==='allergens'||S.phase==='hunt')&&!AI.dead){
   BN.scare-=dt;if(BN.scare>0||S.subT>0)return;BN.scare=rnd(15,27);
   const dead=pals.filter(id=>A_[id].dead),live=livingFriends(),r=Math.random();
@@ -4960,6 +4960,29 @@ async function spareAidan(){
   store.run.stories=[first,...rest];seen[first]=(seen[first]||0)+1;save();await N('ALSO TONIGHT: '+FRIEND_STORIES[first].title+'. (Jay’s brownies, the fake ID and Hasan’s grandad are always there if you go looking. Nobody will remind you.)')}return ch}}
 {const _sh=setupHunt;setupHunt=function(m){_sh(m);const r=store.run;if(m&&r.sewn)S.monsterHP=Math.max(6,S.monsterHP-3);if(!m&&r.shedBurned)sub('He knows you burned his party. He isn’t pretending to be nice any more.')}}
 Object.assign(GOALS,{shed:['Find out what’s in the shed.',r=>r.shedBurned||r.nameCard||r.satDown],sorry:['Remember who held the scissors.',r=>r.sorry],ninth:['Deal with the ninth doll.',r=>r.sewn||r.tucked]});
+
+/* ================= PASS 12: cheekier banter ================= */
+BANTER.push(
+ ['arjun','“It’s too big, it won’t fit.”','david','That’s what she said.'],
+ ['david','It’s the SOFA, Arjun. We’re moving the SOFA.','arjun','That’s ALSO what she said.'],
+ ['nivaan','If I die tonight, somebody clear my search history.','omer','I’ve seen your search history. Dying is the better outcome.'],
+ ['hasan','Why’s there one sock under your bed. Just one. And it’s crunchy.','sean','We don’t ask the sock questions. The sock has seen things.'],
+ ['arjun','Your mum.','hasan','You didn’t even hear what I said.','arjun','Didn’t need to.'],
+ ['david','Corey, how do you talk to girls?','corey','I say hi.','david','…And then what? There’s a THEN, right?'],
+ ['sean','My voice cracked saying “Stella” in registration.','arjun','We know. Dogs three streets away know.'],
+ ['omer','Incognito mode doesn’t hide it from the wifi owner.','nivaan','…Whose wifi is this?','omer','His dad’s.'],
+ ['arjun','I’ve got a girlfriend. She goes to another school.','hasan','In Canada?','arjun','…Near Canada.'],
+ ['david','Is it weird that the biology textbook has a favourite page?','omer','It falls open at 214 for EVERYONE, David.'],
+ ['hasan','Who used all the hand cream in the downstairs loo?','david','It’s a dry house. Very dry. Leave it.'],
+ ['nivaan','Aidan asked me once what “third base” is.','corey','What did you say?','nivaan','I said it’s in baseball. Because I ALSO don’t know.']);
+BANTER.sort(()=>Math.random()-.5);
+DARKTALK.push(
+ async()=>{await talk([['Arjun','Whoever’s sleeping bag is rustling like that — stop it.'],['David','I’m opening a cereal bar.'],['Arjun','Sure you are, mate.'],['David','IT’S A NUTRI-GRAIN.']])},
+ async()=>{await talk([['Hasan','Truth. Has anyone here actually kissed anyone?'],['','A long silence.'],['Corey','Yeah.'],['Arjun','We KNOW, Corey. The question was for the mortals.'],['Sean','…Does my nan count.']])},
+ async()=>{await talk([['Nivaan','Your dad’s got a locked drawer in the study.'],['You','It’s tax stuff.'],['Omer','It is not tax stuff. I’ve seen the spine of one. It was called “Caravan Wives”.'],['You','GO TO SLEEP.']])});
+calmLines.arjun.push('I’m not saying I’ve done it. I’m saying I’ve read EXTENSIVELY.');
+calmLines.david.push('If anyone asks, that folder on my laptop is “homework”. All four gigabytes.');
+calmLines.hasan.push('Arjun says my head’s shaped like a gear stick. Then he says a second thing it’s shaped like. I prefer the gear stick.');
 
 const sceneText=$('scene-text'),textInk=sceneText.getContext('2d');
 let sceneLetters=[];
