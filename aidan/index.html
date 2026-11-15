@@ -2805,7 +2805,8 @@ async function finale(){
   await stellaBat(L);
   await wait(500);await say('Aidan','Everyone’s… here. Everyone came.');
  }else{cue('reveal');await N('You listen for footsteps behind you. There is nobody left to make them.')}
- const c=await choose(['“Worst sleepover of my fucking life.”','“You were never invited.”','Say nothing.']);
+ const c=await choose(['“Worst sleepover of my fucking life.”','“You were never invited.”','Say nothing.'].concat(store.run.sorry?['“I’m sorry about Year 7.”']:[]));
+ if(c===3&&await spareAidan())return;
  if(c===0)await say('Aidan','Ha. Ha. Ha. …That one was good.');
  else if(c===1)await say('Aidan','I know. I came anyway. That’s what friends do.');
  else await N('He waits for you to say something. He is still waiting when you raise the knife.');
@@ -4867,6 +4868,98 @@ let tripT=18;
 {const _sh=setupHunt;setupHunt=function(m){_sh(m);store.run.high=0;if(!m&&store.run.fedAidan){S.hp=Math.min(S.hp,2);sub('Aidan ate four of Jay’s brownies. He’s moving like he’s underwater.')}}}
 {const _h=harm;harm=function(){const p=A_.you;if(S.monster&&store.run.dadaji&&!(p.guard>0)){store.run.dadaji=false;save();p.guard=2.5;AI.state='stun';AI.timer=4;SFX.smack();S.shake=.7;fx(.3,'');sub('A see-through old man steps out of the wall and backhands Aidan across the room. “RUDE.”');return}_h()}}
 Object.assign(GOALS,{tin:['Find out what was in the tin.',r=>r.fedAidan!==undefined||r.high===0&&socialState().tin.step>=4],slap:['Earn Dada-ji’s slap.',r=>r.dadaji!==undefined]});
+
+/* ================= PASS 11: Aidan stories front and centre; the off-topic ones go quiet ================= */
+const OFFTOPIC=['tin','fakeid','ashes'];let quietCtx=false;
+{const _sr=storyReady;storyReady=function(k){if(OFFTOPIC.includes(k)){if(quietCtx)return false;const on=store.run.stories;store.run.stories=null;const r=_sr(k);store.run.stories=on;return r}return _sr(k)}}
+{const _df=drawFriendInvitations;drawFriendInvitations=function(){quietCtx=true;_df();quietCtx=false}}
+{const _st=socialTick;socialTick=function(dt){quietCtx=true;_st(dt);quietCtx=false}}
+for(const k of OFFTOPIC)FRIEND_STORIES[k].title+=' · silly extra';
+K.aidan7={n:'Aidan',skin:'#e6c2a2',hair:'#4a2f1a',hs:'wavy',top:'#2456c8',pants:'#0c0c10',seed:9};
+{const _du=drawUnder;drawUnder=function(m){
+ if(m.kind==='shed'){R(0,0,W,H,'#0d0a08');for(let x=0;x<W;x+=16)R(x,20,2,130,'#1c140e');R(0,150,W,30,'#19110c');R(96,128,128,5,'#4a3524');R(100,133,4,17,'#3a2a1c');R(216,133,4,17,'#3a2a1c');
+  for(let i=0;i<7;i++){const x=70+i*30,sit=i<3||i>3;if(i===3&&!m.seat)continue;R(x-7,124,14,24,['#6a6f8a','#8a5a5a','#5a7a5a','#b3343c','#7a6a4a','#5a5a7a','#8a7a5a'][i]);R(x-5,112,10,10,i===3?'#0000':'#9a8a78');R(x-6,108,12,6,'#4a2f1a');R(x-5,104,10,3,['#e33','#3a8','#ee3','#e33','#38e','#e3e','#3ee'][i]);R(x-1,100,2,5,'#eee');if(i!==3){R(x-3,116,2,1,'#111');R(x+1,116,2,1,'#111');R(x-2,119,4,2,'#3a0508')}}
+  for(let i=0;i<9;i++)R(104+i*12,125,6,3,'#ddd');R(150,118,14,8,'#e8d0d0');for(let i=0;i<9;i++)R(151+i*1.4,114,1,4,'#e33');if(m.flies)for(let i=0;i<14;i++)R(160+Math.sin(T*3+i)*70,90+Math.cos(T*2.3+i*2)*30,1,1,'#000')}
+ else if(m.kind==='y7'){R(0,0,W,H,'#6f5382');for(let x=4;x<W;x+=12)R(x,20,4,130,'rgba(0,0,0,.07)');R(0,150,W,30,'#5c3d2e');R(40,60,60,40,'#0c1230');R(110,120,90,26,'#b3343c');for(let i=0;i<6;i++)R(30+i*46,158,34,8,['#6a6f8a','#8a5a5a','#5a7a5a','#7a6a4a','#5a5a7a','#8a7a5a'][i]);if(m.hair)for(let i=0;i<16;i++)R(150+hsh(i)*40,152+hsh(i+3)*10,3,1,'#4a2f1a');g.fillStyle='rgba(255,220,160,.12)';g.fillRect(0,0,W,H)}
+ else{_du(m);return}
+ for(const c of m.cast||[]){if(c.hidden)continue;g.save();g.translate(Math.round(c.x),c.y);if(m.kind==='y7')g.scale(.82,.82);drawKid(K[c.id],0,0,{dir:c.dir,still:!c.moving,moving:c.moving,walk:T*13,pose:c.pose,sit:c.sit,scared:c.scared,weapon:c.weapon,punchT:c.punchT,bowl:c.bowl,shake:c.shake});g.restore()}
+ if(m.kind==='shed'){const c=m.cast[0],v=g.createRadialGradient(c.x,120,14,c.x,120,120);v.addColorStop(0,'#0000');v.addColorStop(1,'#000f');g.fillStyle=v;g.fillRect(0,0,W,H)}
+ R(0,0,W,10,'#100d18');R(0,H-10,W,10,'#100d18')}}
+{const _d=draw;draw=function(){_d();if(mode==='memory'&&MEM.tape){for(let y=0;y<H;y+=3)R(0,y,W,1,'rgba(0,0,0,.22)');R(0,(T*40)%H,W,5,'rgba(255,255,255,.07)');g.save();g.font='6px KenPixel,monospace';g.fillStyle='#fff';g.fillText('PLAY ▶  '+MEM.tape,8,20);if(Math.sin(T*6)>0){R(292,14,5,5,'#e33')}g.fillText('REC',300,20);g.restore()}}}
+/* ---------- A1: THE TAPES ---------- */
+FRIEND_STORIES.tapes={title:'The tapes',cast:['nivaan','omer'],lead:'nivaan',meet:[[0,600],[0,600],[0,600],[0,20]],places:['the TV','the TV','the TV','the garage side door'],needs:{},
+ invite:['“Someone posted a camcorder tape through your door. It says US.”','“There’s a second tape. It wasn’t there an hour ago.”','“Third one. This one’s got tonight’s date on it.”','“The last tape’s filmed in your shed. The light’s on out there.”']};
+FRIEND_SCENES.tapes=[
+ async q=>{const prev=scoreName;await say('Nivaan','It’s a proper tape. Hi8. Label says “US ♥ YEAR 7–NOW”. Your dad’s still got the camcorder.');
+  await toUnder({kind:'y7',tape:'14 MAR · YEAR 7',cast:[{id:'david',x:60,y:158,sit:true},{id:'hasan',x:108,y:158,sit:true},{id:'arjun',x:200,y:158,sit:true},{id:'you',x:248,y:158,sit:true}]});cue('street');
+  await talk([['','It’s you. All of you. Eleven years old, at a sleepover, filmed through a gap in a wardrobe door.'],['','The camera’s very still. Whoever’s holding it is breathing through their mouth. You can hear them trying not to laugh at Arjun’s joke, half a second late.'],['Omer','He was in the wardrobe. For the whole of David’s eleventh birthday.'],['','Forty minutes in, the lens tilts down. A small hand is holding a notebook. In felt tip: “RULES FOR BEING INVITED. 1. Laugh. 2. Bring something. 3. Don’t be weird.” Number 3 has been gone over until the paper tore.']]);
+  await fromMemory();cue(prev);q.outcome='He’s been filming for years'},
+ async q=>{const prev=scoreName;await toUnder({kind:'room',tape:'EVERY NIGHT · 03:00',cast:[{id:'aidan',x:60,y:150,dir:1}]});cue('call');
+  await talk([['','Tape two is his bedroom. He’s set the camera up himself. He’s practising.'],['Aidan','“Ha ha, good one, David.” …“Ha ha, GOOD one, David.” …“Ha. Good one.”'],['','He does it for two hours. Every laugh. Every nod. He rewinds your voices on a little dictaphone and says the replies along with you.'],['Nivaan','He’s learning us. Like lines.']]);fx(.4,'');
+  await talk([['','At 03:00 on the tape, he stops. He walks to the camera. He looks down the lens the way you’d look through a keyhole.'],['Aidan','I know you’re watching this on the night. Hi! You’re in the living room. Omer’s on the left. Don’t turn the lamp off, I like the lamp.'],['Omer','I’m on the left.']]);
+  const c=await choose(['Turn the lamp off.','Leave the lamp on.']);if(!c){S.dark=Math.min(.7,S.dark+.2);await say('Aidan','(on the tape) …Rude.')}else await say('Aidan','(on the tape) Thank you.');await fromMemory();cue(prev);q.outcome='He knew you’d watch'},
+ async q=>{const prev=scoreName;await toStage({tape:'TONIGHT · 21:40',cast:[{id:'pizza',x:200,y:162,dir:-1,scared:true}],blood:[],sprays:[]});cue('reveal');
+  await talk([['','Tape three is tonight. Your front path, from the hedge. A man in a red cap walks up with a stack of boxes.'],['','The camera gets put down on the grass. You only see feet after that. Two big ones. Two small ones. Then the big ones leave the ground.']]);
+  MEM.cast[0].dead=true;MEM.sprays.push({x:200,y:140,d:1,t:T,n:50},{x:200,y:140,d:-1,t:T,n:50});MEM.blood.push({x:200,w:20,y:128,s:12});SFX.smack();SFX.squelch();S.shake=.6;fx(.3,'');tw(MEM.blood[0],{w:110},4000);
+  await talk([['','It takes four minutes. He hums through all of it. At one point he says “sorry, sorry, nearly done,” like a dentist.'],['','Then the small hands pick the camera back up and turn it round. He’s red to the elbows. He’s holding the cap.'],['Aidan','He was going to ring the bell and you’d all go to the door and nobody would’ve been thinking about me. Does it suit me?'],['Nivaan','I’m going to be sick. I’ve filmed everything my whole life and I’m going to be sick at a TAPE.']]);
+  await fromMemory();cue(prev);q.outcome='Tape three is tonight'},
+ async q=>{const prev=scoreName,you={id:'you',x:20,y:150,dir:1},nv={id:'nivaan',x:6,y:150,dir:1,phone:1};
+  await N('The last tape is one continuous shot of your garden shed. Light on. Door open. You go because not going is worse.');
+  await toUnder({kind:'shed',cast:[you,nv],flies:true});cue('reveal');mvc(nv,40);await mvc(you,60);fx(.5,'');SFX.sting();
+  await talk([['','It’s a sleepover. He’s laid the table for nine.'],['','Six of the places are taken. The pizza man. A woman in a lanyard that says SUPPLY TEACHER. A postman. Three you can’t make sense of any more. They’re all in sleeping bags, sat up, in party hats.'],['','He’s cut their hair. Every one of them. Round.'],['Nivaan','They’re smiling. He’s— he’s pinned them like that. There’s drawing pins.']]);
+  MEM.seat=true;await talk([['','There’s a seventh sleeping bag in the middle. Red. Empty. Zip open, turned down, like a bed in a hotel.'],['','The name card on the plate is in his best handwriting. It’s yours.']]);
+  const c=await choose(['Burn the shed.','Take the name card and go.','Sit down.']);
+  if(c===0){SFX.power();store.run.shedBurned=true;await N('It goes up like paper. From the house, upstairs, you hear a sound you’ve never heard him make. He isn’t angry. He’s heartbroken.');S.rage+=3}
+  else if(c===1){store.run.nameCard=true;await N('It’s laminated. On the back: “you were always my favourite. you held the scissors.” You don’t know what that means. Part of you does.')}
+  else{you.sit=true;fx(1,'SAVED YOU A SPOT');await N('The sleeping bag’s warm. Somebody’s been keeping it warm. From the dark at the back of the shed, very quietly, somebody starts to clap.');store.run.satDown=true}
+  await fromMemory();cue(prev);save();q.outcome=c===0?'You burned his party':c===1?'You took your name':'You sat down'}];
+/* ---------- A2: THE DOLLS ---------- */
+FRIEND_STORIES.dolls={title:'The nine dolls',cast:['sean','hasan'],lead:'sean',meet:[[0,410],[1,80],[1,80],[1,80]],places:['the lava lamp','the guest room','the guest room','the guest room'],needs:{},
+ invite:['“There’s a little me behind your sofa. It’s got my actual retainer.”','“We found five more. Guest room. Don’t let Arjun touch them.”','“Arjun touched them.”','“There’s nine now. We didn’t make the ninth.”']};
+FRIEND_SCENES.dolls=[
+ async q=>{await talk([['Sean','It was wedged behind the sofa. It’s me. Look — it’s got my hoodie. The real one, the one I lost in Year 9.'],['','It’s hand-sewn. Blond wool for hair. In its mouth, on a loop of fishing line, is a retainer.'],['Sean','That’s MINE. I lost that at camp. I got grounded for that.'],['Hasan','There’s one of me under the stairs. I’m not picking it up. Its head’s… he’s got the head right.'],['','Inside the Hasan doll’s head, when you squeeze it, something small and hard rattles. A baby tooth.']]);q.outcome='There are dolls'},
+ async q=>{await talk([['','Eight of them on the guest bed now. Each stuffed with something real. David’s is full of toenail clippings. Corey’s has a lock of hair so perfect Corey asks to keep it.'],['Arjun','Voodoo. It’s VOODOO. Watch.']]);
+  const c=await choose(['“Arjun, DON’T.”','“…Go on then. Flick Hasan’s.”']);await say('Arjun',c?'Scientifically. For science.':'Too late, I’m committed to the bit.');SFX.smack();A_.hasan.shake=true;S.shake=.3;
+  await talk([['Hasan','OW. What the FUCK. Who hit me?'],['','Nobody hit him. There’s a red mark on his forehead, the size of a fingernail.'],['Arjun','…Oh, that’s BRILLIANT.']]);A_.hasan.shake=false;q.outcome='They work'},
+ async q=>{const v=one(['hasan','david','sean'].filter(id=>!A_[id].dead));await talk([['','It took Arjun nine minutes to go from “let’s be careful” to holding David’s doll over a candle.'],['David','I’m SWEATING. Why am I so hot. Arjun, PUT IT DOWN.'],['Arjun','One more test. Tiny one. Compass.']]);
+  hurt(v);fx(.3,'');await talk([[K[v].n,'AAAGH— my LEG— it’s OPEN, there’s a HOLE in my LEG—'],['','There is. Neat. Round. Compass-sized. Bleeding like a tap.'],['Arjun','I barely touched it! I barely— oh my god, it’s so much blood. It’s such a small doll.']]);A_[v].pose=null;
+  const c=await choose(['Lock all eight in the wardrobe.','Burn them.','Hide yours where nobody will find it.']);q.did=c;
+  if(c===1){for(const id of livingFriends())A_[id].shake=true;S.shake=.6;fx(.5,'');await N('Everyone in the house screams at the same time. You put the fire out with your hands. All eight of you have the same blister.');for(const id of pals)A_[id].shake=false}
+  else await N(c===0?'You wedge a chair under the handle. Through the door you can hear them, very faintly, shuffling up to make room.':'You put yours inside the piano. For the rest of the night you can feel the strings against your back.');q.outcome='Someone got hurt'},
+ async q=>{fx(.5,'');SFX.sting();await talk([['','There’s a ninth doll on the pillow. Nobody made it. Blue jacket. Brown wool, cut round.'],['','It’s stuffed fuller than the others. When Sean lifts it, something inside moves by itself, slow, like a hand in a glove.'],['Sean','It’s warm. It’s got a heartbeat. Why’s it got a HEARTBEAT.']]);
+  const c=await choose(['Stab it.','Sew its mouth shut.','Put it in a sleeping bag with the others.']);
+  if(c===0){SFX.squelch();spurt(A_.you.x,A_.you.y-20,14,A_.you.y);S.shake=.6;store.run.plush=true;await N('It bleeds. Properly. More than a doll holds. Somewhere downstairs something heavy falls over and says “ow” in a small, surprised voice.')}
+  else if(c===1){store.run.sewn=true;await N('Nine stitches. From inside the walls, for the first time all night, the humming stops. It’s so much worse.')}
+  else{store.run.tucked=true;await N('You tuck it in between Hasan’s and David’s. It looks right there. That’s the horrible thing. It looks like it was always meant to be there.')}
+  save();q.outcome=c===0?'You stabbed the ninth':c===1?'You sewed it shut':'You tucked him in'}];
+/* ---------- A3: YEAR 7 ---------- */
+FRIEND_STORIES.year7={title:'What happened in Year 7',cast:['david','corey'],lead:'david',meet:[[0,447],[0,447],[1,480],[1,480]],places:['the couch','the couch','the game room','the game room'],needs:{},
+ invite:['“Do you remember my eleventh birthday? Properly remember it?”','“Corey remembers more than I do. It’s bad.”','“We need to say it out loud. All of it. Upstairs.”','“There’s one bit none of us will say. It’s about you.”']};
+FRIEND_SCENES.year7=[
+ async q=>{await talk([['David','My eleventh. Sleepover at mine. Aidan came. That was the last time he was ever invited anywhere.'],['David','He didn’t have the bowl cut then. Did you know that? He had normal hair. Nice hair.'],['You','So when did he—'],['David','That night. That’s when.'],['','He won’t say any more. He’s eating crisps one at a time, which is how you know it’s serious.']]);q.outcome='It started at David’s'},
+ async q=>{const prev=scoreName,ai={id:'aidan7',x:160,y:158,sit:true},cast=[{id:'david',x:60,y:158,sit:true},{id:'arjun',x:110,y:158,sit:true},ai,{id:'hasan',x:210,y:158,sit:true},{id:'you',x:255,y:158,sit:true}];
+  await toUnder({kind:'y7',tape:null,cast});cue('memory');
+  await talk([['Corey','He brought a present. A good one. And he’d written jokes on his hand so he wouldn’t forget them.'],['','You remember now. He was funny. That was the problem. He was getting laughs. Arjun hated it.'],['Corey','Arjun dared him. “If you want to be in the group you’ve got to do the initiation.”'],['Corey','There wasn’t an initiation. We made it up right there.']]);
+  ai.shake=true;await talk([['','They held him down. It was a laugh. Everyone was laughing, including him, at first.'],['','Somebody got the mixing bowl from the kitchen and put it on his head.']]);MEM.hair=true;ai.bowl=true;SFX.blip(300);fx(.3,'');
+  await talk([['','And somebody got the kitchen scissors, and went round the edge.'],['Corey','He stopped laughing about halfway round. We didn’t.']]);ai.shake=false;await fromMemory();cue(prev);q.outcome='They cut his hair'},
+ async q=>{await talk([['Hasan','We sent him home at midnight. In the rain. His mum never came — he walked.'],['Arjun','I told him on Monday it looked good. As a joke. I said “never change it.”'],['','Nobody has to say the rest. He never changed it.'],['Omer','He’s re-cut it himself every month for five years. Same bowl. I’ve seen it in his bag. He brought the bowl to school.'],['David','He kept my party. He just… kept it. He’s been at that sleepover since he was eleven and we all went home.']]);
+  const c=await choose(['“We were kids.”','“We were cunts.”']);await say('Corey',c?'Yeah. We were. Still are, a bit.':'That’s what everyone says. He was a kid too.');q.outcome='He never left that party'},
+ async q=>{fx(.6,'');await talk([['David','There’s a bit none of us ever say.'],['David','We all held him. But somebody had to do the actual cutting.'],['','They’re all looking at you.'],['','And there it is. The weight of the kitchen scissors. How steady your hand was. How you said “hold still, I’m making it even,” and how he DID hold still, because you’d asked nicely.'],['Corey','He thanked you. After. He said “thanks for making it even.” You don’t remember that?']]);
+  store.run.sorry=true;save();await N('You remember it now. You’ll get one chance tonight to say something about it. It will not be enough. It might still matter.');q.outcome='It was you with the scissors'}];
+/* ---------- the apology: a ninth ending ---------- */
+async function spareAidan(){
+ await talk([['You','Aidan. David’s eleventh. The bowl. It was me. I held the scissors.'],['','Every arm stops.'],['You','I’m sorry. I’m so fucking sorry. You were funny, and we couldn’t stand it.'],['Aidan','…You remember.'],['Aidan','I just wanted somebody to remember. I thought if I kept it exactly the same, one of you would look at it one day and go “oh.”']]);
+ AI.transform=.2;fx(.8,'');await tw(AI,{transform:.2},10);await talk([['','It comes off him in layers. The arms first. Then the jaw goes back where a jaw goes. What’s left is a small wet boy in a jacket that doesn’t fit.'],['Aidan','Can I stay? Just till morning. I’ll be quiet. I brought snacks.']]);
+ if(await choose(['“…Yeah. You can stay.”','Finish it.'])){await say('Aidan','Oh. Okay. That’s— yeah. That’s fair.');AI.transform=1;return false}
+ cue('dawn');await tw(view,{fade:1},1500);await card('MORNING','Nine sleeping bags.',2600);store.end['rNINE']=1;save();
+ await menu('<h1>NINE</h1><p>He’s asleep between Hasan and David. He laughed at every joke, half a second late.</p><p>'+(livingFriends().length<7?'There are empty bags too. Nobody’s talking about those yet.':'Everybody lived.')+'</p><p>He’s already asked about next week.</p>',['TITLE']);
+ location.reload();await new Promise(()=>{});return true}
+/* ---------- wiring ---------- */
+{const _t=title;title=async function(){const ch=await _t();if(ch===0){const keys=Object.keys(FRIEND_STORIES).filter(k=>!OFFTOPIC.includes(k)),seen=store.storySeen??={},A=['tapes','dolls','year7'];
+  const first=shuffle(A).sort((a,b)=>(seen[a]||0)-(seen[b]||0))[0],rest=shuffle(keys.filter(k=>k!==first)).sort((a,b)=>(seen[a]||0)-(seen[b]||0)).slice(0,3);
+  store.run.stories=[first,...rest];seen[first]=(seen[first]||0)+1;save();await N('ALSO TONIGHT: '+FRIEND_STORIES[first].title+'. (Jay’s brownies, the fake ID and Hasan’s grandad are always there if you go looking. Nobody will remind you.)')}return ch}}
+{const _sh=setupHunt;setupHunt=function(m){_sh(m);const r=store.run;if(m&&r.sewn)S.monsterHP=Math.max(6,S.monsterHP-3);if(!m&&r.shedBurned)sub('He knows you burned his party. He isn’t pretending to be nice any more.')}}
+Object.assign(GOALS,{shed:['Find out what’s in the shed.',r=>r.shedBurned||r.nameCard||r.satDown],sorry:['Remember who held the scissors.',r=>r.sorry],ninth:['Deal with the ninth doll.',r=>r.sewn||r.tucked]});
 
 const sceneText=$('scene-text'),textInk=sceneText.getContext('2d');
 let sceneLetters=[];
