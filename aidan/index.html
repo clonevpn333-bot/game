@@ -333,8 +333,8 @@ function drawKid(k,x,y,o){o=o||{};x=Math.round(x);y=Math.round(y);
  const st=o.moving?Math.sin(o.walk||0):0,ct=o.moving?Math.cos(o.walk||0):0,lf=[ct>.3?-2:0,ct<-.3?-2:0],sx=Math.round(st*2)*d,lxs=[bx+1+sx,bx+bw-1-lw-sx];
  for(let i=0;i<2;i++){const lx=lxs[i],f=lf[i];R(lx,y-legH,lw,legH+f,k.pants);if(k.shorts)R(lx,y-legH+3,lw,legH-3+f,k.skin);if(k.cuff)R(lx,y-2+f,lw,1,'#a8c8ff');R(lx-(d<0?1:0),y-1+f,lw+1,1,k.tight?'#ddd':'#2a2a30')}
  const by=y-legH-bodyH+bob,bh=bodyH-bob;R(bx,by,bw,bh,k.top);R(d>0?bx:bx+bw-2,by,2,bh,'rgba(0,0,0,.22)');
- const sw=Math.round(st*2);R(bx-2+sw,by+1,2,6,k.top);R(bx-2+sw,by+7,2,2,k.skin);
- if(o.phone){R(bx+bw-1,by+2,3,3,k.top);R(bx+bw+1,by+1,2,2,k.skin);R(bx+bw+1,by-2,3,4,'#bfe8ff')}else{R(bx+bw-sw,by+1,2,6,k.top);R(bx+bw-sw,by+7,2,2,k.skin)}
+ const sw=Math.round(st*2),posed=o.pose&&poseArms(k,o,x,bx,by,bw,d);if(!posed){R(bx-2+sw,by+1,2,6,k.top);R(bx-2+sw,by+7,2,2,k.skin)}
+ if(posed){}else if(o.phone){R(bx+bw-1,by+2,3,3,k.top);R(bx+bw+1,by+1,2,2,k.skin);R(bx+bw+1,by-2,3,4,'#bfe8ff')}else{R(bx+bw-sw,by+1,2,6,k.top);R(bx+bw-sw,by+7,2,2,k.skin)}
  if(k.collar)R(x-2,by,4,1,'#f4f4f4');if(k.hood){R(x-2,by+1,1,3,'#e8e8e8');R(x+1,by+1,1,3,'#e8e8e8')}if(k.zip)R(x,by,1,bh,'rgba(255,255,255,.28)');
  const hw=k.knob?10:12,hd=k.knob?12:11,hx=x-(hw>>1),hy=by-hd+1,S_=k.skin;
  R(hx+1,hy,hw-2,1,S_);R(hx,hy+1,hw,hd-2,S_);R(hx+1,hy+hd-1,hw-2,1,S_);R(d>0?hx:hx+hw-1,hy+2,1,hd-4,'rgba(0,0,0,.12)');
@@ -354,6 +354,7 @@ function drawKid(k,x,y,o){o=o||{};x=Math.round(x);y=Math.round(y);
  else if(hs==='fluffy'){R(hx-1,hy-4,hw+2,6,c);R(hx+1,hy-6,hw-2,2,c);R(hx+3,hy-7,hw-6,1,c);R(hx-2,hy-2,2,5,c);R(hx+hw,hy-2,2,5,c);R(hx+3,hy-5,2,1,'rgba(255,255,255,.14)');R(hx+7,hy-3,2,1,'rgba(255,255,255,.14)')}
  else if(hs==='wavy'){R(hx-1,hy-2,hw+2,4,c);R(hx-2,hy,2,5,c);R(hx+hw,hy,2,5,c);R(hx+1,hy-3,3,1,c);R(hx+6,hy-3,4,1,c);R(hx+2,hy+2,5,1,c);R(hx+3,hy-1,3,1,'#fff2b0')}
  else if(hs==='cap'){R(hx-1,hy-2,hw+2,4,'#2a4a8a');R(hx+1,hy-3,hw-2,1,'#2a4a8a');R(d>0?hx+hw-1:hx-4,hy+1,5,1,'#1c3566');R(d>0?hx-1:hx+hw-1,hy+2,2,3,c)}
+ if(o.pose)posePost(k,o,x,hx,hy,hw);
  if(k.glow&&Math.sin(T*1.7+1)>.9){R(x+8,hy-4,1,3,'#fff');R(x+7,hy-3,3,1,'#fff')}
 }
 const A_={};
@@ -442,7 +443,8 @@ function drawExt(){const e=S.ext;['#060714','#090b1e','#0c1029','#0f1533','#121a
  R(120,128,3,16,'#333');R(113,122,14,8,'#b33');R(113,122,14,2,'#d55');R(126,119,1,5,'#eee');
  R(280,126,44,16,'#0a1a0e');R(284,122,30,6,'#0a1a0e');
  R(50,66,3,98,'#1c1c22');R(50,66,18,2,'#1c1c22');R(62,68,10,3,'#ffe9a0');for(let i=0;i<30;i++)R(66-i*.95,71+i*3.1,2+i*1.9,4,'rgba(255,233,160,.045)');
- if(e.aidan)drawKid(K.aidan,e.aidan.x,e.aidan.y,{dir:e.aidan.dir||1,horror:!e.aidan.fly,scared:e.aidan.fly,still:1,noHair:e.wig});
+ if(e.cast)for(const c of e.cast)drawKid(K[c.id],c.x,c.y,{dir:c.dir,still:!c.moving,moving:c.moving,walk:T*13,pose:c.pose,phone:c.phone,bowl:c.bowl,noG:c.noG});
+ if(e.aidan)drawKid(K.aidan,e.aidan.x,e.aidan.y,{pose:e.aidan.pose,dir:e.aidan.dir||1,horror:!e.aidan.fly,scared:e.aidan.fly,still:1,noHair:e.wig});
  if(e.wig){const w=e.wig;R(w.x-7,w.y-4,14,6,K.aidan.hair);R(w.x-6,w.y-5,12,1,K.aidan.hair);R(w.x-3,w.y-3,4,1,'rgba(255,255,255,.3)')}
  for(const p of parts)R(p.x,p.y,p.s||2,p.s||2,p.c);
  for(let i=0;i<70;i++){const x=(i*53+T*70)%W,y=(i*29+T*250+i*i)%H;R(x,y,1,4,'rgba(160,180,255,.3)')}
@@ -646,6 +648,7 @@ function drawHouse(){
   if(r.x){R(x-3,20,6,96,'#302635');R(x-4,116,8,3,'#44374b')}
  }
 
+ drawProps();
  const visible=Object.values(A_).filter(a=>a.vis&&a.floor===S.floor&&!a.safe);
  if(S.aidanIn&&AI.floor===S.floor&&!AI.dead)visible.push(AI);
  visible.sort((a,b)=>a.y-b.y);
@@ -656,9 +659,11 @@ function drawHouse(){
   if(a.sleep){drawBag(a,x);if(!a.awake&&a!==AI)zzz(x,a.y,a.k.seed);continue}
   if(a===AI&&S.monster){drawChunkMonster(x,a.y,AI.transform);continue}
   if(a===A_.you&&a.guard>0&&Math.floor(T*16)%3===0)continue;
-  if(a===A_.you&&a.down){g.save();g.translate(x,a.y-3);g.rotate(a.down*Math.PI/2);drawPlayer(a,0,0);g.restore();R(x+a.down*12,a.y-1,7,2,'#8a0d16')}
+  if(a===A_.you&&a.down)drawPlayerDown(a,x,a.y);
+  else if(a===A_.you&&a.fall){g.save();g.translate(x,a.y);g.rotate(a.fall*Math.PI/2*(a.fallDir||1));drawPlayer(a,0,0);g.restore()}
+  else if(a!==A_.you&&a.lie){g.save();g.translate(x,a.y-3+(a.pose==='pushup'&&Math.sin(T*5)>0?-2:0));g.rotate(Math.PI/2*a.lie);drawKid(a.k,0,0,{dir:1,still:1,bowl:a.bowl,noG:a.noG});g.restore()}
   else if(a===A_.you)drawPlayer(a,x,a.y);
-  else drawKid(a.k||K.aidan,x,a.y,{dir:a.dir,moving:a.moving,walk:a.walk,sit:a.sit||a.pinned,talk:talker===(a.k?.n||'Aidan'),shake:a.pinned||a.shake,bowl:a.bowl,phone:a.phone,noG:a.noG,scared:S.aidanIn||a.scared,horror:a===AI&&S.callMad>1});
+  else drawKid(a.k||K.aidan,x,a.y-(a.laughT>T&&Math.sin(T*22)>0?1:0),{pose:a.pose,punchT:a.punchT,rageT:a.rageT,weapon:a.weapon,dir:a.dir,moving:a.moving,walk:a.walk,sit:a.sit||a.pinned,talk:talker===(a.k?.n||'Aidan')||a.laughT>T,shake:a.pinned||a.shake,bowl:a.bowl,phone:a.phone,noG:a.noG,scared:S.aidanIn||a.scared,horror:a===AI&&S.callMad>1});
   if(a.zzz)zzz(x,a.y-8,3);
   if(a===A_.you&&S.knife||a.knife){
    const reach=a.swing>0?17:9;R(x+a.dir*reach-2,a.y-18,4,3,'#5a3b2a');R(x+a.dir*reach-1,a.y-24,3,7,'#dfe6ea');
@@ -936,7 +941,7 @@ function things(){
    run(async()=>{
     if(id==='sean'){await openSean();return}
     if(id==='corey'&&S.secret>=3){await coreySecret();return}
-    if(S.aidanIn){await say(f.k.n,AI.dead?'We’re all going out together. I’m not staying here.':f.floor===AI.floor?'He’s on this floor. Keep moving.':'I heard him on the stairs.');return}
+    if(S.aidanIn){await say(f.k.n,AI.dead?'We’re all going out together. I’m not staying here.':f.floor===AI.floor?'He’s on this fucking floor. MOVE.':'Shit. Shit. I heard him on the stairs.');return}
     await say(f.k.n,pick(calmLines[id]));S.talked.add(id);S.social=(S.social||0)+1;
    });
   }});
@@ -1101,77 +1106,6 @@ FURN.playerroom=x=>{
  R(x+96,133,9,15,'#9c714c');R(x+94,137,13,8,'#b78957');R(x+99,108,3,30,'#b89a70');R(x+98,105,5,8,'#6b5144');R(x+99,139,3,4,'#463e38');
  R(x+19,159,63,13,'#6f617e');R(x+22,161,57,2,'#a18b9b');R(x+57,165,17,3,'#b66362');
 };
-/* Eight poses share the original cap, hoodie, palette, and one-pixel grid. */
-const playerGait=[
- {stride:-3,lift:0,bob:0,arm:2},
- {stride:-2,lift:0,bob:1,arm:1},
- {stride:0,lift:2,bob:0,arm:0},
- {stride:2,lift:1,bob:-1,arm:-1},
- {stride:3,lift:0,bob:0,arm:-2},
- {stride:2,lift:0,bob:1,arm:-1},
- {stride:0,lift:-2,bob:0,arm:0},
- {stride:-2,lift:-1,bob:-1,arm:1}
-];
-function drawPlayer(a,x,y){
- const facing=a.facing||(a.dir<0?'left':'right'),back=facing==='up',front=facing==='down';
- const side=!back&&!front,d=facing==='left'?-1:1;
- const pose=a.moving?playerGait[Math.floor((a.walk||0)/(Math.PI*2)*8)%8]:{stride:0,lift:0,bob:0,arm:0};
- const dodging=a.dash>0,bob=dodging?2:pose.bob,lean=dodging?a.dir*2:0;
- x=Math.round(x);y=Math.round(y);
- const k=K.you;
- // The rear leg is shaded, and each swing has a raised passing foot.
- const ph=a.moving?(a.walk||0):0,cs=a.moving?-Math.cos(ph):0,sn=a.moving?Math.sin(ph):0;
- for(let i=0;i<2;i++){
-  const rear=i===0,sign=rear?-1:1,col=rear?'#253049':k.pants;
-  const stride=dodging?sign*4:side?Math.round(cs*sign*3):0;
-  const lift=dodging?0:Math.max(0,Math.round(sn*sign*2));
-  const hip=x+(side?(rear?-2:-1):(rear?-4:1));
-  R(hip,y-9,3,4,col);R(hip+Math.round(stride/2),y-6,3,3,col);R(hip+stride,y-4-lift,3,3,col);
-  const sx=hip+stride+(side&&d<0?-1:0);
-  R(sx,y-2-lift,side?4:3,2,'#25242e');R(sx,y-1-lift,side?4:3,1,'#748093');
- }
- const torsoX=x+lean,bodyY=y-19+bob,arm=pose.arm;
- // Draw the far arm behind the torso so the shoulders remain attached.
- R(torsoX-7+(side?arm:0),bodyY+2,3,6,'#913039');
- R(torsoX-7+(side?arm:0),bodyY+8+(side?0:arm),3,3,'#be8d73');
- R(torsoX-5,bodyY,10,10,k.top);
- R(torsoX-5,bodyY+1,2,8,'#9a3037');R(torsoX+3,bodyY+1,2,8,'#ad353b');
- R(torsoX-4,bodyY+9,8,2,'#8f303a');
- if(back){
-  R(torsoX-3,bodyY,6,5,'#9c303b');R(torsoX-2,bodyY+1,4,2,'#d65550');
- }else{
-  R(torsoX-2,bodyY+1,1,3,'#eed5ba');R(torsoX+1,bodyY+1,1,3,'#eed5ba');
-  R(torsoX-2,bodyY+6,5,2,'#af343a');R(torsoX-2,bodyY+6,5,1,'#db514a');
- }
- if(a.phone){
-  R(torsoX+5,bodyY+2,4,3,k.top);R(torsoX+7,bodyY+1,3,3,k.skin);
-  R(torsoX+8,bodyY-3,3,5,'#262938');R(torsoX+9,bodyY-2,2,3,'#b8d9e5');
- }else{
-  const handX=torsoX+5-(side?arm:0),handY=bodyY+7-(side?0:arm);
-  R(handX,bodyY+1,3,Math.max(4,handY-bodyY),k.top);
-  R(handX,handY,3,3,k.skin);R(handX+2,handY+1,1,2,'#bf8e75');
- }
- const headX=torsoX,headY=bodyY-10;
- R(headX-5,headY,10,11,k.skin);R(headX-6,headY+1,12,8,k.skin);
- R(headX-6,headY+3,2,6,'#cda183');
- if(back){
-  R(headX-6,headY+3,12,5,k.hair);R(headX-4,headY+7,8,2,k.hair);
- }else{
-  const ex=headX+(side?d:0),blink=(T*1.3)%5<.11;
-  R(ex-4,headY+4,2,blink?1:2,'#241b1b');R(ex+2,headY+4,2,blink?1:2,'#241b1b');
-  if(side)R(headX+d*6-(d<0?1:0),headY+5,2,2,'#e8b890');
-  if(store.run&&store.run.bruised){R(ex+1,headY+3,4,4,'#5d3a70');R(ex-1,headY+7,1,2,'#b3121e')}
-  R(ex-2,headY+8,4,talker==='You'&&Math.sin(T*13)>0?2:1,'#915b4b');
-  R(side?headX-d*6:headX-6,headY+2,2,3,k.hair);
- }
- R(headX-6,headY-2,12,4,'#2a4a8a');R(headX-4,headY-3,8,1,'#2a4a8a');
- R(headX-3,headY-2,6,1,'#4668a0');
- if(side)R(d>0?headX+5:headX-10,headY+1,5,2,'#1c3566');
- else{
-  R(headX-7,headY+1,14,2,'#1c3566');
-  if(back){R(headX-3,headY+1,6,2,'#7187ac');R(headX-1,headY+1,2,1,'#c4bdab')}
- }
-}
 // Choices are drafted before sending. Only a sent choice changes the conversation.
 const seanStories=[
  {id:'cat',title:'MILO HAS STOLEN MY SEAT',caption:'every day. this is his bus now.',age:'12 min',art:'cat'},
@@ -1189,7 +1123,7 @@ const seanNodes={
  ]},
  tooSoon:{aside:'Sean: I have placed the phone face-down. That does not unsend it.',choices:[
   {text:'That came out way more intense than I meant. How was your day?',warm:2,reply:'haha okay. long day. the cat stole my seat. how is your night?',next:'sleepover'},
-  {text:'I meant what I said.',warm:-2,risk:true,flag:'pressure',delay:[13,22],reply:'can we slow down a little? we have barely talked',next:'boundary'},
+  {text:'I meant what I said.',warm:-2,risk:true,flag:'pressure',delay:[13,22],reply:'wtf? we’ve talked for five minutes. slow down, sean.',next:'boundary'},
   {text:'Arjun typed that. I have fired him.',warm:-1,flag:'blame',reply:'sure he did. are you having fun at least?',next:'sleepover'}
  ]},
  sleepover:{choices:[
@@ -1200,19 +1134,19 @@ const seanNodes={
  post:{aside:'Sean: I have three photos. One of them might get me killed by Hasan.',choices:[
   {text:'Post the pizza photo. Caption: “David has declared a national emergency.”',kind:'story',warm:1,flag:'pizzaPost',reply:'LIKED YOUR STORY\nhe looks like he is negotiating with the pizza',next:'callback'},
   {text:'Ask Hasan, then post his ridiculous victory pose.',kind:'story',warm:2,flag:'kindPost',reply:'LIKED YOUR STORY\nhe said yes to THAT photo?? incredible confidence',next:'callback'},
-  {text:'Post Hasan yelling. Caption: “actual skill issue”.',kind:'story',warm:-2,flag:'meanPost',reply:'is he okay with you posting that? he looks pretty embarrassed',next:'photoRepair'},
+  {text:'Post Hasan yelling. Caption: “actual skill issue”.',kind:'story',warm:-2,flag:'meanPost',reply:'kind of a dick move? is he okay with you posting that? he looks really embarrassed.',next:'photoRepair'},
   {text:'Post a selfie. Caption: “Waiting for someone to rescue me.”',kind:'story',warm:1,risk:true,flag:'selfiePost',delay:[8,14],reply:s=>s.warm>=3?'LIKED YOUR STORY\nrescue team is considering your application':'LIKED YOUR STORY\ndramatic much',next:'callback'}
  ]},
  photoRepair:{choices:[
   {text:'You’re right. Taking it down. I’ll ask him first.',warm:2,flag:'apologized',reply:'thanks. everyone has an awful photo they don’t want posted',next:'callback'},
-  {text:'It is just a joke. He will survive.',warm:-3,flag:'dismissive',delay:[12,20],reply:'i know. i just don’t find that funny',next:'boundary'},
+  {text:'It is just a joke. He will survive.',warm:-3,flag:'dismissive',delay:[12,20],reply:'wow. “he will survive.” that’s a pretty shitty way to talk about your friend.',next:'boundary'},
   {text:'I’ll crop him out and post the leaderboard.',warm:1,reply:'better. the leaderboard cannot be embarrassed',next:'callback'}
  ]},
  callback:{aside:'Sean: I remember everything she posts. In a normal way. Can we say that? No? Okay.',choices:[
   {text:'Is Milo still sitting in your seat?',warm:1,reply:'yes. i am on the floor. he has won',next:'invite'},
   {text:'I listened to Night Drive. The ending is so good.',when:s=>s.flags.music||s.story==='music',warm:2,flag:'remembered',reply:'right?? everyone skips the ending. okay you can pick the music next time',next:'invite'},
   {text:'Your story said you had a long day. Want to talk about it?',warm:2,flag:'listened',reply:'maybe tomorrow. thanks for asking. tonight i just want something funny',next:'invite'},
-  {text:'So who was the jacket selfie for?',warm:-2,risk:true,flag:'jealous',delay:[11,19],reply:'me? i can post a photo without it being for someone',next:'boundary'}
+  {text:'So who was the jacket selfie for?',warm:-2,risk:true,flag:'jealous',delay:[11,19],reply:'excuse me? i can post a photo without it being FOR someone. what the hell, sean.',next:'boundary'}
  ]},
  invite:{choices:[
   {text:'Want to see a comedy tomorrow? Just us.',warm:1,flag:'invited',reply:s=>s.warm>=5?'i could do after 3. just us sounds nice :)':'maybe. let’s talk tomorrow when everyone’s awake',next:'slowNight'},
@@ -1227,13 +1161,13 @@ const seanNodes={
  ]},
  afterConfession:{aside:'Sean: I want to read that again. And then perhaps another forty times.',choices:[
   {text:'Of course. No pressure. I’m glad I said it.',warm:2,flag:'respected',reply:'i’m glad you told me. go enjoy the sleepover for a bit',next:'slowNight'},
-  {text:'So is that a yes?',warm:-3,risk:true,flag:'pressure',reply:'i said i need time. please listen to that',next:'boundary'},
+  {text:'So is that a yes?',warm:-3,risk:true,flag:'pressure',reply:'i JUST said i need time. are you even reading these? wtf.',next:'boundary'},
   {text:'Can we pretend I said something less terrifying?',warm:1,reply:'we can pretend you said it calmly. that’s the best i can do',next:'slowNight'}
  ]},
  boundary:{aside:'Sean: Okay. Stop trying to win the conversation. Read what she actually said.',choices:[
   {text:'You’re right. I got carried away. I’ll give you some room.',warm:2,flag:'respected',delay:[10,18],reply:'thank you. i appreciate you hearing me',next:'slowNight'},
   {text:'Sorry. Tell me about your day instead?',warm:1,flag:'respected',reply:'not tonight. but thanks for asking',next:'slowNight'},
-  {text:'Fine. Forget I said anything.',warm:-3,flag:'sulking',delay:[14,23],reply:'okay. i’m putting my phone away for a bit',next:'slowNight'}
+  {text:'Fine. Forget I said anything.',warm:-3,flag:'sulking',delay:[14,23],reply:'seriously? i set one boundary and you sulk. grow up. i’m putting my phone down.',next:'slowNight'}
  ]},
  slowNight:{waitStage:2,notice:'Stella put her phone down. Sean can put his down too.',arrival:'back. how did the call go?',aside:'Sean: She came back. Please let the next sentence be normal.',choices:[
   {text:'Funny at first. Then he realised everyone was here.',warm:1,flag:'honest',reply:'oh. did you tell him you were all together?',next:'dare'},
@@ -1255,7 +1189,7 @@ const seanNodes={
   {text:'A little. I hoped you’d reply. I liked seeing your name pop up.',warm:2,flag:'genuine',reaction:['I kept deleting that sentence before tonight.','I wanted her to know. I just didn’t know how to let her.'],reply:s=>s.warm>=7?'i hoped you’d reply to mine too. i remember you saving me a seat on the bus. you probably don’t even remember':'that’s sweet. i remember you saving me a seat on the bus. you can just say hi, you know',next:'quietMemory'},
   {text:'Yes. Every dramatic second of Hasan’s defeat. For you.',warm:1,reply:'hasan sacrificed a lot for this conversation',next:'dangerWait'},
   {text:'No. I post for my enormous fanbase of seven people.',reply:'of course. i am honoured to be number eight',next:'dangerWait'},
-  {text:'I’m in love with you. I’ve been waiting forever to say it.',warm:-3,risk:true,flag:'tooIntense',delay:[18,27],reply:'sean, that’s a lot. please don’t turn one good conversation into a whole future tonight',next:'repair'}
+  {text:'I’m in love with you. I’ve been waiting forever to say it.',warm:-3,risk:true,flag:'tooIntense',delay:[18,27],reply:'what the fuck, sean. we have had ONE good conversation. please don’t turn it into a whole future tonight.',next:'repair'}
  ]},
  quietMemory:{aside:'Sean looks away from the screen. He remembers the bus. Every detail of it.',choices:[
   {text:'I remember. Your headphones kept getting caught in your scarf. I wanted you to sit there again the next day.',warm:2,flag:'vulnerable',reaction:['I remember which song was leaking out of her headphones.','I didn’t think she even noticed me that day.'],reply:'you waited while i untangled them. everyone else was getting off. i remember thinking you weren’t in a hurry to leave me',next:'softSpot'},
@@ -1275,7 +1209,7 @@ const seanNodes={
  repair:{choices:[
   {text:'You’re right. “I’d like to know you better” is what I meant.',warm:2,flag:'respected',reply:'that is a much better place to start',next:'dangerWait'},
   {text:'Sorry. I’m nervous and I made it huge in my head.',warm:2,flag:'genuine',reply:'i get nervous too. just talk to me like a person',next:'dangerWait'},
-  {text:'I thought you felt the same.',warm:-3,flag:'pressure',reply:'i didn’t say that. i need you to listen to what i actually say',next:'dangerWait'}
+  {text:'I thought you felt the same.',warm:-3,flag:'pressure',reply:'i never said that. don’t put words in my mouth. listen to what i actually say.',next:'dangerWait'}
  ]},
  dangerWait:{waitStage:3,notice:'Stella is away from her phone. The chat will keep your place.',arrival:'your last photo has someone by the kitchen window. is that aidan?',choices:[
   {text:'Yes. He got inside. This is serious.',warm:1,flag:'honest',reply:'tell me the address. i’m getting my sister',next:'address'},
@@ -1302,9 +1236,15 @@ const seanNodes={
   {text:'I’m not letting anyone stay behind.',warm:1,reply:'then get them up. we can finish this conversation outside',next:'steady'}
  ]},
  steady:{choices:[
-  {text:'Remind me what movie we were going to see.',warm:1,reply:s=>s.flags.invited?'a comedy. after three. just get out first':'something funny. i promise we will find something funny',next:'dawnWait'},
-  {text:'When I get out, I want to ask you properly.',when:s=>!s.flags.tooIntense,warm:1,reply:'then ask me when you get out. i want you here to ask',next:'dawnWait'},
-  {text:'Stay outside. Please.',reply:s=>s.flags.address?'we are. by the end of the street. we’re waiting':'i’m staying on the phone. let me know when you’re out',next:'dawnWait'}
+  {text:'Remind me what movie we were going to see.',warm:1,reply:s=>s.flags.invited?'a comedy. after three. just get out first':'something funny. i promise we will find something funny',next:'ifNot'},
+  {text:'When I get out, I want to ask you properly.',when:s=>!s.flags.tooIntense,warm:1,reply:'then ask me when you get out. i want you here to ask',next:'ifNot'},
+  {text:'Stay outside. Please.',reply:s=>s.flags.address?'we are. by the end of the street. we’re waiting':'i’m staying on the phone. let me know when you’re out',next:'ifNot'}
+ ]},
+ ifNot:{aside:'Sean’s thumbs are shaking too hard to type. He holds the record button and whispers instead.',choices:[
+  {text:'Voice note: “If I don’t come out — the bus seat thing. Best day of my year. I need you to know that.”',warm:2,flag:'tender',reaction:['I’ve never said anything that true out loud.','If I die in this house, at least she knows about the bus.'],reply:'don’t you DARE say goodbye to me in a voice note. you come out and say it to my face. i’m standing right here. i’m not leaving.',next:'dawnWait'},
+  {text:'Voice note: “I’m scared. I’m really fucking scared, Stella.”',warm:2,flag:'vulnerable',reaction:['I didn’t make it a joke. First time ever.','She didn’t think I was pathetic. She just… stayed.'],reply:'i know. i’m scared too. so listen to my voice instead of his. you’re going to walk out that door and i’m going to be so annoying about how brave you were.',next:'dawnWait'},
+  {text:'Text: “brb, monster.”',warm:1,reply:'how are you making JOKES right now. …okay, it helped. don’t stop. stay you until you’re outside.',next:'dawnWait'},
+  {text:'Text: “This is your fault for distracting me all night.”',warm:-2,reply:'what the fuck? i’m standing in the rain calling for help FOR YOU. don’t put that on me.',next:'dawnWait'}
  ]},
  dawnWait:{waitStage:5,notice:'The message is sent. For now, Sean needs both hands.',arrival:'are you outside?',choices:[
   {text:'We’re at the door. We’re coming out.',reply:s=>s.flags.address?'i can see the porch light. keep coming':'thank goodness. please sit down somewhere safe',next:'breathe'},
@@ -1349,7 +1289,7 @@ const seanNodes={
  declined:{aside:'Sean takes a breath. It hurts, but the answer is clear.',choices:[
   {text:'Thanks for being honest. I’m glad we talked.',flag:'respected',reply:'me too. i’d still like to be friends',next:'friendsDone'},
   {text:'I need a little time. But I heard you.',flag:'respected',reply:'that’s okay. take the time you need',next:'spaceDone'},
-  {text:'But you liked my story. I thought that meant something.',warm:-3,flag:'pressure',reply:'liking a story isn’t a promise. i’m going to leave it here tonight',next:'spaceDone'}
+  {text:'But you liked my story. I thought that meant something.',warm:-3,flag:'pressure',reply:'are you serious? liking a story isn’t a promise. i don’t owe you anything for a like. goodnight.',next:'spaceDone'}
  ]},
  friends:{choices:[
   {text:'Absolutely. A normal hangout next time.',reply:'please. one normal evening. that is all i ask',next:'friendsDone'},
@@ -1442,6 +1382,7 @@ function rememberSeanReaction(choice){
 }
 function sendSeanMessage(choice){
  const s=ensureSean();
+ if(!choice.burn&&(choice.warm||0)<=-2){s.strikes=(s.strikes||0)+1;if(s.strikes>=3)choice=Object.assign({},choice,{burn:'strikes',resolve:null,delay:[6,10],reply:'no. that’s three times tonight you’ve made me feel like shit for being nice to you. i’m done. fuck off, sean. i mean that as calmly as i can.',next:'burnedDone',reaction:['Three times. You did that to her THREE times.','She gave me chances. You spent every one of them.']})}
  s.warm+=choice.warm||0;
  if(choice.flag)s.flags[choice.flag]=true;
  if(choice.flag==='address')S.sharedAddress=true;
@@ -1689,12 +1630,12 @@ const coreyNodes={
  first:{aside:'Corey bought the paperback yesterday. He has not sent the first message yet.',choices:[
   {text:'Hey. Was The Lantern Keeper the book in your story?',warm:2,reply:'the blue cover? yes. have you read it?',next:'book'},
   {text:'Hey. You followed me first, so I figured I should say hi.',warm:0,reply:'hi. i follow quite a few people. do we know each other?',next:'book'},
-  {text:'I bought you a book. I thought you might like that.',warm:-2,reply:'you bought me something? we haven’t talked before',next:'book'}
+  {text:'I bought you a book. I thought you might like that.',warm:-2,reply:'you bought me something?? we have literally never spoken. that’s kind of a lot.',next:'book'}
  ]},
  book:{aside:'Corey: Technically I bought it for her. Practically, I am holding the receipt like a hostage note.',choices:[
   {text:'I picked it up because your post made it sound good. No spoilers?',warm:2,reply:'none from me. tell me what you think when you finish it',next:'chapter'},
   {text:'I got a copy for you. You don’t have to take it.',warm:1,reply:'that’s thoughtful, but you didn’t need to buy me anything',next:'chapter'},
-  {text:'I bought it because I thought you were giving me a hint.',warm:-3,reply:'it was a book post. please don’t read that much into it',next:'chapter'}
+  {text:'I bought it because I thought you were giving me a hint.',warm:-3,reply:'what? it was a book post. that’s a weird thing to say to a stranger.',next:'chapter'}
  ]},
  chapter:{aside:'There are three saved posts and forty-three followers. One post is an advert. Corey has liked all three.',choices:[
   {text:'What did you like about it?',warm:2,reply:'the bit where they stop waiting for someone to save them. did you get that far?',next:'honest'},
@@ -1820,9 +1761,11 @@ async function coreyIntervention(){
  await say('You','Corey. Wait.');
  await walk(corey,315,82);
  await say('Aidan','You’re supposed to be listening to me.');
- await tw(view,{fade:1},160);SFX.smack();await wait(650);
- corey.knife=false;AI.y=171;corey.x=276;AI.state='recover';await tw(view,{fade:.25},350);
- await N('A chair hits the floor. When you see them again, Aidan is down. Corey has dropped the knife.');
+ const ch=prop({t:'chair',x:332,y:160});corey.pose='punch';corey.weapon='#dfe6ea';corey.knife=false;
+ for(let i=0;i<3;i++){corey.punchT=T+.17;SFX.smack();SFX.squelch();S.shake=.35;spurt(AI.x-4,AI.y-15,9,AI.y+2);fx(.1,'');AI.x+=3;AI.shake=true;await wait(340)}
+ AI.shake=false;ch.tilt=1;SFX.smack();await tw(AI,{y:171,x:AI.x+8},260);AI.state='recover';corey.pose=null;corey.weapon=null;prop({t:'knife',x:corey.x+12,y:166});
+ await N('Three times, fast. Aidan goes backwards over a chair and takes it down with him. Corey lets the knife fall.');
+ await say('Corey','Fuck. Fuck. I just—');
  await say('Corey','He was coming at you.');
  await wait(900);await tw(view,{fade:0},350);
  await N('Under the table, the blue jacket starts moving again.');
@@ -1999,19 +1942,19 @@ async function title(){
 async function intro(){
  mode='ext';cue('home');await card('FRIDAY · 9:42 PM','No adults until morning.',1800);
  await N('Eight friends. One house. Enough snacks for seven of them, according to David.');
- await tw(view,{fade:1},500);mode='house';cam.x=320;await tw(view,{fade:0},500);
+ await tw(view,{fade:1},500);mode='house';cam.x=320;chill();await tw(view,{fade:0},500);
  const introductions=[
   ['david','David has claimed the couch. And both family-size bags.'],
   ['nivaan','Nivaan is filming Hasan lose at a racing game. He has sixteen clips already.'],
   ['hasan','Hasan’s controller is perfectly fine. His excuses are not.'],
-  ['arjun','Arjun has spent ten minutes comparing Hasan’s head to the gear stick.'],
+  ['arjun','Arjun is winning, and still has time to compare Hasan’s head to the gear stick on screen.'],
   ['omer','Omer is the only person who remembers where the spare keys live.'],
   ['corey','Corey looks annoyingly good under the worst ceiling light in the house.'],
   ['sean','Sean keeps unlocking his phone, then putting it away before anyone can see.']
  ];
- for(const [id,line] of introductions){await pan(A_[id].x,450);await N(line)}
+ for(const [id,line] of introductions){await pan(A_[id].x,450);if(id==='hasan')A_.hasan.rageT=T+2.5;if(id==='sean'){A_.sean.phone=0;setTimeout(()=>A_.sean.phone=1,2600)}await N(line)}
  await say('Arjun','Call Aidan. He told me he’s been practicing jokes.');
- await say('Hasan','Practicing? Like a sport?');
+ await say('Hasan','Practicing? Like a sport?');setPose(['hasan','arjun'],null);
  await say('You','We didn’t invite him. Calling from here is going to make it worse.');
  await say('Omer','Then don’t make it a prank.');
  await say('Nivaan','Fine. Normal phone call. Extremely normal.');
@@ -2026,14 +1969,14 @@ async function windowScene(){
  await tw(view,{fade:0},600);
  await say('Hasan','He walked here? In this rain?');
  await say('Arjun','That’s commitment to a joke.');
- await N('Aidan raises his hand. He keeps holding it there after everyone stops waving.');
+ S.ext.aidan.pose='reach';await N('Aidan raises his hand. He keeps holding it there after everyone stops waving.');
  await wait(1600);await say('Omer','He’s looking at the kitchen window. That one doesn’t lock.');
  await tw(view,{fade:1},500);mode='house';S.ext.aidan=null;await tw(view,{fade:0},500);
  S.winSeen=true;await cameraBack();
 }
 async function act2(){
  await card('ACT II','The next call',1600);
- S.chapter=2;S.social=0;S.talked=new Set();
+ S.chapter=2;S.social=0;S.talked=new Set();chill();
  await stagePlay('r1','Explore the house and talk to three friends.\nGather at the rug when you’re ready.');
  await ringPhone();await say('You','Aidan again.');
  const answer=await choose(['Answer him.','Let it ring.']);
@@ -2096,7 +2039,7 @@ function setupHunt(monster=false){
  S.chapter=monster?4:3;S.phase=monster?'hunt':'allergens';mode='house';S.floor=0;S.hiddenAt=null;
  S.monster=monster;S.aidanIn=true;S.health=6;S.dark=S.got.power?.19:.54;S.lights=!!S.got.power;S.tvOn=false;
  S.hp=3;S.monsterHP=14;S.inv=[];S.drops=[];S.proj=null;parts=[];
- S.subT=0;$('sub').style.opacity=0;
+ S.subT=0;$('sub').style.opacity=0;PROPS=[];
  placeLiving();resetAidan();
  A_.you.x=500;A_.you.y=164;
  const positions=[[440,0],[105,0],[930,1],[520,1],[285,1],[790,0],[380,0]];
@@ -2124,7 +2067,7 @@ async function allergens(){
  await card('ACT III','Nobody stays hidden forever',1600);
  if(S.corey?.used){S.hp=0;return true}
  if(coreyReady()){await coreyIntervention();return true}
- await say('You','Stay ahead of him. Once he catches you, there is no pulling you back.');
+ await say('You','Stay the fuck ahead of him. Once he catches you, there is no pulling you back.');
  await sayLiving('omer','Get the dust bag from the garage, lilies from the kitchen, and dander from under the downstairs bed.');
  await N('A successful grab is fatal. Fallen friends stay dead, including when you retry a checkpoint. Keep Aidan occupied and stay ahead of his reach.');
  await N('E interacts. F throws in the direction you face. Shift dodges. Move up and down to avoid his reach.');
@@ -2144,17 +2087,17 @@ async function transformScene(){
  await cameraOn(AI.x,1.35);cue('reveal');
  await say('Aidan',S.corey?.used?'That didn’t make me leave.':'Ah— ah— I can’t—');
  if(!S.corey?.used)SFX.sneeze();await tw(AI,{y:168},1000);
- await sayLiving('arjun',S.corey?.used?'He was down. You all saw him go down.':'Okay! Okay, it worked. He’s going to throw up.');
+ await sayLiving('arjun',S.corey?.used?'He was down. You all fucking saw him go down.':'Okay! Okay, holy shit, it worked. He’s going to throw up.');
  await say('You','Back up. Give him room.');
  await wait(1300);AI.shake=true;SFX.creak();
  await N('His sleeve is moving. His hand is still on the floor.');
  S.monster=true;fx(.8,'STILL HERE');AI.transform=0;AI.state='recover';AI.timer=100;
  await tw(AI,{transform:.5},2400);
- await sayLiving('david','That’s another hand.');
+ await sayLiving('david','That’s another hand. That’s another FUCKING hand.');
  await N('His jacket tears at both shoulders. Four shoes drag across the floor. He looks up before the rest of him does.');
  SFX.squelch();fx(1.1,'I’M STILL HERE');S.shake=1;await tw(AI,{transform:1},2600);AI.state='stun';
  await say('Aidan','I’m still here. I’m still—');
- await sayLiving('hasan','STOP SAYING THAT.');
+ await sayLiving('hasan','STOP FUCKING SAYING THAT.');
  await N('The face turns toward you. A moment later, the head follows. Every hand is pointing at the stairs.');
  await wait(1700);
  await cameraBack();AI.state='patrol';
@@ -2164,9 +2107,9 @@ async function transformScene(){
  await tw(view,{fade:1},350);AI.floor=destination;S.floor=destination;A_.you.floor=destination;A_.you.x=stairX;cam.x=540;
  await tw(view,{fade:0},350);
  await walk(AI,925,155);
- await sayLiving('nivaan','He went into the bedroom!');
+ await sayLiving('nivaan','What the FUCK was that? He went into the bedroom!');
  await sayLiving('omer','Kitchen. Cutlery drawer. We need something that can hurt him.');
- await say('You','Stay away from him. I’m getting the knife.');
+ await say('You','Everybody stay the fuck away from him. I’m getting the knife.');
  await N('From the bedroom, his footsteps cross the ceiling.');
  await tw(view,{fade:1},350);S.floor=0;A_.you.floor=0;A_.you.x=stairX;cam.x=540;
  await tw(view,{fade:0},350);
@@ -2207,6 +2150,7 @@ async function ending(){
  await say('You',missing.length?'We tell someone exactly what happened. All of it.':'That’s everyone. Open it.');
  S.doorOpen=true;SFX.creak();await wait(1200);
  await tw(view,{fade:1},800);mode='ext';S.ext={lit:true,open:true};view.zoom=1;view.letter=0;await tw(view,{fade:0},800);
+ await outside(survivors);
  await N('You stand on the pavement until the rain stops. Nobody looks back at the upstairs window.');
  if(missing.length)await N('Morning arrives anyway. That is the part you cannot understand.');
  else{await sayLiving('david','Next time. My house.');await sayLiving('hasan','There is no next time.')}
@@ -2315,7 +2259,7 @@ updateFatal=function(dt){
   S.fatal=null;busy=false;S.play=true;releaseKeys();A_.you.guard=Math.max(A_.you.guard||0,2.2);
   AI.state='recover';AI.timer=3;cue(sc.score,true);
   const left=livingFriends().length;sub(K[sc.id].n+' is dead. '+(left?left+' friend'+(left>1?'s':'')+' left.':'Nobody is left.'));
-  $('death-caption').textContent='';fx(2,K[sc.id].n.toUpperCase()+' IS DEAD',sc.id);GL.next=5;
+  $('death-caption').textContent='';fx(2,K[sc.id].n.toUpperCase()+' IS DEAD',sc.id);GL.next=5;if(left){const w=one(livingFriends());BN.q={text:K[w].n+': '+one(GRIEFBARK).replace(/\{n\}/g,K[sc.id].n),at:T+3.2};BN.scare=12}
  }
 };
 drawFatalScene=function(){
@@ -2423,7 +2367,8 @@ const BANTER=shuffle([
  ['david','I’m just saying, a ninth guy means smaller pizza slices.','hasan','That’s the most David reason not to invite someone.'],
  ['hasan','He remembered my birthday last year. Nobody else did.','arjun','…Okay now I feel bad. Stop it.']
 ]);
-const BARK={david:['I can’t run any more. I’m running anyway.','He touched my HAIR.'],nivaan:['I’m not filming this. I’m not.','He’s under us. Listen.'],hasan:['Don’t let him near my head.','Which floor? WHICH FLOOR?'],corey:['Stay behind me.','He keeps saying my name.'],omer:['He’s slower on the stairs. Use the stairs.','Allergies. It’s the only weakness. Keep throwing.'],arjun:['I take it back. All the jokes. ALL of them.','He’s not blinking. Why isn’t he blinking.'],sean:['If I die, don’t read my texts.','I can hear him breathing through the wall.']};
+const BARK={david:['I can’t run any more. I’m fucking running anyway.','He touched my HAIR.'],nivaan:['I’m not filming this. Fuck. I’m not.','He’s under us. Listen.'],hasan:['Keep him the fuck away from my head.','Which floor? WHICH FUCKING FLOOR?'],corey:['Stay behind me.','He keeps saying my name. Why does he know my middle name.'],omer:['He’s slower on the stairs. Use the stairs!','Allergies. It’s the only weakness. Keep throwing shit at him!'],arjun:['I take it back. All the jokes. ALL of them. Fuck.','He’s not blinking. Why isn’t he blinking.'],sean:['If I die, don’t read my texts.','Shit. I can hear him breathing through the wall.']};
+const GRIEFBARK=['FUCK. FUCK. That was {n}.','No no no no. {n}. He just— {n}—','He killed {n}. He fucking KILLED {n}.','{n}’s not moving. Oh my god. Oh my god.','I’m going to be sick. That was {n}.'];
 const MIMIC=['come upstairs. it’s safe now.','guys? i found the way out.','it doesn’t hurt. come see.','why did you leave me with him?'];
 const BN={t:9,i:0,q:null,scare:16};
 function ambient(dt){
@@ -2441,28 +2386,6 @@ function ambient(dt){
  }
 }
 {const _pu=playUpdate;playUpdate=function(dt){_pu(dt);if(!S.fatal)ambient(dt)}}
-/* ---------- Sean puts you on the floor ---------- */
-async function seanBeatdown(lines){
- const sean=A_.sean,you=A_.you,d=you.x<sean.x?-1:1,calm=!S.aidanIn;
- await N('Sean takes the phone. He reads the message you sent as him. Then he reads it again, slower.');
- await say('Sean',lines[0]);
- await say('Sean','Stand still.');await say('You','Sean, it was a jo—');
- const hit=async(line)=>{sean.x=you.x-d*9;SFX.smack();S.shake=.35;fx(.14,'');you.x=clamp(you.x+d*5,20,WORLD-20);view.fade=.25;await wait(140);view.fade=0;if(line)await say('Sean',line);else await wait(260)};
- await hit('That was HER.');await hit('She TRUSTED me.');
- you.down=d;SFX.squelch();await N('You go down. He follows you down.');
- await hit();await hit();await hit('I asked you for ONE thing!');await hit();
- if(calm){
-  if(!A_.arjun.dead)await say('Arjun','WORLDSTA— no. No, stop, he’s actually folding him.');
-  if(!A_.david.dead)await say('David','Sean. SEAN. He’s done. You’re punching carpet now.');
-  if(!A_.corey.dead)await N('Corey lifts Sean off you with one arm. It is, annoyingly, very cinematic.');
- }else await N('He only stops because something upstairs laughs.');
- sean.x=you.x-d*26;sean.dir=d;
- await say('Sean',lines[1]||'Don’t ever touch my phone again.');
- await say('Sean','Don’t talk to me. Don’t stand near me.');
- await N('Your nose is bleeding onto the floor. One eye is closing. You earned both.');
- you.down=0;store.run.bruised=true;save();if(S.aidanIn)S.health=Math.max(1,S.health-2);
- if(calm&&!A_.hasan.dead)await say('Hasan','…So are we not doing charades, or.');
-}
 /* ---------- THE SLEEPOVER ---------- */
 const SLEEP={
  david:['David opened the emergency crisps “to stay alert.” The bag is empty now. So is David.','David rested his eyes for one advert break. There are no adverts. The TV isn’t on.'],
@@ -2473,7 +2396,7 @@ const SLEEP={
  arjun:['Arjun whispered roasts at the door to stay awake. He ran out of material at 2:51. He has never been quiet this long.','Arjun did push-ups to stay sharp. Eleven. He is lying exactly where the eleventh ended.'],
  sean:['Sean stared at “Stella is typing…” until the dots were the only thing in the world. Then they were nothing.','Sean drafted one message nineteen times. During draft twenty he put his face down on the screen.']};
 const WOKEN={david:'I’m up. I’m up. Is it breakfast?',nivaan:'Second watch. Got it. Camera’s rolling.',hasan:'Fine. But if my head gets a draught, that’s on you.',corey:'Go to sleep. I’ve got it.',omer:'I have a system. Do not worry.',arjun:'Nothing gets past me. I am the wall.',sean:'Yeah. Can’t sleep anyway. She’s online.'};
-const GELLED={david:'Did he give me a BOWL CUT? In my SLEEP? I can’t even see without my — where are my GLASSES?',nivaan:'Tell me nobody filmed that. Tell me. NIVAAN DOES THE FILMING.',hasan:'He put a bowl on the gear stick. He put a BOWL on it.',corey:'…Is it bad?',omer:'Statistically this is the worst possible outcome.',arjun:'No. No no no. I have ROASTED this haircut. I can’t BE this haircut.',sean:'She’s going to see this. She is going to SEE this.'};
+const GELLED={david:'Did he give me a BOWL CUT? In my SLEEP? I can’t even see without my — where the fuck are my GLASSES?',nivaan:'Tell me nobody filmed that. Tell me. Oh my god, it’s a fucking bowl.',hasan:'He put a bowl on the gear stick. He put a BOWL on it. I’ll kill him.',corey:'…Is it bad? Somebody fucking tell me if it’s bad.',omer:'Statistically this is the worst possible outcome. Fuck.',arjun:'No. No no no. I have ROASTED this haircut. I can’t BE this fucking haircut.',sean:'She’s going to see this. She is going to SEE this. Fuck my life.'};
 const ENTRY=[
  ['window','Downstairs, the kitchen window slides up. It doesn’t lock. It has never locked. Omer said so twice.'],
  ['key','A key turns in the front door. The spare. The one under the ceramic frog. Aidan has been to this house exactly once, and he looked under everything.'],
@@ -2487,86 +2410,203 @@ const HEART={
  arjun:[['Arjun','I roast people so they can’t get there first. That’s the whole trick.'],['Arjun','Aidan never worked that out. He just stands there and takes it. And comes back.'],['Arjun','…We were kind of horrible to him, weren’t we.']],
  omer:[['Omer','I’ve counted the exits eleven times. There are still only two.'],['Omer','Being the smart one just means being scared earlier than everyone else.'],['Omer','If something happens: garage panel. Spare fuse is in the study. Remember that.']],
  nivaan:[['Nivaan','I film everything because I’m scared I’ll forget the good bits.'],['Nivaan','Sixteen clips tonight. Haven’t watched one. I’m just… keeping them.'],['Nivaan','If this goes bad, don’t let the last video of us be the one where we’re laughing at him.']]};
+function seenLine(){const s=store.seen,n=o=>Object.keys(o||{}).length;return 'Night-watch stories '+n(s.r)+'/14 · Break-ins '+n(s.e)+'/4 · Deaths '+n(s.d)+'/3 · Endings '+Object.keys(store.end||{}).filter(k=>k[0]==='r').length+'/4'}
+
+/* ================= PASS 2: poses, props, player sprite, shown-not-told cutscenes ================= */
+let PROPS=[];
+function prop(o){o=Object.assign({floor:S.floor},o);PROPS.push(o);return o}
+function spurt(x,y,n,fy){prop({t:'spurt',x,y,n:n||8,t0:T,fy:fy||170})}
+const RR=(x0,x1,y,h,c)=>R(Math.min(x0,x1),y,Math.abs(x1-x0),h,c);
+function drawProps(){
+ PROPS=PROPS.filter(p=>!(p.t==='pillow'&&T>p.t0+p.dur)&&!(p.t==='feather'&&T>p.t0+3.5));
+ for(const p of PROPS){if(p.floor!==S.floor)continue;const x=X(p.x),y=p.y;
+  if(p.t==='chair'){if(p.tilt){R(x-8,y-4,14,3,'#6b4a2e');R(x-10,y-9,3,9,'#7d5836');R(x+4,y-7,2,4,'#5a3d25')}else{R(x-4,y-9,9,2,'#7d5836');R(x-4,y-21,2,14,'#6b4a2e');R(x-4,y-21,9,2,'#7d5836');R(x-4,y-7,2,7,'#5a3d25');R(x+3,y-7,2,7,'#5a3d25')}}
+  else if(p.t==='paper'){R(x-4,y-1,8,2,'#eee9d4');R(x-2,y-1,3,1,'#555')}
+  else if(p.t==='prints'){for(let i=0;i<p.n;i++)R(x+i*9*p.dir,y+(i%2?2:-2),4,2,'#2c4a7088')}
+  else if(p.t==='pillow'){const q=(T-p.t0)/p.dur;R(x+(p.x1-p.x)*q-4,y-18-Math.sin(q*3.14)*14,9,6,'#f4f0e6');R(x+(p.x1-p.x)*q-4,y-13-Math.sin(q*3.14)*14,9,1,'#c9c4b6')}
+  else if(p.t==='feather'){const q=T-p.t0;for(let i=0;i<p.n;i++)R(x+(hsh(i+p.x)-.5)*60+Math.sin(q*3+i)*3,Math.min(y,y-34+q*(9+hsh(i)*14)+hsh(i+2)*12),1,1,'#fff')}
+  else if(p.t==='spurt'){const q=T-p.t0;for(let i=0;i<p.n;i++){const vx=(hsh(i+p.x)-.5)*60,vy=-20-hsh(i+5)*40,tt=Math.min(q,.25+hsh(i)*.5);R(x+vx*tt,Math.min(p.fy,y+vy*tt+140*tt*tt),2,2,BLOOD[1+i%3])}}
+  else if(p.t==='knife'){R(x-4,y-1,4,2,'#5a3b2a');R(x,y-1,7,2,'#dfe6ea')}
+  else if(p.t==='gel'){R(x-2,y-4,5,4,'#3fb7c9');R(x-2,y-5,5,1,'#e8e8e8')}
+ }
+}
+function poseArms(k,o,x,bx,by,bw,d){
+ const p=o.pose,t=T+k.seed,top=k.top,sk=k.skin,fs=d>0?bx+bw:bx-2,bs=d>0?bx-2:bx+bw;
+ const back=()=>{R(bs,by+1,2,6,top);R(bs,by+7,2,2,sk)};
+ if(p==='game'){const j=Math.sin(t*11)>0?1:0,up=o.rageT>T?-12:0,cx=x-4+d*4;R(bx-2,by+2,2,4,top);R(bx+bw,by+2,2,4,top);R(cx,by+5+up,9,3,'#2b2b36');R(cx+1+j,by+5+up,2,1,'#e33');R(cx+6-j,by+6+up,1,1,'#6cf');R(cx-1,by+5+up,1,3,sk);R(cx+9,by+5+up,1,3,sk);if(up){R(bx-2,by-6,2,8,top);R(bx+bw,by-6,2,8,top)}return true}
+ if(p==='eat'){const up=(t*1.2)%1<.4;back();R(bs-(d>0?3:-1),by+5,5,6,'#e8a23c');R(bs-(d>0?3:-1),by+5,5,1,'#c23b3b');if(up){R(fs,by-1,2,4,top);R(fs-d,by-3,2,2,sk);R(fs-d*2,by-3,2,1,'#f2d27a')}else{R(fs,by+1,2,6,top);R(fs,by+7,2,2,sk)}return true}
+ if(p==='punch'||p==='point'){const out=p==='point'||o.punchT>T,ext=out?8:3,x0=d>0?bx+bw:bx-ext;back();R(x0,by+2,ext,3,top);const fx_=d>0?x0+ext:x0-3;R(fx_,by+1,3,p==='point'?2:4,sk);
+  if(o.weapon){if(out)RR(fx_+(d>0?3:0),fx_+(d>0?13:-10),by+1,3,o.weapon);else R(fx_,by-9,3,10,o.weapon)}return true}
+ if(p==='pound'){const a=Math.sin(T*14)>0,x1=x+d*5,x2=x+d*2;R(x1-1,by+2,3,a?10:4,top);R(x1-1,by+(a?12:6),3,3,sk);R(x2-1,by+(a?-3:2),3,a?5:10,top);R(x2-1,by+(a?-5:12),3,3,sk);return true}
+ if(p==='reach'){back();R(d>0?bx+bw:bx-4,by-1,4,3,top);R(d>0?bx+bw+2:bx-5,by-6,3,6,top);R(d>0?bx+bw+2:bx-5,by-9,3,3,sk);return true}
+ if(p==='up'){for(const ax of[bx-2,bx+bw]){R(ax,by-5,2,8,top);R(ax,by-7,2,2,sk)}return true}
+ if(p==='cover'){for(const ax of[bx-2,bx+bw]){R(ax,by-4,2,7,top);R(ax+(ax<x?1:-1),by-9,3,5,sk)}return true}
+ if(p==='hug'){RR(x,x+d*10,by+2,3,top);RR(x,x+d*10,by+6,3,top);RR(x+d*10,x+d*12,by+2,7,sk);return true}
+ if(p==='pillow'){const a=Math.sin(t*10);back();R(fs,by-5,2,8,top);R(x+d*(4+a*5)-4,by-13+Math.abs(a)*9,9,6,'#f4f0e6');return true}
+ if(p==='torch'){R(bx-2,by+2,2,4,top);R(bx+bw,by+2,2,4,top);R(x-1,by-1,2,6,'#666');R(x-1,by-2,2,1,'#ffe9a0');return true}
+ return false;
+}
+function posePost(k,o,x,hx,hy,hw){
+ if(o.pose==='torch'){g.fillStyle='rgba(255,236,140,.4)';g.fillRect(hx,hy+4,hw,7);g.fillStyle='rgba(0,0,0,.35)';g.fillRect(hx,hy+1,hw,3);g.fillStyle='rgba(255,236,140,.08)';g.fillRect(hx-8,hy-14,hw+16,18)}
+}
+/* ---------- the player: cap, hoodie, TWO legs ---------- */
+function drawPlayer(a,x,y){
+ const f=a.facing||(a.dir<0?'left':'right'),back=f==='up',front=f==='down',side=!back&&!front,d=f==='left'?-1:1,k=K.you,sk=k.skin;
+ x=Math.round(x);y=Math.round(y);
+ const dodge=a.dash>0,mv=a.moving&&!dodge,ph=a.walk||0,s=mv?Math.sin(ph):0,c=mv?Math.cos(ph):0;
+ const bob=dodge?2:mv?(Math.abs(s)>.6?1:0):(Math.sin(T*2.2+1)>.6?1:0),lean=dodge?a.dir*2:0;
+ for(let i=0;i<2;i++){
+  const sg=i?1:-1,col=i?k.pants:'#222c48',hip=side?x-3+i*3:x-4+i*5;
+  const st=dodge?sg*3:side?Math.round(s*sg*3)*d:0,lift=dodge?0:(c*sg>.3?2:0);
+  R(hip+Math.round(st/2),y-8,3,4,col);R(hip+st,y-5-lift,3,3,col);
+  const sx=hip+st-(side&&d<0?1:0);R(sx,y-2-lift,side?4:3,2,'#1d1c26');R(sx,y-1-lift,side?4:3,1,'#8a93a6');
+ }
+ const tx=x+lean,by=y-17+bob,sl='#a8323a',sw=Math.round(s*2)*d;
+ if(side){R(tx-1+sw,by+1,3,6,'#8a2830');R(tx-1+sw,by+7,3,2,'#c99a7a')}
+ R(tx-5,by,10,9,k.top);R(side&&d<0?tx+3:tx-5,by,2,9,'rgba(0,0,0,.2)');R(tx-5,by+8,10,1,'#8f303a');
+ if(back)R(tx-3,by,6,4,'#9c303b');else if(front){R(tx-2,by+1,1,3,'#eed5ba');R(tx+1,by+1,1,3,'#eed5ba');R(tx-3,by+5,6,2,sl)}
+ if(a.phone){R(tx+3,by+2,4,3,sl);R(tx+6,by,3,3,sk);R(tx+7,by-4,3,5,'#262938');R(tx+8,by-3,1,3,'#b8d9e5')}
+ else if(side){R(tx-1-sw,by+1,3,6,sl);R(tx-1-sw,by+7,3,2,sk)}
+ else{const al=mv&&s>0?1:0,ar=mv&&s<0?1:0;R(tx-7,by+1-al,2,6,sl);R(tx-7,by+7-al,2,2,sk);R(tx+5,by+1-ar,2,6,sl);R(tx+5,by+7-ar,2,2,sk)}
+ const hx=tx-6,hy=by-10;
+ R(hx+1,hy,10,1,sk);R(hx,hy+1,12,9,sk);R(hx+1,hy+10,10,1,sk);
+ if(back){R(hx,hy+2,12,6,k.hair);R(hx+1,hy+8,10,1,k.hair)}
+ else{
+  const ex=tx+(side?d:0),ey=hy+5,blink=(T*1.3)%5<.11;
+  if(side)R(d>0?hx:hx+10,hy+2,2,5,k.hair);else{R(hx,hy+2,1,4,k.hair);R(hx+11,hy+2,1,4,k.hair)}
+  R(ex-4,ey,2,blink?1:2,'#1a1410');R(ex+2,ey,2,blink?1:2,'#1a1410');
+  if(store.run&&store.run.bruised){R(ex+1,ey-1,4,4,'#5d3a70');R(ex+2,ey+1,2,1,'#1a1410');R(ex-1,ey+3,1,2,'#b3121e')}
+  R(ex-2,ey+3,4,talker==='You'&&Math.sin(T*13)>0?2:1,'#7a3a2a');
+ }
+ R(hx-1,hy-2,14,4,'#2a4a8a');R(hx+1,hy-3,10,1,'#2a4a8a');R(hx+2,hy-2,5,1,'#4668a0');
+ if(side)R(d>0?hx+11:hx-4,hy+1,5,2,'#1c3566');else if(front)R(hx-1,hy+1,14,2,'#1c3566');else R(hx+4,hy+1,4,2,'#7187ac');
+}
+function drawPlayerDown(a,x,y){
+ const k=K.you,d=a.down,tw_=a.hitT>T?(Math.random()*3|0)-1:0,h=x-d*13,b=Math.min(22,a.bleed||0);
+ if(b){R(h-b,y-1,b*2,3,BLOOD[1]);R(h-b+3,y,b*2-6,1,BLOOD[2])}
+ RR(x+d*3,x+d*13,y-6,3,'#222c48');RR(x+d*13,x+d*16,y-7,4,'#1d1c26');
+ RR(x+d*3,x+d*11,y-3+tw_,3,k.pants);RR(x+d*11,x+d*14,y-3+tw_,3,'#1d1c26');
+ RR(x-d*7,x+d*4,y-8,7,k.top);RR(x-d*7,x+d*4,y-2,1,'#8f303a');
+ RR(x-d*2,x+d*5,y-1,2,'#a8323a');RR(x+d*5,x+d*7,y-1,2,k.skin);
+ RR(x-d*8,x-d*19,y-2-tw_,2,'#a8323a');RR(x-d*19,x-d*21,y-2-tw_,2,k.skin);
+ R(h-5,y-11+tw_,10,10,k.skin);RR(h-d*5,h-d*2,y-11+tw_,10,k.hair);
+ R(h+d,y-9+tw_,2,1,'#1a1410');R(h+d,y-5+tw_,2,1,'#1a1410');R(h+d*3-1,y-7+tw_,2,2,BLOOD[2]);R(h+d*3-1,y-5+tw_,1,3,BLOOD[1]);R(h-1,y-9+tw_,3,3,'#5d3a7088');
+ R(h-d*13-4,y-3,8,3,'#2a4a8a');R(h-d*13-4,y-1,10,1,'#1c3566');
+}
+const setPose=(ids,p)=>{for(const id of [].concat(ids))if(A_[id])A_[id].pose=p};
+const laugh=(ms,ids)=>{for(const id of ids||pals)A_[id].laughT=T+(ms||900)/1000};
+function chill(){ // what the narration says they're doing, they are doing
+ Object.assign(A_.hasan,{pose:'game',dir:1,sit:true});Object.assign(A_.arjun,{pose:'game',dir:1,sit:true,x:560,y:158});
+ A_.david.pose='eat';A_.nivaan.phone=1;A_.nivaan.dir=1;
+}
+/* ---------- Sean actually beats you up ---------- */
+async function seanBeatdown(lines){
+ const sean=A_.sean,you=A_.you,calm=!S.aidanIn,d=you.x<sean.x?-1:1,fy=you.y;
+ Object.assign(sean,{phone:0,sit:false,pose:null});you.facing=d>0?'left':'right';you.dir=-d;
+ await N('Sean takes the phone. He reads the message you sent as him. Then he reads it again, slower.');
+ await say('Sean',lines[0]);
+ sean.dir=d;sean.y=you.y;await walk(sean,you.x-d*14,95);
+ await say('Sean','Stand still.');await say('You','Sean, it was a jo—');
+ const jab=async line=>{sean.pose='punch';sean.punchT=T+.2;SFX.smack();S.shake=.3;fx(.1,'');spurt(you.x,you.y-22,5,fy);
+  await tw(you,{x:clamp(you.x+d*7,20,WORLD-20)},110);await wait(190);await walk(sean,you.x-d*14,130);if(line)await say('Sean',line)};
+ await jab('That was HER.');await jab('She TRUSTED me, you piece of shit.');
+ sean.punchT=T+.35;SFX.smack();SFX.squelch();S.shake=.5;fx(.22,'');spurt(you.x,you.y-22,10,fy);
+ you.fallDir=d;you.fall=.01;await tw(you,{x:clamp(you.x+d*12,24,WORLD-24),fall:1},280);you.fall=0;you.down=-d;you.bleed=2;
+ await N('The third one takes your legs away. You hit the floor and stay there.');
+ await walk(sean,you.x-d*1,110);sean.y=you.y+1;sean.sit=true;sean.pose='pound';
+ const pound=async(n,line)=>{for(let i=0;i<n;i++){you.hitT=T+.16;you.bleed+=1.5;SFX.smack();if(i%2)SFX.squelch();S.shake=.22;spurt(you.x+d*13,you.y-7,4,fy);await wait(240)}sean.pose=null;if(line)await say('Sean',line);sean.pose='pound'};
+ await pound(4);await pound(3,'I asked you for ONE thing!');await pound(4,'ONE. FUCKING. THING.');
+ if(calm){
+  if(!A_.arjun.dead)await say('Arjun','WORLDSTA— no. No, shit, stop, he’s actually folding him.');
+  if(!A_.david.dead)await say('David','Sean. SEAN. He’s done. He’s not even blocking.');
+  await pound(2);
+  if(!A_.corey.dead){const c=A_.corey;Object.assign(c,{sit:false,pose:null,y:sean.y,dir:d});await walk(c,sean.x-d*11,120);c.pose='hug';
+   await N('Corey hooks him under both arms and hauls him off you.');sean.sit=false;sean.pose='up';sean.shake=true;
+   walk(c,sean.x-d*45,45);await walk(sean,sean.x-d*34,45);c.pose=null;sean.shake=false}
+ }else await N('He only stops because something upstairs laughs.');
+ Object.assign(sean,{sit:false,pose:null,dir:d,y:fy});if(Math.abs(sean.x-you.x)<20)await walk(sean,you.x-d*30,70);sean.dir=d;
+ await say('Sean',lines[1]||'Don’t ever touch my phone again.');
+ await say('Sean','Don’t talk to me. Don’t stand near me.');
+ await N('You lie there and breathe through your mouth. Your nose isn’t taking requests.');
+ await wait(600);you.down=0;you.fall=1;await tw(you,{fall:0},1100);you.bleed=0;prop({t:'spurt',x:you.x-d*13,y:fy-1,n:9,t0:T-9,fy});
+ store.run.bruised=true;save();if(S.aidanIn)S.health=Math.max(1,S.health-2);
+ await N('You get up in three stages. One eye is already closing.');
+ if(calm&&!A_.hasan.dead)await say('Hasan','…So are we not doing charades, or.');
+}
+/* ---------- sleepover activities (everything narrated is staged) ---------- */
+const calmAll=()=>{for(const id of pals)Object.assign(A_[id],{pose:null,lie:0,shake:false,phone:0,sit:true});A_.sean.phone=1};
 const ACTS={
  roast:['ROAST CIRCLE',async()=>{
-  await say('Arjun','Roast circle. I start. Hasan, your head is so gear-stick I tried to put you in reverse.');
-  await say('Hasan','You have made that joke four hundred times.');await say('Arjun','And it has never once stalled.');
-  await say('Hasan','Arjun, your forehead has more bumps than the road to my grandmother’s village.');
-  await say('Nivaan','OHHH. Clipped. Posted. Captioned.');
-  await say('David','Do me. I can take it.');await say('Omer','David, you ate a candle because it smelled like vanilla.');await say('David','It WAS vanilla.');
+  A_.arjun.pose='point';A_.arjun.dir=Math.sign(A_.hasan.x-A_.arjun.x)||1;
+  await say('Arjun','Roast circle. I start. Hasan, your head is so gear-stick I tried to put you in reverse.');laugh(1200);A_.hasan.pose='cover';
+  await say('Hasan','You have made that joke four hundred fucking times.');await say('Arjun','And it has never once stalled.');
+  A_.arjun.pose=null;A_.hasan.pose='point';A_.hasan.dir=Math.sign(A_.arjun.x-A_.hasan.x)||1;
+  await say('Hasan','Arjun, your forehead has more bumps than the road to my grandmother’s village.');laugh(1400);A_.arjun.pose='cover';A_.nivaan.phone=1;
+  await say('Nivaan','OHHH. Clipped. Posted. Captioned.');A_.hasan.pose=null;A_.arjun.pose=null;
+  await say('David','Do me. I can take it.');A_.omer.pose='point';A_.omer.dir=Math.sign(A_.david.x-A_.omer.x)||1;
+  await say('Omer','David, you ate a candle because it smelled like vanilla.');laugh(1300);await say('David','It WAS vanilla.');A_.omer.pose=null;
   const c=await choose(['Roast Corey.','Roast Omer.','Roast yourself.']);
   if(c===0){await say('You','Corey, you’re so good-looking it’s genuinely annoying to stand next to you.');await say('Corey','That’s not a roast.');await say('Arjun','Nobody has EVER landed one on him. It’s like trying to insult a sunset.')}
-  else if(c===1){await say('You','Omer reminded the teacher about the homework.');await say('Omer','ONE time. And we all needed the grade.');await say('Hasan','We needed the WEEKEND, Omer.')}
+  else if(c===1){await say('You','Omer reminded the teacher about the homework.');laugh();A_.omer.pose='cover';await say('Omer','ONE time. And we all needed the grade.');await say('Hasan','We needed the WEEKEND, Omer.')}
   else{await say('You','I’m the genius who called Aidan.');await wait(900);await say('David','Yeah, that one’s not a roast. That’s just a fact.')}
  }],
  dare:['TRUTH OR DARE',async()=>{
-  await say('Nivaan','Truth or dare. Sean. Truth: who do you keep texting.');await say('Sean','Dare.');
-  await say('Nivaan','Dare: show us who you keep texting.');await say('Sean','I will jump out of that window.');
-  await say('Hasan','Aidan’s out there.');await say('Sean','…Truth, then. Her name starts with S. That is ALL you get.');
-  await say('Arjun','SEAN AND S. It’s the same letter. You’re basically married.');
-  const c=await choose(['Dare David: one spoon of every sauce in the fridge.','Dare Hasan: answer the next call as Aidan’s mum.','Truth, Corey: why do you smile at your phone at 2am?']);
-  if(c===0){await say('David','That’s not a dare. That’s a Tuesday.');SFX.squelch();await N(one(['He does it. He asks for seconds.','He does it. He goes very quiet. He goes very red. “The yellow one was mustard powder.”']))}
-  else if(c===1){await say('Hasan','“Hello, this is Aidan’s mother. He is grounded. For ever.”');await say('Arjun','Why is that actually a good voice.');await N('Nobody laughs for long. It’s the kind of joke that works until the phone really rings.')}
-  else{await say('Corey','Pass.');await say('Arjun','COREY NEVER PASSES.');await say('Corey','I’m passing.');await N('He turns his phone face down. For one second, the most confident person you know looks fourteen.')}
+  A_.nivaan.pose='point';A_.nivaan.dir=Math.sign(A_.sean.x-A_.nivaan.x)||1;
+  await say('Nivaan','Truth or dare. Sean. Truth: who do you keep texting.');A_.sean.phone=0;await say('Sean','Dare.');
+  await say('Nivaan','Dare: show us who you keep texting.');A_.sean.sit=false;await say('Sean','I will jump out of that window.');
+  await say('Hasan','Aidan’s out there.');A_.sean.sit=true;await say('Sean','…Truth, then. Her name starts with S. That is ALL you get.');
+  laugh(1400);A_.nivaan.pose=null;await say('Arjun','SEAN AND S. It’s the same letter. You’re basically married.');
+  const c=await choose(['Dare David: finish the hot sauce he brought. All of it.','Dare Hasan: do Aidan’s mum on the phone.','Truth, Corey: why do you smile at your phone at 2am?']);
+  if(c===0){await say('David','That’s not a dare. That’s a Tuesday.');A_.david.pose='eat';SFX.squelch();await wait(1600);A_.david.pose=null;
+   if(Math.random()<.5){await N('He finishes the bottle. He asks if there’s more.')}else{A_.david.shake=true;A_.david.pose='cover';await say('David','…oh fuck. Oh FUCK. Milk. MILK.');laugh(1500);await wait(900);A_.david.shake=false}}
+  else if(c===1){A_.hasan.phone=1;await say('Hasan','“Hello, this is Aidan’s mother. He is grounded. For ever.”');laugh();await say('Arjun','Why is that actually a good voice.');A_.hasan.phone=0;await N('Nobody laughs for long. It’s the kind of joke that works until the phone really rings.')}
+  else{A_.corey.phone=1;await say('Corey','Pass.');await say('Arjun','COREY NEVER PASSES.');await say('Corey','I’m passing.');A_.corey.phone=0;await N('He puts his phone face down. For one second, the most confident person you know looks fourteen.')}
  }],
  story:['GHOST STORY',async()=>{
-  S.dark=.6;await N('Omer puts the torch under his chin. It makes him look like a very worried moon.');
+  S.dark=.66;A_.omer.pose='torch';SFX.click();await N('Omer puts the torch under his chin. It makes him look like a very worried moon.');
   await say('Omer','There was a boy who was never invited anywhere.');
   await say('Omer','So he practised. Jokes, in the mirror. Laughing, at the right bits.');
   await say('Omer','And when that didn’t work, he stopped waiting to be asked.');
   await say('Hasan','Tell a different one.');await say('Omer','There isn’t a different one. That’s the one we’re in.');
-  S.flash=1;SFX.power();fx(.25,'');await say('Arjun','AAAH—');await say('Arjun','…I sneezed.');
-  await say('David','Zero stars. Too real. Somebody put a cartoon on.');S.dark=.32;
+  S.flash=1;SFX.power();fx(.25,'');A_.arjun.pose='up';A_.arjun.sit=false;await say('Arjun','AAAH— FUCK—');A_.arjun.sit=true;A_.arjun.pose=null;await say('Arjun','…I sneezed.');
+  laugh();await say('David','Zero stars. Too real. Somebody put a cartoon on.');A_.omer.pose=null;S.dark=.32;
  }],
  rank:['WHO DIES FIRST',async()=>{
   await say('Arjun','Horror-movie rules. We rank who dies first.');await say('David','Why would we—');
-  await say('Hasan','David.');await say('Nivaan','David.');await say('Omer','David.');await say('David','I didn’t even finish the SENTENCE.');
-  await say('Nivaan','You’d stop running to pick up a dropped crisp.');await say('David','…It depends on the crisp.');
+  for(const id of ['hasan','nivaan','omer']){A_[id].pose='point';A_[id].dir=Math.sign(A_.david.x-A_[id].x)||1;await say(K[id].n,'David.')}
+  laugh(1200,['arjun','corey','sean']);await say('David','I didn’t even finish the SENTENCE.');setPose(['hasan','nivaan','omer'],null);
+  await say('Nivaan','You’d stop running to pick up a dropped crisp.');A_.david.pose='eat';await say('David','…It depends on the crisp.');A_.david.pose=null;
   await say('Omer','Statistically the funny one goes second.');await say('Arjun','So I’m safe, because Hasan only THINKS he’s funny.');
   await say('Corey','I’d survive.');await say('Hasan','Obviously YOU survive. You get the slow-motion walk away from the fire.');
   await say('Arjun','Okay, host decides. Who’s the last one standing?');
   const opts=shuffle(pals).slice(0,3),c=await choose(opts.map(id=>K[id].n+' makes it to morning.'));
-  store.run.pick=opts[c];save();await say(K[opts[c]].n,one(['Finally. Some respect.','Don’t jinx it.','I’m getting that in writing.']));
-  await N('Everybody laughs. You will remember, later, exactly who you picked.');
+  store.run.pick=opts[c];save();A_[opts[c]].pose='up';await say(K[opts[c]].n,one(['Finally. Some respect.','Don’t jinx it.','I’m getting that in writing.']));A_[opts[c]].pose=null;
+  laugh();await N('Everybody laughs. You will remember, later, exactly who you picked.');
  }],
  pillow:['PILLOW WAR',async()=>{
-  await say('Arjun','Hasan, your head is—');SFX.smack();S.shake=.3;await N('The pillow arrives mid-insult.');
+  const ar=A_.arjun,ha=A_.hasan,throwP=(a,b)=>{prop({t:'pillow',x:a.x,x1:b.x,y:a.y,t0:T,dur:.3});setTimeout(()=>{SFX.smack();S.shake=.2;b.shake=true;prop({t:'feather',x:b.x,y:b.y,n:10,t0:T});setTimeout(()=>b.shake=false,250)},300)};
+  await say('Arjun','Hasan, your head is—');throwP(ha,ar);await wait(450);await N('The pillow arrives mid-insult.');
   await say('Hasan','FINISH THE SENTENCE. GO ON.');
-  for(let i=0;i<4;i++){SFX.smack();S.shake=.25;await wait(240)}
+  for(const id of pals){A_[id].sit=false;A_[id].pose='pillow'}
+  for(let i=0;i<7;i++){const [a,b]=shuffle(pals);throwP(A_[a],A_[b]);await wait(260)}
   await N('It becomes a war in under four seconds. David is using a sofa cushion, which is against the convention.');
-  await say('Nivaan','This is the best footage I have ever—');SFX.smack();await say('Nivaan','MY PHONE.');
-  await say('Omer','Not the glasses, NOT the glasses, David’s need those to—');SFX.smack();S.shake=.4;
-  await N('David sits on Hasan to declare victory. The floor thuds.');await wait(700);
-  SFX.creak();fx(.2,'');await N('Downstairs, something thuds back. Once. Politely.');
+  A_.nivaan.pose=null;A_.nivaan.phone=1;await say('Nivaan','This is the best footage I have ever—');throwP(A_.david,A_.nivaan);await wait(400);A_.nivaan.phone=0;await say('Nivaan','MY PHONE. You DICK.');
+  throwP(ar,A_.omer);await say('Omer','Not the glasses, NOT the glasses, David needs those to—');
+  A_.david.pose=null;await walk(A_.david,ha.x,120);ha.pose=null;ha.lie=1;A_.david.y=ha.y-5;A_.david.sit=true;SFX.smack();S.shake=.45;prop({t:'feather',x:ha.x,y:ha.y,n:16,t0:T});
+  await N('David sits on Hasan to declare victory. The floor thuds.');await say('Hasan','GET. OFF. I can’t feel my fucking head.');await wait(500);
+  setPose(pals,null);SFX.creak();fx(.2,'');S.shake=.2;await N('Downstairs, something thuds back. Once. Politely.');
   await say('Corey','…Nobody move.');await N('Nobody moves. After a while you all agree it was the boiler. Nobody believes it.');
  }]};
-const NIGHT=[
- async()=>{SFX.blip(700);await N('Your phone lights up. AIDAN: “which sleeping bag is yours”');await N('AIDAN: “the red one?”');await N('You are in the red one.');
-  const c=await choose(['Reply: “go home”','Leave him on read.','Block the number.']);
-  if(c===0)await N('AIDAN: “you answered :)”   AIDAN: “you always answer”');
-  else if(c===1){S.rage++;await N('Three dots appear. They stay there for eleven minutes.')}
-  else{SFX.ring();await N('BLOCKED. Downstairs, the landline starts ringing. Nobody here has ever given him the landline.')}},
- async()=>{SFX.creak();await N('A stair creaks. Then the one above it.');
-  const c=await choose(['Check the landing.','Hold the door shut.']);
-  if(c===0){fx(.3,'');await N('Nothing on the landing. Just wet footprints coming up. They stop on the top step. They don’t go back down.')}
-  else{await N('Something leans on the other side of the door. Gently. Like a hug.');await N('After a minute the weight is gone. The handle is warm.')}},
- async()=>{await N('Outside, under the window, somebody is telling jokes.');await say('Aidan','…because it had the DRUMSTICKS.');
-  await N('He waits. Exactly as long as a laugh would last. Then he starts the next one.');
-  const c=await choose(['Laugh, quietly, so he can hear.','Close the curtain.']);
-  if(c===0)await N('The jokes stop. “I KNEW it,” says the garden.');else{S.rage++;await N('The jokes get louder. They are all the same joke now.')}},
- async()=>{await N('A sheet of paper slides under the door.');await N('A drawing. Nine stick figures holding hands. Eight have names. The ninth has a bowl cut and an enormous smile.');await N('On the back: “SAVED ME A SPOT? :)”');
-  const c=await choose(['Keep it.','Push it back under the door.']);
-  if(c===1){fx(.4,'');await N('It slides straight back. There’s a tenth figure now, crossed out. It’s wearing your hoodie.')}else await N('You fold it into your pocket. You don’t know why. It feels like evidence.')}];
 const DARKTALK=[
  async()=>{await say('David','Is anyone else hungry?');await say('Hasan','NO.');await say('Arjun','NO.');await say('David','…I was just asking.')},
  async()=>{await say('Hasan','Whoever is breathing like that, stop.');await say('Arjun','That’s just how I breathe.');await say('Hasan','Then stop breathing.')},
  async()=>{await say('Nivaan','If I die, delete my drafts.');await say('Omer','If you die, I’m posting them.')},
- async()=>{await say('Arjun','Guys. What if Aidan’s actually nice and we’re the bad guys.');await wait(1100);await say('Corey','Go to sleep, Arjun.')},
- async()=>{await say('David','Sean, your screen is a lighthouse.');await say('Sean','She’s typing.');await say('Arjun','oooooOOOOOO—');await say('Sean','I will smother you.')}];
+ async()=>{await say('Arjun','Guys. What if Aidan’s actually nice and we’re the assholes.');await wait(1100);await say('Corey','Go to sleep, Arjun.')},
+ async()=>{A_.sean.awake=true;await say('David','Sean, your screen is a lighthouse.');await say('Sean','She’s typing.');await say('Arjun','oooooOOOOOO—');await say('Sean','I will smother you.')}];
 async function sleepover(){
- S.chapter=2;S.phase='night';cue('home');
- const bedX=i=>352+i*34,order=shuffle(['you',...pals]);
- await cameraOn(500,1.2);
+ S.chapter=2;S.phase='night';cue('home');PROPS=[];
+ const bedX=i=>352+i*34,order=shuffle(['you',...pals]),you=A_.you,DOOR=618;
+ await cameraOn(500,1.2);setPose(pals,null);A_.nivaan.phone=0;
  await say('Omer','The kitchen window doesn’t lock. He knows. I know he knows.');
  await say('Hasan','So we call our parents.');
  await say('Arjun','And say what? “Help, a boy is standing near a house”? My dad would invite him in for chai.');
@@ -2574,57 +2614,87 @@ async function sleepover(){
  await say('Corey','One room. One door. Somebody awake the whole time.');
  await say('Nivaan','Guard shifts. Like a heist film. I’m filming it.');
  await say('You','Fine. Everybody grab a sleeping bag.');
- await tw(view,{fade:1},600);view.zoom=1;view.letter=0;
+ for(const id of pals){A_[id].sit=false;walk(A_[id],stairX,80)}await walk(you,stairX-20,70);
+ await tw(view,{fade:1},600);view.zoom=1;view.letter=0;for(const a of Object.values(A_)){a.tx=null;a.res=null;a.moving=false}
  S.floor=1;S.dark=.32;S.tvOn=false;
- order.forEach((id,i)=>{const a=A_[id];Object.assign(a,{floor:1,x:bedX(i),y:i%2?171:160,sit:id!=='you',phone:0,tx:null,moving:false,dir:i<4?1:-1})});
- A_.sean.phone=1;cam.x=cam.tx=330;await card('11:58 PM','One room. One door. Guard shifts.',2000);await tw(view,{fade:0},600);
+ order.forEach((id,i)=>{const a=A_[id];Object.assign(a,{floor:1,x:bedX(i),y:i%2?171:160,sit:id!=='you',phone:0,dir:i<4?1:-1});a.bag={x:a.x,y:a.y}});
+ A_.sean.phone=1;you.facing='down';const chair=prop({t:'chair',x:634,y:158,floor:1});
+ cam.x=cam.tx=330;await card('11:58 PM','One room. One door. Guard shifts.',2000);await tw(view,{fade:0},600);
  await N('The game room. Eight sleeping bags, one door, and a chair wedged under the handle that Omer tested three times.');
- // --- the actual sleepover: two activities out of a random three
  let offer=shuffle(Object.keys(ACTS)).slice(0,3);
  for(let n=0;n<2;n++){
   await say(n?'Hasan':'Arjun',n?'One more. I’m not tired. I’m never tired.':'We are NOT letting him ruin the sleepover. What are we doing?');
   const c=await choose(offer.map(k=>ACTS[k][0]));const key=offer.splice(c,1)[0];
   await card(ACTS[key][0],'',1100);await ACTS[key][1]();
+  calmAll();for(const id of pals){const a=A_[id];a.x=a.bag.x;a.y=a.bag.y}
  }
- // --- lights out
- await tw(view,{fade:1},500);S.dark=.5;for(const id of order){const a=A_[id];a.sit=false;a.sleep=true;a.awake=true;a.phone=0}
+ await tw(view,{fade:1},500);S.dark=.5;for(const id of order){const a=A_[id];Object.assign(a,{sit:false,sleep:true,awake:true,phone:0,pose:null})}
  await card('12:47 AM','Lights out.',1700);await tw(view,{fade:0},500);
  for(const f of shuffle(DARKTALK).slice(0,2)){await f();await wait(500)}
- await N('One by one, the whispering stops.');
+ await N('One by one, the whispering stops.');for(const id of pals)A_[id].awake=false;
  // --- your watch
- const you=A_.you;for(const id of pals)A_[id].awake=false;
- await tw(view,{fade:1},500);you.sleep=false;const myBag={x:you.x,y:you.y};you.x=622;you.y=162;you.dir=-1;
- await card('1:13 AM','First watch: you.',1700);await tw(view,{fade:0},500);cam.tx=null;await pan(560,900);
+ await card('1:13 AM','First watch: you.',1700);
+ you.sleep=false;you.y=162;await walk(you,DOOR,45);you.facing='right';cam.tx=null;await pan(560,700);
  await N('Seven people breathing. Rain on the roof. The chair under the handle. You count all three, over and over.');
- await one(NIGHT)();
- const friend=one(pals),fa=A_[friend];fa.awake=true;await pan(fa.x,700);
- await N(K[friend].n+' is awake too. Has been for a while.');
+ const ev=Math.random()*4|0;
+ if(ev===0){you.phone=1;SFX.blip(700);await N('Your phone lights up. AIDAN: “which sleeping bag is yours”');await N('AIDAN: “the red one?”');await N('You are in the red one.');
+  const c=await choose(['Reply: “go home”','Leave him on read.','Block the number.']);
+  if(c===0)await N('AIDAN: “you answered :)”   AIDAN: “you always answer”');
+  else if(c===1){S.rage++;await N('Three dots appear. They stay there for eleven minutes.')}
+  else{SFX.ring();await N('BLOCKED. Downstairs, the landline starts ringing. Nobody here has ever given him the landline.')}you.phone=0}
+ else if(ev===1){SFX.creak();await N('A stair creaks. Then the one above it.');
+  const c=await choose(['Check the landing.','Hold the door shut.']);
+  if(c===0){await tw(chair,{x:600},600);prop({t:'prints',x:stairX,y:163,n:5,dir:-1,floor:1});walk(you,672,40);await pan(660,1100);fx(.3,'');
+   await N('Nothing on the landing. Just wet footprints, coming up from the stairs. They stop outside the door. They don’t go back down.');
+   await say('You','…Fuck this.');walk(you,DOOR,70);await pan(560,800);await tw(chair,{x:634},500)}
+  else{await walk(you,626,60);for(let i=0;i<3;i++){S.shake=.18;SFX.creak();chair.x+=i%2?1:-1;await wait(420)}await N('Something leans on the other side of the door. Gently. Like a hug.');await N('After a minute the weight is gone. The handle is warm.');await walk(you,DOOR,40)}}
+ else if(ev===2){you.facing='up';await N('Outside, under the window, somebody is telling jokes.');await say('Aidan','…because it had the DRUMSTICKS.');
+  await N('He waits. Exactly as long as a laugh would last. Then he starts the next one.');
+  const c=await choose(['Laugh, quietly, so he can hear.','Stay silent.']);
+  if(c===0)await N('The jokes stop. “I KNEW it,” says the garden.');else{S.rage++;await N('The jokes get louder. They are all the same joke now.')}you.facing='right'}
+ else{const paper=prop({t:'paper',x:652,y:166,floor:1});SFX.blip(200);await tw(paper,{x:626},900);await N('A sheet of paper slides under the door.');
+  await N('A drawing. Nine stick figures holding hands. Eight have names. The ninth has a bowl cut and an enormous smile.');await N('On the back: “SAVED ME A SPOT? :)”');
+  const c=await choose(['Keep it.','Push it back under the door.']);
+  if(c===1){await tw(paper,{x:652},500);await wait(700);await tw(paper,{x:626},350);fx(.4,'');await N('It slides straight back. There’s a tenth figure now, crossed out. It’s wearing your hoodie.')}
+  else{PROPS.splice(PROPS.indexOf(paper),1);await N('You fold it into your pocket. You don’t know why. It feels like evidence.')}}
+ const friend=one(pals),fa=A_[friend];fa.sleep=false;fa.sit=true;fa.awake=true;fa.dir=1;
+ walk(you,fa.x+15,45);await pan(fa.x,900);you.facing='left';
+ await N(K[friend].n+' is sitting up. Has been for a while.');
  for(const [who,line] of HEART[friend])await say(who,line);
  if(friend==='sean'){store.run.vow=true;save()}
- fa.awake=false;await wait(500);
- // --- handover
+ fa.sit=false;fa.sleep=true;fa.awake=false;await wait(500);
+ // --- handover, on screen
  const guard=one(pals.filter(id=>id!==friend)),ga=A_[guard],ri=Math.random()*2|0,entry=one(ENTRY);
  store.seen.r[guard+ri]=1;store.seen.e[entry[0]]=1;store.run.gelled=guard;save();
- await pan(ga.x,600);await N('2:40. Your eyes are closing on their own. You shake '+K[guard].n+' awake for second watch.');
- ga.awake=true;await say(K[guard].n,WOKEN[guard]);
- await tw(view,{fade:1},700);const gBag={x:ga.x,y:ga.y};ga.sleep=false;ga.x=622;ga.y=162;ga.dir=-1;ga.sit=true;
- you.x=myBag.x;you.y=myBag.y;you.sleep=true;you.awake=false;
- await card('2:40 AM','Second watch: '+K[guard].n+'.',1900);await tw(view,{fade:0},700);await pan(560,700);
+ walk(you,ga.x+14,45);await pan(ga.x,800);you.facing='left';ga.shake=true;
+ await N('2:40. Your eyes are closing on their own. You shake '+K[guard].n+' awake for second watch.');
+ ga.shake=false;ga.sleep=false;ga.awake=true;await say(K[guard].n,WOKEN[guard]);
+ ga.y=162;walk(ga,DOOR,50);await walk(you,you.bag.x,45);you.y=you.bag.y;you.sleep=true;you.awake=false;ga.dir=1;
+ await card('2:40 AM','Second watch: '+K[guard].n+'.',1900);await pan(560,700);
  await N('You are asleep before your head finishes going down.');
- await wait(900);await N(SLEEP[guard][ri]);ga.zzz=true;await wait(1500);
- cue('street');await N(entry[1]);SFX.creak();await wait(900);
- await N('Feet on the stairs. Unhurried. He knows how many steps there are.');SFX.creak();await wait(700);
- await N('The chair under the handle is moved. Carefully. Considerately. So it won’t wake anyone.');
- S.aidanIn=true;AI.floor=1;AI.x=648;AI.y=160;AI.dir=-1;AI.state='stun';AI.timer=999;AI.sleep=false;
- await walk(AI,600,14);await N('He stands over the first sleeping bag. He whispers the name of the person inside it. He’s right.');
- await walk(AI,470,16);cam.tx=null;await pan(470,1200);
- await N('He does that for every bag. Eight names. Then he looks at the gap in the middle of the floor, and smiles like someone has saved it for him.');
- await tw(view,{fade:1},1200);AI.x=bedX(3)+17;AI.y=166;AI.sleep=true;
- await card('3:33 AM','',2200);cue('call');await tw(view,{fade:0},900);
- you.awake=true;await N('You wake up and you don’t know why.');
- await N(K[guard].n+' is asleep by the door. The chair is against the wall. The door is open.');
+ // what the guard is doing instead of guarding
+ if(guard==='david')ga.pose='eat';else if(guard==='arjun'&&ri===1){ga.lie=1;ga.pose='pushup'}else if(guard==='hasan'){ga.sit=true}else ga.phone=1;
+ await wait(1800);await N(SLEEP[guard][ri]);Object.assign(ga,{pose:null,lie:guard==='arjun'&&ri===1?1:0,phone:0,sit:true,zzz:true});await wait(1400);
+ // --- the break-in, shown
+ cue('street');await tw(view,{fade:1},500);S.aidanIn=true;Object.assign(AI,{state:'stun',timer:999,sleep:false,sit:false,pose:null});
+ if(entry[0]==='window'){S.floor=0;S.dark=.3;cam.x=120;Object.assign(AI,{floor:0,x:242,y:132,dir:1});await tw(view,{fade:0},500);await N(entry[1]);SFX.creak();await tw(AI,{y:154},1700);await walk(AI,330,22)}
+ else if(entry[0]==='key'){S.floor=0;S.dark=.3;cam.x=560;S.doorOpen=true;Object.assign(AI,{floor:0,x:738,y:158,dir:-1});await tw(view,{fade:0},500);SFX.click();await N(entry[1]);await walk(AI,stairX,22)}
+ else if(entry[0]==='inside'){S.floor=1;cam.x=0;S.aidanIn=false;Object.assign(AI,{floor:1,x:143,y:152,dir:1});await tw(view,{fade:0},500);await wait(900);SFX.creak();S.aidanIn=true;fx(.3,'');await N(entry[1]);await walk(AI,300,22)}
+ else{S.floor=1;cam.x=330+70;S.aidanIn=false;await tw(view,{fade:0},500);for(let i=0;i<3;i++){S.shake=.12;SFX.blip(120);await wait(380)}await N(entry[1]);await say(K[guard].n,'zzz… yeah… sure… come in…')}
+ await tw(view,{fade:1},500);S.floor=1;S.dark=.5;S.doorOpen=false;cam.x=400;Object.assign(AI,{floor:1,x:662,y:160,dir:-1});S.aidanIn=true;await tw(view,{fade:0},500);
+ SFX.creak();await N('Feet on the stairs. Unhurried. He knows how many steps there are.');
+ await tw(chair,{x:590,y:152},1600);await N('The chair under the handle is moved. Carefully. Considerately. So it won’t wake anyone.');
+ await walk(AI,DOOR+15,14);AI.pose='reach';const tub=prop({t:'gel',x:AI.x-8,y:150,floor:1});SFX.squelch();await wait(900);ga.bowl=true;ga.noG=true;SFX.squelch();await wait(700);
+ await N('He takes a small tub out of his jacket. He smooths '+K[guard].n+'’s hair down, flat, all the way round. '+K[guard].n+' doesn’t wake up.');
+ AI.pose=null;PROPS.splice(PROPS.indexOf(tub),1);cam.tx=null;
+ for(const i of [7,5,2]){walk(AI,bedX(i)+16,20);await pan(bedX(i),1100);while(AI.tx!=null)await wait(60);AI.sit=true;await wait(700);if(i===7)await N('He kneels over the first sleeping bag. He whispers the name of the person inside it. He’s right.');AI.sit=false}
+ await N('He does that for every bag. Eight names. Then he looks at the gap in the middle of the floor, and smiles like someone saved it for him.');
+ await walk(AI,bedX(3)+17,20);await pan(AI.x,600);AI.y=166;AI.sleep=true;SFX.blip(90);await wait(1200);
+ await tw(view,{fade:1},1200);await card('3:33 AM','',2200);cue('call');await tw(view,{fade:0},900);
+ you.awake=true;await N('You wake up and you don’t know why.');you.sleep=false;you.sit=true;you.facing='right';
+ await pan(DOOR-40,800);await N(K[guard].n+' is asleep by the door, with different hair. The chair is against the wall. The door is open.');
  await choose(['Count the sleeping bags.']);
- await pan(bedX(0),700);await tw(view,{zoom:1.5,letter:1},500);view.focus=bedX(0);view.focusY=150;
+ await pan(bedX(0),700);view.focus=bedX(0);view.focusY=150;await tw(view,{zoom:1.5,letter:1},500);
  const count=['One.','Two.','Three.','Four.'];for(let i=0;i<4;i++){view.focus=bedX(i);cam.x=clamp(bedX(i)-160,0,WORLD-W);SFX.blip(300+i*30);await N(count[i])}
  await N('Five, six, seven. One empty — the guard’s.');await N('That’s eight.');
  view.focus=AI.x;cam.x=clamp(AI.x-160,0,WORLD-W);cue('reveal');fx(.9,'NINE');SFX.sting();await wait(700);
@@ -2633,66 +2703,103 @@ async function sleepover(){
  await say('Aidan','Shhh. You’ll wake them.');
  await say('Aidan','This is the best one I’ve ever been to.');
  await say('Aidan',K[guard].n+' fell asleep. So I did the watch. I watched everyone.');
- const c=await choose(['“WAKE UP! EVERYBODY UP!”','Slowly reach for the door.']);
- if(c===1){await say('Aidan','You’re leaving? During MY turn?');S.rage++}
- else{S.shake=.4;await say('You','WAKE UP! EVERYBODY UP!')}
- await tw(view,{zoom:1.3},500);AI.sleep=false;AI.y=162;SFX.creak();
- for(const id of pals){const a=A_[id];a.awake=true;a.scared=true}
+ const c=await choose(['“WAKE THE FUCK UP! EVERYBODY UP!”','Slowly reach for the door.']);
+ await tw(view,{zoom:1.3},400);you.sit=false;
+ if(c===1){await walk(you,you.x+18,25);await say('Aidan','You’re leaving? During MY turn?');S.rage++}
+ else{S.shake=.4;you.pose='up';await say('You','WAKE THE FUCK UP! EVERYBODY UP!')}
+ AI.sleep=false;AI.y=162;AI.dir=1;SFX.creak();
+ for(const id of pals){const a=A_[id];Object.assign(a,{awake:true,scared:true,sleep:false,sit:true,zzz:false,lie:0})}
+ await say('Hasan','WHAT THE FUCK. WHAT THE ACTUAL FUCK.');
+ for(const id of pals){const a=A_[id];a.sit=false;a.y=156+K[id].seed%3*6;a.pose='up'}
+ await say('Arjun','HE WAS IN A SLEEPING BAG. HE WAS IN A FUCKING SLEEPING BAG.');
  await say('Aidan',K[guard].n+'’s hair was all over the place. I fixed it while they slept. I brought my own gel.');
- ga.zzz=false;ga.sit=false;ga.bowl=true;ga.noG=true;await pan(ga.x-60,600);SFX.squelch();
+ await pan(ga.x-60,600);ga.pose='cover';
  await say(K[guard].n,GELLED[guard]);
- if(guard==='corey')await say('Arjun','…It WORKS on him. How does it WORK on him.');
+ if(guard==='corey')await say('Arjun','…It WORKS on him. How the fuck does it WORK on him.');
  else if(guard==='arjun')await say('Hasan','Finally. A head worse than mine.');
  else await say('Arjun','Don’t move. It’s almost symmetrical.');
- for(const id of ['you',...pals]){const a=A_[id];a.sleep=false;a.y=156+K[id].seed%3*6}
- S.lights=false;S.dark=.6;SFX.power();fx(.5,'NOBODY LEAVES');
+ S.lights=false;S.dark=.62;SFX.power();fx(.5,'NOBODY LEAVES');
  await say('Aidan','We’re having the sleepover now. Nobody leaves.');
- for(const id of pals){const a=A_[id];walk(a,a.x<470?330:690,94)}
+ setPose(pals,null);for(const id of pals){const a=A_[id];walk(a,a.x<470?330:690,94)}
  await wait(1400);
- await say('Omer','He’s allergic to EVERYTHING. Dust. Lilies. Cat hair. Make him sneeze and RUN!');
- for(const a of Object.values(A_)){a.tx=null;a.res=null;a.moving=false;a.awake=false}
- await cameraBack();S.aidanIn=false;AI.timer=1;
+ await say('Omer','Holy shit— he’s allergic to EVERYTHING. Dust. Lilies. Cat hair. Make him sneeze and RUN!');
+ for(const a of Object.values(A_)){a.tx=null;a.res=null;a.moving=false;a.awake=false;a.pose=null}
+ PROPS=[];await cameraBack();S.aidanIn=false;AI.timer=1;
 }
 /* ---------- finale ---------- */
 const FIN={
- david:()=>store.run.gelled==='david'?'THIS is for my HAIR.':'This is for making me RUN. I do not RUN.',
- nivaan:()=>'Smile. This one’s going on a spinning planet.',
- hasan:()=>'Reverse THIS.',
+ david:()=>store.run.gelled==='david'?'THIS is for my fucking HAIR.':'This is for making me RUN. I do not RUN.',
+ nivaan:()=>'Smile, asshole. This one’s going on a spinning planet.',
+ hasan:()=>'Reverse THIS, motherfucker.',
  corey:()=>'You should have stayed outside.',
- omer:()=>'Dust. Lilies. Dander. And a fire extinguisher.',
- arjun:()=>'Your jokes were MID. All of them. Even the drumsticks.',
- sean:()=>S.sean?.burned?'I needed to hit something that actually deserved it.':'She says hi. She says good luck.'};
+ omer:()=>'Dust. Lilies. Dander. And a fire extinguisher, you prick.',
+ arjun:()=>'Your jokes were MID. All of them. Even the fucking drumsticks.',
+ sean:()=>S.sean?.burned?'I needed to hit something that actually deserved it.':'She says hi. She says go fuck yourself.'};
+const WEAPON={david:'#3a3a40',nivaan:'#9aa0a8',corey:'#7d5836',omer:'#c23b3b',arjun:'#b89a70',sean:'#c06ad0'};
 async function finale(){
  const L=livingFriends();
  await say('Aidan','Wait. Wait. I can still hear the phone.');
  await say('You','It stopped ringing a long time ago.');
  if(L.length){
   await N('Footsteps on the boards behind you. Not his. Yours. All of yours.');cue('fury');
-  L.forEach((id,i)=>Object.assign(A_[id],{floor:AI.floor,pinned:false,safe:false,sit:false,scared:false,tx:null,x:clamp(AI.x-150-i*10,10,WORLD-10),y:157+i%3*5,dir:1}));
+  L.forEach((id,i)=>Object.assign(A_[id],{floor:AI.floor,pinned:false,safe:false,sit:false,scared:false,tx:null,x:clamp(AI.x-150-i*10,10,WORLD-10),y:157+i%3*5,dir:1,pose:'punch',weapon:WEAPON[id]}));
   for(const id of L){
-   const a=A_[id];await walk(a,AI.x-26,170);await say(K[id].n,FIN[id]());
-   a.knife=id!=='hasan';SFX.smack();SFX.squelch();S.shake=.35;fx(.12,'');AI.y=Math.min(170,AI.y+1.5);await wait(380);a.knife=false;
+   const a=A_[id];await walk(a,AI.x-27,170);await say(K[id].n,FIN[id]());
+   if(id==='hasan'){a.pose=null;await tw(a,{x:AI.x-12},90)}else a.punchT=T+.3;
+   SFX.smack();SFX.squelch();S.shake=.4;fx(.12,'');spurt(AI.x-6,AI.y-16,9,AI.y+2);AI.y=Math.min(170,AI.y+1.5);AI.shake=true;await wait(380);AI.shake=false;
    if(id==='hasan'&&!A_.arjun.dead)await say('Arjun','HE HEADBUTTED HIM. HE SHIFTED GEARS.');
    if(id==='corey')await N('Even the violence is handsome. It’s honestly unfair.');
-   walk(a,clamp(AI.x-58-K[id].seed*7,10,WORLD-10),90);
+   a.pose=null;walk(a,clamp(AI.x-58-K[id].seed*7,10,WORLD-10),90);
   }
   await wait(500);await say('Aidan','Everyone’s… here. Everyone came.');
  }else{cue('reveal');await N('You listen for footsteps behind you. There is nobody left to make them.')}
- const c=await choose(['“Worst sleepover of my life.”','“You were never invited.”','Say nothing.']);
+ const c=await choose(['“Worst sleepover of my fucking life.”','“You were never invited.”','Say nothing.']);
  if(c===0)await say('Aidan','Ha. Ha. Ha. …That one was good.');
  else if(c===1)await say('Aidan','I know. I came anyway. That’s what friends do.');
  else await N('He waits for you to say something. He is still waiting when you raise the knife.');
- await tw(A_.you,{x:AI.x-18},650);A_.you.swing=.5;SFX.smack();SFX.squelch();S.shake=.5;fx(.6,'');
- await tw(AI,{y:174},1100);AI.dead=true;
+ await tw(A_.you,{x:AI.x-18},650);A_.you.swing=.5;SFX.smack();SFX.squelch();S.shake=.5;fx(.6,'');spurt(AI.x-4,AI.y-18,16,AI.y+3);
+ await tw(AI,{y:174},1100);AI.dead=true;for(const id of L)A_[id].pose='up';
  await N('The other hands stop moving. His jacket settles. Aidan is dead.');
- await wait(1400);await sayLiving('david','Is it over?');
+ await wait(1400);setPose(L,null);await sayLiving('david','Is it over? Somebody tell me that shit is over.');
  await N('You wait. This time, nothing gets back up.');
  const p=store.run.pick;
  if(p&&!A_[p].dead)await say(K[p].n,'You called it. Upstairs. You said I’d make it to morning.');
  else if(p){fx(.5,'YOU PICKED '+K[p].n.toUpperCase(),p);await N('You said '+K[p].n+' would be the one who made it. You said it out loud, and everybody laughed.')}
  if(store.run.vow&&!A_.sean.dead&&!S.sean?.burned)await say('Sean','First thing I do outside is tell her. All of it. I wrote it down.');
 }
-function seenLine(){const s=store.seen,n=o=>Object.keys(o||{}).length;return 'Night-watch stories '+n(s.r)+'/14 · Break-ins '+n(s.e)+'/4 · Deaths '+n(s.d)+'/3 · Endings '+Object.keys(store.end||{}).filter(k=>k[0]==='r').length+'/4'}
+/* ---------- the pavement: survivors, and Stella ---------- */
+K.stella={n:'Stella',skin:'#f0c8a8',hair:'#7a2e1e',hs:'long',top:'#c0408a',pants:'#3a4a7a',seed:11};
+async function outside(survivors){
+ const cast=S.ext.cast=[],add=(id,x)=>{const c={id,x:228,y:161,dir:-1,moving:true,bowl:A_[id]?.bowl,noG:A_[id]?.noG};cast.push(c);return tw(c,{x},600+Math.abs(228-x)*9).then(()=>{c.moving=false})};
+ await add('you',212);let i=0;for(const id of survivors){add(id,196-i*15);i++;await wait(260)}await wait(1400);
+ const s=S.sean,alive=survivors.includes('sean'),sc=cast.find(c=>c.id==='sean');
+ if(s&&s.started&&S.sharedAddress&&!s.burned){
+  const st={id:'stella',x:14,y:162,dir:1,pose:'up'};cast.push(st);SFX.blip(500);
+  if(alive){
+   await N('At the end of the street, under the crooked light, a girl in a pink jacket drops her phone.');
+   await say('Stella','SEAN!');st.pose=null;st.moving=true;sc.dir=-1;await tw(st,{x:sc.x-10},1300);st.moving=false;st.pose='hug';sc.pose='hug';S.shake=.2;
+   await N('She hits him at a dead run. He was halfway through saying hi.');
+   if(s.outcome==='A date on Saturday'||s.warm>=8){
+    await say('Stella','You said three o’clock. You don’t get to fucking die before three o’clock.');
+    await say('Sean','I was going to say hi first. I practised.');await say('Stella','Then say it.');await wait(700);await say('Sean','…Hi.');
+    await N('She laughs into his shoulder, and it turns into the other thing halfway through. He holds on. Nobody tells them to hurry up.');
+    if(survivors.includes('arjun'))await N(survivors.includes('corey')?'Arjun opens his mouth. Corey puts a hand over it.':'Arjun opens his mouth. For once in his life, he closes it again.');
+   }else{
+    await say('Stella','You’re okay. Holy shit. You’re okay.');await say('Sean','You stayed.');
+    await say('Stella','You sent me the address, idiot. Of course I stayed.');await N('They stand there. Neither of them lets go first.');
+   }
+  }else{
+   st.pose=null;st.phone=1;await N('At the end of the street, a girl in a pink jacket is holding her phone to her ear.');
+   SFX.ring();await wait(1300);fx(.5,'SEAN IS NOT COMING OUT','sean');await N('Somewhere inside the house, a phone starts ringing.');
+   st.moving=true;await tw(st,{x:cast[0].x-16},1500);st.moving=false;await say('Stella','Where is he?');
+   const c=await choose(['Tell her the truth.','You can’t say it.']);
+   if(c===0){await say('You','He didn’t make it. He was texting you right up until—');await say('Stella','No. No, he said— he said he’d ask me properly when he got out.')}
+   else await N('You shake your head. That’s all it takes.');
+   st.pose='cover';SFX.ring();await wait(1400);
+   await N('She doesn’t scream. She sits down on the kerb and types something with both thumbs. Inside the house, the phone rings once more, and stops.');
+  }
+ }else if(s&&s.burned&&alive){sc.dir=1;await N('Sean checks his phone out of habit. Nothing. He looks at you. Then he looks at the road for a very long time.')}
+}
 
 S=fresh();placeLiving();resetAidan();document.fonts.load('10px KenPixel').catch(()=>{});requestAnimationFrame(frame);if(!window.NOAUTO)main();
 </script></body></html>
