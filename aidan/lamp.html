@@ -6526,7 +6526,7 @@ function drawGrid(m){R(0,0,W,H,'#08080e');g.save();g.font='7px KenPixel,monospac
  m.tiles.forEach((t,i)=>{const x=5+(i%cols)*tw,y=15+(i/cols|0)*th,live=talker&&(talker===t.label||talker===(K[t.id]&&K[t.id].n)||(t.id==='you'&&talker==='You'));
   R(x,y,tw-3,th-3,live?'#ffe066':'#2a2438');fillG(x+1,y+1,tw-5,th-5,GRD(x,y,x,y+th,[[0,t.bg||'#2a2a3a'],[1,'#121218']]));if(t.room)R(x+4,y+4,10,8,'#ffffff18');
   g.save();g.beginPath();g.rect(x+1,y+1,tw-5,th-5);g.clip();const s=Math.min(2.2,(th-6)/22);g.translate(x+tw/2-1,y+th+4*s);g.scale(s,s);
-  if(t.crowd){for(let j=0;j<t.crowd.length;j++){g.save();g.translate((j-(t.crowd.length-1)/2)*9,0);drawKid(K[t.crowd[j]],0,0,{still:1,dir:j%2?-1:1,scared:m.scared})}g.restore()}else drawKid(K[t.id],0,0,{still:1,dir:1,talk:live,horror:t.id==='aidan',phone:t.phone,bowl:t.bowl});
+  if(t.crowd){for(let j=0;j<t.crowd.length;j++){g.save();g.translate((j-(t.crowd.length-1)/2)*9,0);drawKid(K[t.crowd[j]],0,0,{still:1,dir:j%2?-1:1,scared:m.scared});g.restore()}}else drawKid(K[t.id],0,0,{still:1,dir:1,talk:live,horror:t.id==='aidan',phone:t.phone,bowl:t.bowl});
   g.restore();if(t.frozen&&Math.sin(T*20)>0){for(let k=0;k<6;k++)R(x+2,y+2+k*((th-6)/6),tw-7,2,'#ffffff22')}
   if(t.blood)R(x+tw/2-2,y+th/2-2,3,8,'#b3121e');R(x+1,y+th-11,tw-5,8,'#000a');g.save();g.font='6px KenPixel,monospace';g.fillStyle=live?'#ffe066':'#fff';g.fillText((t.muted?'🔇 ':'')+t.label,x+4,y+th-5);g.restore()});
  if(m.stamp){g.save();g.globalAlpha=.85;g.font='8px KenPixel,monospace';g.fillStyle='#ff5a8a';g.fillText(m.stamp,W/2-g.measureText(m.stamp).width/2,H-6);g.restore()}}
@@ -6791,7 +6791,7 @@ let BEATSFX=0;const sfxOnce=(f,gap=.12)=>{if(T-BEATSFX>gap){BEATSFX=T;try{f()}ca
  for(const b of BEATS){if(T-b.t0>(b.max||12))continue;try{b.tick(dt,T-b.t0)}catch(e){}}}}
 const head=c=>({x:c.x,y:c.y-18});
 /* --- behaviours --- */
-function bPile(members,o={}){members=members.filter(c=>c&&!c.dead&&!isAI(c));if(members.length<3)return bBrawl(members,o);
+function bPile(members,o={}){members=members.filter(c=>c&&!c.dead&&!pinned(c));if(members.length<3)return bBrawl(members,o);
  const you=members.find(c=>cid(c)==='you');const order=o.youBottom&&you?[you,...members.filter(c=>c!==you)]:members.slice();const nb=Math.max(1,Math.ceil(order.length/3));const bottoms=order.slice(0,nb),tops=order.slice(nb);const cx=o.cx??center(members);const st=new Map();let next=0;
  for(const c of order){st.set(c,{lie:c.lie,sit:c.sit,pose:c.pose});keep(c)}
  bottoms.forEach((c,i)=>{c.lie=i%2?-1:1;c.x=lim(cx+(i-(nb-1)/2)*16)});
@@ -6802,17 +6802,17 @@ function bPile(members,o={}){members=members.filter(c=>c&&!c.dead&&!isAI(c));if(
   end(){for(const c of order){const s0=st.get(c);c.lie=s0.lie||0;c.sit=s0.sit;c.pose=s0.pose||null;c.shake=false;c.moving=false;delete c.__lift}}})}
 function bBrawl(members,o={}){members=members.filter(c=>c&&!c.dead);if(members.length<2)return;const cx=o.cx??center(members);let next=0;const own=new Set();
  members.forEach((c,i)=>{c.__slot=(i-(members.length-1)/2)*(o.tight?7:10)});
- return beat({kind:'brawl',tick(dt,a){for(const c of members){if(isAI(c)||c.tx!=null||c.lie)continue;const tx=lim(cx+c.__slot+Math.sin(a*7+c.__slot)*3);const d=tx-c.x;if(Math.abs(d)>1){c.x+=Math.sign(d)*Math.min(Math.abs(d),70*dt);c.moving=Math.abs(d)>3;if(c.moving)c.walk=(c.walk||0)+dt*10}else c.moving=false}
+ return beat({kind:'brawl',tick(dt,a){for(const c of members){if(pinned(c)||c.tx!=null||c.lie)continue;const tx=lim(cx+c.__slot+Math.sin(a*7+c.__slot)*3);const d=tx-c.x;if(Math.abs(d)>1){c.x+=Math.sign(d)*Math.min(Math.abs(d),70*dt);c.moving=Math.abs(d)>3;if(c.moving)c.walk=(c.walk||0)+dt*10}else c.moving=false}
   if(a>next){next=a+.14+Math.random()*.18;const h=one(members.filter(c=>!c.lie&&!isAI(c)))||members[0],v=one(members.filter(c=>c!==h))||members[0];
    if(!h.pose||own.has(h)){h.pose=Math.random()<.25?'choke':'punch';own.add(h)}h.punchT=T+.18;h.dir=Math.sign(v.x-h.x)||h.dir;v.shake=true;setTimeout(()=>{v.shake=false},180);
    sfxOnce(()=>SFX.smack(),.16);const p=head(v);emit(p.x,p.y+10,3,['#d8d0c0','#a89880'],{sy:20,vy:-10,life:.4});if(Math.random()<(o.blood??.25))emit(p.x,p.y+2,5,['#b3121e','#8a0d16'],{vy:-30,life:.7});if(o.shake!==false)S.shake=Math.max(S.shake,.18)}},
   end(){for(const c of members){c.moving=false;if(own.has(c))c.pose=null;c.shake=false}}})}
 function bBob(c,amp=2,sp=14){if(!c||isAI(c))return;keep(c);return beat({tick(dt,a){c.y=c.__by-Math.abs(Math.sin(a*sp))*amp},end(){}})}
 function bShake(c,dur){if(!c)return;c.shake=true;return beat({tick(dt,a){if(dur&&a>dur)c.shake=false},end(){c.shake=false}})}
-function bMove(c,x,sp=60){if(!c||isAI(c)||c.tx!=null)return;x=lim(x);c.dir=Math.sign(x-c.x)||c.dir;return beat({tick(dt){const d=x-c.x;if(Math.abs(d)>1){c.x+=Math.sign(d)*Math.min(Math.abs(d),sp*dt);c.moving=true;c.walk=(c.walk||0)+dt*12}else c.moving=false},end(){c.moving=false}})}
+function bMove(c,x,sp=60){if(!c||pinned(c)||c.tx!=null)return;x=lim(x);c.dir=Math.sign(x-c.x)||c.dir;return beat({tick(dt){const d=x-c.x;if(Math.abs(d)>1){c.x+=Math.sign(d)*Math.min(Math.abs(d),sp*dt);c.moving=true;c.walk=(c.walk||0)+dt*12}else c.moving=false},end(){c.moving=false}})}
 function bPose(c,p,pulse){if(!c)return;const had=c.pose;if(!had)c.pose=p;let n=0;return beat({tick(dt,a){if(pulse&&a>n){n=a+pulse;c.punchT=T+.2}},end(){if(!had&&c.pose===p)c.pose=null}})}
 function bEmit(c,col,o,rate=.06,dur=2.5){if(!c)return;let n=0;return beat({tick(dt,a){if(a<dur&&a>n){n=a+rate;const p=head(c);emit(p.x+(o.ox||0)*(c.dir||1),p.y+(o.oy||0),o.n||2,col,Object.assign({},o,{vx:(o.vx||0)*(c.dir||1)}))}},end(){}})}
-function bLift(c,amp=10){if(!c||isAI(c))return;keep(c);return beat({tick(dt,a){c.y=c.__by-Math.min(amp,a*40)},end(){}})}
+function bLift(c,amp=10){if(!c||pinned(c))return;keep(c);return beat({tick(dt,a){c.y=c.__by-Math.min(amp,a*40)},end(){}})}
 /* --- the reader --- */
 const ACTIONRE=/\b(grab|pull|yank|drag|climb|crawl|jump|leap|spin|roll|swing|slam|kick|punch|hit|slap|stab|shoot|fires?\b|throw|hurl|catch|drops?\b|fall|trip|slip|lunge|charge|run|sprint|chase|wrestl|fight|pile|bite|chew|chok|strangl|hug|kiss|danc|laugh|cry|cries|scream|vomit|throws? up|spit|pour|spill|smash|shatter|break|crash|burn|flame|fire\b|tape|tied|ties|cut|chop|slice|rip|tear|bleed|blood|carr(y|ies)|lift|push|shove|hide|hiding|duck|kneel|knee|elbow|headbutt|tackl|wave|waving|point|shak|trembl|explod|stumbl|squirm|struggl|thrash|bolt|flee|scatter|crowd|huddle|cheer|celebrat|faint|collaps|slump|sprays?|squirt|piss|wet himself|sob|wail|shriek|yell|beats?\b|beating|batter|pummel|stamp|stomp|smack|whack|thump|clatter|knock|bang|launch|dive|dives|scramble|wrestle|hurl|retch|puke|chuck|lob|flip|tumble|tip|smear|wipe|scrub|dig|digs|claw|scratch|grip|seize|pin|pinn|sit on|sits on|stand on|lands on|jumps on)/;
 const STILLRE=/\b(nobody moves|doesn’t move|don’t move|stays very still|stands very still|is very still|goes (completely )?still|silence|frozen|freezes)\b/;
@@ -6891,7 +6891,7 @@ let PREVSIG='',STAGELOG=null;
 /* if the narration makes a friend do something, that friend has to be in the shot */
 const REMOTE=/\b(window|on the phone|on speaker|in the study|photo|picture|tape|clip|screen|video|camera|footage|group chat|texts?|messag|downstairs|upstairs|from the|through the (wall|ceiling|floor|door)|in the hedge|next door|at home|tomorrow|yesterday|last (week|year)|years? ago|used to|remember)\b/;
 function narrBringIn(t){if(mode==='call'||!busy)return;const sents=t.split(/(?<=[.!?…])\s+/);for(const sn of sents){if(REMOTE.test(sn.toLowerCase()))continue;const m=/^(?:And |Then |But |So |Now |Suddenly )?([A-Z][a-z]+)(?: and ([A-Z][a-z]+))?\b/.exec(sn);if(!m)continue;
- for(const nm of [m[1],m[2]]){if(!nm)continue;const id=pals.find(p=>K[p]&&K[p].n===nm);if(!id||A_[id].dead)continue;const list=castOf();const qc=QS&&mode==='house'?QS.cast.map(i=>A_[i]).filter(x=>x&&!x.dead&&x.floor===S.floor&&x.id!==id):[];const cx=qc.length?center(qc):(CAMT??cam.x+160);const here=list?list.some(c=>c.id===id&&!c.hidden):(A_[id].floor===S.floor&&A_[id].vis!==false&&Math.abs(A_[id].x-cx)<130);if(here)continue;
+ for(const nm of [m[1],m[2]]){if(!nm)continue;const id=pals.find(p=>K[p]&&K[p].n===nm);if(!id||A_[id].dead)continue;const list=castOf();const qc=QS&&mode==='house'?QS.cast.map(i=>A_[i]).filter(x=>x&&!x.dead&&x.floor===S.floor&&x.id!==id):[];if(A_[id].taped)continue;const cx=qc.length?center(qc):(CAMT??cam.x+160);const here=list?list.some(c=>c.id===id&&!c.hidden):(A_[id].floor===S.floor&&A_[id].vis!==false&&Math.abs(A_[id].x-cx)<130);if(here)continue;
   if(list){bringIn(id,'');continue}if(mode!=='house')continue;const a=A_[id],side=a.floor===S.floor&&a.x<cx?-1:1;Object.assign(a,{floor:S.floor,vis:true,sit:false,sleep:false,pose:null,lie:0,phone:0,y:158,tx:null});a.x=clamp(cx+side*75,20,WORLD-20);walk(a,clamp(cx+side*24,20,WORLD-20),130)}}}
 function stageFallbackFor(t){return ACTIONRE.test((t||'').toLowerCase())&&!STILLRE.test((t||'').toLowerCase())}
 {const _say=say;say=function(n,t){const live=!FAST||window.STAGE_AUDIT;let s0='',s1='',did=0,fb=0;
@@ -6905,6 +6905,14 @@ function stageFallbackFor(t){return ACTIONRE.test((t||'').toLowerCase())&&!STILL
   if(STAGELOG&&n==='')STAGELOG.push({t:t||'',explicit,auto,did,fb,action:stageFallbackFor(t),mode,scene:MEM&&MEM.scene})}catch(e){if(window.STAGE_AUDIT)console.error(e)}
   Promise.resolve(r).then(()=>{endBeats();try{PREVSIG=stageSig()}catch(e){}})}
  return r}}
+
+/* ================= PASS 31: canvas state can never leak between frames; taped people stay on the wall ================= */
+{let depth=0;const sv=g.save.bind(g),rs=g.restore.bind(g);g.save=function(){depth++;sv()};g.restore=function(){if(depth>0){depth--;rs()}};
+ const _d=draw;draw=function(){const d0=depth;try{_d()}finally{while(depth>d0){depth--;rs()}}}}
+const pinned=c=>!!(c&&(c===AI||c.taped));
+{const _w=walk;walk=function(a,x,sp){if(a&&a.taped)return Promise.resolve();return _w(a,x,sp)}}
+{const _b=bringIn;bringIn=function(id,t){if(id&&A_[id]&&A_[id].taped&&mode==='house')return;return _b(id,t)}}
+{const _u=update;update=function(dt){_u(dt);for(const id of [...pals,'you',...VISIT]){const a=A_[id];if(!a)continue;if(a.taped&&!a.dead){if(a.__tpx==null){a.__tpx=a.x;a.__tpy=a.y;a.__tpf=a.floor}a.x=a.__tpx;a.y=a.__tpy;a.floor=a.__tpf;a.tx=null;a.moving=false;a.sit=false;a.lie=0}else if(a.__tpx!=null){delete a.__tpx;delete a.__tpy;delete a.__tpf}}}}
 
 /* ================= THE LAMP TIMELINE (only when built as lamp.html) ================= */
 if(window.LAMP_TIMELINE){
