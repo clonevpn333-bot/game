@@ -2199,6 +2199,7 @@ async function main(){
   if(chapter<4){
    if(!await allergens())continue;
    await transformScene();
+   await biteChapter();
    if(!await knifeHunt())continue;
   }else if(!await knifeHunt(true))continue;
   await ending();
@@ -6608,6 +6609,53 @@ async function poolChaos(q){const prev=scoreName,ha={id:'hasan',x:150,y:160,dir:
  await fromMemory();cue(prev);mark('hasan','beat');store.run.darren=k;save();
  await talk([['','You walk back to the sleepover. Hasan in the foil blanket, the flowered cap, the duck shorts. He does not speak for six streets.'],['','When you open the front door, the entire sleepover is in the hallway. Somebody has already seen it. The pool posted it.'],['','“LATE SWIM ROMANCE 💕 Congratulations to Hasan & Darren!” — 2.1k likes.']])}
 {const _pm=poolMeetup;poolMeetup=async function(q){await _pm(q);if(q.revealed&&!q.chaos){q.chaos=true;await poolChaos(q)}}}
+
+/* ================= PASS 27: THE BITE (main story, between the transformation and the hunt) ================= */
+function drawArmFX(c,x,y,sit){const by=sit?y-12:y-16,d=c.dir||1,sx=d>0?x+5:x-8;
+ if(c.stump||c.cardArm){R(sx-1,by,5,9,'#000');R(sx,by,3,3,'#8a0d16');R(sx,by+3,3,1,'#b3121e')}
+ if(c.stump&&!c.cardArm){for(let i=0;i<3;i++)R(sx+i,by+4+((T*14+i*3)%8),1,2,'#b3121e')}
+ if(c.cardArm){R(sx-1,by+1,5,9,'#d8a84a');R(sx-1,by+4,5,2,'#f0d040');R(sx-1,by+2,5,1,'#c0c4cc');R(sx-1,by+7,5,1,'#c0c4cc');R(sx-1,by+9,5,3,'#c8a26a');R(sx+1,by+4,2,1,'#3a3a3a');if(c.peas){R(sx+4,by+2,5,6,'#3a9a3a');R(sx+4,by+2,5,1,'#e8e8e8')}}}
+{const _dk=drawKid;drawKid=function(k,x,y,o){const r=_dk(k,x,y,o);const ca=store.run&&store.run.cardArm;if(ca&&K[ca]===k&&!(o&&o.deadFace))drawArmFX({dir:(o&&o.dir)||1,cardArm:true,peas:store.run.armPeas},Math.round(x),Math.round(y),o&&o.sit);return r}}
+{const _dm=drawMemory;drawMemory=function(){_dm();if(MEM&&MEM.chairAt!=null){const x=MEM.chairAt;R(x-9,MEM.chairY-12,18,3,'#3a6a3a');R(x-9,MEM.chairY-26,3,16,'#2a5a2a');R(x+6,MEM.chairY-26,3,16,'#2a5a2a');R(x-8,MEM.chairY-10,2,10,'#222');R(x+6,MEM.chairY-10,2,10,'#222');for(let i=0;i<3;i++)R(x-9,MEM.chairY-22+i*5,18,1,'#c8b88a')}
+ if(MEM&&MEM.cast)for(const c of MEM.cast)if(c.stump||c.cardArm)drawArmFX(c,Math.round(c.x),c.y,c.sit);if(MEM&&MEM.armOnFloor){const a=MEM.armOnFloor;R(a.x,150,12,4,K[a.id]?K[a.id].top:'#c23b3b');R(a.x+12,150,4,4,'#e0b090');R(a.x-2,150,3,4,'#8a0d16')}}}
+async function biteChapter(){if(store.run.biteDone)return;const L=livingFriends();if(L.length<2)return;store.run.biteDone=true;save();
+ const victim=one(L.filter(id=>id!=='omer'))||one(L),V=K[victim].n,chop=!A_.omer.dead&&victim!=='omer'?'omer':one(L.filter(id=>id!==victim)),C=K[chop].n,bq=socialState().bunker||{step:0},tun=bq.step>0,col=bq.outcome==='Tunnel collapsed';
+ await card('THE BITE','',1800);cue('reveal');const va=A_[victim];Object.assign(va,{floor:S.floor,sit:false,pose:null,x:clamp(A_.you.x+40,30,WORLD-30),y:158,dir:-1});
+ AI.floor=S.floor;AI.x=va.x+60;AI.y=160;AI.state='windup';AI.transform=1;AI.lurk=null;AI.ceil=null;AI.shade=0;await cameraOn(va.x+20,1.3);
+ await talk([['','It comes back down the stairs on all of its hands at once.'],['',V+' is closest. '+V+' is always going to be closest.']]);
+ await tw(AI,{x:va.x+16},250);SFX.squelch();SFX.scream();S.shake=1;fx(.4,'');spurt(va.x,va.y-18,16,va.y);va.pose='cover';va.shake=true;
+ await talk([['','The jaw closes on '+V+'’s forearm. It doesn’t tear. It just… holds on. Like a dog with a toy. Then it lets go, and smiles, and goes back up the stairs, humming.'],[V,'IT BIT ME. IT BIT ME. WHY DID IT JUST BITE ME AND LEAVE?']]);va.shake=false;va.pose=null;AI.floor=1;AI.state='patrol';
+ if(!A_.omer.dead)await say('Omer',tun?'The garage. My hole. Everyone. NOW.':'Garage. GARAGE. I need to show you something and I need you not to ask about it.');else await say('You','Garage! The rug — there’s a trapdoor under the rug!');
+ await tw(view,{fade:1},500);const cast=[{id:victim,x:110,y:150,dir:1,stump:false},{id:'you',x:80,y:152,dir:1}];for(const id of L)if(id!==victim)cast.push({id,x:40+cast.length*14,y:150+(cast.length%3)*2,dir:1});
+ await toUnder({kind:'tunnel',cast,bed:tun&&!col,prints:true,spoon:tun});await tw(view,{fade:0},300);cue('sneak');
+ if(col)await talk([['','The tunnel’s still half-collapsed from where Omer blew it earlier. You dig through the clay with your hands. Eight boys, in the dark, in a hole Omer made, with fingernails.'],['Arjun','This is the worst escape room I’ve ever paid for.'],['Omer','You didn’t pay.'],['Arjun','I paid with my DIGNITY.']]);
+ else if(tun)await talk([['Omer','Welcome back to my hole.'],['Sean','Please never, ever say that sentence again.'],['','You all know the way now. The spoon. The handprints. The little camp bed. Somehow it’s less scary than upstairs.']]);
+ else await talk([['','A trapdoor under the garage rug. A combination lock. 2-4-6-8. A ladder going down into the dark.'],['Everyone','OMER?'],['Omer','Eleven months of “study sessions”. Don’t ask. Get in the hole.'],['Arjun','I’m not getting in a hole on the word of a man who LAMINATES things.']]);
+ await talk([[V,'It’s fine. It’s fine. It’s just a bite. It barely broke the skin.'],['','It’s a perfect ring of little teeth marks. Shaped like a bowl.'],['Arjun','That’s how it starts. In every film. “It’s just a bite.” Then he’s eating our FACES.'],['Nivaan','He’s going grey. Look at him. He’s going GREY.'],['David','That’s the torch, Nivaan. The torch is grey.'],[V,'I feel FINE. I feel completely normal. Why are you all backing away?']]);
+ const c=await choose(['Hold him down. Just in case.','“Let him explain.”','Stand in front of '+V+'. “Nobody touches him.”']);
+ if(c===1)await talk([[V,'I am a PERSON. I am not a ZOMBIE. Zombies aren’t REAL.'],['Omer','Neither were monsters, at 9pm.'],['','That lands. Everyone takes one more step back.']]);
+ else if(c===2)await talk([['You','Nobody touches him.'],['','Six people look at you. Then at the bite. Then at each other. Then they go round you.']]);
+ const vc=MEM.cast[0];for(const x of MEM.cast)if(x.id!==victim&&x.id!=='you'){x.pose='choke';await mvc(x,vc.x-12+Math.random()*24,300)}vc.shake=true;SFX.smack();S.shake=.5;
+ await talk([['','They hold him back. Everyone. Arms, legs, a hand over his mouth. Hasan sits on his feet.'],[V,'(muffled) THIS IS INSANE. YOU ARE ALL INSANE.']]);
+ await tw(view,{fade:1},700);cue('reveal');for(const x of MEM.cast)x.pose=null;vc.shake=false;
+ await N('Dark.');noise(.6,.15,300,1);await wait(600);await N('A chair being dragged across a clay floor. Duct tape. A lot of duct tape.');for(let i=0;i<3;i++){noise(.3,.25,2200,3);await wait(300)}
+ MEM.chairAt=160;MEM.chairY=152;vc.x=160;vc.y=150;vc.sit=true;vc.dir=1;{let i=0;for(const x of MEM.cast)if(x!==vc&&x.id!==chop){x.x=52+i*17;x.y=150+(i%2)*3;x.dir=1;x.pose=i%3===1?'cover':null;i++}}const cw=MEM.cast.find(x=>x.id===chop)||{id:chop,x:190,y:152};if(!MEM.cast.includes(cw))MEM.cast.push(cw);cw.x=186;cw.dir=-1;cw.pose='swing';cw.weapon='#c9c9d0';
+ await tw(view,{fade:.15},600);await talk([['','A torch clicks on.'],['',V+' is taped to a green camping chair. '+C+' is standing over him in safety goggles, holding a machete from the bunker armoury. He’s never held it before. You can tell.'],[V,'Guys. Guys. GUYS. It’s a BITE. He’s a BOY. Boys BITE.'],[C,'If you turn, you eat all of us. One arm or eight people. I did the maths.'],[V,'YOU DID THE MATHS ON MY ARM?']]);
+ const d=await choose(['“STOP. Put it down.”','Look away.','Hold the torch steady.']);
+ await talk(d===0?[[C,'I’m sorry. I’m so sorry. I can’t risk it.']]:d===1?[['','You look at the wall. The wall has a little mark scratched in it for every time you’ve laughed tonight.']]:[['','You hold the torch. Your hand is shaking so much the shadows are dancing.']]);
+ cw.punchT=T+.4;view.fade=1;SFX.smack();SFX.squelch();noise(.5,.9,300,1);S.shake=1.3;fx(.8,'');await wait(250);view.fade=.1;gush(vc,46);vc.stump=true;MEM.armOnFloor={id:victim,x:132};SFX.scream();tone(900,1.4,'sawtooth',.12,300);
+ await talk([[V,'AAAAAAAAAAAAAAAAAAAAAGH—'],['','It takes three goes. The machete was not sharpened. Nobody sharpens machetes in a bunker. The screaming fills the tunnel all the way to Aidan’s end.']]);cw.pose=null;cw.weapon=null;
+ await tw(view,{fade:1},500);await N('Dark again. Ripping cardboard. A cereal box. The sports section. Most of a roll of duct tape. Somebody humming to stay calm. It’s David.');
+ vc.cardArm=true;await tw(view,{fade:.1},500);
+ await talk([['','When the torch comes back on, '+V+' has a new arm. It’s made of a Crunchy Nut box and the sports pages, taped into the shape of an arm by people who have only ever seen an arm from the outside.'],['','The screaming stops.'],['','Everybody holds their breath.']]);
+ await wait(900);vc.shake=true;await talk([[V,'…'],[V,'You CUT OFF MY ARM.'],[V,'YOU CUT OFF MY ACTUAL ARM BECAUSE ARJUN HAS SEEN ONE FILM.'],[V,'IT WAS A BITE. A NORMAL. HUMAN. BITE. HE’S NOT A ZOMBIE, HE’S A FUCKING DICKHEAD WITH TOO MANY HANDS.'],[V,'AND THIS — THIS IS A CEREAL BOX. YOU’VE GIVEN ME A CRUNCHY NUT ARM. IT SAYS “GOLDEN HONEY” ON MY ELBOW.'],['Omer','…In hindsight, statistically, zombie transmission was always unlikely.'],[V,'IN HINDSIGHT? IN HINDSIGHT, OMER?']]);vc.shake=false;
+ await talk([['Arjun','Can I sign it?'],[V,'SIGN IT AND I’LL BEAT YOU TO DEATH WITH IT.'],['Arjun','Fair. Fair. Very fair.']]);
+ await talk([['Omer','Wait. Wait. Surgeons can reattach a limb within six hours. If it’s kept cold.'],[V,'WHY. DIDN’T. YOU. SAY THAT. BEFORE.'],['David','Peas.'],['','David still has the bag of frozen peas from the toe. He puts the arm in with the peas. Then, because nobody wants to carry it, he tapes the peas to the cardboard arm.'],['','So now '+V+' has a cardboard arm, and his real arm, in a bag of peas, taped to the cardboard arm.'],[V,'I hate all of you. I hate every single one of you so much.'],['David','We love you too.']]);
+ store.run.cardArm=victim;store.run.armPeas=true;INJ_SCENE++;injure(victim);save();
+ await talk([['','Above you, through the clay, something heavy crosses the floor. Two voices. One humming. One crying.'],['Omer','Kitchen knife. Then we end this. Then we go to a hospital. In that order.']]);
+ await fromMemory();for(const id of L){const a=A_[id];a.floor=0;a.vis=true;a.sit=false;a.pose=null;a.x=60+L.indexOf(id)*18;a.y=156}A_.you.floor=0;A_.you.x=100;S.floor=0;await cameraBack()}
+{const _w=whereNow;whereNow=function(){const L=_w(),r=store.run;if(r.cardArm&&!A_[r.cardArm].dead){const i=L.findIndex(l=>l.includes('<b>'+K[r.cardArm].n.toUpperCase()+'</b>'));if(i>=0)L[i]='<b>'+K[r.cardArm].n.toUpperCase()+'</b> — Got his arm sewn back on at 6am. Six hours, on the dot. Keeps the Crunchy Nut arm on his bedroom wall. Still hasn’t forgiven Omer.'}return L}}
+{const _st=socialSmalltalk;socialSmalltalk=function(id){const r=store.run;if(r.cardArm===id)return one(['Don’t talk to me. I have a cereal box for an arm.','It says GOLDEN HONEY on my elbow.','My real arm is in the peas. The PEAS.']);if(r.cardArm&&Math.random()<.3)return 'We cut off '+K[r.cardArm].n+'’s arm. We cut off his arm for nothing.';return _st(id)}}
 
 /* ================= THE LAMP TIMELINE (only when built as lamp.html) ================= */
 if(window.LAMP_TIMELINE){
