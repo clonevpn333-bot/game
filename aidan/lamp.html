@@ -2680,7 +2680,7 @@ async function sleepover(){
  await tw(view,{fade:1},500);S.dark=.5;for(const id of order){const a=A_[id];Object.assign(a,{sit:false,sleep:true,awake:true,phone:0,pose:null})}
  await card('12:47 AM','Lights out.',1700);await tw(view,{fade:0},500);
  for(const f of shuffle(DARKTALK).slice(0,2)){await f();await wait(500)}
- if(store.run.abbyRoute)await abbyNight();
+ if(store.run.abbyRoute)await abbyNight();if(store.run.curlRoute)await curlNight();
  await N('One by one, the whispering stops.');for(const id of pals)A_[id].awake=false;
  // --- your watch
  await card('1:13 AM','First watch: you.',1700);
@@ -2813,7 +2813,7 @@ async function finale(){
  else await N('He waits for you to say something. He is still waiting when you raise the knife.');
  await tw(A_.you,{x:AI.x-18},650);A_.you.swing=.5;SFX.smack();SFX.squelch();S.shake=.5;fx(.6,'');spurt(AI.x-4,AI.y-18,16,AI.y+3);
  await tw(AI,{y:174},1100);AI.dead=true;for(const id of L)A_[id].pose='up';
- if(store.run.abbyRoute&&await abbyFinale())return;
+ if(store.run.abbyRoute&&await abbyFinale())return;if(store.run.curlRoute&&await curlFinale())return;
  await monsterDeath();
  await N('The other hands stop moving. His jacket settles. Aidan is dead.');
  await wait(1400);setPose(L,null);await sayLiving('david','Is it over? Somebody tell me that shit is over.');
@@ -6453,6 +6453,70 @@ function bgY7(m){fillG(0,0,W,150,GRD(0,0,0,150,[[0,'#7a5a8e'],[1,'#5a4070']]));f
  R(108,116,96,30,'#a02c34');R(108,112,96,6,'#c23b3b');R(104,120,6,26,'#8a2228');R(202,120,6,26,'#8a2228');planks(0,150,W,30,'#6a4630','#553624',14);
  for(let i=0;i<6;i++)R(30+i*46,158,34,8,['#6a6f8a','#8a5a5a','#5a7a5a','#7a6a4a','#5a5a7a','#8a7a5a'][i]);R(250,110,30,20,'#e8e0d0');R(254,104,22,8,'#f0a0c0');for(let i=0;i<5;i++)R(256+i*4,98,1,6,'#fff'),R(256+i*4,96,1,2,'#ffb02e');
  if(m.hair)for(let i=0;i<16;i++)R(150+hsh(i)*40,152+hsh(i+3)*10,3,1,'#4a2f1a');g.fillStyle='rgba(255,220,160,.14)';g.fillRect(0,0,W,H)}
+
+/* ================= PASS 22: THE CURLFATHER ROUTE (lamp timeline) ================= */
+Object.assign(K,{imogen:{n:'Imogen',skin:'#f0d8c8',hair:'#f4f0e0',hs:'long',top:'#e8e8f0',pants:'#e8e8f0',seed:101},straight:{n:'Straightener',skin:'#e8c8b0',hair:'#d8d0c0',hs:'long',top:'#d8d8e8',pants:'#c8c8d8',seed:102},
+ cmum:{n:'Corey’s Mum',skin:'#c99a76',hair:'#2a1a12',hs:'curly',top:'#8a3a5a',pants:'#2a2a3a',seed:103},inspector:{n:'Inspector Blunt',skin:'#e0b090',hair:'#888',hs:'short',top:'#5a5a4a',pants:'#3a3a34',wide:1,glasses:1,seed:104}});
+Object.assign(NCOL,{Imogen:'#c8c8e8','Corey’s Mum':'#8a3a5a','Inspector Blunt':'#5a5a4a',Straighteners:'#c8c8e8'});
+function bgSalon(m){fillG(0,0,W,150,GRD(0,0,0,150,[[0,m.dark?'#1a1418':'#f0d8d0'],[1,m.dark?'#120e12':'#e0c0b8']]));for(let x=0;x<W;x+=14)R(x,10,1,140,m.dark?'#ffffff06':'#ffffff40');
+ for(let i=0;i<3;i++){const x=24+i*96;R(x,40,56,60,'#c9a56a');R(x+3,43,50,54,m.dark?'#2a3040':'#bfd8e8');R(x+8,48,10,40,'#ffffff30');R(x+14,104,28,6,'#3a2a2a');R(x+18,110,20,26,'#2a1a1a');R(x+26,136,4,14,'#888')}
+ R(90,12,140,20,m.dark?'#2a1a20':'#8a3a5a');g.save();g.font='9px KenPixel,monospace';g.fillStyle=m.sign||'#ffe066';g.fillText(m.signText||'ROYAL CURLS',112,26);g.restore();
+ for(let i=0;i<8;i++)R(270+(i%2)*14,110+(i/2|0)*8,10,6,['#9a4ae8','#e86aa0','#ffe066','#7ab'][i%4]);R(264,104,40,46,'#5a3a30');
+ for(let y=150;y<H;y+=6)for(let x=(y/6%2)*6;x<W;x+=12)R(x,y,6,6,m.dark?'#1a1418':'#e8e0d8');if(m.dark)R(0,0,W,H,'rgba(0,0,0,.45)');glow(160,20,90,m.dark?'rgba(160,80,255,.15)':'rgba(255,240,220,.3)')}
+{const _dp=drawPost;drawPost=function(m){if(m.place==='salon'){bgSalon(m);castDraw(m);if(m.caption){g.save();R(0,H-28,W,18,'#000a');g.font='7px KenPixel,monospace';g.fillStyle='#ffe066';g.textAlign='center';g.fillText(m.caption,160,H-16);g.restore()}return}if(m.place==='loft'){bgLoft(m);castDraw(m);if(m.caption){g.save();R(0,H-28,W,18,'#000a');g.font='7px KenPixel,monospace';g.fillStyle='#ffe066';g.textAlign='center';g.fillText(m.caption,160,H-16);g.restore()}return}_dp(m)}}
+async function curlNight(){if(!store.run.curlRoute||A_.corey.dead)return;const co=A_.corey;co.sleep=false;co.sit=true;co.phone=1;await cameraOn(co.x,1.4);
+ await talk([['','Lights out. Everyone’s whispering. Corey is under his sleeping bag on a nine-way video call. Every face on it is wearing sunglasses. It is 1am.'],['Corey','(very quiet) The Commission is in session. Westfield. Report.'],['Phone','Westfield’s dry, boss. Year 10s are using CONDITIONER. Regular conditioner.'],['Corey','Animals.'],['Phone','And boss… the Straighteners are moving. Imogen’s been seen near your house. With an iron.']]);
+ await talk([['Arjun','(throwing a sock) Who are you TALKING to?'],['Corey','My accountant.'],['Omer','I’M your accountant.'],['Corey','My OTHER accountant.']]);co.sleep=true;co.sit=false;co.phone=0;await cameraBack()}
+{const _al=allergens;allergens=async function(){if(store.run.curlRoute&&!store.run.curlRaid&&!A_.corey.dead&&!FAST){store.run.curlRaid=true;save();
+  const im={id:'imogen',x:120,y:160,dir:1,pose:'swing',weapon:'#c8c8d0'},s1={id:'straight',x:100,y:162,dir:1,pose:'swing',weapon:'#c8c8d0'},s2={id:'straight',x:84,y:160,dir:1},co={id:'corey',x:236,y:160,dir:-1},dv={id:'david',x:252,y:160,dir:-1},you={id:'you',x:268,y:161,dir:-1};
+  await extScene([you,dv,co,s2,s1,im],async e=>{await talk([['','In the middle of everything — the monster on the stairs, everyone screaming — headlights on the lawn. Three girls get out of a Fiat Panda. They’re holding hair straighteners. Plugged into a car battery.'],['Imogen','Corey. You’ve been dealing curls in MY catchment area.'],['Corey','There’s a MONSTER in the house, Imogen.'],['Imogen','And there’s a STRAIGHTENER in my hand. 230 degrees. Pick your battle.']]);
+   const c=await choose(['“Join us. Fight the monster. Then we fight each other.”','Let Corey handle it.','Let David handle it.']);
+   if(c===0){await talk([['Imogen','…A truce?'],['Corey','Until sunrise. Then you can straighten whatever you like.'],['Imogen','Deal. But I’m straightening HIM first.'],['','She points at the stairs. At the monster. It hears her. It touches its own bowl cut, nervously.']]);store.run.straightAlly=true}
+   else{const w=c===1?co:dv;w.pose='swing';w.weapon=c===1?'#1a9ad6':'#3a3a40';for(let i=0;i<5;i++){w.punchT=T+.22;SFX.smack();SFX.squelch();S.shake=.4;egush(e,i%2?s1:im,8);await wait(220)}w.pose=null;
+    await talk(c===1?[['','Corey doesn’t fight. Corey ARGUES. He takes the straightener out of her hand, unplugs it, and hands it back to her, gently, like a father.'],['Corey','Not tonight, Imogen. Tonight I’m busy.'],['','She’s so offended she leaves. She will be back.']]:[['','David runs at the Fiat Panda. He simply lifts the front of it off the ground and puts it down again a bit further away. The Straighteners flee into the night. David has never been so proud.']])}
+   for(const x of [im,s1,s2])if(!store.run.straightAlly)x.hidden=true});cue('hunt');sub('THE CURLFATHER ROUTE: the night belongs to the family now.')}return _al()}}
+async function curlFinale(){if(!store.run.curlRoute||A_.corey.dead)return false;cue('reveal');
+ await talk([['','Corey steps between you and the monster. He raises one hand. Everyone stops. Even it stops.'],['Corey','Aidan. Let’s talk business.'],['Aidan','…Business?']]);
+ const bald=store.run.aidanBald,curly=store.run.aidanCurls;
+ await talk(bald?[['Corey','I took your hair. I know. That was business. Now I’m giving it back.'],['','He holds up a jar. Not C.U.R.L. Something else. Label: “BOWL. EXTRA HOLD.” He made it himself. Tonight. In the loft.']]:curly?[['Corey','You look good, man. The curls suit you. You know what doesn’t suit you? Eating my friends.']]:[['Corey','I’ve watched you all night. You’re relentless. You never sleep. You don’t give up. You know what that is?'],['Aidan','…Annoying?'],['Corey','Management material.']]);
+ await talk([['Corey','Join the family.'],['Corey','Consigliere. Full benefits. Free product for life. You never sit outside a house again. You’re IN the house. Every house.']]);
+ const c=await choose(['“Corey, he literally ate the pizza man.”','Say nothing. Let Corey cook.']);if(c===0)await say('Corey','Everyone has a past. I have a loft full of illegal hair cream.');
+ for(let i=0;i<4;i++){AI.transform=Math.max(0,(AI.transform||1)-.25);SFX.squelch();S.shake=.3;await wait(450)}S.monster=false;
+ await talk([['','The monster thinks about it. All of it thinks about it — the big head, the little face. They whisper to each other.'],['','Then it folds down into a small wet boy, who walks up to Corey and kisses his ring. Corey doesn’t have a ring. Aidan kisses his knuckle.'],['Aidan','Thank you, Godfather.'],['','From the doorway, Omer, quietly: “We’ve made it worse. We have made everything SO much worse.”']]);
+ AI.dead=true;AI.floor=-9;S.aidanIn=false;store.run.consigliere=true;store.end.rCURL_NIGHT=1;save();return true}
+async function curlYear(sv){if(!store.run.curlRoute||!sv.includes('corey'))return;cue('fight');const F=['david','arjun','hasan','omer','nivaan','sean'].filter(id=>sv.includes(id)),con=store.run.consigliere;const fam=(x0,y=160)=>F.slice(0,4).map((id,i)=>({id,x:x0+i*12,y:y+(i%2)*2,dir:-1}));
+ await card('THE CURLFATHER','A year in the family business',2800);
+ await card('DECEMBER','The National Christmas Tree.',1800);
+ await toPost('rink',[{id:'corey',x:150,y:150,dir:1},...(con?[{id:'aidan',x:132,y:150,dir:1}]:[]),...fam(200,152)],'The Ellipse · the deal');
+ await talk([['','The National Christmas Tree lighting. Ten thousand people. Corey does eleven deals before the lights come on. Aidan stands behind him in a tiny black suit, holding an umbrella that isn’t open.'],['Arjun','Boss. Boss. Is that a SECRET SERVICE agent?'],['Corey','That’s a customer. Look at his hair. That is NOT natural, Arjun.'],['','The agent nods to Corey on the way past. Discreetly. Fluffily.']]);await fromMemory();
+ await card('JANUARY','The raid.',1800);
+ await toPost('loft',[{id:'inspector',x:200,y:156,dir:-1},{id:'corey',x:120,y:156,dir:1},{id:'omer',x:96,y:156,dir:1}],'Your loft · 7:02am');
+ await talk([['Inspector Blunt','Trading Standards. We’ve had reports of an unlicensed cosmetic product. Four schools. One PE teacher.'],['Corey','This is a… science project. Omer?'],['Omer','(holding a beaker) It’s about… volume. In curls. And in sales.'],['Inspector Blunt','…Is that a forty-litre vat of hair cream in a child’s loft?'],['','The loft hatch closes behind him. Very gently. Aidan, on the other side, says “oops”.'],['','Inspector Blunt is never seen again. His car is found three weeks later, fully detailed, with a jar of C.U.R.L. on the dashboard and a thank-you note.']]);await fromMemory();
+ await card('MARCH','The summit.',1800);
+ await toPost('blossom',[{id:'corey',x:120,y:150,dir:1},{id:'imogen',x:150,y:150,dir:-1},{id:'david',x:96,y:152,dir:1}],'Tidal Basin · neutral waters');
+ await talk([['','A paddle boat summit. Corey and David in a swan. Imogen and her lieutenant in a duck. Neutral waters.'],['Imogen','You get every school north of the river. I get everything south. Nobody touches the Year 7s.'],['Corey','I want the sixth form.'],['Imogen','You can’t HAVE the sixth form, Corey, they’ve all got PERMS.'],['','A goose attacks both boats. Nobody blinks. Godfather Part II, but in a swan.']]);await fromMemory();
+ await card('APRIL','Prom season.',1800);
+ await toPost('party',[{id:'corey',x:160,y:160,dir:1},...fam(220,162).map(c=>Object.assign(c,{dir:1}))],'Prom after-party · 11pm');
+ await talk([['','Every single person at the after-party has Corey’s curls. Boys. Girls. A teacher. A dog. The DJ.'],['','The school paper’s front page, framed on Corey’s wall: “LOCAL BOY RUINS ENTIRE HAIR ECONOMY”.'],['Hasan','I tried it. It doesn’t work on me. My head’s the wrong shape. It slid off.'],['Corey','Nothing slides off, Hasan. Nothing.'],['Hasan','It slid off, Corey.']]);await fromMemory();
+ await card('MAY','',1200);
+ await toPost('salon',[{id:'cmum',x:200,y:150,dir:-1},{id:'corey',x:120,y:156,dir:1}],'An empty shop on Maple Row',{});
+ MEM.dark=true;MEM.signText='CLOSED — TO LET';MEM.sign='#c8c8c8';
+ await talk([['','The loft hatch was open when he got home. His mum had found it. All of it. Forty jars. The vat. The ledger.'],['','He finds her here, in the empty shop on Maple Row with the TO LET sign. The salon she lost two years ago. She has a jar in her hand.'],['Corey’s Mum','This is my recipe.'],['Corey','…Yeah.'],['Corey’s Mum','I stopped making it when the shop closed. I threw it out. You took it out of the bin.']]);
+ await talk([['Corey','Everyone thinks I’m the pretty one. That I just wake up like this. I don’t. You did this. Every morning since I was six.'],['Corey','When the shop went, you stopped doing my hair. You stopped doing anything. You just sat in the kitchen.'],['Corey','So I made it. And I sold it. And every jar paid a bit of the rent you think Grandma’s been paying.'],['','She doesn’t say anything for a long time. Then she sits him down in the one chair left, in front of the dusty mirror, and starts doing his hair. Like when he was six.'],['Corey’s Mum','You’ve been using too much. You always use too much.']]);await fromMemory();
+ await card('JUNE','The last day. The family decides.',2200);
+ const end=await choose(['Go legit. Open the salon with his mum.','Stay the Curlfather. Take the sixth form.','Burn it all. Every jar. Walk away.']);
+ if(end===0){await toPost('salon',[{id:'cmum',x:200,y:150,dir:-1},{id:'corey',x:150,y:150,dir:1},...(con?[{id:'aidan',x:60,y:156,dir:1}]:[]),...fam(250,156)],'ROYAL CURLS · grand reopening');
+  await talk([['','ROYAL CURLS. The sign’s back up. The lights are on. There’s a queue round the block, and half of it is Year 10s who used to buy out of a loft.'],['','His mum cuts. Corey sweeps. David is security. Omer does the books, legitimately, for the first time in his life, and finds it deeply unsatisfying.'],...(con?[['','Aidan works the front desk in a little waistcoat. He answers the phone every time it rings. He’s very, very good at it. He has never once let a call go to voicemail.']]:[]),['Corey’s Mum','Next!'],['Corey','(to you, quietly) Turns out the best thing I ever made wasn’t the cream.']]);store.end.rCURL_LEGIT=1;await fromMemory();await card('ROYAL CURLS','The Curlfather route — the ending where he goes legit.',3600)}
+ else if(end===1){await toPost('school',[{id:'corey',x:150,y:150,dir:1},...(con?[{id:'aidan',x:130,y:152,dir:1}]:[]),...fam(200,156)],'The last day · the sixth form falls');
+  await talk([['','He walks into the sixth-form common room at 3:15 on the last day of school with eleven people behind him in sunglasses. Every perm in the room goes quiet.'],['Corey','Gentlemen. Ladies. Imogen.'],['Imogen','…Corey.'],['Corey','Summer’s long. Humidity’s high. Frizz is coming. You’re going to need a friend.'],['','By the end of the summer he runs every school in the city. By the end of the next one, two in Baltimore. His mum still doesn’t know. He sends her flowers every Sunday with no name on them.'],...(con?[['Aidan','Godfather? Someone’s on the phone for you.'],['Corey','Who?'],['Aidan','It’s me. I’m practising.']]:[])]);store.end.rCURL_KING=1;await fromMemory();await card('THE CURLFATHER','The Curlfather route — the ending where he keeps the crown.',3600)}
+ else{await toPost('loft',[{id:'corey',x:150,y:156,dir:1,pose:'aim',weapon:'#e86aa0'},...(F.includes('omer')?[{id:'omer',x:120,y:156,dir:1}]:[])],'Your loft · midnight');
+  for(let i=0;i<4;i++){noise(.6,.6,400,.6);SFX.power();S.shake=.6;fx(.2,'');await wait(260)}
+  await talk([['','THE ASSISTANT, on full. Forty jars. The vat. The ledger. Every recipe card but one.'],['','The loft goes up like it was always meant to. He walks out of the house without looking back, in slow motion, while it burns behind him, and his curls are absolutely perfect the entire time.'],['Omer','Was that necessary?'],['Corey','No. But it looked incredible.'],['','In his pocket: one recipe card. His mum’s handwriting. He gives it back to her that night, and she laughs for the first time in two years.']]);store.end.rCURL_BURN=1;await fromMemory();await card('SAY GOODBYE TO MY LITTLE FRIENDS','The Curlfather route — the ending where he burns it down.',3600)}
+ save()}
+{const _e=epilogue;epilogue=async function(sv){await _e(sv);await curlYear(sv)}}
+if(window.LAMP_TIMELINE){after(FRIEND_SCENES.curlfather,3,async()=>{if(A_.corey.dead)return;const c=await choose(['“Expand the empire.”','“That’s enough for one night, Corey.”']);
+ if(c===0){store.run.curlRoute=true;save();await talk([['Corey','Expand.'],['Corey','Four schools isn’t an empire. It’s a hobby. I want the city.'],['','He puts on sunglasses. It is 1am. Nobody tells him to take them off. Nobody would dare.']]);sub('THE CURLFATHER ROUTE has begun. The family business is the story now.')}});
+ Object.assign(QBLURB,{curlfather:'Corey’s secret empire in your loft. Expand it and it takes over everything.'});}
 
 const sceneText=$('scene-text'),textInk=sceneText.getContext('2d');
 let sceneLetters=[];
