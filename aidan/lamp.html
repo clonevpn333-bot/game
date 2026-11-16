@@ -191,6 +191,7 @@ button:focus-visible{outline:2px solid #ffd58d;outline-offset:4px}
 </main>
 <script>
 'use strict';window.LAMP_TIMELINE=1;
+const __SRC='<!doctype html>\n'+document.documentElement.outerHTML; // untouched copy of this page, for the offline (blob:) button
 const $=id=>document.getElementById(id);
 const W=320,H=180,FLOOR=150,WORLD=1020;
 const cv=$('c'),g=cv.getContext('2d');g.imageSmoothingEnabled=false;
@@ -6744,6 +6745,14 @@ FRIEND_SCENES.revenge=[
 {const _w=whereNow;whereNow=function(){const L=_w(),r=store.run;if(r.revenge&&!A_.hasan.dead){const i=L.findIndex(l=>l.includes('<b>HASAN</b>'));const t={forgave:'Kept the notebook. Burned it on bonfire night with Arjun. They toasted marshmallows over PHASES.',toe:'He and '+(K[socialState().revenge.ta]||K.arjun).n+' have matching feet now. They call it the Toe Club. Nobody else is allowed in.',killed:'Told the police it was Aidan. Some nights he almost believes it. He hasn’t told a joke since.'}[r.revenge];if(i>=0&&t)L[i]='<b>HASAN</b> — '+t}return L}}
 {const _st=socialSmalltalk;socialSmalltalk=function(id){const r=store.run,q=socialState().revenge;if(id==='hasan'&&q&&q.step>0&&q.step<4)return one(['Phase '+(q.step+1)+' is going to be beautiful.','(sharpening something) Hm? Oh. Nothing. Just tidying.','Tell a joke about my head. Go on. I dare you. Tell one.']);
  if(id==='hasan'&&r.revenge==='killed')return one(['…','It was a little bit funny.','Don’t laugh. Please don’t laugh near me.']);if(r.revenge==='toe'&&id===(q&&q.ta))return 'Toe Club. Population: two. Unwillingly.';return _st(id)}}
+
+/* ================= PASS 29: offline copy (blob: link) button on the title screen ================= */
+{const css=document.createElement('style');css.textContent='#blobBtn{position:fixed;left:12px;bottom:12px;z-index:9999;display:flex;align-items:center;gap:8px;padding:8px 12px;background:#1a1622;color:#f1e7df;border:2px solid #4a3f5a;border-radius:6px;font:11px ui-monospace,Menlo,Consolas,monospace;letter-spacing:.06em;cursor:pointer;box-shadow:0 2px 0 #000}#blobBtn:hover{border-color:#f4cda0;color:#f4cda0}#blobBtn svg{flex:none}#blobBtn small{display:block;color:#b9a39e;font-size:9px;letter-spacing:0;margin-top:2px}';document.head.appendChild(css);
+ const b=document.createElement('button');b.id='blobBtn';b.hidden=true;b.title='Opens a copy of the game from memory (a blob: link). Works with no internet.';
+ b.innerHTML='<svg viewBox="0 0 48 48" width="22" height="22" aria-hidden="true"><path d="M24 24L4.95 13A22 22 0 0 1 43.05 13Z" fill="#db4437"/><path d="M24 24L43.05 13A22 22 0 0 1 24 46Z" fill="#f4b400"/><path d="M24 24L24 46A22 22 0 0 1 4.95 13Z" fill="#0f9d58"/><circle cx="24" cy="24" r="10.5" fill="#fff"/><circle cx="24" cy="24" r="8" fill="#4285f4"/></svg><span style="text-align:left">OPEN OFFLINE COPY<small>blob: link · no internet needed</small></span>';
+ b.onclick=e=>{e.stopPropagation();try{const url=URL.createObjectURL(new Blob([__SRC],{type:'text/html'}));const w=window.open(url,'_blank');if(!w)location.href=url;else sub&&sub('Offline copy opened in a new tab.')}catch(err){alert('Couldn’t make the offline copy: '+err.message)}};
+ b.onpointerdown=e=>e.stopPropagation();document.body.appendChild(b);
+ let inT=false;const _t=title;title=async function(){inT=true;try{return await _t()}finally{inT=false;b.hidden=true}};setInterval(()=>{const m=$('menu');b.hidden=!(inT&&m&&m.style.display==='flex'&&/THE CALLING<br>OF AIDAN/i.test(m.innerHTML))},200)}
 
 /* ================= THE LAMP TIMELINE (only when built as lamp.html) ================= */
 if(window.LAMP_TIMELINE){
