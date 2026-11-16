@@ -7703,6 +7703,127 @@ function nightSummary(){const r=store.run||{},s=socialState(),done=Object.keys(F
 /* closest friend gets the last word in the epilogue */
 {const _w=whereNow;whereNow=function(){const L=_w(),best=pals.filter(id=>!A_[id].dead).sort((a,b)=>bondOf(b)-bondOf(a))[0];if(best&&bondOf(best)>=6){const i=L.findIndex(l=>l.includes('<b>'+K[best].n.toUpperCase()+'</b>'));if(i>=0)L[i]+=' Still texts you first thing every morning. Just “up?”. Every day.'}return L}}
 
+/* ================= PASS 43: CURTAIN CALL — the post-game musical number (non-canon, obviously) =================
+   Plays after a standard ending. A cheerful song-and-dance that collapses into the bloodiest war ever staged,
+   then the curtain drops… and rises again on the whole cast, alive, taking a bow. Esc skips. Replay from Extras. */
+Object.assign(PUP,{bow:()=>({lean:.55,legs:[[.05,.02],[-.05,-.02]],arms:[[.55,.7],[.35,.5]],face:'proud'})});
+/* ---- the band ---- */
+const CC={on:false,mode:'song',bpm:132,step:0,next:0,timer:null,gain:null};
+const NOTE={A2:110,F2:87.31,C3:130.81,G2:98,E2:82.41,C2:65.41,D2:73.42,B1:61.74,A4:440,C5:523.25,E5:659.25,F4:349.23,G5:783.99,G4:392,B4:493.88,D5:587.33,E4:329.63};
+const PROG={song:[['A2',['A4','C5','E5']],['F2',['F4','A4','C5']],['C3',['C5','E5','G5']],['G2',['G4','B4','D5']]],war:[['E2'],['C2'],['D2'],['B1']],bow:[['C3',['C5','E5','G5']],['G2',['G4','B4','D5']],['A2',['A4','C5','E5']],['F2',['F4','A4','C5']]]};
+const MEL=[[0,-1,1,-1,2,-1,1,0,-1,0,1,-1,2,1,0,-1],[2,-1,2,1,0,-1,1,-1,2,-1,1,2,-1,1,0,-1]];
+function ccTone(f,d,type,v,t){if(!AC)return;const o=AC.createOscillator(),gn=AC.createGain();o.type=type;o.frequency.setValueAtTime(f,t);gn.gain.setValueAtTime(0,t);gn.gain.linearRampToValueAtTime(v,t+.008);gn.gain.exponentialRampToValueAtTime(.0005,t+d);o.connect(gn).connect(CC.gain);o.start(t);o.stop(t+d+.02)}
+function ccDrum(k,t,v=1){if(!AC)return;if(k==='kick'){const o=AC.createOscillator(),gn=AC.createGain();o.frequency.setValueAtTime(150,t);o.frequency.exponentialRampToValueAtTime(42,t+.12);gn.gain.setValueAtTime(.55*v,t);gn.gain.exponentialRampToValueAtTime(.001,t+.16);o.connect(gn).connect(CC.gain);o.start(t);o.stop(t+.17);return}
+ const len=k==='snare'?.13:k==='crash'?.9:.035,n=AC.sampleRate*len|0,b=AC.createBuffer(1,n,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,k==='crash'?1.5:2);
+ const s=AC.createBufferSource();s.buffer=b;const f=AC.createBiquadFilter();f.type=k==='snare'?'bandpass':'highpass';f.frequency.value=k==='snare'?1900:k==='crash'?5000:7500;const gn=AC.createGain();gn.gain.value=(k==='snare'?.38:k==='crash'?.25:.1)*v;s.connect(f).connect(gn).connect(CC.gain);s.start(t)}
+function ccStep(st,t){const m=CC.mode;if(m==='silent')return;const s=st%16,bar=Math.floor(st/16),P=PROG[m],[root,tones]=P[bar%4],R0=NOTE[root];
+ if(m==='song'){if(s===0||s===8)ccDrum('kick',t);if(s===4||s===12)ccDrum('snare',t);if(s%2===0)ccDrum('hat',t);if(s%2===0)ccTone(R0,.16,'square',.07,t);
+  const mel=MEL[Math.floor(bar/4)%2][s];if(mel>=0)ccTone(NOTE[tones[mel]],.12,'square',.04,t);if(bar%8>=4&&mel>=0)ccTone(NOTE[tones[(mel+1)%3]]/2,.12,'triangle',.03,t)}
+ else if(m==='war'){if(s%4===0)ccDrum('kick',t,1.2);if(s===4||s===12||(bar%4===3&&s>=12))ccDrum('snare',t,1.2);ccDrum('hat',t,.6);ccTone(R0,.08,'sawtooth',.08,t);
+  if([0,3,6,10,12].includes(s)){ccTone(R0*4,.14,'sawtooth',.035,t);ccTone(R0*6,.14,'sawtooth',.03,t)}if(s===0&&bar%4===0)ccDrum('crash',t)}
+ else if(m==='bow'){if(s===0){for(const n of tones)ccTone(NOTE[n],60/CC.bpm*4,'triangle',.035,t);ccTone(R0,60/CC.bpm*4,'sine',.08,t);ccDrum('kick',t,.5)}if(s===8)ccDrum('snare',t,.3);const mel=MEL[0][s];if(mel>=0&&s%4===0)ccTone(NOTE[tones[mel]]*2,.4,'triangle',.025,t)}}
+function ccStart(mode){if(!AC){try{audio()}catch(e){}}if(!AC)return;CC.mode=mode;if(CC.on)return;CC.on=true;CC.gain=AC.createGain();CC.gain.gain.value=.9;CC.gain.connect(MG);try{if(musicRoom)CC.gain.connect(musicRoom)}catch(e){}
+ if(scoreBus)scoreBus.gain.setTargetAtTime(0,AC.currentTime,.08);CC.step=0;CC.next=AC.currentTime+.08;CC.timer=setInterval(()=>{const spb=60/CC.bpm/4;while(CC.next<AC.currentTime+.12){ccStep(CC.step,CC.next);CC.step++;CC.next+=spb}},25)}
+function ccMode(mode,bpm){CC.mode=mode;if(bpm)CC.bpm=bpm;CC.step=Math.ceil(CC.step/16)*16}
+function ccStop(){if(CC.timer)clearInterval(CC.timer);CC.timer=null;CC.on=false;if(CC.gain&&AC){const gn=CC.gain;gn.gain.setTargetAtTime(0,AC.currentTime,.15);setTimeout(()=>{try{gn.disconnect()}catch(e){}},900)}}
+function applause(sec){if(!AC)return;for(let i=0;i<sec*14;i++)setTimeout(()=>{try{noise(.06,.18+Math.random()*.12,2600+Math.random()*2000,1.5)}catch(e){}},i*70+Math.random()*60)}
+/* ---- the stage ---- */
+function drawCurtainSide(x,w,side){fillG(x,0,w,170,GRD(x,0,x+w,0,[[0,'#5a0510'],[.5,'#a8121e'],[1,'#5a0510']]));for(let i=0;i<w;i+=7){R(x+i,0,2,170,'rgba(0,0,0,.25)');R(x+i+3,0,1,170,'rgba(255,130,130,.12)')}R(side>0?x+w-2:x,0,2,170,'#d8b040')}
+function drawCurtainDrop(h){fillG(0,0,W,h,GRD(0,0,W,0,[[0,'#7a0810'],[.5,'#b8141f'],[1,'#7a0810']]));for(let i=0;i<W;i+=8){R(i,0,2,h,'rgba(0,0,0,.22)');R(i+4,0,1,h,'rgba(255,130,130,.12)')}R(0,h-3,W,3,'#d8b040');for(let i=0;i<W;i+=10)R(i+3,h,4,3,'#d8b040')}
+function drawHeadProp(id,x,y,rot){const k=K[id]||K.aidan,hh=k.h||0;g.save();g.translate(Math.round(x),Math.round(y));g.rotate(rot||0);g.beginPath();g.rect(-9,-14,18,21);g.clip();drawKid(k,0,16+hh+6,{still:1,dir:1,talk:Math.sin(T*12)>0});g.restore();R(Math.round(x)-3,Math.round(y)+6,6,2,'#b3121e')}
+function drawGore(p){if(p.t==='head'){drawHeadProp(p.id,p.x,p.y,p.rot);return}g.save();g.translate(Math.round(p.x),Math.round(p.y));g.rotate(p.rot||0);
+ if(p.t==='spine'){for(let i=0;i<8;i++){R(-1,-14+i*3,3,2,'#f0ece0');R(-2,-13+i*3,5,1,'#d0c8b8')}R(-2,-18,5,4,'#b3121e');R(-1,10,3,3,'#8a0d16')}
+ else if(p.t==='eye'){R(-1,-1,3,3,'#f8f8f8');R(0,0,1,1,p.iris||'#3a6ad8');R(-1,2,1,3,'#b3121e')}
+ else if(p.t==='guts'){for(let i=0;i<14;i++){const yy=Math.round(Math.sin(i*.9+T*5)*2);R(i*2-14,yy,3,3,i%2?'#e07888':'#c0505e')}}
+ else if(p.t==='arm'){R(-1,-6,3,8,p.col||'#888');R(-1,2,3,2,p.skin||'#e0b090');R(-1,-7,3,1,'#b3121e')}
+ else if(p.t==='bolt'){R(-4,0,8,1,'#c8a060');R(3,-1,2,3,'#e8e8e8')}
+ g.restore()}
+function drawCastMember(c){const k=K[c.id]||K.aidan,hh=k.h||0,x=Math.round(c.x),y=c.y;
+ if(c.monster){drawChunkMonster(x,y,1);return}
+ if(c.dead){g.save();g.translate(x,y-3);g.rotate(Math.PI/2*(c.ld||1));if(c.headless){g.beginPath();g.rect(-40,-(15+hh),80,60);g.clip()}drawKid(k,0,0,{still:1,deadFace:1});g.restore();return}
+ const o={dir:c.dir,pose:c.pose,punchT:c.punchT,weapon:c.weapon,shake:c.shake,scared:c.scared,talk:c.sing&&Math.sin(T*12)>0,still:!c.moving,moving:c.moving,walk:T*13,sit:c.sit};
+ const yy=y-(c.hop?Math.round(Math.abs(Math.sin(T*8+x))*3):0);
+ if(c.headless){g.save();g.beginPath();g.rect(x-24,yy-(16+hh),48,40);g.clip();drawKid(k,x,yy,o);g.restore();if(Math.random()<.5)emit(x,yy-(16+hh),2,['#b3121e','#d0202e'],{vx:0,vy:-70,sx:30,g:240,life:.7});return}
+ drawKid(k,x,yy,o);if(c.patch){R(x+(c.dir||1)*1-4,yy-26,4,3,'#111');R(x-6,yy-27,12,1,'#111')}if(c.bandage)R(x-5,yy-14,10,3,'#f0f0f0')}
+function drawTheatre(m){bgStreet({});g.fillStyle='rgba(120,70,30,.30)';g.fillRect(0,0,W,H);
+ R(0,150,W,22,'#5a3a22');for(let i=0;i<7;i++)R(0,152+i*3,W,1,'#4a2e1a');R(0,150,W,2,'#7a5232');
+ if(m.pool>0){g.fillStyle='rgba(140,8,18,.9)';g.beginPath();g.ellipse(160,160,Math.min(200,m.pool*190),Math.min(14,m.pool*12+2),0,0,Math.PI*2);g.fill()}
+ for(const b of m.splats||[])splat(b.x,b.y,b.r,b.s);
+ for(const s of m.spots||[]){const c=cf(s),x=c?c.x:s;const gr=g.createLinearGradient(x,0,x,158);gr.addColorStop(0,'rgba(255,240,200,0)');gr.addColorStop(1,'rgba(255,240,200,.22)');g.fillStyle=gr;g.beginPath();g.moveTo(x-6,14);g.lineTo(x+6,14);g.lineTo(x+22,158);g.lineTo(x-22,158);g.fill()}
+ for(const c of m.cast)if(!c.hidden&&c.dead)drawCastMember(c);for(const c of m.cast)if(!c.hidden&&!c.dead)drawCastMember(c);
+ for(const p of m.gore||[])drawGore(p);for(const s of m.sprays||[])spray(s.x,s.y,s.d,s.t,T,s.n);
+ for(let i=0;i<14;i++){const x=12+i*23;R(x,166,5,3,m.lightsOut?'#3a3020':'#ffe8a0');if(!m.lightsOut)glow(x+2,166,10,'rgba(255,220,140,.35)')}
+ R(0,169,W,11,'#120a10');for(let i=0;i<22;i++){const x=i*15+(i%2)*7,b=m.cheer&&Math.sin(T*9+i)>.3?2:0;R(x,170-b,9,9,'#0a0508');R(x+1,167-b,7,4,'#0a0508');if(m.cheer&&Math.sin(T*7+i*2)>.6)R(x+2,163-b,2,4,'#0a0508')}
+ const cw=(1-(m.open??0))*(W/2)+16;drawCurtainSide(0,cw,1);drawCurtainSide(W-cw,cw,-1);
+ R(0,0,W,14,'#7a0a14');for(let i=0;i<W;i+=16){R(i,11,16,4,'#5a0610');R(i+7,14,2,3,'#d8b040')}R(0,12,W,1,'#d8b040');
+ if(m.drop>0)drawCurtainDrop(m.drop*172);
+ g.save();g.textAlign='center';if(m.lyric&&!m.drop){g.font='7px KenPixel,monospace';g.fillStyle=m.lyric.col;g.fillText(m.lyric.who,160,24);g.font='10px KenPixel,monospace';g.fillStyle='#fff';g.fillText(m.lyric.text,160,36)}
+ if(m.banner){g.font='16px KenPixel,monospace';g.fillStyle='#ffe066';g.fillText(m.banner.text,160,82);if(m.banner.sub){g.font='8px KenPixel,monospace';g.fillStyle='#fff';g.fillText(m.banner.sub,160,98)}}g.restore()}
+{const _dm=drawMemory;drawMemory=function(){if(MEM&&MEM.scene==='theatre'){drawTheatre(MEM);return}_dm()}}
+{const _u=update;update=function(dt){_u(dt);if(mode!=='memory'||!MEM||MEM.scene!=='theatre')return;
+ for(const p of MEM.gore||[]){if(p.rest)continue;p.vy=(p.vy||0)+300*dt;p.x+=(p.vx||0)*dt;p.y+=p.vy*dt;p.rot=(p.rot||0)+(p.vr||0)*dt;const fl=p.floor||160;if(p.y>=fl){p.y=fl;if(Math.abs(p.vy)>70){p.vy*=-.35;p.vx=(p.vx||0)*.6;p.vr=(p.vr||0)*.5;emit(p.x,fl-2,4,['#b3121e','#8a0d16'],{sx:50,vy:-30,life:.5});SFX.squelch()}else{p.rest=true;p.vy=0;p.vx=0}}}
+ if(MEM.dance){const bt=Math.floor((CINE.rt-MEM.dance)*CC.bpm/60);for(const [i,c] of MEM.cast.entries()){if(c.dead||c.monster||c.fixed)continue;c.pose=['dance','cheer','fingerguns','dance','peace','flex'][(bt+i)%6];c.hop=true;c.dir=(bt+i)%4<2?1:-1}}}}
+/* ---- the show ---- */
+let CCSKIP=false;
+async function curtainCall(){if(FAST&&!window.CC_TEST)return;CCSKIP=false;const prevScore=scoreName,keepMode=mode,busy0=busy;busy=true;closeModal&&closeModal();$('menu').style.display='none';$('dlg').hidden=true;
+ const skipBtn=document.createElement('button');skipBtn.textContent='SKIP ⏭ (Esc)';skipBtn.style.cssText='position:fixed;right:14px;bottom:14px;z-index:10060;font:10px KenPixel,monospace;padding:8px 12px;background:#100d16e8;color:#e8e0d0;border:1px solid #8f6d6b';skipBtn.onclick=e=>{e.stopPropagation();CCSKIP=true};document.body.appendChild(skipBtn);
+ const onKey=e=>{if(e.key==='Escape'){CCSKIP=true;e.stopPropagation()}};addEventListener('keydown',onKey,true);
+ const ids=['you','hasan','arjun','david','aidan','omer','corey','sean','nivaan'],cast=ids.map((id,i)=>({id,x:34+i*31.5,y:158,dir:i<4?1:-1}));
+ await toMemory({scene:'theatre',cast,open:0,drop:0,pool:0,gore:[],sprays:[],splats:[],spots:[]});
+ const c=id=>MEM.cast.find(x=>x.id===id);const barMs=()=>60/CC.bpm*4*1000;const W8=async ms=>{if(!CCSKIP)await wait(ms)};
+ const sing=async(who,text,nb=2,col)=>{if(CCSKIP)return;const ws=who==='all'?MEM.cast:[c(who)].filter(Boolean);ws.forEach(x=>x.sing=true);MEM.lyric={who:who==='all'?'EVERYONE':(K[who]?K[who].n:who).toUpperCase(),text,col:col||(who==='all'?'#ffe066':NCOL[K[who]?.n]||'#ff9ab0')};await W8(nb*barMs());ws.forEach(x=>x.sing=false)};
+ const yell=async(who,text,ms=1500)=>{if(CCSKIP)return;MEM.lyric={who:(K[who]?K[who].n:who).toUpperCase(),text,col:'#ff5a5a'};await W8(ms)};
+ const kill=(v,o={})=>{if(!v)return;v.dead=true;v.ld=o.ld||(v.dir>0?-1:1);v.pose=null;v.hop=false;v.fixed=true;MEM.pool+=.12;(MEM.sprays??=[]).push({x:v.x,y:v.y-18,d:v.dir||1,t:T,n:34},{x:v.x,y:v.y-18,d:-(v.dir||1),t:T,n:20});MEM.splats.push({x:v.x+(Math.random()-.5)*20,y:160,r:8+Math.random()*6,s:Math.random()*99});SFX.squelch();SFX.scream();S.shake=.6};
+ const gore=o=>{MEM.gore.push(Object.assign({rot:0,vr:(Math.random()-.5)*14},o))};
+ try{
+  ccStart('song');ccMode('song',132);MEM.banner={text:'CURTAIN CALL',sub:'one night only · the whole cast'};await W8(2600);MEM.banner=null;
+  await tw(MEM,{open:1},CCSKIP?0:1800);MEM.spots=['aidan'];MEM.cheer=true;MEM.dance=CINE.rt;
+  await sing('aidan','🎵 I rang you at nine, I rang you at ten',2);await sing('aidan','🎵 I rang you so often you’ll ring me again',2);
+  MEM.spots=['you','aidan','nivaan'];await sing('all','🎵 PICK UP, PICK UP, IT’S A SLEEPOVER NIGHT',2);await sing('all','🎵 eight sleeping bags and a boy in the light',2);
+  MEM.spots=['hasan'];await sing('hasan','🎵 I’ve got a big head and a beautiful soul',2);MEM.spots=['arjun'];await sing('arjun','🎵 your head’s got a postcode, a lake and a—',2);
+  MEM.spots=['david'];await sing('david','🎵 nobody touch my bouncy chair',2);MEM.spots=['omer'];await sing('omer','🎵 I laminated this choreography, it’s fair',2);
+  MEM.spots=['corey'];await sing('corey','🎵 I’m only up here ’cause my face is nice',2);MEM.spots=['sean'];await sing('sean','🎵 Stella, if you’re watching — I’m singing it twice',2);
+  MEM.spots=['nivaan'];await sing('nivaan','🎵 I’m filming the lot and it’s going in KEEP',2);MEM.spots=['you','aidan','nivaan','hasan'];await sing('all','🎵 and NOBODY, NOBODY’S GOING TO SLEEEEEEP',2);
+  /* the elbow */
+  const ar=c('arjun'),ha=c('hasan');MEM.dance=0;for(const x of MEM.cast){x.hop=false;x.pose='dance'}ar.fixed=ha.fixed=true;ar.pose='swingthrough';ar.dir=-1;ha.pose='recoil';ha.shake=true;SFX.smack();ccMode('silent');noise(.5,.5,800,2);MEM.cheer=false;
+  MEM.lyric={who:'',text:'*record scratch*',col:'#fff'};await W8(1400);ha.shake=false;
+  await yell('hasan','…your ELBOW. In my FACE. During the HARMONY.',1700);await yell('arjun','It was choreography, you massive forehead.',1500);await yell('hasan','THAT’S IT.',900);
+  /* the war */
+  ccMode('war',172);MEM.spots=[];MEM.cheer=true;for(const x of MEM.cast){x.fixed=true;x.hop=false;x.pose='guard'}const av=c('aidan');
+  ha.pose='headbutt';await tw(ha,{x:ar.x-8},CCSKIP?0:180);ar.headless=true;gore({t:'head',id:'arjun',x:ar.x,y:ar.y-24,vx:-90,vy:-220,vr:-9});MEM.pool+=.08;SFX.smack();SFX.squelch();S.shake=1;
+  await yell('arjun','(his head, mid-air) I’M STILL ON KEY, YOU FUCKING MELON',1800);kill(ar);
+  const dv=c('david'),om=c('omer');dv.pose='carry';om.x=dv.x+4;om.y=134;await W8(500);om.y=158;dv.pose='pinning';gore({t:'spine',x:om.x,y:om.y-20,vx:40,vy:-260,vr:10});kill(om,{ld:1});
+  await yell('omer','MY SPINE. MY LAMINATED SPINE.',1500);
+  const co=c('corey');gore({t:'bolt',x:om.x,y:150,vx:220,vy:-60,vr:0});await W8(260);gore({t:'eye',x:co.x,y:co.y-22,vx:70,vy:-150,vr:6,iris:'#7a4fa0'});co.patch=true;co.pose='hidehands';MEM.pool+=.05;SFX.squelch();
+  await yell('corey','NOT THE FACE. NOT THE FACE. ANYTHING BUT THE FACE.',1600);
+  const se=c('sean');se.pose='windup';se.weapon='#3a3a3a';await W8(300);se.pose='swingthrough';noise(.4,.95,900,1);S.shake=1.2;cine.flash&&cine.flash('#fff',.12);for(let i=0;i<3;i++)gore({t:'guts',x:dv.x,y:dv.y-10,vx:(Math.random()-.5)*160,vy:-160-Math.random()*80,vr:(Math.random()-.5)*8});kill(dv);
+  await yell('sean','(shotgun from the orchestra pit) STRIKE THREE, BIG MAN',1500);await yell('david','(in pieces) I WAS THE COUNTERWEIGHT',1300);
+  co.pose='stab';co.weapon='#c9c9d0';await tw(co,{x:se.x-10},CCSKIP?0:200);gore({t:'arm',x:se.x,y:se.y-14,vx:120,vy:-200,vr:12,col:K.sean.top,skin:K.sean.skin});MEM.pool+=.05;SFX.squelch();se.pose='recoil';
+  await yell('sean','THAT WAS MY THROWING ARM, COREY',1300);
+  const nv=c('nivaan');nv.pose='filming';await yell('nivaan','(still filming) this is the best content of my LIFE',1300);nv.pose='recoil';await tw(nv,{x:nv.x+18,y:166},CCSKIP?0:300);for(let i=0;i<12;i++)emit(nv.x,nv.y-20,2,['#bfe8ff','#fff','#ffe066'],{sx:80,life:.4});noise(.6,.6,3000,4);
+  gore({t:'eye',x:nv.x-2,y:nv.y-24,vx:-60,vy:-180,vr:9,iris:'#2a1a12'});gore({t:'eye',x:nv.x+2,y:nv.y-24,vx:60,vy:-170,vr:-9,iris:'#2a1a12'});kill(nv);await yell('nivaan','(electrocuted by the footlights) RATE AND SUBSCRIBE',1300);
+  av.monster=true;av.fixed=true;S.shake=1.2;SFX.scream();await yell('aidan','🎵 BOWL CUT BOY, BOWL CUT BOY',1400);
+  gore({t:'spine',x:se.x,y:se.y-20,vx:-30,vy:-280,vr:-12});kill(se);await yell('aidan','(playing Sean’s spine like a xylophone) 🎵 NOBODY PICKS UP AGAIN AND AGAIN',1800);
+  co.headless=false;kill(co);await yell('corey','(bleeding out, gorgeously) …tell Abby I said hi',1200);
+  ha.pose='headbutt';await tw(ha,{x:av.x-14},CCSKIP?0:200);S.shake=1.4;SFX.smack();MEM.lyric={who:'HASAN',text:'CRANIUM… FULL… OW.',col:'#ff5a5a'};await W8(700);
+  gore({t:'head',id:'hasan',x:ha.x,y:ha.y-24,vx:-40,vy:-300,vr:14});ha.headless=true;MEM.pool+=.1;await yell('hasan','(the head, bouncing) I REGRET NOTHING. I REGRET MY HEAD.',1600);kill(ha);
+  const yu=c('you');yu.pose='stab';yu.weapon='#dfe6ea';await tw(yu,{x:av.x-12},CCSKIP?0:300);SFX.squelch();SFX.smack();S.shake=1.5;MEM.pool+=.15;for(let i=0;i<3;i++)gore({t:'guts',x:av.x,y:av.y-20,vx:(Math.random()-.5)*200,vy:-200,vr:5});
+  av.monster=false;kill(av);await yell('aidan','(the little face, one last note) 🎵 eeeeeeight sleeping baaaaaags…',1800);
+  kill(yu,{ld:-1});MEM.lyric={who:'',text:'*everyone is dead*',col:'#b9a39e'};ccMode('silent');await W8(1600);
+  /* the curtain */
+  MEM.lyric=null;await tw(MEM,{drop:1},CCSKIP?0:2200);applause(4);MEM.banner={text:'BRAVO',sub:'(it was an act. nobody died. probably.)'};await W8(2600);MEM.banner=null;
+  for(const x of MEM.cast){Object.assign(x,{dead:false,headless:false,monster:false,shake:false,scared:false,weapon:null,pose:'bow',fixed:true,hop:false,dir:1,y:158});x.patch=x.id==='corey';x.bandage=x.id==='david'}
+  ids.forEach((id,i)=>{c(id).x=34+i*31.5});MEM.gore=[];MEM.pool=.25;MEM.sprays=[];MEM.lightsOut=false;ccMode('bow',84);MEM.cheer=true;MEM.spots=['aidan'];
+  await tw(MEM,{drop:0},CCSKIP?0:2000);for(let b=0;b<3&&!CCSKIP;b++){for(const x of MEM.cast)x.pose=b%2?'cheer':'bow';applause(1.5);await W8(1300)}
+  for(const x of MEM.cast)x.pose='cheer';await yell('arjun','(popping his head back on) still on key, by the way',1500);await yell('hasan','(head taped back on, slightly backwards) same time next week?',1600);
+  await sing('aidan','🎵 thanks for coming. you can all come again :)',2,'#7ab8ff');
+  MEM.lyric=null;await tw(MEM,{drop:1},CCSKIP?0:1800);MEM.banner={text:'THE END',sub:'thank you for playing · THE CALLING OF AIDAN'};await W8(2800)}
+ finally{ccStop();removeEventListener('keydown',onKey,true);skipBtn.remove();store.curtainSeen=1;save();MEM.banner=null;await fromMemory();mode=keepMode==='memory'?'house':keepMode;busy=busy0;try{cue(prevScore,true)}catch(e){}}}
+/* after a standard ending — never after the secret ending */
+{const _m=menu;menu=function(html,btns){const p=_m(html,btns);if(/THE CALL<br>ENDED|<h1>NINE<\/h1>/.test(html)&&!/NIGHT ∞|NINTH SLEEPOVER/.test(html))return p.then(async r=>{try{await curtainCall()}catch(e){}return r});return p}}
+/* replay from Extras once you've earned it */
+{const _ox=openExtras;openExtras=function(tab){_ox(tab);if((tab||'endings')==='endings'&&store.curtainSeen&&MODAL){const b=document.createElement('button');b.textContent='▶ REPLAY THE CURTAIN CALL';b.style.cssText='font:11px KenPixel,monospace;padding:8px 14px;margin:10px 0;background:#6a3a2a;color:#ffe066;border:1px solid #d8b040';b.onclick=e=>{e.stopPropagation();closeModal();$('menu').style.display='none';curtainCall().then(()=>{$('menu').style.display='flex'})};MODAL.el.firstChild.insertBefore(b,MODAL.el.firstChild.children[1])}}}
+
 /* ================= THE LAMP TIMELINE (only when built as lamp.html) ================= */
 if(window.LAMP_TIMELINE){
  findCoreyPhoto=async function(){if(coreyPhotoFound())return;S.secret=2;socialState().hidden.photo=true;SFX.pick();socialSave();
