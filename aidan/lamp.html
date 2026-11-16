@@ -6129,7 +6129,7 @@ async function abbyYear(sv){if(!store.run.abbyRoute||!sv.includes('corey'))retur
  await toPost('bus',[{id:'corey',x:140,y:156,dir:1},{id:'girl',x:170,y:156,dir:-1},...spy(230,162)],'The 43 stop · 3:20pm');
  await talk([['','The 43 stop. Where it started. The group is in the bushes holding a bedsheet banner. Omer spelled it. It’s spelled right.'],['Corey','Four rows. A whole year of four rows.'],['Corey','I like you. I liked you before I knew your name. I like you more now that I know it’s Abby and you hate geese and you hum when you read.'],['Corey','Will you be my girlfriend? Properly. Out loud. In front of these idiots.']]);
  await talk([['','She doesn’t answer straight away. She looks at the banner. She looks at him.'],['Abby','Yes.'],['','The bushes explode. The banner goes up: COREY + ABBY. Hasan gets tangled in it. David is crying so hard he has to sit on the kerb.'],['Abby','…My dad got the job.'],['Abby','We move back to Florida in two weeks.']]);
- fx(.3,'');await wait(800);await talk([['Corey','Okay.'],['Abby','Okay?'],['Corey','You said yes. You don’t get to un-yes because of a state.']]);await fromMemory();
+ fx(.3,'');await wait(800);const real=await choose(['“Okay. You said yes. You don’t get to un-yes because of a state.”','“You told me those songs were for when something ends. You’ve already had one ending this year. Let me be the thing that starts.”']);if(real===1&&await abbyStays(AF))return;await talk([['Corey','Okay.'],['Abby','Okay?'],['Corey','You said yes. You don’t get to un-yes because of a state.']]);await fromMemory();
  await card('TWO WEEKS LATER','Union Station.',2400);
  await toPost('station',[{id:'corey',x:140,y:160,dir:1},{id:'girl',x:166,y:160,dir:-1},...spy(230,164)],'Union Station · Silver Meteor to Miami');
  await talk([['','The Silver Meteor. Twenty-six hours to Miami. She has one bag, one guitar, and Morrissey in a travel tub.'],['Corey','I made you another tape. For the train.'],['Abby','What’s it called?'],['Corey','“Songs for when something keeps going.”'],['','She puts one of her headphones in his ear. Same song. 9pm, every night, wherever they both are. That’s the deal.'],['Abby','Don’t you dare get good at being away from me.'],['Corey','I’m going to be so bad at it.']]);
@@ -6221,6 +6221,75 @@ Object.assign(QBLURB,{stella:'Sean has to call her. With his VOICE.',triple:'Sea
  if(r.abbyRoute)set('corey','Is in a long-distance relationship with a girl in Florida. 9pm, every night, same song. Has never once missed it.');
  if(r.triple)set('arjun',r.arjunAidan?'Walks fine. Hums when he walks. Doesn’t know he does it.':'Spent two weeks in hospital. Got the neck brace signed by every nurse. Calls it his “tryout era”.');
  if(store.run.stellaBall===false||socialState().stella&&socialState().stella.step>=4)set('sean','Gave the ball back on Monday. Got it handed straight back. They pass it back and forth every day now.');return L}}
+
+/* ================= PASS 21: the year, redrawn; and a path where she stays ================= */
+function columnsFacade(x,y,w,h,col,shade){R(x,y+10,w,h-10,col);for(let i=0;i<w;i+=10){R(x+i+2,y+14,4,h-18,shade);R(x+i+1,y+14,6,2,col)}R(x-4,y+6,w+8,6,col);for(let i=0;i<10;i++)R(x+w/2-i*(w/20)-2,y-i*1.2+6,i*(w/10)+4,1.2,col)}
+function crowd(y,n,seed,c){for(let i=0;i<n;i++){const x=(hsh(seed+i)*W)|0,h=10+hsh(seed+i+7)*6;R(x,y-h,4,h,c);R(x-1,y-h-4,6,5,c)}}
+drawPost=function(m){const p=m.place;
+ if(p==='rink'){nightSky(110,'#03061a','#18204a');moon(272,20);
+  columnsFacade(40,46,240,60,'#232a44','#1a2036');for(let i=0;i<8;i++)R(58+i*28,74,12,18,i%3?'#f2c14e55':'#0a0e1c');
+  for(let i=0;i<5;i++){const x=12+i*76;R(x+10,64,3,58,'#120e14');for(let j=0;j<6;j++)R(x+10+Math.cos(j)*14,64+j*6,1,8,'#120e14')}
+  for(let i=0;i<34;i++){const x=i*10,y=30+Math.sin(i*.55)*8;const c=['#ffe9a0','#ff9ad0','#9ad0ff'][i%3];R(x,y,2,2,c);if(Math.sin(T*2+i)>0)glow(x+1,y+1,7,c+'99')}
+  R(0,118,W,4,'#e8eef8');R(0,121,W,2,'#8a96a8');fillG(0,122,W,42,GRD(0,122,0,164,[[0,'#d8ecff'],[1,'#9cc4ec']]));for(let i=0;i<16;i++)R((i*29+T*10)%W,128+(i%4)*8,12,1,'#ffffffaa');for(let i=0;i<6;i++)R(30+i*52,124,4,38,'#b8d8f0');
+  for(let i=0;i<5;i++){const x=(T*20+i*70)%(W+40)-20;R(x,138+(i%2)*10,4,12,'#1a1a2a');R(x-1,134+(i%2)*10,6,5,'#2a2a3a')}
+  R(250,96,64,24,'#2a1e18');for(let i=0;i<3;i++)R(256+i*18,102,12,10,'#ffcf7a');glow(282,108,40,'rgba(255,200,120,.25)');
+  R(0,164,W,16,'#1c1c26');for(let i=0;i<70;i++){const t=(T*.15+hsh(i))%1;R(hsh(i+9)*W+Math.sin(T+i)*4,t*170,1,1,'#ffffff')}}
+ else if(p==='blossom'){fillG(0,0,W,104,GRD(0,0,0,104,[[0,'#ffc6b8'],[.6,'#ffe4d6'],[1,'#fff1e6']]));glow(70,40,60,'rgba(255,240,220,.5)');
+  R(196,22,10,82,'#f0ece4');R(198,22,2,82,'#fff');R(197,16,8,8,'#f0ece4');R(199,12,4,6,'#f0ece4');R(200,30,2,2,'#e33');
+  R(40,82,60,20,'#e8e4dc');R(46,72,48,12,'#e8e4dc');R(56,62,28,12,'#e8e4dc');R(64,58,12,6,'#e8e4dc');for(let i=0;i<6;i++)R(44+i*10,86,3,16,'#d0ccc4');
+  fillG(0,102,W,50,GRD(0,102,0,152,[[0,'#8ab4d8'],[1,'#4a7cac']]));R(196,104,10,30,'#f0ece466');R(50,104,40,10,'#e8e4dc44');for(let i=0;i<22;i++)R((i*31+T*6)%W,108+(i%6)*7,10+(i%3)*4,1,'#d8ecff');
+  const sw=(T*6)%380-40;R(sw,124,22,8,'#fff');R(sw+16,114,4,12,'#fff');R(sw+16,112,7,3,'#fff');R(sw+22,113,3,2,'#f80');
+  R(0,146,W,8,'#c8b8a8');R(0,152,W,28,'#6a8a50');for(let i=0;i<9;i++){const x=6+i*38;R(x+10,108,4,42,'#4a2e22');R(x+6,114,4,2,'#4a2e22');R(x+14,118,6,2,'#4a2e22');for(let j=0;j<16;j++)R(x+hsh(i*16+j)*34-6,88+hsh(i*16+j+3)*28,7,6,['#ffb4cc','#ffd2e2','#ff98bc','#fff0f4'][j%4])}
+  for(let i=0;i<40;i++){const t=(T*.25+hsh(i))%1;R((hsh(i+50)*W+t*60)%W,t*160,2,1,'#ffc6da')}}
+ else if(p==='whale'){fillG(0,0,W,150,GRD(0,0,0,150,[[0,'#06122a'],[1,'#123060']]));for(let i=0;i<7;i++){R(i*48+8,0,30,8,'#2a4a7a');R(i*48+10,2,26,4,'#6a9ad0')}glow(160,10,110,'rgba(140,200,255,.18)');
+  for(let i=0;i<8;i++)R(i*44,8,6,142,'#0e2246');R(0,104,W,2,'#1e3a6a');
+  const wx=36,wy=30;R(wx+4,wy+10,196,22,'#4a5866');R(wx+18,wy+4,150,10,'#4a5866');R(wx+196,wy+14,26,12,'#4a5866');R(wx+218,wy+4,10,14,'#4a5866');R(wx+218,wy+24,10,14,'#4a5866');R(wx,wy+14,12,14,'#4a5866');R(wx+4,wy+30,180,4,'#c8d0d8');for(let i=0;i<14;i++)R(wx+8+i*12,wy+30,2,4,'#8a98a8');R(wx+16,wy+16,3,3,'#0a0a10');R(wx+60,wy+30,30,10,'#4a5866');R(wx+20,wy+6,40,2,'#6a7886');for(let i=0;i<3;i++)R(wx+30+i*60,0,1,wy+6,'#9aa8b8');
+  for(let i=0;i<3;i++){const x=24+i*100;R(x,108,64,40,'#0a1a30');R(x+2,110,60,36,'#0e3050');for(let j=0;j<3;j++){const jx=x+12+j*18,jy=118+Math.sin(T*1.5+i+j)*4;R(jx,jy,8,5,'#ff9ae0');for(let k=0;k<3;k++)R(jx+1+k*3,jy+5,1,6+(k%2)*2,'#ff9ae0aa');glow(jx+4,jy+3,9,'rgba(255,150,230,.35)')}}
+  fillG(0,150,W,30,GRD(0,150,0,180,[[0,'#1e2a3e'],[1,'#141c2c']]));for(let x=0;x<W;x+=20)R(x,150,1,30,'#24324a');R(0,150,W,1,'#4a6a9a');vign(160,90,100,240,'rgba(0,0,20,.5)')}
+ else if(p==='party'){bgStreet({});const t=T*4,cols=['#ff3ab8','#3affd8','#ffe03a','#7a3aff'];for(const [x,y,w,h] of [[186,74,26,20],[252,82,18,14],[154,112,28,22],[240,112,34,22]]){g.globalAlpha=.75;g.fillStyle=cols[(t+x)%4|0];g.fillRect(x,y,w,h);g.globalAlpha=1;for(let i=0;i<3;i++)R(x+3+i*(w/3),y+h-8-Math.abs(Math.sin(t+i+x))*3,4,8,'#111')}
+  for(let i=0;i<16;i++){const x=6+i*20,y=134+Math.sin(i)*4;R(x,y,2,2,cols[i%4]);glow(x,y,6,cols[i%4]+'88')}for(let i=0;i<8;i++)R(30+i*36,156,3,5,'#e8202a');R(96,138,12,18,'#111');R(98,140,8,6,'#333');R(98,148,8,6,'#333')}
+ else if(p==='school'){fillG(0,0,W,120,GRD(0,0,0,120,[[0,'#5aa8f0'],[1,'#cfeaff']]));for(let i=0;i<3;i++){const cx=((T*3+i*150)%440)-60;R(cx,16+i*12,46,8,'#fff');R(cx+10,12+i*12,24,6,'#fff')}
+  bricks(26,46,268,76,'#a85a3a','#b86a4a','#7a3a2a');R(22,42,276,6,'#6a3a2a');R(138,18,44,30,'#a85a3a');R(134,14,52,6,'#6a3a2a');R(150,24,20,20,'#f0ece4');R(159,26,2,9,'#222');R(160,33,7,2,'#222');
+  for(let r=0;r<2;r++)for(let i=0;i<9;i++)if(!(r===1&&i===4))wwin(38+i*28,56+r*28,16,14,0);R(144,92,32,30,'#4a2e22');R(146,94,13,28,'#6a4630');R(161,94,13,28,'#6a4630');R(200,6,2,40,'#ccc');R(202,8,16,10,'#b33');R(202,8,8,5,'#33a');
+  R(60,30,200,10,'#ffe066');g.save();g.font='7px KenPixel,monospace';g.fillStyle='#b33';g.fillText('HAVE AN AMAZING SUMMER!!',84,38);g.restore();
+  R(0,122,W,26,'#7ab04a');R(0,148,W,32,'#9a9aa2');for(let i=0;i<2;i++){const bx=200+i*-150;R(bx,140,70,24,'#f2c11e');R(bx+4,144,12,8,'#9ad');for(let j=0;j<4;j++)R(bx+20+j*12,144,9,8,'#9ad');R(bx+6,162,10,5,'#111');R(bx+52,162,10,5,'#111')}crowd(146,14,7,'#2a2a3a')}
+ else if(p==='bus'){fillG(0,0,W,120,GRD(0,0,0,120,[[0,'#7ab8f0'],[1,'#d8eefc']]));for(let i=0;i<3;i++){const cx=((T*4+i*140)%420)-60;R(cx,18+i*10,40,8,'#fff');R(cx+8,14+i*10,22,6,'#fff')}
+  for(let i=0;i<5;i++){const x=i*70-10;R(x,72,56,48,['#c8b8a0','#a8b8c8','#c8a8a0','#b8c8a8','#d0c0b0'][i]);for(let j=0;j<10;j++)R(x-2+j*3,72-j,60-j*6,1,'#6a4a3a');wwin(x+10,86,12,10,0);wwin(x+32,86,12,10,0)}
+  for(let i=0;i<6;i++)blobTree(10+i*60,116,18,'#3a7a3a','#5a9a4a');R(0,118,W,32,'#7ab04a');R(0,150,W,10,'#c8c8d0');for(let i=0;i<14;i++)R(i*24,150,1,10,'#a8a8b0');R(0,159,W,1,'#888');fillG(0,160,W,20,GRD(0,160,0,180,[[0,'#4a4a52'],[1,'#3a3a42']]));for(let i=0;i<6;i++)R(i*60+20,170,26,2,'#e8e0a0');
+  R(88,94,116,4,'#3a3a46');R(90,98,3,52,'#4a4a56');R(201,98,3,52,'#4a4a56');R(94,100,106,40,'rgba(200,230,255,.25)');R(94,100,1,40,'#fff8');R(100,136,92,4,'#4a4a56');R(214,70,4,80,'#555');R(206,62,20,14,'#e8202a');g.save();g.font='8px KenPixel,monospace';g.fillStyle='#fff';g.fillText('43',209,73);g.restore();
+  R(110,102,40,30,'#fff');R(112,104,36,4,'#e8202a');g.save();g.font='5px KenPixel,monospace';g.fillStyle='#333';g.fillText('43 · MAPLE RW',113,116);g.fillText('every 12 min',113,124);g.restore()}
+ else if(p==='station'){fillG(0,0,W,160,GRD(0,0,0,160,[[0,'#d8c4a0'],[1,'#b89c74']]));
+  for(let r=0;r<4;r++)for(let i=0;i<16;i++)R(i*20+(r%2)*10,4+r*10,18,8,r%2?'#c8b08a':'#d4bc94');for(let i=0;i<16;i++)R(i*20+8,6,4,4,'#e8c870');
+  for(let i=0;i<4;i++){const x=12+i*80;R(x,44,60,70,'#e8d8b8');R(x+4,48,52,62,'#fff4dc');R(x+29,48,2,62,'#c8b08a');R(x+4,78,52,2,'#c8b08a');R(x,40,60,6,'#a8885a');for(let k=0;k<3;k++){g.fillStyle='rgba(255,240,200,.07)';g.beginPath();g.moveTo(x+10+k*14,110);g.lineTo(x+30+k*30,160);g.lineTo(x+40+k*30,160);g.lineTo(x+16+k*14,110);g.fill()}}
+  R(96,118,128,22,'#0e0e12');R(98,120,124,18,'#16161c');g.save();g.font='6px KenPixel,monospace';g.fillStyle='#ffd060';g.fillText('SILVER METEOR   MIAMI   4:05P',101,128);g.fillText('TRACK 15         BOARDING',101,135);g.restore();R(158,112,4,6,'#8a6a3a');R(150,108,20,4,'#c8a050');
+  R(0,150,W,30,'#9a8a74');for(let x=0;x<W;x+=24)R(x,150,1,30,'#8a7a64');R(0,150,W,2,'#e8d8a0');crowd(150,10,3,'#4a3a3a');glow(160,40,160,'rgba(255,240,200,.18)')}
+ else if(p==='porch'){fillG(0,0,W,110,GRD(0,0,0,110,[[0,'#5a3a8a'],[.45,'#ff7a5a'],[1,'#ffd08a']]));glow(220,92,70,'rgba(255,190,110,.65)');R(208,80,24,16,'#fff0c8');R(204,84,32,8,'#fff0c8');
+  fillG(0,96,W,26,GRD(0,96,0,122,[[0,'#ff9a6a'],[1,'#c86a5a']]));for(let i=0;i<14;i++)R(180+hsh(i)*90,98+i*1.6,20+hsh(i+3)*20,1,'#ffe0a0');
+  for(let i=0;i<3;i++){const x=24+i*120;R(x+2,36+i*4,4,80-i*4,'#6a4a2a');for(let j=0;j<7;j++){const a=j/7*6.28;R(x+Math.cos(a)*16-6,32+i*4+Math.sin(a)*6,18,3,'#1e4a2a')}}
+  planks(0,122,W,58,'#9a7a52','#7a5a3a',16);R(0,118,W,6,'#7a5a3a');for(let x=0;x<W;x+=16)R(x,98,3,22,'#7a5a3a');R(0,98,W,3,'#8a6a4a');for(let i=0;i<18;i++){const x=i*18+6,y=8+Math.sin(i*.5)*5;R(x,y,2,2,'#ffe9a0');glow(x,y,6,'rgba(255,233,160,.6)')}
+  R(250,128,30,20,'#2a6a7a');R(252,130,26,16,'#5ac0d0');R(262,140,8,3,'#f6a8c8');R(40,112,6,30,'#c9a56a');R(37,108,12,6,'#c9a56a')}
+ else if(p==='nightbus'){R(0,0,W,H,'#08080e');fillG(0,10,W,60,GRD(0,10,0,70,[[0,'#0a0e20'],[1,'#141a34']]));for(let i=0;i<5;i++){const x=12+i*62;R(x,16,52,40,'#05060c');fillG(x+2,18,48,36,GRD(x,18,x,54,[[0,'#0c1428'],[1,'#1a2448']]))}
+  for(let i=0;i<6;i++){const x=((T*90+i*70)%400)-40;R(x,22,3,3,'#ffe9a0');glow(x,24,12,'rgba(255,220,140,.5)')}R(0,8,W,6,'#2a2a34');R(0,60,W,4,'#3a3a44');R(0,64,W,10,'#22222a');for(let i=0;i<6;i++){R(i*56+20,64,40,8,['#c23b3b','#2b4fd6','#e8e0d0'][i%3])}
+  for(let i=0;i<5;i++){R(30+i*60,6,3,124,'#8a8a96');R(30+i*60,6,3,2,'#ccc')}R(0,8,W,2,'#9a9aa8');
+  for(let r=0;r<3;r++){const y=96+r*10,s=1-r*.08;for(let i=0;i<5;i++)R(16+i*62,y,40*s,22,r===0?'#4a2a4a':'#3a2238');}R(0,130,W,50,'#1a1a22');for(let x=0;x<W;x+=12)R(x,130,1,50,'#22222c');glow(250,40,80,'rgba(255,220,160,.10)')}
+ else if(p==='records'){bgRecord(m)}
+ castDraw(m);if(m.caption){g.save();R(0,H-28,W,18,'#000a');g.font='7px KenPixel,monospace';g.fillStyle='#ffe066';g.textAlign='center';g.fillText(m.caption,160,H-16);g.restore()}};
+/* ---------- the path where she stays ---------- */
+Object.assign(K,{abbyDad:{n:'Abby’s Dad',skin:'#ecd2c4',hair:'#3a2a2a',hs:'short',top:'#4a5a6a',pants:'#2a2a34',wide:1,seed:94},abbyMum:{n:'Abby’s Mum',skin:'#ecd2c4',hair:'#1a1626',hs:'long',top:'#6a4a8a',pants:'#2a2a3a',seed:95}});Object.assign(NCOL,{'Abby’s Dad':'#4a5a6a','Abby’s Mum':'#6a4a8a'});
+async function abbyStays(AF){
+ await talk([['','She doesn’t say anything. Her eyes go very bright. She takes his hand, squeezes it once, hard, and walks away fast without looking back.'],['','The bushes are completely silent. The banner sags.'],['Corey','…Was that wrong? Did I say it wrong?'],['David','(standing up out of the bush) Corey. That was the rightest thing anybody has ever said.']]);await fromMemory();
+ await card('TWO WEEKS LATER','Union Station.',2400);
+ await toPost('station',[{id:'abbyDad',x:110,y:160,dir:1,phone:1},{id:'abbyMum',x:130,y:160,dir:1},{id:'corey',x:200,y:160,dir:-1}],'Union Station · Silver Meteor to Miami');
+ await talk([['','He comes to say goodbye. He brought the second tape. Her parents are on the platform with four suitcases.'],['','She isn’t with them.'],['Abby’s Dad','(into his phone) Abigail. ABIGAIL. The train is BOARDING. Pick up.'],['Abby’s Mum','You’re Corey.'],['Corey','…Yes. Hi. Sorry. Hi.']]);
+ await talk([['Abby’s Mum','She told us on Tuesday. She’s staying. With my brother. Above the record shop. For junior year.'],['Abby’s Dad','She said if we put her on this train she’d get off at Richmond and walk back.'],['Abby’s Mum','She’s never fought us on anything. Not once. Not even last year, when we— when everything ended.'],['Abby’s Mum','She stood in the kitchen and said, “I’ve done enough endings. I want to find out what happens when something stays.”'],['','Her dad looks at Corey for a long time. Then he holds out his hand.'],['Abby’s Dad','Bring her to Florida at Christmas. Both of you. On the train. You can sit four rows in front if you like.']]);
+ await fromMemory();await toPost('records',[{id:'girl',x:280,y:152,dir:-1},{id:'corey',x:110,y:160,dir:1}],'Maple Row Records · 4:30pm');
+ await talk([['','She’s behind the counter. She’s got Morrissey’s tank next to the till. She looks like she hasn’t slept in a fortnight and she’s smiling anyway.'],['Abby','I’m grounded. From four hundred miles away. Is that even legal?'],['Corey','You stayed.'],['Abby','You said the thing. At the bus stop. Nobody’s ever said a thing like that to me. I went home and screamed into a pillow for an hour.'],['Abby','Then I went downstairs and said no to my dad for the first time in my whole life.']]);
+ const k=await choose(['He kisses her across the counter.','He climbs over the counter and holds her.','He puts the second tape on.']);
+ await talk(k===0?[['','He kisses her across the counter. Morrissey bites the glass, which is the closest thing he has to applause.']]:k===1?[['','He climbs over the counter, knocks over the INDIE section, and holds her in the middle of three hundred spilled records.']]:[['','He puts the second tape on the shop stereo. Track one. She knows it in two notes. She comes round the counter and stands on his feet, and they dance between Breakup and Soul again.']]);
+ await talk([['Abby','What’s the tape called?'],['Corey','It was going to be “Songs for when something keeps going”.'],['Corey','I’m going to need a new label.']]);await fromMemory();
+ await card('9:00 PM','The 43.',1800);await toPost('nightbus',[{id:'corey',x:236,y:124,dir:-1,sit:true},{id:'girl',x:258,y:124,dir:-1,sit:true},...(AF?[{id:'aidan',x:110,y:124,dir:1,sit:true}]:[])],'The 43 · back seat · 9:00pm');
+ await talk([['','The back seat of the 43. Two earbuds. One song. No rows in between.'],...(AF?[['','Four rows in front, a boy with a bowl cut is sitting very still, facing forward.'],['Abby','(leaning forward) Hey. You. Four rows up.'],['','He turns round. Slowly. Like he’s been practising.'],['Aidan','…Hi.'],['Abby','Hi. There it is.']]:[['','Outside, DC goes past in streetlights. Inside, nobody turns the volume up, because they don’t need to.']])]);
+ await fromMemory();store.end.rABBY_STAY=1;save();await card('SONGS FOR WHEN SOMETHING STAYS','The Abby route — the ending where she stays.',3600);return true}
 
 /* ================= THE LAMP TIMELINE (only when built as lamp.html) ================= */
 if(window.LAMP_TIMELINE){
