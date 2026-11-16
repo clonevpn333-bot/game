@@ -2445,7 +2445,7 @@ const BN={t:9,i:0,q:null,scare:16};
 function ambient(dt){
  if(BN.q&&T>=BN.q.at&&S.subT<=.3){sub(BN.q.text);BN.q=null}
  if(S.phase==='r1'||S.phase==='r2'){
-  BN.t-=dt;if(BN.t>0||S.subT>0||BN.q)return;BN.t=rnd(9,15);
+  BN.t-=dt;if(BN.t>0||S.subT>0||BN.q)return;BN.t=rnd(20,30);
   const b=BANTER[BN.i++%BANTER.length];sub(K[b[0]].n+': '+b[1]);BN.q={text:K[b[2]].n+': '+b[3]+(b[4]?'   '+K[b[4]].n+': '+b[5]:'')+(b[6]?'   '+K[b[6]].n+': '+b[7]:''),at:T+3.7};
  }else if(S.aidanIn&&(S.phase==='allergens'||S.phase==='hunt')&&!AI.dead){
   BN.scare-=dt;if(BN.scare>0||S.subT>0)return;BN.scare=rnd(15,27);
@@ -4434,7 +4434,7 @@ const TWIST={none:['A NORMAL NIGHT',''],blackout:['BLACKOUT','The power’s been
 const twist=()=>store.run.twist||'none';
 {const _t=title;title=async function(){const ch=await _t();for(const id of pals)K[id].beat=K[id].bloody=K[id].wrap=K[id].melt=0;K.david.glasses=1;STREAM.on=false;
  if(ch===0){store.nights=(store.nights||0)+1;store.run.twist=store.nights===1?'none':one(Object.keys(TWIST).filter(k=>k!=='none'&&k!==store.lastTwist));store.lastTwist=store.run.twist;if(twist()==='tipsy')store.run.drunk=1;save();
-  const tw_=TWIST[twist()];await card('NIGHT '+store.nights,tw_[0]+(tw_[1]?' — '+tw_[1]:''),2600)}return ch}}
+  }return ch}}
 {const _fm=floorMove;floorMove=function(a,dt,sp){_fm(a,dt,(sp||74)*(twist()==='sugar'?1.28:1))}}
 {const _sh=setupHunt;setupHunt=function(m){_sh(m);if(twist()==='sugar'&&m)S.monsterHP=18;S.errand=null}}
 let strT=20,stormT=5;
@@ -4714,7 +4714,7 @@ const GOALS={clean:['Get all seven friends out alive.',(r,n)=>n===7],solo:['Be t
 {const _t=title;title=async function(){const ch=await _t();if(ch===0){const keys=Object.keys(FRIEND_STORIES),seen=store.storySeen??={};
   store.run.stories=shuffle(keys).sort((a,b)=>(seen[a]||0)-(seen[b]||0)).slice(0,3);for(const k of store.run.stories)seen[k]=(seen[k]||0)+1;
   store.run.goals=shuffle(Object.keys(GOALS)).slice(0,3);save();
-  await N('TONIGHT: '+store.run.stories.map(k=>FRIEND_STORIES[k].title).join(' · ')+'.');await N('DARES FOR TONIGHT — '+store.run.goals.map(g=>GOALS[g][0]).join('  /  '));
+  
   if(Object.keys(store.medals||{}).length>=4&&!(await choose(['Pick tonight’s twist yourself.','Keep it: '+TWIST[twist()][0]]))){const ks=Object.keys(TWIST);store.run.twist=ks[await choose(ks.map(k=>TWIST[k][0]))];if(twist()==='tipsy')store.run.drunk=1;save()}}return ch}}
 {const _sp=stagePlay;stagePlay=function(p,o){S.brk=(S.brk|0)+1;return _sp(p,o)}}
 {const _sh=setupHunt;setupHunt=function(m){_sh(m);const r=store.run;if(!m&&(r.diary||r.ambush))S.hp=Math.min(S.hp,2);if(m&&r.plush)S.monsterHP=Math.max(6,S.monsterHP-4)}}
@@ -4938,7 +4938,7 @@ async function spareAidan(){
 /* ---------- wiring ---------- */
 {const _t=title;title=async function(){const ch=await _t();if(ch===0){const keys=Object.keys(FRIEND_STORIES).filter(k=>!OFFTOPIC.includes(k)),seen=store.storySeen??={},A=['tapes','dolls','year7'];
   const first=shuffle(A).sort((a,b)=>(seen[a]||0)-(seen[b]||0))[0],rest=shuffle(keys.filter(k=>k!==first)).sort((a,b)=>(seen[a]||0)-(seen[b]||0)).slice(0,3);
-  store.run.stories=[first,...rest];seen[first]=(seen[first]||0)+1;save();await N('ALSO TONIGHT: '+FRIEND_STORIES[first].title+'. (Jay’s brownies, the fake ID and Hasan’s grandad are always there if you go looking. Nobody will remind you.)')}return ch}}
+  store.run.stories=[first,...rest];seen[first]=(seen[first]||0)+1;save();}return ch}}
 {const _sh=setupHunt;setupHunt=function(m){_sh(m);const r=store.run;if(m&&r.sewn)S.monsterHP=Math.max(6,S.monsterHP-3);if(!m&&r.shedBurned)sub('He knows you burned his party. He isn’t pretending to be nice any more.')}}
 Object.assign(GOALS,{shed:['Find out what’s in the shed.',r=>r.shedBurned||r.nameCard||r.satDown],sorry:['Remember who held the scissors.',r=>r.sorry],ninth:['Deal with the ninth doll.',r=>r.sewn||r.tucked]});
 
@@ -5255,7 +5255,7 @@ OFFTOPIC.length=0;for(const k of ['tin','fakeid','ashes'])FRIEND_STORIES[k].titl
 function questsTaken(){const s=socialState();return Object.keys(FRIEND_STORIES).filter(k=>s[k]&&(s[k].step>0||s[k].invited))}
 {const _sr=storyReady;storyReady=function(k){const s=socialState()[k];if(s&&s.step===0&&!s.invited&&questsTaken().length>=2)return false;return _sr(k)}}
 {const _t=title;title=async function(){const ch=await _t();if(ch===0){const fav=['race','snacks','pooldate'],have=store.run.stories||[];store.run.stories=[...new Set([...have,...fav.filter(()=>Math.random()<.6),'tin','fakeid','ashes','bunker'].filter(k=>FRIEND_STORIES[k]))];save();
-  await N('Tonight you can only commit to TWO big quests. Choose who you ride for.')}return ch}}
+  }return ch}}
 {const _hud=hud;hud=function(){_hud();if(S.play&&!busy&&socialRoam()){const n=questsTaken().length;$('obj').textContent+='\n• BIG QUESTS '+Math.min(n,2)+'/2'+(n>=2?' — you’re committed.':'')}}}
 /* ======== QUEST: JAY'S BAG (Corey + Arjun) ======== */
 Object.assign(FRIEND_STORIES.tin,{title:'Jay’s bag',cast:['corey','arjun'],lead:'corey',meet:[[1,80],[1,80],[0,700],[0,700]],places:['the guest room','the guest room','the front door','the front door'],
@@ -5450,7 +5450,7 @@ async function abbyRoom(co,gi){
 async function abbyEnding(sv){
  if(!store.run.crushDone)return;const alive=sv.includes('corey');await card('THREE WEEKS LATER','',2000);
  const old=mode,C={id:'corey',x:150,y:156,dir:1,sit:true,hidden:!alive},A={id:'girl',x:180,y:154,dir:-1,sit:true};await tw(view,{fade:1},500);MEM={scene:'under',kind:'abby',cast:[C,A],candle:true,back:old};mode='memory';await tw(view,{fade:0},500);cue('crush');
- if(alive){await talk([['','Her floor. The Lantern Keeper, finished. He read the last page out loud and she pretended she wasn’t crying, and he pretended he believed her.'],['','He opens the front cover. Blank. He writes in it, in pen, very carefully, while she pretends to tune the guitar.']]);
+ if(alive){await talk([['','Her floor. The Lantern Keeper, finished. He read the last page out loud. Her eyes were wet. She said it was the candle smoke.'],['','He opens the front cover. Blank. He writes in it, in pen, very carefully. She tunes the guitar and doesn’t look over, not once.']]);
   await N('“Abby — I said I’d tell you what I thought of the ending. Here it is.”');
   await N('“I think the keeper was waiting for someone to climb up the stairs and stop asking him to be the light.”');
   await N('“Most people only ever look at me. You were the first one who looked at the back of my head at a bus stop and decided to stay. I don’t know how to be anything except good-looking. Teach me. I’ll learn. I’ll learn all of it.”');
@@ -5490,7 +5490,7 @@ if(!window.LAMP_TIMELINE){
  {const _th=things;things=function(){return _th().filter(o=>!/folded photo|parcel|book with Corey|take the book/i.test(o.label||''))}}
  coreyHint=function(){if(!socialRoam()||A_.corey.dead)return null;if(!coreyPhotoFound())return 'COREY: something is tucked under the lava lamp.';const q=socialState().abby;if(q&&q.step<4)return 'COREY & ABBY: part '+(q.step+1)+'/4 — talk to Corey.';return null};
  {const _f=findCoreyPhoto;findCoreyPhoto=async function(){await _f();await N('It’s a printout of an Instagram profile: @abby.3am. Someone has drawn a tiny heart next to it, then scribbled it out so hard the paper tore.');sub('Talk to Corey. Bring the printout.')}}
- {const _sr=storyReady;storyReady=function(k){if(k!=='abby')return _sr(k);const q=socialState().abby;if(!socialRoam()||!coreyPhotoFound()||q.step>=4||A_.corey.dead||A_.arjun.dead)return false;if(q.step===0&&!q.invited&&questsTaken().length>=2)return false;return true}}
+ {const _sr=storyReady;storyReady=function(k){if(k!=='abby')return _sr(k);const q=socialState().abby;if(!socialRoam()||!coreyPhotoFound()||q.step>=4||A_.corey.dead)return false;if(q.step===0&&!q.invited&&questsTaken().length>=2)return false;return true}}
 }
 FRIEND_STORIES.abby={title:'Corey vs Abby',cast:['corey','arjun'],lead:'corey',meet:[[0,500],[1,480],[0,700],[0,700]],places:['the living room','the game room','the front door','the front door'],needs:{},
  invite:['“Arjun’s got my phone. ARJUN HAS MY PHONE. Living room. NOW.”','“She replied. Everyone wants to help. Nobody is allowed to help. Game room.”','“She said come over and bring the idiots. You’re the idiots. Front door.”','“Her light’s still on. One more time. Front door.”']};
@@ -5652,7 +5652,7 @@ BANTER.sort(()=>Math.random()-.5);
  if(r.gaz)set('david',r.gaz==='police'?'Lives with his mum at his auntie’s now. Still carries the bent frying pan. Calls it “Gaz”.':r.gaz==='aidan'?'Sleeps fine. Doesn’t ask what the noise in the drain is. Never will.':'Says he didn’t mean it. Means it a bit.');
  if(r.partyKill)set('hasan',r.devDead?'juniors cross the road when they see him. He has never been more invited to things.':'Still has the hoodie. Can’t wash it. Can’t throw it away.');return L}}
 {const _m=menu;menu=async function(html,btns){if(/THE CALL<br>ENDED/.test(html))html+=auraBoard();return _m(html,btns)}}
-Object.assign(GOALS,{abby:['See Abby beat Corey at everything.',r=>r.crushDone],gaz:['Deal with Gaz.',r=>!!r.gaz],party:['Survive the junior party.',r=>r.partyKill],aura:['Finish with positive aura.',r=>(r.aura||{}).you>0]});
+Object.assign(GOALS,{abby:['Get Corey and Abby together.',r=>r.crushDone],gaz:['Deal with Gaz.',r=>!!r.gaz],party:['Survive the junior party.',r=>r.partyKill],aura:['Finish with positive aura.',r=>(r.aura||{}).you>0]});
 
 {const _t=title;title=async function(){const ch=await _t();if(ch===0){store.run.stories=Object.keys(FRIEND_STORIES).filter(k=>window.LAMP_TIMELINE?k!=='abby':k!=='curlfather');save()}return ch}}
 /* ================= PASS 17: no aura, quest log, relics, the secret ending, crazier old quests ================= */
@@ -5996,6 +5996,75 @@ questLog=function(){const hideUI=v=>{for(const id of ['foot','tools','pad'])if($
   '<div style="margin-top:12px;padding:10px;border-radius:8px;background:'+(allRelics()?'#3a1018':'#15121c')+';border:1px dashed '+(allRelics()?'#ff5a4a':'#3a3348')+';font-size:10px">'+(allRelics()?'🩸 <b style="color:#ff5a4a">Every relic is on the table.</b> A new option is waiting on the title screen.':'❓ Finish quests, take what they leave behind. Collect every relic and something wakes up.')+'</div></div>';
  document.body.appendChild(QLOG);$('qlog-close').onclick=questLog;QLOG.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{QTAB=b.dataset.tab;questLog();questLog()})};
 
+/* ================= PASS 19: Corey & Abby (just them), and a calmer game ================= */
+FRIEND_STORIES.abby.cast=['corey'];
+FRIEND_SCENES.abby=[
+ async q=>{const co=A_.corey;co.phone=1;
+  await talk([['','All night, Corey has been blasting Skull Engine off his speaker. “KILL THE LIGHTS”, on repeat, loud enough that Omer left the room twice.'],['','Now he’s alone in the dark kitchen with one earbud in. The song leaking out of it is so quiet you have to lean in.'],['You','Is that… The Lanterns?'],['Corey','No.'],['','It’s The Lanterns. “Small Hours”. The saddest band in the country. The song people play when someone leaves them.']]);
+  await talk([['Corey','There’s a girl.'],['Corey','She sits at the back of the 43 with her headphones on. I sit four rows in front. Every day. For a year.'],['Corey','I can talk to anyone. I walk into a room and the room turns round. I can’t turn round on a BUS.'],['Corey','I’ve never even said hi. I don’t know what my face does when I look at her. I’m scared it does something stupid.'],['','He shows you the printout from under the lava lamp. @abby.3am. A heart he drew. A scribble over the heart.'],['Corey','Don’t tell the others. Not yet. Please.']]);
+  const c=await choose(['“Message her. Tonight. You’ve got nothing to lose.”','“Mate, she’s way out of your league.” (as a joke)']);
+  if(c){mess();await talk([['Corey','…Yeah. Yeah, probably.'],['','He puts the earbud back in. He turns the volume up until you can’t hear it any more.'],['','You stand there for a second too long. It was a joke. It didn’t land like one.']]);
+   if(!(await choose(['“That came out wrong. You should message her.”','Leave it.'])))await talk([['Corey','…You think?'],['You','I think she’d be lucky.'],['Corey','Okay. Okay. Tonight.']])}
+  else await talk([['Corey','Tonight.'],['Corey','…Tonight. Okay. Okay. Oh, I feel sick.'],['You','That’s love. Or the samosas.']]);co.phone=0;q.outcome='Corey has a soft song and a big secret'},
+ async q=>{const co=A_.corey;co.phone=1;co.sit=true;
+  await talk([['','The game room. Corey has told them. For once, nobody is being horrible. Sean sits on one side of him. David brings snacks and doesn’t eat any. Omer has a notepad and is just holding it.'],['Sean','The first message is the worst. After that it’s just the second worst, forever.'],['','Corey types “hey.” Deletes. Types “hi.” Deletes. Types “I sit four rows in front of you on the 43.”'],['','His thumb hovers over SEND.']]);
+  SFX.blip(880);fx(.15,'');await talk([['','Before he presses it, his phone buzzes.'],['','abby.3am: “hey. you’re the boy on the 43 who gives his seat away and pretends he wanted to stand.”'],['','Corey drops the phone. Nobody breathes. Then six people scream into six pillows at the same time.'],['David','(into a cushion) SHE MESSAGED HIM. SHE MESSAGED HIM FIRST.'],['Corey','She was— at the same time? She was writing to ME?']]);
+  await talk([['','Three dots. They stop. They start again.'],['','abby.3am: “ok honest question. what are you always listening to. it sounds soft through your hood. it doesn’t sound like you.”']]);
+  const c=await choose(['Corey tells the truth: “The Lanterns. Small Hours.”','Corey plays it cool: “Skull Engine. Heavy stuff.”']);
+  if(c===0)await talk([['','The dots appear. Disappear. Appear.'],['','abby.3am: “that’s my favourite song.”'],['','abby.3am: “that’s what i listen to on the bus. behind you. every day.”'],['','Corey puts his face in his hands. When he takes them away he’s smiling in a way nobody in this room has ever seen.']]);
+  else{mess();await talk([['','abby.3am: “oh. cool.”'],['','A minute later: “i could’ve sworn it was something softer. never mind.”'],['','Corey looks at the screen like he’s dropped something down a drain.'],['Sean','Tell her. Tell her the real one.'],['','He does. “It’s The Lanterns. Small Hours. Sorry. I don’t know why I lied.”'],['','abby.3am: “…that’s my favourite song.”']])}
+  await talk([['','abby.3am: “my uncle has the record shop on maple row. i have keys. come at 2? i’ll play you the b-side. nobody’s heard it.”'],['Corey','I can’t go.'],['Everyone','YOU CAN GO.']]);co.phone=0;co.sit=false;q.outcome='She messaged him first'},
+ async q=>{const prev=scoreName,co={id:'corey',x:120,y:160,dir:1},gi={id:'girl',x:280,y:152,dir:-1};
+  await N('You walk him to Maple Row. He changed his hoodie twice. You’re the lookout, outside the shop window, in the rain.');
+  await toStage({records:true,cast:[gi,co]});cue('crush');
+  await talk([['','She’s behind the counter. She looks up. He looks at the floor.'],['','He looks at the INDIE section. At his shoes. At a poster of a band he hates. At everything in the shop except her.'],['Abby','You can look at me. I won’t bite.'],['Abby','Morrissey bites. I don’t.'],['Corey','Who’s Morrissey?'],['Abby','My axolotl. He’s a nightmare. You’d like him.']]);
+  gi.y=158;await mvc(gi,170,1400);gi.dir=-1;MEM.notes=true;await talk([['','She puts a record on. The B-side of “Small Hours”. A crackly demo, the singer laughing halfway through a line because he got it wrong.'],['','She holds out one side of her headphones. He has to stand close to share them.'],['','And then, because there’s nowhere else to look, he finally looks at her.'],['','Purple eyes. Blue and purple in her hair. A chipped front tooth you could never have seen from four rows away. She doesn’t look away. She waits.'],['Corey','…Hi.'],['Abby','Hi. There it is.']]);
+  await talk([['Corey','Everyone looks at me. My whole life. Nobody’s ever… stayed long enough to see anything.'],['Abby','My mum and dad split up last year. These songs got me through it. They’re songs for when something ends.'],['Abby','I wanted to know what they sounded like when something starts.']]);
+  const c=await choose(['Give him a thumbs up through the window.','Text him a pickup line.','Look away. Give them this one.']);
+  if(c===1){mess();SFX.blip(880);await talk([['','His phone buzzes. He reads it out loud before his brain catches up.'],['Corey','“Are you a record? Because I’d… spin you… all night”—'],['Corey','That was NOT me. That was my friend. In the window. That one.'],['','She turns, sees you standing in the rain, and laughs so hard she has to hold onto the counter.'],['Abby','Your friends are idiots.'],['Corey','They are. I love them.']])}
+  else if(c===0)await N('He sees your thumb. He doesn’t give one back. He just mouths “thank you”, and turns back to her.');
+  else await N('You look at the wet street instead. It feels like the most important thing you’ve done all night.');
+  gi.pose='hug';co.pose='hug';await mvc(co,156,800);await talk([['','The song ends. The needle clicks in the run-out groove, round and round. Neither of them moves to turn it off.'],['Abby','Dance with me. In the aisle. Between Breakup and Soul.'],['Corey','I can’t dance.'],['Abby','I know. I’ll stand on your feet.']]);
+  MEM.heart=true;await talk([['','They sway between the racks while the rain does all the drumming. When you look up, there’s a heart drawn in the dust on the outside of the window.'],['','You didn’t draw it. Neither did they. Next to it, smaller, somebody has drawn a bowl.']]);
+  co.pose=gi.pose=null;await fromMemory();cue(prev);q.outcome='They danced between Breakup and Soul'},
+ async q=>{const prev=scoreName,gi={id:'girl',x:204,y:104,dir:-1,sit:true},co={id:'corey',x:150,y:160,dir:1},cast=[gi,co],hedge=[];
+  for(const [i,id] of ['you','david','sean','hasan','omer','nivaan'].entries()){if(id!=='you'&&A_[id].dead)continue;const c={id,x:20+i*13,y:158+(i%2)*3,dir:1,phone:id!=='you'};cast.push(c);hedge.push(c)}
+  await toStage({purple:true,cast});cue('crush');
+  await talk([['','He made her a tape. An actual cassette, on your dad’s old deck, with a hand-drawn cover: SONGS FOR WHEN SOMETHING STARTS.'],['','Eleven soft songs by bands that only ever wrote about endings. He put them in an order. He wrote why next to each one.'],['','He stands under her window with your dad’s boombox held over his head. In the hedge behind him, the others hold up their phone torches like it’s a concert.'],['Omer','(whispering) It’s a reference. From an old film. I’ve explained it to David four times.'],['David','(whispering) I GET it. I just think it’s BEAUTIFUL.']]);
+  SFX.click();await wait(500);for(let i=0;i<3;i++){tone(523+i*131,.6,'triangle',.05);await wait(300)}
+  gi.sit=false;await tw(gi,{x:214,y:160},300);gi.dir=-1;await mvc(co,198,900);
+  await talk([['Abby','You made me a TAPE.'],['Corey','I didn’t know how else to say it. I can say anything to anyone except you. So I let them say it.'],['Corey','I’m scared. I’m scared of looking at you. And I’m more scared of not getting to.'],['Abby','I wrote you nine messages this year. I sent one. Tonight.'],['Abby','You weren’t the only one four rows from saying something.']]);
+  if(ROM()>=2){await talk([['Abby','I like you. I do. But tonight you keep trying to be who they expect. A bit.'],['Abby','Can we go slow? Bus. Back seat. Both of us. Tomorrow.'],['Corey','…Yeah. Yeah. I’d like that more than anything.'],['','She hugs him. It isn’t the end of a film. It’s the start of an ordinary Tuesday, and he looks like he’s been handed the moon.']]);store.run.abby=0}
+  else{const k=await choose(['He kisses her.','He hugs her.','He just holds her hand.']);store.run.abby=k===0?1:k===1?0:2;
+   if(k===0)await talk([['','He kisses her. Quick. Terrified. She kisses him back. Slower. The tape keeps playing on the wet grass.'],['','In the hedge, five phone torches start to wobble.']]);
+   else if(k===1)await talk([['','He hugs her like he’s been holding his breath for a year. Her arms go round him and stay there.']]);
+   else await talk([['','He takes her hand. She doesn’t let go. They sit on her front step in the rain and listen to the whole of side A without saying a word.']]);
+   await talk([['David','(in the hedge, sobbing) I’m not crying. It’s hay fever.'],['Hasan','It’s NOVEMBER, David.'],['David','IT’S EMOTIONAL HAY FEVER.'],['Omer','(quietly) Nobody say anything. Leave him this one.']])}
+  await talk([['','She takes out one earbud and holds it out to him. They sit on the step. You lead the hedge home, and nobody says a single word the whole way, which has never happened before.'],['','At the end of Maple Row, on a garden wall, Aidan is sitting alone, listening to the same song through his tinny phone speaker. He’s crying.'],['Aidan','Is that what it sounds like? When someone picks you?'],['','Nobody answers him. You all walk a little faster. It doesn’t feel as good as it should.']]);
+  for(const h of hedge)mvc(h,-30,1800);await wait(1600);await fromMemory();cue(prev);store.run.crushDone=true;store.run.abbySave=true;save();q.outcome=ROM()>=2?'They’re going slow. Back seat of the 43.':'Songs for when something starts'}];
+/* ---------- a calmer HUD: one objective, one next step ---------- */
+function nextStep(){if(!S.play||busy||!socialRoam())return '';if(S.errand)return S.errand.label;
+ if(S.chaos)return '!! '+CHAOS[S.chaos].t;if(S.lead)return S.lead.label;const s=socialState();
+ for(const k of questKeys()){const q=s[k];if(q&&q.invited){const d=FRIEND_STORIES[k];return 'Meet '+d.cast.map(id=>K[id].n).join(' & ')+' at '+(d.places[q.step]||'the meeting spot')+'.'}}
+ const todo=S.todo&&Object.values(S.todo)[0];if(todo)return todo;const ch=coreyHint&&coreyHint();if(ch)return ch;
+ if(questsTaken().length<2&&applesLeft()>0)return 'Walk up to a friend with a ! above them to start a quest.';return ''}
+{const _h=hud;hud=function(){_h();if(!S.play||busy){return}const base=S.obj||'',nx=nextStep();$('obj').textContent=base+(nx?'\n▶ '+nx:'')+(socialRoam()?'\n[Q] Quest log':'')}}
+BN.t=Math.max(BN.t,20);{const _pu=playUpdate;playUpdate=function(dt){const t=BN.t;_pu(dt);if(BN.t>t&&BN.t<17)BN.t+=10}}
+/* ---------- one briefing screen instead of a wall of messages ---------- */
+function briefing(){return new Promise(res=>{const first=!store.briefed,tw_=TWIST[twist()]||['A NORMAL NIGHT',''];const el=document.createElement('div');
+ el.style.cssText='position:fixed;inset:0;z-index:1000;overflow:auto;background:#0b0912;color:#e8e0d0;font:11px KenPixel,monospace;line-height:1.5;display:flex;align-items:center;justify-content:center';
+ const li=(i,t)=>'<div style="display:flex;gap:8px;margin:5px 0"><span style="font-size:15px;width:22px;text-align:center">'+i+'</span><span>'+t+'</span></div>';
+ el.innerHTML='<div style="max-width:560px;padding:20px 16px"><div style="color:#8a80a0;font-size:10px">NIGHT '+(store.nights||1)+(window.LAMP_TIMELINE?' · THE LAMP TIMELINE':'')+'</div><h2 style="margin:4px 0 2px;color:#ffe066;font-size:20px">'+tw_[0]+'</h2><div style="color:#b8aec8;margin-bottom:14px">'+(tw_[1]||'No twist. Just eight friends, one house, and a phone that keeps ringing.')+'</div>'+
+  '<div style="padding:10px 12px;border-radius:8px;background:#1e1a2a;margin-bottom:10px"><b style="color:#fff">HOW TONIGHT WORKS</b>'+li('💬','Talking to friends is always free.')+li('🍎','You have <b>8 apples</b>. Each part of a quest eats one.')+li('❗','A <b>!</b> over a friend means a quest. You can commit to <b>2 big quests</b> a night.')+li('💎','Finish a quest, take its relic. Collect them all…')+li('📒','Lost? Press <b>Q</b> (or QUESTS) any time. It pauses the game.')+(first?li('🎮','Move: WASD / arrows · Act: E · Throw/knife: F · Dodge: Shift · Map: Tab'):'')+'</div>'+
+  ((store.run.goals||[]).length?'<div style="padding:10px 12px;border-radius:8px;background:#1e1a2a;margin-bottom:12px"><b style="color:#fff">TONIGHT’S DARES</b> <span style="color:#8a80a0">(optional)</span>'+store.run.goals.map(g=>li('🎯',GOALS[g][0])).join('')+'</div>':'')+
+  '<button id="brief-go" style="width:100%;padding:10px;border-radius:8px;border:0;background:#ffe066;color:#111;font:inherit;font-size:13px;cursor:pointer">START THE NIGHT ▶</button></div>';
+ document.body.appendChild(el);const go=()=>{removeEventListener('keydown',kd);el.remove();store.briefed=1;save();res()};const kd=e=>{if(['enter',' ','e'].includes(e.key.toLowerCase())){e.preventDefault();go()}};addEventListener('keydown',kd);$('brief-go').onclick=go})}
+{const _t=title;title=async function(){const ch=await _t();if(ch===0&&!FAST)await briefing();return ch}}
+
+
+Object.assign(GOALS,{abby:['Get Corey and Abby together.',r=>r.crushDone]});
+let NEAR_ONLY=null;{const _sr=storyReady;storyReady=function(k){if(NEAR_ONLY&&!NEAR_ONLY.has(k))return false;return _sr(k)}}
+{const _df=drawFriendInvitations;drawFriendInvitations=function(){const p=A_.you,seen=new Set,list=Object.keys(FRIEND_STORIES).filter(k=>{const a=A_[FRIEND_STORIES[k].lead];return a&&a.floor===p.floor&&Math.abs(a.x-p.x)<150&&storyReady(k)}).sort((x,y)=>Math.abs(A_[FRIEND_STORIES[x].lead].x-p.x)-Math.abs(A_[FRIEND_STORIES[y].lead].x-p.x)).filter(k=>{const l=FRIEND_STORIES[k].lead;if(seen.has(l))return false;seen.add(l);return true}).slice(0,2);NEAR_ONLY=new Set(list);try{_df()}finally{NEAR_ONLY=null}}}
 /* ================= THE LAMP TIMELINE (only when built as lamp.html) ================= */
 if(window.LAMP_TIMELINE){
  findCoreyPhoto=async function(){if(coreyPhotoFound())return;S.secret=2;socialState().hidden.photo=true;SFX.pick();socialSave();
