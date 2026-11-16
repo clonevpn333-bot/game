@@ -734,7 +734,7 @@ function draw(){
  else if(mode==='call')drawCall();
  else if(mode==='memory')drawMemory();
  else{
-  if(view.zoom!==1){const fx=X(view.focus),fy=view.focusY;g.translate(fx,fy);g.scale(view.zoom,view.zoom);g.translate(-fx,-fy)}
+  if(view.zoom!==1&&view.phone>0){const fx=X(view.focus),fy=view.focusY;g.translate(fx,fy);g.scale(view.zoom,view.zoom);g.translate(-fx,-fy)}
   drawHouse();
  }
  g.restore();
@@ -6920,7 +6920,7 @@ const pinned=c=>!!(c&&(c===AI||c.taped));
    shockwaves, screen cracks, rage auras, chromatic split, title stamps. Works in the house and in every scene. */
 var CINE={ts:1,hs:0,rt:0,fl:null,imp:null,spd:null,cut:null,cracks:[],rings:[],trails:[],rgb:0,stamp:null,slow:null};
 const cineOff=()=>FAST;
-function scr(c){if(!c)return {x:W/2,y:H/2};const y=(c.y||150)-14;if(mode==='house'){const fx=X(view.focus),fy=view.focusY,z=view.zoom;return {x:fx+(X(c.x)-fx)*z,y:fy+(y-fy)*z}}return {x:c.x,y}}
+function scr(c){if(!c)return {x:W/2,y:H/2};const y=(c.y||150)-14;if(mode==='house'){const fx=X(view.focus),fy=view.focusY,z=view.phone>0?view.zoom:1;return {x:fx+(X(c.x)-fx)*z,y:fy+(y-fy)*z}}return {x:c.x,y}}
 const cine={
  flash(col='#fff',dur=.12){if(cineOff())return;CINE.fl={col,t0:CINE.rt,dur}},
  impact(c,dur=.16){if(cineOff())return;const p=c&&c.x!=null&&c.y!=null&&!c.sx?scr(c):(c||{x:W/2,y:H/2});CINE.imp={x:c&&c.sx!=null?c.sx:p.x,y:c&&c.sy!=null?c.sy:p.y,t0:CINE.rt,dur};try{noise(.18,.9,180,1);tone(70,.35,'sawtooth',.25,30)}catch(e){}},
