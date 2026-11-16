@@ -8,7 +8,7 @@ const {chromium}=require('playwright');const path=require('path');
 const file=process.argv.find(a=>/\.html$/.test(a))||'index.html',verbose=process.argv.includes('-v');
 (async()=>{const b=await chromium.launch();const p=await b.newPage({viewport:{width:960,height:600}});const errs=[];p.on('pageerror',e=>errs.push(e.message));
 await p.addInitScript(()=>{window.NOAUTO=1;localStorage.clear()});await p.goto('file://'+path.resolve(__dirname,'..',file));await p.waitForTimeout(500);
-const res=await p.evaluate(async()=>{FAST=true;window.STAGE_AUDIT=true;$('menu').style.display='none';menu=()=>new Promise(()=>{});
+const res=await p.evaluate(async()=>{FAST=true;window.STAGE_AUDIT=true;$('menu').style.display='none';menu=()=>new Promise(()=>{});offerRelic=async()=>{};
  const LOG={};let CUR='';STAGELOG=[];const flush=()=>{(LOG[CUR]??=[]).push(...STAGELOG.splice(0))};
  let PICK=0;choose=o=>Promise.resolve((PICK++)%o.length);
  const R0=ph=>{S=fresh();placeLiving();resetAidan();mode='house';S.phase=ph||'r2';S.play=true;busy=true;store.run={stories:Object.keys(FRIEND_STORIES)};S.secret=2;socialState().hidden.photo=true;for(const id of pals)A_[id].bag={x:A_[id].x,y:A_[id].y};S.stageResolve=()=>{};PREVSIG=''};
@@ -20,7 +20,7 @@ const res=await p.evaluate(async()=>{FAST=true;window.STAGE_AUDIT=true;$('menu')
  const extra={royale:()=>royale(),parentCall:()=>parentCall(),crackQuest:()=>crackQuest(),poolChaos:()=>poolChaos({}),biteChapter:async()=>{S.monster=true;S.aidanIn=true;await biteChapter()},
   beatdown1:()=>seanBeatdown(1),beatdown2:()=>seanBeatdown(2),beatdown3:()=>seanBeatdown(3),
   intro:()=>intro(),act2:()=>act2(),sleepover:()=>sleepover(),transform:async()=>{S.aidanIn=true;AI.floor=0;AI.x=400;await transformScene()},monsterDeath:async()=>{S.monster=true;S.aidanIn=true;AI.floor=0;AI.x=400;await monsterDeath()},
-  epilogueAll:()=>epilogue([...pals]),epilogueFew:()=>{loseFriend(A_.david);loseFriend(A_.sean);return epilogue(livingFriends())}};
+  defend:()=>{stagePlay=async()=>'go';return defendHouse()},chair:async()=>{S.floor=1;for(const id of pals){A_[id].floor=1;A_[id].bag={x:A_[id].x,y:160}}await davidChair()},fb1:()=>FLASH.fb1(),fb2:()=>FLASH.fb2(),fb3:()=>FLASH.fb3(),fb4:()=>FLASH.fb4(),gHasan:()=>playGroup('gHasan'),gArjun:()=>playGroup('gArjun'),gDavid:()=>playGroup('gDavid'),gOmer:()=>playGroup('gOmer'),gNivaan:()=>playGroup('gNivaan'),gSean:()=>playGroup('gSean'),gCorey:()=>playGroup('gCorey'),epilogueAll:()=>epilogue([...pals]),epilogueFew:()=>{loseFriend(A_.david);loseFriend(A_.sean);return epilogue(livingFriends())}};
  stagePlay=async()=>'ready';
  for(const [k,f] of Object.entries(extra))await go(k,f);
  // every narration line in the file, fed straight to the engine with everyone on screen
