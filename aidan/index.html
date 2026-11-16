@@ -2028,6 +2028,7 @@ async function act2(){
  else {S.rage++;await say('Aidan','You only laugh when you aren’t looking at me.')}
  await say('Aidan','I brought snacks. Nobody asked. But I brought them.');
  await phoneOut();cue('street');S.winSeen=false;
+ await parentCall();
  await stagePlay('r2','Check the living-room window.\nGather at the downstairs rug when you’re ready.');
  await gatherForGroup(0, 'You', 'Everyone, back to the rug. We need to decide what to do about him.');
  S.callStage=3;S.callMad=2;await ringPhone();await phoneIn('you');
@@ -6503,6 +6504,110 @@ function clearVisitors(){for(const id of VISIT)if(!pals.includes(id))delete A_[i
  if(/\b(hands? (him|her|you) (the|a|his|her))\b/.test(low)&&a)set(a,'reach');
  if(/\b(cries|crying|sobbing|tears)\b/.test(low)&&a)a.tears=T+5}}
 {const _dh=drawHouse;drawHouse=function(){for(const id of [...pals,...VISIT]){const a=A_[id];if(a&&a.hopT>T)a.y-=0}_dh()}}
+
+/* ================= PASS 26: camera follows, the parents' call, "u tryna crack", Hasan's pool disaster ================= */
+/* ---------- camera follows whoever is acting ---------- */
+let CAMT=null;
+function camTarget(n,t){if(mode!=='house'||!busy)return;let x=null;if(n){const id=speakerId(n);const a=id==='you'?A_.you:(A_[id]||(id==='aidan'&&S.aidanIn&&AI.floor===S.floor?AI:(id==='aidan'?A_.aidanV:null)));if(a&&a.floor===S.floor&&a.vis!==false&&!a.dead)x=a.tx!=null?(a.x+a.tx)/2:a.x}
+ else{const s=subjectsFor(t||'').filter(c=>c.floor===S.floor);if(s.length)x=s.reduce((m,c)=>m+c.x,0)/s.length}if(x!=null)CAMT=x}
+{const _say=say;say=function(n,t){try{camTarget(n,t)}catch(e){}return _say(n,t)}}
+{const _co=cameraOn;cameraOn=async function(x,z){CAMT=x;return _co(x,z)}}{const _cb=cameraBack;cameraBack=async function(){CAMT=null;return _cb()}}
+{const _u=update;update=function(dt){if(CAMT!=null&&busy&&mode==='house'){cam.tx=CAMT-160;if(view.zoom>1)view.focus+=(CAMT-view.focus)*Math.min(1,dt*3)}else if(!busy)CAMT=null;_u(dt)}}
+/* ---------- video-call grid ---------- */
+Object.assign(K,{arjunMum:{n:'Arjun’s Mum',skin:'#b9835c',hair:'#1a1210',hs:'long',top:'#c86a3a',pants:'#3a2a3a',seed:111},davidMum:{n:'David’s Mum',skin:'#e8c0a0',hair:'#8a5a2a',hs:'long',top:'#5a7a5a',pants:'#3a3a44',wide:1,seed:112},omerDad:{n:'Omer’s Dad',skin:'#d8a880',hair:'#2a2a2a',hs:'short',top:'#3a5a8a',pants:'#2a2a34',glasses:1,seed:113},
+ nivaanMum:{n:'Nivaan’s Mum',skin:'#b9835c',hair:'#2a1a12',hs:'curly',top:'#8a3a6a',pants:'#2a2a3a',seed:114},seanDad:{n:'Sean’s Dad',skin:'#f0c8a8',hair:'#c9a24a',hs:'short',top:'#4a4a4a',pants:'#2a2a34',wide:1,seed:115},
+ g1:{n:'Jasmine',skin:'#c99a76',hair:'#1a1210',hs:'long',top:'#e86aa0',pants:'#2a2a3a',seed:121},g2:{n:'Tia',skin:'#8a5a3a',hair:'#1a1210',hs:'curly',top:'#ffe066',pants:'#2a2a3a',seed:122},g3:{n:'Maddie',skin:'#f0d0b8',hair:'#c9a24a',hs:'long',top:'#7ab8ff',pants:'#2a2a3a',seed:123},
+ g4:{n:'Lou',skin:'#e8c0a0',hair:'#b3343c',hs:'short',top:'#3a8a5a',pants:'#2a2a3a',seed:124},g5:{n:'Zara',skin:'#b9835c',hair:'#3a2418',hs:'long',top:'#9a4ae8',pants:'#2a2a3a',seed:125},g6:{n:'Kenzie',skin:'#f0d8c8',hair:'#e8e0d0',hs:'long',top:'#222',pants:'#2a2a3a',seed:126}});
+Object.assign(NCOL,{'Arjun’s Mum':'#c86a3a','David’s Mum':'#5a7a5a','Omer’s Dad':'#3a5a8a','Nivaan’s Mum':'#8a3a6a','Sean’s Dad':'#4a4a4a',Jasmine:'#e86aa0',Tia:'#c9a020',Maddie:'#5a8ac8',Lou:'#3a8a5a',Zara:'#9a4ae8',Kenzie:'#888'});
+function drawGrid(m){R(0,0,W,H,'#08080e');g.save();g.font='7px KenPixel,monospace';g.fillStyle='#ffe066';g.fillText(m.title||'',8,11);g.fillStyle='#8a80a0';g.fillText((m.tiles.length)+' on call',W-60,11);g.restore();
+ const n=m.tiles.length,cols=n<=4?2:n<=9?3:4,rows=Math.ceil(n/cols),tw=Math.floor((W-10)/cols),th=Math.floor((H-30)/rows);
+ m.tiles.forEach((t,i)=>{const x=5+(i%cols)*tw,y=15+(i/cols|0)*th,live=talker&&(talker===t.label||talker===(K[t.id]&&K[t.id].n)||(t.id==='you'&&talker==='You'));
+  R(x,y,tw-3,th-3,live?'#ffe066':'#2a2438');fillG(x+1,y+1,tw-5,th-5,GRD(x,y,x,y+th,[[0,t.bg||'#2a2a3a'],[1,'#121218']]));if(t.room)R(x+4,y+4,10,8,'#ffffff18');
+  g.save();g.beginPath();g.rect(x+1,y+1,tw-5,th-5);g.clip();const s=Math.min(2.2,(th-6)/22);g.translate(x+tw/2-1,y+th+4*s);g.scale(s,s);
+  if(t.crowd){for(let j=0;j<t.crowd.length;j++){g.save();g.translate((j-(t.crowd.length-1)/2)*9,0);drawKid(K[t.crowd[j]],0,0,{still:1,dir:j%2?-1:1,scared:m.scared})}g.restore()}else drawKid(K[t.id],0,0,{still:1,dir:1,talk:live,horror:t.id==='aidan',phone:t.phone,bowl:t.bowl});
+  g.restore();if(t.frozen&&Math.sin(T*20)>0){for(let k=0;k<6;k++)R(x+2,y+2+k*((th-6)/6),tw-7,2,'#ffffff22')}
+  if(t.blood)R(x+tw/2-2,y+th/2-2,3,8,'#b3121e');R(x+1,y+th-11,tw-5,8,'#000a');g.save();g.font='6px KenPixel,monospace';g.fillStyle=live?'#ffe066':'#fff';g.fillText((t.muted?'🔇 ':'')+t.label,x+4,y+th-5);g.restore()});
+ if(m.stamp){g.save();g.globalAlpha=.85;g.font='8px KenPixel,monospace';g.fillStyle='#ff5a8a';g.fillText(m.stamp,W/2-g.measureText(m.stamp).width/2,H-6);g.restore()}}
+{const _dm=drawMemory;drawMemory=function(){if(MEM.scene==='grid'){drawGrid(MEM);return}_dm()}}
+const toGrid=(title,tiles)=>toMemory({scene:'grid',title,tiles});
+/* ---------- MAIN STORY: the parents' group call ---------- */
+async function parentCall(){if(store.run.parentCallDone)return;store.run.parentCallDone=true;save();const L=livingFriends();
+ await card('THE GROUP CALL','Everyone’s phone, all at once.',2200);cue('call');
+ for(const id of L){const a=A_[id];a.phone=1;a.sit=false}A_.you.phone=1;for(let i=0;i<4;i++){SFX.ring();S.shake=.1;await wait(260)}
+ await cameraOn(500,1.15);await talk([['','Eight phones ring at the same time. Same ringtone. None of them set it.'],['Omer','It’s a group FaceTime. “SLEEPOVER PARENTS 💕”. Who made— oh no.'],['','The host is Aidan. He has added every single one of your parents.']]);
+ const crowd=['you',...L].slice(0,6);const tiles=[{id:'aidan',label:'Aidan (host)',bg:'#1a2448'},{id:'mum',label:'Hasan’s Mum',bg:'#5a3a4a',room:1},{id:'arjunMum',label:'Arjun’s Mum',bg:'#4a3a2a',room:1},{id:'davidMum',label:'David’s Mum',bg:'#3a4a3a',room:1},{id:'omerDad',label:'Omer’s Dad',bg:'#2a3a4a',room:1},{id:'nivaanMum',label:'Nivaan’s Mum',bg:'#4a2a4a',room:1},{id:'seanDad',label:'Sean’s Dad',bg:'#3a3a3a',room:1},{id:'momma',label:'Mum',bg:'#5a3a3a',room:1},{id:'you',label:'The Sleepover',crowd,bg:'#2a1a2a'}];
+ await toGrid('SLEEPOVER PARENTS 💕 · hosted by Aidan',tiles);
+ await talk([['Aidan','Hi everyone! I’m Aidan! I’m a friend of the boys. I thought you’d all like to see how the sleepover’s going!'],['Hasan’s Mum','What a POLITE boy. Hasan, why are you never this polite?'],['Arjun’s Mum','Arjun. Why are you not wearing a vest. I can SEE that you are not wearing a vest.'],['Arjun','Mummy, please, not in front of the—'],['Arjun’s Mum','In front of the WHAT, Arjun?']]);
+ await talk([['Aidan','David’s had eleven slices of pizza. I counted.'],['David’s Mum','ELEVEN?'],['David','He’s lying! It was nine! It was a LOT of nine!']]);
+ let c=await choose(['Omer cuts the wifi.','Corey leans into the camera.','Nivaan plays a fake “we’re revising” video.']);
+ if(c===0){tiles[8].frozen=true;await talk([['Omer','(off-screen) Router’s off. We’re frozen. We’re safe.'],['Aidan','I’m on 4G :)'],['Omer’s Dad','Omer. Why is the router app saying “disconnected by Omer”?'],['Omer','…Statistically, that’s a coincidence.']]);tiles[8].frozen=false}
+ else if(c===1){tiles[8].crowd=['corey'];await talk([['','Corey leans into frame. Every parent on the call goes quiet at the same time.'],['Arjun’s Mum','…Who is THAT?'],['Nivaan’s Mum','Is that the Corey boy? Priya, sit down.'],['Corey’s Mum','(joining the call) That is MY son, and you will all stop looking at him like that.'],['','Three mums start arguing. Nobody is watching Aidan. For thirty glorious seconds, it works.']]);tiles.push({id:'cmum',label:'Corey’s Mum',bg:'#4a2a3a',room:1});tiles[8].crowd=crowd}
+ else{tiles[8].crowd=crowd;await talk([['Nivaan','(whispering) It’s a loop. Eight seconds of us studying. They’ll never know.'],['Hasan’s Mum','Why is my son yawning the same yawn four times?'],['Hasan’s Mum','HASAN. WHY ARE YOU ON A LOOP.']])}
+ await talk([['Aidan','Sean’s been texting a girl since nine o’clock. Her name’s Stella. She plays baseball.'],['Sean’s Dad','…Is she nice, son?'],['Sean','(dying) She’s really nice, Dad.'],['Sean’s Dad','Good. Bring her for tea. Your mother will cry.']]);
+ await talk([['Aidan','Oh! And there’s beer in the garage fridge. And somebody already opened one.'],['Mum','WHAT beer? Whose beer? GRAHAM. Is that YOUR beer?'],['','Your mum is in an airport. She is shouting at your dad in an airport. On a call with seven other parents.']]);
+ c=await choose(['Hasan does his mum’s voice to calm everyone down.','Everyone throws their phones into the sofa.','Tell them the truth: Aidan is outside the house.']);
+ if(c===0)await talk([['Hasan','(as his own mum) Hello, everyone, it is Hasan’s mother, everything is FINE, the boys are SAINTS.'],['Hasan’s Mum','I am RIGHT HERE, Hasan.'],['','Two Hasan’s mums. One real. The real one takes her glasses off. This is how wars start.']]);
+ else if(c===1){tiles[8].muted=true;await talk([['','Eight phones go into the sofa cushions at once. Eight muffled parents shout from inside the sofa.'],['David’s Mum','(from the sofa) DAVID, WHY IS IT DARK.']]);tiles[8].muted=false}
+ else await talk([['You','Mum. Everyone. Aidan isn’t at the sleepover. He’s OUTSIDE. He’s been outside all night.'],['','A pause. Then all seven parents laugh at once.'],['Mum','Of course he’s not outside, sweetheart, he’s right here on the call. Look how lovely and dry he is.']]);
+ tiles[0].bg='#0a0a14';fx(.4,'');SFX.sting();await talk([['','Aidan’s camera turns round. Slowly.'],['','It’s your living-room window. From outside. In the rain. On every parent’s screen: the back of eight boys’ heads, on a sofa, looking at their phones.'],['Hasan’s Mum','Ooh, he can see you! WAVE, boys!']]);
+ await fromMemory();for(const id of L)A_[id].dir=-1;await talk([['','Nobody waves. Eight heads turn, very slowly, towards the window behind the sofa.'],['','There’s a phone pressed against the glass. Its torch is on. Behind it, a smile.']]);fx(.5,'');
+ await toGrid('SLEEPOVER PARENTS 💕 · hosted by Aidan',tiles);
+ await talk([['Aidan','Can I stay over too?'],['Hasan’s Mum','Of COURSE, beta. Boys, let him in. It is pouring.'],['Arjun’s Mum','Let him in, Arjun. Don’t be rude.'],['Mum','Be nice, sweetheart. He walked all that way.'],['Sean’s Dad','Let the lad in, son.'],['','Seven parents. One chorus. “Let him in.”']]);
+ c=await choose(['“…Fine.” End the call.','Hang up on all of them.']);
+ await talk(c===0?[['Aidan','Thank you, everyone! See you soon :)'],['','The call ends. Eight black screens. In each one, faintly, the reflection of the window behind you.']]:[['','You hang up. Then you block the number. Then you turn your phone face down.'],['','All the other phones ring again. Same ringtone. “SLEEPOVER PARENTS 💕 (2)”.']]);
+ await fromMemory();for(const id of L)A_[id].phone=0;A_.you.phone=0;await talk([['Arjun','My mum is never going to let me out of the house again.'],['David','My mum knows about the eleven slices.'],['Omer','Nine.'],['David','Thank you, Omer.']]);await cameraBack();cue('street')}
+/* ---------- SIDE: "u tryna crack" (one go, no apple) ---------- */
+FRIEND_STORIES.crack={title:'“u tryna crack”',cast:['arjun'],lead:'arjun',meet:[[0,500],[0,500],[0,500],[0,500]],places:['','','',''],needs:{},invite:['','','','']};
+{const _qt=questsTaken;questsTaken=function(){return _qt().filter(k=>k!=='crack')}}{const _sr=storyReady;storyReady=function(k){if(k==='crack')return false;return _sr(k)}}
+Object.assign(RELIC,{crack:'The screenshot (framed)'});Object.assign(QICON,{crack:'📸'});Object.assign(QBLURB,{crack:'Someone saw a girl on Instagram and his nose started bleeding. One go, no apple.'});
+async function crackQuest(){const r=store.run;S.crackDone=true;const pool=['david','omer','hasan','nivaan','sean'].filter(id=>!A_[id].dead);const guy=r.crackGuy&&!A_[r.crackGuy].dead?r.crackGuy:one(pool);if(!guy)return;r.crackGuy=guy;const G=K[guy].n,gA=A_[guy];
+ const inst=!A_.arjun.dead&&guy!=='arjun'?'arjun':!A_.hasan.dead&&guy!=='hasan'?'hasan':'david',I=K[inst].n,iA=A_[inst];
+ await cameraOn(500,1.2);for(const id of livingFriends()){const a=A_[id];Object.assign(a,{floor:0,sit:false,pose:null});a.x=440+pals.indexOf(id)*16}gA.phone=1;gA.x=470;iA.x=490;
+ await talk([['','',''+G+' has been staring at the same Instagram profile for nine minutes without blinking.'],['',G+'’s nose starts to bleed.']]);spurt(gA.x,gA.y-20,6,gA.y);gA.tears=0;
+ await talk([[I,'Bro. BRO. Your nose.'],[G,'She’s so pretty my nose is bleeding. Is that a thing? That’s a thing now.'],[I,'(reading over his shoulder) Jasmine. Two thousand followers. Way out of your league. Text her.'],[G,'No.'],[I,'Text her.'],[G,'NO.']]);
+ for(const id of livingFriends())if(id!==guy){A_[id].pose='up'}await talk([['','It spreads. It always spreads. Within ten seconds the entire room is chanting.'],['Everyone','TEXT HER. TEXT HER. TEXT HER.']]);setPose(pals,null);
+ iA.pose='choke';await walk(iA,gA.x+12,120);await talk([['',I+' gets the phone in a headlock move nobody knew he had.'],[I,'(typing, reading aloud) “u… tryna… crack?”']]);
+ const c0=await choose(['Lunge for the phone.','Let it happen. It’s funny.']);if(c0===0){A_.you.pose='reach';await walk(A_.you,iA.x-12,140);await N('You get one finger on the screen. That finger presses SEND.');A_.you.pose=null}else await N('SEND.');iA.pose=null;gA.phone=1;
+ await talk([['','Delivered.'],['','Seen.'],['','Jasmine: “??”'],['','Jasmine: “who is this”'],['','Then a sound everybody in the room knows. The little camera-shutter click of a screenshot.']]);SFX.click();S.flash=1;fx(.15,'');
+ const chats=[['Jasmine','added 14 people to “WHO IS THIS 💀”'],['Tia','LMAOOOO'],['Maddie','“crack” WHAT. crack WHAT'],['Lou','his pfp is a minecraft sheep'],['Zara','he has 41 followers and one is his nan'],['Kenzie','u good bro? 😭']];for(const [u,t] of chats){SFX.blip(820);await N(u+': '+t)}
+ await talk([[G,'Fifteen. There are fifteen girls in there. My nan is in there. How is my NAN in there?']]);spurt(gA.x,gA.y-20,10,gA.y);
+ SFX.ring();await talk([['','Jasmine started a video call.'],['','Nobody decides. Everybody just runs. Eight boys, one phone, one upstairs bathroom with a lock.']]);
+ await tw(view,{fade:1},400);S.floor=1;for(const [i,id] of ['you',...livingFriends()].entries()){const a=A_[id];a.floor=1;a.x=772+i*10;a.y=152+(i%3)*6;a.dir=id===guy?1:-1}gA.x=830;cam.x=clamp(800-160,0,WORLD-W);await cameraOn(800,1.6);await tw(view,{fade:0},400);
+ await talk([['','Everyone crammed into the bathroom. One in the bath. Two on the toilet lid. All of them turned to look at '+G+', who is holding the phone like it’s a live grenade.'],[G,'(whispering) Why am I holding it? Why did you all give it to ME?']]);
+ const tiles=[{id:'g1',label:'Jasmine',bg:'#4a2a3a'},{id:'g2',label:'Tia',bg:'#3a3a2a'},{id:'g3',label:'Maddie',bg:'#2a3a4a'},{id:'g4',label:'Lou',bg:'#2a4a3a'},{id:'g5',label:'Zara',bg:'#3a2a4a'},{id:'g6',label:'Kenzie',bg:'#3a3a3a'},{id:guy,label:G,bg:'#2a3a4a',blood:true}];
+ await toGrid('WHO IS THIS 💀 · video call',tiles);
+ await talk([['Jasmine','So. You’re “u tryna crack”.'],['Tia','Is your nose BLEEDING? On CAMERA?'],['Maddie','Why are there eight boys in one bathroom'],['Lou','Is that someone in the BATH'],['Zara','Bro has his whole squad in the toilet like it’s a press conference'],['Jasmine','Go on then. Explain yourself.']]);
+ const c=await choose(['Let '+G+' tell the truth.','Corey steps into frame.','Hasan pretends to be '+G+'’s dad.','Everyone stays silent.']);
+ if(c===0){await talk([[G,'I’ve never talked to a girl. My friend took my phone. You’re really pretty and my nose won’t stop bleeding and I’m in a bathroom and I want to die.'],['','Silence. Then six girls go “awwww” at the exact same time.'],['Jasmine','…Okay. That was kind of cute. Not the crack thing. The nosebleed.'],['Jasmine','You can follow me back. Do NOT message me “crack” ever again.']]);r.crack='win'}
+ else if(c===1){if(A_.corey.dead){await N('There is no Corey. There is only '+G+', and silence.');r.crack='silent'}else{tiles[6].crowd=['corey',guy];await talk([['','Corey leans into frame to help. The call goes completely silent.'],['','Six screenshot clicks. One after the other.'],['Jasmine','…Who is HE.'],['Corey','I’m with him. He’s a good guy, honestly.'],['Tia','Is HE single'],['','Corey gets fourteen follow requests in eleven seconds. '+G+' is not mentioned again. His nose starts bleeding for an entirely different reason.']]);r.crack='corey'}}
+ else if(c===2){await talk([['Hasan','(deep voice) Good evening, ladies. This is his father. He is grounded. For CRACK.'],['','In Jasmine’s window, a door opens. A very large man walks into frame. Navy tattoos. A towel round his neck.'],['Jasmine’s Dad','Who is this.'],['Hasan','…This is his father.'],['Jasmine’s Dad','No, it isn’t. I can see a shower curtain behind you, son. I’ve got your username. I’m coming over.'],['','The call ends. Nobody breathes for a full minute.']]);r.crack='dad'}
+ else{await talk([['','Nobody says anything. Fifteen seconds of eight boys breathing in a bathroom.'],['Kenzie','…Who’s that behind you? In the shower?'],['','Eight heads turn round. The shower curtain is closed. It wasn’t closed before.'],['','On the call, behind all of them, something small with a bowl cut is waving through the gap in the curtain.']]);SFX.scream();fx(.6,'');await talk([['Jasmine','WHAT IS THAT. WHAT IS— *call ended*']]);r.crack='aidan'}
+ await fromMemory();await talk(r.crack==='aidan'?[['','You rip the curtain back. Nothing. The bath is wet. There’s a bowl-shaped dent in the bubble bath.'],['','Ten minutes later, '+G+'’s phone buzzes. A DM from bowlcut_09: “u tryna crack? :)”']]:r.crack==='dad'?[['Arjun','We need to move house. All of us. Tonight.'],[G,'He said “son”. He called me SON. Like he’s already planning the funeral.']]:r.crack==='corey'?[[G,'(through a tissue) Thanks, Corey.'],['Corey','I’m so sorry. I was trying to help.'],[G,'I know. That’s the worst part.']]:[['','Everybody spills out of the bathroom at once, cheering. '+G+' is carried down the landing like a footballer.'],[G,'She said I could follow her back. SHE SAID. I can FOLLOW HER.']]);
+ for(const id of livingFriends()){A_[id].phone=0;A_[id].pose=null}save();store.done.crack=1;socialState().crack.step=4;save();await cameraBack();await offerRelic('crack')}
+{const _th=things;things=function(){const l=_th();if(socialRoam()&&!S.crackDone&&!S.hiddenAt&&!S.errand&&!S.floor&&livingFriends().length>=4)l.push({x:470,priority:4.5,label:'!! Someone’s nose is bleeding at his phone (one go, no apple)',act:()=>run(crackQuest)});return l}}
+{const _ql=questLog;questLog=function(){const s=socialState();if(S.crackDone&&s.crack)s.crack.step=4;return _ql()}}
+/* ---------- Hasan's pool disaster gets worse ---------- */
+async function poolChaos(q){const prev=scoreName,ha={id:'hasan',x:150,y:160,dir:-1},ar={id:'arjun',x:122,y:160,dir:1},you={id:'you',x:104,y:162,dir:1},da={id:'darren',x:178,y:160,dir:-1};K.darren??={n:'Darren',skin:'#e0b090',hair:'#5a4a3a',hs:'short',top:'#2a6a8a',pants:'#2a2a34',wide:1,glasses:1,seed:131};NCOL.Darren??='#2a6a8a';
+ await toStage({cast:[you,ar,ha,da],car:{x:250}});cue('mom');
+ await talk([['','You all get out of the water. It does not get better.'],['','The only thing left in lost property for Hasan to wear home is a pair of child’s swim shorts with a duck on them and a flowered swimming cap. He has to wear the cap. Nobody knows why. Pool rules.'],['Darren','(over the pool tannoy) WOULD HASAN, MY DATE, PLEASE COME TO RECEPTION. HASAN. MY DATE.'],['','The whole late-night aqua-aerobics class — eleven pensioners in floral caps — turn round and applaud him.']]);
+ await talk([['Darren','I made you something.'],['','A laminated sign. HASAN ♥ LILY. Lily is crossed out. DARREN is written underneath in Sharpie.'],['Hasan','I’m fourteen. I’m FOURTEEN, Darren.'],['Darren','I know. I’m very mature for my age.'],['Arjun','You’re FIFTY.']]);
+ const c=await choose(['Arjun fights Darren.','Hasan fights Darren.','Call the lifeguard.']);
+ const fighter=c===1?ha:ar;fighter.pose='punch';da.pose='choke';
+ for(let i=0;i<5;i++){const [a,b]=i%2?[da,fighter]:[fighter,da];a.punchT=T+.22;SFX.smack();if(i%2)SFX.squelch();S.shake=.4;gush(b,8);await tw(b,{x:b.x+(a.x<b.x?4:-4)},90);await wait(220)}
+ await talk(c===1?[['','Hasan headbutts him. With the flowered cap on. The cap absorbs nothing. Darren’s glasses fold in half.']]:c===0?[['','Arjun goes for Darren and Darren puts him in a headlock that has clearly been practised on a lot of nephews.'],['Arjun','(muffled) I CAN SMELL HIS ARMPIT. I CAN SMELL THE CHLORINE IN HIS ARMPIT.']]:[['','The lifeguard is seventeen. He looks at the situation, says “nah”, and leaves for his break.']]);
+ await talk([['','The aqua-aerobics class gets involved. Pool noodles. Eleven of them. Darren goes down under a hail of foam. A woman called Pat hits him so hard with a noodle it snaps.']]);da.sit=true;fighter.pose=da.pose=null;
+ da.sit=false;await talk([['Darren','Fine. FINE. If you won’t come to meet my mother, she’ll come to meet YOU.']]);da.pose='choke';await mvc(da,ha.x+10,250);ha.scared=true;
+ SFX.scream();await tw(ha,{x:250,y:156},500);ha.hidden=true;await mvc(da,240,600);da.hidden=true;S.shake=.5;SFX.smack();
+ await talk([['','He picks Hasan up — duck shorts, flowered cap and all — runs across the car park, and puts him in the boot of a silver Vauxhall Astra.'],['Hasan','(from the boot) THIS IS A KIDNAPPING. TELL MY MUM. ACTUALLY DON’T TELL MY MUM.'],['','The Astra drives off. It indicates. Even now, Darren indicates.']]);
+ await tw(MEM.car,{x:360},1600);const k=await choose(['Chase it on a mobility scooter from the pensioners.','Call the police.','Do nothing. Wait.']);
+ if(k===0){await talk([['','You and Arjun take Pat’s mobility scooter. Top speed: six miles an hour. The Astra is stopped at a red light, three hundred metres away. You are gaining. Slowly. Terribly slowly.']]);await wait(500)}
+ else if(k===1)await talk([['','PC Dawson’s voicemail. “If this is about the boy in the hedge, I’ve already been told.”']]);
+ MEM.car.x=200;MEM.car.back=false;await talk([['','At the red light, before anyone can reach it, the boot opens. From the outside.'],['','A small figure in a blue jacket lifts Hasan out — duck shorts, cap, foil blanket from somewhere — and sets him down on the kerb, very gently.'],['Aidan','(to Darren, through the window) He’s MINE to scare.'],['','Then Aidan gets into the passenger seat. The light goes green. The Astra drives off with both of them, indicating.']]);
+ ha.hidden=false;ha.x=200;ha.y=162;ha.scared=true;await mvc(you,180,900);
+ await talk([['Hasan','Darren’s been kidnapped. By AIDAN. Darren kidnapped me and then AIDAN kidnapped DARREN.'],['Arjun','Is that… good?'],['Hasan','I don’t KNOW, Arjun. I’m wearing a DUCK.']]);
+ await fromMemory();cue(prev);mark('hasan','beat');store.run.darren=k;save();
+ await talk([['','You walk back to the sleepover. Hasan in the foil blanket, the flowered cap, the duck shorts. He does not speak for six streets.'],['','When you open the front door, the entire sleepover is in the hallway. Somebody has already seen it. The pool posted it.'],['','“LATE SWIM ROMANCE 💕 Congratulations to Hasan & Darren!” — 2.1k likes.']])}
+{const _pm=poolMeetup;poolMeetup=async function(q){await _pm(q);if(q.revealed&&!q.chaos){q.chaos=true;await poolChaos(q)}}}
 
 /* ================= THE LAMP TIMELINE (only when built as lamp.html) ================= */
 if(window.LAMP_TIMELINE){
