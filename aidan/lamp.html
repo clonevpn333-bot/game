@@ -6657,6 +6657,94 @@ async function biteChapter(){if(store.run.biteDone)return;const L=livingFriends(
 {const _w=whereNow;whereNow=function(){const L=_w(),r=store.run;if(r.cardArm&&!A_[r.cardArm].dead){const i=L.findIndex(l=>l.includes('<b>'+K[r.cardArm].n.toUpperCase()+'</b>'));if(i>=0)L[i]='<b>'+K[r.cardArm].n.toUpperCase()+'</b> — Got his arm sewn back on at 6am. Six hours, on the dot. Keeps the Crunchy Nut arm on his bedroom wall. Still hasn’t forgiven Omer.'}return L}}
 {const _st=socialSmalltalk;socialSmalltalk=function(id){const r=store.run;if(r.cardArm===id)return one(['Don’t talk to me. I have a cereal box for an arm.','It says GOLDEN HONEY on my elbow.','My real arm is in the peas. The PEAS.']);if(r.cardArm&&Math.random()<.3)return 'We cut off '+K[r.cardArm].n+'’s arm. We cut off his arm for nothing.';return _st(id)}}
 
+/* ================= PASS 28: friends go back to what they were doing after a call; HASAN'S REVENGE ================= */
+const HOMESPOTS={
+ r1:{sean:[360,150,{phone:1,sit:1,dir:1}],david:[447,146,{sit:1,pose:'eat',dir:1}],nivaan:[472,146,{sit:1,phone:1,dir:1}],omer:[522,151,{dir:-1}],arjun:[560,158,{sit:1,pose:'game',dir:1}],corey:[612,148,{dir:-1}],hasan:[586,159,{sit:1,pose:'game',dir:1}]},
+ r2:{sean:[300,156,{phone:1,dir:1}],david:[252,156,{pose:'eat',dir:1}],nivaan:[455,146,{sit:1,phone:1,dir:1}],omer:[140,156,{dir:1}],arjun:[560,158,{sit:1,pose:'game',dir:1}],corey:[372,150,{sit:1,dir:1}],hasan:[586,159,{sit:1,pose:'game',dir:1}]}};
+function disperse(ph){const lay=HOMESPOTS[ph];if(!lay||S.aidanIn)return;const s=socialState(),busyIds=new Set();for(const k of Object.keys(FRIEND_STORIES)){const q=s[k];if(q&&q.invited)FRIEND_STORIES[k].cast.forEach(id=>busyIds.add(id))}
+ for(const id of livingFriends()){if(busyIds.has(id)||!lay[id])continue;const a=A_[id],[x,y,props]=lay[id];if(a.taped||a.vis===false)continue;a.phone=0;
+  marchTo(a,0,x+(Math.random()-.5)*6).then(()=>{if(!a.dead&&a.tx==null&&a.floor===0&&Math.abs(a.x-x)<10&&!S.aidanIn)Object.assign(a,{y,pose:null,sit:false},props)})}}
+{const _sp=stagePlay;stagePlay=function(phase,objective){if((phase==='r1'||phase==='r2')&&mode==='house')try{disperse(phase)}catch(e){}return _sp(phase,objective)}}
+{const _dh=drawHouse;drawHouse=function(){_dh();for(const id of pals){if(id==='hasan')continue;const h=A_[id];if(h&&h.taped&&!h.dead&&h.floor===S.floor&&h.vis!==false){const x=X(h.x),y=h.y;for(const dy of [-30,-22,-12,-4])R(x-9,y+dy,18,3,'#b8bcc4');R(x-9,y-30,18,1,'#e0e4ea')}}
+ const rq=store.run.social&&store.run.social.revenge;if(rq&&rq.step>=2&&S.floor===0){const x=X(24);R(x-9,108,18,14,'#ece8e0');R(x-9,108,18,1,'#fff');R(x-6,110,12,4,'#d8d2c8');R(x-4,115,2,2,'#111');R(x+2,115,2,2,'#111');R(x-3,119,6,1,'#111');for(let i=0;i<6;i++)R(x-5+i*2,110+(i%2),1,2,'#777')}const hz=A_.hasan;if(hz&&!hz.dead&&hz.floor===S.floor&&store.run.revenge==='killed'&&hz.vis!==false){const x=X(hz.x);R(x-6,hz.y-8,12,3,'#8a0d16')}}}
+
+FRIEND_STORIES.revenge={title:'Hasan’s Revenge',cast:['hasan'],lead:'hasan',meet:[[0,270],[1,780],[0,85],[0,85]],places:['the kitchen','the upstairs landing','the garage','the garage'],needs:{},
+ invite:['“You. Kitchen. I need a witness who can keep his mouth shut.”','“Phase two. Upstairs. Bring nothing. Touch nothing.”','“Garage. I want to show you something I’ve been practising.”','“Garage. Last phase. Come alone.”']};
+Object.assign(RELIC,{revenge:'Hasan’s notebook (“PHASES”)'});Object.assign(QICON,{revenge:'🔥'});Object.assign(QBLURB,{revenge:'They made him the joke. Now he’s making a list.'});
+function revTargets(q){const L=livingFriends().filter(id=>id!=='hasan');if(!q.ta||A_[q.ta].dead)q.ta=L.includes('arjun')?'arjun':one(L);if(!q.tb||A_[q.tb].dead||q.tb===q.ta)q.tb=L.includes('nivaan')&&q.ta!=='nivaan'?'nivaan':one(L.filter(id=>id!==q.ta))||q.ta;return [q.ta,q.tb]}
+function grudge(){const s=socialState();if(S.royaleDone)return ['They taped me to a wall. They cut off my TOE. And then everybody HUGGED, like a hug puts a toe back ON.','gear stick'];
+ if(s.pooldate&&s.pooldate.step>0)return ['A forty-six-year-old man called Darren. In GOGGLES. And they FILMED it. It’s got eleven thousand views.','Darren'];
+ return ['Five years of gear-stick jokes. Five YEARS. And then he beats me, in a garage, with a BELL.','gear stick']}
+FRIEND_SCENES.revenge=[
+ async q=>{const [ta]=revTargets(q),TA=K[ta].n,h=A_.hasan,[gl]=grudge();q.rage=0;h.dir=-1;cue('sneak');
+  await talk([['',S.royaleDone?'Hasan is standing at the kettle with his back to the room. Very still. One foot is in a sandwich bag.':'Hasan is standing at the kettle with his back to the room. Very still. Humming.'],['Hasan','Oh good. You. Shut the door.'],['Hasan',gl],['Hasan','Everyone gets to tell a joke about Hasan. All night. Every night. Since fifth grade. Hasan never gets a turn.'],['','He opens a notebook. Page one says PHASES. There are four of them. Phase four is underlined so hard it went through the paper.'],['Hasan','Phase one is NON-LETHAL. I want that on record. Phase one is hot chocolate.']]);
+  h.pose='eat';await N('Into a mug: chocolate powder. Six spoons of the Carolina Reaper sauce from the back of the fridge. A crushed-up laxative from your mum’s bathroom. A little squeeze of Deep Heat, “for texture”.');h.pose=null;
+  const c=await choose(['Stir it for him.','“Hasan. This is insane.”','Add more Reaper.']);
+  if(c===0){q.rage++;await say('Hasan','Clockwise. Clockwise, you animal.')}else if(c===2){q.rage+=2;await talk([['','You empty the whole bottle in. Hasan watches you do it with something close to love.'],['Hasan','Oh, I like you. I like you a lot.']])}
+  else await talk([['Hasan','Insane is cutting off a man’s toe for a ROAST. This is CATERING.']]);
+  const a=A_[ta];Object.assign(a,{floor:0,vis:true,sit:false,pose:null});a.x=380;await walk(a,h.x-18,80);a.dir=1;
+  await talk([[TA,'Is that hot chocolate? Hasan, you absolute angel.'],['Hasan','Made it special. Just for you. No hard feelings.'],[TA,'See, this is growth. This is why I love you, big man.']]);
+  if(c===1)await talk([['You','Don’t—'],[TA,'Don’t what? Don’t drink free hot chocolate? Shut up.']]);
+  a.pose='eat';await wait(900);a.pose=null;a.shake=true;S.shake=.6;SFX.scream();fx(.3,'');
+  await talk([['','He gets four big gulps in before his whole face goes the colour of a postbox.'],[TA,'MY MOUTH. MY MOUTH IS IN HELL. WHY IS IT ALSO COLD? WHY IS IT HOT AND COLD AT THE SAME TIME?'],['Hasan','That’s the Deep Heat.'],['','Then '+TA+'’s stomach makes a noise like a drain clearing. Everyone in the house hears it.'],[TA,'…Oh no. Oh no no no no.']]);
+  a.shake=false;walk(a,stairX,140).then(()=>{a.floor=1;a.x=820;a.y=158});await wait(900);noise(.4,.3,600,2);
+  await talk([['','A door slams upstairs. Then a sound nobody should ever hear through a ceiling.'],['','Hasan starts laughing. It’s a normal laugh at first. It goes on about twenty seconds too long. It doesn’t sound like Hasan.'],['Hasan','Phase one. Complete.']]);q.outcome='Phase one: the hot chocolate'},
+ async q=>{const [ta,tb]=revTargets(q),TB=K[tb].n,h=A_.hasan,[,nick]=grudge();
+  await talk([['Hasan','Phase two. Slightly less non-lethal.'],['','Marbles. About two hundred of them, on the top three stairs. Lego, sprinkled into '+TB+'’s sleeping bag like seasoning. And over the bathroom door, a cast-iron frying pan on a dressing-gown cord.'],['Hasan',tb==='nivaan'?'He called me “'+nick+'”. He filmed me crying. He put a SAD VIOLIN on it.':TB+' laughed. Everyone laughed. But '+TB+' laughed the LONGEST.']]);
+  const c=await choose(['Help him hang the pan.','Pick the marbles up.','Text '+TB+': “don’t come upstairs”']);let marbles=true;
+  if(c===0){q.rage++;await say('Hasan','Bit to the left. Perfect. You have a gift.')}
+  else if(c===1){marbles=false;await talk([['','You kneel and scoop marbles into your hoodie. Hasan watches you do it.'],['Hasan','Fine. Keep the marbles. The pan stays.']])}
+  else await talk([['','Downstairs, '+TB+'’s phone buzzes.'],[TB,'(from downstairs) lol what. why'],['','He comes upstairs to ask why.']]);
+  const b=A_[tb];Object.assign(b,{floor:1,vis:true,sit:false,pose:null,phone:0});b.x=stairX+10;b.y=158;await walk(b,790,60);b.dir=1;
+  await talk([[TB,'Why is everyone standing on the landing like a—']]);
+  SFX.smack();noise(.4,.9,900,1.2);S.shake=1;fx(.4,'');spurt(b.x,b.y-24,14,b.y);b.lie=1;
+  await talk([['','BONNNG. Like a church bell. '+TB+' goes down like a folding chair.'],['Hasan','(writing in the notebook) Beautiful. Beautiful sound.']]);
+  if(marbles){b.lie=0;b.shake=true;await walk(b,stairX+4,40);b.shake=false;await talk([['','He gets up. He staggers. He says “I’m good” to a lamp. Then he steps onto the marbles and leaves the floor completely.']]);
+   b.floor=0;b.x=stairX-10;b.lie=1;for(let i=0;i<6;i++){SFX.smack();S.shake=.3;await wait(140)}
+   await talk([['','You count eleven bumps. There are fourteen stairs.'],[TB,'(from the bottom of the stairs) I’M FINE. I CAN’T FEEL MY TEETH. I’M FINE.']]);q.stairs=true}
+  mark(tb,'beat');b.lie=0;
+  await talk([['You','Hasan. That could have killed him.'],['Hasan','Could have.'],['','He smiles. You’ve known Hasan since you were six. You have never seen that smile.'],['Hasan','Phase three is just practice. Don’t worry about phase three.']]);q.outcome=q.stairs?'Phase two: the pan and the stairs':'Phase two: the pan'},
+ async q=>{const [ta]=revTargets(q),TA=K[ta].n,h=A_.hasan;cue('reveal');
+  await talk([['','The garage. Your dad’s nail gun is on the workbench, fully charged. On the wall: a pillow with a face drawn on it in Sharpie.'],['','The face has a big forehead. Someone has written '+TA.toUpperCase()+' under it, and then underlined it, and then written it again.']]);
+  h.pose='aim';h.weapon='#e0b020';h.dir=-1;for(let i=0;i<4;i++){h.punchT=T+.12;noise(.12,.9,1800,.6);S.shake=.2;prop({t:'feather',x:h.x-60+Math.random()*6,y:120,t0:T});await wait(320)}
+  await talk([['','THUNK. THUNK. THUNK. THUNK. Every single nail goes into the forehead. Feathers drift down like snow.'],['Hasan','I’ve been practising since phase one. Turns out I’m a natural. I’m a natural at something. Finally.'],['Hasan',S.royaleDone?'(holding up the sandwich bag) Look at my toe. It’s going grey. It’s going grey and he’s upstairs LAUGHING.':'You know what they’ll do tomorrow? Laugh about it. In the group chat. Forever.'],['Hasan','Unless there’s nobody left to type.']]);h.pose=null;
+  const c=await choose(['Go and tell the others.','Keep his secret.','Unplug the nail gun.']);
+  if(c===0){q.told=true;await talk([['','You go and find David. You tell him everything. The hot chocolate. The pan. The pillow.'],['David','Hasan? Hasan cries at dog adverts. Hasan cried at the end of CARS.'],['','Nobody believes you. Hasan waves at you from the garage door.']])}
+  else if(c===1){q.rage++;await talk([['Hasan','You’re a good friend. You’re my only friend tonight.'],['','He means it. That’s the worst part.']])}
+  else await talk([['','You pull the plug out of the wall. Hasan doesn’t even look at you.'],['Hasan','It’s got a battery.']]);
+  h.pose='aim';h.punchT=T+.12;noise(.12,.9,1800,.6);SFX.smack();S.shake=.4;await talk([['','A nail goes into the doorframe a centimetre from your ear.'],['Hasan','Missed.'],['','He didn’t miss.']]);h.pose=null;h.weapon=null;q.outcome='Phase three: practice'},
+ async q=>{const [ta]=revTargets(q),TA=K[ta].n,h=A_.hasan,a=A_[ta],r=store.run;cue('monster');
+  Object.assign(a,{floor:0,vis:true,sit:false,pose:'cover',lie:0,phone:0,taped:true});a.x=52;a.y=150;a.dir=1;h.x=88;h.dir=-1;h.weapon='#c9c9d0';h.pose='stab';A_.you.x=Math.max(A_.you.x,120);
+  await cameraOn(80,1.4);
+  await talk([['','The garage light is off except for the bulb over the workbench.'],['',S.royaleDone?TA+' is duct-taped to the wall. The same wall. The same tape. Hasan has even left the same gaps.':TA+' is duct-taped to the wall by his armpits. His feet don’t touch the floor.'],[TA,'Oh thank GOD. Get me down. He’s lost it. He’s actually lost it.'],['Hasan','A toe for a toe. That’s fair. That’s the fairest thing that’s happened all night.'],[TA,'Hasan. Mate. Bro. Your head is so big that—'],['','He can’t stop himself. Five years of muscle memory.'],['Hasan','FINISH. THAT. SENTENCE.'],[TA,'…that it’s… beautiful. It’s a beautiful big head.']]);
+  await talk([['Hasan','Five years. Gear stick. The postcode. The weather system. Every day. And I laugh. I LAUGH, so it isn’t weird for YOU.'],['Hasan','And tonight you all held me down, and you took a piece of me, and then you HUGGED me. And I had to hug you back. Because otherwise I’m the one who can’t take a joke.'],['','The shears are shaking in his hand. The nail gun is on the workbench, still warm.']]);
+  let c=await choose(['Talk him down.','“A toe for a toe. Do it.”','Hand him the nail gun.']);
+  if(c===0){if(q.rage>=2){await say('Hasan','Too late for talking. You HELPED me. You stirred the cup.');const d=await choose(['“It’s just a toe, Hasan.”','“You laugh at our jokes so we don’t feel bad. We know. We’ve always known.”','“Think about your mum.”']);if(d!==1){await say('Hasan',d===0?'JUST a toe? JUST A TOE?':'My mum would hold his leg.');c=1}}
+   if(c===0){h.shake=true;await wait(700);SFX.smack();h.weapon=null;h.pose='cover';h.sit=true;
+    await talk([['','He drops the shears. They clang off the concrete. He sits down on the garage floor and cries the ugly way, with his whole face.'],[TA,'Hasan. I’m sorry. I’m actually sorry. Your head’s normal. It’s a normal head.'],['Hasan','…It’s not.'],[TA,'It’s not. It’s huge. But I’m sorry.']]);
+    h.shake=false;a.taped=false;a.y=158;h.sit=false;h.pose='hug';a.pose='hug';await wait(900);
+    await talk([['','You cut '+TA+' down. Hasan hugs him first, which is a surprise to everyone, including Hasan.'],['','Then Hasan picks up the nail gun, very calmly, and puts one nail through '+TA+'’s hoodie sleeve, pinning him back to the wall.'],['Hasan','For balance.'],[TA,'…Yeah. Yeah, that’s fair.']]);
+    h.pose=a.pose=null;r.revenge='forgave';q.outcome='Hasan put the shears down';return}}
+  if(c===1){a.shake=true;h.pose='stab';h.x=62;await talk([['','Hasan kneels and pulls off '+TA+'’s sock. It has a hole in it. Of course it does.'],[TA,'NO NO NO NO HASAN PLEASE I’LL NEVER SAY POSTCODE AGAIN I’LL NEVER SAY IT—']]);
+   for(let i=0;i<2;i++){h.punchT=T+.25;SFX.squelch();noise(.3,.8,500,1);S.shake=.8;spurt(a.x,a.y-2,18,a.y+8);fx(.3,'');await wait(450)}SFX.scream();
+   await talk([[TA,'AAAAAAAAAAAAAAAAAGH—'],['','It takes two goes. Garden shears are for roses.'],['','Hasan drops the toe into his own sandwich bag of peas, next to his own toe.'],['Hasan','There. They can keep each other company.'],['Hasan','Now we’re even. Now it’s funny. Laugh.'],['','Nobody laughs.'],['Hasan','…Why isn’t anyone laughing?']]);
+   a.shake=false;a.taped=false;a.y=158;a.lie=1;mark(ta,'beat');mark('hasan','bloody');r.revenge='toe';h.weapon=null;h.pose=null;await wait(500);a.lie=0;q.outcome='A toe for a toe';return}
+  h.weapon='#e0b020';h.pose='aim';h.x=100;a.shake=true;
+  await talk([['','You pick up the nail gun and put it in his hands. He holds it with both of them, the way he practised.'],[TA,'Hasan. HASAN. It was a JOKE. They were ALL jokes.'],['Hasan','Then laugh.']]);
+  for(let i=0;i<3;i++){h.punchT=T+.12;noise(.15,.95,1600,.7);SFX.squelch();S.shake=.7+i*.2;spurt(a.x,a.y-20+i*-4,12+i*8,a.y);fx(.25,'');await wait(520)}
+  a.shake=false;fx(1,'HE WAS JOKING');
+  await talk([['','The first one goes in his shoulder. The second goes in his cheek. The third goes into the middle of his forehead, exactly where Hasan practised on the pillow.'],['',''+TA+' stops struggling. The tape holds him up. It’s very good tape.'],['','Hasan puts the nail gun down on the workbench very carefully, like it’s a sleeping animal.'],['Hasan','…It was funny.'],['Hasan','It was a little bit funny. Wasn’t it?']]);
+  loseFriend(a);a.taped=false;mark('hasan','bloody');h.weapon=null;h.pose=null;r.revenge='killed';r.revengeVictim=ta;save();
+  await talk([['','Upstairs, someone laughs at something on their phone. Hasan flinches like he’s been shot.']]);q.outcome='Hasan wasn’t joking'}
+];
+{const _bw=blockedWhy;blockedWhy=function(k){const r=store.run,s=socialState(),q=s[k];
+ if(k==='revenge'&&!(q&&(q.step>0||q.invited))&&!(S.royaleDone||(s.pooldate&&s.pooldate.step>0)||(s.race&&s.race.step>0)))return 'Nobody’s made Hasan the joke yet tonight. (Unlocks after the Roast Battle Royale, Hasan’s mystery crush or the garage fight.)';
+ if(r.revenge==='killed'&&!(q&&(q.step>0||q.invited))&&FRIEND_STORIES[k]&&FRIEND_STORIES[k].cast.includes('hasan')&&k!=='revenge')return 'Hasan is sitting in the garage with the light off. He won’t come out.';
+ return _bw(k)}}
+{const _w=whereNow;whereNow=function(){const L=_w(),r=store.run;if(r.revenge&&!A_.hasan.dead){const i=L.findIndex(l=>l.includes('<b>HASAN</b>'));const t={forgave:'Kept the notebook. Burned it on bonfire night with Arjun. They toasted marshmallows over PHASES.',toe:'He and '+(K[socialState().revenge.ta]||K.arjun).n+' have matching feet now. They call it the Toe Club. Nobody else is allowed in.',killed:'Told the police it was Aidan. Some nights he almost believes it. He hasn’t told a joke since.'}[r.revenge];if(i>=0&&t)L[i]='<b>HASAN</b> — '+t}return L}}
+{const _st=socialSmalltalk;socialSmalltalk=function(id){const r=store.run,q=socialState().revenge;if(id==='hasan'&&q&&q.step>0&&q.step<4)return one(['Phase '+(q.step+1)+' is going to be beautiful.','(sharpening something) Hm? Oh. Nothing. Just tidying.','Tell a joke about my head. Go on. I dare you. Tell one.']);
+ if(id==='hasan'&&r.revenge==='killed')return one(['…','It was a little bit funny.','Don’t laugh. Please don’t laugh near me.']);if(r.revenge==='toe'&&id===(q&&q.ta))return 'Toe Club. Population: two. Unwillingly.';return _st(id)}}
+
 /* ================= THE LAMP TIMELINE (only when built as lamp.html) ================= */
 if(window.LAMP_TIMELINE){
  findCoreyPhoto=async function(){if(coreyPhotoFound())return;S.secret=2;socialState().hidden.photo=true;SFX.pick();socialSave();
