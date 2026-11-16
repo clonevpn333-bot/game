@@ -2810,8 +2810,10 @@ async function finale(){
   await stellaBat(L);
   await wait(500);await say('Aidan','Everyone’s… here. Everyone came.');
  }else{cue('reveal');await N('You listen for footsteps behind you. There is nobody left to make them.')}
- const c=await choose(['“Worst sleepover of my fucking life.”','“You were never invited.”','Say nothing.'].concat(store.run.sorry?['“I’m sorry about sixth grade.”']:[]));
+ const fo=['“Worst sleepover of my fucking life.”','“You were never invited.”','Say nothing.'],ft=[0,1,2];if(store.run.sorry){fo.push('“I’m sorry about sixth grade.”');ft.push(3)}if(store.run.invitesAll){fo.push('Hold out the eight invitations. “We’re sorry. All of us.”');ft.push(4)}
+ const c=ft[await choose(fo)];
  if(c===3&&await spareAidan())return;
+ if(c===4&&await groupSorry())return;
  if(c===0)await say('Aidan','Ha. Ha. Ha. …That one was good.');
  else if(c===1)await say('Aidan','I know. I came anyway. That’s what friends do.');
  else await N('He waits for you to say something. He is still waiting when you raise the knife.');
@@ -7543,6 +7545,163 @@ R=function(x,y,w,h,c){g.fillStyle=c;x=Math.round(x);y=Math.round(y);w=Math.round
   const x0=Math.round(m.a*x+m.e),y0=Math.round(m.d*y+m.f),x1=Math.round(m.a*(x+w)+m.e),y1=Math.round(m.d*(y+h)+m.f);g.setTransform(1,0,0,1,0,0);g.fillRect(Math.min(x0,x1),Math.min(y0,y1),Math.abs(x1-x0),Math.abs(y1-y0));g.setTransform(m);return}
  g.fillRect(x-.1,y-.1,w+.2,h+.2)};
 {const di=g.drawImage.bind(g);g.drawImage=function(img,...a){if(img===cv){if(a.length===8){a[0]*=SCALE;a[1]*=SCALE;a[2]*=SCALE;a[3]*=SCALE}else if(a.length===2)return di(img,0,0,cv.width,cv.height,a[0],a[1],W,H)}return di(img,...a)}}
+
+/* ================= PASS 39 (AUTHOR'S EDITION): settings, backlog, fast-forward, auto-advance ================= */
+store.settings??={spd:'normal',auto:false,skipSeen:true,shake:true,flash:true,vol:1};const SET=store.settings;store.seenL??={};
+const TXS={slow:22,normal:42,fast:95,instant:99999};
+function lineKey(n,t){let h=5381;const s=(n||'')+'|'+(t||'');for(let i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))|0;return (h>>>0).toString(36)}
+let MODAL=null,BACKLOG=[],FFHOLD=false,FFTOG=false,lastFF=0,seenDirty=0;
+{const _say=say;say=function(n,t){const k=lineKey(n,t),was=!!store.seenL[k];store.seenL[k]=1;seenDirty++;if(t!==undefined&&!FAST){BACKLOG.push({n:n||'',t:t||''});if(BACKLOG.length>150)BACKLOG.shift()}const r=_say(n,t);if(D&&!D.ch)D.seen=was;return r}}
+{const _u=update;update=function(dt){if(MODAL)return;_u(dt);
+ if(D&&!D.ch&&D.i<D.t.length&&SET.spd!=='normal'){D.i+=dt*(TXS[SET.spd]-42);if(D.i>=D.t.length){D.i=D.t.length;dtx.textContent=D.t;more.style.visibility='visible'}}
+ const ff=FFHOLD||FFTOG;if(ff&&D&&!D.ch){if(SET.skipSeen&&!D.seen){if(FFTOG){FFTOG=false;syncDlgBtns()}if(!D.ffWarned){D.ffWarned=1;sub('New dialogue — fast-forward paused')}}else{if(D.i<D.t.length){D.i=D.t.length;dtx.textContent=D.t}if(CINE.rt-lastFF>.07){lastFF=CINE.rt;advance()}}}
+ else if(SET.auto&&D&&!D.ch&&D.i>=D.t.length){D.autoAt??=CINE.rt+1.2+D.t.length*.028;if(CINE.rt>D.autoAt)advance()}
+ if(!SET.shake)S.shake=0;if(!SET.flash){GL.t=0;GL.next=Math.max(GL.next,5);S.flash=0;CINE.fl=null}
+ if(MG&&!muted)MG.gain.value=.65*SET.vol;if(seenDirty>40){seenDirty=0;save()}}}
+/* dialogue box buttons: AUTO and SKIP */
+const dlgBtns=document.createElement('div');dlgBtns.id='dlgbtns';dlgBtns.style.cssText='position:absolute;right:8px;top:4px;display:flex;gap:4px;z-index:3';
+dlgBtns.innerHTML='<button id="bAuto" style="font:9px KenPixel,monospace;padding:3px 6px;background:#100d16e8;color:#e8e0d0;border:1px solid #8f6d6b">AUTO</button><button id="bSkip" style="font:9px KenPixel,monospace;padding:3px 6px;background:#100d16e8;color:#e8e0d0;border:1px solid #8f6d6b">SKIP ⏩</button><button id="bLog" style="font:9px KenPixel,monospace;padding:3px 6px;background:#100d16e8;color:#e8e0d0;border:1px solid #8f6d6b">LOG</button>';
+$('dlg').style.position=$('dlg').style.position||'';$('dlg').appendChild(dlgBtns);
+function syncDlgBtns(){$('bAuto').style.background=SET.auto?'#6a3a2a':'#100d16e8';$('bSkip').style.background=FFTOG?'#6a3a2a':'#100d16e8'}
+for(const [id,fn] of [['bAuto',()=>{SET.auto=!SET.auto;save()}],['bSkip',()=>{FFTOG=!FFTOG}],['bLog',()=>openBacklog()]]){const b=$(id);b.onclick=e=>{e.stopPropagation();fn();syncDlgBtns()};b.onpointerdown=e=>e.stopPropagation()}syncDlgBtns();
+/* modals */
+function modal(html,onClose){closeModal();const m=document.createElement('div');m.id='aemodal';m.style.cssText='position:fixed;inset:0;z-index:10050;overflow:auto;background:#0b0912f4;color:#e8e0d0;font:11px KenPixel,monospace;line-height:1.5';m.innerHTML='<div style="max-width:760px;margin:0 auto;padding:18px 14px 40px">'+html+'<p style="margin-top:18px"><button data-close style="font:11px KenPixel,monospace;padding:8px 14px;background:#2a1a24;color:#ffe066;border:1px solid #8f6d6b">CLOSE (Esc)</button></p></div>';
+ m.addEventListener('click',e=>{e.stopPropagation();if(e.target.dataset.close!==undefined)closeModal()});m.addEventListener('pointerdown',e=>e.stopPropagation());document.body.appendChild(m);MODAL={el:m,onClose};releaseKeys&&releaseKeys();return m}
+function closeModal(){if(!MODAL)return;const c=MODAL.onClose;MODAL.el.remove();MODAL=null;if(c)c()}
+const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+function openBacklog(){const rows=BACKLOG.slice(-120).map(l=>'<p style="margin:0 0 7px">'+(l.n?'<b style="color:'+(NCOL[l.n]||'#ffe066')+'">'+esc(l.n)+'</b> ':'')+'<span style="color:'+(l.n?'#e8e0d0':'#b9a39e')+'">'+esc(l.t)+'</span></p>').join('');
+ const m=modal('<h2 style="color:#ffe066;margin:0 0 10px">BACKLOG</h2>'+(rows||'<p>Nothing said yet.</p>'));m.scrollTop=m.scrollHeight}
+function openSettings(){const opt=(k,vals,lbl)=>'<p style="margin:0 0 10px">'+lbl+': '+vals.map(([v,t])=>'<button data-k="'+k+'" data-v="'+v+'" style="font:10px KenPixel,monospace;padding:5px 9px;margin:2px;background:'+(String(SET[k])===String(v)?'#6a3a2a':'#1a1622')+';color:#e8e0d0;border:1px solid #8f6d6b">'+t+'</button>').join('')+'</p>';
+ const m=modal('<h2 style="color:#ffe066;margin:0 0 12px">SETTINGS</h2>'+opt('spd',[['slow','Slow'],['normal','Normal'],['fast','Fast'],['instant','Instant']],'Text speed')+opt('auto',[[true,'On'],[false,'Off']],'Auto-advance dialogue')+opt('skipSeen',[[true,'Only lines I’ve seen'],[false,'Everything']],'SKIP fast-forwards')+opt('vol',[[0.25,'25%'],[0.5,'50%'],[0.75,'75%'],[1,'100%']],'Volume')+opt('shake',[[true,'On'],[false,'Off']],'Screen shake')+opt('flash',[[true,'On'],[false,'Off (reduced flashing)']],'Glitches & flashes')+
+  '<h3 style="color:#ffe066;margin:18px 0 6px">CONTROLS</h3><p>Move: WASD / arrows · Interact: E · Switch target: R · Throw / knife: F · Dodge: Shift · House plan: Tab<br>Quest log: Q · Backlog: L · Settings: O · Hold Ctrl to fast-forward · Click / Space to advance text</p>');
+ m.addEventListener('click',e=>{const b=e.target.closest('button[data-k]');if(!b)return;let v=b.dataset.v;v=v==='true'?true:v==='false'?false:isNaN(+v)?v:+v;SET[b.dataset.k]=v;save();syncDlgBtns();openSettings()})}
+{const tb=$('tools');for(const [t,f] of [['LOG',openBacklog],['SETTINGS',openSettings]]){const b=document.createElement('button');b.textContent=t;b.onclick=e=>{e.stopPropagation();f()};tb.insertBefore(b,tb.firstChild)}}
+addEventListener('keydown',e=>{if(e.target&&/INPUT|TEXTAREA/.test(e.target.tagName))return;const k=e.key.toLowerCase();
+ if(k==='escape'&&MODAL){closeModal();e.preventDefault();return}if(MODAL){if(k==='l'||k==='o'){closeModal();e.preventDefault()}e.stopPropagation();return}
+ if(k==='l'){openBacklog();e.preventDefault()}else if(k==='o'){openSettings();e.preventDefault()}else if(e.key==='Control')FFHOLD=true},true);
+addEventListener('keyup',e=>{if(e.key==='Control')FFHOLD=false},true);addEventListener('blur',()=>FFHOLD=false);
+
+/* ================= PASS 40 (AUTHOR'S EDITION): friendship bonds + heart-to-hearts ================= */
+const bondOf=id=>((store.run&&store.run.bond)||{})[id]||0;
+const BONDNAME=b=>b>=8?'best friend tonight':b>=6?'close':b>=4?'getting real':b>=2?'friendly':'distant';
+function addBond(id,n){if(!pals.includes(id)||!A_[id]||A_[id].dead||!n)return;const r=store.run;r.bond??={};const b0=r.bond[id]||0,b1=clamp(b0+n,0,10);r.bond[id]=b1;save();if(!FAST&&Math.floor(b1/2)!==Math.floor(b0/2))try{sub((n>0?'♥ ':'💔 ')+K[id].n+': '+BONDNAME(b1))}catch(e){}}
+const hearts=b=>{let s='';for(let i=0;i<5;i++)s+=b>=i*2+2?'♥':b>=i*2+1?'❥':'♡';return s};
+/* what raises and lowers a bond */
+{const _pr=playRivalry;playRivalry=async function(key){const q=socialState()[key],b=q.step;await _pr(key);if(q.step>b)for(const id of FRIEND_STORIES[key].cast)addBond(id,1)}}
+{const _pg=playGroup;playGroup=async function(k){await _pg(k);for(const id of livingFriends())addBond(id,1);addBond(GROUPQ[k].lead,1)}}
+{const _ro=royale;royale=async function(){await _ro();for(const id of livingFriends())addBond(id,1)}}
+{const _dc=davidChair;davidChair=async function(){await _dc();if(store.run.kickedChair)addBond('david',-3);if(store.run.satWithDavid)addBond('david',2)}}
+{const _sb=seanBeatdown;seanBeatdown=async function(l){const r=await _sb(l);addBond('sean',-4);return r}}
+/* warmer small talk once you're close */
+const WARM={hasan:['You’re alright, you know that? Don’t tell anyone I said it.','If this goes bad tonight, I’m standing next to you. Head first.'],david:['You’re one of the good ones. I mean that.','Stay near me tonight. Not for me. For you.'],omer:['I’ve updated your row in the spreadsheet. It’s mostly compliments now.','If I had to pick one person to be stuck in a bunker with. Statistically. It’s you.'],
+ arjun:['I’m not even going to roast you. That’s how much I like you. Don’t make it weird.','You laugh at the right bits. Nobody laughs at the right bits.'],corey:['You’re the only person who talks to me like I’m normal.','I’d give you my last biscuit. I mean it. Ask the pigeon.'],sean:['You’re the first person I tell stuff. Before Stella, even. Don’t tell Stella.','Dad says you’re a good influence. I said “on WHAT”.'],nivaan:['You’re in KEEP now. The folder. That’s the highest honour.','I’m not filming this one. Some stuff you just keep.']};
+{const _st=socialSmalltalk;socialSmalltalk=function(id){if(bondOf(id)>=6&&WARM[id]&&Math.random()<.35)return one(WARM[id]);return _st(id)}}
+/* heart-to-hearts: one real conversation per friend, once you've earned it */
+const H2H={
+ hasan:async()=>{const r=store.run;await tk([['Hasan','Can I tell you something and you don’t make a joke? Not even a small one.'],['Hasan','Everyone thinks I like being the funny one. The head. The gear stick. I laugh first so it doesn’t land as hard.'],...(r.scoliosis?[['Hasan','(shifting his weight, crooked) And now I’m the funny one with a funny spine. Love that for me.']]:r.revenge?[['Hasan','You saw what I did tonight. That wasn’t a joke either.']]:[]),['Hasan','Sometimes I think if I stopped being funny, nobody would notice I was there.']]);
+  const c=await choose(['“I’d notice.”','“Your head IS pretty big though.”','Just sit with him.']);
+  if(c===0){await tk([['Hasan','…Yeah?'],['','He laughs. A real one. Quiet. Not for anyone.']]);return 2}if(c===1){await tk([['Hasan','See? See. There it is.'],['','He laughs anyway. First. So it doesn’t land as hard.']]);return -1}
+  await tk([['','You sit with him until the game on the telly finishes. Neither of you says anything. It’s the best conversation you’ve had all year.']]);if((store.seen.fb||{})[1])await tk([['Hasan','…Aidan laughed first too. Half a second late. I never thought about why.']]);return 2},
+ david:async()=>{const r=store.run;await tk([['David','Do you ever get so angry it goes white? Like the room just… goes.'],r.davidRage===true?['David','I did that to Hasan. His back. I keep seeing it every time I blink.']:['David','It hasn’t happened in ages. But I can feel it there. Like a dog behind a door.'],['David','Mum says it’s Dad’s. The temper. Like a jacket he left behind when he went.'],['David','I don’t want to be a jacket somebody left behind.']]);
+  const c=await choose(['“Then tell someone. Tell me.”','“Everyone gets angry.”','“Want to do a lap of the garden?”']);
+  if(c===0){r.davidTold=true;await tk([['David','I’m telling you now. That counts. Doesn’t it?'],['You','It counts.']]);return 2}if(c===1){await tk([['David','Not like this. You don’t get it.']]);return 0}
+  await tk([['','Two laps of the garden in the rain. He talks about football. He doesn’t mention it again. His shoulders come down about an inch.']]);return 2},
+ omer:async()=>{await tk([['Omer','Do you want to know why I write everything down?'],['Omer','My granddad forgot my name in March. He called me by my dad’s name. Then by nobody’s.'],['Omer','So I keep lists. Who likes what. Who’s scared of what. Who said the nice thing. In case it goes. In me. One day.'],...((store.run.gdone||{}).gOmer?[['Omer','You read the spreadsheet. That’s what it’s for. It isn’t data. It’s people. Backed up.']]:[])]);
+  const c=await choose(['“Put me in it. Something true.”','“That’s actually really sad, Omer.”','“If it ever goes, I’ll remember for you.”']);
+  if(c===0){await tk([['Omer','Already did. Tab five. “Answers the phone even when it’s a bad idea.”']]);return 2}if(c===1){await tk([['Omer','Statistically, yes.'],['','But he’s smiling.']]);return 1}
+  await tk([['','Omer goes very quiet. He takes his glasses off and cleans them for much longer than glasses need.'],['Omer','…Okay.']]);return 3},
+ arjun:async()=>{await tk([['Arjun','You know why I’m loud? Real answer. Free of charge. Once.'],['Arjun','At home it’s either shouting or nothing. And the nothing is worse. So I fill it.'],['Arjun','If I’m talking, I can’t hear them. If I’m talking here, I’m not there.'],...((store.seen.fb||{})[2]?[['Arjun','And then I wrote a song about a kid who sits on his own. Like I don’t know exactly what that’s like. That’s why it was so good. That’s the worst bit.']]:[])]);
+  const c=await choose(['“You can be quiet here. Nothing bad happens.”','“Stay at mine more. Weekends.”','Make him laugh.']);
+  if(c===0){await tk([['','Arjun tries it. Ten whole seconds of quiet. Nothing happens. He looks amazed.']]);return 2}if(c===1){await tk([['Arjun','…Every weekend? Is that weird? That’s weird.'],['You','It’s not weird.']]);return 3}
+  await tk([['','You do the worst Hasan impression ever performed. Arjun laughs so hard he has to lie on the floor.']]);return 1},
+ corey:async()=>{const abby=(socialState().abby||{step:0}).step>0&&!window.LAMP_TIMELINE;await tk([['Corey','Can I say something stupid? People only ever talk to my face.'],['Corey','They tell me I’m fit, then wait for me to be interesting, and I never am, and they leave.'],['Corey','You’re the only one who asks how I am and then actually waits.'],...(abby?[['Corey','Abby doesn’t look at my face either. She looks at whatever I’m holding. A record. A tape. She asks what it sounds like.']]:[])]);
+  const c=await choose(['“How are you? Actually.”','“You ARE interesting.”','Give him your hoodie. He’s shivering.']);
+  if(c===0){await tk([['Corey','…Tired. Scared about tonight. Scared about Aidan. Scared I’m not a nice person and nobody’s noticed because of my face.'],['You','I’d have noticed.']]);return 3}
+  if(c===1){await tk([['Corey','Name one thing.'],['You','You’d give your last biscuit to a pigeon.'],['Corey','…I did that on Tuesday.']]);return 2}
+  await tk([['','He puts it on. It’s too big. He looks less like a poster and more like a person.']]);return 2},
+ sean:async()=>{await tk([['Sean','My dad said something on that call. “Bring her for tea, your mother will cry.”'],['Sean','He never says stuff like that. He says “alright” and “where’s the remote”.'],['Sean','I think he’s proud of me. I don’t know what to do with that.'],rom()?['Sean','And I’m scared I’ll mess it up with Stella. She’s better than me at everything. Including being nice.']:['Sean','I don’t think anyone’s been proud of me since I was ten.']]);
+  const c=await choose(['“Let him be proud. You don’t have to do anything with it.”','“Ask him to come to your game.”',rom()?'“Stella picked you, man.”':'“I’m proud of you. For what it’s worth.”']);
+  if(c===0)await tk([['','He texts his dad one word: “night”. His dad replies in four seconds: “night son”.']]);else if(c===1)await tk([['Sean','He’d come. He’d bring the folding chair and shout at the umpire. …Yeah.']]);else await tk([['Sean',rom()?'…She did. She actually did.':'…It’s worth a lot, actually.']]);return 2},
+ nivaan:async()=>{const r=store.run;await tk([['Nivaan','Want to see something? Not a clip. A thing.'],['','He opens a folder called KEEP. Two videos. Him and his older brother, before his brother moved to Leeds. Eleven seconds each.'],['Nivaan','We never filmed anything. Then he left and I had eleven seconds. Twice.'],['Nivaan','That’s why I film everything. Not for views. So nobody leaves and I’ve only got eleven seconds.'],...((store.seen.fb||{})[1]?[['Nivaan','And then I used it to make Aidan dance. I took the thing I love and I made it into a knife.']]:[])]);
+  const c=await choose(['“Film this. Us. Right now.”','“Call your brother.”','“Delete the dance. Every copy you’ve got.”']);
+  if(c===0){await tk([['','He films you both, sitting there, saying nothing. Forty seconds. It’s the longest thing in KEEP.']]);return 2}if(c===1){await tk([['','He calls. His brother picks up on the second ring, half asleep. They talk about nothing for twenty minutes.']]);return 2}
+  r.danceDeleted=true;await tk([['Nivaan','…Yeah. Even the ones on my backup.'],['','He deletes them one by one. It takes a while. There are a lot.']]);return 2}
+};
+async function heartToHeart(id){const r=store.run;r.h2h??={};r.h2h[id]=1;save();const a=A_[id],you=A_.you,prev=scoreName;
+ Object.assign(a,{sit:true,pose:null,phone:0,lie:0});you.x=clamp(a.x+14,20,WORLD-20);a.dir=1;you.dir=-1;await cameraOn(a.x+7,1.5);cue('memory');
+ await card(K[id].n.toUpperCase(),'a heart-to-heart',1300);const n=await H2H[id]();addBond(id,n||0);cue(prev);await cameraBack()}
+{const _th=things;things=function(){const l=_th();if(busy)return l;const r=store.run||{};for(const it of l){const m=/^Talk to (.+)$/.exec(it.label||'');if(!m)continue;const id=pals.find(p=>K[p].n===m[1]);if(!id)continue;const orig=it.act;
+ const ready=H2H[id]&&bondOf(id)>=4&&!(r.h2h||{})[id]&&socialRoam()&&!S.aidanIn;if(ready)it.label='♥ Heart-to-heart with '+m[1];
+ it.act=()=>{const ph=socialPhase();r.talkPh??={};if(!r.talkPh[id+ph]){r.talkPh[id+ph]=1;addBond(id,1)}if(ready)run(()=>heartToHeart(id));else orig()}}return l}}
+/* bonds in the quest log */
+{const _ql=questLog;questLog=function(){_ql();if(!QLOG)return;const r=store.run||{},rows=pals.filter(id=>!A_[id].dead).map(id=>'<span style="display:inline-block;min-width:200px;margin:2px 10px 2px 0"><b style="color:'+(NCOL[K[id].n]||'#fff')+'">'+K[id].n+'</b> <span style="color:#ff6a8a">'+hearts(bondOf(id))+'</span> <small style="color:#b9a39e">'+BONDNAME(bondOf(id))+((r.h2h||{})[id]?' · talked ♥':bondOf(id)>=4?' · ready for a heart-to-heart':'')+'</small></span>').join('');
+ const inv=Object.keys(r.invites||{}).length;const box=document.createElement('div');box.style.cssText='max-width:880px;margin:0 auto;padding:10px 14px;border:1px solid #3a2a3a;background:#140f1c';box.innerHTML='<h3 style="margin:0 0 6px;color:#ff9ab0">FRIENDS TONIGHT</h3><p style="margin:0 0 6px;color:#b9a39e">Talk to people, do quests together, and be decent. Close friends open up — and remember you at the end.</p>'+rows+'<p style="margin:8px 0 0;color:#f4cda0">✉ Aidan’s invitations found: '+inv+'/8'+(inv>=8?' — you know what to do at the end.':' — look for envelopes around the house.')+'</p>';QLOG.insertBefore(box,QLOG.firstChild)}}
+
+/* ================= PASS 41 (AUTHOR'S EDITION): Aidan's invitations — and the apology they unlock ================= */
+const INVITES=[
+ {id:'you',f:0,x:700,where:'under the doormat',text:'To my best friend (I hope that’s ok to say). You’re invited to my 14th!!! Saturday, 7pm. Mum is making a cake shaped like a phone because you always answer. — Aidan :)'},
+ {id:'nivaan',f:1,x:880,where:'tucked behind a picture frame',text:'Nivaan — you can film it if you want! I practised a dance. It’s bad. You can laugh. Just don’t post it. — A'},
+ {id:'arjun',f:0,x:560,where:'down the back of the sofa',text:'Arjun — I wrote some jokes for you to roast. I left the really good ones in so you win. — A'},
+ {id:'hasan',f:0,x:236,where:'in the kitchen drawer',text:'Hasan — Mum is doing samosas because you said your mum’s are the best and she wants to compete. — A'},
+ {id:'david',f:1,x:420,where:'inside a board-game box',text:'David — there’s a beanbag just for you because you said chairs hurt your back. Nobody else is allowed on it. — A'},
+ {id:'omer',f:0,x:72,where:'pinned to the garage noticeboard',text:'Omer — I made a schedule for the party. It’s laminated. I hope that’s ok. I copied you. — A'},
+ {id:'sean',f:1,x:760,where:'in a coat pocket on the landing',text:'Sean — you can bring Stella. Or anyone. Or nobody. Whatever’s easiest. — A'},
+ {id:'corey',f:1,x:560,where:'under a pillow',text:'Corey — you don’t have to talk to anyone. You can just sit with me. I won’t make it weird. — A'}];
+store.invitesEver??={};
+function invitesFound(){return Object.keys(store.run.invites||{}).length}
+{const _th=things;things=function(){const l=_th();if(busy||S.aidanIn||!socialRoam())return l;const r=store.run;r.invites??={};
+ for(const v of INVITES)if(v.f===S.floor&&!r.invites[v.id])l.push({x:v.x,priority:3,label:'Pick up the envelope '+v.where,act:()=>run(()=>readInvite(v))});return l}}
+{const _dh=drawHouse;drawHouse=function(){_dh();if(busy||S.aidanIn||!socialRoam())return;const r=store.run||{};for(const v of INVITES){if(v.f!==S.floor||(r.invites||{})[v.id])continue;const x=X(v.x);if(x<-10||x>W+10)continue;const gl=Math.sin(T*3+v.x)>.6;
+ R(x-4,146,9,6,'#f4ead8');R(x-4,146,9,1,'#fff');R(x-3,147,1,1,'#c8b898');R(x+3,147,1,1,'#c8b898');R(x-2,148,1,1,'#c8b898');R(x+2,148,1,1,'#c8b898');R(x,149,1,1,'#c8b898');R(x-1,150,3,1,'#d23b5a');if(gl){R(x+5,142,1,3,'#fff');R(x+4,143,3,1,'#fff')}}}}
+async function readInvite(v){const r=store.run;r.invites??={};r.invites[v.id]=1;store.invitesEver[v.id]=1;save();SFX.pick?SFX.pick():SFX.blip(700);
+ await card('✉ '+(v.id==='you'?'FOR YOU':'FOR '+K[v.id].n.toUpperCase()),'found '+v.where,1300);
+ await tk([['','A small envelope, the kind you get in a card shop. Bowl-cut handwriting. The flap was licked shut and has never been opened.'],['',v.text]]);
+ if(v.id!=='you'&&LV(v.id))await tk([[K[v.id].n,one(['…He sent me one? I never got— I never looked.','I remember the envelope. I put it in the recycling without opening it.','Why is it here? How is it HERE?'])]]);
+ if(v.id!=='you')addBond(v.id,1);const n=invitesFound();sub('✉ Aidan’s invitations: '+n+'/8');
+ if(n>=8){r.invitesAll=true;save();await tk([['','Eight envelopes. Eight names. Every one of you was invited. Nobody went.'],['','You put them together in your pocket. You have one chance tonight to say something about it. You’ll know when.']])}}
+/* the finale gets a new answer */
+const SORRY={nivaan:'I made you dance. You told me you couldn’t, and I made you anyway. I’m sorry.',arjun:'I wrote the song. “Nobody picks up.” …I’m picking up. I’m sorry.',hasan:'I typed “make it slap”. And I’d have come to your party if I wasn’t a coward. I’m sorry.',david:'I put a laughing face under it so nobody would think I was soft. I’m sorry.',omer:'We knew it was real. We just didn’t check. I’m sorry.',corey:'We went bowling. I didn’t even want to go bowling. I’m sorry.',sean:'You came to the disco in an ironed shirt, man. I’m sorry.'};
+async function groupSorry(){const L=livingFriends();
+ await tk([['','You hold them out. Eight envelopes. Handwritten. The top one has your name on it.'],['Aidan','…You found them. I posted them through all your doors. One at a time. Nobody came.']]);
+ for(const id of L){const a=A_[id];a.pose='chest';a.weapon=null;await say(K[id].n,SORRY[id]);a.pose=null}
+ await tk([['You','We should have come. All of us. Every single one of us. I’m sorry.']]);
+ AI.transform=.2;fx(.8,'');await tw(AI,{transform:.2},10);
+ await tk([['','It comes off him in layers. The extra hands first. Then the jaw goes back to where a jaw goes. What’s left is a small, soaked boy in a jacket that doesn’t fit, holding a ninth envelope.'],['Aidan','I made one for me too. In case. So there’d be nine.'],['Aidan','Can I stay? Just till morning. I’ll be quiet. I brought snacks.']]);
+ if(await choose(['“…Yeah. You can stay. All of us want you to.”','Finish it.'])){await say('Aidan','Oh. Okay. That’s— yeah. That’s fair.');AI.transform=1;return false}
+ cue('dawn');await tw(view,{fade:1},1500);await card('MORNING','Nine sleeping bags.',2600);store.end['rNINE']=1;store.end['rAPOLOGY']=1;(store.medals??={}).apology=1;save();
+ await menu('<h1>NINE</h1><p style="color:#ffe066">AUTHOR’S CUT</p><p>He’s asleep between Hasan and David. He laughed at every joke, half a second late, and nobody minded.</p><p>'+(livingFriends().length<7?'There are empty bags too. Nobody’s talking about those yet.':'Everybody lived.')+'</p><p>On Saturday all eight of you go round to his. His mum makes the phone cake again. This time everybody comes.</p><p>Nivaan films the whole thing. He doesn’t post it. It goes in KEEP.</p>',['TITLE']);
+ location.reload();await new Promise(()=>{});return true}
+
+/* ================= PASS 42 (AUTHOR'S EDITION): title, Extras, notes, credits, end-of-night summary ================= */
+const AUTHOR_NAME='the author'; // change this to your name
+const AUTHOR_NOTES=[
+ ['Aidan was never the monster','Every version of this story starts with the same question: what would make a kid keep calling people who never pick up? The answer is in the flashbacks. The horror is real, but it is a mirror.'],
+ ['The calls','Each call is written so Aidan says one true thing hidden inside a creepy one. Play it twice and listen for them.'],
+ ['The lads','Eight boys, eight different ways of being fourteen. Hasan laughs first so it lands softer. David is scared of his own temper. Omer writes people down so he can’t lose them. Arjun fills silence. Corey is lonely in plain sight. Sean doesn’t know what to do with being loved. Nivaan films everything because he once had only eleven seconds. And you answer the phone.'],
+ ['Group quests','These are the nights you would actually talk about years later. They are allowed to be more ridiculous than the main story, because real friendships are.'],
+ ['The chair','David’s chair is the moment the comedy stops being funny. It changes how everyone talks for the rest of the night, on purpose.'],
+ ['Defend the House','Every trap is something a real group of mates would think of in two minutes with what is lying around a house. Including Hasan.'],
+ ['The invitations','Eight envelopes, one for each of you, never opened. Find them all and the ending changes. It is the only fight in the game you win by saying sorry.'],
+ ['The pixels','Everything is drawn in code, one block at a time, and rendered sharp at any size. No sprite sheets. Every pose is built from a little skeleton.']];
+const ENDNAME={house:'Everyone got out',loss:'Not everyone got out',rNINE:'NINE — the apology',rAPOLOGY:'NINE — Author’s Cut (the group apology)','rTHE PERFECT SLEEPOVER':'The Perfect Sleepover','rMOST OF US':'Most Of Us','rTHE LONG MORNING':'The Long Morning','rLAST ONE AWAKE':'Last One Awake'};
+function openExtras(tab='endings'){const e=store.end||{},md=store.medals||{},rel=store.relics||{},inv=store.invitesEver||{};const T_=(k,t)=>'<button data-tab="'+k+'" style="font:10px KenPixel,monospace;padding:6px 10px;margin:0 4px 10px 0;background:'+(tab===k?'#6a3a2a':'#1a1622')+';color:#e8e0d0;border:1px solid #8f6d6b">'+t+'</button>';
+ let body='';
+ if(tab==='endings'){const ks=Object.keys(ENDNAME);body='<p style="color:#b9a39e">Endings you have reached. Every night is different.</p>'+ks.map(k=>'<p style="margin:4px 0">'+(e[k]?'★ <b style="color:#ffe066">'+ENDNAME[k]+'</b>':'☆ <span style="color:#6a5a6a">??? — not yet</span>')+'</p>').join('')+'<h3 style="color:#ffe066;margin:14px 0 6px">MEDALS</h3>'+(Object.keys(md).length?Object.keys(md).map(k=>'<p style="margin:3px 0">🏅 '+esc(k)+'</p>').join(''):'<p style="color:#6a5a6a">None yet.</p>')}
+ else if(tab==='collection'){const ks=questKeys();body='<p style="color:#b9a39e">Relics: '+ks.filter(k=>rel[k]).length+'/'+ks.length+'</p>'+ks.map(k=>'<p style="margin:3px 0">'+(rel[k]?(QICON[k]||'•')+' '+esc(RELIC[k]||k):'<span style="color:#6a5a6a">? '+esc((FRIEND_STORIES[k]||{}).title||k)+'</span>')+'</p>').join('')+
+  '<h3 style="color:#f4cda0;margin:14px 0 6px">AIDAN’S INVITATIONS — '+Object.keys(inv).length+'/8</h3>'+INVITES.map(v=>inv[v.id]?'<p style="margin:4px 0">✉ <b>'+(v.id==='you'?'You':K[v.id].n)+'</b>: <span style="color:#d8c8b8">'+esc(v.text)+'</span></p>':'<p style="margin:4px 0;color:#6a5a6a">✉ sealed — somewhere in the house</p>').join('')}
+ else if(tab==='notes')body=AUTHOR_NOTES.map(([h,t])=>'<h3 style="color:#ffe066;margin:12px 0 4px">'+esc(h)+'</h3><p style="margin:0">'+esc(t)+'</p>').join('');
+ else body='<h3 style="color:#ffe066">THE CALLING OF AIDAN — AUTHOR’S EDITION</h3><p>Created by '+esc(AUTHOR_NAME)+'.</p><p>Starring: Hasan, David, Omer, Arjun, Corey, Sean, Nivaan, You — and Aidan.</p><p>Also starring: Stella, Abby, Big Lenny, Craig, Clive, Mr. Pugh, Captain Ron, Kenzie, Ziggy, and a bouncy chair.</p><p>Every block, pose, song and scream drawn and played in code.</p><p style="color:#b9a39e">For the group chat.</p>';
+ const m=modal('<h2 style="color:#ffe066;margin:0 0 10px">EXTRAS</h2>'+T_('endings','ENDINGS & MEDALS')+T_('collection','COLLECTION')+T_('notes','AUTHOR’S NOTES')+T_('credits','CREDITS')+body);
+ m.addEventListener('click',ev=>{const b=ev.target.closest('button[data-tab]');if(b)openExtras(b.dataset.tab)})}
+{const _m=menu;menu=function(html,btns){const isTitle=/THE CALLING<br>OF AIDAN/.test(html);if(isTitle)html=html.replace('<p>A sleepover horror story</p>','<p>A sleepover horror story</p><p style="color:#ffe066;letter-spacing:.2em;margin-top:-4px">AUTHOR’S EDITION</p>');
+ if(/THE CALL<br>ENDED/.test(html))html+=nightSummary();
+ const p=_m(html,btns);if(isTitle){const row=document.createElement('div');row.style.cssText='display:flex;gap:8px;justify-content:center;margin-top:8px';for(const [t,f] of [['EXTRAS',()=>openExtras()],['SETTINGS',openSettings]]){const b=document.createElement('button');b.className='mb alt';b.textContent=t;b.onclick=e=>{e.stopPropagation();f()};row.appendChild(b)}$('menu').appendChild(row)}return p}}
+function nightSummary(){const r=store.run||{},s=socialState(),done=Object.keys(FRIEND_STORIES).filter(k=>!GROUPQ[k]&&k!=='royale'&&s[k]&&s[k].step>=((FRIEND_SCENES[k]||[]).length||4)),grp=Object.keys(r.gdone||{}),best=pals.filter(id=>!A_[id].dead).sort((a,b)=>bondOf(b)-bondOf(a))[0];
+ const line=(k,v)=>'<p style="margin:2px 0"><span style="color:#b9a39e">'+k+':</span> '+v+'</p>';
+ return '<div style="margin:10px auto 6px;padding:8px 12px;border:1px solid #3a2a3a;background:#140f1c;max-width:520px;text-align:left;font-size:11px"><p style="color:#ffe066;margin:0 0 4px">TONIGHT</p>'+line('Quests finished',done.length?done.map(k=>QICON[k]||'•').join(' '):'none')+line('Group quests',grp.length?grp.map(k=>QICON[k]).join(' '):'none')+(r.defended!=null?line('House defence',r.defended+'/5 traps sprung'):'')+line('Invitations found',Object.keys(r.invites||{}).length+'/8')+line('Heart-to-hearts',Object.keys(r.h2h||{}).length+'/7')+
+  (best&&bondOf(best)>0?line('Closest tonight','<b style="color:'+(NCOL[K[best].n]||'#fff')+'">'+K[best].n+'</b> '+hearts(bondOf(best))):'')+(r.davidRage===true?line('Scars','Hasan’s spine. David’s temper.'):'')+'</div>'}
+/* closest friend gets the last word in the epilogue */
+{const _w=whereNow;whereNow=function(){const L=_w(),best=pals.filter(id=>!A_[id].dead).sort((a,b)=>bondOf(b)-bondOf(a))[0];if(best&&bondOf(best)>=6){const i=L.findIndex(l=>l.includes('<b>'+K[best].n.toUpperCase()+'</b>'));if(i>=0)L[i]+=' Still texts you first thing every morning. Just “up?”. Every day.'}return L}}
 
 /* ================= THE LAMP TIMELINE (only when built as lamp.html) ================= */
 if(window.LAMP_TIMELINE){
