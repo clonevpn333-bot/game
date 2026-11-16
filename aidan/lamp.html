@@ -6518,6 +6518,33 @@ if(window.LAMP_TIMELINE){after(FRIEND_SCENES.curlfather,3,async()=>{if(A_.corey.
  if(c===0){store.run.curlRoute=true;save();await talk([['Corey','Expand.'],['Corey','Four schools isn’t an empire. It’s a hobby. I want the city.'],['','He puts on sunglasses. It is 1am. Nobody tells him to take them off. Nobody would dare.']]);sub('THE CURLFATHER ROUTE has begun. The family business is the story now.')}});
  Object.assign(QBLURB,{curlfather:'Corey’s secret empire in your loft. Expand it and it takes over everything.'});}
 
+/* ================= PASS 23: shorter Curlfather that doesn't hijack the night; Corey's purple easter egg ================= */
+curlFinale=async function(){if(!store.run.curlRoute||A_.corey.dead)return false;
+ await talk([['Corey','Aidan. Last offer. Join the family. Free product for life.'],['','He holds out a jar. The monster looks at it for a long moment.'],['','Then it slaps it out of his hand. The jar smashes against the wall. Forty quid of cream, gone.'],['Corey','…Okay. Business is over. Finish him.']]);return false};
+curlYear=async function(sv){if(!store.run.curlRoute||!sv.includes('corey'))return;cue('memory');
+ await card('THE CURLFATHER','What happened next',2200);
+ await toPost('salon',[{id:'cmum',x:200,y:150,dir:-1},{id:'corey',x:120,y:156,dir:1}],'An empty shop on Maple Row');MEM.dark=true;MEM.signText='CLOSED — TO LET';MEM.sign='#c8c8c8';
+ await talk([['','His mum found the loft. All of it. She’s waiting for him in the empty shop on Maple Row — the salon she lost two years ago.'],['Corey’s Mum','This is my recipe. I threw it out when the shop closed. You took it out of the bin.'],['Corey','Every jar paid a bit of the rent you think Grandma’s been paying.'],['','She sits him in the one chair left and does his hair, like when he was six.'],['Corey’s Mum','You always use too much.']]);
+ const end=await choose(['Go legit. Reopen the salon with his mum.','Keep the crown. Sunglasses on.','Burn the loft. Walk away in slow motion.']);
+ MEM.dark=false;MEM.signText=end===0?'ROYAL CURLS':MEM.signText;MEM.sign='#ffe066';
+ await talk(end===0?[['','ROYAL CURLS reopens in June. Queue round the block. His mum cuts, Corey sweeps, David is security, and Omer does the books legally and hates it.']]:end===1?[['','By summer he runs every school in the city. He sends his mum flowers every Sunday with no name on them. She knows.']]:[['','THE ASSISTANT, full blast. Forty jars and a vat. He walks out in slow motion while it burns, and his curls are perfect the entire time. He keeps one recipe card and gives it back to her.']]);
+ store.end[end===0?'rCURL_LEGIT':end===1?'rCURL_KING':'rCURL_BURN']=1;save();await fromMemory()};
+{const _sp=FRIEND_SCENES.curlfather;if(_sp){const o=_sp[3];_sp[3]=async(q,s)=>{await o(q,s);if(store.run.curlRoute){store.run.curlRaid=true;save()}}}}
+/* ---------- Corey's easter egg (main game): the purple flower ---------- */
+if(!window.LAMP_TIMELINE){
+ const FX=812;
+ {const _dh=drawHouse;drawHouse=function(){_dh();if(S.floor===1&&!store.run.flower&&socialRoam()){const x=X(FX);R(x-3,124,7,6,'#8a5a3a');R(x-2,123,5,2,'#6a4428');R(x,114,1,9,'#3a7a3a');R(x+1,118,3,1,'#3a7a3a');R(x-2,110,5,5,'#9a4ae8');R(x-1,111,3,3,'#c98aff');R(x,112,1,1,'#ffe066')}}}
+ {const _dk=drawKid;drawKid=function(k,x,y,o){const r=_dk(k,x,y,o);if(k===K.corey&&store.run.cfit&&!(o&&o.deadFace)){x=Math.round(x);y=Math.round(y);const d=(o&&o.dir)||1,sit=o&&o.sit;const by=sit?y-12:y-16;R(x-3,by+2,6,3,'#9a4ae8');R(x-2,by+3,4,1,'#ffe066');const hx=x+d*5,hy=(sit?y-24:y-28);R(hx-1,hy,3,3,'#b06aff');R(hx,hy+1,1,1,'#ffe066');R(hx,hy+3,1,3,'#3a7a3a')}return r}}
+ {const _th=things;things=function(){const l=_th();if(!socialRoam()||S.hiddenAt||S.errand)return l;
+  if(S.floor===1&&!store.run.flower)l.push({x:FX,priority:2,label:'A single purple flower on the windowsill',act:()=>run(async()=>{store.run.flower=1;save();SFX.pick();await N('A purple flower in a little clay pot. Somebody has watered it recently. A tiny card is tied to the stem: “for C. — you know why.”');sub('You have a purple flower. Someone in this house knows what it means.')})});
+  if(store.run.flower===1&&!A_.corey.dead&&A_.corey.floor===S.floor)l.push({x:A_.corey.x,y:A_.corey.y,priority:4,label:'Corey · show him the purple flower',act:()=>run(coreyFit)});return l}}
+ async function coreyFit(){const co=A_.corey;store.run.flower=2;save();co.sit=false;
+  await talk([['Corey','…Where did you get that.'],['You','Bathroom windowsill. It says “for C.”'],['Corey','My mum leaves one wherever I’m staying. Every time. Since I was little. It’s a whole thing. Don’t tell Arjun.'],['Corey','She says purple’s the colour you wear when you’re not trying to impress anyone. When you’re just being yourself.']]);
+  await talk([['','He looks at the flower for a while. Then he goes into the bathroom with his bag.'],['','When he comes out, the black jacket is gone. He’s in a vintage tee — washed black, a faded purple print across the chest. “PURPLE SWAG”, it says, in letters that have been through the wash a thousand times. The flower is tucked behind his ear.'],['Hasan','…Is that an A$AP Rocky shirt?'],['Corey','It’s THE A$AP Rocky shirt. Testing tour. My cousin got it signed. I’ve never worn it in front of anyone.'],['Arjun','Why NOT? You look— oh no. Oh no, he looks even better. It’s getting WORSE.'],['Corey','Because it’s mine. Not for anyone else. Tonight felt like the night.']]);
+  store.run.cfit=true;save();sub('Corey’s secret fit unlocked. He keeps it on for the rest of the night.')}
+ {const _a=FRIEND_SCENES.abby;if(_a){const o=_a[2];_a[2]=async(q,s)=>{if(store.run.cfit)await N('He’s wearing the purple shirt. The flower’s still behind his ear. He didn’t change for her. That’s the point.');await o(q,s);if(store.run.cfit)await talk([['','On the way out, he takes the purple flower from behind his ear and puts it on the counter by the till.'],['Abby','What’s this?'],['Corey','My mum’s thing. Purple’s for when you’re not trying to impress anyone.'],['Abby','…You’re trying really hard right now.'],['Corey','Yeah. First time it’s for real, though.']])}}}
+}
+
 const sceneText=$('scene-text'),textInk=sceneText.getContext('2d');
 let sceneLetters=[];
 g.fillText=function(text,x,y,maxWidth){
