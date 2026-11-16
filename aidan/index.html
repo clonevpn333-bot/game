@@ -7827,39 +7827,50 @@ async function curtainCall(){if(FAST&&!window.CC_TEST)return;CCSKIP=false;const 
 /* ================= PASS 44: THE DRAFTS — something in the woods is playing Aidan's voicemails =================
    Four rejected AI versions of Aidan, generated before he chose "someone they can't ignore". All original creatures. */
 function sirenWail(n=2){if(!AC||FAST)return;for(let i=0;i<n;i++){tone(380,1.1,'sawtooth',.06,920,i*1.2);tone(392,1.1,'square',.03,940,i*1.2+.02)}}
-function drawTannoy(b,m){const x=Math.round(b.x),gy=158,top=26,al=1-(b.fade||0);if(al<=0)return;g.save();g.globalAlpha=al;
- R(x-2,top+20,4,gy-top-20,'#3a332e');R(x-1,top+20,1,gy-top-20,'#5a5048');for(let y=top+30;y<gy;y+=14)R(x-3,y,6,2,'#2a2420');
- R(x-6,top+18,12,4,'#3a332e');for(let i=0;i<5;i++)R(x-6+i*3,top+22,2,8+((i*7)%5)*3,'#4a3a30');
- const hd=b.dir||-1;R(x-5,top+4,10,14,'#6a4a38');R(x-5,top+4,10,2,'#8a6248');g.fillStyle='#7a5a44';g.beginPath();g.moveTo(x+hd*4,top+4);g.lineTo(x+hd*20,top-2);g.lineTo(x+hd*20,top+24);g.lineTo(x+hd*4,top+18);g.fill();
- g.fillStyle='#1a1210';g.beginPath();g.ellipse(x+hd*20,top+11,3,12,0,0,Math.PI*2);g.fill();for(let i=0;i<4;i++)R(x+hd*19,top+2+i*5,2,1,'#3a2a20');if(Math.sin(T*6)>0)R(x-1,top+6,2,2,'#ff2020');
- if(b.sing){g.strokeStyle='rgba(255,220,180,.35)';for(let i=0;i<3;i++){const r=((T*40+i*10)%30)+6;g.beginPath();g.arc(x+hd*20,top+11,r,hd>0?-0.8:Math.PI-0.8,hd>0?0.8:Math.PI+0.8,hd<0);g.stroke()}}
- g.strokeStyle='#3a332e';g.lineWidth=2;const arm=(sx,tx,ty)=>{g.beginPath();g.moveTo(sx,top+24);g.quadraticCurveTo(sx+(tx-sx)*.3,(top+24+ty)/2-10,tx,ty);g.stroke();for(let i=-1;i<=1;i++){g.beginPath();g.moveTo(tx,ty);g.lineTo(tx+i*3,ty+5);g.stroke()}};
- const gr=b.grab&&cf(b.grab);if(gr)arm(x+hd*5,gr.x,gr.y-2);else arm(x+hd*5,x+hd*12,gy-30);arm(x-hd*5,x-hd*10,gy-24);g.lineWidth=1;
- if(b.fade)for(let i=0;i<30;i++)R(x-14+Math.random()*28,top+Math.random()*(gy-top),2,1,Math.random()<.5?'#fff':'#000');g.restore()}
+/* pixel-only drawing helpers: every mark lands on the 320x180 grid */
+function PXL(x0,y0,x1,y1,c,w=1){x0=Math.round(x0);y0=Math.round(y0);x1=Math.round(x1);y1=Math.round(y1);const dx=Math.abs(x1-x0),dy=-Math.abs(y1-y0),sx=x0<x1?1:-1,sy=y0<y1?1:-1;let e=dx+dy;for(let i=0;i<600;i++){R(x0-(w>>1),y0-(w>>1),w,w,c);if(x0===x1&&y0===y1)break;const e2=2*e;if(e2>=dy){e+=dy;x0+=sx}if(e2<=dx){e+=dx;y0+=sy}}}
+function PXE(cx,cy,rx,ry,c){cx=Math.round(cx);cy=Math.round(cy);for(let y=-ry;y<=ry;y++){const w=Math.round(rx*Math.sqrt(Math.max(0,1-(y*y)/((ry+.5)*(ry+.5)))));R(cx-w,cy+y,w*2+1,1,c)}}
+function PXArc(cx,cy,r,a0,a1,c,step=2){const n=Math.max(8,Math.round(r*Math.abs(a1-a0)));for(let i=0;i<=n;i+=step){const t=a0+(a1-a0)*i/n;R(Math.round(cx+Math.cos(t)*r),Math.round(cy+Math.sin(t)*r),1,1,c)}}
+function drawTannoy(b,m){const x=Math.round(b.x),gy=158,top=26,al=1-(b.fade||0);if(al<=0)return;g.save();g.globalAlpha=al;const hd=b.dir||-1;
+ R(x-1,top+20,3,gy-top-20,'#3a332e');R(x,top+20,1,gy-top-20,'#5a5048');for(let y=top+30;y<gy;y+=14){R(x-2,y,5,2,'#2a2420');R(x-2,y,5,1,'#4a4038')}
+ R(x-6,top+18,12,4,'#3a332e');R(x-6,top+18,12,1,'#5a5048');for(let i=0;i<5;i++)R(x-6+i*3,top+22,2,6+((i*7)%5)*3,i%2?'#4a3a30':'#3a2e26');
+ R(x-5,top+4,10,14,'#6a4a38');R(x-5,top+4,10,2,'#8a6248');R(x-5,top+16,10,2,'#4a3428');
+ for(let k=0;k<17;k++){const hh=12+Math.round(k*.8),cx=x+hd*(5+k);R(cx,top+11-(hh>>1),1,hh,k%3===0?'#5a3e2e':'#7a5a44');R(cx,top+11-(hh>>1),1,1,'#9a7258')}
+ const mh=26,mx=x+hd*22;R(mx-(hd<0?1:0),top+11-(mh>>1),2,mh,'#1a1210');for(let i=0;i<5;i++)R(mx-(hd<0?1:0),top+1+i*5,2,1,'#3a2a20');
+ if(Math.sin(T*6)>0)R(x-1,top+6,2,2,'#ff2020');
+ if(b.sing)for(let i=0;i<3;i++){const r=Math.round(((T*30+i*9)%27)+5);PXArc(mx,top+11,r,hd>0?-.7:Math.PI-.7,hd>0?.7:Math.PI+.7,'#e8d0b0',2)}
+ const arm=(sx,tx,ty)=>{const mx2=Math.round(sx+(tx-sx)*.35),my2=Math.round((top+24+ty)/2-8);PXL(sx,top+24,mx2,my2,'#3a332e',2);PXL(mx2,my2,tx,ty,'#3a332e',2);for(let i=-1;i<=1;i++)PXL(tx,ty,tx+i*3,ty+5,'#2a2420',1)};
+ const gr=b.grab&&cf(b.grab);if(gr)arm(x+hd*5,gr.x,gr.y-2);else arm(x+hd*5,x+hd*12,gy-30);arm(x-hd*5,x-hd*10,gy-24);
+ if(b.fade)for(let i=0;i<30;i++)R(x-14+Math.floor(Math.random()*28),top+Math.floor(Math.random()*(gy-top)),2,1,Math.random()<.5?'#fff':'#000');g.restore()}
 function drawMare(b){const x=Math.round(b.x),al=1-(b.fade||0);if(al<=0)return;g.save();g.globalAlpha=al;const ph=T*2.2;
- for(let i=0;i<4;i++){const lx=x-10+i*7+Math.round(Math.sin(ph+i*1.7)*4);g.strokeStyle='#120e10';g.lineWidth=2;g.beginPath();g.moveTo(x-10+i*7,46);g.lineTo(lx,100);g.lineTo(lx+Math.round(Math.sin(ph+i)*3),158);g.stroke()}
- R(x-14,38,32,11,'#1a1416');R(x-14,38,32,2,'#2a2024');g.strokeStyle='#1a1416';g.lineWidth=4;g.beginPath();g.moveTo(x+16,40);g.quadraticCurveTo(x+30,44,x+26,70);g.stroke();R(x+22,68,9,6,'#d8d0c8');R(x+24,70,1,1,'#000');R(x+28,70,1,1,'#000');
- for(let i=0;i<5;i++)R(x-16-i,40+i*2,2,8,'#0e0a0c');g.lineWidth=1;if(b.fade)for(let i=0;i<20;i++)R(x-16+Math.random()*44,36+Math.random()*120,2,1,'#fff');g.restore()}
+ for(let i=0;i<4;i++){const hx=x-10+i*7,kx=hx+Math.round(Math.sin(ph+i*1.7)*4),fx=kx+Math.round(Math.sin(ph+i)*3);PXL(hx,48,kx,100,'#120e10',2);PXL(kx,100,fx,157,'#120e10',2);R(fx-1,156,3,2,'#0a0808')}
+ R(x-14,38,32,11,'#1a1416');R(x-14,38,32,2,'#2a2024');R(x-12,47,28,2,'#100c0e');
+ PXL(x+16,41,x+24,47,'#1a1416',3);PXL(x+24,47,x+27,56,'#1a1416',3);PXL(x+27,56,x+26,67,'#1a1416',3);for(let i=0;i<6;i++)R(x+20+i,40+i*3,1,4,'#0a0808');
+ R(x+22,67,9,6,'#d8d0c8');R(x+22,67,9,1,'#f0e8e0');R(x+24,69,1,1,'#000');R(x+28,69,1,1,'#000');R(x+25,72,4,1,'#b8b0a8');
+ for(let i=0;i<5;i++)R(x-16-i,40+i*2,2,8,'#0e0a0c');if(b.fade)for(let i=0;i<20;i++)R(x-16+Math.floor(Math.random()*44),36+Math.floor(Math.random()*120),2,1,'#fff');g.restore()}
 function drawMascot(b){const x=Math.round(b.x),al=1-(b.fade||0);if(al<=0)return;g.save();g.globalAlpha=al;const w=Math.round(Math.sin(T*3)*2);
- R(x-8,128,16,30,'#141018');R(x-5,150,4,8,'#141018');R(x+1,150,4,8,'#141018');R(x-6,156,5,2,'#f4f0e8');R(x+1,156,5,2,'#f4f0e8');
- R(x-14+w,132,6,4,'#141018');R(x+8+w,128,6,4,'#141018');g.fillStyle='#f4f0e8';g.beginPath();g.arc(x-15+w,134,3,0,7);g.arc(x+15+w,129,3,0,7);g.fill();R(x-3,128,6,3,'#c23b3b');
- g.fillStyle='#ece2c8';g.beginPath();g.arc(x+w,112,14,0,7);g.fill();g.fillStyle='#d8c8a8';g.beginPath();g.arc(x-10+w,100,5,0,7);g.arc(x+10+w,100,5,0,7);g.fill();
- g.fillStyle='#111';g.beginPath();g.ellipse(x-5+w,108,2.5,4,0,0,7);g.ellipse(x+5+w,108,2.5,4,0,0,7);g.fill();R(x-6+w,106,1,1,'#fff');R(x+4+w,106,1,1,'#fff');
- g.fillStyle='#111';g.beginPath();g.arc(x+w,115,9,0.1,Math.PI-0.1);g.fill();for(let i=0;i<6;i++)R(x-7+i*3+w,115,2,2,'#f4f0e8');R(x+12+w,104,1,14,'#888');R(x+12+w,110,2,3,'#0a0a0a');
- if(b.sing&&Math.sin(T*10)>0)R(x-3+w,120,6,2,'#3a0a0a');g.restore()}
-function drawWireDog(b){const x=Math.round(b.x),al=1-(b.fade||0);if(al<=0)return;g.save();g.globalAlpha=al;g.strokeStyle='#1e2a22';g.lineWidth=1;const t=T*4;
- for(let i=0;i<8;i++){g.beginPath();g.ellipse(x-10+i*3,146+Math.sin(t+i)*0.6,3,4,0,0,7);g.stroke()}for(let i=0;i<4;i++){const lx=x-9+i*6;for(let j=0;j<4;j++){g.beginPath();g.arc(lx+Math.sin(t+i)*0.5,150+j*2,1.5,0,7);g.stroke()}}
- g.fillStyle='#2a2a30';g.beginPath();g.arc(x+15,140,6,0,7);g.fill();g.strokeStyle='#d8d0c0';for(let i=0;i<8;i++){const a=i/8*6.28;g.beginPath();g.arc(x+15+Math.cos(a)*3.5,140+Math.sin(a)*3.5,.8,0,7);g.stroke()}R(x+14,139,2,2,'#c23b3b');
- g.strokeStyle='#1e2a22';g.beginPath();g.moveTo(x-12,145);for(let i=0;i<10;i++)g.lineTo(x-14-i*2,146+Math.sin(t+i)*2+i);g.stroke();g.restore()}
-BG2.woods=function(m){nightSky(120,'#02030c','#0c1428');R(260,22,9,9,'#e8e4d0');glow(264,26,20,'rgba(220,220,200,.25)');for(let i=0;i<40;i++)R((i*53)%W,(i*29)%60,1,1,'#cfd8ff');
- for(let i=0;i<16;i++){const x=i*22-6,h=40+((i*37)%30);g.fillStyle='#080c10';g.beginPath();g.moveTo(x,140);g.lineTo(x+11,140-h);g.lineTo(x+22,140);g.fill()}
- for(const px of [70,200]){g.strokeStyle='#1c2028';g.beginPath();g.moveTo(px-14,150);g.lineTo(px-4,30);g.lineTo(px+4,30);g.lineTo(px+14,150);g.moveTo(px-12,40);g.lineTo(px+12,40);for(let y=50;y<150;y+=16){g.moveTo(px-8-(y-30)*.08,y);g.lineTo(px+8+(y-30)*.08,y+16);g.moveTo(px+8+(y-30)*.08,y);g.lineTo(px-8-(y-30)*.08,y+16)}g.stroke()}
- g.strokeStyle='#2a3038';g.beginPath();g.moveTo(0,36);g.quadraticCurveTo(70,46,135,36);g.quadraticCurveTo(200,46,320,34);g.stroke();
- for(const b of m.beasts||[]){if(b.t==='mare')drawMare(b)}for(const b of m.beasts||[]){if(b.t==='tannoy')drawTannoy(b,m)}
- R(0,148,W,32,'#0c120c');for(let i=0;i<30;i++)R((i*37)%W,150+(i*13)%20,3,1,'#16241a');R(120,150,80,30,'#1a1a14');
+ R(x-8,128,16,24,'#141018');R(x-8,128,2,24,'#1e1824');R(x-5,150,4,7,'#141018');R(x+1,150,4,7,'#141018');R(x-7,156,6,2,'#f4f0e8');R(x+1,156,6,2,'#f4f0e8');
+ R(x-14+w,132,7,3,'#141018');R(x+7+w,128,7,3,'#141018');PXE(x-15+w,133,2,2,'#f4f0e8');PXE(x+15+w,129,2,2,'#f4f0e8');R(x-3,128,6,3,'#c23b3b');R(x-1,129,2,1,'#8a1a1a');
+ PXE(x-10+w,100,4,4,'#d8c8a8');PXE(x+10+w,100,4,4,'#d8c8a8');PXE(x-10+w,100,2,2,'#c0a888');PXE(x+10+w,100,2,2,'#c0a888');
+ PXE(x+w,112,13,12,'#ece2c8');R(x-12+w,106,2,10,'#f8f0dc');R(x+10+w,104,3,14,'#d8ccb0');
+ PXE(x-5+w,108,2,3,'#111');PXE(x+5+w,108,2,3,'#111');R(x-6+w,106,1,1,'#fff');R(x+4+w,106,1,1,'#fff');
+ for(let y=0;y<8;y++){const hw=Math.round(9*Math.sqrt(1-(y*y)/64));R(x-hw+w,115+y,hw*2+1,1,'#111')}for(let i=0;i<6;i++)R(x-7+i*3+w,115,2,2,'#f4f0e8');if(b.sing&&Math.sin(T*10)>0)R(x-3+w,120,7,2,'#3a0a0a');
+ R(x+12+w,104,1,14,'#888');R(x+12+w,110,2,3,'#0a0a0a');R(x+13+w,111,1,1,'#555');g.restore()}
+function drawWireDog(b){const x=Math.round(b.x),al=1-(b.fade||0);if(al<=0)return;g.save();g.globalAlpha=al;const c='#1e2a22',c2='#2e3e32',bob=Math.sin(T*4)>.5?1:0;
+ for(let i=0;i<8;i++){const cx=x-11+i*3,cy=142+bob;R(cx,cy,3,1,c2);R(cx-1,cy+1,1,4,c);R(cx+3,cy+1,1,4,c);R(cx,cy+5,3,1,c)}
+ for(let i=0;i<4;i++){const lx=x-9+i*6+((Math.floor(T*4)+i)%2);for(let j=0;j<4;j++){R(lx,149+j*2,2,1,c2);R(lx-1,150+j*2,1,1,c);R(lx+2,150+j*2,1,1,c)}}
+ PXE(x+15,140,5,5,'#2a2a30');PXE(x+15,140,5,5,'#2a2a30');for(let i=0;i<8;i++){const a=i/8*6.283;R(Math.round(x+15+Math.cos(a)*3),Math.round(140+Math.sin(a)*3),1,1,'#d8d0c0')}R(x+15,140,1,1,'#c23b3b');R(x+11,135,2,2,'#2a2a30');R(x+18,135,2,2,'#2a2a30');
+ for(let i=0;i<10;i++)R(x-13-i*2,146+Math.round(Math.sin(T*4+i)*2)+i,2,1,c);g.restore()}
+BG2.woods=function(m){const sky=['#02030c','#03050f','#040712','#050a17','#070d1c','#0a1122','#0c1428','#0e1830'];sky.forEach((c,i)=>R(0,i*19,W,i===7?H:19,c));for(let i=0;i<40;i++)R((i*53)%W,(i*29)%60,1,1,i%5?'#9aa8d8':'#ffffff');
+ PXE(264,26,5,5,'#e8e4d0');R(262,24,2,2,'#cfcab4');R(266,28,1,1,'#cfcab4');
+ for(let i=0;i<16;i++){const x0=i*22-6,h=40+((i*37)%30);for(let r=0;r<h;r+=2){const w=Math.round((r+1)*11/h);R(x0+11-w,140-h+r,w*2,2,'#080c10')}}
+ for(const px of [70,200]){const c='#1c2028';PXL(px-14,150,px-4,30,c);PXL(px+14,150,px+4,30,c);R(px-12,40,25,1,c);R(px-6,30,13,1,c);for(let y=50;y<150;y+=16){const a=8+Math.round((y-30)*.08),b2=8+Math.round((y+16-30)*.08);PXL(px-a,y,px+b2,y+16,c);PXL(px+a,y,px-b2,y+16,c)}}
+ const wire=(x0,x1,y)=>{for(let x=x0;x<x1;x++){const t=(x-x0)/(x1-x0);R(x,Math.round(y+Math.sin(t*Math.PI)*8),1,1,'#2a3038')}};wire(0,66,30);wire(74,196,34);wire(204,W,34);
+ for(const b of m.beasts||[])if(b.t==='mare')drawMare(b);for(const b of m.beasts||[])if(b.t==='tannoy')drawTannoy(b,m);
+ R(0,148,W,32,'#0c120c');for(let i=0;i<30;i++)R((i*37)%W,150+(i*13)%20,3,1,'#16241a');R(120,150,80,30,'#1a1a14');for(let i=0;i<12;i++)R(124+(i*23)%72,152+(i*7)%22,2,1,'#262618');
  for(const b of m.beasts||[]){if(b.t==='mascot')drawMascot(b);if(b.t==='dog')drawWireDog(b)}
- g.fillStyle='rgba(200,210,230,.07)';for(let i=0;i<4;i++)g.fillRect(0,118+i*8+Math.sin(T+i)*2,W,10);
- if(m.torch){const v=g.createRadialGradient(m.torch,140,20,m.torch,140,170);v.addColorStop(0,'#0000');v.addColorStop(1,'#000c');g.fillStyle=v;g.fillRect(0,0,W,H)}};
+ for(let i=0;i<4;i++){const y=118+i*8+Math.round(Math.sin(T+i)*2);for(let x=(i%2)*2;x<W;x+=4)R(x,y,2,6,'rgba(200,210,230,.07)')}
+ if(m.torch){for(let gx=0;gx<W;gx+=4)for(let gy=0;gy<H;gy+=4){const d=Math.hypot(gx+2-m.torch,(gy+2-140)*1.4);const a=Math.min(.85,Math.max(0,(d-36)/130));if(a>.02)R(gx,gy,4,4,'rgba(0,0,0,'+(Math.round(a*8)/8)+')')}}};
 const BEAST=(m,t)=>(m.beasts||[]).find(b=>b.t===t);
 FRIEND_STORIES.drafts={title:'The Drafts',cast:['nivaan','corey','hasan'],lead:'nivaan',meet:[[0,720],[0,720],[0,720],[0,720]],places:['the front door','the front door','the front door','the front door'],needs:{},
  invite:['“My stream’s picking up a siren in the woods behind the estate. Front door. Get Corey and Hasan.”','“It’s louder tonight. And it’s saying our names. Front door.”','“We go back. We finish it. Front door. Now.”','']};
