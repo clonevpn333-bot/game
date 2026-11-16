@@ -3272,7 +3272,7 @@ async function inviteRivalry(key){
  if(!storyReady(key))return;
  const def=FRIEND_STORIES[key],s=socialState(),q=s[key];
  await say(K[def.lead].n,def.invite[q.step]);
- await say(K[def.cast[1]].n,q.step?'We need you there before this gets worse.':'Come over and hear the plan first. You can still say no.');
+ if(def.cast[1])await say(K[def.cast[1]].n,q.step?'We need you there before this gets worse.':'Come over and hear the plan first. You can still say no.');
  const c=await choose(['I’m in. Where are we meeting?','Later. I’m staying out of this for now.']);
  if(c){await say(K[def.lead].n,'Fine. Find us if you change your mind.');return}
  const [floor,x]=meetingFor(key),place=def.places[q.step];
@@ -5600,7 +5600,7 @@ FRIEND_SCENES.gaz=[
    save()});aura('david',2000,'free');q.outcome=store.run.gaz==='police'?'Gaz got arrested':store.run.gaz==='aidan'?'Gaz is under the house':'Gaz crawled into the dark'}];
 /* ======== QUEST: THE YEAR 11 PARTY (Hasan + Sean) ======== */
 FRIEND_STORIES.party={title:'The junior party',cast:['hasan','sean'],lead:'hasan',meet:[[0,500],[0,700],[0,700],[0,700]],places:['the living room','the front door','the front door','the front door'],needs:{},
- invite:['“I’ve been added to a junior party group chat by ACCIDENT. We’re going.”','“Jade’s party. Two streets. Coats. Act eighteen.”','“Someone’s dead in Jade’s bathroom and they think it was ME.”','“The juniors are outside. All of them. They’ve brought a bat.”']};
+ invite:['“I’ve been added to a junior party group chat by ACCIDENT. We’re going.”','“Jade’s party. Two streets. Coats. Act eighteen.”','“Someone’s dead in Jade’s bathroom and they think it was ME. Front door.”','“The juniors are outside. All of them. They’ve brought a bat.”']};
 {const _ds=drawStage;drawStage=function(m){_ds(m);if(!m.party)return;const t=T*4;const cols=['#ff3ab8','#3affd8','#ffe03a','#7a3aff'];for(const [x,y,w,h] of [[186,74,26,20],[252,82,18,14],[154,112,28,22],[240,112,34,22]]){g.fillStyle=cols[(t+x)%4|0];g.globalAlpha=.75;g.fillRect(x,y,w,h);g.globalAlpha=1;for(let i=0;i<3;i++)R(x+3+i*(w/3),y+h-8+Math.abs(Math.sin(t+i+x))*-3,4,8,'#111')}
  glow(220,110,80,cols[t|0%4]+'55');if(Math.sin(T*9)>.6)S.shake=Math.max(S.shake,.04);for(let i=0;i<5;i++)R(90+i*12,160,3,6,['#3a8a3a','#8a3a2a','#ddd'][i%3])}}
 FRIEND_SCENES.party=[
@@ -5999,7 +5999,7 @@ questLog=function(){const hideUI=v=>{for(const id of ['foot','tools','pad'])if($
  document.body.appendChild(QLOG);$('qlog-close').onclick=questLog;QLOG.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{QTAB=b.dataset.tab;questLog();questLog()})};
 
 /* ================= PASS 19: Corey & Abby (just them), and a calmer game ================= */
-FRIEND_STORIES.abby.cast=['corey'];
+FRIEND_STORIES.abby.cast=['corey'];FRIEND_STORIES.abby.meet[0]=[0,250];FRIEND_STORIES.abby.places[0]='the kitchen';
 FRIEND_SCENES.abby=[
  async q=>{const co=A_.corey;co.phone=1;
   await talk([['','All night, Corey has been blasting Skull Engine off his speaker. “KILL THE LIGHTS”, on repeat, loud enough that Omer left the room twice.'],['','Now he’s alone in the dark kitchen with one earbud in. The song leaking out of it is so quiet you have to lean in.'],['You','Is that… The Lanterns?'],['Corey','No.'],['','It’s The Lanterns. “Small Hours”. The saddest band in the country. The song people play when someone leaves them.']]);
