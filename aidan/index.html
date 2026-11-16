@@ -4233,20 +4233,7 @@ let STREAM={on:false,viewers:0,chat:[]};
 const chat=(u,t)=>{STREAM.chat.push([u,t]);if(STREAM.chat.length>4)STREAM.chat.shift();SFX.blip(u==='bowlcut_09'?140:820)};
 const viewers=async n=>{await tw(STREAM,{viewers:n},900);STREAM.viewers=n};
 function drawStage(m){
- R(0,0,W,H,'#131033');['#070616','#0a0a20','#0e0d2a','#131033'].forEach((c,i)=>R(0,i*28,W,28,c));
- for(let i=0;i<50;i++)if(Math.sin(T*1.4+i)>-.6)R((i*71)%W,(i*37)%90,1,1,'#cfd8ff');R(70,14,12,12,'#e8e8d0');
- for(let i=0;i<8;i++){R(i*46-14,96-(i%3)*9,36,48,'#07060f');R(i*46-6,86-(i%3)*9,20,12,'#07060f')}
- const fire=m.fire||0,lit=fire?'#ff9a2e':m.dark?'#141018':'#f2c14e';
- R(150,64,140,80,fire>1.5?'#120c0c':'#1f1c26');for(let i=0;i<26;i++)R(144+i*3,62-i,152-i*6,2,'#0d0b16');
- R(184,72,30,24,'#0a0812');R(186,74,26,20,lit);R(250,80,22,18,'#0a0812');R(252,82,18,14,lit);R(194,112,20,32,fire?'#ff7a1e':'#3a2a20');R(190,144,28,3,'#34343c');
- R(62,98,74,46,'#3a3d46');for(let j=0;j<4;j++)R(62,104+j*10,74,1,'#2a2c33');R(58,94,82,5,'#1c1c22');
- for(let i=0;i<(m.doodle||0);i++){const dx=70+i*13,dy=112+(i%2)*12;R(dx+1,dy-7,2,8,'#f4f4f4');R(dx,dy,2,2,'#f4f4f4');R(dx+2,dy,2,2,'#f4f4f4');R(dx+1,dy-8,2,1,'#f4f4f4')}
- if(m.sticks)for(let i=0;i<9;i++){const sx=66+i*8;R(sx,118,1,7,'#e33');R(sx-1,116,3,3,'#e33');R(sx-2,121,5,1,'#e33');if(i===8)R(sx-2,114,5,2,'#e33')}
- if(fire){g.fillStyle='rgba(255,120,30,'+Math.min(.28,fire*.14)+')';g.fillRect(0,0,W,H);
-  for(let i=0;i<40*Math.min(fire,2);i++){const fx_=152+hsh(i)*136,p=(T*(1+hsh(i+3))+hsh(i+7))%1,h=10+hsh(i+1)*30*fire;R(fx_,(hsh(i+9)<.5?96:66)-p*h,3+hsh(i+2)*4,5,p<.4?'#ffe066':p<.7?'#ff9a2e':'#d2381e')}
-  for(let i=0;i<14;i++){const p=(T*.3+hsh(i+20))%1;R(160+hsh(i+30)*120+Math.sin(T+i)*5,56-p*60,8,6,'rgba(30,26,34,'+(1-p)*.7+')')}}
- R(0,144,W,22,'#0d1f12');for(let i=0;i<40;i++)R((i*31)%W,145+(i*7)%18,1,2,'#153219');R(0,164,W,16,'#131318');for(let i=0;i<6;i++)R(i*60+10,172,24,2,'#3a3a30');
- R(30,62,3,104,'#1c1c22');R(30,62,16,2,'#1c1c22');R(40,64,9,3,'#ffe9a0');for(let i=0;i<30;i++)R(44-i*.9,67+i*3.2,2+i*1.8,4,'rgba(255,233,160,.04)');
+ bgStreet(m);
  if(m.aidan)drawKid(K.aidan,46,163,{dir:1,still:1,horror:1,pose:m.aidan==='wave'?'reach':null});
  for(const b of m.blood||[]){pool(b.x,b.w);if(b.s)splat(b.x,b.y,b.s,b.x)}
  for(const c of m.cast||[]){if(c.hidden)continue;const x=Math.round(c.x),y=c.y;
@@ -4630,13 +4617,7 @@ async function monsterDeath(){
 
 /* ================= PASS 8: two more stories, longer night, goals, more chaos ================= */
 function drawUnder(m){
- if(m.kind==='tunnel'){R(0,0,W,H,'#120c0a');for(let i=0;i<60;i++)R(hsh(i)*W,hsh(i+5)*H,3+hsh(i+2)*6,2,'#2a1c14');R(0,62,W,90,'#1c130f');for(let x=20;x<W;x+=62){R(x,58,5,94,'#4a3524');R(x-7,58,19,4,'#5a4130')}R(0,150,W,30,'#241811');
-  if(m.prints)for(let i=0;i<14;i++)R(60+i*17,84+hsh(i)*40,3,4,'#3d2a1e');if(m.bed){R(236,140,36,6,'#5a6080');R(236,134,8,6,'#ddd');R(268,128,2,12,'#4a3524')}if(m.spoon)R(176,147,7,2,'#c9c9d0')}
- else if(m.kind==='lounge'){R(0,0,W,H,'#0d0c14');const fl=Math.sin(T*9)>0?'#9ad0ff':'#7ab8f0';R(40,88,56,38,'#111');R(43,91,50,32,fl);g.fillStyle='rgba(150,200,255,.06)';g.fillRect(0,60,W,100);R(0,150,W,30,'#1a1418');
-  R(196,104,58,48,'#3a2a30');R(190,118,10,34,'#2e2026');R(250,118,10,34,'#2e2026');R(214,94,22,12,'#8a8a90');R(216,92,18,4,'#6a6a70');R(206,128,20,4,'#ddd');R(208,126,16,2,'#9a9a70')}
- else{R(0,0,W,H,'#2a3350');for(let x=0;x<W;x+=14)R(x,20,6,130,'#26304a');R(0,150,W,30,'#4a3a30');R(18,126,74,24,'#2456c8');R(18,120,20,8,'#eee');R(36,121,12,5,'#c9a56a');
-  R(116,74,160,3,'#5a4130');['you',...pals,'aidan'].forEach((id,i)=>{if(m.gone===i)return;g.save();g.translate(126+i*17,74);g.scale(.5,.5);drawKid(K[id],0,0,{still:1});g.restore()});
-  R(36,40,54,44,'#eee9d4');for(let i=0;i<8;i++)R(40+i*6,78-(10+hsh(i)*22),3,10+hsh(i)*22,'#c23b3b');R(284,66,34,84,'#3a2a20');R(300,66,2,84,'#22160f');R(100,132,8,10,'#9ad');R(102,124,1,9,'#e33');R(105,124,1,9,'#2a4a8a')}
+ if(m.kind==='tunnel')bgTunnel(m);else if(m.kind==='lounge')bgLounge(m);else bgRoom(m);
  for(const c of m.cast||[]){if(c.hidden)continue;drawKid(K[c.id],Math.round(c.x),c.y,{dir:c.dir,still:!c.moving,moving:c.moving,walk:T*13,pose:c.pose,sit:c.sit,scared:c.scared,weapon:c.weapon,punchT:c.punchT})}
  if(m.kind!=='room'){const c=(m.cast||[])[0],v=g.createRadialGradient(c?c.x:160,120,18,c?c.x:160,120,150);v.addColorStop(0,'#0000');v.addColorStop(1,'#000e');g.fillStyle=v;g.fillRect(0,0,W,H)}
  R(0,0,W,10,'#100d18');R(0,H-10,W,10,'#100d18');
@@ -4877,10 +4858,10 @@ const OFFTOPIC=['tin','fakeid','ashes'];let quietCtx=false;
 for(const k of OFFTOPIC)FRIEND_STORIES[k].title+=' · silly extra';
 K.aidan7={n:'Aidan',skin:'#e6c2a2',hair:'#4a2f1a',hs:'wavy',top:'#2456c8',pants:'#0c0c10',seed:9};
 {const _du=drawUnder;drawUnder=function(m){
- if(m.kind==='shed'){R(0,0,W,H,'#0d0a08');for(let x=0;x<W;x+=16)R(x,20,2,130,'#1c140e');R(0,150,W,30,'#19110c');R(96,128,128,5,'#4a3524');R(100,133,4,17,'#3a2a1c');R(216,133,4,17,'#3a2a1c');
+ if(m.kind==='shed'){bgShed(m);R(96,128,128,5,'#4a3524');R(100,133,4,17,'#3a2a1c');R(216,133,4,17,'#3a2a1c');
   for(let i=0;i<7;i++){const x=70+i*30,sit=i<3||i>3;if(i===3&&!m.seat)continue;R(x-7,124,14,24,['#6a6f8a','#8a5a5a','#5a7a5a','#b3343c','#7a6a4a','#5a5a7a','#8a7a5a'][i]);R(x-5,112,10,10,i===3?'#0000':'#9a8a78');R(x-6,108,12,6,'#4a2f1a');R(x-5,104,10,3,['#e33','#3a8','#ee3','#e33','#38e','#e3e','#3ee'][i]);R(x-1,100,2,5,'#eee');if(i!==3){R(x-3,116,2,1,'#111');R(x+1,116,2,1,'#111');R(x-2,119,4,2,'#3a0508')}}
   for(let i=0;i<9;i++)R(104+i*12,125,6,3,'#ddd');R(150,118,14,8,'#e8d0d0');for(let i=0;i<9;i++)R(151+i*1.4,114,1,4,'#e33');if(m.flies)for(let i=0;i<14;i++)R(160+Math.sin(T*3+i)*70,90+Math.cos(T*2.3+i*2)*30,1,1,'#000')}
- else if(m.kind==='y7'){R(0,0,W,H,'#6f5382');for(let x=4;x<W;x+=12)R(x,20,4,130,'rgba(0,0,0,.07)');R(0,150,W,30,'#5c3d2e');R(40,60,60,40,'#0c1230');R(110,120,90,26,'#b3343c');for(let i=0;i<6;i++)R(30+i*46,158,34,8,['#6a6f8a','#8a5a5a','#5a7a5a','#7a6a4a','#5a5a7a','#8a7a5a'][i]);if(m.hair)for(let i=0;i<16;i++)R(150+hsh(i)*40,152+hsh(i+3)*10,3,1,'#4a2f1a');g.fillStyle='rgba(255,220,160,.12)';g.fillRect(0,0,W,H)}
+ else if(m.kind==='y7'){bgY7(m)}
  else{_du(m);return}
  for(const c of m.cast||[]){if(c.hidden)continue;g.save();g.translate(Math.round(c.x),c.y);if(m.kind==='y7')g.scale(.82,.82);drawKid(K[c.id],0,0,{dir:c.dir,still:!c.moving,moving:c.moving,walk:T*13,pose:c.pose,sit:c.sit,scared:c.scared,weapon:c.weapon,punchT:c.punchT,bowl:c.bowl,shake:c.shake});g.restore()}
  if(m.kind==='shed'){const c=m.cast[0],v=g.createRadialGradient(c.x,120,14,c.x,120,120);v.addColorStop(0,'#0000');v.addColorStop(1,'#000f');g.fillStyle=v;g.fillRect(0,0,W,H)}
@@ -5253,11 +5234,9 @@ drawExt=function(){const e=S.ext,lit=e.lit&&!(S.flick>0&&Math.sin(T*60)>0);
 const egush=(e,c,n=24)=>{(e.sprays??=[]).push({x:c.x,y:c.y-20,d:1,t:T,n},{x:c.x,y:c.y-20,d:-1,t:T,n:n/2});SFX.smack();SFX.squelch();S.shake=.45;fx(.12,'')};
 /* ---------- extra locations ---------- */
 {const _ds=drawStage;drawStage=function(m){
- if(m.parlour){R(0,0,W,H,'#120d14');for(let x=0;x<W;x+=24)R(x,10,22,120,'#1a141c');for(let i=0;i<18;i++){const px=16+(i%9)*34,py=26+(i/9|0)*40;R(px,py,26,32,'#e8e0d0');R(px+3,py+4,20,2,'#222');R(px+6,py+10,14,14,['#b3343c','#2a4a8a','#2a6a3a','#6a3a8a'][i%4])}
-  const n=Math.sin(T*7)>-.85;g.save();g.font='10px KenPixel,monospace';g.fillStyle=n?'#ff4fa8':'#5a1a3a';g.fillText('INK & REGRET',112,112);g.restore();R(0,140,W,40,'#2a2228');for(let x=0;x<W;x+=16)R(x,140,8,40,'#322830');
-  R(150,124,50,8,'#5a1a1a');R(196,108,8,24,'#5a1a1a');R(160,132,4,14,'#333');R(186,132,4,14,'#333');R(214,116,24,4,'#666');R(224,104,2,14,'#888');if(m.dark)R(0,0,W,H,'rgba(0,0,0,.75)')}
- else if(m.shelter){_ds(Object.assign({},m,{cast:[],blood:[],sprays:[]}));R(90,96,110,4,'#3a3a44');R(92,100,3,46,'#3a3a44');R(195,100,3,46,'#3a3a44');R(98,104,90,30,'rgba(160,200,255,.12)');R(100,132,86,4,'#4a4a54');R(150,104,30,22,'#e8e0d0');g.save();g.font='6px KenPixel,monospace';g.fillStyle='#222';g.fillText('NO 43',154,114);g.restore();R(0,0,W,H,'rgba(10,8,20,.2)')}
- else if(m.okafor){_ds(Object.assign({},m,{cast:[],blood:[],sprays:[]}));R(60,152,74,10,'#1d4a6a');R(62,152,70,2,'#6ab0e0');for(let i=0;i<5;i++)R(150+i*14,146,8,6,'#c23b3b');R(240,126,4,22,'#555');}
+ if(m.parlour){bgParlour(m)}
+ else if(m.shelter){bgShelter(m)}
+ else if(m.okafor){bgGarden(m)}
  else if(m.loftlab){R(0,0,W,H,'#120a1a')}
  if(m.parlour||m.shelter||m.okafor){SHADOW=1;for(const b of m.blood||[]){pool(b.x,b.w);if(b.s)splat(b.x,b.y,b.s,b.x)}for(const c of m.cast||[]){if(c.hidden)continue;const x=Math.round(c.x),y=c.y;
    if(c.dead){g.save();g.translate(x,y-3);g.rotate(Math.PI/2);drawKid(K[c.id],0,0,{still:1,deadFace:1});g.restore();continue}
@@ -5265,19 +5244,8 @@ const egush=(e,c,n=24)=>{(e.sprays??=[]).push({x:c.x,y:c.y-20,d:1,t:T,n},{x:c.x,
   for(const s of m.sprays||[])spray(s.x,s.y,s.d,s.t,T,s.n);if(m.police){g.fillStyle=Math.sin(T*10)>0?'rgba(60,100,255,.13)':'rgba(255,40,40,.11)';g.fillRect(0,0,W,H)}R(0,0,W,10,'#100d18');R(0,H-10,W,10,'#100d18');return}
  SHADOW=1;_ds(m);SHADOW=0;if(m.purple){R(166,104,80,4,'#0d0b16');R(170,108,3,36,'#0d0b16');R(239,108,3,36,'#0d0b16')}}}
 {const _du=drawUnder;drawUnder=function(m){
- if(m.kind==='abby'){R(0,0,W,H,'#140c22');for(let x=0;x<W;x+=18)R(x,10,9,140,'#170e28');
-  for(let i=0;i<22;i++){const lx=8+i*14,ly=22+Math.sin(i*1.3)*4;R(lx,ly,2,2,Math.sin(T*2+i)>0?'#c9a2ff':'#7a35c9')}
-  for(let i=0;i<12;i++){const px=20+(i%6)*15,py=40+(i/6|0)*18;R(px,py,12,14,'#eee');R(px+1,py+1,10,9,['#3a2a5a','#2b4fd6','#7a35c9','#1a1626'][i%4])}if(m.pol)R(32,58,12,14,'#ffe066');
-  R(120,40,40,40,'#0a0812');R(122,42,36,36,'#26204a');R(136,46,8,10,'#e8e0d0');
-  R(180,60,26,44,'#3a2a5a');R(186,66,14,8,'#ffffff20');R(176,104,34,4,'#2a1a3a');for(let i=0;i<5;i++)R(214+i*7,88,5,16,['#b3343c','#2b4fd6','#eee','#7a35c9','#222'][i]);
-  R(250,90,40,24,'#1a3a4a');R(252,92,36,20,'#2a6a7a');const ax=262+Math.sin(T)*6;R(ax,104,8,4,'#f0a0c0');R(ax+6,102,3,3,'#f0a0c0');
-  R(20,118,96,26,'#0c0a12');R(20,112,96,8,'#1a1626');R(22,114,20,6,'#7a35c9');R(84,100,6,20,'#c9a56a');R(82,96,10,6,'#c9a56a');
-  R(0,144,W,36,'#1a1226');R(140,150,60,20,'#2b1f3d');if(m.candle){R(230,130,4,8,'#eee');R(231,126,2,4,Math.sin(T*9)>0?'#ffb02e':'#ffe066')}
-  g.fillStyle='rgba(150,80,255,.08)';g.fillRect(0,0,W,H)}
- else if(m.kind==='loft'){R(0,0,W,H,'#120a1a');for(let i=0;i<30;i++)R(i*11-6,20+i*2,4,110-i*2,'#1d1220');R(0,140,W,40,'#2a1a14');for(let x=0;x<W;x+=20)R(x,140,1,40,'#1a0f0a');
-  for(let i=0;i<40;i++){const jx=30+(i%10)*24,jy=96+(i/10|0)*12;R(jx,jy,8,10,'#eee');R(jx+1,jy+3,6,6,'#9a4ae8');R(jx,jy-2,8,2,'#7a35c9')}
-  R(40,120,240,4,'#5a4130');const b=Math.sin(T*4);R(150,104,10,16,'#bfe8ff55');R(152,110+b,6,8,'#b06aff');g.fillStyle='rgba(160,80,255,'+(.12+b*.04)+')';g.fillRect(0,0,W,H);
-  g.save();g.font='6px KenPixel,monospace';g.fillStyle='#ffe066';g.fillText('C.U.R.L. — COILS UNDER ROYAL LICENCE',70,30);g.restore()}
+ if(m.kind==='abby'){bgAbby(m)}
+ else if(m.kind==='loft'){bgLoft(m)}
  else{_du(m);for(const s_ of m.sprays||[])spray(s_.x,s_.y,s_.d,s_.t,T,s_.n);return}
  SHADOW=1;for(const c of m.cast||[]){if(c.hidden)continue;drawKid(K[c.id],Math.round(c.x),c.y,{dir:c.dir,still:!c.moving,moving:c.moving,walk:T*13,pose:c.pose,sit:c.sit,scared:c.scared,weapon:c.weapon,punchT:c.punchT,shake:c.shake,phone:c.phone});if(c.id==='girl'){const x=Math.round(c.x),hy=c.y-(c.sit?23:26),ex=x+(c.dir||1);R(x-8,hy+1,2,12,'#2b4fd6');R(x+6,hy+1,2,12,'#7a35c9');R(x-2,hy-2,3,3,'#7a35c9');R(ex-4,hy+5,2,2,'#8a3fe0');R(ex+2,hy+5,2,2,'#8a3fe0')}}SHADOW=0;for(const s_ of m.sprays||[])spray(s_.x,s_.y,s_.d,s_.t,T,s_.n);
  if(m.face){const f=Math.sin(T*3)>-.3;R(122,42,36,36,'#0a0812');if(f){R(132,52,16,14,K.aidan.skin);R(130,48,20,7,K.aidan.hair);R(135,57,3,3,'#fff');R(142,57,3,3,'#fff');R(136,62,8,1,'#fff')}}
@@ -5505,6 +5473,188 @@ function whereNow(){const r=store.run,s=socialState(),L=[];const line=(id,t)=>L.
 {const _m=menu;menu=async function(html,btns){if(/THE CALL<br>ENDED/.test(html)){html+='<p style="text-align:left;font-size:.85em;line-height:1.5">'+whereNow().join('<br>')+'</p><p><b>THE CALLING OF AIDAN</b><br>A passion project. Made for friends, to be played with friends.<br>Same time next week?</p>'}return _m(html,btns)}}
 GOALS.tin=['Fire Jay’s gun.',r=>r.gunFired];GOALS.curls=['Survive Corey’s haircut.',r=>r.curls&&r.curls.stopped];GOALS.abby=['Get Corey into Abby’s room.',r=>r.abby!==undefined];GOALS.tattoo=['Get Sean inked.',r=>r.tattoo];
 
+/* ================= PASS 16: Abby saga, Gaz, the Year 11 party, aura ================= */
+Object.assign(K,{
+ tyler:{n:'Tyler',skin:'#e8c0a0',hair:'#c9a24a',hs:'cap',top:'#e8e8e8',pants:'#2a2a34',seed:71},
+ gaz:{n:'Gaz',skin:'#e0a080',hair:'#9a7a5a',hs:'short',top:'#d8d8d0',pants:'#3a3a44',wide:1,seed:72},
+ wayne:{n:'Wayne',skin:'#d8a880',hair:'#3a2a20',hs:'short',top:'#4a5a8a',pants:'#2a2a34',wide:1,seed:73},
+ kyle:{n:'Kyle',skin:'#e8c0a0',hair:'#2a1a12',hs:'fluffy',top:'#8a2a3a',pants:'#2a2a34',seed:74}});
+Object.assign(NCOL,{Tyler:'#c9a24a',Gaz:'#9a7a5a',Wayne:'#4a5a8a',Kyle:'#8a2a3a','Year 11s':'#8a2a3a'});
+/* ---------- the player can pose too ---------- */
+{const _dp=drawPlayer;drawPlayer=function(a,x,y){if(a.pose)return drawKid(K.you,x,y,{dir:a.dir,pose:a.pose,punchT:a.punchT,weapon:a.weapon,moving:a.moving,walk:a.walk});return _dp(a,x,y)}}
+/* ---------- AURA ---------- */
+function aura(id,n,why){const r=store.run.aura??={};r[id]=(r[id]||0)+n;save();sub((id==='you'?'YOU':K[id].n.toUpperCase())+' '+(n>0?'+':'')+n+' AURA — '+why);if(n<=-500)fx(.15,'')}
+function auraBoard(){const r=store.run.aura||{};const ids=Object.keys(r).sort((a,b)=>r[b]-r[a]);if(!ids.length)return '';return '<p><b>AURA RANKINGS</b><br>'+ids.map((id,i)=>(i===0?'👑 ':i===ids.length-1?'💀 ':'')+(id==='you'?'You':K[id].n)+': '+(r[id]>0?'+':'')+r[id]).join('<br>')+'</p>'}
+/* ---------- Corey's route = the Abby saga (main build) ---------- */
+if(!window.LAMP_TIMELINE){
+ {const _th=things;things=function(){return _th().filter(o=>!/folded photo|parcel|book with Corey|take the book/i.test(o.label||''))}}
+ coreyHint=function(){if(!socialRoam()||A_.corey.dead)return null;if(!coreyPhotoFound())return 'COREY: something is tucked under the lava lamp.';const q=socialState().abby;if(q&&q.step<4)return 'COREY & ABBY: part '+(q.step+1)+'/4 — talk to Corey.';return null};
+ {const _f=findCoreyPhoto;findCoreyPhoto=async function(){await _f();await N('It’s a printout of an Instagram profile: @abby.3am. Someone has drawn a tiny heart next to it, then scribbled it out so hard the paper tore.');sub('Talk to Corey. Bring the printout.')}}
+ {const _sr=storyReady;storyReady=function(k){if(k!=='abby')return _sr(k);const q=socialState().abby;if(!socialRoam()||!coreyPhotoFound()||q.step>=4||A_.corey.dead||A_.arjun.dead)return false;if(q.step===0&&!q.invited&&questsTaken().length>=2)return false;return true}}
+}
+FRIEND_STORIES.abby={title:'Corey vs Abby',cast:['corey','arjun'],lead:'corey',meet:[[0,500],[1,480],[0,700],[0,700]],places:['the living room','the game room','the front door','the front door'],needs:{},
+ invite:['“Arjun’s got my phone. ARJUN HAS MY PHONE. Living room. NOW.”','“She replied. Everyone wants to help. Nobody is allowed to help. Game room.”','“She said come over and bring the idiots. You’re the idiots. Front door.”','“Her light’s still on. One more time. Front door.”']};
+const auraWho=(id,n,w)=>{if(!A_[id]||!A_[id].dead)aura(id,n,w)};
+FRIEND_SCENES.abby=[
+ async q=>{const ar=A_.arjun,co=A_.corey;ar.phone=1;ar.pose='up';
+  await talk([['Arjun','LADIES AND GENTLEMEN. Corey — COREY — has liked every single post on @abby.3am. Every one. Going back to 2023.'],['Corey','Give it back.'],['Arjun','Including — and I need you all to hear this — a picture of a PIGEON. At 3:14am. Corey liked a pigeon at 3:14am.'],['Corey','It was a nice pigeon.']]);
+  await talk([['','Arjun turns the phone round. Her profile picture. Black hair, blue down one side, purple down the other. Purple eyes. Not filtered. Just like that.'],['','The room goes quiet in a way it has never gone quiet for Corey.'],['Hasan','…Bro.'],['Hasan','Bro is getting MOGGED. By a PROFILE PICTURE.'],['Corey','Nobody mogs me.'],['Nivaan','She’s mogging you right now. Through a screen. From three streets away.']]);ar.pose=null;auraWho('corey',-1000,'mogged by a jpeg');
+  await talk([['Arjun','Right. I’m opening a book. Odds Corey pulls her by sunrise: nine to one AGAINST.'],['Arjun','I’ve got twenty quid on him crashing out.'],['Hasan','Ten on her ending his whole career.'],['David','My entire snack stash on Corey. He’s never lost at anything. Ever. In his LIFE.'],['Sean','Fiver on Corey. Love is love, man.'],['Omer','I’m betting he says something so stupid she moves house.'],['Nivaan','I’m betting on CONTENT.']]);
+  const b=await choose(['Bet ON Corey.','Bet AGAINST Corey.','Bet she humiliates him so badly he changes schools.']);store.run.abbyBet=['for','against','destroy'][b];save();
+  await talk([['Corey','You’re all betting on me like I’m a horse.'],['Arjun','A horse with better hair than all of us. Which is why it would be SO beautiful to watch you lose.'],['Corey','I don’t message people. People message ME.'],['Sean','And that’s why you’ve got forty-three likes and no girlfriend, bro.']]);
+  await talk([['','Corey takes the phone back. He types. Deletes. Types. The whole room leans in.'],['','“hey.”'],['','She replies in four seconds.'],['','“you liked a pigeon at 3am. are you ok”']]);laugh(2500);await say('Hasan','SHE’S COOKED HIM. FOUR SECONDS. FOUR.');auraWho('corey',-500,'pigeon allegations');q.outcome='The bets are in'},
+ async q=>{const ar=A_.arjun,co=A_.corey;
+  await talk([['','Every single person in the game room is now writing Corey’s next message. On Corey’s phone. At the same time.'],['Sean','“Your eyes are like two purple galaxies colliding in the—”'],['Omer','Delete that.'],['Hasan','Just send her a picture of your face. Your face is your whole argument.'],['David','Ask if she likes crisps. Everyone likes crisps.'],['Arjun','“u up? 😏”']]);
+  const c=await choose(['Sean’s galaxy poem.','A picture of Corey’s face.','Let Corey write it himself.','Let Arjun send his.']);
+  if(c===3){ar.phone=1;await talk([['Arjun','Sent.'],['Corey','You did NOT.']]);co.sit=false;co.pose='punch';for(let i=0;i<4;i++){co.punchT=T+.22;SFX.smack();S.shake=.35;spurt(ar.x,ar.y-20,6,ar.y);await tw(ar,{x:ar.x+(co.dir||1)*4},90);await wait(240)}mark('arjun','beat');co.pose=null;ar.phone=0;
+   await talk([['Hasan','WORLDSTAR. WORLDSTAR. I’ve waited five years to see someone shut him up.'],['','Her reply: “lol. tell your friend his winky face looks like a sex offender.”'],['Arjun','(from the floor) …She’s funnier than me. She’s funnier than me as well.']]);auraWho('arjun',-1500,'roasted by Abby AND punched');}
+  else if(c===1){await talk([['','He sends a selfie. It’s a good one. It’s the best photo of anyone anybody in this room has ever seen.'],['','She sends one back.'],['','It’s better.'],['','Corey looks at it for a long time. Then he looks at his own. Then he puts the phone face down on the carpet like it’s hot.'],['Corey','…Is my face okay?'],['David','Corey’s ASKING if his FACE is OKAY. Somebody screenshot this moment. History is happening.']]);auraWho('corey',-2000,'out-selfied');}
+  else if(c===0){await talk([['','She replies: “did a victorian ghost write this.”'],['','Then: “actually it’s quite good. it’s better than anything YOU’D write. who wrote it.”'],['Sean','…I wrote it.'],['','Sean gets a follow. Corey does not.']]);auraWho('sean',1000,'stole a follow');auraWho('corey',-1000,'lost to Sean, of all people');}
+  else{await talk([['Corey','“I didn’t like the pigeon ironically. I liked it because you posted it. That’s the truth. It’s embarrassing. I don’t really get embarrassed. This is new.”'],['','Nobody in the room says anything. Arjun puts his hand on his heart without realising.'],['','She replies: “ok. that was good. you’re better at this when you’re bad at it.”']]);auraWho('corey',500,'actually honest');}
+  await talk([['','A second message: “purple window, maple row. bring the idiots. they can watch from the hedge. 1v1 me on mario kart. loser admits it out loud.”'],['Arjun','She said bring the idiots. She’s talking about US. I feel SEEN.'],['Corey','I’ve never lost at Mario Kart.'],['Hasan','Bro, you’ve never lost at ANYTHING. That’s literally why we’re all coming.']]);q.outcome='She called them idiots. Correctly.'},
+ async q=>{const prev=scoreName,ty={id:'tyler',x:262,y:162,dir:-1},gi={id:'girl',x:204,y:104,dir:-1,sit:true},cast=[gi,ty],go=[];
+  for(const [i,id] of ['corey','you','arjun','hasan','david','sean','nivaan','omer'].entries()){if(id!=='you'&&A_[id].dead)continue;const c={id,x:-20-i*14,y:158+(i%3)*3,dir:1};cast.push(c);go.push([c,150-i*15])}
+  await toStage({purple:true,cast,car:{x:250}});cue('street');for(const [c,x] of go)mvc(c,x);await wait(1600);
+  const co=cast.find(c=>c.id==='corey');
+  await talk([['','All of you, in a line, crouched behind one hedge that is very obviously not big enough for eight people.'],['Omer','This is the least stealthy thing I have ever been part of.'],['','Parked outside her house: a lowered Corsa with green underglow. Leaning on it: a seventeen-year-old with a moustache that’s mostly hope.'],['Tyler','Abs! ABBY! I know you’re in there!'],['Abby','(from the porch roof) Go home, Tyler.']]);
+  await mvc(co,226,800);await talk([['Tyler','Who’s this? Abby got a new pet?'],['Corey','She said go home.'],['Tyler','Nice perm, mate.']]);fx(.4,'');await N('A sound comes out of the hedge like seven people inhaling at once.');
+  await choose(['Let Corey handle it.','Jump in.','Film it for Nivaan.']);
+  gi.sit=false;gi.hidden=false;await tw(gi,{x:244,y:160},260);SFX.smack();gi.pose='punch';gi.dir=1;
+  for(let i=0;i<3;i++){gi.punchT=T+.25;SFX.smack();SFX.squelch();S.shake=.5;gush(ty,10+i*6);await tw(ty,{x:ty.x+4},90);await wait(260)}gi.pose=null;
+  await talk([['','She drops off the porch roof before Corey has finished deciding which fist to use. One punch. Nose. Two. Throat. Three is the car door, with Tyler’s head in it.'],['','Tyler sits down on the kerb holding his face together.'],['Corey','…I had that.'],['Abby','You had a fringe adjustment.']]);auraWho('corey',-1500,'she did the fight FOR him');
+  laugh(2000);await talk([['Hasan','(from the hedge) SHE’S BETTER AT FIGHTING TOO. SHE’S BETTER AT FIGHTING.'],['Arjun','THIS IS THE GREATEST NIGHT OF MY LIFE.']]);
+  ty.pose='punch';await talk([['Tyler','You’re all fucking DEAD—']]);for(const c of cast.filter(c=>!['girl','tyler','corey'].includes(c.id)))mvc(c,ty.x-20,500);await wait(500);
+  for(let i=0;i<6;i++){SFX.smack();if(i%2)SFX.squelch();S.shake=.4;gush(ty,8);await wait(200)}ty.sit=true;ty.pose=null;
+  await talk([['','The hedge empties. Seven boys arrive at once. Hasan headbutts the bonnet by accident and dents it. David sits on Tyler. Nivaan narrates.'],['Nivaan','And the hedge goes FOR IT. Absolute cinema. Absolute CINEMA.']]);
+  await mvc(ty,262,700);ty.hidden=true;MEM.car.back=true;fx(.4,'');await talk([['','Tyler crawls into his Corsa. The underglow comes on. And in the back seat, there’s already someone sitting, seatbelt done up, waving at all of you.'],['Abby','…Who’s that?'],['Corey','That’s Aidan. Don’t make eye contact.']]);
+  await tw(MEM.car,{x:340},1400);await wait(700);noise(.6,.6,300,.6);S.shake=.7;await wait(400);for(let i=0;i<3;i++){tone(440,.5,'square',.08);await wait(500)}
+  await talk([['','From round the corner: a crash. Then a car horn. One long note.'],['','It doesn’t stop. It’s still going when Abby turns round to face you all.'],['Abby','Your friends are idiots, Corey.'],['Corey','Yeah.'],['Abby','I like them. Come up. Just you. The rest of you — hedge.']]);
+  for(const c of cast.filter(c=>c.id!=='girl'&&c.id!=='corey'&&c.id!=='tyler'))mvc(c,-30,1600);await wait(1500);await fromMemory();cue(prev);q.outcome='Abby dropped Tyler herself'},
+ async q=>{const prev=scoreName,C={id:'corey',x:150,y:156,dir:1},A={id:'girl',x:180,y:154,dir:-1},cast=[C,A];
+  await tw(view,{fade:1},500);MEM={scene:'under',kind:'abby',cast,candle:true,back:mode};mode='memory';await tw(view,{fade:0},500);cue('crush');
+  await talk([['','Her room. Purple everywhere. An axolotl called Morrissey who looks at Corey like he owes him money.'],['','Nivaan has given Corey an earpiece. Seven idiots in a hedge, all on one walkie-talkie.'],['Arjun','(earpiece) Don’t look at the axolotl. It can smell fear.']]);
+  await talk([['Abby','Mario Kart. Loser admits it out loud.']]);for(let i=0;i<4;i++){SFX.blip(500+i*80);await wait(250)}
+  await talk([['','It isn’t close. It’s twelve races. She wins twelve. On the last one she drives backwards for the final lap, looking at him.'],['Corey','…'],['Abby','Say it.'],['Corey','You’re better than me at Mario Kart.'],['Hasan','(earpiece, sobbing with joy) He SAID it. He said it OUT LOUD.']]);auraWho('corey',-1000,'twelve-nil');
+  await talk([['Corey','I play guitar.'],['Abby','Go on, then.'],['','He plays three chords he learnt for exactly this situation. She takes it off him and plays the same three chords, then about two hundred more, then something she wrote, called “Abby, 3am”, and it is so good that in the hedge David starts crying.'],['David','(earpiece) She’s better at EVERYTHING. She’s better at your WHOLE LIFE.']]);auraWho('corey',-1000,'out-guitared');
+  await talk([['','She leans in. Corey thinks this is it. She reaches into his hoodie pocket and pulls out a tub of purple curl cream.'],['Abby','C.U.R.L.? Mate.'],['Corey','That’s— that’s for— emergencies.'],['Abby','Mine are natural. I just wake up like this.'],['','Her hair is, if anyone’s being honest, better than his. Everyone in the hedge is being honest.']]);auraWho('corey',-2000,'his hair is not natural');
+  const c=await choose(['Corey listens to the earpiece.','Corey throws the earpiece out of the window.']);
+  if(c===0){await talk([['Arjun','(earpiece) Tell her you love her mum.'],['Corey','I love your mum.'],['Abby','…My mum’s a dentist. She’s called Graham’s wife. Are you OKAY?'],['Arjun','(earpiece, wheezing) I’VE WON. I’VE WON THE BET.']]);auraWho('corey',-500,'listened to Arjun')}
+  else{SFX.smack();await talk([['','He pulls it out and throws it out of the window. In the hedge, seven people go “OH” at once.'],['Corey','Nobody’s ever made me try for anything. Everything just… happened. You’re the first thing that hasn’t.'],['Corey','I’m bad at this. I hate it. I want to keep being bad at it. With you.'],['Abby','That’s the first thing you’ve said tonight that wasn’t trying to be cool.'],['Abby','It was better.']]);auraWho('corey',3000,'threw the earpiece')}
+  const k=await choose(['Corey hugs her.','Corey kisses her.','Corey just holds her hand.']);store.run.abby=k;
+  if(k===1)await talk([['','He goes in for the kiss. She meets him halfway, which is to say she does it better than him as well.'],['','Morrissey turns round in his tank to give them privacy. Outside, the hedge erupts like a goal went in.']]);
+  else if(k===0)await talk([['','He hugs her the way people hug at airports. She hugs him back harder. Obviously. She’s better at hugging.']]);
+  else await talk([['','They sit on the floor between the records holding hands while the car horn round the corner finally runs out of battery.']]);
+  const bet=store.run.abbyBet;await talk([['Arjun','(from the hedge) BOOKIE’S CALLING IT. COREY PULLED. BUT HE LOST AT EVERYTHING ELSE. I’M CALLING IT A DRAW.'],['David','IT’S NOT A DRAW. PAY ME MY CRISPS.']]);
+  if(bet==='for')aura('you',1500,'backed Corey');else if(bet==='against')aura('you',-1000,'bet against love');else aura('you',2000,'called the humiliation perfectly');
+  await wait(400);fx(.6,'');SFX.creak();const W_={id:'aidan',x:300,y:156,dir:-1};cast.push(W_);
+  await talk([['','The wardrobe door creaks open. He’s been in there the whole time. He’s holding a Mario Kart wheel.'],['Aidan','Can I play winner?'],['Aidan','Can I have one? A girlfriend? I want the purple one.']]);await mvc(W_,196,600);W_.pose='choke';A.scared=true;
+  C.pose='punch';for(let i=0;i<2;i++){C.punchT=T+.2;SFX.smack();await wait(260)}C.lie=1;await N('Corey goes for him. Aidan throws him across the room into the record crate without looking.');
+  A.scared=false;A.pose='swing';A.weapon='#c9a56a';A.punchT=T+.4;SFX.smack();noise(.4,.6,800,1);S.shake=.8;gush(W_,30);await N('Abby breaks her guitar over Aidan’s head. All of it. Strings and everything.');
+  SFX.squelch();await N('Then she picks up the tank, takes out Morrissey, and throws him at Aidan’s face. Morrissey bites. Morrissey does not let go.');
+  for(let i=0;i<3;i++){SFX.smack();S.shake=.5;await wait(200)}W_.hidden=true;noise(.6,.5,4000,.6);fx(.4,'');
+  await talk([['','She kicks him through her own window. He lands on the porch roof, sits up, looks at all of you in the hedge, and walks off down Maple Row on all fours with an axolotl on his face.'],['','The hedge arrives at the bedroom door, out of breath, holding garden tools. Too late.'],['Hasan','We’re here— oh. She’s done it. She’s done it again.'],['Corey','(from the record crate) …I was about to.'],['Abby','Sure you were, babe.']]);C.lie=0;
+  await N('“Babe.” Corey will think about that word for the rest of his life. He loses all remaining aura. He doesn’t care.');auraWho('corey',-9999,'called babe');
+  await tw(view,{fade:1},500);mode=MEM.back;await tw(view,{fade:0},500);cue(prev);store.run.crushDone=true;store.run.abbySave=true;save();q.outcome='She beat him at everything. He’s never been happier.'}];
+/* Abby turns up once in the hunt */
+{const _h=harm;harm=function(){const p=A_.you;if(store.run.abbySave&&S.monster&&!(p.guard>0)&&!A_.corey.dead){store.run.abbySave=false;save();p.guard=2.6;AI.state='stun';AI.timer=4;SFX.smack();noise(.4,.6,800,1);S.shake=.7;fx(.25,'');sub('ABBY comes through the front door with half a guitar and caves Aidan’s face in. “He’s MINE to embarrass.”');return}_h()}}
+/* ======== QUEST: GAZ (David + Arjun) ======== */
+FRIEND_STORIES.gaz={title:'David’s stepdad',cast:['david','arjun'],lead:'david',meet:[[0,250],[0,700],[0,85],[0,700]],places:['the kitchen','the front door','the garage','the front door'],needs:{},
+ invite:['“It’s nothing. It’s just my phone. Ignore my phone.”','“He’s outside. Gaz is OUTSIDE.”','“He said three o’clock. With his mate. Garage. We’re getting ready.”','“He’s on the lawn. He’s not getting up. What do we do.”']};
+FRIEND_SCENES.gaz=[
+ async q=>{const d=A_.david,a=A_.arjun;d.phone=1;SFX.blip(200);
+  await talk([['','David’s phone has buzzed forty times tonight. He keeps turning it face down. Arjun picks it up as a joke.'],['','GAZ: “get home now”. GAZ: “ur mum’s crying again thanks to u”. GAZ: “fat little shit. 1am. or i come get u”.'],['','Arjun stops smiling. It’s the first time anyone has ever seen that happen on purpose.'],['David','It’s fine. It’s my mum’s boyfriend. He’s just like that.']]);
+  await talk([['Arjun','David. Your arm.'],['','He’s pulled his hoodie sleeve down over it all night. Under it: four bruises in a row. Finger-shaped.'],['David','I walked into a door.'],['Arjun','A door with a HAND?'],['David','Don’t. Don’t make it a thing. I come here so it’s NOT a thing.']]);
+  await talk([['Hasan','I’m going round there. I’m going round there right now with a bat.'],['Omer','We should call someone.'],['David','WHO? My mum’s with HIM. Your dad’s on a cruise. Who do we call?']]);
+  const c=await choose(['“If he comes here, he deals with all of us.”','“We tell someone. Tonight.”']);q.plan=c?'tell':'fight';
+  await talk(c?[['David','…Okay. Tomorrow. Not tonight. Please.'],['','His phone buzzes again. GAZ: “im coming over.”']]:[['David','…All of you?'],['Arjun','All of us. The fattest army in the country.'],['David','That was nearly nice.'],['Arjun','Don’t get used to it.']]);aura('arjun',1000,'dropped the bit for once');q.outcome='Gaz is coming'},
+ async q=>{const gz={id:'gaz',x:120,y:162,dir:1},you={id:'you',x:236,y:160,dir:-1},dv={id:'david',x:252,y:160,dir:-1},ar={id:'arjun',x:266,y:160,dir:-1};
+  await extScene([you,dv,ar,gz],async e=>{await mvc(gz,214,1600);
+   await talk([['Gaz','DAVID. Car. Now.'],['','He’s forty, in a vest, in November. There’s a tattoo on his neck of a woman’s name. It isn’t David’s mum’s name.'],['You','He’s staying here tonight.'],['Gaz','Who the fuck are you? The landlord?']]);
+   gz.pose='punch';gz.punchT=T+.3;SFX.smack();S.shake=.4;await tw(you,{x:246},120);store.run.bruised=true;gz.pose='choke';await talk([['','He shoves you into the door frame like you’re furniture and gets a fistful of David’s hoodie.'],['Gaz','You lot are CHILDREN. What you gonna do?']]);
+   const c=await choose(['Slam the door on his arm.','Arjun throws the hot sauce in his eyes.','Let David go with him.']);
+   if(c===0){SFX.smack();noise(.2,.6,300,3);S.shake=.6;egush(e,gz,10);gz.pose=null;await talk([['','You slam the door on his forearm. Twice. The second time something in it goes CRACK like a branch.'],['Gaz','You little— I’ll be back. Three o’clock. Me and Wayne. And then we’ll see.']]);aura('you',1500,'door-slammed a grown man')}
+   else if(c===1){gz.pose='cover';gz.shake=true;await talk([['Arjun','Carolina Reaper. Two million Scoville. Night night.'],['Gaz','MY EYES. MY FUCKING EYES—'],['','He reels back into the hedge and falls through it, screaming. When he finds the gate, he points the wrong way.'],['Gaz','THREE O’CLOCK. ME AND WAYNE.']]);aura('arjun',2000,'reaper to the eyes')}
+   else{await talk([['','David goes. He doesn’t look back. The car door slams.'],['','Twenty minutes later he’s back on the doorstep on his own. His lip is split. He says he fell. He says Gaz will be back at three with Wayne, to “collect his stuff”.']]);mark('david','beat');aura('you',-2000,'let him take David')}
+   gz.shake=false;await mvc(gz,-30,1600)});q.outcome='Three o’clock. Gaz and Wayne.'},
+ async q=>{const gz={id:'gaz',x:-20,y:162,dir:1},wy={id:'wayne',x:-40,y:162,dir:1},cast=[gz,wy],team=[];
+  await talk([['Omer','I’ve done the maths. Two grown men. Combined weight two hundred kilos. Our advantages: numbers, the element of surprise, and a garage.'],['Arjun','Home Alone. We do Home Alone.'],['David','This is the happiest I’ve been in a year.']]);
+  const t=await choose(['Paint tins on ropes off the porch.','Marbles on the path and a wet slide of washing-up liquid.','Omer’s leaf-blower flamethrower. Obviously.']);
+  for(const [i,id] of ['you','david','arjun','hasan','omer','corey','sean','nivaan'].entries()){if(id!=='you'&&A_[id].dead)continue;const c={id,x:250-i*9,y:158+(i%3)*3,dir:-1,weapon:['#c9c9d0','#3a3a40','#c9a56a','#9aa0a8'][i%4]};cast.push(c);team.push(c)}
+  await extScene(cast,async e=>{await card('3:00 AM','',1400);mvc(wy,170,1700);await mvc(gz,190,1700);
+   if(t===0){SFX.smack();egush(e,gz,14);S.shake=.6;await N('A full tin of Magnolia Matt swings off the porch and hits Gaz in the face at roughly the speed of a car. He goes down cream-coloured and bleeding.')}
+   else if(t===1){gz.sit=true;wy.sit=true;SFX.smack();S.shake=.5;await N('Marbles. Fairy liquid. Both of them go down so hard and so flat that Wayne’s ankle makes a noise you will hear in your sleep.')}
+   else{noise(.6,.6,400,.6);SFX.power();S.shake=.5;fx(.2,'');egush(e,wy,16);await N('Omer opens up with THE ASSISTANT. Wayne’s tracksuit catches. Wayne runs down the street on fire, screaming, which is the last anyone sees of Wayne.');wy.hidden=true}
+   for(const c of team)c.pose='swing';for(let i=0;i<8;i++){const c=team[i%team.length];c.punchT=T+.25;SFX.smack();if(i%2)SFX.squelch();S.shake=.4;egush(e,i%3?gz:wy,8);await wait(210)}
+   await talk([['','Then it’s just eight kids and a cricket bat and a frying pan and two grown men on the ground, and none of it looks like a film. It looks like a lot of people being very scared at once.'],['Gaz','Get off me— GET OFF ME, YOU LITTLE—']]);
+   const dv=team.find(c=>c.id==='david');if(dv){dv.pose='swing';dv.weapon='#3a3a40';await mvc(dv,206,500);await talk([['David','This is for Mum.']]);dv.punchT=T+.4;SFX.smack();noise(.3,.7,200,3);S.shake=.9;fx(.3,'');egush(e,gz,30);gz.sit=false;gz.dead=true;await talk([['','BONG.'],['','The frying pan bends. Gaz doesn’t move again. David stands over him with the pan, breathing like he’s just run a marathon. He’s never run anything.'],['Arjun','DAVID. DAVID. YOU ABSOLUTE UNIT.']]);aura('david',5000,'frying pan of justice')}
+   for(const c of team)c.pose=null;wy.hidden=true});q.outcome='Gaz is on the lawn'},
+ async q=>{const gz={id:'gaz',x:190,y:164,dir:1,dead:true},you={id:'you',x:236,y:160,dir:-1},dv={id:'david',x:220,y:160,dir:-1};
+  await extScene([you,dv,gz],async e=>{await talk([['','Gaz is on the lawn, breathing like a broken bike pump. He’s not getting up.'],['David','What do we do with him.']]);
+   const c=await choose(['Call the police. Tell them everything.','Let David decide.','“Aidan can have him.”']);
+   if(c===0){await talk([['','The police come. They take photos of David’s arm. They take Gaz away on a stretcher with the frying pan in an evidence bag.'],['','At 5am, David’s mum calls. She’s crying. She’s at her sister’s. She says she’s not going back.'],['David','…Okay. Okay.']]);store.run.gaz='police'}
+   else if(c===1){await talk([['David','Get up. Get up and get out of our house and our lives and don’t come back.'],['','Gaz crawls to the gate. He makes it to the dark bit past the streetlight.'],['','Something in the dark says “hello” in a small, happy voice. The crawling stops. Then the screaming starts, and then that stops too.'],['David','…I didn’t mean that. I meant— I didn’t mean THAT.']]);store.run.gaz='dark'}
+   else{e.aidan={x:150,y:163,dir:1,pose:'choke'};fx(.4,'');await talk([['Aidan','Can I have him? I’ll look after him. I’ve got a space. Under the house.'],['David','…Yes.']]);
+    await mvc(gz,150,900);gz.hidden=true;e.aidan=null;SFX.scream();await talk([['','He takes Gaz by the ankle and walks off with him, round the side of the house, like a kid pulling a sledge. Gaz is still saying “wait, wait” when they reach the drain.'],['','Then just the drain. And from inside it, for a long time, a man asking politely to be let out.']]);store.run.gaz='aidan'}
+   save()});aura('david',2000,'free');q.outcome=store.run.gaz==='police'?'Gaz got arrested':store.run.gaz==='aidan'?'Gaz is under the house':'Gaz crawled into the dark'}];
+/* ======== QUEST: THE YEAR 11 PARTY (Hasan + Sean) ======== */
+FRIEND_STORIES.party={title:'The Year 11 party',cast:['hasan','sean'],lead:'hasan',meet:[[0,500],[0,700],[0,700],[0,700]],places:['the living room','the front door','the front door','the front door'],needs:{},
+ invite:['“I’ve been added to a Year 11 party group chat by ACCIDENT. We’re going.”','“Jade’s party. Two streets. Coats. Act eighteen.”','“Someone’s dead in Jade’s bathroom and they think it was ME.”','“The Year 11s are outside. All of them. They’ve brought a bat.”']};
+{const _ds=drawStage;drawStage=function(m){_ds(m);if(!m.party)return;const t=T*4;const cols=['#ff3ab8','#3affd8','#ffe03a','#7a3aff'];for(const [x,y,w,h] of [[186,74,26,20],[252,82,18,14],[154,112,28,22],[240,112,34,22]]){g.fillStyle=cols[(t+x)%4|0];g.globalAlpha=.75;g.fillRect(x,y,w,h);g.globalAlpha=1;for(let i=0;i<3;i++)R(x+3+i*(w/3),y+h-8+Math.abs(Math.sin(t+i+x))*-3,4,8,'#111')}
+ glow(220,110,80,cols[t|0%4]+'55');if(Math.sin(T*9)>.6)S.shake=Math.max(S.shake,.04);for(let i=0;i<5;i++)R(90+i*12,160,3,6,['#3a8a3a','#8a3a2a','#ddd'][i%3])}}
+FRIEND_SCENES.party=[
+ async q=>{const h=A_.hasan;h.phone=1;
+  await talk([['Hasan','Jade Okonkwo’s Year 11 party. Two streets away. Big Dev’s sister. I’ve been added to the group chat by accident.'],['Hasan','I’ve never been invited to anything. Not even by ACCIDENT. This is a sign.'],['Sean','Stella’s cousin is in Year 11. Stella MIGHT be there. Might. Probably not. But MIGHT.'],['Omer','Aidan is outside. A literal monster is outside.'],['Hasan','A literal Year 11 PARTY is outside, Omer.']]);
+  if(await choose(['“We’re going.”','“We’re fourteen. They will eat us.”']))await talk([['Sean','Then we die doing what we love. Being invited to things.'],['Hasan','You’re coming. I’m wearing my dad’s aftershave. I’ve had a full bottle. I can taste it.']]);
+  else aura('hasan',500,'invited (by accident)');q.outcome='You’re going to a Year 11 party'},
+ async q=>{const prev=scoreName,ky={id:'kyle',x:250,y:160,dir:-1},cast=[ky],team=[];for(const [i,id] of ['you','hasan','sean','arjun','david'].entries()){if(id!=='you'&&A_[id].dead)continue;const c={id,x:-20-i*14,y:158+(i%3)*3,dir:1};cast.push(c);team.push(c)}
+  await toStage({party:true,cast});cue('tipsy');for(const [i,c] of team.entries())mvc(c,150-i*16);await wait(1500);const ha=team.find(c=>c.id==='hasan'),se=team.find(c=>c.id==='sean');
+  await talk([['','Bass you can feel in your teeth. Someone is crying in a hedge. Someone else is crying on the trampoline. It’s 1am and three different people are called Kyle.'],['Kyle','Who invited the Year 9s?'],['Hasan','We’re Year TEN.'],['Kyle','Wait. Wait wait wait. Aren’t you the gear stick kid?']]);fx(.3,'');
+  await talk([['','The whole party turns round. Arjun’s joke has gone up two school years. It’s on Year 11 TikTok. Someone has made it a sound.'],['Kyle','VROOM VROOM. Can I put you in REVERSE, mate?']]);
+  ha.pose='punch';await mvc(ha,236,300);for(let i=0;i<5;i++){ha.punchT=T+.22;SFX.smack();if(i%2)SFX.squelch();S.shake=.45;gush(ky,8+i*3);await tw(ky,{x:ky.x+4},90);await wait(220)}ha.pose=null;ky.sit=true;
+  await talk([['','Hasan has been called the gear stick kid ten thousand times. Kyle is the one who pays for all of them.'],['','It ends with Kyle in the paddling pool and Hasan standing on the garden furniture shouting “WHO ELSE? WHO ELSE WANTS TO CHANGE GEAR?”'],['','Nobody else wants to change gear.']]);aura('hasan',3000,'beat up a Year 11');
+  if(se)await talk([['','Meanwhile Sean has drunk the Bucket. Nobody knows what’s in the Bucket. It was blue. It is now inside Sean.'],['Sean','I can see sounds. Is Stella here. I love everyone. I love Kyle.'],['','He is sick in the paddling pool, on Kyle.']]);
+  fx(.5,'');SFX.sting();await talk([['','Then the music stops. Mid-song.'],['','It starts again. It’s a voice. Small, delighted, over the speakers, on loop, with a beat under it.'],['Aidan','(the speakers) Why did the chicken join a band? BECAUSE IT HAD THE DRUMSTICKS. Why did the chicken join a band? BECAUSE IT HAD THE—'],['','He’s on the decks. Aidan is DJing the Year 11 party. And everyone is DANCING to it.']]);
+  await wait(500);for(const c of team)mvc(c,-30,1800);await wait(1700);await fromMemory();cue(prev);q.outcome='Hasan changed Kyle’s gear permanently'},
+ async q=>{const prev=scoreName,cast=[{id:'kyle',x:220,y:166,dead:true}],team=[];for(const [i,id] of ['you','hasan','sean'].entries()){if(id!=='you'&&A_[id].dead)continue;const c={id,x:150-i*16,y:158+(i%3)*3,dir:1,scared:true};cast.push(c);team.push(c)}
+  await toStage({party:true,cast,blood:[{x:220,w:40,y:120,s:10}]});cue('reveal');
+  await talk([['','You go back for Sean’s phone. The party is still going. The bathroom door is shut. There’s red coming out from under it in a long flat tongue, across the hall, into the carpet.'],['','Inside: Kyle. Or most of him. Somebody has drawn a car on the mirror in his blood, with a little gear stick, and written “FOR HASAN ♥”.'],['Hasan','…No. No no no no. That’s not— I didn’t— I only hit him like seven times—'],['','Somebody behind you screams. Then everybody screams. Somebody is filming Hasan, in Hasan’s hoodie, which has Kyle on it.']]);
+  const c=await choose(['Run.','Wipe the mirror first.','Shout “IT WAS AIDAN!”']);
+  if(c===1){SFX.squelch();await N('You wipe it with a Year 11’s coat. It smears into something worse. You run anyway.')}
+  else if(c===2)await talk([['Kyle’s mate','WHO THE FUCK IS AIDAN?'],['','The speakers answer for you: “HI!”']]);
+  for(const c of team){c.scared=true;mvc(c,-30,1100)}await wait(1100);await fromMemory();cue(prev);store.run.partyKill=true;save();aura('hasan',-2000,'framed on camera');q.outcome='Kyle is dead and it’s on Hasan’s hoodie'},
+ async q=>{const yr=[{id:'kyle',x:-10},{id:'dev',x:-30},{id:'goon',x:-50},{id:'tyler',x:-70}].map((c,i)=>Object.assign(c,{id:i?c.id:'goon',y:160+(i%2)*3,dir:1})),team=[];
+  for(const [i,id] of ['you','hasan','arjun','david','corey','omer','sean','nivaan'].entries()){if(id!=='you'&&A_[id].dead)continue;team.push({id,x:236+i*8,y:158+(i%3)*3,dir:-1,weapon:['#c9c9d0','#3a3a40','#c9a56a','#9aa0a8'][i%4]})}
+  await extScene([...team,...yr],async e=>{for(const [i,c] of yr.entries())mvc(c,150-i*14,1400);await wait(1400);
+   await talk([['Big Dev','HASAN. Get out here. You killed Kyle.'],['Hasan','I DIDN’T KILL KYLE.'],['Big Dev','It’s ON CAMERA, bruv. You’re WEARING him.']]);
+   const c=await choose(['Fight. All of you.','Hand Hasan over.','Let Aidan explain.']);
+   if(c===1){await talk([['Hasan','…You’d give me UP?'],['','He looks at you like you’ve hit him harder than Kyle ever could.'],['Arjun','No. NO. Nobody touches the gear stick except me.']]);aura('you',-3000,'tried to sell Hasan out')}
+   if(c<2){for(const t of team)t.pose='swing';for(const y of yr)y.pose='punch';for(let i=0;i<12;i++){const a=i%2?team[i%team.length]:yr[i%yr.length],b=i%2?yr[i%yr.length]:team[i%team.length];a.punchT=T+.22;SFX.smack();if(i%3===0)SFX.squelch();S.shake=.45;egush(e,b,8);await wait(190)}
+    await talk([['','It’s the biggest fight in the history of your road. Corey breaks a nose without messing his hair. David uses his whole body as a weapon. Arjun bites someone. Omer is shouting tactics nobody is following.'],['','The Year 11s are bigger. You are more scared. Scared wins.']]);for(const t of team)t.pose=null;yr.forEach((y,i)=>{if(i%2)y.sit=true});aura('you',2000,'held the line');aura('hasan',2000,'didn’t kill Kyle (probably)')}
+   e.aidan={x:120,y:163,dir:1,pose:'choke'};fx(.6,'');SFX.sting();
+   await talk([['Aidan','I did Kyle. It was me. Hasan didn’t do it. I did it FOR him.'],['Aidan','Does that mean we’re friends now, Hasan?']]);
+   egush(e,yr[1],40);yr[1].dead=true;SFX.scream();await talk([['','He does Big Dev too, right there on your lawn, in front of everyone, to prove it. It doesn’t take long. Big Dev is a big lad and it still doesn’t take long.'],['','The Year 11s run. They run so fast one of them leaves a shoe. They will never, ever come to this road again.'],['Hasan','…Thanks?'],['Aidan','You’re welcome, best friend.']]);
+   for(const y of yr)if(!y.dead){y.scared=true;mvc(y,-40,900)}e.aidan=null;await wait(900)});aura('hasan',1500,'the Year 11s fear him now');store.run.devDead=true;q.outcome='The Year 11s will never come back'}];
+/* ---------- sharper banter ---------- */
+BANTER.push(
+ ['arjun','Corey, how does it feel to never have been ugly for a single second?','corey','Lonely.','arjun','SHUT UP. Shut up. That’s worse.'],
+ ['hasan','I’ve got negative aura. I can feel it. I walked in and the wifi got worse.','nivaan','That was the microwave.','hasan','The microwave KNOWS.'],
+ ['david','If I die tonight, Arjun is NOT doing my eulogy.','arjun','“David. Big lad. Ate the evidence.” Done. Lovely service.'],
+ ['sean','She posted a sunset. Is that about me.','omer','It’s about the SUN, Sean.','sean','But she posted it at the time I usually TEXT her.'],
+ ['nivaan','Rate my jawline out of ten.','corey','It’s there.','nivaan','“It’s there”???','arjun','He’s crashing out. Somebody hold him.'],
+ ['arjun','Omer’s glazing the spreadsheet again.','omer','The spreadsheet is the only thing in this house that’s never let me down.'],
+ ['hasan','Why does David’s phone keep buzzing?','david','Spam.','hasan','…Forty times?','david','Popular spam.'],
+ ['corey','I’ve been mogged once in my life.','sean','When?','corey','I’m not ready to talk about it.'],
+ ['david','Rizz is just confidence plus snacks. I’ve done the research.','arjun','Then why are you single.','david','Because I EAT the snacks.']);
+BANTER.sort(()=>Math.random()-.5);
+/* ---------- ending additions ---------- */
+{const _w=whereNow;whereNow=function(){const L=_w(),r=store.run,set=(id,t)=>{const i=L.findIndex(l=>l.includes('<b>'+K[id].n.toUpperCase()+'</b>'));if(i>=0&&!A_[id].dead)L[i]='<b>'+K[id].n.toUpperCase()+'</b> — '+t};
+ if(r.crushDone&&!window.LAMP_TIMELINE)set('corey','Has lost '+(400+(Math.random()*90|0))+' consecutive games of anything to Abby. Lost all his aura. Has never been happier.');
+ if(r.gaz)set('david',r.gaz==='police'?'Lives with his mum at his auntie’s now. Still carries the bent frying pan. Calls it “Gaz”.':r.gaz==='aidan'?'Sleeps fine. Doesn’t ask what the noise in the drain is. Never will.':'Says he didn’t mean it. Means it a bit.');
+ if(r.partyKill)set('hasan',r.devDead?'Year 11s cross the road when they see him. He has never been more invited to things.':'Still has the hoodie. Can’t wash it. Can’t throw it away.');return L}}
+{const _m=menu;menu=async function(html,btns){if(/THE CALL<br>ENDED/.test(html))html+=auraBoard();return _m(html,btns)}}
+Object.assign(GOALS,{abby:['See Abby beat Corey at everything.',r=>r.crushDone],gaz:['Deal with Gaz.',r=>!!r.gaz],party:['Survive the Year 11 party.',r=>r.partyKill],aura:['Finish with positive aura.',r=>(r.aura||{}).you>0]});
+
+{const _t=title;title=async function(){const ch=await _t();if(ch===0){store.run.stories=Object.keys(FRIEND_STORIES).filter(k=>window.LAMP_TIMELINE?k!=='abby':k!=='curlfather');save()}return ch}}
 /* ================= THE LAMP TIMELINE (only when built as lamp.html) ================= */
 if(window.LAMP_TIMELINE){
  findCoreyPhoto=async function(){if(coreyPhotoFound())return;S.secret=2;socialState().hidden.photo=true;SFX.pick();socialSave();
@@ -5553,6 +5703,120 @@ if(window.LAMP_TIMELINE){
  {const _w=whereNow;whereNow=function(){const L=_w();if(store.run.curlfather&&!A_.corey.dead){const i=L.findIndex(l=>l.includes('COREY'));if(i>=0)L[i]='<b>COREY</b> — Runs the curl trade in eleven schools. Nobody has seen him have a bad hair day. Nobody alive.'}return L}}
  GOALS.curlfather=['Become the Curlfather.',r=>r.curlfather];
 }
+
+/* ================= SCENE ART KIT: proper backgrounds ================= */
+K.dad??={n:'Mr. Okafor',skin:'#6a4430',hair:'#d8d8d8',hs:'short',top:'#6a7a5a',pants:'#3a3a40',wide:1,glasses:1,seed:13};NCOL['Mr. Okafor']??='#4a5a3a';
+function GRD(x0,y0,x1,y1,st){const gr=g.createLinearGradient(x0,y0,x1,y1);for(const [o,c] of st)gr.addColorStop(o,c);return gr}
+function fillG(x,y,w,h,gr){g.fillStyle=gr;g.fillRect(x,y,w,h)}
+function glow(x,y,r,c,a=1){const gr=g.createRadialGradient(x,y,0,x,y,r);gr.addColorStop(0,c);gr.addColorStop(1,'rgba(0,0,0,0)');g.save();g.globalAlpha=a;g.globalCompositeOperation='lighter';g.fillStyle=gr;g.fillRect(x-r,y-r,r*2,r*2);g.restore()}
+function vign(cx=160,cy=100,r0=70,r1=210,c='rgba(0,0,0,.8)'){const v=g.createRadialGradient(cx,cy,r0,cx,cy,r1);v.addColorStop(0,'rgba(0,0,0,0)');v.addColorStop(1,c);g.fillStyle=v;g.fillRect(0,0,W,H)}
+function nightSky(h,top='#03041a',bot='#1d2050'){fillG(0,0,W,h,GRD(0,0,0,h,[[0,top],[1,bot]]));for(let i=0;i<70;i++){const t=Math.sin(T*(.8+hsh(i)*1.6)+i*3);if(t>-.3)R(hsh(i+1)*W,hsh(i+2)*h*.75,1,1,t>.85?'#ffffff':'#8f9ad0')}}
+function moon(x,y){glow(x,y,34,'rgba(190,205,255,.28)');R(x-6,y-7,12,14,'#ecedda');R(x-7,y-5,14,10,'#ecedda');R(x-3,y-3,3,3,'#d2d4bf');R(x+2,y+1,2,2,'#d2d4bf');R(x-1,y+3,2,1,'#d2d4bf')}
+function skyline(base,col,seed,lit){for(let i=0;i<13;i++){const w=20+hsh(seed+i)*26|0,h=14+hsh(seed+i+9)*28|0,x=((i*29+seed*13)%(W+50))-25;R(x,base-h,w,h,col);for(let k=0;k<6;k++)R(x-2+k*(w/6),base-h-6+k,w+4-k*(w/3),1,col);if(hsh(i+seed)>.45)R(x+w-7,base-h-12,4,8,col);
+ if(lit)for(let j=0;j<3;j++)if(hsh(seed+i*3+j)>.62)R(x+3+j*7,base-h+5,3,3,hsh(i+j+seed)>.8?'#7fb0ff99':'#f2c14eaa')}}
+function bricks(x,y,w,h,a,b,mo){R(x,y,w,h,a);for(let r=0;r*4<h;r++){R(x,y+r*4,w,1,mo);for(let c=(r%2)*5;c<w;c+=10)R(x+c,y+r*4,1,4,mo);if(hsh(r+x)>.5)R(x+((r*13)%Math.max(1,w-8)),y+r*4+1,7,3,b)}}
+function planks(x,y,w,h,a,b,st=12){R(x,y,w,h,a);for(let i=0;i*st<w;i++){R(x+i*st,y,1,h,b);R(x+i*st+4,y+((i*7)%Math.max(1,h-2)),st-6,1,b)}}
+function blobTree(x,y,s,c,c2){R(x-1,y,3,s,c);for(let i=0;i<9;i++){const a=i/9*6.28;R(x+Math.cos(a)*s*.55-s*.4,y-s*.3+Math.sin(a)*s*.35-s*.4,s*.8,s*.8,c)}if(c2)R(x-s*.3,y-s*.9,s*.5,3,c2)}
+function wwin(x,y,w,h,lit,cur){R(x-2,y-2,w+4,h+4,'#d8d0c0');R(x-1,y-1,w+2,h+2,'#3a3040');if(lit){fillG(x,y,w,h,GRD(x,y,x,y+h,[[0,'#ffd877'],[1,'#e8902e']]));R(x+w/2-1,y+3,3,h-3,'#5a3a20');R(x+3,y+h-7,6,7,'#6a4628')}else fillG(x,y,w,h,GRD(x,y,x+w,y+h,[[0,'#1a2440'],[1,'#0a0e1c']]));
+ R(x,y,w,1,'#ffffff22');R(x+(w>>1),y,1,h,'#3a3040');R(x,y+(h>>1),w,1,'#3a3040');if(cur){R(x,y,4,h,cur);R(x+w-4,y,4,h,cur)}R(x-3,y+h+2,w+6,2,'#cfc6b4');if(lit)glow(x+w/2,y+h/2,w*1.1,'rgba(255,190,90,.25)')}
+function rainLayer(a=.22,n=60){for(let i=0;i<n;i++){const x=(i*53+T*70)%W,y=(i*29+T*250+i*i)%H;R(x,y,1,4,'rgba(160,180,255,'+a+')')}}
+function lamppost(x,y0,y1){R(x,y0,3,y1-y0,'#24242c');R(x,y0,16,2,'#24242c');R(x+10,y0+2,9,3,'#ffe9a0');glow(x+14,y0+4,26,'rgba(255,225,150,.55)');for(let i=0;i<26;i++)R(x+14-i*.9,y0+7+i*(y1-y0-7)/26,2+i*1.6,4,'rgba(255,225,150,.035)');glow(x+10,y1,34,'rgba(255,220,140,.16)')}
+function bgStreet(m){const fire=m.fire||0,dark=m.dark&&!fire;
+ nightSky(112);moon(70,22);skyline(100,'#0d0f28',3,1);skyline(116,'#090a1d',11,1);for(let i=0;i<7;i++)blobTree(10+i*50,104+(i%2)*6,18,'#060912');
+ bricks(56,92,86,52,'#3a2b30','#45333a','#261b20');R(52,86,94,7,'#16121a');R(52,86,94,1,'#4c3c48');
+ R(62,98,74,46,'#4c5260');for(let j=0;j<5;j++){R(62,100+j*9,74,1,'#626878');R(62,107+j*9,74,1,'#353944')}R(96,138,8,2,'#9a9aa8');R(58,94,82,4,'#1c1c22');
+ for(let i=0;i<34;i++){R(146+i*2.3,61-i,150-i*4.6,1,i%4?'#26222f':'#332e3e')}R(140,60,160,3,'#120f18');R(140,60,160,1,'#4a4258');R(258,22,14,26,'#3a2626');R(256,20,18,3,'#1a1414');
+ for(let i=0;i<6;i++){const p=(T*.25+i*.17)%1;R(262+Math.sin(T+i)*4,18-p*40,6,5,'rgba(70,70,90,'+(1-p)*.35+')')}
+ bricks(146,62,150,82,fire>1.5?'#2a1612':'#4c2f2c','#58372f','#2e1c1c');
+ const lit=!dark;wwin(186,74,26,20,lit||fire,'#6a2234');wwin(252,82,18,14,lit||fire);wwin(154,112,28,22,lit||fire,'#6a2234');wwin(240,112,34,22,lit||fire,'#2a4a6a');
+ R(190,108,28,4,'#1a1418');R(192,110,24,34,'#e8e0d0');R(194,112,20,32,fire?'#ff7a1e':'#3a1a1e');for(let i=0;i<2;i++){R(197+i*8,116,6,10,'#2a1216');R(197+i*8,130,6,10,'#2a1216')}R(210,127,2,2,'#d8b860');
+ R(203,104,3,3,'#ffe9a0');glow(204,106,24,'rgba(255,225,140,.5)');R(190,144,28,3,'#3c3c46');R(192,147,24,2,'#30303a');
+ fillG(0,144,W,20,GRD(0,144,0,164,[[0,'#0a2012'],[1,'#143419']]));for(let i=0;i<80;i++)R((i*37)%W,145+(i*11)%18,1,2,i%3?'#1c4224':'#0c2412');
+ for(let y=147;y<164;y++){const k=(y-147)/17;R(196-k*8,y,16+k*16,1,y%3?'#45424e':'#3a3844')}
+ for(let i=0;i<5;i++){R(i*10,134+(i%2)*2,12,12,'#0b1c10');R(298+i*6,136+(i%2)*2,10,10,'#0b1c10')}for(let i=0;i<12;i++)R(hsh(i)*50,136+hsh(i+4)*8,2,2,'#2a5a30');
+ R(140,128,10,16,'#203020');R(141,126,8,3,'#2c3f2c');R(28,126,10,18,'#2a2a4a');R(29,124,8,3,'#20203a');
+ R(0,164,W,8,'#2c2c34');for(let i=0;i<14;i++)R(i*24,164,1,8,'#24242a');R(0,171,W,1,'#62626e');fillG(0,172,W,8,GRD(0,172,0,180,[[0,'#16161e'],[1,'#0c0c12']]));
+ if(lit)for(const [x,c] of [[198,'#f2c14e44'],[254,'#f2c14e33'],[166,'#f2c14e33']])R(x,173,8,6,c);
+ lamppost(30,62,166);
+ for(let i=0;i<(m.doodle||0);i++){const dx=70+i*13,dy=112+(i%2)*12;R(dx+1,dy-7,2,8,'#f4f4f4');R(dx,dy,2,2,'#f4f4f4');R(dx+2,dy,2,2,'#f4f4f4');R(dx+1,dy-8,2,1,'#f4f4f4')}
+ if(m.sticks)for(let i=0;i<9;i++){const sx=66+i*8;R(sx,118,1,7,'#e33');R(sx-1,116,3,3,'#e33');R(sx-2,121,5,1,'#e33');if(i===8)R(sx-2,114,5,2,'#e33')}
+ if(fire){g.fillStyle='rgba(255,120,30,'+Math.min(.28,fire*.14)+')';g.fillRect(0,0,W,H);glow(220,90,90,'rgba(255,120,30,.35)',Math.min(1,fire));
+  for(let i=0;i<46*Math.min(fire,2);i++){const fx_=150+hsh(i)*140,p=(T*(1+hsh(i+3))+hsh(i+7))%1,h=10+hsh(i+1)*32*fire;R(fx_,(hsh(i+9)<.5?96:64)-p*h,3+hsh(i+2)*4,5,p<.4?'#ffe066':p<.7?'#ff9a2e':'#d2381e')}
+  for(let i=0;i<16;i++){const p=(T*.3+hsh(i+20))%1;R(160+hsh(i+30)*120+Math.sin(T+i)*5,56-p*60,9,7,'rgba(30,26,34,'+(1-p)*.7+')')}}}
+function bgParlour(m){fillG(0,0,W,140,GRD(0,0,0,140,[[0,'#170c14'],[1,'#2a1420']]));for(let x=0;x<W;x+=20)R(x,0,1,140,'#ffffff08');
+ R(0,8,W,4,'#0c060a');for(let i=0;i<16;i++){const px=12+(i%8)*38,py=22+(i/8|0)*38;R(px-1,py-1,30,32,'#5a4030');R(px,py,28,30,'#ece4d2');const c=['#b3343c','#2a4a8a','#2a6a3a','#6a3a8a'][i%4];R(px+6,py+6,16,14,c);R(px+9,py+9,10,8,'#ece4d2');R(px+12,py+11,4,4,c);R(px+4,py+24,20,2,'#333')}
+ const n=Math.sin(T*7)>-.85;if(n)glow(160,110,70,'rgba(255,60,160,.35)');g.save();g.font='10px KenPixel,monospace';g.fillStyle=n?'#ff6ab8':'#4a1830';g.fillText('INK & REGRET',112,114);g.restore();
+ R(262,40,46,60,'#0a0812');fillG(264,42,42,56,GRD(264,42,264,98,[[0,'#101a34'],[1,'#1c2a4a']]));for(let i=0;i<10;i++)R(266+((i*13+T*30)%40),44+((i*17+T*90)%52),1,4,'#9ab0ff66');R(284,42,2,56,'#0a0812');
+ for(let y=140;y<H;y+=6)for(let x=(y/6%2)*6;x<W;x+=12)R(x,y,6,6,'#2a2228');R(0,140,W,1,'#ffffff18');
+ R(146,122,58,10,'#4a1018');R(146,122,58,2,'#7a2a30');R(196,104,10,28,'#4a1018');R(198,104,6,2,'#7a2a30');R(158,132,4,14,'#2a2a2a');R(188,132,4,14,'#2a2a2a');R(150,144,50,3,'#111');
+ R(214,96,2,30,'#777');R(214,96,22,2,'#777');R(234,96,3,6,'#999');glow(236,104,16,'rgba(255,255,220,.35)');R(36,116,40,24,'#3a2a24');R(36,116,40,2,'#5a4234');R(44,108,14,8,'#222');R(46,110,10,4,'#7fd07f');
+ R(84,122,10,18,'#2a3a24');R(80,112,18,12,'#3a6a2a');if(m.dark)R(0,0,W,H,'rgba(0,0,0,.78)');vign(160,100,80,220,'rgba(0,0,0,.6)')}
+function bgShelter(m){nightSky(110,'#03041a','#241c46');moon(250,20);skyline(108,'#0d0f28',7,1);skyline(118,'#090a1d',17,1);
+ R(0,118,W,32,'#14141c');for(let i=0;i<8;i++){R(8+i*40,120,24,30,'#1c1c26');R(10+i*40,124,20,10,hsh(i)>.5?'#f2c14e66':'#1a2440')}
+ R(0,150,W,10,'#2c2c34');for(let i=0;i<14;i++)R(i*24,150,1,10,'#24242a');R(0,159,W,1,'#62626e');fillG(0,160,W,20,GRD(0,160,0,180,[[0,'#1a1a22'],[1,'#0c0c12']]));for(let i=0;i<6;i++)R(i*60+20,170,26,2,'#e8e0a0');
+ R(88,94,116,4,'#3a3a46');R(88,94,116,1,'#7a7a88');R(90,98,3,52,'#4a4a56');R(201,98,3,52,'#4a4a56');R(94,100,106,40,'rgba(150,200,255,.10)');R(94,100,1,40,'#ffffff30');R(100,136,92,4,'#4a4a56');R(104,140,3,10,'#333');R(186,140,3,10,'#333');
+ R(150,102,40,28,'#0a0a10');fillG(152,104,36,24,GRD(152,104,188,128,[[0,'#7a35c9'],[1,'#2b4fd6']]));glow(170,116,34,'rgba(170,90,255,.35)');g.save();g.font='6px KenPixel,monospace';g.fillStyle='#fff';g.fillText('C.U.R.L.',156,114);g.fillText('looksmaxx',155,123);g.restore();
+ g.save();g.font='6px KenPixel,monospace';g.fillStyle='#e33';g.fillText('DEV WOZ ERE',100,132);g.restore();R(212,132,10,18,'#2a3a2a');R(212,130,10,3,'#1a2a1a');lamppost(240,64,152);rainLayer(.2,40)}
+function bgGarden(m){nightSky(96,'#03041a','#18204a');moon(56,18);for(let i=0;i<5;i++)blobTree(30+i*70,92,22,'#050a0c');
+ bricks(186,56,134,74,'#3a2a2a','#463232','#221616');for(let i=0;i<30;i++)R(184+i*2,55-i,140-i*4,1,'#1c1820');wwin(220,76,30,24,1,'#2a5a3a');R(222,88,6,8,'#3a3040');R(232,86,8,6,K.aidan.hair);R(233,90,6,6,K.aidan.skin);wwin(276,80,24,20,0);
+ R(264,104,20,40,'#2a1a14');R(266,106,16,38,'#4a2e24');R(280,122,2,2,'#d8b860');R(264,100,20,3,'#1a1414');R(270,96,6,3,'#ffe9a0');glow(273,99,20,'rgba(255,225,140,.45)');
+ for(let i=0;i<14;i++){R(i*14,104,12,34,'#3a2c1e');R(i*14,104,12,2,'#4e3a28');R(i*14+11,104,1,34,'#22180e')}R(0,112,186,2,'#2a1e14');R(0,128,186,2,'#2a1e14');
+ R(8,98,40,40,'#2a2420');for(let i=0;i<10;i++)R(4+i*4.6,94-i*.6,46-i*4.6,1,'#1a1612');R(20,112,10,26,'#1a1612');
+ for(let x=0;x<W;x+=40)R(x,90,1,10,'#888');R(0,92,180,1,'#aaa');for(let i=0;i<4;i++)R(24+i*34,93,8,10,['#c9c9d0','#b3343c','#2a4a8a','#e8e0d0'][i]);
+ fillG(0,138,W,42,GRD(0,138,0,180,[[0,'#0c2414'],[1,'#163a1c']]));for(let i=0;i<90;i++)R((i*37)%W,140+(i*13)%38,1,2,i%3?'#1f4a26':'#0c2412');
+ for(let i=0;i<6;i++){R(196+i*20,146,18,8,'#5a5660');R(196+i*20,146,18,1,'#7a7680')}
+ fillG(60,150,74,14,GRD(60,150,60,164,[[0,'#1d4a6a'],[1,'#0d2a44']]));R(62,150,70,1,'#6ab0e0');R(80,156,10,4,'#3a8a3a');R(108,154,8,3,'#3a8a3a');glow(97,157,26,'rgba(120,200,255,.12)');R(56,149,82,2,'#5a5660');
+ for(let i=0;i<9;i++){R(140+i*6,150,2,8,'#2a6a2a');R(139+i*6,147,4,4,['#c23b3b','#e86aa0','#ffe066'][i%3])}R(160,140,6,10,'#c23b3b');R(160,137,6,3,'#eee');R(161,141,1,1,'#111');vign(160,110,80,220,'rgba(0,0,0,.55)')}
+function bgAbby(m){fillG(0,0,W,144,GRD(0,0,0,144,[[0,'#1c0f30'],[1,'#2a1640']]));for(let y=12;y<144;y+=12)for(let x=(y/12%2)*8;x<W;x+=16){R(x,y,1,1,'#ffffff10');R(x+2,y+3,1,1,'#7a35c930')}
+ for(let i=0;i<14;i++)R(i*24,0,24-i,12-i*.6,'#120a20');
+ R(118,38,44,44,'#e8dccc');R(120,40,40,40,'#0a0812');fillG(122,42,36,36,GRD(122,42,122,78,[[0,'#0a1030'],[1,'#22305a']]));R(148,46,6,6,'#ecedda');for(let i=0;i<8;i++)R(124+((i*11+T*20)%34),44+((i*13+T*80)%32),1,3,'#9ab0ff88');R(139,42,2,36,'#e8dccc');R(122,59,36,2,'#e8dccc');R(112,36,6,52,'#5a2a7a');R(162,36,6,52,'#5a2a7a');R(116,84,48,3,'#cfc6b4');
+ const pts=[];for(let i=0;i<=24;i++){const x=6+i*13,y=18+Math.sin(i/24*Math.PI)*10;pts.push([x,y]);R(x,y,1,1,'#2a1a3a');const c=['#c9a2ff','#7a35c9','#ff6ab8','#6ab0ff'][i%4];if(Math.sin(T*2+i)>-.2){R(x-1,y+1,3,3,c);glow(x,y+2,6,c+'88')}}
+ for(let i=0;i<12;i++){const px=20+(i%6)*15,py=40+(i/6|0)*18;R(px,py,12,14,'#f4f0e6');R(px+1,py+1,10,9,['#3a2a5a','#2b4fd6','#7a35c9','#1a1626','#6a2a3a','#2a6a6a'][i%6]);R(px+5,py-2,2,3,'#c9a56a')}if(m.pol){R(31,57,14,16,'#ffe066');R(32,58,12,14,'#f4f0e6');R(33,59,10,9,'#2a3a5a');R(37,61,3,5,'#33333f')}R(18,38,94,1,'#c9a56a');R(18,56,94,1,'#c9a56a');
+ R(176,36,30,40,'#111');R(178,38,26,36,'#3a1a4a');g.save();g.font='6px KenPixel,monospace';g.fillStyle='#ff6ab8';g.fillText('THE',182,50);g.fillText('VOID',181,58);g.fillStyle='#c9a2ff';g.fillText('TOUR',180,68);g.restore();
+ R(214,40,24,32,'#111');R(216,42,20,28,'#2b4fd6');R(220,48,12,12,'#0c0a12');R(224,52,4,4,'#c9a2ff');
+ R(180,60,26,44,'#3a2a5a');R(186,66,14,8,'#ffffff20');R(176,104,34,4,'#2a1a3a');R(184,104,3,40,'#2a1a3a');
+ for(let i=0;i<6;i++)R(214+i*7,88,5,16,['#b3343c','#2b4fd6','#eee','#7a35c9','#222','#e86aa0'][i]);R(212,104,46,3,'#4a3428');
+ R(250,88,42,28,'#0a1a24');fillG(252,90,38,24,GRD(252,90,252,114,[[0,'#2a8a9a'],[1,'#0e3a4a']]));glow(271,102,26,'rgba(90,220,240,.22)');const ax=262+Math.sin(T)*7;R(ax,104,9,4,'#f6a8c8');R(ax+7,102,4,4,'#f6a8c8');R(ax+9,101,1,1,'#111');R(ax+10,100,2,2,'#e86aa0');for(let i=0;i<3;i++){const p=(T*.6+i*.3)%1;R(256+i*10,112-p*20,1,1,'#bff')}R(252,112,38,2,'#c9a56a');R(250,116,42,28,'#3a2a3a');
+ R(16,112,100,8,'#1a1626');fillG(18,118,96,26,GRD(18,118,18,144,[[0,'#2a1a40'],[1,'#120a20']]));R(20,113,24,6,'#7a35c9');R(48,113,20,6,'#e8e0e8');for(let i=0;i<5;i++)R(24+i*18,124+(i%2)*4,10,1,'#3a2a5a');
+ R(84,98,8,20,'#c9a56a');R(81,94,14,7,'#c9a56a');R(86,82,4,14,'#5a3a20');R(85,80,6,3,'#2a1a10');
+ R(0,144,W,36,'#1a1226');for(let x=0;x<W;x+=18)R(x,144,1,36,'#140e1e');fillG(130,150,84,22,GRD(130,150,214,172,[[0,'#3a1f55'],[1,'#22143a']]));for(let i=0;i<6;i++)R(136+i*13,154,7,1,'#c9a2ff55');
+ R(40,150,14,4,'#222');R(60,156,10,3,'#5a2a7a');R(290,150,12,5,'#b3343c');
+ if(m.candle){R(228,128,8,6,'#e8e0d0');R(229,126,6,3,'#e8e0d0');R(230,128,1,1,'#111');R(233,128,1,1,'#111');R(231,122,2,4,'#eee');R(231,118,2,4,Math.sin(T*9)>0?'#ffb02e':'#ffe066');glow(232,120,22,'rgba(255,180,80,.45)')}
+ g.fillStyle='rgba(150,80,255,.07)';g.fillRect(0,0,W,H);vign(160,110,90,230,'rgba(10,0,20,.55)')}
+function bgLoft(m){R(0,0,W,H,'#0e0814');for(let i=0;i<40;i++){R(i*8,0,1,140-Math.abs(i-20)*5,'#2a1a14')}for(let i=0;i<20;i++){R(i*16+2,12+Math.abs(i-10)*4,12,130-Math.abs(i-10)*8,'#e8a0b0');R(i*16+2,12+Math.abs(i-10)*4,12,130-Math.abs(i-10)*8,'rgba(0,0,0,.72)')}
+ for(let i=0;i<10;i++){R(i*34,20+Math.abs(i-5)*6,4,140,'#3a2618');R(i*34+1,20+Math.abs(i-5)*6,1,140,'#5a3e28')}R(0,26,W,4,'#3a2618');
+ planks(0,140,W,40,'#2e1e14','#1e130c',18);R(156,10,2,40,'#222');R(152,50,10,8,'#ffe9a0');glow(157,54,70,'rgba(255,230,160,.35)');
+ R(10,110,30,30,'#5a4430');R(12,112,26,2,'#7a6040');g.save();g.font='6px KenPixel,monospace';g.fillStyle='#222';g.fillText('XMAS',14,126);g.restore();R(270,92,40,48,'#5a5a64');R(272,94,36,2,'#7a7a84');R(250,120,18,20,'#5a4430');
+ R(36,118,250,4,'#6a4a30');R(40,122,4,18,'#4a3020');R(278,122,4,18,'#4a3020');
+ for(let i=0;i<40;i++){const jx=46+(i%10)*22,jy=96+(i/10|0)*6;R(jx,jy,8,10,'#f0f0f0');R(jx+1,jy+3,6,6,'#9a4ae8');R(jx,jy-2,8,2,'#7a35c9');R(jx+1,jy+3,1,5,'#ffffff55')}
+ const b=Math.sin(T*4);R(148,100,12,18,'#bfe8ff55');R(150,108+b,8,10,'#b06aff');R(153,92,3,8,'#bfe8ff55');R(151,118,6,3,'#ff9a2e');glow(154,110,40,'rgba(170,80,255,.4)');for(let i=0;i<4;i++){const p=(T*.7+i*.25)%1;R(152+Math.sin(T*3+i)*3,96-p*30,3,3,'rgba(190,140,255,'+(1-p)+')')}
+ g.save();g.font='6px KenPixel,monospace';g.fillStyle='#ffe066';g.fillText('C.U.R.L. — COILS UNDER ROYAL LICENCE',70,30);g.restore();vign(156,100,70,220,'rgba(0,0,0,.65)')}
+function bgTunnel(m){R(0,0,W,H,'#0a0605');fillG(0,40,W,110,GRD(0,40,0,150,[[0,'#24160e'],[.5,'#2e1d12'],[1,'#1c120c']]));for(let i=0;i<120;i++)R(hsh(i)*W,40+hsh(i+5)*110,2+hsh(i+2)*6,1+(i%3),i%2?'#3a2618':'#140c08');
+ for(let i=0;i<10;i++)R(hsh(i+40)*W,40,1+(i%2),8+hsh(i)*20,'#4a3220');for(let x=20;x<W;x+=62){if(x>130&&!m.bed)continue;R(x,46,5,104,'#5a3e24');R(x+1,46,1,104,'#7a5634');R(x-8,42,21,5,'#6a4a2c');R(x-8,42,21,1,'#8a6a40')}
+ fillG(0,150,W,30,GRD(0,150,0,180,[[0,'#2a1a10'],[1,'#120a06']]));for(let i=0;i<20;i++)R(hsh(i+70)*W,152+hsh(i)*20,3+hsh(i+3)*5,2,'#3a281a');
+ for(let i=0;i<5;i++){const p=(T*.5+i*.2)%1;R(40+i*60,46+p*100,1,2,'#6ab0e099')}
+ if(m.prints)for(let i=0;i<14;i++){R(60+i*17,84+hsh(i)*40,3,4,'#140a06');R(61+i*17,82+hsh(i)*40,1,2,'#140a06')}if(m.bed){R(232,136,42,8,'#3a3a50');R(232,130,10,6,'#2456c8');R(270,124,2,14,'#4a3524');R(236,144,2,6,'#222');R(270,144,2,6,'#222');R(250,120,10,12,'#e8e0d0');R(252,124,6,6,'#eee8')}if(m.spoon)R(176,147,7,2,'#c9c9d0')}
+function bgRoom(m){fillG(0,0,W,150,GRD(0,0,0,150,[[0,'#2a3350'],[1,'#1c2238']]));for(let x=0;x<W;x+=14){R(x,10,6,140,'#26304a');R(x+2,10,2,140,'#2e3a58')}
+ for(let i=0;i<6;i++)R(hsh(i)*W,20+hsh(i+2)*60,20+hsh(i+4)*30,14+hsh(i+5)*20,'rgba(80,70,40,.18)');
+ R(214,22,60,44,'#cfc6b4');fillG(216,24,56,40,GRD(216,24,216,64,[[0,'#0a1030'],[1,'#1a2a50']]));R(243,24,2,40,'#cfc6b4');glow(260,40,24,'rgba(255,220,140,.18)');
+ planks(0,150,W,30,'#4a3a30','#3a2c24',16);R(0,150,W,1,'#6a5a48');R(14,124,82,6,'#1a2a50');fillG(18,126,74,24,GRD(18,126,18,150,[[0,'#2456c8'],[1,'#142e70']]));R(18,120,20,8,'#e8e4dc');R(36,121,12,5,'#c9a56a');R(16,140,2,10,'#3a2a20');R(92,140,2,10,'#3a2a20');for(let i=0;i<4;i++)R(30+i*14,134,8,4,'#8a6a3a55');
+ R(116,74,160,3,'#5a4130');R(116,77,160,1,'#2a1e14');['you',...pals,'aidan'].forEach((id,i)=>{if(m.gone===i)return;g.save();g.translate(126+i*17,74);g.scale(.5,.5);drawKid(K[id],0,0,{still:1});g.restore()});
+ R(34,38,58,48,'#5a4a38');R(36,40,54,44,'#eee9d4');for(let i=0;i<8;i++){const h=10+hsh(i)*22;R(40+i*6,78-h,3,h,'#c23b3b');R(40+i*6,78-h-2,3,1,'#222')}g.save();g.font='6px KenPixel,monospace';g.fillStyle='#222';g.fillText('HOW TALL',40,48);g.restore();
+ R(284,62,36,88,'#3a2a20');R(286,64,32,84,'#4a3428');R(301,64,2,84,'#22160f');R(297,104,2,4,'#c9a56a');R(305,104,2,4,'#c9a56a');R(98,126,14,24,'#3a2a20');R(100,132,8,10,'#9ad');R(102,124,1,9,'#e33');R(105,124,1,9,'#2a4a8a');
+ for(let i=0;i<4;i++){R(130+i*30,100,22,18,'#f4f0e6');R(134+i*30,104,6,6,'#2456c8');R(142+i*30,106,6,8,'#c23b3b')}vign(160,100,90,230,'rgba(0,0,0,.45)')}
+function bgLounge(m){R(0,0,W,H,'#0b0a12');fillG(0,10,W,140,GRD(0,10,0,150,[[0,'#1a1622'],[1,'#120e18']]));for(let x=0;x<W;x+=26)R(x,10,1,140,'#ffffff06');
+ const fl=Math.sin(T*9)>0;R(36,84,64,46,'#111');fillG(40,88,56,36,GRD(40,88,96,124,[[0,fl?'#bfe6ff':'#8ac8f0'],[1,'#3a6aa8']]));glow(68,106,90,'rgba(140,200,255,.22)');R(60,130,16,4,'#222');R(30,134,76,16,'#2a2228');
+ g.fillStyle='rgba(150,200,255,.05)';g.fillRect(0,60,W,100);planks(0,150,W,30,'#1e1418','#140e10',20);
+ R(194,100,62,50,'#3a2a30');R(196,100,58,8,'#4a3640');R(188,114,12,36,'#2e2026');R(250,114,12,36,'#2e2026');R(212,92,26,12,'#8a8a90');R(214,90,22,4,'#6a6a70');R(222,96,8,6,K.aidan.skin);R(204,126,22,4,'#e8e8e8');R(206,124,18,2,'#9a9a70');R(238,128,6,10,'#2a2a30');
+ R(280,40,30,60,'#2a2228');for(let i=0;i<10;i++)R(284+(i%3)*8,46+(i/3|0)*14,6,10,['#2456c8','#c23b3b','#eee'][i%3]);vign(68,106,60,240,'rgba(0,0,0,.75)')}
+function bgShed(m){R(0,0,W,H,'#0b0806');planks(0,10,W,140,'#1e150e','#120c08',16);for(let i=0;i<20;i++)R(hsh(i)*W,20+hsh(i+3)*110,1,6+hsh(i+5)*12,'#0a0604');
+ R(150,10,2,26,'#222');R(146,36,10,8,'#ffe9a0');glow(151,40,90,'rgba(255,220,150,.4)');for(let i=0;i<10;i++){R(10+i*31,16+Math.sin(i)*3,1,8,'#3a3a3a');R(8+i*31,24+Math.sin(i)*3,5,4,['#e33','#3a8','#ee3','#38e','#e3e'][i%5])}
+ planks(0,150,W,30,'#2a1c12','#1a1008',22);R(60,40,40,24,'#e8e0d0');g.save();g.font='6px KenPixel,monospace';g.fillStyle='#c23b3b';g.fillText('WELCOME',63,50);g.fillText('FRIENDS!!',62,58);g.restore()}
+function bgY7(m){fillG(0,0,W,150,GRD(0,0,0,150,[[0,'#7a5a8e'],[1,'#5a4070']]));for(let x=4;x<W;x+=12)R(x,10,4,140,'rgba(0,0,0,.07)');for(let i=0;i<18;i++)R(10+i*17,16+Math.sin(i*.8)*4,4,5,['#e33','#ee3','#3ae','#3e8'][i%4]);
+ g.save();g.font='6px KenPixel,monospace';g.fillStyle='#ffe066';g.fillText('HAPPY 11th DAVID',110,32);g.restore();wwin(40,58,60,40,0);
+ R(108,116,96,30,'#a02c34');R(108,112,96,6,'#c23b3b');R(104,120,6,26,'#8a2228');R(202,120,6,26,'#8a2228');planks(0,150,W,30,'#6a4630','#553624',14);
+ for(let i=0;i<6;i++)R(30+i*46,158,34,8,['#6a6f8a','#8a5a5a','#5a7a5a','#7a6a4a','#5a5a7a','#8a7a5a'][i]);R(250,110,30,20,'#e8e0d0');R(254,104,22,8,'#f0a0c0');for(let i=0;i<5;i++)R(256+i*4,98,1,6,'#fff'),R(256+i*4,96,1,2,'#ffb02e');
+ if(m.hair)for(let i=0;i<16;i++)R(150+hsh(i)*40,152+hsh(i+3)*10,3,1,'#4a2f1a');g.fillStyle='rgba(255,220,160,.14)';g.fillRect(0,0,W,H)}
 
 const sceneText=$('scene-text'),textInk=sceneText.getContext('2d');
 let sceneLetters=[];
