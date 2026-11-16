@@ -4258,7 +4258,7 @@ function drawStage(m){
 }
 {const _dm=drawMemory;drawMemory=function(){if(MEM.scene==='stage')drawStage(MEM);else _dm()}}
 const toStage=o=>toMemory(Object.assign({scene:'stage',cast:[],blood:[],sprays:[]},o));
-const gush=(c,n=26)=>{MEM.sprays.push({x:c.x,y:c.y-20,d:1,t:T,n},{x:c.x,y:c.y-20,d:-1,t:T,n:n/2});SFX.smack();SFX.squelch();S.shake=.45;fx(.12,'')};
+const gush=(c,n=26)=>{(MEM.sprays??=[]).push({x:c.x,y:c.y-20,d:1,t:T,n},{x:c.x,y:c.y-20,d:-1,t:T,n:n/2});SFX.smack();SFX.squelch();S.shake=.45;fx(.12,'')};
 async function errand(label,x,floor,objective){
  if(FAST)return;S.errand={x,floor,label};const old=S.obj;setObj(objective);busy=false;releaseKeys();cam.tx=A_.you.x-160;
  await new Promise(r=>S.errand.done=r);busy=true;S.errand=null;setObj(old);releaseKeys();
@@ -4503,7 +4503,7 @@ async function crushOut(){
  else{warm++;await talk([['Corey','I’m going to kill him.'],['???','Don’t. That’s the most honest thing anyone’s said on this street all year.']])}
  gi.sit=false;await tw(gi,{y:160,x:214},260);SFX.smack();MEM.book=false;
  await talk([['','She drops off the roof like the ground owes her a favour.'],['???','Three questions. Why the book?'],['Corey','Because you said it wrecked you. I wanted to know what could.'],['???','Why tonight?'],['Corey','Because there’s a thing outside my friend’s house and I didn’t want to die having only liked your posts.'],['???','…Third one’s mine to keep. Come back and I’ll ask it.']]);
- MEM.aidan=true;fx(.4,'');await talk([['???','The boy with the bowl cut walks past here every night. Counts the houses out loud. He always stops at yours.'],['???','He’s doing it now. Don’t turn round.']]);you.dir=co.dir=-1;MEM.aidan='wave';SFX.sting();await wait(900);
+ await abbyRoom(co,gi);MEM.aidan=true;fx(.4,'');await talk([['???','The boy with the bowl cut walks past here every night. Counts the houses out loud. He always stops at yours.'],['???','He’s doing it now. Don’t turn round.']]);you.dir=co.dir=-1;MEM.aidan='wave';SFX.sting();await wait(900);
  await talk([['You','Corey. We’re going. NOW.'],['','She presses something into his hand. A purple guitar pick with a phone number scratched into it.'],['???','Finish the book first. I’ll know if you skipped. My name’s on page forty-three.']]);
  mvc(you,-20,1500);await mvc(co,-10,1900);await fromMemory();cue(prev);store.run.crush=warm;save();
  await talk([['Corey','Not. One. Word.'],['','He’s grinning like an idiot. On him it still somehow looks expensive.']]);
@@ -5008,6 +5008,551 @@ DARKTALK.push(
 calmLines.corey.push('Arjun asked me for “tips”. I said wash. He wrote it down.');
 calmLines.sean.push('She liked my story at 1am. That’s either love or insomnia.');
 calmLines.omer.push('I know everyone’s browser history. I set up the wifi. I say nothing. That’s called power.');
+
+/* An optional extra, available regardless of the night's random story selection. */
+Object.assign(K,{
+ pool_erin:{n:'Erin',skin:'#d9ac8f',hair:'#58332e',hs:'long',top:'#ad8cc9',pants:'#354961',seed:45},
+ pool_darren:{n:'Darren',skin:'#c99b7c',hair:'#594a3d',hs:'short',top:'#df8c48',pants:'#284a64',wide:1,h:5,glasses:1,seed:46},
+ pool_staff:{n:'Pool attendant',skin:'#916444',hair:'#231d24',hs:'short',top:'#d4575c',pants:'#34444c',seed:47}
+});
+Object.assign(NCOL,{Lily:'#97649c',Erin:'#97649c',Darren:'#b27643','Pool attendant':'#b64d59'});
+FRIEND_STORIES.pooldate={title:'Hasan’s mystery crush',cast:['hasan','arjun'],lead:'hasan',
+ meet:[[0,500],[0,500],[0,720],[1,480]],places:['the living-room couch','the living-room couch','the front door','the upstairs game room'],needs:{},
+ invite:['“Someone just called me cute. Arjun, stop reading over my shoulder.”','“She replied. She wants to meet at the pool.”','“The pool’s still open. Come with me. Both of you.”','“We need to decide what we’re telling the others.”']};
+OFFTOPIC.push('pooldate');
+
+let poolPhoneOptions=null;
+function poolLog(kind,text){const q=socialState().pooldate;(q.log??=[]).push({kind,text});save()}
+function renderPoolMessages(){
+ const box=$('messages');box.replaceChildren();
+ for(const m of socialState().pooldate.log||[]){const el=document.createElement('div');el.className='message '+m.kind;el.textContent=m.text;box.append(el)}
+ box.scrollTop=box.scrollHeight;
+}
+function renderPoolOptions(){
+ const pane=$('text-options');pane.replaceChildren();if(!poolPhoneOptions)return;
+ for(const [i,line] of poolPhoneOptions.lines.entries())phoneButton(line,()=>showDraft(line,()=>{
+  poolLog('out',line);SFX.click();poolPhoneOptions.selected=i;closePhone();
+ }));
+ phoneButton('PUT AWAY WITHOUT SENDING',closePhone);
+}
+async function poolPhone(lines){
+ const a=A_.hasan;await pan(a.x,350);a.phone=1;view.focus=a.x;view.holder='hasan';view.text=true;
+ await tw(view,{zoom:1.7,phone:.2},500);
+ phoneOwner='pool';textOpen=true;releaseKeys();poolPhoneOptions={lines,selected:null};
+ $('phone').hidden=false;$('phone').setAttribute('aria-label','Hasan’s conversation with the Lily account');drawPhoneShell();
+ $('phone-tabs').hidden=true;$('phone-stories').hidden=true;$('messages').hidden=false;
+ $('contact').textContent='LILY · @lily.lanes';$('phone-status').textContent='Hasan’s phone · replies arrive later';
+ renderPoolMessages();renderPoolOptions();await new Promise(resolve=>phoneResolve=resolve);
+ const chosen=poolPhoneOptions.selected;poolPhoneOptions=null;
+ await tw(view,{zoom:1,phone:0},450);view.text=false;a.phone=0;await cameraBack();return chosen;
+}
+{const prev=refreshPhone;refreshPhone=function(){if(textOpen&&phoneOwner==='pool')return;prev()}}
+{const prev=renderMessages;renderMessages=function(){if(textOpen&&phoneOwner==='pool')renderPoolMessages();else prev()}}
+{const prev=renderOptions;renderOptions=function(){if(textOpen&&phoneOwner==='pool')renderPoolOptions();else prev()}}
+{const prev=updatePhoneStatus;updatePhoneStatus=function(){if(phoneOwner!=='pool')prev()}}
+
+async function poolConversation(rows){for(const [name,line] of rows)await say(name,line)}
+FRIEND_SCENES.pooldate=[
+ async q=>{
+  await poolConversation([
+   ['Hasan','Before anyone laughs, someone followed me. Her name’s Lily. She messaged first.'],
+   ['Arjun','Someone with a pulse? Show me.'],
+   ['Hasan','She said she saw the racing clip. And that I have a nice smile.'],
+   ['You','Do you actually know her?'],
+   ['Hasan','No. She says she lives nearby. Just help me answer without sounding weird.']
+  ]);
+  poolLog('in','hey :) saw your racing clip. you have a really nice smile');
+  poolLog('in','your friend talks a lot. i was watching you, not him');
+  q.opener=await poolPhone(['Thanks. That’s the first compliment I’ve had all night. How do you know us?','Arjun’s been talking for six hours. I’m glad someone noticed me.','Have we met before? I don’t recognize this account.']);
+  await poolConversation([
+   ['Arjun',q.opener===1?'SIX hours? It has been four.':'Ask her if she has a friend. A nice friend. A friend with low standards.'],
+   ['Hasan',q.opener===null?'I’ll think about what to send. I don’t want you two choosing everything.':'Sent. Now I’m putting it away before I send something worse.'],
+   ['You','Let her reply. We’ve still got the sleepover.']
+  ]);
+  q.outcome='Hasan is waiting for Lily to reply';
+ },
+ async q=>{
+  poolLog('in',q.opener===2?'we haven’t met. i found you through the clip. i’m near riverside pool':'i’m near riverside pool. the clip came up on my feed');
+  poolLog('in','i’m going to the late swim. you should come. i want to see that smile in person');
+  await poolConversation([
+   ['Hasan','She wants to meet. Tonight. The pool is doing a late swim.'],
+   ['Arjun','You’ve had one conversation and you’re packing a towel. Incredible pace.'],
+   ['You','Ask for a video call first. We haven’t even heard her voice.'],
+   ['Hasan','Fine. Or we can meet somewhere public. You two are coming with me anyway.']
+  ]);
+  q.check=await poolPhone(['Can we video call for a minute before we meet?','I can come later. Two friends are coming with me. Is that okay?','I’m staying at the sleepover. Maybe another time.']);
+  q.cancelled=q.check===2||q.check===null;
+  await say('Hasan',q.cancelled?'I’ll stay here. I like the attention, but I don’t know this person.':'We’ll wait for her answer. If we go, meet me at the front door after the next group game.');
+  await say('Arjun',q.cancelled?'A surprisingly sensible decision. I didn’t prepare a joke for that.':'I’m coming for moral support. And because I need to see you attempt a normal greeting.');
+  q.outcome=q.cancelled?'Hasan stays at the sleepover':'A pool meetup is planned';
+ },
+ async q=>{
+  if(q.cancelled){await say('Hasan','I didn’t go. She stopped replying when I said no. That tells me enough.');q.outcome='You skipped the suspicious meetup';return}
+  poolLog('in',q.check===0?'camera’s broken sorry. come to the pool. i’m by the shallow end':'bring your friends. i’ll be by the shallow end');
+  await poolConversation([
+   ['Hasan',q.check===0?'Apparently her camera is broken. She says to meet by the shallow end.':'She said you can both come. Shallow end. That’s where she’ll be.'],
+   ['You','We can still stay here.'],
+   ['Arjun','I’m ready either way. I brought a towel and several questions.']
+  ]);
+  if(await choose(['Go to the public pool together.','Stay at the sleepover. This feels off.'])){q.cancelled=true;q.outcome='You called off the meetup';await say('Hasan','Okay. I’ll tell her we’re not coming.');poolLog('out','We’re staying here tonight.');return}
+  await poolMeetup(q);
+ },
+ async q=>{
+  if(!q.revealed){
+   await poolConversation([['Hasan','That account changed its name to Darren just now. The photo is some guy holding a fish.'],['Arjun','Your mystery woman had a fishing license.'],['Hasan','We didn’t go. I’m counting that as a win.']]);
+   q.blocked=true;q.outcome='You avoided Darren and blocked the account';save();return;
+  }
+  await poolConversation([
+   ['Hasan','I dried my hair. I changed my hoodie. Somehow I still feel like a complete idiot.'],
+   ['Arjun',q.support==='protect'?'You believed someone who lied. That’s on him. I can still laugh at the entrance, though.':'You walked down those pool steps like the main character in a music video.'],
+   ['Hasan','He said “Hey, I’m Lily.” In the deepest voice I have heard in my life.'],
+   ['You','What do you want to tell the others?']
+  ]);
+  const c=await choose(['Let Hasan tell the story himself.','Keep it between the three of you.','Lie to everyone: Hasan had an amazing date.']);q.fallout=c;
+  if(c===0){
+   await say('Hasan','I’ll tell them. If I get the first joke, you don’t get to make it my name for a month.');
+   await say('You','David, come over. Hasan has a story.');await marchTo(A_.david,1,A_.hasan.x+30);
+   await poolConversation([['Hasan','I got catfished by a man called Darren. He had prescription goggles and a loyalty card.'],['David','Was the loyalty card valid?'],['Hasan','That’s your FIRST question?'],['David','I’m trying to find a positive.']]);
+   q.outcome='Hasan tells the story on his own terms';
+  }else if(c===1){await poolConversation([['Arjun','Fine. No group chat. No nicknames.'],['Hasan','Thank you. Seriously.'],['Arjun','I am still allowed to think about it privately.'],['Hasan','You look like you’re doing that right now.']]);q.outcome='You keep the pool story private'}
+  else{await poolConversation([['You','We tell them you met Lily and it went brilliantly.'],['Hasan','No. Then I have to invent a second date. With DARREN.'],['Arjun','Too late. David already asked if she has a sister.'],['Hasan','Tell him she has a brother. The brother is also Darren.']]);q.outcome='The fake success story falls apart'}
+  q.blocked=true;poolLog('note','Account blocked. Hasan keeps the screenshots of the fake profile.');save();
+  await say('Hasan','That’s enough phone for one night. Can we just play the racing game?');
+ }
+];
+
+async function poolMeetup(q){
+ const prev=scoreName;
+ await say('Hasan','Riverside pool. Five minutes away. Let’s go together.');
+ await Promise.all(['you','hasan','arjun'].map((id,i)=>marchTo(A_[id],0,710+i*8)));S.floor=0;
+ await N('You leave through the front door together. At Riverside pool, you pay at reception and leave your shoes and jackets in the lockers.');
+ const you={id:'you',x:-20,y:164,dir:1},hasan={id:'hasan',x:-35,y:163,dir:1},arjun={id:'arjun',x:-50,y:164,dir:1};
+ const girl={id:'pool_erin',x:254,y:103,dir:-1,sit:true,phone:1},man={id:'pool_darren',x:-22,y:164,dir:1,hidden:true};
+ await toMemory({scene:'pooldate',cast:[girl,you,hasan,arjun,man],splash:null});cue('tipsy');
+ await Promise.all([mvc(you,57,1200),mvc(arjun,78,1500),mvc(hasan,100,1800)]);
+ await poolConversation([
+  ['Hasan','There. Purple top. By the shallow end. That has to be her.'],
+  ['Arjun','You said her photo was blurry. How do you know?'],
+  ['Hasan','She’s even prettier in person. Give me one minute.'],
+  ['You','Ask her name before you start introducing your future children.']
+ ]);
+ await mvc(hasan,123,750);await tw(hasan,{y:140},800);hasan.water=true;MEM.splash={x:hasan.x,t:T};SFX.click();
+ await mvc(hasan,195,1700);hasan.dir=1;
+ await poolConversation([['Hasan','Lily? Hi. It’s Hasan. From the messages.'],['Erin','Sorry? My name’s Erin. I’m waiting for my sister.'],['Hasan','Oh. Sorry. Wrong person.'],['Arjun','Strong opening. Very clear communication.']]);
+ girl.phone=0;girl.sit=false;await mvc(girl,340,1800);
+ await say('Hasan','She said the shallow end. Maybe she’s still getting changed.');
+ man.hidden=false;await mvc(man,118,2200);await wait(500);await tw(man,{y:141},900);man.water=true;MEM.splash={x:118,t:T};await mvc(man,164,1600);man.dir=1;
+ await say('Darren','Hey, I’m Lily.');await wait(1500);hasan.dir=-1;
+ await poolConversation([
+  ['Hasan','...What?'],
+  ['Darren','The account. Lily. That was me. My actual name’s Darren.'],
+  ['Arjun','Lily has a mortgage.'],
+  ['Hasan','You are a grown man.'],
+  ['Darren','Yeah. I’m thirty-eight. It’s a prank account. You should see your faces.'],
+  ['Hasan','You told me I had a nice smile.'],
+  ['Darren','That was part of the joke.'],
+  ['You','You spent your evening pretending to be a girl to get him here?'],
+  ['Darren','It sounds worse when you say it like that.'],
+  ['Arjun','It sounds accurate when he says it like that.']
+ ]);
+ q.revealed=true;save();
+ const c=await choose(['Back Hasan up. Tell Darren to leave him alone.','Let Hasan roast Darren himself.','Call over the pool attendant.']);
+ q.support=['protect','roast','report'][c];
+ if(c===0)await poolConversation([['You','You’re the embarrassing one here. Leave him alone.'],['Hasan','Exactly. I thought someone liked me. You thought THIS was a good hobby.'],['Arjun','Thirty-eight years to come up with “Lily.” Unbelievable.']]);
+ else if(c===1)await poolConversation([['Hasan','You bought a swimming ticket just to tell me that?'],['Darren','I have a monthly pass.'],['Hasan','Of course you do. You budgeted for catfishing.'],['Arjun','Loyalty points for every relationship ruined.'],['Hasan','You need a different hobby. Immediately.']]);
+ else{
+  const staff={id:'pool_staff',x:340,y:163,dir:-1};MEM.cast.push(staff);await mvc(staff,235,1600);
+  await poolConversation([['You','Excuse me. This man used a fake profile to trick my friend into coming here.'],['Pool attendant','Out of the water, sir. Reception. Now.'],['Darren','It was a joke.'],['Pool attendant','You can explain that at reception.']]);q.reported=true;
+ }
+ await mvc(man,118,1100);man.water=false;await tw(man,{y:164},700);await mvc(man,-30,1600);
+ await mvc(hasan,123,1400);hasan.water=false;await tw(hasan,{y:163},800);await mvc(hasan,96,600);
+ await poolConversation([['Hasan','I need my hoodie. And I need both of you to forget everything after reception.'],['Arjun',q.support==='protect'?'We can talk about it later. Let’s get you home.':'I can forget the pool. I can’t forget the monthly pass.'],['You','Come on. Back to the house.']]);
+ await Promise.all([mvc(you,-25,1200),mvc(arjun,-40,1500),mvc(hasan,-55,1800)]);
+ await N('You collect your things from the lockers and walk back together. Hasan blocks the account before you reach the house.');
+ await fromMemory();cue(prev);q.blocked=true;q.outcome='Lily turned out to be Darren';poolLog('note','You met the account owner: Darren, 38. The woman by the pool was an unrelated guest. Account blocked.');
+ await cameraBack();
+}
+
+function drawPoolDate(m){
+ R(0,0,W,H,'#1b2f42');R(0,23,W,83,'#567c87');
+ for(let x=0;x<W;x+=16){R(x,24,1,82,'#8cabb0');for(let y=30;y<105;y+=16)R(x,y,16,1,'#78979c')}
+ for(const x of [33,133,233]){R(x,30,55,5,'#e5ead0');R(x-8,36,71,54,'#b6dfd51a')}
+ R(12,58,36,49,'#243c50');R(16,62,28,40,'#192e42');R(39,81,3,2,'#ced6c1');
+ R(0,106,W,74,'#c1c4b1');for(let x=0;x<W;x+=18)R(x,107,1,73,'#909f99');for(let y=108;y<H;y+=18)R(0,y,W,1,'#909f99');
+ R(101,108,207,47,'#e5dbc2');R(105,112,199,39,'#2c8d9b');R(108,115,193,33,'#54acb7');
+ for(let i=0;i<28;i++){const x=108+(i*29+T*9)%183,y=117+(i*7)%28;R(x,y,6+Math.sin(T*2+i)*3,1,'#b7eee175')}
+ for(let i=0;i<16;i++)R(148+i*9,124,5,2,i%2?'#ecce7d':'#d07965');
+ R(109,100,2,23,'#e1e7d8');R(127,100,2,23,'#e1e7d8');R(109,100,20,2,'#e1e7d8');R(111,115,16,2,'#aabfc0');R(111,121,16,2,'#aabfc0');
+ R(233,91,57,5,'#b38c6f');R(237,96,3,10,'#655c55');R(284,96,3,10,'#655c55');
+ R(257,57,39,18,'#e6dbc0');g.font='6px KenPixel,monospace';g.fillStyle='#334d5a';g.fillText('SHALLOW',261,65);g.fillText('0.9 m',266,72);
+ for(const a of [...m.cast].sort((a,b)=>a.y-b.y)){
+  if(a.hidden)continue;g.save();
+  if(a.water){g.beginPath();g.rect(0,0,W,a.y-8);g.clip()}
+  drawKid(K[a.id],a.x,a.y,{dir:a.dir,moving:a.moving,walk:T*11,sit:a.sit,phone:a.phone,pose:a.pose});
+  if(a.id==='pool_darren'){R(a.x-5,a.y-24,10,4,'#675648');R(a.x-3,a.y-20,6,2,'#675648')}
+  g.restore();if(a.water){R(a.x-12,a.y-8,24,2,'#b0e8d7');R(a.x-8,a.y-4,19,1,'#87d7cf')}
+ }
+ if(m.splash&&T-m.splash.t<.8)for(let i=0;i<6;i++)R(m.splash.x-12+i*5,131-Math.sin((T-m.splash.t)*4)*7+i%2*3,2,3,'#d5f5e2');
+ R(0,0,W,13,'#152331');g.font='6px KenPixel,monospace';g.fillStyle='#e6e2cb';g.fillText('RIVERSIDE POOL · LATE SWIM',9,9);
+}
+{const prev=drawMemory;drawMemory=function(){if(MEM.scene==='pooldate')drawPoolDate(MEM);else prev()}}
+{const prev=socialSmalltalk;socialSmalltalk=function(id){const q=socialState().pooldate;if(q.revealed&&id==='hasan')return 'If anyone calls me Lily, I’m going home.';if(q.revealed&&id==='arjun')return q.support==='protect'?'Darren’s the joke. Hasan just believed him.':'Thirty-eight. A monthly pass. I can’t get over the monthly pass.';return prev(id)}}
+{const prev=socialEpilogue;socialEpilogue=async function(sv){await prev(sv);const q=socialState().pooldate;if(q.revealed&&sv.includes('hasan'))await say('Hasan','Tomorrow I am deleting that app. I don’t want a message from anyone called Lily. Or Darren. Especially Darren.')}}
+
+/* ================= PASS 15: two big quests a night, four rebuilt quests, action poses, the curls ================= */
+Object.assign(K,{
+ jay:{n:'Jay',skin:'#d8a880',hair:'#2a1a12',hs:'curly',top:'#151518',pants:'#3a3a44',seed:61},
+ mags:{n:'Big Mags',skin:'#e8c0a8',hair:'#b3343c',hs:'long',top:'#222',pants:'#2a2a40',wide:1,seed:62},
+ pc:{n:'PC Dawson',skin:'#e0b090',hair:'#1a2440',hs:'cap',top:'#1a2440',pants:'#1a1a22',wide:1,seed:63},
+ dev:{n:'Big Dev',skin:'#c99a76',hair:'#1a1210',hs:'short',top:'#e8e8e8',pants:'#3a3a44',wide:1,seed:64},
+ goon:{n:'Dev’s Mate',skin:'#e0b090',hair:'#c9a24a',hs:'short',top:'#4a6a3a',pants:'#333',seed:65}});
+Object.assign(NCOL,{Jay:'#151518','Big Mags':'#b3343c','PC Dawson':'#1a2440','Big Dev':'#888','Dev’s Mate':'#4a6a3a','Dada-ji (through Hasan)':'#6a8ab0',Abby:'#6a35b9'});
+/* ---------- action poses: two-handed aim, akimbo, overhand stab, choke, bat swing ---------- */
+{const _pa=poseArms;poseArms=function(k,o,x,bx,by,bw,d){const p=o.pose,top=k.top,sk=k.skin,gun='#26262c',fl=o.punchT>T;
+ if(p==='aim'){const ax=d>0?bx+bw:bx-10;R(ax,by+2,10,3,top);R(ax,by+5,10,2,top);const hx=d>0?bx+bw+10:bx-13;R(hx,by+1,3,5,sk);R(d>0?hx+2:hx-6,by,7,2,gun);R(d>0?hx+2:hx+1,by+2,2,4,gun);
+  if(fl){const mx=d>0?hx+9:hx-12;R(mx,by-3,6,7,'#ffb02e');R(mx+1,by-2,4,5,'#fff6c0')}return true}
+ if(p==='akimbo'){for(const s of[-1,1]){const ax=s<0?bx-9:bx+bw;R(ax,by+2,9,3,top);const hx=s<0?ax-3:ax+9;R(hx,by+1,3,4,sk);R(s<0?hx-6:hx+2,by,7,2,gun);R(s<0?hx:hx+2,by+2,2,4,gun);
+  if(fl&&((T*24|0)%2===(s<0?0:1))){const mx=s<0?hx-12:hx+9;R(mx,by-3,6,7,'#ffb02e');R(mx+1,by-2,4,5,'#fff6c0')}}return true}
+ if(p==='stab'){const w=o.weapon||'#dfe6ea',ax=d>0?bx+bw:bx-2;R(d>0?bx-2:bx+bw,by+1,2,6,top);
+  if(fl){RR(ax,ax+d*7,by+5,3,top);R(ax+d*7-1,by+4,3,4,sk);R(ax+d*8,by+8,2,9,w)}else{R(ax,by-8,2,10,top);R(ax-(d<0?1:0),by-11,3,3,sk);R(ax,by-19,2,9,w)}return true}
+ if(p==='choke'){RR(x,x+d*12,by,3,top);RR(x,x+d*12,by+4,3,top);R(x+d*12-(d<0?3:0),by-1,3,9,sk);if(o.shake||fl)R(x+d*14,by+2,1,1,'#fff');return true}
+ if(p==='swing'){const w=o.weapon||'#c9a56a';if(fl){RR(x,x+d*13,by+3,3,top);R(x+d*13-1,by+2,3,4,sk);RR(x+d*15,x+d*30,by+3,3,w)}else{R(bx-2,by-6,2,8,top);R(bx+bw,by-6,2,8,top);R(x-1,by-9,3,3,sk);R(x,by-23,3,14,w)}return true}
+ return _pa(k,o,x,bx,by,bw,d)}}
+let SHADOW=0;{const _dk=drawKid;drawKid=function(k,x,y,o){if(SHADOW&&!(o&&o.sit)){R(Math.round(x)-8,Math.round(y)-1,16,3,'#0000004a')}return _dk(k,x,y,o)}}
+const bang=(sh,tg,o={})=>{sh.punchT=T+.13;noise(.28,.95,1600,.5);tone(85,.22,'square',.22,40);S.shake=.6;fx(.1,'');if(tg){if(o.stage)gush(tg,o.n||16);else{spurt(tg.x,tg.y-20,o.n||10,tg.y);SFX.squelch()}}};
+const stab=async(a,v,n,o={})=>{a.pose='stab';a.weapon=o.w||'#dfe6ea';for(let i=0;i<n;i++){a.punchT=T+.18;SFX.smack();SFX.squelch();S.shake=.35;if(o.stage)gush(v,12+i*2);else spurt(v.x,v.y-18,8+i,v.y);v.shake=true;await wait(o.ms||300)}v.shake=false};
+/* ---------- the outside of the house, built properly ---------- */
+drawExt=function(){const e=S.ext,lit=e.lit&&!(S.flick>0&&Math.sin(T*60)>0);
+ ['#060714','#090b1e','#0c1029','#0f1533','#121a3c'].forEach((c,i)=>R(0,i*24,W,24,c));for(let i=0;i<46;i++)if(Math.sin(T*1.5+i)>-.7)R((i*73)%W,(i*37)%80,1,1,'#cfd8ff');
+ R(262,14,14,16,'#e8e8d0');R(260,16,18,12,'#e8e8d0');R(266,19,3,3,'#c9c9b0');for(let i=0;i<3;i++){const cx=((T*5+i*150)%460)-70;R(cx,20+i*12,54,5,'#161d44')}
+ for(let i=0;i<9;i++){R(i*40-12,88-(i%3)*8,32,46,'#070a14');R(i*40-4,78-(i%3)*8,16,12,'#070a14');if(i%3===1)R(i*40-4,98-(i%3)*8,5,5,'#c9a04055')}
+ R(0,72,74,60,'#1a1622');for(let i=0;i<14;i++)R(-6+i*3,72-i,86-i*5,2,'#0e0b16');R(14,92,20,16,'#0a0812');R(16,94,16,12,'#2a2433');R(48,98,14,34,'#120e18');R(58,112,2,2,'#c9a040');R(46,94,18,3,'#0a0812');R(52,90,6,3,'#ffe9a066');
+ for(let i=0;i<8;i++)R(76+i*7,116,3,16,'#3a2a20');R(76,119,52,2,'#3a2a20');R(76,126,52,2,'#3a2a20');
+ for(let i=0;i<34;i++)R(124+i*3,60-i,190-i*6,2,'#100e1a');R(130,60,180,72,'#1d1b2c');R(130,60,180,3,'#100e1a');R(284,28,12,24,'#100e1a');
+ R(152,78,52,34,'#0a0914');R(154,80,48,30,lit?'#f2c14e':'#07070e');if(lit)for(let i=0;i<5;i++){const hx=158+i*9,b=Math.round(Math.sin(T*3+i*2));R(hx,98+b,5,12,'#3a2a10');R(hx,94+b,5,5,'#2a1c08')}R(177,80,2,30,'#0a0914');R(154,94,48,2,'#0a0914');
+ R(258,74,24,22,'#0a0914');R(260,76,20,18,lit?'#c9a040':'#07070e');R(269,76,2,18,'#0a0914');
+ R(206,86,46,4,'#0d0b16');R(208,90,3,42,'#100e1a');R(247,90,3,42,'#100e1a');R(216,92,26,40,'#100e1a');R(218,94,22,38,e.open?'#f2c14e':'#5a2020');if(!e.open)R(236,112,2,2,'#e8d080');R(227,86,4,3,lit?'#ffe9a0':'#333');
+ R(204,132,50,4,'#3a3a44');R(208,136,42,3,'#2e2e36');
+ for(let y=132;y<170;y+=2){const k=(y-132)/38;R(0,y,W,2,k<.3?'#0b1d10':k<.65?'#0e2414':'#112a17')}
+ for(let i=0;i<70;i++)R((i*37)%W,134+(i*11)%34,1,2,'#18381f');
+ for(let y=139;y<170;y++){const k=(y-139)/31,l=216-k*14,r=242+k*14;R(l,y,r-l,1,y%4?'#3e3b44':'#34313a')}
+ R(262,132,58,38,'#26252c');for(let y=136;y<170;y+=6)R(262,y,58,1,'#1e1d24');
+ if(!store.run.carGone){const cx=270,cy=146;R(cx-2,cy+15,50,3,'#0007');R(cx,cy,46,13,'#3d6ea8');R(cx+8,cy-9,28,10,'#3d6ea8');R(cx+11,cy-7,10,7,lit?'#9ad':'#264');R(cx+24,cy-7,10,7,lit?'#9ad':'#264');R(cx+5,cy+11,9,5,'#111');R(cx+32,cy+11,9,5,'#111');R(cx+44,cy+3,3,3,'#ffe9a0')}
+ R(300,112,9,14,'#2a3a2a');R(310,112,9,14,'#2a2a4a');R(300,110,9,3,'#1a2a1a');R(310,110,9,3,'#1a1a3a');
+ R(104,146,40,12,'#0a1a0e');for(let i=0;i<6;i++)R(106+i*6,142+(i%2)*2,7,6,'#0a1a0e');R(122,134,3,16,'#333');R(115,128,14,8,'#b33');R(115,128,14,2,'#d55');R(128,125,1,5,'#eee');
+ R(0,170,W,10,'#18181e');R(0,170,W,1,'#3a3a44');for(let i=0;i<8;i++)R(i*44+6,175,22,1,'#2a2a30');
+ R(40,58,3,112,'#1c1c22');R(40,58,18,2,'#1c1c22');R(52,60,10,3,'#ffe9a0');for(let i=0;i<30;i++)R(56-i*.9,63+i*3.5,2+i*1.9,4,'rgba(255,233,160,.04)');
+ if(e.police){const f=Math.sin(T*10)>0;R(2,150,58,14,'#e8e8f0');R(2,156,58,3,'#2a4ab8');R(10,142,40,9,'#e8e8f0');R(14,144,14,6,'#9ad');R(30,144,14,6,'#9ad');R(22,139,16,3,f?'#3a6aff':'#ff3a3a');R(8,162,9,5,'#111');R(44,162,9,5,'#111');g.fillStyle=f?'rgba(60,100,255,.13)':'rgba(255,40,40,.11)';g.fillRect(0,0,W,H)}
+ SHADOW=1;const all=(e.cast||[]).filter(c=>!c.hidden).map(c=>({c,y:Math.max(150,c.y)}));if(e.aidan)all.push({a:e.aidan,y:Math.max(150,e.aidan.y)});all.sort((p,q)=>p.y-q.y);
+ for(const it of all){if(it.a){const a=it.a;drawKid(K.aidan,a.x,it.y,{pose:a.pose,dir:a.dir||1,horror:!a.fly,scared:a.fly,still:1,noHair:e.wig,punchT:a.punchT,weapon:a.weapon});continue}const c=it.c;
+  if(c.dead){g.save();g.translate(Math.round(c.x),it.y-3);g.rotate(Math.PI/2);drawKid(K[c.id],0,0,{still:1,deadFace:1});g.restore();continue}
+  drawKid(K[c.id],c.x,it.y,{dir:c.dir,still:!c.moving,moving:c.moving,walk:T*13,pose:c.pose,phone:c.phone,bowl:c.bowl,noG:c.noG,punchT:c.punchT,weapon:c.weapon,scared:c.scared,shake:c.shake,sit:c.sit})}SHADOW=0;
+ if(e.wig){const w=e.wig;R(w.x-7,w.y-4,14,6,K.aidan.hair);R(w.x-6,w.y-5,12,1,K.aidan.hair)}
+ for(const s of e.sprays||[])spray(s.x,s.y,s.d,s.t,T,s.n);for(const p of parts)R(p.x,p.y,p.s||2,p.s||2,p.c);
+ for(let i=0;i<70;i++){const x=(i*53+T*70)%W,y=(i*29+T*250+i*i)%H;R(x,y,1,4,'rgba(160,180,255,.3)')}if(S.flash>.5)R(0,0,W,H,'rgba(220,230,255,.55)')};
+const egush=(e,c,n=24)=>{(e.sprays??=[]).push({x:c.x,y:c.y-20,d:1,t:T,n},{x:c.x,y:c.y-20,d:-1,t:T,n:n/2});SFX.smack();SFX.squelch();S.shake=.45;fx(.12,'')};
+/* ---------- extra locations ---------- */
+{const _ds=drawStage;drawStage=function(m){
+ if(m.parlour){R(0,0,W,H,'#120d14');for(let x=0;x<W;x+=24)R(x,10,22,120,'#1a141c');for(let i=0;i<18;i++){const px=16+(i%9)*34,py=26+(i/9|0)*40;R(px,py,26,32,'#e8e0d0');R(px+3,py+4,20,2,'#222');R(px+6,py+10,14,14,['#b3343c','#2a4a8a','#2a6a3a','#6a3a8a'][i%4])}
+  const n=Math.sin(T*7)>-.85;g.save();g.font='10px KenPixel,monospace';g.fillStyle=n?'#ff4fa8':'#5a1a3a';g.fillText('INK & REGRET',112,112);g.restore();R(0,140,W,40,'#2a2228');for(let x=0;x<W;x+=16)R(x,140,8,40,'#322830');
+  R(150,124,50,8,'#5a1a1a');R(196,108,8,24,'#5a1a1a');R(160,132,4,14,'#333');R(186,132,4,14,'#333');R(214,116,24,4,'#666');R(224,104,2,14,'#888');if(m.dark)R(0,0,W,H,'rgba(0,0,0,.75)')}
+ else if(m.shelter){_ds(Object.assign({},m,{cast:[],blood:[],sprays:[]}));R(90,96,110,4,'#3a3a44');R(92,100,3,46,'#3a3a44');R(195,100,3,46,'#3a3a44');R(98,104,90,30,'rgba(160,200,255,.12)');R(100,132,86,4,'#4a4a54');R(150,104,30,22,'#e8e0d0');g.save();g.font='6px KenPixel,monospace';g.fillStyle='#222';g.fillText('NO 43',154,114);g.restore();R(0,0,W,H,'rgba(10,8,20,.2)')}
+ else if(m.okafor){_ds(Object.assign({},m,{cast:[],blood:[],sprays:[]}));R(60,152,74,10,'#1d4a6a');R(62,152,70,2,'#6ab0e0');for(let i=0;i<5;i++)R(150+i*14,146,8,6,'#c23b3b');R(240,126,4,22,'#555');}
+ else if(m.loftlab){R(0,0,W,H,'#120a1a')}
+ if(m.parlour||m.shelter||m.okafor){SHADOW=1;for(const b of m.blood||[]){pool(b.x,b.w);if(b.s)splat(b.x,b.y,b.s,b.x)}for(const c of m.cast||[]){if(c.hidden)continue;const x=Math.round(c.x),y=c.y;
+   if(c.dead){g.save();g.translate(x,y-3);g.rotate(Math.PI/2);drawKid(K[c.id],0,0,{still:1,deadFace:1});g.restore();continue}
+   drawKid(K[c.id],x,y-(c.hop?Math.abs(Math.sin(T*10))*5:0),{dir:c.dir,still:!c.moving,moving:c.moving,walk:T*13,pose:c.pose,phone:c.phone,sit:c.sit,scared:c.scared,shake:c.shake,punchT:c.punchT,weapon:c.weapon,bowl:c.bowl})}SHADOW=0;
+  for(const s of m.sprays||[])spray(s.x,s.y,s.d,s.t,T,s.n);if(m.police){g.fillStyle=Math.sin(T*10)>0?'rgba(60,100,255,.13)':'rgba(255,40,40,.11)';g.fillRect(0,0,W,H)}R(0,0,W,10,'#100d18');R(0,H-10,W,10,'#100d18');return}
+ SHADOW=1;_ds(m);SHADOW=0;if(m.purple){R(166,104,80,4,'#0d0b16');R(170,108,3,36,'#0d0b16');R(239,108,3,36,'#0d0b16')}}}
+{const _du=drawUnder;drawUnder=function(m){
+ if(m.kind==='abby'){R(0,0,W,H,'#140c22');for(let x=0;x<W;x+=18)R(x,10,9,140,'#170e28');
+  for(let i=0;i<22;i++){const lx=8+i*14,ly=22+Math.sin(i*1.3)*4;R(lx,ly,2,2,Math.sin(T*2+i)>0?'#c9a2ff':'#7a35c9')}
+  for(let i=0;i<12;i++){const px=20+(i%6)*15,py=40+(i/6|0)*18;R(px,py,12,14,'#eee');R(px+1,py+1,10,9,['#3a2a5a','#2b4fd6','#7a35c9','#1a1626'][i%4])}if(m.pol)R(32,58,12,14,'#ffe066');
+  R(120,40,40,40,'#0a0812');R(122,42,36,36,'#26204a');R(136,46,8,10,'#e8e0d0');
+  R(180,60,26,44,'#3a2a5a');R(186,66,14,8,'#ffffff20');R(176,104,34,4,'#2a1a3a');for(let i=0;i<5;i++)R(214+i*7,88,5,16,['#b3343c','#2b4fd6','#eee','#7a35c9','#222'][i]);
+  R(250,90,40,24,'#1a3a4a');R(252,92,36,20,'#2a6a7a');const ax=262+Math.sin(T)*6;R(ax,104,8,4,'#f0a0c0');R(ax+6,102,3,3,'#f0a0c0');
+  R(20,118,96,26,'#0c0a12');R(20,112,96,8,'#1a1626');R(22,114,20,6,'#7a35c9');R(84,100,6,20,'#c9a56a');R(82,96,10,6,'#c9a56a');
+  R(0,144,W,36,'#1a1226');R(140,150,60,20,'#2b1f3d');if(m.candle){R(230,130,4,8,'#eee');R(231,126,2,4,Math.sin(T*9)>0?'#ffb02e':'#ffe066')}
+  g.fillStyle='rgba(150,80,255,.08)';g.fillRect(0,0,W,H)}
+ else if(m.kind==='loft'){R(0,0,W,H,'#120a1a');for(let i=0;i<30;i++)R(i*11-6,20+i*2,4,110-i*2,'#1d1220');R(0,140,W,40,'#2a1a14');for(let x=0;x<W;x+=20)R(x,140,1,40,'#1a0f0a');
+  for(let i=0;i<40;i++){const jx=30+(i%10)*24,jy=96+(i/10|0)*12;R(jx,jy,8,10,'#eee');R(jx+1,jy+3,6,6,'#9a4ae8');R(jx,jy-2,8,2,'#7a35c9')}
+  R(40,120,240,4,'#5a4130');const b=Math.sin(T*4);R(150,104,10,16,'#bfe8ff55');R(152,110+b,6,8,'#b06aff');g.fillStyle='rgba(160,80,255,'+(.12+b*.04)+')';g.fillRect(0,0,W,H);
+  g.save();g.font='6px KenPixel,monospace';g.fillStyle='#ffe066';g.fillText('C.U.R.L. — COILS UNDER ROYAL LICENCE',70,30);g.restore()}
+ else{_du(m);for(const s_ of m.sprays||[])spray(s_.x,s_.y,s_.d,s_.t,T,s_.n);return}
+ SHADOW=1;for(const c of m.cast||[]){if(c.hidden)continue;drawKid(K[c.id],Math.round(c.x),c.y,{dir:c.dir,still:!c.moving,moving:c.moving,walk:T*13,pose:c.pose,sit:c.sit,scared:c.scared,weapon:c.weapon,punchT:c.punchT,shake:c.shake,phone:c.phone});if(c.id==='girl'){const x=Math.round(c.x),hy=c.y-(c.sit?23:26),ex=x+(c.dir||1);R(x-8,hy+1,2,12,'#2b4fd6');R(x+6,hy+1,2,12,'#7a35c9');R(x-2,hy-2,3,3,'#7a35c9');R(ex-4,hy+5,2,2,'#8a3fe0');R(ex+2,hy+5,2,2,'#8a3fe0')}}SHADOW=0;for(const s_ of m.sprays||[])spray(s_.x,s_.y,s_.d,s_.t,T,s_.n);
+ if(m.face){const f=Math.sin(T*3)>-.3;R(122,42,36,36,'#0a0812');if(f){R(132,52,16,14,K.aidan.skin);R(130,48,20,7,K.aidan.hair);R(135,57,3,3,'#fff');R(142,57,3,3,'#fff');R(136,62,8,1,'#fff')}}
+ R(0,0,W,10,'#100d18');R(0,H-10,W,10,'#100d18')}}
+/* ---------- the cap: two big quests a night ---------- */
+OFFTOPIC.length=0;for(const k of ['tin','fakeid','ashes'])FRIEND_STORIES[k].title=FRIEND_STORIES[k].title.replace(' · silly extra','');
+function questsTaken(){const s=socialState();return Object.keys(FRIEND_STORIES).filter(k=>s[k]&&(s[k].step>0||s[k].invited))}
+{const _sr=storyReady;storyReady=function(k){const s=socialState()[k];if(s&&s.step===0&&!s.invited&&questsTaken().length>=2)return false;return _sr(k)}}
+{const _t=title;title=async function(){const ch=await _t();if(ch===0){const fav=['race','snacks','pooldate'],have=store.run.stories||[];store.run.stories=[...new Set([...have,...fav.filter(()=>Math.random()<.6),'tin','fakeid','ashes','bunker'].filter(k=>FRIEND_STORIES[k]))];save();
+  await N('Tonight you can only commit to TWO big quests. Choose who you ride for.')}return ch}}
+{const _hud=hud;hud=function(){_hud();if(S.play&&!busy&&socialRoam()){const n=questsTaken().length;$('obj').textContent+='\n• BIG QUESTS '+Math.min(n,2)+'/2'+(n>=2?' — you’re committed.':'')}}}
+/* ======== QUEST: JAY'S BAG (Corey + Arjun) ======== */
+Object.assign(FRIEND_STORIES.tin,{title:'Jay’s bag',cast:['corey','arjun'],lead:'corey',meet:[[1,80],[1,80],[0,700],[0,700]],places:['the guest room','the guest room','the front door','the front door'],
+ invite:['“Jay dumped his bag on me. It’s heavy in a way gym bags aren’t. Guest room.”','“Arjun won’t stop asking to hold it. Guest room, before he finds it himself.”','“Someone heard the bang. There’s blue lights outside. FRONT DOOR.”','“Jay’s here. He wants his bag. He knows.”']});
+FRIEND_SCENES.tin=[
+ async q=>{const co=A_.corey,ar=A_.arjun;
+  await talk([['Corey','Jay asked me to “mind” his bag tonight. Jay doesn’t go to the gym. Jay goes to “see a man about a thing.”'],['Arjun','Open it.'],['Corey','No.'],['Arjun','Open it.'],['Corey','Arjun, if I open it I become a WITNESS.'],['Arjun','You’re already a witness. You’re a witness to my BEAUTY. Open it.']]);
+  if(await choose(['“…Open it, Corey.”','“Leave it. Seriously. Leave it.”'])){await talk([['Arjun','Coward. Both of you. Absolute pair of wet wipes.'],['','He unzips it himself while Corey is still saying “don’t”.']])}else await say('Corey','Fine. FINE. If I go to prison I’m telling them it was the host.');
+  SFX.click();await talk([['','A Greggs bag. Four thousand pounds in a Pikachu sock. And a gun. Black. Heavy. Real in a way nothing in this house has ever been real.'],['Arjun','Oh my days.'],['Corey','Put it BACK.']]);
+  ar.pose='akimbo';ar.dir=1;await talk([['Arjun','(one in each hand — the real one and a Nerf) SAY HELLO TO MY LITTLE FRIENDS.'],['Omer','Safety’s on. I think. I’ve only seen them in Call of Duty.'],['Arjun','It’s heavier than I thought.'],['Hasan','That’s what she said.'],['Arjun','Nobody has EVER said that to you, gear stick.']]);ar.pose=null;
+  q.holder=(await choose(['Take it off him.','Let him have his moment.']))?'arjun':'you';await say('Corey',q.holder==='you'?'Good. You’re the host. If it goes off, it’s your house.':'He’s going to shoot his own foot off and I’m going to have to watch.');q.outcome='There’s a gun in the house'},
+ async q=>{const co=A_.corey,ar=A_.arjun,you=A_.you;
+  await talk([['Arjun','One photo. For the story. Host holds it, gangster pose, “Sleepover Szn”.'],['Corey','No.'],['Arjun','One.'],['Corey','No.'],['Arjun','ONE. It’s not even— Corey, it’s got the little safety thing.'],['Corey','…ONE. Then it goes back in the sock.']]);
+  you.pose='aim';you.dir=1;const c=await choose(['Aim at the mirror.','Aim at the ceiling.','Aim at Arjun’s arse. He’s literally asking for it.']);q.target=['mirror','ceiling','arjun'][c];
+  await say('Arjun','Three, two, one, say CHEE—');bang(you,c===2?ar:null);store.run.gunFired=true;await wait(500);you.pose=null;
+  if(c===0){SFX.smack();noise(.4,.5,5000,.6);fx(.4,'');await talk([['','The mirror explodes. In every piece of it still on the wall, for one frame, there are nine of you. The ninth is standing right behind you, smiling for the photo.'],['Corey','Did anyone else see—'],['Arjun','NO. Nobody saw anything. My ears are BLEEDING.']])}
+  else if(c===1){await wait(900);prop({t:'spurt',x:you.x+6,y:you.y-2,n:12,t0:T,fy:you.y});fx(.5,'');await talk([['','Silence. Then a drip. Then another. Something red comes through the hole in the ceiling and taps on the carpet like a clock.'],['','Above you, something drags itself away across the loft. It’s laughing. In two voices. Through its teeth.'],['Corey','There was someone in your LOFT.'],['You','There’s always been someone in my loft, apparently.']]);store.run.loftShot=true}
+  else{ar.lie=1;mark('arjun','bloody');await talk([['Arjun','AAAAAAAAAH. MY ARSE. YOU SHOT ME IN THE ARSE.'],['Corey','You said “cheese”. You SAID it.'],['Arjun','I’M LEAKING. I’M LEAKING OUT OF A NEW HOLE.']]);
+   await talk([['Omer','It needs to come out. Someone’s going to have to go in.'],['','Nobody looks at anyone.'],['Hasan','Rock paper scissors. Loser goes in.']]);const l=one(['Omer','Hasan','David']);
+   await talk([['','It’s '+l+'. Of course it’s '+l+'.'],[l,'For the record I’m doing this under protest and I want it in the group chat that I am a HERO.'],['','Tweezers. A bottle of your dad’s whisky. Arjun bites a slipper. It takes four minutes and one of those minutes is just screaming.']]);SFX.squelch();
+   await talk([['','The bullet comes out with a noise like a cork. '+l+' holds it up to the light, shaking.'],['Arjun','…Can I keep it?'],['Hasan','You’re putting it on a CHAIN, aren’t you.'],['Arjun','I’m putting it on a chain.']]);ar.lie=0}
+  await N('Down the road, a dog starts barking. Then every dog. Then, far off, a siren that is definitely, definitely coming this way.');q.outcome='The gun went off'},
+ async q=>{const back=mode,pc={id:'pc',x:150,y:162,dir:1},you={id:'you',x:236,y:160,dir:-1},co={id:'corey',x:252,y:160,dir:-1},dv={id:'david',x:266,y:160,dir:-1};
+  await extScene([you,co,dv,pc],async e=>{e.police=true;await mvc(pc,210,1400);
+   await talk([['PC Dawson','Evening, lads. Neighbours reported a loud bang. Gunshot, they reckoned.'],['','Behind you, Corey is holding the bag behind his back. It is very obviously a bag.']]);
+   const h=await choose(['Hide it in the biscuit tin.','Hide it down David’s trousers.','Give it to Ziggy.']);q.hid=['tin','david','ziggy'][h];
+   if(h===1){dv.shake=true;await talk([['David','Why is it ALWAYS me.'],['PC Dawson','You alright there, son? You’re walking a bit… stiff.'],['David','Growth spurt.'],['PC Dawson','…Right.']]);dv.shake=false}
+   else if(h===2){await talk([['','Ziggy takes the bag in his mouth with enormous dignity and trots into the dark, tail high, like he’s been waiting all his life for a job.'],['Corey','Ziggy’s got a gun now.'],['You','Ziggy’s always had a gun. Spiritually.']]);store.run.aidanGun=true}
+   const b=await choose(['“Firework, officer.”','“Arjun’s arse exploded. Medical thing.”','Tell the truth.']);
+   if(b===0)await talk([['PC Dawson','In November.'],['You','It’s a very late Bonfire Night. We’re traditional.'],['PC Dawson','…I’ve got eleven more of these. Keep it down. And you, stiff lad — see a doctor.']]);
+   else if(b===1)await talk([['PC Dawson','His… arse.'],['Arjun','(from inside) IT’S TRUE. IT WAS A BIG ONE.'],['PC Dawson','I’m going to go. I’m going to go and I’m going to write “arse” in my notebook and never look at it again.']]);
+   else{await talk([['You','There’s a gun. And a boy in the loft. And he’s not a boy any more.'],['PC Dawson','Right. Nobody move.']]);e.aidan={x:120,y:163,dir:1,pose:'reach'};SFX.creak();fx(.4,'');
+    await N('He goes to radio it in. A small hand comes out of the hedge and takes him by the belt.');await tw(pc,{x:120},350);pc.hidden=true;egush(e,{x:120,y:162},40);SFX.scream();
+    await talk([['','The hedge shakes for about eleven seconds. Then his hat rolls out onto the path, very slowly, and stops at your feet.'],['','His radio is still going in the bushes: “Delta Four, respond. Delta Four.”'],['Aidan','(from the hedge, in a perfect police voice) Delta Four. All quiet. Nothing to see here.']]);store.run.copDead=true;e.aidan=null}
+   if(!pc.hidden)await mvc(pc,-30,1800)});q.outcome=store.run.copDead?'The copper is in your hedge':'You lied to a policeman'},
+ async q=>{const jay={id:'jay',x:130,y:162,dir:1},you={id:'you',x:236,y:160,dir:-1},co={id:'corey',x:252,y:160,dir:-1},ar={id:'arjun',x:266,y:160,dir:-1};
+  await extScene([you,co,ar,jay],async e=>{await mvc(jay,206,1500);
+   await talk([['Jay','Coco. Where’s my bag.'],['Corey','Don’t call me Coco.'],['Jay','I’ll call you whatever I want, Coco. You’re wearing my old jacket.'],['Jay',store.run.gunFired?'And one of you lot fired my strap. I can SMELL it on you.':'Bag. Now. I’ve got somewhere to be.']]);
+   const c=await choose(['Give Jay the bag.','“What bag?”','Keep it. Point it at Jay.']);
+   if(c===0){await talk([['Jay','Good boy.'],['','He counts the money at the gate. He’s still counting when a small hand reaches out of the hedge and pulls him in by the ankles.']]);e.aidan={x:130,y:163,dir:1};
+    for(let i=0;i<2;i++){bang({},null);await wait(400)}egush(e,{x:130,y:160},40);jay.hidden=true;await talk([['','Two shots. Then a wet noise, a lot of times. Then Aidan steps out holding the gun by the barrel, like a phone.'],['Aidan','Hello? Hello? …It doesn’t have any buttons.'],['Corey','…That was my brother.']]);store.run.aidanGun=true;e.aidan=null}
+   else if(c===1){jay.pose='punch';co.scared=true;for(let i=0;i<5;i++){jay.punchT=T+.2;SFX.smack();S.shake=.4;egush(e,co,8);await tw(co,{x:co.x+3},90);await wait(200)}mark('corey','beat');jay.pose=null;
+    await talk([['Jay','Find it by tomorrow or Mum gets a phone call about what you did in Year 9.'],['','He walks off. Corey wipes his nose on his sleeve and checks his curls in the car window before anything else.'],['Corey','He’s done worse. Christmas was worse.']])}
+   else{you.pose='aim';await talk([['Jay','Ha. You won’t.'],['Jay','Look at you. You’re holding it like a TV remote.']]);
+    if(await choose(['Shoot.','Lower it.'])){you.pose=null;await talk([['Jay','Thought so.'],['','He takes it off you like taking a toy off a toddler and leaves. Corey doesn’t look at you for an hour.']])}
+    else{bang(you,jay,{stage:false});egush(e,{x:jay.x,y:166},30);jay.sit=true;jay.scared=true;await talk([['','You hit him in the knee. It folds the wrong way. The noise he makes is not a noise people make in films.'],['Jay','YOU’RE DEAD. YOU’RE FUCKING DEAD, COCO, YOU AND YOUR SPECKY LITTLE MATE—'],['','He drags himself to his car and drives off with the door open. Corey is very pale.'],['Corey','He’s going to kill me.'],['You','Not if Aidan kills us first.'],['Corey','…That’s weirdly comforting.']]);store.run.keepGun=true;you.pose=null}}});
+  q.outcome=store.run.keepGun?'You kept Jay’s gun':store.run.aidanGun?'Aidan has a gun now':'Jay got his bag'}];
+/* ======== QUEST: STELLA ON MY NECK (Sean + David) ======== */
+Object.assign(FRIEND_STORIES.fakeid,{title:'Sean’s tattoo',cast:['sean','david'],lead:'sean',meet:[[0,700],[0,700],[0,700],[1,800]],places:['the front door','the front door','the front door','the upstairs bathroom'],
+ invite:['“I’ve got a fake ID and a really, really bad idea.”','“Ink & Regret shuts at two. Coat on. Don’t talk me out of it again.”','“We left her there. We just LEFT her there.”','“It’s finished. Somebody FINISHED it. Bathroom. NOW.”']});
+FRIEND_SCENES.fakeid=[
+ async q=>{await talk([['Sean','Reginald Pemberton. Forty-three. Laminated it with your mum’s straighteners.'],['David','Why is it still warm.'],['Sean','I’m getting STELLA tattooed. Tonight. Before Monday. So she knows I’m serious.'],['David','You’ve spoken to her for a combined total of nine minutes.'],['Sean','Nine GREAT minutes.']]);
+  if(await choose(['“It’s romantic.”','“It’s insane.”'])){await talk([['Sean','Romance IS insane, David. Have you SEEN Romeo and Juliet?'],['David','They both DIE, Sean.'],['Sean','TOGETHER.']])}else await say('David','Don’t encourage him. He’s like a dog. You feed him once, he’s yours forever.');
+  await talk([['David','Where are you even putting it?'],['Sean','Somewhere only she’ll see.'],['David','…Your diary?'],['Sean','My NECK, David.'],['David','EVERYONE can see your neck!'],['Sean','Yeah, but only SHE’LL get it.']]);q.outcome='Sean has a fake ID and a plan'},
+ async q=>{const prev=scoreName,mg={id:'mags',x:226,y:146,dir:-1},se={id:'sean',x:200,y:142,dir:1,sit:true},dv={id:'david',x:118,y:160,dir:1},you={id:'you',x:100,y:162,dir:1};
+  await N('Ink & Regret is above a chicken shop. The stairs smell like chips and bad decisions.');await toStage({parlour:true,cast:[dv,you,se,mg]});cue('sneak');
+  await talk([['Big Mags','ID.'],['Sean','(deep voice) Reginald Pemberton, madam.'],['Big Mags','Forty-three.'],['Sean','I moisturise.'],['Big Mags','Sweetheart, it’s two in the morning and I’ve got a mortgage. Sit.']]);
+  q.spot=['forearm','chest','neck'][await choose(['Forearm. Classy.','Chest. Over the heart.','Neck. Like a footballer.'])];
+  await talk([['Big Mags','The '+q.spot+'. And what are we writing?'],['Sean','S-T-E-L-L-A.'],['Big Mags','One L or two?'],['Sean','…'],['David','He doesn’t KNOW. He doesn’t know how to SPELL HER NAME.'],['Sean','TWO. It’s two. I think.']]);
+  mg.pose='stab';mg.weapon='#888';for(let i=0;i<5;i++){mg.punchT=T+.15;noise(.3,.18,2400,3);await wait(320)}await talk([['','S. T. E.'],['Sean','It barely hurts. It barely— OW. That one hurt. That one went in my SOUL.']]);
+  MEM.dark=true;SFX.power();await wait(700);await talk([['','The lights go out. All of them. The chicken shop downstairs too. And the street.'],['Big Mags','Generator. Don’t move, Reginald. Don’t move or you’ll have STE for life.']]);await fromMemory();cue(prev);q.outcome='STE'},
+ async q=>{const prev=scoreName,mg={id:'mags',x:226,y:146,dir:-1},se={id:'sean',x:200,y:142,dir:1,sit:true},dv={id:'david',x:118,y:160,dir:1},you={id:'you',x:100,y:162,dir:1},ai={id:'aidan',x:300,y:160,dir:-1};
+  await toStage({parlour:true,dark:true,cast:[dv,you,se,mg,ai]});cue('reveal');await wait(800);MEM.dark=false;SFX.power();fx(.5,'');
+  await talk([['','When the lights come back, there’s someone else in the chair by the window. Small. Damp. Holding up a little card that says “NEXT PLEASE :)”.'],['Aidan','I want one too. I want “BEST FRIENDS” and then all your names.'],['Big Mags','Out. OUT. I don’t do kids.'],['Aidan','I’m not a kid. I’m a regular.']]);
+  await mvc(ai,236,600);ai.pose='stab';ai.weapon='#888';mg.scared=true;
+  for(let i=0;i<4;i++){ai.punchT=T+.2;noise(.3,.2,2400,3);gush(mg,10+i*6);await wait(320)}mg.dead=true;MEM.blood.push({x:230,w:20,y:120,s:12});tw(MEM.blood[0],{w:90},3000);
+  await talk([['','He uses her own machine. Through the eye. He holds her head very still with his other hand, the way she held Sean’s, and when he’s done he’s tattooed a tiny heart on her cheek.'],['Aidan','Two L’s, Sean. I checked.'],['Sean','(still in the chair) Is— is she—'],['David','RUN. RUN, STE. RUN.']]);
+  se.sit=false;mvc(se,-20,1100);mvc(dv,-30,1000);await mvc(you,-20,1200);await fromMemory();cue(prev);
+  await talk([['Sean','Did that happen. Tell me that happened so I’m not insane.'],['David','You’ve got “STE” on your '+q.spot+' and a dead woman’s blood in your hair. Yes. It happened.'],['Sean','…Is “Ste” a nickname? Could I go out with a Steve?']]);q.outcome='Big Mags is dead'},
+ async q=>{SFX.sting();fx(.5,'');await talk([['Sean','LOOK AT IT.'],['','The tattoo has been finished. Neatly. Professionally. While he was in the bathroom, with the door locked, for two minutes.'],['','It says: STELLA ♥ AIDAN.'],['','It’s still wet. There’s a little plaster next to it, with a smiley face on, waiting for him.'],['Sean','When. HOW. I was in here. I was ALONE in here.'],['David','Clearly not, mate.']]);
+  const c=await choose(['Scrub it with bleach.','Cover it with a plaster and never speak of it.','Get a biro and add “IS DEAD” after AIDAN.']);
+  if(c===0){mark('sean','bloody');SFX.squelch();await talk([['','It takes the skin. It doesn’t take the ink. The ink is somehow deeper than the skin was.'],['Sean','It’s IN me. It’s in me like a splinter.']]);store.run.tattoo='STELLA ♥ AIDAN (scrubbed raw)'}
+  else if(c===1){await say('Sean','If she ever asks, it’s a birthmark.');store.run.tattoo='STELLA ♥ AIDAN (under a plaster)'}
+  else{await talk([['','STELLA ♥ AIDAN IS DEAD.'],['David','That’s… actually quite metal.'],['','From under the bathroom floor, very faintly, someone starts crying.']]);store.run.tattoo='STELLA ♥ AIDAN IS DEAD'}save();q.outcome='STELLA ♥ AIDAN'}];
+/* ======== QUEST: DADA-JI RIDES AGAIN (Hasan + David) ======== */
+Object.assign(FRIEND_STORIES.ashes,{title:'Dada-ji rides again',cast:['hasan','david'],lead:'hasan',meet:[[0,250],[0,250],[0,40],[0,250]],places:['the kitchen','the kitchen','the garage side door','the kitchen'],
+ invite:['“I brought my grandad. He’s in a tin. Do NOT make it weird.”','“Something’s wrong with me. I want a Werther’s Original. I have NEVER wanted one.”','“Dada-ji wants to fight Mr. Okafor. With my BODY. Garage door.”','“Get him OUT of me. Kitchen. Bring the pancake mix.”']});
+FRIEND_SCENES.ashes=[
+ async q=>{await talk([['Hasan','That’s Dada-ji. In the tin. Scatter at midnight, from somewhere high, at a party. His words. Don’t touch it.'],['','It’s on the counter. Next to David’s tub of vanilla protein. Same tin. Same lid.'],['David','PANCAKES! Protein pancakes! I used the whole tub, they’ve come out a bit grey—'],['','Everyone has eaten at least two. Arjun’s had six. The tin that’s left says WHEY.']]);
+  q.told=!(await choose(['Tell Hasan.','Say nothing. Say NOTHING.']));
+  if(!q.told)await talk([['Arjun','*BURP*'],['Arjun','…Sorry. That was him.'],['Hasan','That was WHO.']]);
+  await talk([['Hasan','YOU ATE MY GRANDAD.'],['David','In fairness, he was a bit dry.'],['Hasan','HE HAD DIABETES, DAVID. HE WOULDN’T HAVE WANTED SYRUP.'],['','Hasan grabs the last pancake off David’s plate and eats it, weeping, because it’s all he has left of him.']]);q.outcome='Everyone ate Dada-ji'},
+ async q=>{const h=A_.hasan;h.shake=true;SFX.squelch();await wait(600);noise(.3,.5,300,2);S.shake=.6;fx(.5,'');h.dir*=-1;
+  await talk([['','There’s a CRACK like a stick snapping. Hasan’s head turns. All the way round. The rest of him stays facing the fridge.'],['Dada-ji (through Hasan)','Oho. Young knees. I had forgotten knees.'],['David','HE’S IN HIM. YOU ATE HIM AND NOW HE’S IN HIM.']]);h.shake=false;
+  await talk([['Dada-ji (through Hasan)','You. Fat one. Your pancakes were dry. I’ve been dead nine months and that is the worst thing that has happened to me.'],['Dada-ji (through Hasan)','And you, spotty. You make jokes like a man apologising. In my day we said the joke once and then we HIT somebody.'],['Arjun','…Can he stay? I want him to stay.']]);
+  await talk([['Dada-ji (through Hasan)','Now. Next door. Okafor. In 1971 that man took Kamala from me at the Palais. Tonight I take back my honour.'],['Hasan (somewhere inside)','Don’t you DARE use my legs for a pensioner fight.'],['Dada-ji (through Hasan)','Your legs are my legs now, beta. Also, you need to stretch.']]);
+  q.go=!(await choose(['“Let him have his fight.”','“Nobody fights a pensioner.”']));if(!q.go)await talk([['Dada-ji (through Hasan)','Then I will sit in this body and complain until you change your mind. I complained for seventy-nine years. I have stamina.'],['','Twenty minutes of complaining later, you change your mind.']]);q.outcome='Dada-ji is driving Hasan'},
+ async q=>{const prev=scoreName,ha={id:'hasan',x:-20,y:160,dir:1},ok={id:'dad',x:200,y:160,dir:-1,sit:true},you={id:'you',x:-40,y:162,dir:1},dv={id:'david',x:-56,y:160,dir:1};
+  await toStage({okafor:true,cast:[ok,dv,you,ha]});cue('fight');mvc(dv,60);mvc(you,80);await mvc(ha,150,1800);ok.sit=false;
+  await talk([['Mr. Okafor','Who’s in my garden at three in the— RAJESH? RAJESH KHAN? You’re DEAD.'],['Dada-ji (through Hasan)','And yet I am STILL better looking than you, Emmanuel.'],['Mr. Okafor','You’re a CHILD. With a big HEAD.'],['Dada-ji (through Hasan)','It’s a MAGNIFICENT head. Kamala would have loved this head.']]);
+  ok.pose='swing';ok.weapon='#5a3a20';ha.pose='punch';
+  for(let i=0;i<6;i++){const [a,b]=i%2?[ha,ok]:[ok,ha];a.punchT=T+.25;SFX.smack();S.shake=.4;gush(b,6+i*2);await tw(b,{x:b.x+(a===ok?-5:5)},100);await wait(260)}
+  await talk([['','Walking stick to the ribs. A headbutt (the head was MADE for it). Mr. Okafor’s false teeth leave his face at speed and land in the pond.'],['Mr. Okafor','She chose ME because I was better at the… dancing.'],['Dada-ji (through Hasan)','You were better at NOTHING. You danced like a man being electrocuted by a cow.']]);
+  const c=await choose(['Cheer for Dada-ji.','Cheer for Mr. Okafor.','Try to break it up.']);
+  if(c===2){mark('you','beat');store.run.bruised=true;SFX.smack();S.shake=.5;await N('You step in. Both pensioners hit you at the same time. It’s the only thing they’ve agreed on in fifty-five years.')}
+  else{const w=c===0?ha:ok,l=c===0?ok:ha;w.punchT=T+.4;SFX.smack();noise(.3,.5,300,3);S.shake=.7;gush(l,30);l.sit=true;await N(c===0?'A crack like a cricket bat. Mr. Okafor’s hip goes. He sits down in his own petunias and starts laughing, and can’t stop.':'Mr. Okafor gets the stick under Hasan’s chin. Hasan’s nose goes flat. Dada-ji, inside, is delighted by the pain. “I FEEL ALIVE.”');if(l===ha)mark('hasan','beat')}
+  ha.pose=ok.pose=null;await talk([['Mr. Okafor','…She married Derek, you know. Kamala. Derek with the van.'],['Dada-ji (through Hasan)','DEREK? DEREK WITH THE VAN?'],['','Both old men are on the grass now, wheezing, laughing, bleeding into the lawn. Mr. Okafor’s window is lit. Inside, someone small is eating his dinner, one pea at a time.']]);
+  mvc(you,-30,1500);mvc(dv,-30,1500);await mvc(ha,-20,1800);await fromMemory();cue(prev);q.outcome='Pensioner fight'},
+ async q=>{const h=A_.hasan;await talk([['Hasan (through Dada-ji, sort of)','I want MY body back. I’ve got a test on Monday and he keeps trying to grow a moustache.'],['Dada-ji (through Hasan)','It is coming in beautifully.']]);
+  const c=await choose(['Hit him with the frying pan.','Pancake batter in the mouth. Like calls to like.','Ask Dada-ji nicely to leave.']);
+  if(c===0){SFX.smack();S.shake=.6;mark('hasan','beat');await N('BONG. Hasan’s head spins back round the right way. It also gains a pan-shaped dent that will be there for the rest of the night.')}
+  else if(c===1){SFX.squelch();await N('He chokes, then retches, then vomits a long grey cloud of ash across the kitchen. It hangs in the air in the shape of an old man waving.')}
+  else await talk([['Dada-ji (through Hasan)','Nobody has said please to me since 1994.'],['','The head turns back round. Gently. Hasan blinks.']]);
+  fx(.5,'');await talk([['Dada-ji','(fading by the fridge) Hasan. Good head. Strong legs. Terrible friends. I love you.'],['Dada-ji','If the rude wet one comes for you — I have one slap left. I’ve been saving it since 1971.'],['Hasan','…Bye, Dada-ji.'],['David','Sorry I made you dry.']]);store.run.dadaji=true;save();q.outcome='Dada-ji saved his slap for Aidan'}];
+/* ======== QUEST: OMER'S BUNKER (Omer + Sean) ======== */
+Object.assign(FRIEND_STORIES.bunker,{title:'Omer’s bunker',invite:['“I need to show you something under the garage. Bring nobody. Bring snacks.”','“I’ve built a flamethrower out of a leaf blower. I need a witness, and a fire blanket.”','“The tunnel goes all the way to his house. I’m going in. Come or don’t.”','“The trap’s caught something. It’s screaming in two voices.”']});
+FRIEND_SCENES.bunker=[
+ async q=>{await talk([['','Omer kicks the oil-stained rug aside. Under it: a trapdoor. Combination lock. 2-4-6-8.'],['Omer','Panic bunker. Eleven months of “study sessions” at your house. You never once checked what I was studying.'],['Sean','You dug a HOLE under his GARAGE?'],['Omer','A structurally sound hole.']]);
+  await talk([['','Tins. A camp bed. A laminated rota for the apocalypse: “DAVID — morale / ballast.” “ARJUN — bait.” “SEAN — spare.”'],['Sean','Why am I spare?'],['Omer','Every team needs a spare.'],['','And on the wall: a nail gun, a crossbow made from a ruler and a bra (“it was my mum’s, it’s fine, it’s for the elastic”), and a leaf blower duct-taped to a gas canister. Label: THE ASSISTANT.']]);q.outcome='Omer has an armoury'},
+ async q=>{await talk([['Sean','Test the flamethrower.'],['Omer','No.'],['Sean','Test it.'],['Omer','Testing is for people without spreadsheets.'],['Sean','You built a FLAMETHROWER and you’re not going to FLAME anything?'],['Omer','…One test. ONE. Into the garden. Away from everything flammable.']]);
+  const c=await choose(['Aim it at the garden gnome.','Aim it at the fence.','Sean volunteers his eyebrows. Sort of.']);A_.omer.pose='aim';
+  for(let i=0;i<3;i++){noise(.6,.6,400,.6);SFX.power();S.shake=.4;fx(.15,'');await wait(260)}A_.omer.pose=null;
+  if(c===0)await talk([['','The gnome melts. And screams. A thin electronic scream. Inside it, melting, is a little camera, still recording.'],['Omer','Somebody’s been watching your garden through a GNOME.'],['Sean','How long has that gnome been there?'],['You','…We’ve never had a gnome.']]);
+  else if(c===1)await talk([['','Next door’s fence goes up like it was waiting for permission. Mr. Okafor’s dog runs out of the flames looking personally betrayed.'],['Omer','In my defence, the fence was technically “away from everything”.']]);
+  else{mark('sean','beat');await talk([['','WHOOMPH.'],['Sean','…Are they gone?'],['Omer','They’ve ascended.'],['','Sean has no eyebrows. None. He looks permanently amazed. It’s actually quite a good look for someone who’s in love.']])}
+  q.outcome='THE ASSISTANT works'},
+ async q=>{const prev=scoreName,om={id:'omer',x:30,y:150,dir:1,pose:'torch'},you={id:'you',x:14,y:152,dir:1},se={id:'sean',x:0,y:150,dir:1};
+  await toUnder({kind:'tunnel',cast:[om,you,se]});cue('sneak');mvc(se,70);mvc(you,90);await mvc(om,110);
+  await talk([['Omer','Six metres. I dug six. After that…'],['','The tunnel keeps going. No supports. Clay scraped smooth by something small, with a dessert spoon worn down to half a spoon.'],['Omer','I’m not going further.'],['Sean','You dragged us down a HOLE—'],['Omer','I dragged you down MY hole. That one’s HIS hole.'],['Sean','…Please never say that sentence again.']]);
+  MEM.prints=true;MEM.spoon=true;mvc(se,170);mvc(you,190);await mvc(om,210);MEM.bed=true;fx(.4,'');SFX.sting();
+  await talk([['','An alcove. A child-sized camp bed. A blue jacket folded as a pillow. And a jar.'],['','The jar is full of teeth. Baby teeth. Labelled in felt tip. DAVID (YR 2). HASAN (YR 3). SEAN (YR 4).'],['Sean','That’s my TOOTH. That’s the one I lost on the trampoline. The tooth fairy never came. I CRIED.'],['Omer','The tooth fairy came, Sean. The tooth fairy just never left.']]);
+  const c=await choose(['Take the jar.','Leave it. Back up. NOW.']);if(!c){store.run.teeth=true;await N('It rattles all the way back. Every few steps, something in the dark behind you rattles back.')}
+  await fromMemory();cue(prev);q.outcome='The tooth fairy lives under your house'},
+ async q=>{const prev=scoreName,om={id:'omer',x:60,y:150,dir:1,pose:'aim'},se={id:'sean',x:40,y:150,dir:1},you={id:'you',x:80,y:152,dir:1},ai={id:'aidan',x:180,y:154,dir:-1,sit:true};
+  await N('Omer filled the tunnel mouth with garden rakes, tines up. Then he covered it with a rug. Then he waited. Now something is in it.');
+  await toUnder({kind:'tunnel',cast:[se,om,you,ai]});cue('reveal');await wait(600);
+  await talk([['','It’s Aidan. Four rakes straight through him. One through the cheek. He’s chatting.'],['Aidan','This is so cool. Did you make this? For me? Nobody’s ever MADE me anything.'],['Omer','It’s a trap.'],['Aidan','I know! It’s so thoughtful!']]);
+  const c=await choose(['Nail-gun him.','Flamethrower.','“Why us? Why us, Aidan?”']);
+  if(c===0){for(let i=0;i<10;i++){om.punchT=T+.1;noise(.08,.4,3000,4);S.shake=.25;if(i%3===0)gush(ai,8);await wait(110)}
+   await talk([['','Thirty nails. He looks like a hedgehog made of a boy.'],['Aidan','Ow. Ha. Ha.'],['','He pulls himself up off the rakes. It takes a while. He leaves quite a lot of himself behind on the tines, and goes back down the tunnel humming.']]);store.run.trapHurt=true}
+  else if(c===1){for(let i=0;i<4;i++){noise(.5,.6,400,.6);SFX.power();S.shake=.5;fx(.15,'');await wait(250)}gush(ai,30);
+   await talk([['','Everything on him burns. The jacket. The skin under it. Everything except the hair. The bowl cut sits there, perfect, untouched, in the middle of the fire.'],['Omer','That’s not hair. Hair burns. What IS that.'],['Aidan','(burning, cheerful) It’s mine.']]);store.run.trapHurt=true}
+  else await talk([['Aidan','Because you’re the only ones who ever called back.'],['Aidan','Even when you were laughing. Especially when you were laughing. You still CALLED.'],['','He unhooks himself, rake by rake, and goes. Omer sits down in the tunnel and doesn’t speak for a while.']]);
+  await fromMemory();cue(prev);save();q.outcome=store.run.trapHurt?'Aidan left bits of himself in the trap':'He told you why'}];
+/* ---------- consequences in the hunts ---------- */
+{const _sh=setupHunt;setupHunt=function(m){_sh(m);const r=store.run;
+ if(m){let dmg=0;if(r.keepGun){dmg+=5;sub('You empty Jay’s gun into him. Four hit. He keeps coming.')}if(r.loftShot)dmg+=2;if(r.trapHurt)dmg+=3;if(r.teeth)dmg+=1;S.monsterHP=Math.max(5,S.monsterHP-dmg)}
+ else if(r.aidanGun)setTimeout(()=>{if(S.play)sub('Aidan has a gun now. He doesn’t know how it works. He keeps answering it like a phone.')},4000)}}
+/* ======== COREY'S CURLS ======== */
+const CURLED=()=>store.run.curls;
+const CURLKILL={
+ arjun:[['Corey','You held the straighteners, Arjun.'],['Arjun','It was a JOKE, it was one SECTION—'],['Corey','You always said I never had to try. Look. I’m trying.']],
+ sean:[['','Corey picks up Sean’s phone and types with one thumb: “its sean. i love you. sorry.” Send.'],['Corey','Now she knows. You’re welcome.'],['Sean','Corey— Corey, she’s TYPING—']],
+ david:[['','David is at the fridge. He doesn’t turn round.'],['David','Can I finish this first?'],['Corey','Finish it.'],['','He finishes the yoghurt. He even scrapes the lid.']],
+ omer:[['Corey','Count them.'],['Omer','Count—'],['Corey','You count everything. Count these.'],['Omer','…One.']],
+ nivaan:[['','Corey hands Nivaan his own phone, camera on.'],['Corey','Film it. Make it look good. You’ve always wanted something that went viral.'],['Nivaan','Corey, please, I’ll delete everything, I’ll—']],
+ hasan:[['Corey','It was never the head, Hasan.'],['Corey','It was the way you laughed at it. Every time Arjun said it. You laughed so they wouldn’t stop liking you.'],['Hasan','…Yeah.']]};
+async function curlSnap(culprit){
+ if(CURLED()||A_.corey.dead)return;store.run.curls={kills:0,culprit,stopped:false};save();K.corey.hs='long';K.corey.hair='#2a1a12';const co=A_.corey;
+ fx(1,'');SFX.sting();await talk([['','The curls are gone. What’s left hangs flat, limp, ordinary. For the first time in his life, Corey looks like everyone else.'],['','He looks in the mirror for a very long time.'],['Corey','…'],[culprit==='you'?'You':K[culprit].n,'Corey? Mate? It’ll grow back, it’s just—'],['Corey','Don’t.']]);
+ co.sit=false;await walk(co,250,40);co.pose='stab';co.weapon='#dfe6ea';await N('He walks to the kitchen. The cutlery drawer opens and closes. He comes back holding the big knife the way he holds everything: like it was made for him.');co.pose=null;
+ sub('Corey has the kitchen knife. He isn’t saying anything.');}
+async function curlKill(){
+ const r=CURLED();if(!r||r.stopped||r.kills>=3||A_.corey.dead)return;
+ const order=[r.culprit,'sean','david','omer','nivaan','hasan','arjun'].filter((id,i,a)=>id&&id!=='you'&&id!=='corey'&&a.indexOf(id)===i&&!A_[id].dead);if(!order.length)return;
+ if(r.kills===2&&!r.offered){r.offered=true;save();const c=await choose(['Fix his curls. Find the curl cream (upstairs bathroom).','Fight him.','Let him.']);
+  if(c===0){await errand('Take the curl cream',800,1,'FIND THE CURL CREAM IN THE UPSTAIRS BATHROOM. FIX COREY.');const co=A_.corey;await errand('Give Corey the curl cream',co.x,co.floor,'BRING IT TO COREY.');busy=true;
+   K.corey.hs='curly';await talk([['','You do it yourself. Scrunch, twist, scrunch. It takes ten minutes. He lets you. Halfway through he starts crying, very quietly, onto your hands.'],['Corey','…They look okay?'],['You','They look like you.'],['','He puts the knife down on the side and steps away from it like it’s somebody else’s.']]);r.stopped=true;save();return}
+  if(c===1){const co=A_.corey,you=A_.you;you.pose='stab';co.pose='stab';for(let i=0;i<5;i++){(i%2?co:you).punchT=T+.2;SFX.smack();SFX.squelch();S.shake=.5;spurt(i%2?you.x:co.x,co.y-18,10,co.y);await wait(300)}
+   mark('you','bloody');store.run.bruised=true;co.lie=1;await talk([['','It isn’t a fight. It’s two boys rolling around on the floor with one knife between them. When it stops, the knife is in Corey.'],['Corey','…Make sure they bury me with good hair.']]);co.lie=0;loseFriend(co);r.stopped=true;save();return}}
+ const id=order[0],v=A_[id],co=A_.corey,keep={f:S.floor,vis:A_.you.vis};r.kills++;save();
+ await tw(view,{fade:1},400);S.floor=v.floor;A_.you.vis=false;Object.assign(v,{sit:false,pose:null,sleep:false,lie:0,dir:1});Object.assign(co,{floor:v.floor,x:clamp(v.x-60,20,WORLD-20),y:v.y,dir:1,sit:false,pose:null});cam.tx=null;cam.x=clamp(v.x-160,0,WORLD-W);
+ view.focus=v.x;view.focusY=140;view.zoom=1.5;view.letter=1;await tw(view,{fade:0},400);cue('reveal');
+ await walk(co,v.x-14,40);v.dir=-1;for(const [n,t] of CURLKILL[id])await say(n,t);
+ v.scared=true;await stab(co,v,id==='omer'?7:5,{ms:id==='omer'?420:300});if(id==='omer')await N('He gets to thirteen.');v.lie=1;SFX.scream();await wait(700);
+ co.pose=null;mark('corey','bloody');loseFriend(v);v.lie=0;v.scared=false;
+ await say('Corey',one(['That’s one more who won’t laugh at me.','Hold still. I said hold STILL.','Look what you made me do. Look at my HAIR.']));
+ await tw(view,{fade:1},400);S.floor=keep.f;A_.you.vis=keep.vis;view.zoom=1;view.letter=0;cam.tx=A_.you.x-160;await tw(view,{fade:0},400);sub(K[id].n+' is dead. Corey did it. Corey is still holding the knife.');}
+{const _sp=stagePlay;stagePlay=async function(p,o){if(['r2','late','winddown'].includes(p))await curlKill();return _sp(p,o)}}
+{const _al=allergens;allergens=async function(){if(CURLED())await curlKill();return _al()}}
+CHAOS.curls={x:447,f:0,t:'Corey has fallen asleep on the sofa. Arjun has just plugged in the straighteners.',ok:()=>!A_.corey.dead&&!CURLED(),go:async()=>{
+ await talk([['','Corey is asleep on the sofa, perfectly. Even asleep, the curls are doing something. Arjun is crouched over him with your sister’s straighteners, glowing at 230 degrees.'],['Arjun','One section. ONE. Just to see what he looks like as a mortal.'],['Omer','I am formally objecting.'],['Arjun','Objection noted. And ignored.']]);
+ const c=await choose(['Do it yourself. One section.','Let Arjun do it.','Wake Corey up.']);
+ if(c===2){await say('Corey','…Why is everyone standing over me. Why do I smell hot metal. ARJUN.');return}
+ SFX.power();noise(.6,.3,4000,2);await N('Hssssssss. One section. Then, because one section looks stupid on its own, all of them.');await curlSnap(c===0?'you':'arjun')}};
+{const _c=ACTS.clip[1];ACTS.clip[1]=async()=>{if(!A_.corey.dead&&!CURLED()&&(Math.random()<.25||!(await choose(['Rig the bottle so it lands on Corey.','Spin it fair.'])))){
+  await talk([['','It lands on Corey. It was always going to land on Corey.'],['Corey','No. No. Anyone else. ANYONE. Do David twice.'],['Arjun','Rules are rules, pretty boy.']]);for(let i=0;i<5;i++){noise(.25,.2,3000,3);await wait(260)}await curlSnap('arjun');return}return _c()}}
+/* ======== ABBY: her room, and the ending ======== */
+async function abbyRoom(co,gi){
+ const old=MEM,prev=scoreName;await tw(view,{fade:1},500);
+ const C={id:'corey',x:150,y:156,dir:1},A={id:'girl',x:180,y:154,dir:-1},Y={id:'you',x:40,y:156,dir:1,hidden:false};MEM={scene:'under',kind:'abby',cast:[C,A],candle:true,back:old.back};await tw(view,{fade:0},500);cue('crush');
+ await talk([['???','You can come up. The trellis takes one at a time. Your friend can keep watch. Your friend looks like he’d enjoy keeping watch.'],['','You stay on the porch roof, outside the window. From here you can see the whole room. You are, technically, a lookout. You are, emotionally, at the cinema.']]);
+ await talk([['','Fairy lights, all purple. A wall of records. A guitar with three strings. An axolotl in a tank, glaring.'],['Corey','What’s his name?'],['???','Morrissey. He bites.'],['Corey','He’s cute.'],['','Morrissey bites him.']]);
+ MEM.pol=true;await talk([['','A wall of Polaroids. Street lights, rain, the backs of people’s heads. One of them is the bus stop on Maple Row. One of the backs of heads is Corey’s.'],['Corey','That’s… me.'],['???','October. You let an old man have your seat and then pretended you wanted to stand. I liked you for about three weeks before you liked my first post.'],['Corey','You noticed me FIRST?'],['???','Don’t let it go to your head. It’s already big enough. Your hair alone has its own postcode.']]);
+ await talk([['','She plays something on the guitar with three strings. It’s not good. It’s really, really good.'],['???','It’s called “Abby, 3am”. Because I’m Abby. And it’s three am. I’m not good at titles.'],['Corey','Abby.'],['Abby','Say it like that again and I’ll have to do something about it.']]);
+ const c=await choose(['Corey hugs her.','Corey kisses her.','Corey just holds her hand.']);
+ if(c===0)await talk([['','He hugs her the way people hug at airports. Her headphones are still round her neck, and the song leaks out of them into his shoulder.'],['Abby','…Okay. That was a good hug. Ten out of ten. Morrissey’s jealous.']]);
+ else if(c===1)await talk([['','He kisses her. Quick. Terrified. The most confident boy in the county shaking like a leaf.'],['Abby','…You missed a bit.'],['','She kisses him back. Properly. Morrissey turns round in his tank to give them privacy.'],['','Outside the window, you do a silent scream into your sleeve.']]);
+ else await talk([['','He holds her hand. That’s all. They sit on the floor between the records and nobody says anything for a whole song.'],['Abby','You’re weird. I like weird.']]);store.run.abby=c;save();
+ MEM.face=true;fx(.6,'');SFX.sting();await talk([['','The window behind them isn’t empty any more. A face, pressed to the glass. Bowl cut. Smiling. He’s been there the whole song.'],['Abby','Don’t turn round.'],['Corey','I’m turning round.']]);
+ await tw(view,{fade:1},400);MEM=old;await tw(view,{fade:0},400);cue(prev)}
+async function abbyEnding(sv){
+ if(!store.run.crushDone)return;const alive=sv.includes('corey');await card('THREE WEEKS LATER','',2000);
+ const old=mode,C={id:'corey',x:150,y:156,dir:1,sit:true,hidden:!alive},A={id:'girl',x:180,y:154,dir:-1,sit:true};await tw(view,{fade:1},500);MEM={scene:'under',kind:'abby',cast:[C,A],candle:true,back:old};mode='memory';await tw(view,{fade:0},500);cue('crush');
+ if(alive){await talk([['','Her floor. The Lantern Keeper, finished. He read the last page out loud and she pretended she wasn’t crying, and he pretended he believed her.'],['','He opens the front cover. Blank. He writes in it, in pen, very carefully, while she pretends to tune the guitar.']]);
+  await N('“Abby — I said I’d tell you what I thought of the ending. Here it is.”');
+  await N('“I think the keeper was waiting for someone to climb up the stairs and stop asking him to be the light.”');
+  await N('“Most people only ever look at me. You were the first one who looked at the back of my head at a bus stop and decided to stay. I don’t know how to be anything except good-looking. Teach me. I’ll learn. I’ll learn all of it.”');
+  await N('“PS: Morrissey can bite me. He did. Twice. — C x”');
+  await talk([['Abby','…You wrote in my BOOK.'],['Corey','Our book.'],['Abby','Our book.']]);}
+ else await talk([['','The book came back to her in a box of his things. The front cover is full. He’d written it the night before, in the kitchen, while everyone else was asleep.'],['','The last line just says: “Teach me. I’ll learn.”'],['','She keeps the window lit for a long time. Morrissey doesn’t bite anyone, for a whole month, out of respect.']]);
+ await tw(view,{fade:1},500);mode=old;await tw(view,{fade:0},500)}
+{const _e=epilogue;epilogue=async function(sv){await _e(sv);await abbyEnding(sv);if(store.run.tattoo&&sv.includes('sean')&&S.sean&&S.sean.started&&!S.sean.burned)await talk([['','Monday. Stella sees the plaster on Sean’s '+(socialState().fakeid.spot||'neck')+'. Then she sees under it.'],['Stella','“'+store.run.tattoo.replace(/ \(.*\)/,'')+'”?'],['Sean','I can explain.'],['Stella','…Two L’s. You spelled it right.']])}}
+/* ======== WHERE ARE THEY NOW ======== */
+function whereNow(){const r=store.run,s=socialState(),L=[];const line=(id,t)=>L.push('<b>'+K[id].n.toUpperCase()+'</b> — '+t);
+ for(const id of pals){const a=A_[id];if(a.dead){line(id,one(['Gone. Someone keeps leaving crisps on his bench.','Gone. His phone still gets messages. Nobody has the heart to turn it off.','Gone. The group chat still has his name in it. Nobody will remove him.']));continue}
+  if(id==='corey')line(id,r.curls&&!r.curls.stopped?'Murdered '+r.curls.kills+' of his friends over a hair appointment. Still the best-looking person in the courtroom.':r.crushDone?'Spends every Sunday on Abby’s floor. Morrissey has bitten him eleven times. He calls it “commitment”.':s.tin.step?'Jay hasn’t spoken to him since the bag. Corey says that’s the best gift he’s ever had.':'Still impossibly good-looking. Still hasn’t told anyone about the photo under the lamp.');
+  else if(id==='david')line(id,K.david.wrap?'Wears a half-mask to school now. Calls it his Phantom era. Girls have never been more interested.':s.snacks.step?'Signs nothing in ketchup ever again.':'Opened a snack stall at school. It’s called “Minister of Lunch”. It’s thriving.');
+  else if(id==='sean')line(id,r.tattoo?'Has “'+r.tattoo.replace(/ \(.*\)/,'')+'” on his '+(s.fakeid.spot||'neck')+' for life.':S.sean&&S.sean.outcome==='A date on Saturday'?'Saturday, three o’clock, every week. He still practises saying hi.':'Still checks his phone every eleven seconds.');
+  else if(id==='hasan')line(id,r.dadaji!==undefined?'Hasn’t had a pancake since. Sometimes his head still turns round on its own when old men walk past.':s.pooldate&&s.pooldate.revealed?'Still gets a monthly swimming newsletter from Darren.':'Took up karting. He’s actually fast. Arjun is furious.');
+  else if(id==='arjun')line(id,r.murder&&r.murder.killer==='arjun'?'Says the freezer was already broken. Nobody believes him.':r.target==='arjun'||socialState().tin.target==='arjun'?'Wears the bullet on a chain. Tells girls it’s “a war wound”. It is, technically, an arse wound.':'Still doing the gear stick joke. Hasan still hits him for it.');
+  else if(id==='omer')line(id,s.bunker.step?'The bunker is now a registered business: “Omer’s Holes”. Do not google it.':'Made a spreadsheet of the night. It’s 140 rows long. The last row just says “why”.');
+  else if(id==='nivaan')line(id,r.stream?'Hit a million followers. Still hasn’t watched the stream back.':'Deleted every clip of Aidan. Kept one. The drumsticks joke. It was actually funny.');}
+ return L}
+{const _m=menu;menu=async function(html,btns){if(/THE CALL<br>ENDED/.test(html)){html+='<p style="text-align:left;font-size:.85em;line-height:1.5">'+whereNow().join('<br>')+'</p><p><b>THE CALLING OF AIDAN</b><br>A passion project. Made for friends, to be played with friends.<br>Same time next week?</p>'}return _m(html,btns)}}
+GOALS.tin=['Fire Jay’s gun.',r=>r.gunFired];GOALS.curls=['Survive Corey’s haircut.',r=>r.curls&&r.curls.stopped];GOALS.abby=['Get Corey into Abby’s room.',r=>r.abby!==undefined];GOALS.tattoo=['Get Sean inked.',r=>r.tattoo];
+
+/* ================= THE LAMP TIMELINE (only when built as lamp.html) ================= */
+if(window.LAMP_TIMELINE){
+ findCoreyPhoto=async function(){if(coreyPhotoFound())return;S.secret=2;socialState().hidden.photo=true;SFX.pick();socialSave();
+  await N('Under the lava lamp: a tiny jar of something purple and shimmering. The label says C.U.R.L. Taped to the lid, a key and a note.');
+  await N('“LOFT. 3AM. TELL NOBODY. — C”');sub('Talk to Corey. Show him the jar.')};
+ coreyHint=function(){if(!socialRoam()||A_.corey.dead)return null;const q=socialState().curlfather;if(!coreyPhotoFound())return 'COREY: something is hidden under the lava lamp.';if(!q||q.step<4)return 'COREY: talk to him about the jar.';return null};
+ {const _th=things;things=function(){return _th().filter(o=>!/folded photo|parcel|book with Corey|take the book/i.test(o.label||''))}}
+ {const _t=title;title=async function(){const ch=await _t();if(ch===0){store.run.stories=[...new Set([...(store.run.stories||[]),'curlfather'])];save();await card('THE LAMP TIMELINE','Corey has a different secret here.',2600)}return ch}}
+ {const _sr=storyReady;storyReady=function(k){if(k==='curlfather'&&!coreyPhotoFound())return false;return _sr(k)}}
+ FRIEND_STORIES.curlfather={title:'The Curlfather',cast:['corey','david'],lead:'corey',meet:[[1,80],[0,700],[0,700],[0,700]],places:['the guest room','the front door','the front door','the front door'],needs:{},
+  invite:['“You found the jar. Guest room. The loft hatch. Now.”','“Big Dev wants a re-up. Bus shelter. Bring David. Bring his whole body.”','“Dev’s back. With people. Front door.”','“There’s a customer at the door. Small. Wet. Wants curls.”']};
+ FRIEND_SCENES.curlfather=[
+  async q=>{const prev=scoreName,co={id:'corey',x:120,y:156,dir:1},dv={id:'david',x:70,y:156,dir:1},you={id:'you',x:90,y:156,dir:1};
+   await N('The loft hatch in the guest room has a padlock. The key from the jar fits it.');await toUnder({kind:'loft',cast:[dv,you,co]});cue('sneak');
+   await talk([['','Your loft. Your actual loft. Forty jars of purple cream on your dad’s old pasting table, a camping stove, and a beaker bubbling over a tealight.'],['Corey','C.U.R.L. Coils Under Royal Licence. Four schools. Two sixth forms. One PE teacher.'],['You','You’ve been running a hair-product cartel in my LOFT.'],['Corey','You think curls like these are FREE? You think God does this? God does the bones. I do the rest.']]);
+   await talk([['David','I want in.'],['Corey','No.'],['David','I want in, Corey.'],['Corey','You’re not ready for this life, David. You cried at a pizza advert.'],['David','The cheese pull was BEAUTIFUL. I can be muscle. I am, structurally, almost all muscle.'],['Corey','You’re structurally almost all crisps.']]);
+   if(!(await choose(['“Let him in. He’s loyal.”','“Keep him out of it.”'])))await talk([['Corey','Fine. You’re the muscle. Say my name.'],['David','…Corey?'],['Corey','You’re goddamn right.'],['','He has clearly been waiting his whole life to do that.']]);
+   else await talk([['David','I’m coming anyway. I’ll follow you. I’ll follow you like a big sad dog.'],['Corey','…Fine. FINE. You carry the jars.']]);await fromMemory();cue(prev);q.outcome='Corey is the Curlfather'},
+  async q=>{const prev=scoreName,dev={id:'dev',x:150,y:160,dir:1},gn={id:'goon',x:132,y:160,dir:1},co={id:'corey',x:220,y:160,dir:-1},dv={id:'david',x:238,y:160,dir:-1},you={id:'you',x:254,y:162,dir:-1};
+   await toStage({shelter:true,cast:[gn,dev,co,dv,you]});cue('sneak');
+   await talk([['Big Dev','Fifty jars. On tick. I’ll pay you Friday.'],['Corey','You said that last Friday.'],['Big Dev','And I meant it last Friday too, Coco.'],['Corey','Don’t call me Coco.'],['Big Dev','Or what? Honestly, bruv, everyone knows. They’re not even real. They’re a PERM.']]);
+   fx(.4,'');await N('The bus shelter goes very, very quiet. A crisp packet blows past. Even it seems to slow down.');
+   const opts=['Let Corey handle it.','Pay Dev off with Omer’s Greggs voucher.'];if(store.run.keepGun)opts.push('Pull Jay’s gun.');const c=await choose(opts);
+   if(c===0){co.pose='choke';await mvc(co,166,300);SFX.smack();noise(.15,.5,500,3);gush(dev,8);dev.sit=true;await talk([['','Corey takes his hand like he’s going to shake it. Then he bends one finger back until it points at Dev’s own face.'],['Big Dev','AAAAAAH—'],['Corey','By order of the Peaky Curlers. Say “perm” again.'],['Big Dev','I WON’T, I WON’T, THEY’RE REAL, THEY’RE GOD’S CURLS—']]);co.pose=null;gn.scared=true;await mvc(gn,-30,700);q.dev='finger'}
+   else if(c===1)await talk([['Big Dev','A… Greggs voucher.'],['You','It’s a meal deal.'],['Big Dev','…Fair. That’s actually fair. But I’ll be back, Coco. With PEOPLE.']]);
+   else{const yo=MEM.cast[4];yo.pose='aim';await talk([['','You pull it out. Dev’s mate wets himself. Audibly. In the bus shelter. Forever.'],['Big Dev','Okay. Okay. Okay. Paid in full. Paid in FULL.']]);yo.pose=null;q.dev='gun'}
+   await fromMemory();cue(prev);q.outcome='The deal went down'},
+  async q=>{const dev={id:'dev',x:120,y:162,dir:1},g1={id:'goon',x:100,y:162,dir:1},co={id:'corey',x:236,y:160,dir:-1},dv={id:'david',x:252,y:160,dir:-1},you={id:'you',x:266,y:161,dir:-1};
+   await N('SPLAT. A water balloon comes through the living-room window. It’s full of hair-removal cream. It hits Arjun in the face.');
+   await say('Arjun','MY EYEBROWS. AGAIN. WHY IS IT ALWAYS MY EYEBROWS.');
+   await extScene([you,dv,co,g1,dev],async e=>{await talk([['Big Dev','Thought you’d like a taste of your own product, Coco.'],['Corey','You came to my house.'],['Big Dev','It’s HIS house.'],['Corey','It’s my HOUSE.']]);
+    co.pose='akimbo';co.weapon='#1a9ad6';SFX.sting();await say('Corey','SAY HELLO… TO MY LITTLE FRIENDS.');
+    for(let i=0;i<8;i++){co.punchT=T+.12;noise(.2,.3,2600,2);if(i%2)egush(e,i%4?dev:g1,6);await wait(170)}co.pose=null;
+    await talk([['','Two Super Soakers. Full of bleach. He doesn’t miss.'],['','Big Dev’s hair comes off in his hands. All of it. Then his eyebrows. He stands in the porch light, bald as an egg, screaming, while Dev’s mate rolls on the lawn with his tracksuit smoking.'],['David','THIS IS THE GREATEST NIGHT OF MY LIFE.']]);
+    dev.scared=g1.scared=true;mvc(g1,-30,900);await mvc(dev,-30,1100)});
+   q.outcome='Big Dev is bald'},
+  async q=>{const co={id:'corey',x:236,y:160,dir:-1},you={id:'you',x:252,y:161,dir:-1};
+   await extScene([you,co],async e=>{e.aidan={x:196,y:163,dir:1};SFX.creak();fx(.4,'');
+    await talk([['Aidan','Hello. Is this where the curls come from?'],['Aidan','I want to be pretty. Like Corey. I’ve got money. I’ve got eleven pounds and a tooth.'],['Corey','…Wait outside, I’ll get the jar.'],['Aidan','I AM outside.']]);
+    const c=await choose(['Sell him a jar.','Refuse. Nobody’s that desperate.','Sell him the bad batch.']);
+    if(c===0){K.aidan.hs='curly';fx(.6,'');store.run.aidanCurls=true;await talk([['','He puts it on right there on the step. The bowl cut… blooms. Into curls. Big, soft, glossy ones.'],['','He looks in the wing mirror of your dad’s car and starts to cry. Then he looks at YOU, and his face does something terrible and happy.'],['Aidan','Now you’ll HAVE to let me stay.'],['Corey','Oh no. Oh no, he’s actually fit now.']])}
+    else if(c===2){K.aidan.hs='';fx(.8,'');SFX.scream();store.run.aidanBald=true;await talk([['','He rubs it in. It fizzes. The bowl cut slides off his head in one piece, like a hat, and hits the doormat with a wet sound.'],['','Underneath, there’s nothing. Not skin. Not skull. Just the shape where a boy should be, and it’s SCREAMING, in two voices, the big and the small.'],['Corey','Refunds are not available at this time.']])}
+    else await talk([['Aidan','…Okay.'],['','He sits down on the step. Takes out a comb. Combs the bowl. It doesn’t move. It never moves.'],['Aidan','I’ll wait. You always say yes in the end.']]);
+    e.aidan=null});q.outcome=store.run.aidanBald?'Aidan is bald and furious':store.run.aidanCurls?'Aidan has curls now':'Aidan waits on the step';store.run.curlfather=true;save()}];
+ {const _sh=setupHunt;setupHunt=function(m){_sh(m);if(m&&store.run.aidanBald)S.monsterHP=Math.max(5,S.monsterHP-5);if(store.run.aidanCurls)setTimeout(()=>{if(S.play)sub('Aidan keeps stopping to check his curls in every reflective surface. Use it.')},3500)}}
+ {const _w=whereNow;whereNow=function(){const L=_w();if(store.run.curlfather&&!A_.corey.dead){const i=L.findIndex(l=>l.includes('COREY'));if(i>=0)L[i]='<b>COREY</b> — Runs the curl trade in eleven schools. Nobody has seen him have a bad hair day. Nobody alive.'}return L}}
+ GOALS.curlfather=['Become the Curlfather.',r=>r.curlfather];
+}
 
 const sceneText=$('scene-text'),textInk=sceneText.getContext('2d');
 let sceneLetters=[];
