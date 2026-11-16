@@ -466,7 +466,7 @@ function drawExt(){const e=S.ext;['#060714','#090b1e','#0c1029','#0f1533','#121a
  R(120,128,3,16,'#333');R(113,122,14,8,'#b33');R(113,122,14,2,'#d55');R(126,119,1,5,'#eee');
  R(280,126,44,16,'#0a1a0e');R(284,122,30,6,'#0a1a0e');
  R(50,66,3,98,'#1c1c22');R(50,66,18,2,'#1c1c22');R(62,68,10,3,'#ffe9a0');for(let i=0;i<30;i++)R(66-i*.95,71+i*3.1,2+i*1.9,4,'rgba(255,233,160,.045)');
- if(e.cast)for(const c of e.cast)drawKid(K[c.id],c.x,c.y,{dir:c.dir,still:!c.moving,moving:c.moving,walk:T*13,pose:c.pose,phone:c.phone,bowl:c.bowl,noG:c.noG});
+ if(e.cast)for(const c of e.cast)drawKid(K[c.id],c.x,c.y,{lie:c.lie,dir:c.dir,still:!c.moving,moving:c.moving,walk:T*13,pose:c.pose,phone:c.phone,bowl:c.bowl,noG:c.noG});
  if(e.aidan)drawKid(K.aidan,e.aidan.x,e.aidan.y,{pose:e.aidan.pose,dir:e.aidan.dir||1,horror:!e.aidan.fly,scared:e.aidan.fly,still:1,noHair:e.wig});
  if(e.wig){const w=e.wig;R(w.x-7,w.y-4,14,6,K.aidan.hair);R(w.x-6,w.y-5,12,1,K.aidan.hair);R(w.x-3,w.y-3,4,1,'rgba(255,255,255,.3)')}
  for(const p of parts)R(p.x,p.y,p.s||2,p.s||2,p.c);
@@ -3137,7 +3137,7 @@ function drawNight(m){
  R(30,62,3,104,'#1c1c22');R(30,62,16,2,'#1c1c22');R(40,64,9,3,'#ffe9a0');for(let i=0;i<30;i++)R(44-i*.9,67+i*3.2,2+i*1.8,4,'rgba(255,233,160,.04)');
  if(m.aidan)drawKid(K.aidan,46,163,{dir:1,still:1,horror:1,pose:m.aidan==='wave'?'reach':null});
  for(const c of m.cast||[]){if(c.hidden)continue;const x=Math.round(c.x),y=c.y-(c.hop?Math.abs(Math.sin(T*10))*4:0);
-  drawKid(K[c.id],x,y,{dir:c.dir,still:!c.moving,moving:c.moving,walk:T*13,pose:c.pose,phone:c.phone,sit:c.sit,scared:c.scared,shake:c.shake,punchT:c.punchT,weapon:c.weapon});
+  drawKid(K[c.id],x,y,{lie:c.lie,dir:c.dir,still:!c.moving,moving:c.moving,walk:T*13,pose:c.pose,phone:c.phone,sit:c.sit,scared:c.scared,shake:c.shake,punchT:c.punchT,weapon:c.weapon});
   if(c.id==='visitor'){const hy=y-(c.sit?23:26),ex=x+(c.dir||1);R(x-8,hy+1,1,12,'#2b4fd6');R(x+7,hy+1,1,12,'#7a35c9');R(x-2,hy-2,2,3,'#7a35c9');R(ex-4,hy+5,2,2,'#7a35c9');R(ex+2,hy+5,2,2,'#7a35c9');R(x-3,hy+11,6,1,'#c9a2ff')}
   if(c.zzz)zzz(x,y,3)}
  if(m.present)R(m.present.x,m.present.y,5,5,'#e33'),R(m.present.x+2,m.present.y,1,5,'#ffe066');
@@ -4239,8 +4239,8 @@ function drawStage(m){
  if(m.aidan)drawKid(K.aidan,46,163,{dir:1,still:1,horror:1,pose:m.aidan==='wave'?'reach':null});
  for(const b of m.blood||[]){pool(b.x,b.w);if(b.s)splat(b.x,b.y,b.s,b.x)}
  for(const c of m.cast||[]){if(c.hidden)continue;const x=Math.round(c.x),y=c.y;
-  if(c.dead){g.save();g.translate(x,y-3);g.rotate(Math.PI/2);drawKid(K[c.id],0,0,{still:1,deadFace:1});g.restore();continue}
-  drawKid(K[c.id],x,y-(c.hop?Math.abs(Math.sin(T*10))*5:0),{dir:c.dir,still:!c.moving,moving:c.moving,walk:T*13,pose:c.pose,phone:c.phone,sit:c.sit,scared:c.scared,shake:c.shake,punchT:c.punchT,weapon:c.weapon})}
+  if(c.dead){g.save();g.translate(x,y-3);g.rotate(Math.PI/2);drawKid(K[c.id],0,0,{lie:c.lie,still:1,deadFace:1});g.restore();continue}
+  drawKid(K[c.id],x,y-(c.hop?Math.abs(Math.sin(T*10))*5:0),{lie:c.lie,dir:c.dir,still:!c.moving,moving:c.moving,walk:T*13,pose:c.pose,phone:c.phone,sit:c.sit,scared:c.scared,shake:c.shake,punchT:c.punchT,weapon:c.weapon})}
  for(const s of m.sprays||[])spray(s.x,s.y,s.d,s.t,T,s.n);
  for(let i=0;i<60;i++){const x=(i*53+T*70)%W,y=(i*29+T*250+i*i)%H;R(x,y,1,4,'rgba(160,180,255,.22)')}
  R(0,0,W,10,'#100d18');R(0,H-10,W,10,'#100d18');
@@ -4620,7 +4620,7 @@ async function monsterDeath(){
 /* ================= PASS 8: two more stories, longer night, goals, more chaos ================= */
 function drawUnder(m){
  if(m.kind==='tunnel')bgTunnel(m);else if(m.kind==='lounge')bgLounge(m);else bgRoom(m);
- for(const c of m.cast||[]){if(c.hidden)continue;drawKid(K[c.id],Math.round(c.x),c.y,{dir:c.dir,still:!c.moving,moving:c.moving,walk:T*13,pose:c.pose,sit:c.sit,scared:c.scared,weapon:c.weapon,punchT:c.punchT})}
+ for(const c of m.cast||[]){if(c.hidden)continue;drawKid(K[c.id],Math.round(c.x),c.y,{lie:c.lie,dir:c.dir,still:!c.moving,moving:c.moving,walk:T*13,pose:c.pose,sit:c.sit,scared:c.scared,weapon:c.weapon,punchT:c.punchT})}
  if(m.kind!=='room'){const c=(m.cast||[])[0],v=g.createRadialGradient(c?c.x:160,120,18,c?c.x:160,120,150);v.addColorStop(0,'#0000');v.addColorStop(1,'#000e');g.fillStyle=v;g.fillRect(0,0,W,H)}
  R(0,0,W,10,'#100d18');R(0,H-10,W,10,'#100d18');
 }
@@ -4865,7 +4865,7 @@ K.aidan7={n:'Aidan',skin:'#e6c2a2',hair:'#4a2f1a',hs:'wavy',top:'#2456c8',pants:
   for(let i=0;i<9;i++)R(104+i*12,125,6,3,'#ddd');R(150,118,14,8,'#e8d0d0');for(let i=0;i<9;i++)R(151+i*1.4,114,1,4,'#e33');if(m.flies)for(let i=0;i<14;i++)R(160+Math.sin(T*3+i)*70,90+Math.cos(T*2.3+i*2)*30,1,1,'#000')}
  else if(m.kind==='y7'){bgY7(m)}
  else{_du(m);return}
- for(const c of m.cast||[]){if(c.hidden)continue;g.save();g.translate(Math.round(c.x),c.y);if(m.kind==='y7')g.scale(.82,.82);drawKid(K[c.id],0,0,{dir:c.dir,still:!c.moving,moving:c.moving,walk:T*13,pose:c.pose,sit:c.sit,scared:c.scared,weapon:c.weapon,punchT:c.punchT,bowl:c.bowl,shake:c.shake});g.restore()}
+ for(const c of m.cast||[]){if(c.hidden)continue;g.save();g.translate(Math.round(c.x),c.y);if(m.kind==='y7')g.scale(.82,.82);drawKid(K[c.id],0,0,{lie:c.lie,dir:c.dir,still:!c.moving,moving:c.moving,walk:T*13,pose:c.pose,sit:c.sit,scared:c.scared,weapon:c.weapon,punchT:c.punchT,bowl:c.bowl,shake:c.shake});g.restore()}
  if(m.kind==='shed'){const c=m.cast[0],v=g.createRadialGradient(c.x,120,14,c.x,120,120);v.addColorStop(0,'#0000');v.addColorStop(1,'#000f');g.fillStyle=v;g.fillRect(0,0,W,H)}
  R(0,0,W,10,'#100d18');R(0,H-10,W,10,'#100d18')}}
 {const _d=draw;draw=function(){_d();if(mode==='memory'&&MEM.tape){for(let y=0;y<H;y+=3)R(0,y,W,1,'rgba(0,0,0,.22)');R(0,(T*40)%H,W,5,'rgba(255,255,255,.07)');g.save();g.font='6px KenPixel,monospace';g.fillStyle='#fff';g.fillText('PLAY ▶  '+MEM.tape,8,20);if(Math.sin(T*6)>0){R(292,14,5,5,'#e33')}g.fillText('REC',300,20);g.restore()}}}
@@ -5228,8 +5228,8 @@ drawExt=function(){const e=S.ext,lit=e.lit&&!(S.flick>0&&Math.sin(T*60)>0);
  if(e.police){const f=Math.sin(T*10)>0;R(2,150,58,14,'#e8e8f0');R(2,156,58,3,'#2a4ab8');R(10,142,40,9,'#e8e8f0');R(14,144,14,6,'#9ad');R(30,144,14,6,'#9ad');R(22,139,16,3,f?'#3a6aff':'#ff3a3a');R(8,162,9,5,'#111');R(44,162,9,5,'#111');g.fillStyle=f?'rgba(60,100,255,.13)':'rgba(255,40,40,.11)';g.fillRect(0,0,W,H)}
  SHADOW=1;const all=(e.cast||[]).filter(c=>!c.hidden).map(c=>({c,y:Math.max(150,c.y)}));if(e.aidan)all.push({a:e.aidan,y:Math.max(150,e.aidan.y)});all.sort((p,q)=>p.y-q.y);
  for(const it of all){if(it.a){const a=it.a;drawKid(K.aidan,a.x,it.y,{pose:a.pose,dir:a.dir||1,horror:!a.fly,scared:a.fly,still:1,noHair:e.wig,punchT:a.punchT,weapon:a.weapon});continue}const c=it.c;
-  if(c.dead){g.save();g.translate(Math.round(c.x),it.y-3);g.rotate(Math.PI/2);drawKid(K[c.id],0,0,{still:1,deadFace:1});g.restore();continue}
-  drawKid(K[c.id],c.x,it.y,{dir:c.dir,still:!c.moving,moving:c.moving,walk:T*13,pose:c.pose,phone:c.phone,bowl:c.bowl,noG:c.noG,punchT:c.punchT,weapon:c.weapon,scared:c.scared,shake:c.shake,sit:c.sit})}SHADOW=0;
+  if(c.dead){g.save();g.translate(Math.round(c.x),it.y-3);g.rotate(Math.PI/2);drawKid(K[c.id],0,0,{lie:c.lie,still:1,deadFace:1});g.restore();continue}
+  drawKid(K[c.id],c.x,it.y,{lie:c.lie,dir:c.dir,still:!c.moving,moving:c.moving,walk:T*13,pose:c.pose,phone:c.phone,bowl:c.bowl,noG:c.noG,punchT:c.punchT,weapon:c.weapon,scared:c.scared,shake:c.shake,sit:c.sit})}SHADOW=0;
  if(e.wig){const w=e.wig;R(w.x-7,w.y-4,14,6,K.aidan.hair);R(w.x-6,w.y-5,12,1,K.aidan.hair)}
  for(const s of e.sprays||[])spray(s.x,s.y,s.d,s.t,T,s.n);for(const p of parts)R(p.x,p.y,p.s||2,p.s||2,p.c);
  for(let i=0;i<70;i++){const x=(i*53+T*70)%W,y=(i*29+T*250+i*i)%H;R(x,y,1,4,'rgba(160,180,255,.3)')}if(S.flash>.5)R(0,0,W,H,'rgba(220,230,255,.55)')};
@@ -5241,15 +5241,15 @@ const egush=(e,c,n=24)=>{(e.sprays??=[]).push({x:c.x,y:c.y-20,d:1,t:T,n},{x:c.x,
  else if(m.okafor){bgGarden(m)}
  else if(m.loftlab){R(0,0,W,H,'#120a1a')}
  if(m.parlour||m.shelter||m.okafor){SHADOW=1;for(const b of m.blood||[]){pool(b.x,b.w);if(b.s)splat(b.x,b.y,b.s,b.x)}for(const c of m.cast||[]){if(c.hidden)continue;const x=Math.round(c.x),y=c.y;
-   if(c.dead){g.save();g.translate(x,y-3);g.rotate(Math.PI/2);drawKid(K[c.id],0,0,{still:1,deadFace:1});g.restore();continue}
-   drawKid(K[c.id],x,y-(c.hop?Math.abs(Math.sin(T*10))*5:0),{dir:c.dir,still:!c.moving,moving:c.moving,walk:T*13,pose:c.pose,phone:c.phone,sit:c.sit,scared:c.scared,shake:c.shake,punchT:c.punchT,weapon:c.weapon,bowl:c.bowl})}SHADOW=0;
+   if(c.dead){g.save();g.translate(x,y-3);g.rotate(Math.PI/2);drawKid(K[c.id],0,0,{lie:c.lie,still:1,deadFace:1});g.restore();continue}
+   drawKid(K[c.id],x,y-(c.hop?Math.abs(Math.sin(T*10))*5:0),{lie:c.lie,dir:c.dir,still:!c.moving,moving:c.moving,walk:T*13,pose:c.pose,phone:c.phone,sit:c.sit,scared:c.scared,shake:c.shake,punchT:c.punchT,weapon:c.weapon,bowl:c.bowl})}SHADOW=0;
   for(const s of m.sprays||[])spray(s.x,s.y,s.d,s.t,T,s.n);if(m.police){g.fillStyle=Math.sin(T*10)>0?'rgba(60,100,255,.13)':'rgba(255,40,40,.11)';g.fillRect(0,0,W,H)}R(0,0,W,10,'#100d18');R(0,H-10,W,10,'#100d18');return}
  SHADOW=1;_ds(m);SHADOW=0;if(m.purple){R(166,104,80,4,'#0d0b16');R(170,108,3,36,'#0d0b16');R(239,108,3,36,'#0d0b16')}}}
 {const _du=drawUnder;drawUnder=function(m){
  if(m.kind==='abby'){bgAbby(m)}
  else if(m.kind==='loft'){bgLoft(m)}
  else{_du(m);for(const s_ of m.sprays||[])spray(s_.x,s_.y,s_.d,s_.t,T,s_.n);return}
- SHADOW=1;for(const c of m.cast||[]){if(c.hidden)continue;drawKid(K[c.id],Math.round(c.x),c.y,{dir:c.dir,still:!c.moving,moving:c.moving,walk:T*13,pose:c.pose,sit:c.sit,scared:c.scared,weapon:c.weapon,punchT:c.punchT,shake:c.shake,phone:c.phone});if(c.id==='girl'){const x=Math.round(c.x),hy=c.y-(c.sit?23:26),ex=x+(c.dir||1);R(x-8,hy+1,2,12,'#2b4fd6');R(x+6,hy+1,2,12,'#7a35c9');R(x-2,hy-2,3,3,'#7a35c9');R(ex-4,hy+5,2,2,'#8a3fe0');R(ex+2,hy+5,2,2,'#8a3fe0')}}SHADOW=0;for(const s_ of m.sprays||[])spray(s_.x,s_.y,s_.d,s_.t,T,s_.n);
+ SHADOW=1;for(const c of m.cast||[]){if(c.hidden)continue;drawKid(K[c.id],Math.round(c.x),c.y,{lie:c.lie,dir:c.dir,still:!c.moving,moving:c.moving,walk:T*13,pose:c.pose,sit:c.sit,scared:c.scared,weapon:c.weapon,punchT:c.punchT,shake:c.shake,phone:c.phone});if(c.id==='girl'){const x=Math.round(c.x),hy=c.y-(c.sit?23:26),ex=x+(c.dir||1);R(x-8,hy+1,2,12,'#2b4fd6');R(x+6,hy+1,2,12,'#7a35c9');R(x-2,hy-2,3,3,'#7a35c9');R(ex-4,hy+5,2,2,'#8a3fe0');R(ex+2,hy+5,2,2,'#8a3fe0')}}SHADOW=0;for(const s_ of m.sprays||[])spray(s_.x,s_.y,s_.d,s_.t,T,s_.n);
  if(m.face){const f=Math.sin(T*3)>-.3;R(122,42,36,36,'#0a0812');if(f){R(132,52,16,14,K.aidan.skin);R(130,48,20,7,K.aidan.hair);R(135,57,3,3,'#fff');R(142,57,3,3,'#fff');R(136,62,8,1,'#fff')}}
  R(0,0,W,10,'#100d18');R(0,H-10,W,10,'#100d18')}}
 /* ---------- the cap: two big quests a night ---------- */
@@ -5785,8 +5785,8 @@ function bgRecord(m){fillG(0,0,W,150,GRD(0,0,0,150,[[0,'#2a1a22'],[1,'#3a2228']]
  R(150,4,2,16,'#222');R(146,20,10,6,'#ffd877');glow(151,24,70,'rgba(255,210,140,.35)');planks(0,150,W,30,'#3a2618','#2a1a10',18);
  if(m.notes)for(let i=0;i<4;i++){const p=(T*.4+i*.25)%1;g.save();g.globalAlpha=1-p;g.font='8px KenPixel,monospace';g.fillStyle='#ffd0e8';g.fillText('♪',150+i*10+Math.sin(T+i)*4,140-p*60);g.restore()}
  vign(160,110,90,230,'rgba(10,0,10,.5)')}
-function castDraw(m){SHADOW=1;for(const c of m.cast||[]){if(c.hidden)continue;const x=Math.round(c.x);if(c.dead){g.save();g.translate(x,c.y-3);g.rotate(Math.PI/2);drawKid(K[c.id],0,0,{still:1,deadFace:1});g.restore();continue}
- drawKid(K[c.id],x,c.y-(c.hop?Math.abs(Math.sin(T*10))*5:0),{dir:c.dir,still:!c.moving,moving:c.moving,walk:T*13,pose:c.pose,phone:c.phone,sit:c.sit,scared:c.scared,shake:c.shake,punchT:c.punchT,weapon:c.weapon,bowl:c.bowl,horror:c.horror,talk:talker===(K[c.id]&&K[c.id].n)});
+function castDraw(m){SHADOW=1;for(const c of m.cast||[]){if(c.hidden)continue;const x=Math.round(c.x);if(c.dead){g.save();g.translate(x,c.y-3);g.rotate(Math.PI/2);drawKid(K[c.id],0,0,{lie:c.lie,still:1,deadFace:1});g.restore();continue}
+ drawKid(K[c.id],x,c.y-(c.hop?Math.abs(Math.sin(T*10))*5:0),{lie:c.lie,dir:c.dir,still:!c.moving,moving:c.moving,walk:T*13,pose:c.pose,phone:c.phone,sit:c.sit,scared:c.scared,shake:c.shake,punchT:c.punchT,weapon:c.weapon,bowl:c.bowl,horror:c.horror,talk:talker===(K[c.id]&&K[c.id].n)});
  if(c.id==='girl'){const hy=c.y-(c.sit?23:26),ex=x+(c.dir||1);R(x-8,hy+1,2,12,'#2b4fd6');R(x+6,hy+1,2,12,'#7a35c9');R(x-2,hy-2,3,3,'#7a35c9');R(ex-4,hy+5,2,2,'#8a3fe0');R(ex+2,hy+5,2,2,'#8a3fe0')}
  if(c.mask){const hy=c.y-24;R(x-5,hy,10,10,'#f4f0ea');R(x-3,hy+3,2,2,'#111');R(x+1,hy+3,2,2,'#111');R(x-2,hy+7,4,1,'#c9b0a0')}}SHADOW=0;for(const s of m.sprays||[])spray(s.x,s.y,s.d,s.t,T,s.n);R(0,0,W,10,'#100d18');R(0,H-10,W,10,'#100d18')}
 FRIEND_SCENES.abby=[
@@ -5955,7 +5955,7 @@ async function royaleChaos(){const h=A_.hasan,ar=A_.arjun,dv=A_.david,om=A_.omer
  const spots=await choose(['Everyone behind the sofa. Hasan stays on the wall behind the curtain.','Everyone in the airing cupboard. Pull Hasan down first.','Everyone upstairs. Leave Hasan. He’s part of the wall now.']);cue('mom');
  for(const id of livingFriends()){if(id==='hasan'&&spots!==1)continue;A_[id].vis=false}if(spots===1){h.taped=false;h.vis=false;h.pose=null}
  actor('momma',720,160,-1);actor('pops',740,160,-1);const mm=A_.momma,pp=A_.pops;await cameraOn(560,1.15);mm.y=160;pp.y=162;
- walk(mm,300,55);await walk(pp,520,50);
+ walk(mm,470,55);await walk(pp,540,50);
  await talk([['Dad','Passports. Kitchen drawer. In and out. We’re not stopping. Why is the hall light on?'],['You','I’m— revising.'],['Mum','At midnight? Good boy. Why does it smell of crisps and… is that blood?'],['You','Ketchup. Hasan— I mean, I— spilled ketchup.']]);
  await talk([['Dad','(from the kitchen) Why are there grapes in the fruit bowl? We don’t buy grapes.'],['','He picks one up.'],['','It’s not a grape.'],['','He looks at it. He looks at it for a long time. He puts it back in the fruit bowl, very gently, and wipes his fingers on his trousers.'],['Dad','…We’re going to be late.']]);
  if(spots===0){await talk([['Mum','Why is the curtain moving?'],['','The curtain is moving because there is a fourteen-year-old boy taped behind it, weeping through a nose full of snot, trying to breathe without his foot dripping on the skirting board.'],['You','Draught.'],['Mum','You need to put the heating on, it’s freezing. Love you. Don’t have anyone round.']])}
@@ -6198,7 +6198,7 @@ FRIEND_SCENES.triple=[
    await talk([['','One punch. Corey doesn’t put his hands up. He lets it land.'],['Sean','…Okay. Okay. That’s all you get. Fix it.'],['Corey','I will. I swear I will.']])}
   else if(c===1)await talk([['','Corey says nothing. Sean doesn’t ask. The silence goes into Corey like a splinter, and stays.']]);
   else await talk([['Corey','It was Arjun. All of it.'],['Arjun','(from the bottom of the stairs) Wow. Okay. Wow.'],['','Arjun can’t move his body. He can move his eyes. He uses them to look at Corey for a very long time.']]);q.outcome='Arjun can’t feel his legs'},
- async q=>{const ar=A_.arjun;ar.lie=1;
+ async q=>{const ar=A_.arjun;ar.lie=1;ar.floor=0;ar.x=410;ar.y=146;
   await talk([['','Arjun is on the sofa. He can blink and talk. That’s it. That is, unfortunately, still enough for him to talk.'],['Arjun','If I die, play “Mr. Brightside” at the funeral and tell Parker she was the only one I respected.'],['Omer','We can’t call an ambulance. Your parents—'],['You','My parents are in the AIR. Over the ATLANTIC.']]);
   const c=await choose(['Omer’s YouTube chiropractor technique.','Nivaan’s mum’s back-pain TENS machine.','Aidan says he can fix him.']);q.fix=c;
   if(c===0){await talk([['Omer','I’ve watched a six-minute video. Twice. Hold his head.']]);noise(.2,.8,300,3);S.shake=.6;SFX.scream();await talk([['','CRACK. Like a branch in winter.'],['Arjun','AAAAAAAAAAAH— wait. Wait. My toe. I can feel my TOE.'],['Omer','I am a medical miracle.'],['Arjun','You are a CRIMINAL.']])}
@@ -6357,7 +6357,7 @@ function autoStage(t){for(const {c,pose} of AUTO)if(c.pose===pose)c.pose=null;fo
 function autoJoin(id){if(!QS||!id||QS.cast.includes(id)||!A_[id]||A_[id].dead)return;const list=castOf();
  if(list){if(!list.some(c=>c.id===id)){const c={id,x:-16,y:160+(list.length%3)*2,dir:1};list.push(c);mvc(c,20+(list.length%5)*12,700)}return}
  if(mode==='house'){const a=A_[id],cx=cam.x+160;if(a.floor!==S.floor||Math.abs(a.x-cx)>150){a.floor=S.floor;a.sit=false;a.sleep=false;a.x=clamp(cx+(Math.random()<.5?-150:150),20,WORLD-20);a.y=158;walk(a,clamp(cx+(a.x<cx?-40:40),20,WORLD-20),90)}}}
-{const _say=say;say=function(n,t){if(!FAST){if(n==='')try{autoStage(t)}catch(e){}else if(PALID[n])autoJoin(PALID[n])}return _say(n,t)}}
+
 {const _dm=drawMemory;drawMemory=function(){_dm();drawMemFX()}}
 {const _de=drawExt;drawExt=function(){_de();drawMemFX()}}
 function drawMemFX(){const list=castOf();if(list)for(const c of list){if(c.sway){c.sx??=c.x;c.x=c.sx+Math.sin(T*2.2)*2}else if(c.sx!=null){c.sx=null}
@@ -6458,6 +6458,51 @@ monsterDeath=async function(){const p=A_.you,team=livingFriends().map(id=>A_[id]
  await talk([['','It folds in on itself, arm by arm, until it’s a heap of blue jacket and too many knees in the middle of the carpet.'],['','Nobody moves. The rain on the windows is the only sound left in the house.']]);
  S.dark=.17;S.lights=true;SFX.power();await tw(view,{zoom:1,letter:0},900);};
 {const _sh=setupHunt;setupHunt=function(m){_sh(m);FXH.mini=null;FXH.bowl=null;FXH.rain=0;AI.lurkRun=null}}
+
+/* ================= PASS 25: nobody talks from nowhere; richer staging ================= */
+const N2I={};for(const [id,k] of Object.entries(K)){if(k&&k.n&&!N2I[k.n])N2I[k.n]=id}Object.assign(N2I,{Aidan:'aidan',Abby:'girl',Stella:'stella',You:'you','Dada-ji':'dada'});
+let PHONECALL=false;
+function speakerId(n){const base=n.replace(/ \(.*\)$/,'');if(/\(through Hasan\)|Hasan \(through/.test(n))return 'hasan';return PALID[base]||N2I[base]||null}
+function offstage(n,t){t=t||'';return PHONECALL||/^[“"]/.test(t)||/^\((on the phone|on speaker|through|from |the speakers|earpiece|on the tape|into|over|in the hedge|on the call|outside|back seat|still in the chair|from the floor)/i.test(t)||(mode==='memory'&&MEM&&(MEM.tape||MEM.kind==='y7'||MEM.car))}
+let VISIT=[];
+function bringIn(id,t){if(!id||offstage('',t))return;const list=castOf();
+ if(list){if(id==='aidan'&&(MEM&&MEM.aidan||(S.ext&&S.ext.aidan)))return;const h=list.find(c=>c.id===id);if(h){if(h.hidden){h.hidden=false;h.x=clamp(h.x,10,W-10)}return}
+  if(id==='you'&&mode==='memory'&&MEM.scene==='under'&&MEM.kind==='abby')return;const c={id,x:-16,y:158+(list.length%3)*2,dir:1};list.push(c);mvc(c,18+(list.length%6)*11,FAST?0:700);return}
+ if(mode!=='house'||!busy)return;const cx=cam.x+160;
+ if(A_[id]&&pals.includes(id)){const a=A_[id];if(a.dead)return;if(a.floor!==S.floor||Math.abs(a.x-cx)>150||a.vis===false){a.vis=true;a.floor=S.floor;a.sit=false;a.sleep=false;a.x=clamp(cx+(a.x<cx?-150:150),20,WORLD-20);a.y=158;walk(a,clamp(cx+(a.x<cx?-50:50)+(Math.random()-.5)*20,20,WORLD-20),95)}return}
+ if(id==='you')return;if(id==='aidan'){if(S.aidanIn||!QS||QS.key==='twins'||A_.aidanV)return;actor('aidanV',clamp(cx+60,20,WORLD-20),158,-1,{floor:S.floor,k:K.aidan});VISIT.push('aidanV');return}if(!K[id])return;
+ if(!A_[id]||A_[id].floor!==S.floor){actor(id,clamp(cx+70+VISIT.length*14,20,WORLD-20),158,-1,{floor:S.floor,ghost:id==='dada'});VISIT.push(id)}}
+function clearVisitors(){for(const id of VISIT)if(!pals.includes(id))delete A_[id];VISIT=[]}
+{const _say=say;say=function(n,t){try{if(n===''){if(!FAST)autoStage(t||'')}else bringIn(speakerId(n),t)}catch(e){}return _say(n,t)}}
+{const _run=run;run=async function(fn){try{return await _run(fn)}finally{clearVisitors()}}}
+{const _dk=drawKid;drawKid=function(k,x,y,o){if(k===K.dada){g.save();g.globalAlpha=.55+.15*Math.sin(T*3);const r=_dk(k,x,y-Math.sin(T*2)*2,o);g.restore();glow(Math.round(x),Math.round(y)-20,14,'rgba(150,190,255,.25)');return r}
+ if(o&&o.lie&&!o.deadFace){g.save();g.translate(Math.round(x),Math.round(y)-3);g.rotate(Math.PI/2*(o.lie<0?-1:1));const r=_dk(k,0,0,Object.assign({},o,{lie:0}));g.restore();return r}return _dk(k,x,y,o)}}
+{const st=FRIEND_SCENES.stella;if(st){const o=st[1];st[1]=async(q,s)=>{PHONECALL=true;try{await o(q,s)}finally{PHONECALL=false}}}}
+{const o=ACTS.call[1];ACTS.call[1]=async()=>{PHONECALL=true;try{await o()}finally{PHONECALL=false}}}
+/* ---------- richer staging ---------- */
+{const _as=autoStage;autoStage=function(t){_as(t);const low=t.toLowerCase(),s=subjectsFor(t);if(!s.length)return;const [a,b]=s,inMem=!!castOf();
+ const set=(c,p)=>{if(c&&!c.pose){c.pose=p;AUTO.push({c,pose:p})}},bleed=(c,n)=>{if(!c)return;if(inMem)gush(c,n);else spurt(c.x,c.y-18,n,c.y)};
+ if(/\b(falls|fell|goes down|collapses|slumps|crumples|hits the floor|on the floor|goes over|drops to)\b/.test(low)&&a&&!/\bdrops (the|his|her|it|a)\b/.test(low)){a.lie=a.dir||1;SFX.smack()}
+ if(/\b(gets up|stands up|sits up|on (his|her) feet)\b/.test(low)&&a){a.lie=0;a.sit=false}
+ if(/\b(grabs|seizes|takes (him|her) by|chokes|strangles|by the collar|by the throat|fistful)\b/.test(low)&&a){set(a,'choke');if(b){b.shake=true;setTimeout(()=>b.shake=false,500);if(Math.abs(a.x-b.x)>16)tw(a,{x:b.x-(b.x>a.x?13:-13)},250)}}
+ if(/\bdrags?\b/.test(low)&&a&&b){set(a,'choke');tw(b,{x:b.x+(a.dir||1)*-30},900);tw(a,{x:a.x+(a.dir||1)*-30},900)}
+ if(/\b(stabs|knife goes in|scalpel|slashes)\b/.test(low)&&a){set(a,'stab');a.weapon=a.weapon||'#dfe6ea';a.punchT=T+.3;SFX.squelch();bleed(b,12)}
+ if(/\b(shoots|fires|gunshot|bang\b|pulls the trigger)/.test(low)&&a){set(a,'aim');a.punchT=T+.15;noise(.25,.9,1600,.5);S.shake=.5;bleed(b,10)}
+ if(/\b(throws|hurls|lobs|swings)\b/.test(low)&&a){set(a,'swing');a.punchT=T+.3;SFX.smack()}
+ if(/\b(kicks|stamps|stomps)\b/.test(low)&&a){set(a,'punch');a.punchT=T+.25;SFX.smack();S.shake=.3}
+ if(/\bpoints?\b/.test(low)&&a)set(a,'point');
+ if(/\b(waves|waving)\b/.test(low)&&a)set(a,'reach');
+ if(/\b(holds up|raises|arms up|hands up|cheers|celebrat)/.test(low)&&a)set(a,'up');
+ if(/\b(covers (his|her) face|hands over (his|her)|head in (his|her) hands|face in (his|her) hands)\b/.test(low)&&a)set(a,'cover');
+ if(/\b(eats|eating|bites into|chews|drinks|sips|cracks a can|gulp)/.test(low)&&a)set(a,'eat');
+ if(/\b(films|filming|records|recording|camera)\b/.test(low)&&a&&!a.phone){a.phone=1;AUTO.push({c:a,pose:'__p'})}
+ if(/\b(screams|shrieks|panics|terrified|backs away)\b/.test(low)&&a){a.scared=true;a.shake=true;setTimeout(()=>{a.shake=false},700)}
+ if(/\b(blood|bleeding|bleeds|split lip|nosebleed)\b/.test(low)&&a&&/(his|her|their) (nose|lip|face|arm|leg|ear)/.test(low))bleed(a,6);
+ if(/\b(runs at|charges|lunges)\b/.test(low)&&a&&b){tw(a,{x:b.x-(b.x>a.x?14:-14)},260)}
+ if(/\b(nods|shrugs)\b/.test(low)&&a){a.hopT=T+.4}
+ if(/\b(hands? (him|her|you) (the|a|his|her))\b/.test(low)&&a)set(a,'reach');
+ if(/\b(cries|crying|sobbing|tears)\b/.test(low)&&a)a.tears=T+5}}
+{const _dh=drawHouse;drawHouse=function(){for(const id of [...pals,...VISIT]){const a=A_[id];if(a&&a.hopT>T)a.y-=0}_dh()}}
 
 /* ================= THE LAMP TIMELINE (only when built as lamp.html) ================= */
 if(window.LAMP_TIMELINE){
