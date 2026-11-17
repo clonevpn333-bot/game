@@ -28,18 +28,20 @@ console.log('content:', JSON.stringify(info));
 // 1) every hook, many times, with everything it could want
 const res = await page.evaluate(async (RUNS) => {
   const out = { ran: 0, deaths: {}, outcomes: {}, errs: [] };
-  const ITEMS = ['video', 'ball', 'powder', 'spare', 'plan', 'tape', 'energy', 'key', 'padlock', 'swap', 'detention'];
+  const ITEMS = ['video', 'ball', 'powder', 'spare', 'plan', 'tape', 'energy', 'key', 'padlock', 'swap', 'detention', 'compass', 'chucks', 'extinguisher', 'soaker'];
   for (let hi = 0; hi < HS.HOOKS.length; hi++) {
     const h = HS.HOOKS[hi];
     for (let r = 0; r < RUNS; r++) {
       const D = HS.freshD();
       D.period = Array.isArray(h.period) ? h.period[0] : h.period; D.room = h.room;
       // a rich random state
-      for (const f of ['seat1', 'seat2', 'fight', 'stella1', 'corey1', 'swap', 'beep1', 'beepRig', 'loach1', 'detention', 'rewired', 'angelo1', 'dheva1', 'hold', 'padlock', 'bullied', 'aidanIncluded']) if (Math.random() < .6) D.f[f] = 1;
+      for (const f of ['seat1', 'seat2', 'fight', 'stella1', 'corey1', 'swap', 'beep1', 'beepRig', 'loach1', 'detention', 'rewired', 'angelo1', 'dheva1', 'hold', 'padlock', 'bullied', 'aidanIncluded', 'adam1', 'adam2', 'adamKind', 'tez1', 'ollie1', 'kay1']) if (Math.random() < .6) D.f[f] = 1;
       D.f.crowd = Math.random() < .5 ? 2 : 1;
       for (const it of ITEMS) if (Math.random() < .5) D.items.push(it);
       D.money = Math.floor(Math.random() * 6);
       if (h.mis === 'calling' && Math.random() < .3) D.f.aidanDead = 1;
+      if (Math.random() < .5) { D.done.instella = 1; D.done.corey = 'kiss'; }
+      if (Math.random() < .5) HS.P.coll.overdue = 1;
       HS.D = D;
       HS.P.intel.aidanPoem = 1; HS.P.intel.aidanJars = 1;
       try { HS.buildRoom(h.room); } catch (e) { out.errs.push('build ' + e); }
@@ -90,7 +92,8 @@ const auto = await page.evaluate(async (DAYS) => {
     if (ids.length && Math.random() < .85) { const id = ids[Math.floor(Math.random() * ids.length)]; HS.A.you.x = HS.A[id].x; log.push('  talk ' + id); HS.talkTo(id); continue; }
     const sp = HS.SPOTS.filter(s => s.room === D.room && (s.period == null || s.period === D.period || (Array.isArray(s.period) && s.period.includes(D.period))) && (!s.cond || s.cond()));
     if (sp.length && Math.random() < .5) { log.push('  spot ' + sp[0].label); HS.useSpot(sp[0]); continue; }
-    if (D.period === 7) { const bus = HS.SPOTS.find(s => s.label.startsWith('Get on')); HS.useSpot(bus); continue; }
+    if (D.period === 7) { if (Math.random() < .5) { const bus = HS.SPOTS.find(s => s.label.startsWith('Get on')); HS.useSpot(bus); } else HS.endPeriod(); continue; }
+    if (D.period === 8) { HS.boardBus(true); continue; }
     HS.endPeriod();
   }
   return { log: log.slice(-60), loops: HS.P.loops - startLoops, done: Object.keys(HS.P.done), parts: HS.P.parts, coll: Object.keys(HS.P.coll).length, guard };

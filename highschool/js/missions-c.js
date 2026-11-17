@@ -289,6 +289,7 @@ hook({mis:'calling',period:7,room:'bus',who:'aidan',label:'Ask Aidan about Frida
  if(A.hasan)await say('hasan','What’s he on about? What’s “keep the Friday”? Is that a TikTok thing?','shock');
  if(A.arjun)await say('arjun','He’s lost it. Finally. I called this in Year 7. I have it in writing.','smirk');
  await say('aidan','They don’t remember. Only you. You’re the only one who’s ever noticed.','sad');
+ if(P.intel.ollie)await say('aidan','Well. You and Ollie. He was the first. He told you, didn’t he. He told you it was lonely.','sad');
  fxState.red=0;
  const can=D.f.aidanIncluded&&!D.f.bullied;
  const c=await choose([{t:'“Sit with us on Monday.”',dis:!can,why:D.f.bullied?'not after what you did to him today':'he’s never been part of the group. Not once.',tag:'🤝'},{t:'“Omer. Do it.”',tag:'🔒'},{t:'“Then keep it. I’ll stay.”',tag:'🔁'}],'Everyone is looking at you.');

@@ -105,7 +105,14 @@ function drawHead(k,x,hy,d,o){
  else if(hs==='limp'){R(hx-1,hy-1,hw+2,3,c);R(hx-1,hy+2,2,9,c);R(hx+hw-1,hy+2,2,9,c);R(hx+2,hy+2,3,1,c)}
  else if(hs==='bald'){R(hx-1,hy+3,2,4,c);R(hx+hw-1,hy+3,2,4,c);R(hx+3,hy,4,1,'rgba(255,255,255,.35)')}
  else if(hs==='capr'){R(hx-1,hy-2,hw+2,4,'#c02a32');R(hx+1,hy-3,hw-2,1,'#c02a32');R(d>0?hx+hw-1:hx-4,hy+1,5,1,'#8a1a22');R(d>0?hx-1:hx+hw-1,hy+2,2,3,c);R(hx+4,hy-1,3,2,'#fff')}
+ else if(hs==='receding'){R(hx-1,hy+1,2,5,c);R(hx+hw-1,hy+1,2,5,c);R(hx+1,hy-1,3,2,c);R(hx+hw-4,hy-1,3,2,c);if(o.messy){R(hx-3,hy-3,2,4,c);R(hx+hw+1,hy-4,2,5,c);R(hx+5,hy-3,1,2,c);R(hx+1,hy-4,1,3,c)}}
+ else if(hs==='ponytail'){R(hx-1,hy-2,hw+2,4,c);R(hx-1,hy+2,2,3,c);R(hx+hw-1,hy+2,2,3,c);R(d>0?hx-4:hx+hw+1,hy+1,3,9,c);R(d>0?hx-3:hx+hw+1,hy,2,1,'#c03030');R(hx+3,hy-1,3,1,'rgba(255,255,255,.2)')}
+ else if(hs==='side'){R(hx-1,hy-2,hw+2,3,c);R(hx-1,hy+1,2,3,c);R(hx+hw-1,hy+1,2,3,c);R(hx+3,hy-2,1,2,'rgba(0,0,0,.3)');R(hx+4,hy+1,5,1,c)}
+ else if(hs==='buzz'){R(hx,hy-1,hw,2,c);R(hx+1,hy-2,hw-2,1,c);R(hx,hy+1,1,2,c);R(hx+hw-1,hy+1,1,2,c)}
+ else if(hs==='manbun'){R(hx-1,hy-2,hw+2,3,c);R(hx+3,hy-6,5,4,c);R(hx-1,hy+1,2,2,c);R(hx+hw-1,hy+1,2,2,c)}
  else if(hs==='net'){R(hx-1,hy-3,hw+2,5,c);for(let i=0;i<hw+2;i+=2)R(hx-1+i,hy-3,1,5,'rgba(255,255,255,.25)');R(hx-1,hy-1,hw+2,1,'rgba(90,90,120,.4)')}
+ if(k.tache)R(ex-3,ey+2,7,1,k.tacheC||k.hair);
+ if(k.beard){R(hx,hy+hd-5,2,4,k.hair);R(hx+hw-2,hy+hd-5,2,4,k.hair);R(hx+2,hy+hd-2,hw-4,2,k.hair)}
  if(k.glow&&Math.sin(T*1.7+1)>.92){R(x+8,hy-4,1,3,'#fff');R(x+7,hy-3,3,1,'#fff')}
 }
 
@@ -131,6 +138,9 @@ function drawKid(k,x,y,o){
  if(k.coat){R(bx-1,by,bw+2,bh+5,top);R(x+lean,by+3,1,bh+2,'#c8c6bc');R(bx-1,by+bh+4,bw+2,1,'#c8c6bc')}
  R(bx,by,bw,bh,top);R(d>0?bx:bx+bw-2,by,2,bh,'rgba(0,0,0,.2)');
  if(k.apron){R(bx+1,by+3,bw-2,bh+3,'#f2f0ea');R(bx+2,by+2,bw-4,1,'#f2f0ea')}
+ if(k.puffer){for(let i=2;i<bh;i+=3)R(bx,by+i,bw,1,'rgba(0,0,0,.28)');R(bx-1,by,bw+2,2,top)}
+ if(k.hivis){R(bx,by+3,bw,2,'#e8f040');R(bx,by+7,bw,1,'#e8f040')}
+ if(k.scarf){R(x+lean-3,by,7,2,'#d8a040');R(x+lean+2,by+2,2,5,'#d8a040')}
  if(k.cardigan){R(x+lean-1,by,2,bh,'rgba(0,0,0,.25)');R(x+lean-2,by+1,1,3,'#e8e2d0')}
  if(k.collar)R(x+lean-2,by,4,1,'#f4f4f4');
  if(k.hood){R(x+lean-2,by+1,1,3,'#e8e8e8');R(x+lean+1,by+1,1,3,'#e8e8e8')}
@@ -222,6 +232,8 @@ function drawHeld(it,x,y,d){
 function drawActor(a){
  const k=a.k;if(!k)return;
  if(a.alpha<1)g.globalAlpha=Math.max(0,a.alpha);
+ if(k.ghost)g.globalAlpha=Math.min(g.globalAlpha,.62+Math.sin(T*3+a.x)*.12);
+ let messy=false;if(k.adam){const L=adamLvl();messy=L>=3;if(!a.ex)a._ex=['happy','smirk','shock','smirk','yell','evil','shock','evil','sad'][L];if(L>=5)a.bloody=1}
  const y=Math.round(a.y-(a.z||0));
  if(a.dead||a.pose==='lie'){
   if(a.pool!=null&&P.set.gore){const w=a.pool;R(a.x-w/2,a.y-1,w,3,BLOOD[1]);R(a.x-w/2+2,a.y,w-4,1,BLOOD[2]);R(a.x-w*.3,a.y+2,w*.5,1,BLOOD[0])}
@@ -232,7 +244,7 @@ function drawActor(a){
   if(a.dead==='melt'){R(a.x-12,a.y-2,24,3,'#6aff8a55')}
   g.globalAlpha=1;return;
  }
- drawKid(k,a.x,y,{dir:a.dir,moving:a.moving,walk:a.walk,pose:a.pose,ex:a.ex,talk:a.talk,hold:a.hold,hurt:a.hurt,bloody:a.bloody,shake:a.shake,punchT:a.punchT,still:a.still,hs:a.hs||(a.id==='dheva'&&(typeof D!=="undefined"&&D)&&D.f&&!D.f.dhevaFixed?'limp':null)});
+ drawKid(k,a.x,y,{messy,dir:a.dir,moving:a.moving,walk:a.walk,pose:a.pose,ex:a.ex||a._ex,talk:a.talk,hold:a.hold,hurt:a.hurt,bloody:a.bloody,shake:a.shake,punchT:a.punchT,still:a.still,hs:a.hs||(a.id==='dheva'&&(typeof D!=="undefined"&&D)&&D.f&&!D.f.dhevaFixed?'limp':null)});
  if(a.z>2){g.globalAlpha=.25;R(a.x-5,a.y,10,1,'#000');}
  g.globalAlpha=1;
 }

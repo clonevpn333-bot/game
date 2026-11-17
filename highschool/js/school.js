@@ -10,8 +10,10 @@ const PERIODS=[
  {id:'lunch',name:'Lunch',time:'12:20',free:1,locs:['canteen','corridor','field','gym','library','maths','chem','toilets']},
  {id:'pe',name:'PE',time:'13:20',lesson:1,locs:['gym','field','toilets']},
  {id:'p3',name:'Period 3',time:'14:20',lesson:1,locs:['maths','science','gym','chem','office','library','toilets']},
- {id:'home',name:'Home Time',time:'15:15',free:1,locs:['bus']}
+ {id:'home',name:'Home Time',time:'15:15',free:1,locs:['bus']},
+ {id:'mall',name:'After School',time:'15:50',free:1,mall:1,locs:['foodcourt','arcade','carpark']}
 ];
+const ON_PERIOD=[];
 const TEACH={1:{english:'balduf',maths:'shermian',science:'loach'},3:{english:'balduf',maths:'shermian',science:'loach'},5:{gym:'coach'},6:{maths:'shermian',science:'loach',gym:'coach',chem:'voss',office:'sherman'}};
 /* Who is where. [id, x, dir, pose, y] */
 const ROSTER=[
@@ -86,7 +88,7 @@ function buildRoom(room){
  const lesson=TEACH[per]&&TEACH[per][room];
  for(const [id,x,dir,ps,y] of rosterFor(per,room)){
   if(D.dead[id]&&!(id==='aidan'&&per===7))continue;
-  if(id==='aidan'&&D.f.aidanDead&&per<7)continue;
+  if(id==='aidan'&&D.f.aidanDead&&per!==7)continue;
   if(lesson&&id!==lesson)continue;
   put(id,x,dir,{pose:ps||null,y:y||(ps==='sit'?150:146)});
  }
@@ -161,12 +163,13 @@ async function startPeriod(i,resume){
  D.period=i;D.room=null;P.cur=JSON.parse(JSON.stringify(D));save();
  const p=PERIODS[i];closeOverlays();setHud(true);
  if(!resume){SFX.bell();await card(p.name.toUpperCase(),'FRIDAY · '+p.time+(i===0?'  ·  DAY '+D.day:''),1500)}
+ for(const f of ON_PERIOD)await f(i,resume);
  if(i===0)return enterRoom('bus');
  if(i===7)return enterRoom('bus');
  openMap(true);
 }
 async function endPeriod(){
- if(D.period>=7)return;
+ if(D.period>=PERIODS.length-1)return;
  return startPeriod(D.period+1);
 }
 async function newDay(died){
@@ -176,11 +179,12 @@ async function newDay(died){
  await dayIntro(died);
  return startPeriod(0);
 }
-async function boardBus(){
- setPanel('talk');busy=true;
+async function boardBus(fromMall){
+ setPanel('talk');busy=true;closeOverlays();
  cue('sad');
- await N('The 43 pulls in. You get on. You sit where you always sit.');
+ await N(fromMall?'The mall lights go off one shop at a time. You get the last 43 home. You sit where you always sit.':'The 43 pulls in. You get on. You sit where you always sit.');
  if(Object.keys(D.done).length)await N('Today you: '+Object.keys(D.done).map(m=>MIS[m].name).join(', ')+'.');
+ if(!D.done.headcase&&D.period>=7)await N('Somewhere behind you, back at school, something goes BANG. Nobody on the bus looks up. Nobody ever does.');
  await N('Somewhere around the roundabout you close your eyes for one second.');
  fxState.dark=0;await tw(fxState,{dark:1},900);
  await card('FRIDAY','AGAIN',1600);
@@ -341,6 +345,8 @@ function openMap(forced){
   b.onclick=()=>{audio();SFX.door();o.hidden=true;enterRoom(r)};
   grid.appendChild(b);
  }
+ if(D.period===7){const m=document.createElement('button');m.className='loc';m.innerHTML='<b>Walk to Fair City Mall</b><span>Everyone goes to the mall after school. Some of them have things to say.</span>';m.onclick=()=>{o.hidden=true;endPeriod()};grid.appendChild(m)}
+ if(D.period===8){const m=document.createElement('button');m.className='loc';m.innerHTML='<b>Get the last 43 home</b><span>End the day.</span>';m.onclick=()=>{o.hidden=true;busy=true;boardBus(true)};grid.appendChild(m)}
  if(D.period<7){const w=document.createElement('button');w.className='loc';w.innerHTML='<b>Wait for the bell</b><span>Skip to '+(PERIODS[D.period+1]||{name:''}).name+'.</span>';w.onclick=()=>{o.hidden=true;endPeriod()};grid.appendChild(w)}
 }
 

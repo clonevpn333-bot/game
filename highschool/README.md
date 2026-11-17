@@ -11,9 +11,13 @@ S skip (or hold Ctrl) · Esc settings. Touch: on-screen ◀ ▶ / TALK / MAP, ta
 
 ## What's in it
 
-- **The day:** Before School → Period 1 → Break → Period 2 → Lunch → PE → Period 3 → Home Time.
+- **The day:** Before School → Period 1 → Break → Period 2 → Lunch → PE → Period 3 → Home Time →
+  After School at **Fair City Mall** (food court, arcade, roof car park).
   Each period you pick where to go. A mission scene ends the period, and dying restarts the day.
-- **17 missions** (most in parts across the day), **13 deaths**, **12 collectibles**, **4 endings**,
+- **Mr. Adam**, the headteacher, loses his mind a little more every period: PA announcements, bursting
+  into lessons, digging holes on the field, and a bomb at the bus loop at home time. Everyone talks about it.
+- **Every lesson goes wrong:** random chaos, teachers killing kids in the background, Mr. Adam interruptions.
+- **29 missions** (most in parts across the day), **17 deaths**, **16 collectibles**, **4 endings**,
   friendship bonds, cross-loop memories, and a curtain call.
   - *Aidan's Bad Day:* Ms. Balduf's English with Hasan, Corey and Aidan → show Omer the video →
     the fight at the lockers, with the whole school chanting and filming.
@@ -23,13 +27,18 @@ S skip (or hold Ctrl) · Esc settings. Touch: on-screen ◀ ▶ / TALK / MAP, ta
   - *In Person* (Sean & Stella), *Corey Gets It* (Corey & Abby, PE).
   - New kids: *Locker 13* (Angelo), *Hat-Trick* (Alex), *Texture* (Dheva),
     *Good Morning, Highgate* (Marcus), *Royal Rumble* (Paul), *Buzzer Beater* (Kenneth), *Pushed* (Jacob).
+  - *Head Case* (Mr. Adam's bomb), *Bake Off* (Mrs. Kettle, Food Tech), *Method* (Mr. Pratt, Drama).
+  - Made-up students: *The Armoury* (Tez, 21, still in Year 11, sells weaponised stationery that changes
+    how some deaths go), *Register* (Ollie, the Year 7 from 1987 nobody else can see), *Opps* (Kayden's
+    four-foot-eleven "gang" and a Super Soaker drive-by at the mall).
+  - At the mall: *Arjun, Alone* · *Hasan's Shot* · *Strike Two* · *Small Hours* · *Omer's Mum* · *Pushed Around*.
   - *The Calling:* the finale at home time, once you know why Friday keeps happening.
 
 ## Files
 
 `js/engine.js` (canvas, audio/music, dialogue, stage, mini-games) · `js/art.js` (sprites, poses,
 faces, gore) · `js/rooms.js` (12 backgrounds) · `js/school.js` (periods, roster, map, quest log,
-settings, curtain call) · `js/missions-*.js` (all the content).
+settings, curtain call) · `js/missions-*.js` (all the content; `missions-d.js` has Mr. Adam, the new classes and the mall rooms).
 
 `node tools/test.mjs [runsPerScene] [days]` runs every mission scene with random choices and
 autoplays whole days in headless Chromium, failing on any error.

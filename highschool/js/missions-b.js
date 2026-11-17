@@ -330,7 +330,7 @@ hook({mis:'beep',period:6,room:'gym',who:'auto',run:async()=>{
   if(A.kenneth){await walk('kenneth',160,60);SFX.click();await N('Kenneth turns it off.');await say('kenneth','Pain is weakness leaving the body. Rest in peace, sir. You were so weak.')}
   await complete('beep','coach');return;
  }
- const n=await rhythm('Beep test: step on every beep',{n:9,gap:has('energy')?1:.85,window:has('energy')?.26:.19});
+ let n=await rhythm('Beep test: step on every beep',{n:9,gap:has('energy')?1:.85,window:has('energy')?.26:.19});
  if(has('energy'))take('energy');
  if(A.angelo){
   await N('On level six, Angelo stops to sell someone a Twix.');
@@ -339,6 +339,16 @@ hook({mis:'beep',period:6,room:'gym',who:'auto',run:async()=>{
   blood(A.angelo.x,A.angelo.y-20,40,1,100,A.angelo.y+2);kill('angelo','lie',{pool:30});
   pose('coach',null);
   await say('angelo','(dying) …No refunds…','dead');
+ }
+ if(n<6&&has('chucks')){
+  await N('Your legs stop. The beep doesn’t.');
+  await say('coach','CUT.','evil');
+  await walk('coach',A.you.x-14,160);pose('coach','slam');pose('you','up');SFX.smack();SFX.smack();shake(.8);
+  await N('The cleaver comes down. You catch it between two thirty-centimetre rulers and a shoelace. It holds.');
+  pose('coach',null);pose('you',null);
+  await say('coach','…Ruler-chucks. I haven’t seen ruler-chucks since ’94.','shock');
+  await say('coach','You pass. Don’t tell anyone. Respect is weakness leaving the body.','smirk');
+  take('chucks');n=6;
  }
  if(n<6){
   await N('Your legs stop. The beep doesn’t.');
@@ -407,7 +417,8 @@ hook({mis:'voss',period:6,room:'chem',who:'auto',cond:()=>has('key'),run:async()
  pose('voss','choke');A.you.ex='scared';
  await walk('voss',230,60);A.you.x=244;
  const has_=has('spare')||has('powder');
- const c=await choose([{t:'Throw texture powder in his eyes.',dis:!has_,why:'you need powder',tag:'💇'},{t:'Bite his hand.'},{t:'Scream for David.'}],'He’s lifting you over the vat.');
+ const c=await choose([{t:'Throw texture powder in his eyes.',dis:!has_,why:'you need powder',tag:'💇'},{t:'Bite his hand.'},{t:'Scream for David.'},{t:'Stab him with the compass shiv.',dis:!has('compass'),why:'Tez sells those',tag:'🗡️'}],'He’s lifting you over the vat.');
+ if(c===3){take('compass');pose('you','punch');A.you.punchT=T+.4;SFX.squelch();blood(A.voss.x,A.voss.y-20,30,1,80,A.voss.y+2);await say('voss','You… STABBED me. With GEOMETRY.','yell');pose('voss',null);A.voss.shake=1;await walk('voss',266,60);SFX.squelch();SFX.fire();await tw(A.voss,{y:128},300);prop({t:'smoke',x:268,y:114});SFX.scream();await tw(A.voss,{alpha:0},1200);A.voss.vis=false;D.dead.voss=1;P.stats.kills++;await N('He staggers back into his own vat clutching a compass. Tez is going to want a review.');if(A.nivaan)await say('nivaan','Chat says “Pythagoras would be proud”.','happy');await complete('voss');return}
  if(c===0){
   take('spare');take('powder');pose('you','throw');
   for(let i=0;i<14;i++)parts.push({x:A.voss.x,y:A.voss.y-24,vx:rand(-20,20),vy:rand(-30,0),c:'#e8e8e8',s:1,fy:150,life:1});
@@ -458,8 +469,9 @@ hook({mis:'angelo',period:2,room:'canteen',who:'marcus',label:'Get Marcus to dis
  await say('pat','…They’re iced buns, love.');
  await say('marcus','I know.','smirk');
  await say('pat','(blushing, hitting him with a tea towel) Oh, STOP it.','blush');
- const c=await choose(['Sneak round her LEFT side.','Sneak round her RIGHT side.','Just grab the tray and run.']);
- if(c!==0){
+ const c=await choose([{t:'Sneak round her LEFT side.'},{t:'Sneak round her RIGHT side.'},{t:'Just grab the tray and run.'},{t:'Blast her with the fire extinguisher.',dis:!has('extinguisher'),why:'Tez sells those',tag:'🧯'}]);
+ if(c===3){take('extinguisher');pose('you','hold');SFX.whoosh();for(let i=0;i<30;i++)parts.push({x:A.you.x-8,y:A.you.y-22,vx:rand(-90,-30),vy:rand(-20,10),c:'#e8f0ff',s:2,fy:150,life:1});await say('pat','I CAN’T SEE. I can’t see out of my GOOD eye!','yell');pose('you',null)}
+ if(c===1||c===2){
   if(c===1){await walk('you',118,60);await N('She turns her good eye. It lands on you like a searchlight.')}
   else{await walk('you',100,120);await N('You grab the tray. Pat doesn’t shout. Pat doesn’t do anything at all, for one second.')}
   await evil('pat','evil');
