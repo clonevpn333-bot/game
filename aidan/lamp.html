@@ -2746,6 +2746,7 @@ async function sleepover(){
  await walk(AI,bedX(3)+17,20);await pan(AI.x,600);AI.y=166;AI.sleep=true;SFX.blip(90);await wait(1200);
  await tw(view,{fade:1},1200);await card('3:33 AM','',2200);cue('call');await tw(view,{fade:0},900);
  you.awake=true;await N('You wake up and you don’t know why.');you.sleep=false;you.sit=true;you.facing='right';
+ Object.assign(ga,{floor:1,vis:true,sleep:false,sit:true,zzz:true,pose:null,lie:0,x:DOOR-14,dir:1});
  await pan(DOOR-40,800);await N(K[guard].n+' is asleep by the door, with different hair. The chair is against the wall. The door is open.');
  await choose(['Count the sleeping bags.']);
  await pan(bedX(0),700);view.focus=bedX(0);view.focusY=150;await tw(view,{zoom:1.5,letter:1},500);
@@ -3961,7 +3962,7 @@ async function ziggyTaken(){
  const you=A_.you,omer=A_.omer;
  await N('A collar jingles behind you. Ziggy lifts his head from the end of David’s sleeping bag.');z.sleep=false;
  await say('From downstairs','Ziggy. Here, boy.');
- await say('You','David?');await N('David is still asleep. The voice came from below the stairs.');
+ await say('You','David?');if(!A_.david.dead)Object.assign(A_.david,{sleep:true,zzz:true,pose:null,phone:0});await N('David is still asleep. The voice came from below the stairs.');
  z.moving=true;await tw(z,{x:stairX,y:160},2000);z.floor=-1;z.moving=false;
  await exchange([['you','Ziggy, wait. Omer—watch the door. I’m getting him.'],['omer','What? Okay. I’m awake. Bring him straight back.']]);omer.sleep=false;omer.awake=true;
  await marchTo(you,0,712);S.floor=0;await cameraOn(720,1.15);
@@ -5435,6 +5436,7 @@ async function curlKill(){
 {const _sp=stagePlay;stagePlay=async function(p,o){if(['r2','late','winddown'].includes(p))await curlKill();return _sp(p,o)}}
 {const _al=allergens;allergens=async function(){if(CURLED())await curlKill();return _al()}}
 CHAOS.curls={x:447,f:0,t:'Corey has fallen asleep on the sofa. Arjun has just plugged in the straighteners.',ok:()=>!A_.corey.dead&&!CURLED(),go:async()=>{
+ {const co=A_.corey,ar=A_.arjun;Object.assign(co,{floor:0,vis:true,x:447,y:147,sit:false,lie:1,zzz:true,pose:null,phone:0,tx:null});if(!ar.dead)Object.assign(ar,{floor:0,vis:true,x:464,y:158,dir:-1,sit:false,pose:'crouch',weapon:'#c23b3b',tx:null})}
  await talk([['','Corey is asleep on the sofa, perfectly. Even asleep, the curls are doing something. Arjun is crouched over him with your sister’s straighteners, glowing at 230 degrees.'],['Arjun','One section. ONE. Just to see what he looks like as a mortal.'],['Omer','I am formally objecting.'],['Arjun','Objection noted. And ignored.']]);
  const c=await choose(['Do it yourself. One section.','Let Arjun do it.','Wake Corey up.']);
  if(c===2){await say('Corey','…Why is everyone standing over me. Why do I smell hot metal. ARJUN.');return}
@@ -7938,6 +7940,8 @@ function seanToShower(){const se=A_.sean;if(!se||se.dead)return;Object.assign(se
   const near=Math.min(...['arjun','corey'].map(i=>A_[i].x));await walk(se,Math.max(near+40,770),60);se.phone=1;try{await p1(q,s)}finally{K.sean.towel=false;se.phone=0}}}
 {const _pk=paceOK;paceOK=function(key,st){if(key==='triple'&&st.step===1)return true;return _pk(key,st)}}
 
+/* PASS 45b: wake Corey after the curls event */
+{const _cg=CHAOS.curls.go;CHAOS.curls.go=async function(){try{return await _cg()}finally{const co=A_.corey,ar=A_.arjun;co.lie=0;co.zzz=false;co.y=158;if(ar&&ar.pose==='crouch'){ar.pose=null;ar.weapon=null}}}}
 /* ================= THE LAMP TIMELINE (only when built as lamp.html) ================= */
 if(window.LAMP_TIMELINE){
  findCoreyPhoto=async function(){if(coreyPhotoFound())return;S.secret=2;socialState().hidden.photo=true;SFX.pick();socialSave();
