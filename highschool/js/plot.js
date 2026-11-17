@@ -9,7 +9,7 @@ const crew=()=>{P.crew=P.crew||{};P.crew.ev=P.crew.ev||{};return P.crew};
 const cut=id=>(window.EDITION_CUT||[]).includes(id);
 const alive=ids=>ids.filter(n=>K[n]&&!cut(n)&&!(D&&D.dead[n]));
 function evidence(id,label){const c=crew();if(c.ev[id])return;c.ev[id]=1;save();SFX.ding();toast('🗂️ Evidence for THE FILE: '+label+' ('+crewEvidence()+')')}
-function crewEvidence(){const c=crew();return['retainer','jars','register','boiler','rota'].filter(k=>c.ev[k]).length+(P.intel.shermianList?1:0)}
+function crewEvidence(){const c=crew();return['retainer','jars','register','boiler','rota','notebook','footage','confession'].filter(k=>c.ev[k]).length+(P.intel.shermianList?1:0)}
 Object.assign(INTEL,{crewRota:'Pat gave the crew the staff rota for Inspection Day.'});
 K.insp1={n:'Inspector Hale',col:'#4a4a5a',skin:'#e0c0a0',hair:'#6a6a6a',hs:'short',top:'#2a2a33',pants:'#2a2a33',tie:1,adult:1,seed:81,v:200};
 K.insp2={n:'Inspector Okafor',col:'#4a4a5a',skin:'#7a5034',hair:'#1a1412',hs:'bun',top:'#3a3a48',pants:'#3a3a48',skirt:1,adult:1,girl:1,seed:82,v:330};
@@ -288,7 +288,7 @@ async function inspectionDay(){
  if(A.kenneth)await say('kenneth','(at the projector, typing very fast) The File is up. Everyone look at the wall.','smirk');
  if(A.nivaan)await say('nivaan','(phone up) We’re live. Three thousand people watching. Chat, say hi to the inspectors.','happy');
  const ev=c.ev;
- const shown=[];if(ev.retainer)shown.push('Tyler’s retainer, with blood on the wire, from Ms. Shermian’s bin');if(ev.jars)shown.push('Mr. Voss’s fridge: fourteen jars labelled AIDAN, and one labelled TYLER');if(P.intel.shermianList)shown.push('Ms. Shermian’s list: NOT PASSING, with names crossed out');if(ev.register)shown.push('the 1987 detention register: four names, crossed out in red');if(ev.boiler)shown.push('four names scratched into the boiler-room wall');if(ev.rota)shown.push('the staff rota, with a little skull next to Ms. Shermian');
+ const shown=[];if(ev.retainer)shown.push('Tyler’s retainer, with blood on the wire, from Ms. Shermian’s bin');if(ev.jars)shown.push('Mr. Voss’s fridge: fourteen jars labelled AIDAN, and one labelled TYLER');if(P.intel.shermianList)shown.push('Ms. Shermian’s list: NOT PASSING, with names crossed out');if(ev.register)shown.push('the 1987 detention register: four names, crossed out in red');if(ev.boiler)shown.push('four names scratched into the boiler-room wall');if(ev.notebook)shown.push('Tyler’s notebook: “if I tell anyone she says I get a seat in her drawer”');if(ev.footage)shown.push('night camera footage: Mr. Voss wheeling a laundry cart into the chem lab at 3 a.m., and every teacher in the building sitting in the dark, not moving');if(ev.confession)shown.push(c.adamNamed?'a voice memo: Mr. Adam, crying, telling the whole story of 1987':'a voice memo: an anonymous adult, crying, telling the whole story of 1987');if(ev.rota)shown.push('the staff rota, with a little skull next to Ms. Shermian');
  if(!shown.length)shown.push('a slideshow that is mostly memes, because the File is nearly empty');
  for(const s of shown){SFX.click();await N('Click. On the wall: '+s+'.')}
  if(ev.boiler){await say('you','(standing up) Ollie Finch. Raj Patel. Danny Mason. Louise Okafor. March 13, 1987. They were in detention in the boiler room. Ms. Sherman left them there.');
@@ -312,7 +312,8 @@ async function inspectionDay(){
   score++;
   await N('He puts the jar down in front of Inspector Okafor. She looks at it. She looks at the name. She looks at Aidan, standing right there, alive. You can watch her brain fall over.');
  }
- if(score>=6){
+ if(c.adamNamed&&A.adam){score++;await say('adam','(into the microphone, steady for the first time in two weeks) It’s me on that recording. Everything on it is true. I was there in 1987. I was supposed to be in that room.','sad')}
+ if(score>=8){
   c.finale='exposed';save();
   await say('insp2','(standing, very calm) Nobody leaves this hall. Mr. Hale, call the state police. And then call everybody else.','angry');
   if(A.shermian){
