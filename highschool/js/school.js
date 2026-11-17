@@ -426,6 +426,7 @@ function openSettings(){
  row('Voice blips','voice',[0,1],['Off','On']);
  row('Screen shake','shake',[0,1],['Off','On']);
  row('Gore','gore',[0,1],['Less','Full']);
+ row('Lighting & shadows','light',[0,1],['Off','On']);
  row('Skip button skips','skipAll',[0,1],['Read text only','Everything']);
  const act=o.querySelector('.actions');
  const btn=(t,f,alt)=>{const b=document.createElement('button');b.className='mb'+(alt?' alt':'');b.textContent=t;b.onclick=f;act.appendChild(b)};

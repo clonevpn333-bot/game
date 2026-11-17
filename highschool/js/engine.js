@@ -14,7 +14,7 @@ let T=0;                                   // game clock (seconds, scaled by spe
 
 /* ---------------- persistent save ---------------- */
 const SAVE_KEY='highschool_v1';
-const DEFAULT_SET={text:2,auto:2,music:.7,sfx:.8,voice:1,shake:1,gore:1,skipAll:0};
+const DEFAULT_SET={text:2,auto:2,music:.7,sfx:.8,voice:1,shake:1,gore:1,skipAll:0,light:1};
 let P;
 function freshP(){return{v:1,loops:0,intel:{},done:{},parts:{},coll:{},deaths:{},endings:{},bond:{},seen:[],set:Object.assign({},DEFAULT_SET),cur:null,best:{},stats:{deaths:0,kills:0}}}
 function loadP(){P=freshP();try{const s=JSON.parse(localStorage.getItem(SAVE_KEY));if(s&&s.v===1){P=Object.assign(P,s);P.set=Object.assign({},DEFAULT_SET,s.set||{})}}catch(e){}SEEN=new Set(P.seen)}
@@ -445,6 +445,7 @@ function draw(){
  if(window.drawCrowdFront&&crowd)drawCrowdFront(crowd);
  for(const p of parts)R(p.x,p.y,p.s,p.s,p.c);
  if(room&&room.over)room.over();
+ if(typeof drawLighting==='function')drawLighting();
  if(fxState.romance>0){g.globalAlpha=fxState.romance*.22;R(0,0,W,H,'#ff8fb8');g.globalAlpha=1;drawPetals(fxState.romance)}
  if(fxState.red>0){g.globalAlpha=fxState.red*.16;R(0,0,W,H,'#2a0a12');g.globalAlpha=fxState.red*.5;R(0,0,W,6,'#000');R(0,H-6,W,6,'#000');R(0,0,8,H,'#000');R(W-8,0,8,H,'#000');g.globalAlpha=1}
  if(fxState.dark>0){g.globalAlpha=fxState.dark;R(0,0,W,H,'#05040a');g.globalAlpha=1}
