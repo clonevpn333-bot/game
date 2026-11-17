@@ -4439,10 +4439,10 @@ function bossAudio(dt){
   if(r>.85){tone(60,2.2,'sawtooth',.13*vol,34);tone(610,1.6,'triangle',.06*vol,240,.4);if(S.subT<=0)sub(near?'Two voices. The big one groans. The little one in his chest finishes the sentence.':'Through the '+(S.floor?'floor':'ceiling')+': something heavy, and something small humming along.')}}
 }
 /* ---------- twists: every night plays differently ---------- */
-const TWIST={none:['A NORMAL NIGHT',''],blackout:['BLACKOUT','The power’s been out since nine. Torches only.'],tipsy:['SPIKED','Somebody did something to the squash. Everyone’s a bit off.'],sugar:['SUGAR RUSH','David brought the blue sweets. You’re all faster. He’s tougher.'],storm:['THE STORM','It’s right on top of the house. You can’t trust the lights.']};
+const TWIST={none:['A NORMAL NIGHT',''],blackout:['BLACKOUT','The power’s been out since nine. Torches only.'],tipsy:['SPIKED','Somebody did something to the squash. Don’t drink the squash.'],sugar:['SUGAR RUSH','David brought the blue sweets. You’re all faster. He’s tougher.'],storm:['THE STORM','It’s right on top of the house. You can’t trust the lights.']};
 const twist=()=>store.run.twist||'none';
 {const _t=title;title=async function(){const ch=await _t();for(const id of pals)K[id].beat=K[id].bloody=K[id].wrap=K[id].melt=0;K.david.glasses=1;STREAM.on=false;
- if(ch===0){store.nights=(store.nights||0)+1;store.run.twist=store.nights===1?'none':one(Object.keys(TWIST).filter(k=>k!=='none'&&k!==store.lastTwist));store.lastTwist=store.run.twist;if(twist()==='tipsy')store.run.drunk=1;save();
+ if(ch===0){store.nights=(store.nights||0)+1;store.run.twist=store.nights===1?'none':one(Object.keys(TWIST).filter(k=>k!=='none'&&k!==store.lastTwist));store.lastTwist=store.run.twist;if(twist()==='tipsy')store.run.spiked=true;save();
   }return ch}}
 {const _fm=floorMove;floorMove=function(a,dt,sp){_fm(a,dt,(sp||74)*(twist()==='sugar'?1.28:1))}}
 {const _sh=setupHunt;setupHunt=function(m){_sh(m);if(twist()==='sugar'&&m)S.monsterHP=18;S.errand=null}}
@@ -4724,7 +4724,7 @@ const GOALS={clean:['Get all seven friends out alive.',(r,n)=>n===7],solo:['Be t
   store.run.stories=shuffle(keys).sort((a,b)=>(seen[a]||0)-(seen[b]||0)).slice(0,3);for(const k of store.run.stories)seen[k]=(seen[k]||0)+1;
   store.run.goals=shuffle(Object.keys(GOALS)).slice(0,3);save();
   
-  if(Object.keys(store.medals||{}).length>=4&&!(await choose(['Pick tonight’s twist yourself.','Keep it: '+TWIST[twist()][0]]))){const ks=Object.keys(TWIST);store.run.twist=ks[await choose(ks.map(k=>TWIST[k][0]))];if(twist()==='tipsy')store.run.drunk=1;save()}}return ch}}
+  if(Object.keys(store.medals||{}).length>=4&&!(await choose(['Pick tonight’s twist yourself.','Keep it: '+TWIST[twist()][0]]))){const ks=Object.keys(TWIST);store.run.twist=ks[await choose(ks.map(k=>TWIST[k][0]))];if(twist()==='tipsy')store.run.spiked=true;save()}}return ch}}
 {const _sp=stagePlay;stagePlay=function(p,o){S.brk=(S.brk|0)+1;return _sp(p,o)}}
 {const _sh=setupHunt;setupHunt=function(m){_sh(m);const r=store.run;if(!m&&(r.diary||r.ambush))S.hp=Math.min(S.hp,2);if(m&&r.plush)S.monsterHP=Math.max(6,S.monsterHP-4)}}
 {const _th=things;things=function(){const l=_th();if(store.run.tunnel&&S.aidanIn&&!S.floor&&!S.hiddenAt&&!S.errand)l.push(hide(85,'Omer’s bunker'));return l}}
@@ -7942,6 +7942,12 @@ function seanToShower(){const se=A_.sean;if(!se||se.dead)return;Object.assign(se
 
 /* PASS 45b: wake Corey after the curls event */
 {const _cg=CHAOS.curls.go;CHAOS.curls.go=async function(){try{return await _cg()}finally{const co=A_.corey,ar=A_.arjun;co.lie=0;co.zzz=false;co.y=158;if(ar&&ar.pose==='crouch'){ar.pose=null;ar.weapon=null}}}}
+/* ================= PASS 46: the spiked squash is a choice, not a curse ================= */
+if(store.run&&store.run.twist==='tipsy'&&store.run.drunk===1&&!store.run.drunkPal&&!store.run.drankSquash){store.run.drunk=0;store.run.spiked=true;save()}
+{const _th=things;things=function(){const l=_th();const r=store.run||{};if(r.spiked&&!r.drankSquash&&!r.squashGone&&S.floor===0&&!S.aidanIn&&!busy)l.push({x:252,priority:3,label:'Look at the jug of squash (it might be spiked)',act:()=>run(async()=>{
+ await N('A jug of orange squash on the counter. It smells of orange and of something that is definitely not orange.');const c=await choose(['Drink it anyway.','Pour it down the sink.']);
+ if(c===0){r.drankSquash=true;r.drunk=Math.max(drunk(),1);save();SFX.blip(220);await tk([['','It tastes of squash, then of a petrol station, then of nothing at all. The room tilts a polite three degrees.'],['You','…Oh. Oh, that’s spiked.']])}
+ else{r.squashGone=true;save();await tk([['','You pour it down the sink. The sink makes a noise like it’s been through something.']])}})});return l}}
 /* ================= THE LAMP TIMELINE (only when built as lamp.html) ================= */
 if(window.LAMP_TIMELINE){
  findCoreyPhoto=async function(){if(coreyPhotoFound())return;S.secret=2;socialState().hidden.photo=true;SFX.pick();socialSave();
