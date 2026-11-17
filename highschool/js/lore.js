@@ -16,8 +16,8 @@
    ===================================================================== */
 const LORE={
  poem:{title:'Ode to Omer',text:'Aidan’s poem ends: “And every Friday is the same Friday.” When he read it, the clock over the door went backwards. Nobody else noticed.',hint:'Period 1, English.'},
- again:{title:'Page forty-seven',text:'In the margin of the science textbook, page 47, in old biro: “again again again again”. Underneath, in a different hand: “me too”. Under that: “1987”.',hint:'Actually read page forty-seven.'},
- kit:{title:'Lost property',text:'The oldest PE kit in lost property has a name tag: O. FINCH, 7F. The shorts are from 1987. They’re still folded.',hint:'Forget your PE kit.'},
+ again:{title:'Page forty-seven',text:'In the margin of the science textbook, page 47, in old ballpoint: “again again again again”. Underneath, in a different hand: “me too”. Under that: “1987”.',hint:'Actually read page forty-seven.'},
+ kit:{title:'Lost property',text:'The oldest gym clothes in lost property has a name tag: O. FINCH, 7F. The shorts are from 1987. They’re still folded.',hint:'Forget your gym clothes.'},
  mugring:{title:'The ring on the desk',text:'Ms. Loach’s mug has worn a perfect ring into her desk. You’d have to put it down in the same place ten thousand times to do that. Maybe she has.',hint:'Push Ms. Loach as far as she’ll go.'},
  jars:{title:'Fourteen jars',text:'Mr. Voss keeps fourteen jars labelled AIDAN. The oldest label is yellow and dated 13/3/87. Aidan wasn’t born in 1987.',hint:'Open the back fridge.'},
  ollie:{title:'Ollie Finch, 7F',text:'Ollie signed out “How to Be Brave” on 13 March 1987. Ms. Sherman told him to bring it to detention. He’s been in Friday ever since.',hint:'Someone in the library needs his book back.'},
@@ -64,9 +64,9 @@ spot({room:'library',x:290,y:150,label:'Look through the old newspapers',short:'
    SATURDAY — the secret ending
    ================================================================= */
 Object.assign(K,{
- ghost1:Object.assign({},K.kid1,{n:'Year 7, 1987',ghost:1,top:'#4a5a7a',hair:'#5a3a22',hs:'side',seed:61}),
- ghost2:Object.assign({},K.kid3,{n:'Year 7, 1987',ghost:1,top:'#4a5a7a',seed:62}),
- ghost3:Object.assign({},K.kid2,{n:'Year 7, 1987',ghost:1,top:'#4a5a7a',hs:'short',seed:63})
+ ghost1:Object.assign({},K.kid1,{n:'6th Grader, 1987',ghost:1,top:'#4a5a7a',hair:'#5a3a22',hs:'side',seed:61}),
+ ghost2:Object.assign({},K.kid3,{n:'6th Grader, 1987',ghost:1,top:'#4a5a7a',seed:62}),
+ ghost3:Object.assign({},K.kid2,{n:'6th Grader, 1987',ghost:1,top:'#4a5a7a',hs:'short',seed:63})
 });
 ENDINGS.saturday={name:'Saturday',desc:'You said what happened in 1987, out loud, in front of everyone. The building finally let go.',hint:'Find every page of the Highgate Archive. Then talk to Aidan at home time.'};
 hook({mis:'calling',period:7,room:'bus',who:'aidan',label:'“I know what happened in 1987.”',cond:()=>!D.f.aidanDead&&loreCount()>=Object.keys(LORE).length,look:{ex:'sad'},run:async()=>{
@@ -75,12 +75,12 @@ hook({mis:'calling',period:7,room:'bus',who:'aidan',label:'“I know what happen
  scene('bus',cast);cue('sad');
  await say('you','I know what happened in 1987.');
  await say('aidan','…Nobody knows what happened in 1987. That’s the whole point. That’s why it keeps happening.','sad');
- await say('you','Friday the thirteenth of March. Detention in the boiler room, because Ms. Sherman’s office was being painted. Four Year Sevens. She told them to wait and went to get a coffee.');
+ await say('you','Friday the thirteenth of March. Detention in the boiler room, because Ms. Sherman’s office was being painted. Four sixth graders. She told them to wait and went to get a coffee.');
  await say('you','The boiler went at quarter past three. They were in the coal chute. The paper said nobody was hurt. They built a swimming pool on top and a trapdoor over the chute and never said their names again.');
  await say('aidan','(very quietly) Ollie Finch. Danny Shaw. Priya Lal. Michael Kerr.','cry');
  if(A.hasan)await say('hasan','What are you two talking about? What’s— why is everyone being quiet?','shock');
  await say('aidan','It doesn’t keep the day because of me. It keeps it because nobody said it. It finds whoever’s alone enough on a Friday and it keeps them. Ollie was the first. I’m the latest.','sad');
- await say('aidan','It found me in Year 7. The Friday you all laughed at my haircut. I went to the toilets and I didn’t come out until Monday, except Monday never came.','cry');
+ await say('aidan','It found me in sixth grade. The Friday you all laughed at my haircut. I went to the bathroom and I didn’t come out until Monday, except Monday never came.','cry');
  const c=await choose(['“Then we say it. Everyone. Right now.”','Say nothing. Hold his hand.']);
  if(c===1){pose('you','hold');await N('You take his hand. It’s cold. It stays cold. But he doesn’t let go.')}
  await say('you','Their names were Ollie Finch, Danny Shaw, Priya Lal and Michael Kerr.');
@@ -103,7 +103,7 @@ hook({mis:'calling',period:7,room:'bus',who:'aidan',label:'“I know what happen
  await N('The bell rings. It rings for a long time. Then, for the first time since 1987, it stops.');
  await say('ollie','(to Aidan) You can come. Or you can stay. Staying’s allowed now.','happy');
  await say('aidan','…I want to stay. I want to see what Monday’s like.','cry');
- await say('ollie','It’s rubbish. You’ll love it.','laugh');
+ await say('ollie','It’s garbage. You’ll love it.','laugh');
  await Promise.all(ghosts.map(g=>{walk(g,360,26);return tw(A[g],{alpha:0},3000)}));
  ghosts.forEach(g=>remove(g));fxState.romance=0;
  P.endings.saturday=(P.endings.saturday||0)+1;P.done.calling=P.done.calling||1;P.cur=null;save();
@@ -113,7 +113,7 @@ hook({mis:'calling',period:7,room:'bus',who:'aidan',label:'“I know what happen
  await N('It’s Saturday. Nobody has school. Everyone came anyway, without arranging it, and stood at the bus stop like idiots.');
  await say('hasan','Why are we all here? It’s Saturday. I had a lie-in planned. A big one.','shock');
  await say('aidan','I don’t know. I think we just wanted to check.','happy');
- await say('arjun','Your fringe is still a crime, though.','smirk');
+ await say('arjun','Your bangs is still a crime, though.','smirk');
  await say('aidan','I know.','laugh');
  await card('SATURDAY','SECRET ENDING',2600,'love');
  await curtainCall('saturday');

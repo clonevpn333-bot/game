@@ -22,7 +22,7 @@ for(const p in CLASS)for(const r in CLASS[p])CLASS[p][r]=CLASS[p][r].filter(x=>x
 for(let i=ADAM_REACT.length-1;i>=0;i--)if(ADAM_REACT[i][0]==='abby')ADAM_REACT.splice(i,1);
 delete CHAT.abby;delete BONDLINE.abby;delete ARJUN_AT.abby;
 CHAT.corey=['I’m fine. My hair is fine. Everything’s fine.','Do you think purple curl cream is too much for a Friday?','I give my seat up on the 43 every morning. Nobody’s ever said thanks. I don’t need thanks. I need someone to notice.','It’s not product. It’s maintenance.'];
-ARJUN_AT.corey=['Corey, all that hair and still nothing upstairs.','Corey, you use more product than a hairdresser’s bin.'];
+ARJUN_AT.corey=['Corey, all that hair and still nothing upstairs.','Corey, you use more product than a hairdresser’s trash can.'];
 
 /* Corey’s curl-cream prank is about the curls, not about anyone watching */
 Object.assign(MIS.emergency,{who:['corey','tez'],

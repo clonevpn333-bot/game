@@ -36,7 +36,7 @@ hook({mis:'instella',period:0,room:'bus',who:'sean',label:'Ask Sean why he’s h
 }});
 
 async function arjunGives(item,line){
- const c=await choose(['“Give it back or I read your Year 7 diary out loud.”','Wrestle it off him.',{t:'“Two quid.”',dis:D.money<2,why:'skint'}]);
+ const c=await choose(['“Give it back or I read your sixth grade diary out loud.”','Wrestle it off him.',{t:'“Two bucks.”',dis:D.money<2,why:'skint'}]);
  if(c===0){
   await say('arjun','You haven’t got my diary.','smirk');
   await say('you','“Dear Diary. Today Ms. Shermian smiled at me and I think she’s the only person who gets me.”');
@@ -54,7 +54,7 @@ async function arjunGives(item,line){
   }
  }else{
   D.money-=2;updateLoc();
-  await say('arjun','Two quid. And you have to say I’m handsome.','smirk');
+  await say('arjun','Two bucks. And you have to say I’m handsome.','smirk');
   await say('you','You’re handsome.');
   await say('arjun','I know. Tragically.','smirk');
  }
@@ -110,10 +110,10 @@ hook({mis:'instella',period:4,room:'field',who:'sean',label:'Give Sean the ball'
  await say('omer','(looking at the javelin quivering where they were standing) Bro.','shock');
  await wait(400);
  cue('romance');await tw(fxState,{romance:1},1200);
- await say('sean','I had a whole speech. I practised. On your voicemail. Forty times.','blush');
+ await say('sean','I had a whole speech. I practiced. On your voicemail. Forty times.','blush');
  await say('stella','I know. I listened to all forty.','happy');
  await say('sean','Oh no.','shock');
- await say('stella','Number thirty-one was my favourite. You cried a bit.','happy');
+ await say('stella','Number thirty-one was my favorite. You cried a bit.','happy');
  await say('sean','That was hay fever.','blush');
  await say('stella','In November?','smirk');
  await say('sean','…I cried a bit.','blush');
@@ -126,7 +126,7 @@ hook({mis:'instella',period:4,room:'field',who:'sean',label:'Give Sean the ball'
  await wait(1400);
  await card('IN PERSON','STRIKE ONE',2400,'love');
  put('arjun',340,-1,{y:150});await walk('arjun',230,90);
- await say('arjun','OI, SEAN! Does she know you practised that on a MIRR—','smirk');
+ await say('arjun','OI, SEAN! Does she know you practiced that on a MIRR—','smirk');
  const k=await choose(['Tackle Arjun.','Let Omer handle it.']);
  if(k===0){await walk('you',220,120);await hit('you','arjun',{pose:'headbutt',blood:6});A.arjun.pose='lie';SFX.thud();pose('you',null);await say('arjun','(from the grass) …worth it.','hurt')}
  else{
@@ -144,9 +144,9 @@ hook({mis:'instella',period:4,room:'field',who:'sean',label:'Give Sean the ball'
    COREY GETS IT — Corey & Abby, PE
    ================================================================= */
 mission('corey',{name:'Corey Gets It',icon:'🏐',who:['corey','abby','kenneth'],
- blurb:'Corey has looked at Abby every day since Year 8. Today she’s in his PE group. Today, one way or another, Corey gets it.',
- parts:['Break: the canteen queue','Lunch: get Kenneth to swap PE partners','Period 5 (PE): medicine-ball dodgeball'],
- tips:['Break, canteen. Corey’s in the queue behind her.','Lunch, sports hall. Kenneth will swap for a buzzer-beater.','Period 5 (PE), sports hall. When the ball comes, put Corey in front of it.'],
+ blurb:'Corey has looked at Abby every day since seventh grade. Today she’s in his PE group. Today, one way or another, Corey gets it.',
+ parts:['Break: the cafeteria line','Lunch: get Kenneth to swap PE partners','Period 5 (PE): medicine-ball dodgeball'],
+ tips:['Break, cafeteria. Corey’s in the line behind her.','Lunch, sports hall. Kenneth will swap for a buzzer-beater.','Period 5 (PE), sports hall. When the ball comes, put Corey in front of it.'],
  variants:{kiss:'He gets the girl',ball:'He gets the ball'}});
 
 hook({mis:'corey',period:2,room:'canteen',who:'corey',label:'Get Corey to talk to Abby',cond:()=>!D.f.corey1,run:async()=>{
@@ -158,9 +158,9 @@ hook({mis:'corey',period:2,room:'canteen',who:'corey',label:'Get Corey to talk t
  ex('corey','shock');await wait(600);
  hold('corey',null);const t=prop({t:'tray',x:172,y:128});SFX.whoosh();await tw(t,{y:150},260,'in');SFX.thud();SFX.glass();
  const jar=prop({t:'powder',x:176,y:150});await tw(jar,{x:154},500);
- await N('He drops the tray. A small purple jar rolls out of his hoodie pocket and stops against Abby’s trainer.');
+ await N('He drops the tray. A small purple jar rolls out of his hoodie pocket and stops against Abby’s sneaker.');
  pose('abby','kneel');jar.hide=1;await wait(300);pose('abby',null);hold('abby','powder');
- await say('abby','C.U.R.L.? Mate.','smirk');
+ await say('abby','C.U.R.L.? Bro.','smirk');
  await say('corey','That’s— for emergencies.','blush');
  await say('abby','Mine are natural. I just wake up like this.','smirk');
  hold('abby','tray');
@@ -261,7 +261,7 @@ hook({mis:'corey',period:5,room:'gym',who:'auto',cond:()=>D.f.corey1&&!D.dead.co
   pose('abby',null);
   await say('abby','…Corey?','shock');
   await say('corey','(from the floor) I’m good. I’m great. Hi.','hurt');
-  await say('abby','You’re bleeding on my trainers.','smirk');
+  await say('abby','You’re bleeding on my sneakers.','smirk');
   await say('abby','…Text me. After you’ve stopped bleeding.','happy');
   part('corey',2,true);toast('So close. Next time, put him in front of it on purpose.');
   return;
@@ -288,11 +288,11 @@ hook({mis:'beep',period:2,room:'gym',who:'alex',label:'Ask Alex what’s wrong',
  scene('gym',{coach:[70,1,{pose:'hips',y:146}],alex:[150,1,{y:146}],paul:[190,-1,{y:144}],kenneth:[230,-1,{y:146,pose:'dribble'}],you:[176,-1,{y:154}]});
  await say('alex','Coach has a list. The cut list. Anyone who drops out of the beep test this afternoon gets cut.','scared');
  await say('you','From the team?');
- await say('alex','From the register. Gary Pritchard got cut last year. They never found the rest of Gary.','scared');
- await say('kenneth','They found his left trainer. On the roof. Still laced.','shock');
- await say('alex','The beep-test CD player’s in the PE cupboard. There’s a speed dial on the back. If someone turned it up…');
+ await say('alex','From the attendance list. Gary Pritchard got cut last year. They never found the rest of Gary.','scared');
+ await say('kenneth','They found his left sneaker. On the roof. Still laced.','shock');
+ await say('alex','The beep-test CD player’s in the PE closet. There’s a speed dial on the back. If someone turned it up…');
  intel('beepDial');
- await say('paul','I’ve wanted to wrestle Coach since Year 7. This is my moment. Go.','happy');
+ await say('paul','I’ve wanted to wrestle Coach since sixth grade. This is my moment. Go.','happy');
  await walk('paul',84,90);pose('paul','grab');pose('coach','grab');
  await say('coach','PAUL. YOU ABSOLUTE GIRAFFE—','yell');
  const s=async()=>{for(let i=0;i<6;i++){hop('paul',4,200);hop('coach',3,200);SFX.thud();shake(.3);await wait(260)}};
@@ -312,7 +312,7 @@ hook({mis:'beep',period:6,room:'gym',who:'auto',run:async()=>{
  const kids=['paul','kenneth','jacob','omer','angelo'].filter(n=>!D.dead[n]);
  const cast={coach:[50,1,{pose:'hips',y:146,hold:'cleaver'}],you:[290,-1,{y:150}]};kids.forEach((n,i)=>cast[n]=[120+i*32,-1,{y:146}]);
  scene('gym',cast);
- await say('coach','BEEP TEST. Twenty metres. Every beep, you’re on the line. Miss a beep, you’re CUT.','evil');
+ await say('coach','BEEP TEST. Twenty meters. Every beep, you’re on the line. Miss a beep, you’re CUT.','evil');
  await N('He taps the cleaver against his whistle. Ting. Ting.');
  if(D.f.beepRig){
   SFX.beep();await wait(200);SFX.beep();await wait(150);SFX.beep();
@@ -446,21 +446,21 @@ hook({mis:'voss',period:6,room:'chem',who:'auto',cond:()=>has('key'),run:async()
    LOCKER 13 — Angelo
    ================================================================= */
 mission('angelo',{name:'Locker 13',icon:'💰',who:['angelo','marcus'],
- blurb:'Angelo runs the only working economy in the building out of locker 13. He’s out of stock. Pat’s cookies go for a quid each.',
- parts:['Before school: Angelo needs stock','Break: rob Dinner Lady Pat'],
- tips:['Before school, main corridor.','Break, canteen. Pat’s left eye is glass. Marcus can talk to anyone about anything.'],
+ blurb:'Angelo runs the only working economy in the building out of locker 13. He’s out of stock. Pat’s cookies go for a buck each.',
+ parts:['Before school: Angelo needs stock','Break: rob Lunch Lady Pat'],
+ tips:['Before school, main corridor.','Break, cafeteria. Pat’s left eye is glass. Marcus can talk to anyone about anything.'],
  doneTip:'Angelo’s shop is open every day now. Talk to him to buy things.'});
 
 hook({mis:'angelo',period:0,room:'corridor',who:'angelo',label:'Ask Angelo how business is',cond:()=>!D.f.angelo1&&!P.done.angelo,run:async()=>{
  scene('corridor',{angelo:[36,1,{pose:'lean',y:146}],you:[70,-1,{y:154}],corey:[150,1,{pose:'phone',y:146}]});
  await say('angelo','Angelo. Like the angel, but I charge.','smirk');
  await say('angelo','Locker 13 is the only functioning economy in this building. Cash, cookies or favours. And right now? I’m out of stock.','sad');
- await say('angelo','Pat’s cookies go for a quid each after lunch. Fresh ones. The ones she won’t let anyone have. I need a tray.','smirk');
+ await say('angelo','Pat’s cookies go for a buck each after lunch. Fresh ones. The ones she won’t let anyone have. I need a tray.','smirk');
  await say('angelo','Bring me a tray at break. I’ll cut you in. Fifty-fifty. Sixty-forty. To me. Seventy-thirty.','smirk');
  D.f.angelo1=1;part('angelo',1);
 }});
 
-hook({mis:'angelo',period:2,room:'canteen',who:'marcus',label:'Get Marcus to distract Dinner Lady Pat',cond:()=>D.f.angelo1&&!D.done.angelo,run:async()=>{
+hook({mis:'angelo',period:2,room:'canteen',who:'marcus',label:'Get Marcus to distract Lunch Lady Pat',cond:()=>D.f.angelo1&&!D.done.angelo,run:async()=>{
  scene('canteen',{pat:[90,1,{y:140,hold:'cleaver'}],marcus:[180,-1,{y:146}],you:[210,-1,{y:154}],hasan:[260,-1,{y:148}]});
  await say('marcus','Pat? Easy. Her left eye’s glass, by the way. I asked. She showed me. We’re close now.','smirk');
  intel('patBlind');
@@ -488,7 +488,7 @@ hook({mis:'angelo',period:2,room:'canteen',who:'marcus',label:'Get Marcus to dis
  scene('corridor',{angelo:[36,1,{pose:'lean',y:146}],you:[80,-1,{y:154,hold:'tray'}]});
  await say('angelo','Oh, that is BEAUTIFUL. You’re on the list. The good list.','happy');
  take('cookies');hold('you',null);D.money+=5;updateLoc();
- await say('angelo','Five quid, and locker 13 is open to you every day from now on. Every. Day.','smirk');
+ await say('angelo','Five bucks, and locker 13 is open to you every day from now on. Every. Day.','smirk');
  await N('He says “every day” like he knows something. He doesn’t. Probably.');
  await complete('angelo');
 }});

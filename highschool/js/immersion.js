@@ -20,7 +20,7 @@ const LOOKS=[
  ['headcase','What’s in the box, sir?',{pose:'mic'}],
  ['armoury','Ask Tez what he’s selling',{x:292,dir:-1,pose:'lean',ex:'smirk'}],
  ['armoury','Buy a weapon off Tez',{x:292,dir:-1,pose:'lean',ex:'smirk'}],
- ['register','Ask the Year 7 if he’s lost',{ex:'sad',dir:-1}],
+ ['register','Ask the sixth grade if he’s lost',{ex:'sad',dir:-1}],
  ['opps','Ask Kayden what he’s doing',{pose:'cross',ex:'angry'}],
  ['opps','Ride out with Kayden',{hold:'soaker',ex:'smirk'}],
  ['hasanmia','Help Hasan with Mia',{hold:'mug',ex:'scared',dir:1}],

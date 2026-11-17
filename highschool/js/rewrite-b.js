@@ -15,14 +15,14 @@ Object.assign(MIS.loach,{
 hook({mis:'loach',period:3,room:'science',who:'auto',run:async()=>{
  const c=await classIn('science',{kids:['paul','kenneth','jacob','angelo','abby'].filter(n=>!D.dead[n]),fixed:{paul:0,kenneth:1,angelo:2,jacob:3,abby:6},you:7});
  cue('class');hold('loach','mug');
- await N('Period 3. Science. Ms. Loach is marking at her desk with her mug in her left hand. She has been marking the same pile since you were in Year 7.');
+ await N('Period 3. Science. Ms. Loach is marking at her desk with her mug in her left hand. She has been marking the same pile since you were in sixth grade.');
  await say('loach','Page forty-seven.');
  await scrawl('science',['P.47'],'#3a4a3a');
  await N('She sits back down. That’s the whole lesson plan. It’s always been the whole lesson plan.');
- await say('paul','I bet you a quid I can make her react.','smirk');
+ await say('paul','I bet you a buck I can make her react.','smirk');
  await say('angelo','I’ll take that. I’ll take that bet and I’ll open a book on it. Odds are forty to one.','smirk');
  if(A.kenneth){
-  await say('kenneth','Watch. Miss? Can I go to the toilet?');
+  await say('kenneth','Watch. Miss? Can I go to the bathroom?');
   await say('loach','Mm.');
   await walk('kenneth',-16,80);await wait(900);
   put('kenneth',-16,1,{y:133});A.kenneth.hs='cone';await walk('kenneth',c.seats[1].x,80);A.kenneth.dir=-1;
@@ -44,7 +44,7 @@ hook({mis:'loach',period:3,room:'science',who:'auto',run:async()=>{
   await say('angelo','Children. Watch a professional.','smirk');
   await walk('angelo',150,60);pose('angelo','reach');
   prop({t:'fire',x:150,y:148,w:12,n:9});prop({t:'smoke',x:150,y:132});SFX.fire();
-  await N('Angelo lights the bin. Then, with real care, he lights the bin inside the bin.');
+  await N('Angelo lights the trash can. Then, with real care, he lights the trash can inside the trash can.');
   await say('loach','(turning a page) Mm-hm.');
   pose('angelo',null);await walk('angelo',c.seats[2].x,60);
  }
@@ -52,7 +52,7 @@ hook({mis:'loach',period:3,room:'science',who:'auto',run:async()=>{
   await walk('paul',A.jacob.x-12,70);pose('paul','grab');await tw(A.jacob,{x:A.jacob.x+6},120);SFX.thud();pose('paul',null);
   await say('jacob','STOP. PUSHING. ME.','yell');
   hold('jacob','chair');pose('jacob','throw');await wait(260);SFX.glass();shake(1);hold('jacob',null);pose('jacob',null);
-  await N('Jacob throws a lab stool through the window. It lands in the car park. A car alarm starts. Nobody laughs. You don’t laugh at Jacob.');
+  await N('Jacob throws a lab stool through the window. It lands in the parking lot. A car alarm starts. Nobody laughs. You don’t laugh at Jacob.');
   await say('loach','Page forty-seven.');
   await walk('paul',c.seats[0].x,60);
  }
@@ -80,7 +80,7 @@ hook({mis:'loach',period:6,room:'science',who:'auto',cond:()=>D.f.loach1,run:asy
  const kids=['hasan','abby','sean','stella'].filter(n=>!D.dead[n]);
  const c=await classIn('science',{kids,fixed:Object.fromEntries(kids.map((n,i)=>[n,[0,1,6,7][i]])),you:2});
  cue('class');hold('loach','mug');
- await N('Period 7. Science. The window is still broken from Period 3. There’s a lab stool in the car park. Ms. Loach has not noticed. Her mug is back on the ring.');
+ await N('Period 7. Science. The window is still broken from Period 3. There’s a lab stool in the parking lot. Ms. Loach has not noticed. Her mug is back on the ring.');
  await say('loach','Page forty-seven.');
  if(A.hasan)await say('hasan','(leaning over) Paul told me about Period 3. The fire. The cone. I’ve got something worse.','smirk');
  const o=[{t:'Let Hasan drink from her mug.',dis:!A.hasan,why:'Hasan isn’t here'},{t:'Drink from her mug yourself.'},{t:'Flood the room from every tap.'}];
@@ -147,13 +147,13 @@ hook({mis:'group',period:3,room:'english',who:'auto',run:async()=>{
   if(job==='Make the slides'){pose(w,'point');await say(w,good?'Slide one. A graph of everyone we’ve ever fallen out with. It goes up. Slide two: it comes back down. That’s friendship.':'Slide one. It’s… it’s a picture of my thumb. I don’t know how that got in.',good?'happy':'shock');pose(w,null)}
   if(job==='Film it'){pose(w,'film');await say(w,good?'We’re live! Ninety viewers! Say hi to chat, Miss!':'I pressed record. I think. Is it the red one, or the other red one?',good?'happy':'shock');pose(w,null)}
   if(job==='Do the voice-over')await say(w,good?'(in a voice so deep and smooth the radiator stops knocking) “Friendship. It’s a Friday. And it’s forever.”':'(voice cracking) “FRIENDship— it’s, um—”',good?'closed':'shock');
-  if(job==='Write the jokes')await say(w,good?'What do you call a group of mates with one brain cell between them? 10B. Thank you, I’ve been Hasan.':'Friendship is… when… knock knock?',good?'laugh':'sad');
+  if(job==='Write the jokes')await say(w,good?'What do you call a group of friends with one brain cell between them? 10B. Thank you, I’ve been Hasan.':'Friendship is… when… knock knock?',good?'laugh':'sad');
   if(job==='Stand at the front and look scary'){pose(w,'cross');await say(w,good?'(standing at the front in shorts, arms folded, so scary that nobody heckles)':'(standing at the front, waving nervously)',good?'angry':'scared')}
   if(job==='Write the poem')await say(w,good?'“Friendship is a Friday that finally ends. Thank you for ending it with me.”':'“Roses are red. Er. Friends are also red. Sometimes.”',good?'sad':'shock');
  }
  if(score>=5){
   cue('romance');fxState.romance=.4;classLaugh(400);
-  await say('balduf','(sobbing into a tissue) That was… BEAUTIFUL. A-STAR. EVERYONE. Group hug. Not you, Hasan, you’re still bleeding.','cry');
+  await say('balduf','(sobbing into a tissue) That was… BEAUTIFUL. A-PLUS. EVERYONE. Group hug. Not you, Hasan, you’re still bleeding.','cry');
   for(const n of front)pose(n,'cheer');
   if(aidanIn){await say('aidan','(to you, so quietly nobody else hears) Nobody’s ever given me a job before. In a group. With people.','happy');D.f.aidanIncluded=1}
   fxState.romance=0;await classOut(c);

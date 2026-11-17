@@ -24,22 +24,22 @@ Object.assign(K,{
    THE ROAST TABLE
    ================================================================= */
 mission('roast',{name:'The Roast Table',icon:'🔥',who:['arjun','hasan','sean','nivaan','paul','kenneth','alex','dheva','aidan'],
- blurb:'Every Friday at lunch, the back table of the canteen turns into a roast battle. Everyone gets roasted. Everyone. The winner gets the Belt.',
- parts:['Lunch: survive the Roast Table'],tips:['Lunch, canteen. Sit down at the back table (talk to Arjun).'],variants:{belt:'Won the Belt',burnt:'Got burnt'}});
+ blurb:'Every Friday at lunch, the back table of the cafeteria turns into a roast battle. Everyone gets roasted. Everyone. The winner gets the Belt.',
+ parts:['Lunch: survive the Roast Table'],tips:['Lunch, cafeteria. Sit down at the back table (talk to Arjun).'],variants:{belt:'Won the Belt',burnt:'Got burnt'}});
 const ROASTS={
- aidan:[['Aidan’s fringe is so straight, the maths department borrows it as a ruler.',2],['Aidan doesn’t walk into a room. He loads in.',2],['Aidan’s quiet.',0]],
- sean:[['Sean practised saying “hi” so many times his mirror got a restraining order.',2],['Sean’s voice is gorgeous. His feet are still tripping over the same piece of air from Year 7.',2],['Sean’s blonde.',0]],
+ aidan:[['Aidan’s bangs is so straight, the math department borrows it as a ruler.',2],['Aidan doesn’t walk into a room. He loads in.',2],['Aidan’s quiet.',0]],
+ sean:[['Sean practiced saying “hi” so many times his mirror got a restraining order.',2],['Sean’s voice is gorgeous. His feet are still tripping over the same piece of air from sixth grade.',2],['Sean’s blonde.',0]],
  nivaan:[['Nivaan’s got ninety-one viewers and eighty of them are his own phone on different accounts.',2],['Nivaan livestreamed himself sleeping. Chat said it was his best content.',2],['Nivaan streams a lot.',0]],
  paul:[['Paul’s arms are so long he can high-five people in the next lesson.',2],['Paul’s never lost a wrestle because nobody wants to be that close to him.',2],['Paul’s tall.',0]],
  kenneth:[['Kenneth’s five foot seven but his ego plays for the Lakers.',2],['Kenneth’s hairline is on a fast break and it’s winning.',2],['Kenneth likes basketball.',0]],
- alex:[['Alex’s left foot is a weapon. The rest of him is a waiting room.',2],['Alex’s dad shouts “that’s my boy” at a different kid every single match.',2],['Alex plays football.',0]],
+ alex:[['Alex’s left foot is a weapon. The rest of him is a waiting room.',2],['Alex’s dad shouts “that’s my boy” at a different kid every single match.',2],['Alex plays soccer.',0]],
  dheva:[['Dheva’s spent so long on his hair, his parting has its own postcode.',2],['Dheva’s texture powder costs more than his phone, and it’s doing more work.',2],['Dheva has hair.',0]],
  arjun:[['Arjun roasts everyone because nobody’s ever invited him to an actual barbecue.',2],['Arjun’s forehead has more bumps than the 43’s route.',2],['Arjun’s mean.',0]]
 };
 const COMEBACK={
  aidan:'(not blinking) I’ve heard that one. Fourteen times. It was funnier the first time. It was the first time you said it every time.',
- sean:'At least my mirror talks back. Who talks to you? Your NAN? Your nan’s on mute.',
- nivaan:'Chat’s typing… chat says “bro peaked in the queue for chips”.',
+ sean:'At least my mirror talks back. Who talks to you? Your NAN? Your grandma’s on mute.',
+ nivaan:'Chat’s typing… chat says “bro peaked in the line for fries”.',
  paul:'(standing up, very slowly, arms going on for ever) Do you want to say that from the floor?',
  kenneth:'I may be five seven, but my free-throw percentage is taller than your whole family.',
  alex:'My left foot’s got more friends than you. It’s got a group chat.',
@@ -52,8 +52,8 @@ hook({mis:'roast',period:4,room:'canteen',who:'arjun',label:'Sit down at the Roa
  const who=['hasan','sean','nivaan','paul','kenneth','alex','dheva','aidan'].filter(n=>!D.dead[n]&&!(n==='aidan'&&D.f.aidanDead));
  who.forEach((n,i)=>cast[n]=[seat[i],-1,{y:i%2?150:144}]);
  scene('canteen',cast);cue('canteen');
- await say('arjun','Welcome to the Roast Table. Rules: you roast who I point at. The table decides. Anyone who cries buys chips.','smirk');
- await say('hasan','I’ve bought chips four Fridays running.','sad');
+ await say('arjun','Welcome to the Roast Table. Rules: you roast who I point at. The table decides. Anyone who cries buys fries.','smirk');
+ await say('hasan','I’ve bought fries four Fridays running.','sad');
  let score=0;const targets=['aidan','sean','nivaan','paul','kenneth','alex','dheva','arjun'].filter(n=>A[n]);
  for(const t of targets.slice(0,5)){
   pose('arjun','point');face('arjun',t);
@@ -71,19 +71,19 @@ hook({mis:'roast',period:4,room:'canteen',who:'arjun',label:'Sit down at the Roa
  if(score>=8){
   await say('arjun','…Fine. FINE. The Belt goes to you. I hate it. Give it here so I can give it to you.','sad');
   const b=prop({t:'belt',x:A.you.x,y:A.you.y-16,follow:'you',dy:-14,layer:1});
-  await N('The Belt is a canteen-tray strap with a Fanta lid glued to it. It is the most respected object in the building.');
+  await N('The Belt is a cafeteria-tray strap with a Fanta lid glued to it. It is the most respected object in the building.');
   await complete('roast','belt');return;
  }
- await say('arjun','Weak. The Belt stays with me. Chips are on you.','smirk');
- await N('You buy nine portions of chips. Hasan eats two of them out of pure relief that it wasn’t him.');
+ await say('arjun','Weak. The Belt stays with me. Fries are on you.','smirk');
+ await N('You buy nine portions of fries. Hasan eats two of them out of pure relief that it wasn’t him.');
  await complete('roast','burnt');
 }});
 
 /* more banter in chats, aimed at exactly these eight */
 const BANTER={
- aidan:['Hasan says my fringe looks like a lampshade. I asked if it gives off light. He went quiet.','I’m not weird. I’m just early. You’ll all be weird eventually.'],
+ aidan:['Hasan says my bangs looks like a lampshade. I asked if it gives off light. He went quiet.','I’m not weird. I’m just early. You’ll all be weird eventually.'],
  sean:['Hasan says I walk like I’m apologising to the floor.','My voice is the only part of me that’s cool. The rest of me is buffering.'],
- nivaan:['Chat says I’m “the human equivalent of a loading screen”. Chat’s been mean since the update.','I streamed a fire drill. It’s my second-most-watched video. The first is me falling off a bin.'],
+ nivaan:['Chat says I’m “the human equivalent of a loading screen”. Chat’s been mean since the update.','I streamed a fire drill. It’s my second-most-watched video. The first is me falling off a trash can.'],
  paul:['Kenneth says I hug like a car crash. I said thank you.','I’m not lanky. I’m long-form.'],
  kenneth:['Alex says my jump shot looks like I’m throwing away a parking ticket.','Height is just a number. My number’s small. That’s all.'],
  alex:['Dheva says I’ve got the conversation skills of a corner flag.','I don’t know how to talk to people. I know how to cross to them.'],
@@ -96,17 +96,17 @@ for(const id in BANTER)if(CHAT[id])CHAT[id].push(...BANTER[id]);
    CHEEKS & CHEEK-CLAPPER — Fists of Fair City 4
    ================================================================= */
 mission('cheeks',{name:'Fists of Fair City 4',icon:'🎬',who:['nivaan','paul'],
- blurb:'Cheeks & Cheek-Clapper are two grown men with a YouTube channel, 312 subscribers, huge backsides, very long nails and teeth the colour of old piano keys. They’re filming the fourth Fists of Fair City. They need extras.',
- parts:['Break: Nivaan finds the casting call','After school: the roof car park shoot'],
- tips:['Break, main corridor. Nivaan’s watching something he shouldn’t be.','After school, Fair City Mall roof car park.'],variants:{premiere:'Henchman #2',glen:'Shut down by Big Glen'}});
+ blurb:'Cheeks & Cheek-Clapper are two grown men with a YouTube channel, 312 subscribers, huge backsides, very long nails and teeth the color of old piano keys. They’re filming the fourth Fists of Fair City. They need extras.',
+ parts:['Break: Nivaan finds the casting call','After school: the rooftop parking shoot'],
+ tips:['Break, main corridor. Nivaan’s watching something he shouldn’t be.','After school, Fair City Mall rooftop parking.'],variants:{premiere:'Henchman #2',glen:'Shut down by Big Glen'}});
 hook({mis:'cheeks',period:2,room:'corridor',who:'nivaan',label:'Ask Nivaan what he’s laughing at',look:{pose:'phone',ex:'laugh'},cond:()=>!D.f.ch1,run:async()=>{
  scene('corridor',{nivaan:[120,-1,{pose:'phone',ex:'laugh'}],you:[96,1,{y:154}]});
- await say('nivaan','(crying laughing) You HAVE to see this. These two grown men. They make action films. In the Fair City Mall car park.','laugh');
+ await say('nivaan','(crying laughing) You HAVE to see this. These two grown men. They make action films. In the Fair City Mall parking lot.','laugh');
  await dms('Cheeks & Cheek-Clapper Productions','312 subscribers',[
   ['them','FISTS OF FAIR CITY 3: THE CLAPPENING — out now!! 🎬👊🍑','Mon 18:20'],['note','4:51 · 1,204 views'],
-  ['them','CASTING CALL!!! Fists of Fair City 4. Need henchmen + 1 stuntman. Roof car park, Fair City Mall, 4pm TODAY. Bring own snacks. No pay. Exposure!!','Fri 07:12'],
+  ['them','CASTING CALL!!! Fists of Fair City 4. Need henchmen + 1 stuntman. Roof parking lot, Fair City Mall, 4pm TODAY. Bring own snacks. No pay. Exposure!!','Fri 07:12'],
   ['note','Top comment: “why do they keep hitting each other with their backsides”'],['note','Reply from Cheeks: “its called THE CHEEK CLAP. it’s a martial art. look it up. (we invented it)”']]);
- await say('nivaan','They slap each other in the face with their bums. Fully clothed. In tracksuits. As a FIGHTING STYLE. They’ve got a whole lore.','laugh');
+ await say('nivaan','They slap each other in the face with their butts. Fully clothed. In tracksuits. As a FIGHTING STYLE. They’ve got a whole lore.','laugh');
  await say('nivaan','We’re going. You’re a henchman. I’m the camera. Paul’s going to want to be the stuntman. Paul is ALWAYS the stuntman.','happy');
  D.f.ch1=1;part('cheeks',1);
 }});
@@ -117,7 +117,7 @@ hook({mis:'cheeks',period:8,room:'carpark',who:'cheeks',label:'“We’re here f
  scene('carpark',cast);cue('arcade');
  await say('cheeks','EXTRAS! Welcome to the set of FISTS OF FAIR CITY FOUR. I’m Cheeks. Director, writer, lead, catering.','happy');
  await say('clapper','And I’m Cheek-Clapper. Star. Stunts. Emotional core of the franchise.','happy');
- await N('They are both enormous in the back. Their tracksuits are working very hard. When they smile, their teeth are the colour of a nicotine ceiling. Cheeks’ nails are long enough to have their own weather.');
+ await N('They are both enormous in the back. Their tracksuits are working very hard. When they smile, their teeth are the color of a nicotine ceiling. Cheeks’ nails are long enough to have their own weather.');
  if(A.paul)await say('paul','I’d like to be the stuntman. I’ve done my own stunts since the womb.','happy');
  await say('cheeks','Love the energy. Love the arms. YOU. Henchman Number Two. Here’s your line: “Boss, he’s too powerful!”','happy');
  await say('cheeks','SCENE ONE. The Clap of Doom. ACTION!','yell');
@@ -128,7 +128,7 @@ hook({mis:'cheeks',period:8,room:'carpark',who:'cheeks',label:'“We’re here f
  face('clapper',1);await walk('clapper',196,40);
  await N('Cheek-Clapper turns round, plants his feet, sticks his backside out like a battering ram, and reverses into Cheeks at full speed.');
  SFX.smack();shake(.9);await tw(A.cheeks,{x:240,y:150},360);
- await N('BOOMF. Cheeks takes it full in the face. He spins once, staggers, and goes down on the bonnet of a Vauxhall Corsa.');
+ await N('BOOMF. Cheeks takes it full in the face. He spins once, staggers, and goes down on the hood of a Honda Civic.');
  A.cheeks.pose='lie';SFX.thud();
  await wait(500);
  await say('cheeks','(from the car) …CUT. CUT. That was BEAUTIFUL. Did you get that? Tell me you got that.','laugh');
@@ -160,7 +160,7 @@ hook({mis:'cheeks',period:8,room:'carpark',who:'cheeks',label:'“We’re here f
   SFX.smack();shake(1);await tw(A.you,{x:96},300);A.you.pose='lie';await wait(600);A.you.pose=null;
   await say('cheeks','PERFECT. You’ve got a face made for being clapped. That’s a compliment in this industry.','happy');
  }
- await N('Half an hour later, the premiere: everyone round Nivaan’s phone on the roof of the car park. It is three minutes long. It is terrible. Nobody has ever been happier.');
+ await N('Half an hour later, the premiere: everyone round Nivaan’s phone on the roof of the parking lot. It is three minutes long. It is terrible. Nobody has ever been happier.');
  await say('clapper','(wiping his eyes with a long, long nail) Henchman Number Two… you were the heart of it.','cry');
  await say('cheeks','Credits roll! Look! Look at your name!','happy');
  await N('Under “HENCHMAN #2”, in Comic Sans, is your name. Spelt wrong.');

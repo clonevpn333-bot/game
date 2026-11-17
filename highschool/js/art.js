@@ -29,11 +29,11 @@ const K={
  loach:{n:'Ms. Loach',col:'#6f7a6a',skin:'#d8c4b4',hair:'#6e6a58',hs:'limp',top:'#6f7a6a',pants:'#4a4a44',cardigan:1,tired:1,adult:1,girl:1,seed:34,v:165,vw:'sine'},
  voss:{n:'Mr. Voss',col:'#8aa0a8',skin:'#e2d0c0',hair:'#9a9088',hs:'bald',top:'#ecebe4',pants:'#2a2a2a',coat:1,goggles:1,adult:1,thin:1,seed:35,v:150,vw:'sawtooth'},
  coach:{n:'Coach Dunmore',col:'#a8202a',skin:'#c98e64',hair:'#2a1a10',hs:'capr',top:'#a8202a',pants:'#a8202a',whistle:1,stripe:1,adult:1,wide:1,seed:36,v:188},
- pat:{n:'Dinner Lady Pat',col:'#6a8aa8',skin:'#e8c0a0',hair:'#d8d8d8',hs:'net',top:'#6a8aa8',pants:'#3a3a48',apron:1,adult:1,wide:1,girl:1,seed:37,v:250},
- kid1:{n:'Year 9',skin:'#e8c0a0',hair:'#3a2a1a',hs:'short',top:'#3a4a7a',pants:'#2a2a33',seed:41,v:400},
- kid2:{n:'Year 10',skin:'#b88058',hair:'#151010',hs:'curly',top:'#7a3a3a',pants:'#2a2a33',seed:42,v:360},
- kid3:{n:'Year 8',skin:'#f0d0b0',hair:'#c8a050',hs:'long',top:'#5a7a4a',pants:'#2a2a33',girl:1,seed:43,v:500},
- kid4:{n:'Year 11',skin:'#7a5034',hair:'#101010',hs:'fade',top:'#4a4a5a',pants:'#2a2a33',h:3,seed:44,v:230}
+ pat:{n:'Lunch Lady Pat',col:'#6a8aa8',skin:'#e8c0a0',hair:'#d8d8d8',hs:'net',top:'#6a8aa8',pants:'#3a3a48',apron:1,adult:1,wide:1,girl:1,seed:37,v:250},
+ kid1:{n:'8th Grader',skin:'#e8c0a0',hair:'#3a2a1a',hs:'short',top:'#3a4a7a',pants:'#2a2a33',seed:41,v:400},
+ kid2:{n:'Freshman',skin:'#b88058',hair:'#151010',hs:'curly',top:'#7a3a3a',pants:'#2a2a33',seed:42,v:360},
+ kid3:{n:'7th Grader',skin:'#f0d0b0',hair:'#c8a050',hs:'long',top:'#5a7a4a',pants:'#2a2a33',girl:1,seed:43,v:500},
+ kid4:{n:'Sophomore',skin:'#7a5034',hair:'#101010',hs:'fade',top:'#4a4a5a',pants:'#2a2a33',h:3,seed:44,v:230}
 };
 const FRIENDS=['hasan','arjun','david','omer','nivaan','corey','sean','stella','abby','aidan','angelo','alex','dheva','marcus','paul','kenneth','jacob'];
 const TEACHERS=['balduf','shermian','sherman','loach','voss','coach','pat'];

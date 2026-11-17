@@ -8,7 +8,7 @@ Object.assign(K,{
  kettle:{n:'Mrs. Kettle',col:'#c87a3a',skin:'#efcfb4',hair:'#b8b0a8',hs:'bun',top:'#d88a4a',pants:'#4a3a3a',skirt:1,apron:1,adult:1,girl:1,wide:1,seed:39,v:330,vw:'triangle'},
  pratt:{n:'Mr. Pratt',col:'#8a3a9a',skin:'#e8c0a0',hair:'#3a2418',hs:'manbun',beard:1,top:'#5a2a6a',pants:'#1a1a1a',scarf:1,adult:1,thin:1,seed:40,v:272},
  glen:{n:'Big Glen',col:'#4a4a5a',skin:'#d0a080',hair:'#2a2020',hs:'buzz',top:'#2a2a3a',pants:'#1a1a22',hivis:1,adult:1,wide:1,seed:45,v:165},
- omermum:{n:'Omer’s Mum',col:'#a86a8a',skin:'#e0b088',hair:'#3a2418',hs:'long',top:'#c86a8a',pants:'#3a3a54',adult:1,girl:1,seed:46,v:420,vw:'triangle'},
+ omermum:{n:'Omer’s Mom',col:'#a86a8a',skin:'#e0b088',hair:'#3a2418',hs:'long',top:'#c86a8a',pants:'#3a3a54',adult:1,girl:1,seed:46,v:420,vw:'triangle'},
  tez:{n:'Tez',col:'#7a7a3a',skin:'#d8a878',hair:'#2a1e16',hs:'short',tache:1,top:'#4a4a3a',pants:'#2a2a30',h:7,wide:1,seed:47,v:188},
  mia:{n:'Mia',col:'#3a8a7a',skin:'#c89068',hair:'#1a1412',hs:'ponytail',top:'#4a5a3a',pants:'#2a2f2a',girl:1,seed:48,v:440,vw:'triangle'},
  ollie:{n:'Ollie',col:'#8a9aba',skin:'#e8e4e0',hair:'#8a6a4a',hs:'side',top:'#5a6a8a',pants:'#4a4a5a',ghost:1,h:-3,tie:1,seed:49,v:525,vw:'sine'},
@@ -62,7 +62,7 @@ Object.assign(ROOMS,{
   R(272,22,42,90,'#1a1a1a');R(280,30,26,18,'#fff');R(286,48,14,2,'#e0502a');pxc('HOOPS',293,60,'#ff8a3a');
   R(0,112,W,68,'#2a1a3a');for(let i=0;i<W;i+=16)for(let j=0;j<5;j++){if((i+j*7)%3===0)R(i+4,116+j*13,3,3,['#ff3ab0','#3affff','#ffd03a'][(i+j)%3])}
  }},
- carpark:{name:'Fair City Mall — Roof Car Park',music:'sunset',bg(){
+ carpark:{name:'Fair City Mall — Rooftop Parking',music:'sunset',bg(){
   for(let i=0;i<112;i++)R(0,i,W,1,i<40?'#3a2a5a':i<70?'#a8506a':'#f0905a');
   R(240,70,26,26,'#ffd08a');R(236,82,34,6,'#f0905a');
   for(let i=0;i<14;i++){const h=20+hsh(i)*40;R(i*24,112-h,20,h,'#2a2038');for(let j=0;j<h-6;j+=6)if(hsh(i*7+j)>.5)R(i*24+4+(j%3)*5,112-h+3+j,2,2,'#ffe08a')}
@@ -95,10 +95,10 @@ buildRoom=function(room){_build(room);if(D.period===8&&room==='foodcourt'&&D.don
 /* ---------- Mr. Adam: every period he's a bit further gone ---------- */
 const ADAM_PA=[
  'Good morning, Highgate! Today is Friday. It is ALWAYS Friday. Have a normal one. A NORMAL one.',
- 'This is your headteacher. Please stop looking at me through the walls. I can feel it. I can feel all four hundred of you.',
+ 'This is your principal. Please stop looking at me through the walls. I can feel it. I can feel all four hundred of you.',
  'Break time. The inspectors are coming on Monday. Monday is CANCELLED. I have cancelled Monday. That is all.',
  'Would the boy who keeps laughing inside my head please report to my office. Bring a sandwich. I haven’t eaten since Tuesday.',
- 'Lunch is served. I have eaten the register. Attendance is now one hundred percent. You’re ALL inside me now.',
+ 'Lunch is served. I have eaten the attendance list. Attendance is now one hundred percent. You’re ALL inside me now.',
  'PE. Run. RUN. The inspectors can smell fear and lanyards.',
  'Final lesson. I have been on the roof. The roof understands me. The roof has never once asked for a data report.',
  'Home time. Nobody goes home. Have a lovely weekend. There is no weekend.',
@@ -106,15 +106,15 @@ const ADAM_PA=[
 ];
 const ADAM_REACT=[
  ['hasan','He’s actually lost it. Like, properly. Like a guy in a film who’s about to be on the news.'],['arjun','Twenty-two years running this place and he’s finally become the building. Damp and falling apart.'],
- ['david','My mum says he’s been like this since the divorce. My mum says that about everyone. This time it’s true.'],['omer','I respect it. Going insane at work is the most honest thing an adult can do.'],
- ['nivaan','Chat says “bro’s speedrunning a breakdown”. Chat’s right.'],['corey','Should we… tell someone? Who do you tell when it’s the headteacher?'],
- ['sean','He called my mum this morning to tell her “the walls are listening”. She said “thank you”.'],['marcus','He’s been in that suit since Tuesday. It’s not a suit anymore. It’s a lifestyle.'],
+ ['david','My mom says he’s been like this since the divorce. My mom says that about everyone. This time it’s true.'],['omer','I respect it. Going insane at work is the most honest thing an adult can do.'],
+ ['nivaan','Chat says “bro’s speedrunning a breakdown”. Chat’s right.'],['corey','Should we… tell someone? Who do you tell when it’s the principal?'],
+ ['sean','He called my mom this morning to tell her “the walls are listening”. She said “thank you”.'],['marcus','He’s been in that suit since Tuesday. It’s not a suit anymore. It’s a lifestyle.'],
  ['kenneth','He gave me a merit for “breathing correctly”. I’ll take it.'],['jacob','Nobody push him. He looks like he’d explode. Literally. Like, with a bang.'],
- ['paul','I offered him a hug and he wrestled me. I lost. To a headteacher. In a corridor.'],['mia','He’s bought forty metres of wire from the electronics shop at the mall. My cadet instructor says that’s “a sign”.'],
- ['tez','I’ve been in Year 11 for six years. I’ve seen three heads go mad. This one’s the best one.'],['kayden','Mr. Adam is a certified opp. On God. I fear no man but that man.'],
+ ['paul','I offered him a hug and he wrestled me. I lost. To a principal. In a corridor.'],['mia','He’s bought forty meters of wire from the electronics shop at the mall. My cadet instructor says that’s “a sign”.'],
+ ['tez','I’ve been in tenth grade for six years. I’ve seen three heads go mad. This one’s the best one.'],['kayden','Mr. Adam is a certified opp. On God. I fear no man but that man.'],
  ['dheva','He touched my hair at registration. He just said “real” and walked off.'],['alex','He tried to take a penalty at break and kicked the ball onto the roof, then climbed up after it, and didn’t come down.'],
  ['abby','He asked me to play a song for him in his office. I played him “Small Hours”. He cried and gave me a merit and a fire extinguisher.'],['stella','He stood outside the girls’ changing room shouting “I SEE NO CONCERNS” at the door. Then he left. Bizarre.'],
- ['angelo','He bought a fake doctor’s note off me. For himself. It says he’s “too tired to be the headteacher”.']
+ ['angelo','He bought a fake doctor’s note off me. For himself. It says he’s “too tired to be the principal”.']
 ];
 const ADAM_BURST=[
  null,
@@ -163,7 +163,7 @@ LESSON.pratt=[
 /* teachers killing kids, in the background of an ordinary Friday */
 const LESSON_KILLS={
  balduf:{victim:'kid1',line:'Miss, I could of— I mean—',kill:'pen',after:'Could HAVE. There. Now he’ll never forget. He’ll never do anything again, but he’ll never forget.'},
- shermian:{victim:'kid2',line:'(chewing gum very loudly)',kill:'neck',after:'Bin, sweetie. Gum goes in the bin. You go in the other bin.'},
+ shermian:{victim:'kid2',line:'(chewing gum very loudly)',kill:'neck',after:'Trash, sweetie. Gum goes in the trash can. You go in the other trash can.'},
  loach:{victim:'kid3',line:'(reaching for the mug to see what happens)',kill:'scissors',after:'Page forty-seven.'},
  coach:{victim:'kid4',line:'Sir, I’m tired—',kill:'ball',after:'TIRED is a word for people who are going to DIE. Like Darren.'},
  voss:{victim:'kid1',line:'Sir, I volunteer! For anything!',kill:'vat',after:'Lovely. Very… absorbent.'},
@@ -213,7 +213,7 @@ drawProp=function(p){
    HEAD CASE — Mr. Adam
    ================================================================= */
 mission('headcase',{name:'Head Case',icon:'💣',who:['mia','hasan','david'],
- blurb:'Mr. Adam, the headteacher, is losing his mind one period at a time. Everyone can see it. The inspectors come on Monday. He’s decided Monday isn’t coming.',
+ blurb:'Mr. Adam, the principal, is losing his mind one period at a time. Everyone can see it. The inspectors come on Monday. He’s decided Monday isn’t coming.',
  parts:['Break: find out what’s wrong with Mr. Adam','Lunch: Mia found the receipts','Home time: the box at the bus loop'],
  tips:['Break, main corridor. He’s talking to the trophies.','Lunch, library. Mia’s in the cadets. She knows things she shouldn’t.','Home time, bus loop. Know which wire. (Or bring something cold.)'],
  variants:{wire:'Cut the right wire',ice:'Froze it'},doneTip:'After school you’ll find him in the food court, eating noodles. Calm. Finally.'});
@@ -238,9 +238,9 @@ hook({mis:'headcase',period:2,room:'corridor',who:'adam',label:'Ask Mr. Adam if 
 
 hook({mis:'headcase',period:4,room:'library',who:'mia',label:'Ask Mia what she knows',cond:()=>D.f.adam1&&!D.f.adam2,run:async()=>{
  scene('library',{mia:[60,1,{y:146,hold:'paper'}],david:[140,-1,{pose:'sit',y:150}],you:[90,-1,{y:154}]});
- await say('mia','I’m in the cadets. I know what forty metres of wire, a kitchen timer and a padlocked toolbox look like on a receipt. It looks like a sad man with a plan.','angry');
- await say('mia','I found his receipts in the bin outside the staffroom. He bought them at the electronics place in Fair City Mall. He paid with a Nectar card. He got the POINTS.','shock');
- await say('david','The headteacher is building a— in the— and he got Nectar POINTS?','shock');
+ await say('mia','I’m in the cadets. I know what forty meters of wire, a kitchen timer and a padlocked toolbox look like on a receipt. It looks like a sad man with a plan.','angry');
+ await say('mia','I found his receipts in the trash can outside the staffroom. He bought them at the electronics place in Fair City Mall. He paid with a rewards card. He got the POINTS.','shock');
+ await say('david','The principal is building a— in the— and he got rewards POINTS?','shock');
  await say('mia','He’s not a terrorist. He’s a sad man who watched YouTube. Which is worse. Sad men are thorough.');
  await say('mia','Rule one: never cut red. Red’s what they WANT you to cut.','smirk');
  await say('mia','Rule two: sad men wire it to the thing they love. What does Mr. Adam love?','smirk');
@@ -307,7 +307,7 @@ async function finishHead(v){
  await walk('adam',120,40);A.adam.pose='sit';A.adam.y=158;
  await say('adam','(sitting on the kerb with the megaphone in his lap) I just didn’t want to be judged. Twenty-two years. Nobody ever told me I was good at it.','cry');
  const c=await choose(['“You were good at it. You’re bad at bombs.”','“Sir, you need help. Real help.”','Sit down next to him and say nothing.']);
- if(c===0){await say('adam','(laughing, crying) I’m TERRIBLE at bombs. I got Nectar points.','laugh')}
+ if(c===0){await say('adam','(laughing, crying) I’m TERRIBLE at bombs. I got reward points.','laugh')}
  if(c===1){await say('adam','I know. I know. I’ll call someone. I’ll call… Mia’s cadet instructor, he seems to know everything.','sad')}
  if(c===2){await N('You sit next to him on the kerb. The bus loop goes quiet. After a while he stops shaking.');await say('adam','…Thank you.','sad')}
  if(A.mia)await say('mia','(already holding the wires) I’ll take these. For the cadets. For science. For no reason.','smirk');
@@ -386,14 +386,14 @@ hook({mis:'method',period:3,room:'drama',who:'auto',run:async()=>{
  cue('tension');
  await say('pratt','Macbeth. Act Two. The murder of King Duncan. And we are NOT using props, because props are for COWARDS and children’s TV.','yell');
  await say('kayden','Sir, is that a real dagger?','scared');
- await say('pratt','Is this a dagger which I see before me? YES. Sheffield steel. Forty quid.','happy');
- await say('pratt','Our Duncan tonight is… you. Year Nine. Up on the stage. Lie down. Close your eyes. Trust the craft.','smirk');
+ await say('pratt','Is this a dagger which I see before me? YES. Sheffield steel. Forty bucks.','happy');
+ await say('pratt','Our Duncan tonight is… you. eighth grade. Up on the stage. Lie down. Close your eyes. Trust the craft.','smirk');
  A.kid1.pose='lie';
  await walk('pratt',190,60);hold('pratt','knife');
  await say('kid1','Sir? Sir, it’s pointy—','scared');
  pose('pratt','slam');SFX.squelch();await wait(200);SFX.squelch();kill('kid1','lie',{pool:20});hold('pratt',null);pose('pratt',null);
  await say('pratt','And SCENE. Do you SEE? Do you FEEL it? THAT is theatre!','happy');
- await say('mia','He’s actually killed a Year Nine. In a lesson. Out loud.','shock');
+ await say('mia','He’s actually killed an eighth grader. In a lesson. Out loud.','shock');
  await walk('pratt',140,60);face('pratt',-1);
  await say('pratt','You. Next scene. You’re Macbeth. Mia’s Banquo. Banquo dies. Make me believe it.','evil');
  prop({t:'dagger',x:126,y:140});

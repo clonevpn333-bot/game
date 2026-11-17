@@ -13,7 +13,7 @@ const TEA=[
  'SPOTTED: corey buying purple CURL CREAM at the mall like it’s contraband 🧴😭',
  'stella’s dad walked out when she was 9 and she STILL carries his ball around everywhere 😭 seek help bestie',
  'aidan has been standing at locker 217 for 40 minutes. not opening it. just standing 👀',
- 'omer’s mum DOES pick his clothes. we have the receipts 🩳🧾',
+ 'omer’s mom DOES pick his clothes. we have the receipts 🩳🧾',
  'kenneth’s “girlfriend” jess from fair city types EXACTLY like someone we know 👀',
  'vote DAVID for year rep. he’s the only one we’ve got nothing on 😇',
  'see u all monday!!! (jk there’s no monday)',
@@ -37,8 +37,8 @@ hook({mis:'tea',period:2,room:'library',who:'stella',label:'Ask Stella what’s 
  await dms('@highgate.tea','4,211 followers',[['them','stella’s dad walked out when she was 9 and she STILL carries his ball around everywhere 😭 seek help bestie','10:20'],['note','1,402 likes · 213 comments'],['them','(top comment, from an account with no picture) “this is so true lmaooo”']]);
  if(A.sean)await say('sean','When I find out who runs that account I’m going to do something I’ll have to explain to a judge.','angry');
  await say('stella','I only ever told, like, four people that. In the whole school. Four.','cry');
- await say('david','(from his desk, without looking up) That’s awful. Truly awful. That’s why I’m running for Year Rep. For a kinder Highgate.','smirk');
- await N('He has a VOTE DAVID badge on. He’s had it on since Year 8. He’s never once lost the badge.');
+ await say('david','(from his desk, without looking up) That’s awful. Truly awful. That’s why I’m running for class president. For a kinder Highgate.','smirk');
+ await N('He has a VOTE DAVID badge on. He’s had it on since seventh grade. He’s never once lost the badge.');
  D.f.tea1=1;part('tea',1);
 }});
 
@@ -46,10 +46,10 @@ spot({room:'library',period:4,x:112,y:150,label:'Look at David’s laptop',short
  scene('library',{david:[140,1,{pose:'sit',y:150}],mia:[60,1,{y:146}],you:[112,1,{y:154}]});
  await say('david','Printer’s jammed again. Don’t touch my stuff.','smirk');
  await walk('david',300,50);remove('david');
- await N('His laptop is open. Two tabs. One is the Year Rep election page. The other one is logged in as @highgate.tea.');
+ await N('His laptop is open. Two tabs. One is the class president election page. The other one is logged in as @highgate.tea.');
  await dms('Drafts — @highgate.tea','not posted yet',[
-  ['them','omer’s mum DOES pick his clothes. we have the receipts 🩳🧾'],['them','kenneth’s “girlfriend” jess from fair city types EXACTLY like someone we know 👀'],['them','vote DAVID for year rep. he’s the only one we’ve got nothing on 😇'],
-  ['note','— Notes: “CAMPAIGN STRATEGY.docx” —'],['them','1. Make everyone else look worse.\n2. Be the only one left who looks normal.\n3. Year Rep.\n4. Be liked (??)']]);
+  ['them','omer’s mom DOES pick his clothes. we have the receipts 🩳🧾'],['them','kenneth’s “girlfriend” jess from fair city types EXACTLY like someone we know 👀'],['them','vote DAVID for year rep. he’s the only one we’ve got nothing on 😇'],
+  ['note','— Notes: “CAMPAIGN STRATEGY.docx” —'],['them','1. Make everyone else look worse.\n2. Be the only one left who looks normal.\n3. class president.\n4. Be liked (??)']]);
  intel('teaDavid');
  if(A.mia)await say('mia','(looking over your shoulder) Huh. The nerd’s the villain. That’s actually quite good writing.','smirk');
  await N('You take a photo of the screen with your phone. Your hand is shaking a bit. You didn’t expect it to be David.');
@@ -67,11 +67,11 @@ hook({mis:'tea',period:7,room:'bus',who:'david',label:'Confront David about @hig
  if(c===0){
   await say('you','Everyone. Look at this. @highgate.tea. It’s David’s laptop.');
   await N('You hold up the photo. It goes round the bus loop phone by phone. You can watch it travel by the faces.');
-  if(A.omer)await say('omer','You posted about my MUM? You came to my HOUSE. She made you LASAGNE.','angry');
+  if(A.omer)await say('omer','You posted about my MOM? You came to my HOUSE. She made you LASAGNE.','angry');
   if(A.hasan)await say('hasan','You’ve been in our group chat for four years. Four years! You’ve been taking NOTES?','shock');
   if(A.stella){await walk('stella',162,80);SFX.smack();A.david.hurt=1;shake(.5);await say('stella','That one was for my dad. He doesn’t deserve it, but I do.','angry')}
   await say('david','(crying, glasses fogging) Nobody votes for the nice guy! Nobody even LOOKS at the nice guy! I thought if everyone else looked worse, I’d just… be there.','cry');
-  if(A.arjun)await say('arjun','And I’M the one people call cruel. Mate. MATE. You’re the final boss.','shock');
+  if(A.arjun)await say('arjun','And I’M the one people call cruel. Bro. BRO. You’re the final boss.','shock');
   await N('Nobody sits with David on the 43. He sits at the back with his VOTE DAVID badge in his hand.');
   await N('He deletes the account before the roundabout. You see him do it. It doesn’t fix anything.');
   await complete('tea','exposed');return;
@@ -80,7 +80,7 @@ hook({mis:'tea',period:7,room:'bus',who:'david',label:'Confront David about @hig
  await walk('david',290,60);await walk('you',270,60);face('you',1);face('david',-1);
  await say('you','I saw your laptop.');
  await N('He doesn’t ask what you mean. He takes his glasses off and cleans them for a long time.');
- await say('david','I’ve run for Year Rep every year since Year 7. I’ve never got more than nine votes. Nine. Four are my cousins.','sad');
+ await say('david','I’ve run for class president every year since sixth grade. I’ve never got more than nine votes. Nine. Four are my cousins.','sad');
  await say('david','Nobody votes for the nice guy. So I thought, if everyone else looked worse…','sad');
  await say('you','You posted about Stella’s dad. She cried in the library. You watched her do it.');
  await say('david','I know. I was RIGHT THERE. I said “that’s awful”. I meant it. I still posted the next one.','cry');
@@ -104,7 +104,7 @@ mission('catfish',{name:'Jess from Fair City',icon:'🎣',who:['kenneth','arjun'
  blurb:'Kenneth has been texting “Jess, 16, Fair City” every night for three months. She’s perfect. She’s meeting him at the arcade after school. She has never once sent a voice note.',
  parts:['Break: Kenneth shows you the messages','Lunch: Nivaan runs the photos','After school: Jess arrives'],
  tips:['Break, sports hall.','Lunch, main corridor. Nivaan can find anyone.','After school, the arcade. Get there before the punchline does.'],
- variants:{chips:'Chips with Arjun',claw:'The claw machine'}});
+ variants:{chips:'Fries with Arjun',claw:'The claw machine'}});
 
 hook({mis:'catfish',period:2,room:'gym',who:'kenneth',label:'Ask Kenneth who he keeps texting',cond:()=>!D.f.jess1,run:async()=>{
  scene('gym',{kenneth:[220,-1,{pose:'phone',y:146}],paul:[150,1,{y:144,pose:'hips'}],you:[196,1,{y:152}]});
@@ -146,22 +146,22 @@ hook({mis:'catfish',period:8,room:'arcade',who:'kenneth',label:'Wait for Jess wi
   await walk('kenneth',258,60);face('kenneth',1);
   await say('kenneth','I know.','sad');
   pose('arjun',null);ex('arjun','shock');
-  await say('kenneth','Who wrote the nice ones? The three in the morning ones. About my mum being ill. About being scared of being short forever.','sad');
+  await say('kenneth','Who wrote the nice ones? The three in the morning ones. About my mom being ill. About being scared of being short forever.','sad');
   await say('arjun','…','sad');
   await say('arjun','Me. I did. I meant those ones. That’s the worst bit. I meant them and I still did the bit.','cry');
   await say('kenneth','…That’s the saddest thing anyone’s ever said to me. And I’ve been catfished by you for three months.','sad');
-  await say('kenneth','Do you want to get chips?','sad');
+  await say('kenneth','Do you want to get fries?','sad');
   await say('arjun','(wiping his face on his sleeve) …Yeah. Yeah. I’ll pay. Obviously I’ll pay.','cry');
   await complete('catfish','chips');return;
  }
  SFX.blip(880,'sine');
  await dms('Jess 💕','online now',[['them','see u at 4 😘','15:12'],['note','— now —'],['them','im here 👀'],['them','turn around 🔴']],{live:2});
  put('arjun',330,-1,{y:150,pose:'film'});await walk('arjun',270,60);
- await say('arjun','(filming, in a red jumper) HIIIII KEN. It’s me! Jess! From Fair City! I love your HAIRLINE—','laugh');
+ await say('arjun','(filming, in a red sweater) HIIIII KEN. It’s me! Jess! From Fair City! I love your HAIRLINE—','laugh');
  await N('Arjun is wearing red. He planned the red. He planned it three months ago.');
  ex('kenneth','cry');
  await say('kenneth','…Three months.','cry');
- await say('arjun','Three months, Ken! You told “Jess” about your MUM! You told her you sleep with a—','laugh');
+ await say('arjun','Three months, Ken! You told “Jess” about your MOM! You told her you sleep with a—','laugh');
  ex('jacob','angry');A.jacob.shake=1;
  await say('jacob','Stop.','angry');
  await walk('jacob',280,90);pose('jacob','hold');await hop('arjun',16,400);
@@ -187,7 +187,7 @@ hook({mis:'kaivibes',period:0,room:'bus',who:'nivaan',label:'Ask Nivaan why he�
   ['them','yo nivaan 🔥 been watching ur streams fr fr','07:58'],['them','u got that dawg in u no cap','07:58'],['me','OMG HI KAI. BIG FAN. HUGE. MASSIVE.','08:01'],
   ['them','collab?? fair city mall food court 4pm. bring snacks','08:02'],['them','specifically haribo. specifically the tangfastics','08:02'],['me','i will bring every tangfastic in the country','08:03'],
   ['them','also dont tell anyone. especially not kayden from year 8. hes a hater','08:04'],['note','The blue tick is slightly the wrong blue.']]);
- await say('hasan','Why would a man with a million followers specifically hate a Year 8 called Kayden?','shock');
+ await say('hasan','Why would a man with a million followers specifically hate a seventh grader called Kayden?','shock');
  await say('nivaan','Because Kayden is a HATER, Hasan. Keep up.','happy');
  D.f.kai1=1;part('kaivibes',1);
 }});
@@ -211,7 +211,7 @@ hook({mis:'kaivibes',period:8,room:'foodcourt',who:'nivaan',label:'Go to the col
  await say('kayden','Highgate Hittaz till I die. Also sorry. Both.','happy');
  await wait(400);
  await say('nivaan','Ninety-one viewers. NINETY-ONE.','happy');
- await N('It’s the most viewers he’s ever had. Kayden is trending at number forty in Fair City for “moustache in sweets”.');
+ await N('It’s the most viewers he’s ever had. Kayden is trending at number forty in Fair City for “moustache in candy”.');
  await complete('kaivibes');
 }});
 
@@ -219,25 +219,25 @@ hook({mis:'kaivibes',period:8,room:'foodcourt',who:'nivaan',label:'Go to the col
    SCREENSHOTS — the group chat
    ================================================================= */
 mission('groupchat',{name:'Screenshots',icon:'💬',who:['omer','arjun','hasan'],
- blurb:'Arjun said something about Omer’s mum in the group chat. Someone screenshotted it. Omer has seen it. Lunch is in two hours.',
+ blurb:'Arjun said something about Omer’s mom in the group chat. Someone screenshotted it. Omer has seen it. Lunch is in two hours.',
  parts:['Break: Omer has seen the screenshot','Lunch: get to Arjun first'],
- tips:['Break, the field.','Lunch, the canteen. If you know why Arjun is the way he is, you might be able to use it.'],
- variants:{sorry:'A real apology',nose:'The canteen table'}});
+ tips:['Break, the field.','Lunch, the cafeteria. If you know why Arjun is the way he is, you might be able to use it.'],
+ variants:{sorry:'A real apology',nose:'The cafeteria table'}});
 hook({mis:'groupchat',period:2,room:'field',who:'omer',label:'Ask Omer why he’s staring at his phone',cond:()=>!D.f.gc1,run:async()=>{
  scene('field',{omer:[150,1,{pose:'phone',y:146}],jacob:[200,-1,{y:146}],you:[124,1,{y:154}]});
  await say('omer','Someone sent me this. Look.','angry');
- await dms('THE LADS 🚫AIDAN','8 members',[
-  ['hasan','who’s going mall after','Thu 21:03'],['corey','me','21:03'],['david','me. campaigning','21:04'],['arjun','omer’s mum dresses him like she’s getting him ready to be sold at auction 💀','21:16'],
+ await dms('THE GUYS 🚫AIDAN','8 members',[
+  ['hasan','who’s going mall after','Thu 21:03'],['corey','me','21:03'],['david','me. campaigning','21:04'],['arjun','omer’s mom dresses him like she’s getting him ready to be sold at auction 💀','21:16'],
   ['david','😂😂','21:16'],['hasan','bro','21:17'],['corey','not cool man','21:17'],['arjun','what it’s a joke he’s not even in this chat','21:19'],['note','Omer is in the chat. Omer has always been in the chat.']]);
- await say('omer','“He’s not even in this chat.” I MADE the chat. I made it in Year 7. I named it.','angry');
+ await say('omer','“He’s not even in this chat.” I MADE the chat. I made it in sixth grade. I named it.','angry');
  await say('omer','And David laughed. Two crying emojis. Two.','angry');
  await say('jacob','That’s out of order. That’s really out of order.','angry');
- await say('omer','Canteen. Lunch. Arjun’s done. I’m going to put him through the table and then I’m going to put the table through him.','angry');
+ await say('omer','Cafeteria. Lunch. Arjun’s done. I’m going to put him through the table and then I’m going to put the table through him.','angry');
  D.f.gc1=1;part('groupchat',1);
 }});
 hook({mis:'groupchat',period:4,room:'canteen',who:'arjun',label:'Warn Arjun before Omer gets here',cond:()=>D.f.gc1&&!D.dead.arjun&&!D.dead.omer,run:async()=>{
  scene('canteen',{pat:[90,1,{y:140}],shermian:[140,1,{pose:'cross',y:140}],arjun:[204,-1,{pose:'cross',y:146}],hasan:[176,1,{y:146}],you:[230,-1,{y:154}]});
- await say('you','Omer’s seen the chat. The thing about his mum.');
+ await say('you','Omer’s seen the chat. The thing about his mom.');
  await say('arjun','It was a JOKE. He knows it’s a joke. Everyone knows I’m joking. That’s my whole personality.','smirk');
  const o=[{t:'“Then apologise properly. Like you mean it.”'},{t:'Let Omer handle it.'}];
  if(P.done.alone)o.unshift({t:'“You told me what your dad says to you. You know exactly what that feels like.”',tag:'🌇'});
@@ -249,18 +249,18 @@ hook({mis:'groupchat',period:4,room:'canteen',who:'arjun',label:'Warn Arjun befo
  await say('omer','“He’s not even in this chat.”','angry');
  if(real){
   await say('arjun','Omer. I’m sorry. Not a joke sorry. A real one.','sad');
-  await say('arjun','Your mum’s nice. She made me a sandwich in Year 8 when I didn’t have lunch, and she cut it into triangles, and I never said thank you. I say horrible stuff about everyone’s parents because mine are horrible about me.','cry');
-  await N('The whole table goes quiet. Hasan puts his crisps down. Nobody has ever heard Arjun say anything true out loud before.');
+  await say('arjun','Your mom’s nice. She made me a sandwich in seventh grade when I didn’t have lunch, and she cut it into triangles, and I never said thank you. I say horrible stuff about everyone’s parents because mine are horrible about me.','cry');
+  await N('The whole table goes quiet. Hasan puts his chips down. Nobody has ever heard Arjun say anything true out loud before.');
   await say('omer','…Triangles?','shock');
   await say('arjun','Triangles.','cry');
   await say('omer','(sitting down next to him) She always does triangles. She says squares are for people who’ve given up.','sad');
   await complete('groupchat','sorry');return;
  }
- if(tried)await say('arjun','Look, mate, it was a joke, I’m sorry you were offended—','smirk');
+ if(tried)await say('arjun','Look, bro, it was a joke, I’m sorry you were offended—','smirk');
  await say('omer','“Sorry you were offended.”','yell');
  pose('omer','grab');await walk('omer',214,120);
  await hop('arjun',10,300);SFX.crunch();shake(1.3);A.arjun.hurt=3;A.arjun.pose='lie';blood(A.arjun.x,A.arjun.y-10,30,1,70,A.arjun.y+2);
- await N('Omer puts Arjun’s face into the canteen table. The table wins. Arjun’s nose goes somewhere noses don’t go.');
+ await N('Omer puts Arjun’s face into the cafeteria table. The table wins. Arjun’s nose goes somewhere noses don’t go.');
  await evil('shermian');await say('shermian','OMER!','evil');await sweet('shermian','canteen');await say('shermian','…Good form, sweetie.','happy');
  await say('arjun','(from the floor, nose pouring) …It was a joke…','hurt');
  await say('omer','So’s your nose now.','angry');
@@ -273,7 +273,7 @@ hook({mis:'groupchat',period:4,room:'canteen',who:'arjun',label:'Warn Arjun befo
 mission('leaked',{name:'Leaked',icon:'🔓',who:['kenneth','nivaan','kayden'],
  blurb:'Last night a guy online said “yo it’s me, new account” and Kenneth believed him. He told him everything. Then the guy realised Kenneth wasn’t who he thought, got angry, and posted all of it.',
  parts:['Before school: Kenneth’s seen the post','Lunch: trace the account','After school: make them take it down'],
- tips:['Before school, bus loop.','Lunch, main corridor. Nivaan can trace anything.','After school, the roof car park. Someone there knows the guy.'],
+ tips:['Before school, bus loop.','Lunch, main corridor. Nivaan can trace anything.','After school, the rooftop parking. Someone there knows the guy.'],
  variants:{reported:'Reported and deleted',dad:'Told his dad'}});
 
 hook({mis:'leaked',period:0,room:'bus',who:'kenneth',label:'Ask Kenneth why he looks sick',cond:()=>!D.f.leak1&&!D.dead.kenneth,run:async()=>{
@@ -285,7 +285,7 @@ hook({mis:'leaked',period:0,room:'bus',who:'kenneth',label:'Ask Kenneth why he l
   ['them','what school u at now','00:06'],['me','highgate high obviously lol. year 10. ms loach for science','00:06'],['them','where do u live again','00:09'],['me','fair city. same as always','00:10'],
   ['them','wait. ur not kenny B. kenny B is from cardiff','00:11'],['me','who’s kenny b??','00:11'],['them','u wasted my time. watch this','02:14'],
   ['note','— 2:14am —'],['them','(posted publicly) KENNETH DUNCAN BRAMBLE. HIGHGATE HIGH, FAIR CITY. YEAR 10. DAD: GRAHAM BRAMBLE. SCIENCE TEACHER: MS LOACH. 5FT 7. SLEEPS WITH A NIGHTLIGHT. SPAM HIM 😂'],['note','312 shares']]);
- await say('kenneth','He said he was my mate. I thought he was someone from school who got a new account. People do that. People DO that.','cry');
+ await say('kenneth','He said he was my bro. I thought he was someone from school who got a new account. People do that. People DO that.','cry');
  await say('kenneth','I told him my middle name. Nobody knows my middle name. My middle name is DUNCAN.','cry');
  await say('paul','I won’t tell anyone about Duncan. I’ll take it to my grave. I’ll take it to YOUR grave if anyone else finds out.','angry');
  await say('kenneth','People are messaging me. Strangers. They know my dad’s name. One of them said “see you at Highgate”.','scared');
@@ -299,8 +299,8 @@ hook({mis:'leaked',period:4,room:'corridor',who:'nivaan',label:'Ask Nivaan to tr
  await say('nivaan','It’s a drawing of a Super Soaker with “HGH” on it. Highgate Hittaz.','shock');
  await say('nivaan','And the IP’s in Wales.','shock');
  await N('There is exactly one member of the Highgate Hittaz who lives in Wales.');
- await say('nivaan','Kayden’s cousin. Kayden’s cousin doxxed Kenneth because he thought Kenneth was a different Kenny who owes him twenty quid in Cardiff.','shock');
- await say('nivaan','Kayden’s always at the mall car park after school. Make him ring his cousin.');
+ await say('nivaan','Kayden’s cousin. Kayden’s cousin doxxed Kenneth because he thought Kenneth was a different Kenny who owes him twenty bucks in Cardiff.','shock');
+ await say('nivaan','Kayden’s always at the mall parking lot after school. Make him ring his cousin.');
  D.f.leak2=1;part('leaked',2);
 }});
 
@@ -311,22 +311,22 @@ hook({mis:'leaked',period:8,room:'carpark',who:'kayden',label:'Make Kayden ring 
  pose('kayden','phone');
  await say('Rhys (on speaker)','alright kay. what','smirk');
  await say('kayden','Did you post a kid’s whole life online last night? Kenneth? From MY school?','angry');
- await say('Rhys (on speaker)','he pretended to be kenny B. kenny B owes me twenty quid','smirk');
- await say('kayden','He didn’t pretend anything! YOU messaged HIM! You said “it’s me”! He’s just nice! He thought you were a mate!','yell');
+ await say('Rhys (on speaker)','he pretended to be kenny B. kenny B owes me twenty bucks','smirk');
+ await say('kayden','He didn’t pretend anything! YOU messaged HIM! You said “it’s me”! He’s just nice! He thought you were a bro!','yell');
  await say('Rhys (on speaker)','…oh','shock');
- await say('kayden','Take it down. Now. Or you’re out of the Hittaz. And I’m telling Nan.','angry');
- await say('Rhys (on speaker)','not nan. mate. not nan','scared');
+ await say('kayden','Take it down. Now. Or you’re out of the Hittaz. And I’m telling Grandma.','angry');
+ await say('Rhys (on speaker)','not grandma. bro. not grandma','scared');
  await N('Thirty seconds later the post is gone. The account is gone. The screenshots aren’t. Screenshots never are.');
  pose('kayden',null);
  if(!D.dead.kenneth){put('kenneth',330,-1,{y:150});await walk('kenneth',120,60)}
  if(A.kenneth){
   await say('kenneth','Is it gone?','scared');
   await say('kayden','It’s gone, bro. I’m sorry. On God. He’s my cousin and he’s an idiot. Hittaz don’t do that.','sad');
-  await say('kenneth','I told him everything because he said he was my mate. I just… I wanted someone to message me back at two in the morning.','sad');
+  await say('kenneth','I told him everything because he said he was my bro. I just… I wanted someone to message me back at two in the morning.','sad');
  }
  const c=await choose(['“Report the screenshots. All of them.”','“Tell your dad, Ken. Tonight.”']);
  if(c===0){
-  await N('The three of you sit on the car park floor and report every screenshot you can find. It takes forty minutes. Twelve get taken down. Kayden reports one of his own posts by accident and doesn’t say anything.');
+  await N('The three of you sit on the parking lot floor and report every screenshot you can find. It takes forty minutes. Twelve get taken down. Kayden reports one of his own posts by accident and doesn’t say anything.');
   await say('kenneth','Next time someone online says “it’s me”, I’m going to say “prove it” and then I’m going to log off and go outside.','sad');
   await complete('leaked','reported');return;
  }
@@ -343,7 +343,7 @@ Object.assign(ITEMS,{curl:'Corey’s purple C.U.R.L. tub (stolen)'});
 mission('emergency',{name:'Emergencies Only',icon:'🧴',who:['corey','tez','abby'],
  blurb:'Corey keeps a tub of purple C.U.R.L. curl cream in his black zip-up hoodie. He says it’s “for emergencies”. He has an emergency every hour. Today, the emergency is you.',
  parts:['Before school: nick the tub out of his hoodie','Break: Tez helps you “improve” it','Home time: Corey fixes his hair in front of Abby'],
- tips:['Before school, main corridor. He checks his curls in the door window.','Break, the toilets. Tez has supplies.','Home time, bus loop. He always does a last touch-up before the 43.'],
+ tips:['Before school, main corridor. He checks his curls in the door window.','Break, the bathroom. Tez has supplies.','Home time, bus loop. He always does a last touch-up before the 43.'],
  variants:{mayo:'Mayonnaise',glue:'Superglue',paint:'Purple paint'}});
 
 hook({mis:'emergency',period:0,room:'corridor',who:'corey',label:'Nick Corey’s curl cream',cond:()=>!has('curl')&&!D.f.curlSwap,run:async()=>{
@@ -373,7 +373,7 @@ hook({mis:'emergency',period:0,room:'corridor',who:'corey',label:'Nick Corey’s
 hook({mis:'emergency',period:2,room:'toilets',who:'tez',label:'Ask Tez to help with Corey’s curl cream',cond:()=>has('curl')&&!D.f.curlSwap,run:async()=>{
  scene('toilets',{tez:[200,-1,{pose:'lean',y:146}],you:[170,1,{y:154,hold:'powder'}]});
  await say('tez','C.U.R.L.? Corey’s C.U.R.L.? Oh, you’re evil. I like you. I’m twenty-one and I like you.','smirk');
- await say('tez','Options. I’ve got a mayonnaise sachet from 2019. I’ve got superglue. And I’ve got purple poster paint from the Year 7 art cupboard. Same colour as the tub. He’ll never know.','smirk');
+ await say('tez','Options. I’ve got a mayonnaise sachet from 2019. I’ve got superglue. And I’ve got purple poster paint from the sixth grade art closet. Same color as the tub. He’ll never know.','smirk');
  const c=await choose(['Mayonnaise.','Superglue.','Purple poster paint.']);
  D.f.curlSwap=['mayo','glue','paint'][c];
  await N(['You scoop out the curl cream and fill the tub with very old mayonnaise. It smells like a car boot sale.','Tez stirs half a tube of superglue into the curl cream with a lolly stick. It goes a bit shiny. It goes very shiny.','You fill the tub with purple poster paint. It looks exactly the same. It is not the same.'][c]);
@@ -410,10 +410,10 @@ hook({mis:'emergency',period:7,room:'bus',who:'corey',label:'Watch Corey do his 
  }
  await walk('corey',152,40);face('corey',-1);
  await say('corey','(quietly, just to you) Was this you?','sad');
- const c=await choose(['“Yeah. It was me.”','“No idea, mate. Probably Arjun.”']);
+ const c=await choose(['“Yeah. It was me.”','“No idea, bro. Probably Arjun.”']);
  if(c===0){
   await say('corey','…','sad');
-  await say('corey','My nan bought me my first tub. Year 8. She said “you’ve got your grandad’s hair, look after it”. I’ve been looking after it ever since.','sad');
+  await say('corey','My grandma bought me my first tub. seventh grade. She said “you’ve got your grandpa’s hair, look after it”. I’ve been looking after it ever since.','sad');
   await say('corey','…It’s fine. It was a good one. I’d have done it to you.','smirk');
   await say('corey','(zipping his hoodie up to his chin) I’m going to get you back, though. Not today. When you don’t expect it. Like the Curlfather.','smirk');
  }else{

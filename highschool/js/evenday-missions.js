@@ -30,7 +30,7 @@ Object.assign(BOARD,{psych:[0,0,0,0]});
    PERIOD 2 · HISTORY — OFF WITH THEIR HEADS (Mr. Grieve)
    ================================================================= */
 mission('heads',{name:'Off With Their Heads',icon:'🪓',who:['arjun','david','omer','hasan'],
- blurb:'Mr. Grieve doesn’t teach history. He re-enacts it. Today is the French Revolution, and he spent half-term building the guillotine himself.',
+ blurb:'Mr. Grieve doesn’t teach history. He re-enacts it. Today is the French Revolution, and he spent spring break building the guillotine himself.',
  parts:['Period 2, History: the people’s court'],tips:['Even day, Period 2, History. David brought his laminated birth certificate. He always does.'],
  variants:{saved:'Saved the king',grieve:'The blade remembered',arjun:'Long live the Republic'}});
 hook({mis:'heads',day:'even',period:1,room:'history',who:'auto',run:async()=>{
@@ -39,7 +39,7 @@ hook({mis:'heads',day:'even',period:1,room:'history',who:'auto',run:async()=>{
  await N('Period 2. History. There is a guillotine in the corner. It’s not a model. It’s taller than Mr. Grieve, and it smells of fresh varnish.');
  await say('grieve','France. 1793. The people have had ENOUGH. And so, frankly, have I.','angry');
  await scrawl('history',[],'#000');
- await say('grieve','I built her over half-term. Ash and oak. The blade is from a combine harvester. Her name is Margaret.','happy');
+ await say('grieve','I built her over spring break. Ash and oak. The blade is from a combine harvester. Her name is Margaret.','happy');
  await say('arjun','Sir, is that your real moustache, or did a squirrel die on your face during the war?','smirk');
  await say('grieve','…Thank you, Arjun. You’ve just volunteered to be King Louis the Sixteenth.','evil');
  A.arjun.pose=null;await Promise.all([walk('arjun',274,60),tw(A.arjun,{y:120},500)]);A.arjun.pose='kneel';A.arjun.dir=1;
@@ -47,7 +47,7 @@ hook({mis:'heads',day:'even',period:1,room:'history',who:'auto',run:async()=>{
  await say('grieve','The people’s court will now vote. Hands up for GUILTY.','yell');
  const v=await choose(['Vote guilty. He did call his moustache a squirrel.','Vote innocent and make a speech.','“Sir, this is a real blade.”']);
  if(v===0){await N('Hands go up. Omer’s goes up first. Hasan’s goes up so fast he nearly dislocates it.');await say('arjun','(from the collar) You’re all DEAD to me.','angry')}
- if(v===1){await say('you','Citizens! He’s horrible, but he’s OUR horrible. Who else is going to tell David his mum calls him “the first one”?');await say('david','…That’s a fair point, actually.','sad');await N('Three hands go up for innocent. Mr. Grieve looks at them the way you’d look at a dog that’s been sick on a carpet.')}
+ if(v===1){await say('you','Citizens! He’s horrible, but he’s OUR horrible. Who else is going to tell David his mom calls him “the first one”?');await say('david','…That’s a fair point, actually.','sad');await N('Three hands go up for innocent. Mr. Grieve looks at them the way you’d look at a dog that’s been sick on a carpet.')}
  if(v===2){await say('you','Sir. That blade is real.');await say('grieve','History is real, boy. That’s what makes it HISTORY.','evil')}
  await say('grieve','The people have spoken. And when the people are WRONG, the historian corrects them.','evil');
  A.grieve.pose=null;await walk('grieve',300,60);face('grieve',-1);pose('grieve','reach');
@@ -60,7 +60,7 @@ hook({mis:'heads',day:'even',period:1,room:'history',who:'auto',run:async()=>{
    await tw(gl,{by:84},140,'in');SFX.thud();shake(1.2);
    await N('The blade comes down on an empty collar and buries itself four inches into Margaret’s base.');
    await say('arjun','(on the floor, very pale) …I take it back. About the moustache. It’s a lovely moustache.','scared');
-   await say('grieve','(weeping into the rope) Two weeks of half-term. Two WEEKS.','cry');
+   await say('grieve','(weeping into the rope) Two weeks of spring break. Two WEEKS.','cry');
    await classOut(c);await complete('heads','saved');return}
   pose('you',null);await tw(gl,{by:84},140,'in');SFX.squelch();shake(1.4);
   await behead('arjun',1);
@@ -120,7 +120,7 @@ hook({mis:'stilllife',day:'even',period:1,room:'art',who:'auto',run:async()=>{
  const ch=await choose(['Grab the chisel from the clay table.','Distract her with art criticism.','Stay still. Like she said.'],'The plaster is at his chest.');
  if(ch===0){
   A.you.pose=null;await walk('you',150,90);hold('you','knife');pose('you','slam');
-  const ok=await mash('Chisel him out!',{need:20,time:5,info:'Chips fly. Don’t chisel his face. MASH!',onHit(){pl.cracks=(pl.cracks||0)+1;parts.push({x:A.marcus.x+rand(-6,6),y:A.marcus.y-pl.h+rand(0,pl.h),vx:rand(-30,30),vy:rand(-30,0),c:'#ecebe4',s:1,fy:A.marcus.y,life:1})}});
+  const ok=await mash('Chisel him out!',{need:20,time:5,info:'Fries fly. Don’t chisel his face. MASH!',onHit(){pl.cracks=(pl.cracks||0)+1;parts.push({x:A.marcus.x+rand(-6,6),y:A.marcus.y-pl.h+rand(0,pl.h),vx:rand(-30,30),vy:rand(-30,0),c:'#ecebe4',s:1,fy:A.marcus.y,life:1})}});
   pose('you',null);hold('you',null);
   if(ok){pl.hide=1;SFX.glass();A.marcus.pose=null;await N('The plaster comes off in a single shell, shaped exactly like Marcus. It stands up on its own. It’s a better likeness than any painting.');await say('marcus','(free, dusty) I’ve never been so grateful to be hit with a chisel.','happy');await say('dahl','…You’ve made sculpture. By accident. I hate it. B-plus.','sad');await classOut(c);await complete('stilllife','free');return}
   await tw(pl,{h:30},600);
@@ -132,7 +132,7 @@ hook({mis:'stilllife',day:'even',period:1,room:'art',who:'auto',run:async()=>{
   await say('dahl','How DARE you. Plaster. MORE plaster.','evil');await tw(pl,{h:30},600);
  }
  await tw(pl,{h:34},800);
- await N('The plaster closes over the top of his fringe. For four minutes there’s the faint sound of somebody humming in there. Then there isn’t.');
+ await N('The plaster closes over the top of his bangs. For four minutes there’s the faint sound of somebody humming in there. Then there isn’t.');
  D.dead.marcus=1;
  await say('dahl','(stepping back, crying with joy) STILL. Finally. Perfectly STILL.','happy');
  await say('dheva','She’s going to put him in the corridor. She’s going to put him by the trophies, isn’t she.','shock');
@@ -201,16 +201,16 @@ hook({mis:'pitch',day:'even',period:3,room:'music',who:'auto',run:async()=>{
    PERIOD 4 · ICT — CTRL+ALT+DELETE (Mrs. Byte)
    ================================================================= */
 mission('delete',{name:'Ctrl+Alt+Delete',icon:'💻',who:['nivaan','mia','kayden'],
- blurb:'Mrs. Byte has replaced the register with an AI called HIGHGATE OS. It grades every student in real time. The lowest score gets “deleted”. Nobody knows what that means yet.',
+ blurb:'Mrs. Byte has replaced the attendance list with an AI called HIGHGATE OS. It grades every student in real time. The lowest score gets “deleted”. Nobody knows what that means yet.',
  parts:['Break: Nivaan and Mia have a plan','Period 4, ICT: log in as admin'],tips:['Even day, break, main corridor. You’ll need the admin password. Ms. Shermian’s cat might help.','Even day, Period 4, ICT.'],
  variants:{admin:'Admin access',spark:'Hard reset'}});
 hook({mis:'delete',day:'even',period:2,room:'corridor',who:'nivaan',label:'Ask Nivaan what he’s typing',look:{pose:'phone',ex:'angry'},cond:()=>!D.f.del1,run:async()=>{
  scene('corridor',{nivaan:[120,-1,{pose:'phone',y:146}],mia:[148,-1,{y:146,pose:'cross'}],you:[96,1,{y:154}]},true);
  await say('nivaan','HIGHGATE OS. Byte’s AI. It’s been scoring us. Live. I’m on 41. Kayden’s on 3. Three, out of a hundred.','scared');
- await say('mia','Yesterday Tyler was bottom. Today he’s not on the register. Not absent. Not on it. Like he never existed.','angry');
+ await say('mia','Yesterday Tyler was bottom. Today he’s not on the attendance list. Not absent. Not on it. Like he never existed.','angry');
  await say('nivaan','If I can get admin, I can turn the scoring off. I just need the password. It’s some teacher’s. They all use the same one.','smirk');
  const c=await choose([{t:'“Mr. Biscuits.” Shermian’s dead cat.',dis:!P.intel.shermianCat,why:'you don’t know the cat’s name'},{t:'“Password123.”'},{t:'“I don’t know.”'}]);
- if(c===0){D.f.delPass=1;await say('nivaan','MrBiscuits1… capital M… exclamation mark… WE’RE IN. Oh my God. All the teachers use it. The HEADTEACHER uses it.','happy')}
+ if(c===0){D.f.delPass=1;await say('nivaan','MrBiscuits1… capital M… exclamation mark… WE’RE IN. Oh my God. All the teachers use it. The PRINCIPAL uses it.','happy')}
  else if(c===1){await say('nivaan','Account locked. Account locked for twenty minutes. Thanks.','angry')}
  else await say('mia','Then we do it the cadet way. We pull the plug.','smirk');
  D.f.del1=1;part('delete',1);
@@ -265,10 +265,10 @@ hook({mis:'breath',day:'even',period:5,room:'pool',who:'auto',run:async()=>{
  await say('tarn','BREATH TEST. Into the water. Under you go. Two minutes, or you’re not a swimmer, you’re a passenger.','yell');
  for(const k of kids){if(!A[k])continue;A[k].pose='swim';walk(k,A[k].x,60);tw(A[k],{y:150},500)}
  A.you.pose='swim';await tw(A.you,{y:150},500);
- if(A.hasan){A.hasan.hold='ball';await say('hasan','(in armbands) I can’t swim. I’ve told her. I told her in Year 7. She said “not with that attitude”.','scared')}
+ if(A.hasan){A.hasan.hold='ball';await say('hasan','(in armbands) I can’t swim. I’ve told her. I told her in sixth grade. She said “not with that attitude”.','scared')}
  await say('tarn','Hasan. Armbands OFF.','evil');
  A.tarn.pose=null;await walk('tarn',A.hasan?A.hasan.x-14:150,90);
- if(A.hasan){pose('tarn','grab');A.hasan.hold=null;await tw(A.hasan,{y:166},400);A.hasan.ex='scared';await N('She puts one hand on top of his head and pushes him under, calm as anything, like she’s dunking a biscuit.')}
+ if(A.hasan){pose('tarn','grab');A.hasan.hold=null;await tw(A.hasan,{y:166},400);A.hasan.ex='scared';await N('She puts one hand on top of his head and pushes him under, calm as anything, like she’s dunking a cookie.')}
  const ch=await choose(['Dive for the deep-end drain and open it.','“JACOB.”','Hold your own breath. Wait it out.']);
  if(ch===0){
   await walk('you',14,90);await tw(A.you,{y:168},300);
@@ -306,12 +306,12 @@ hook({mis:'breath',day:'even',period:5,room:'pool',who:'auto',run:async()=>{
    ================================================================= */
 mission('measure',{name:'Measure Twice',icon:'🪚',who:['tez','dheva','angelo'],
  blurb:'Mr. Oakes builds coffins in his spare time. He measures students in class. “For later.” Today he’s measuring Dheva.',
- parts:['Lunch: Tez knows about Mr. Oakes','Period 6, Woodwork: the lathe'],tips:['Even day, lunch, the toilets. Tez has been measured before.','Even day, Period 6, Woodwork. The big red button stops the lathe.'],
+ parts:['Lunch: Tez knows about Mr. Oakes','Period 6, Woodwork: the lathe'],tips:['Even day, lunch, the bathroom. Tez has been measured before.','Even day, Period 6, Woodwork. The big red button stops the lathe.'],
  variants:{stop:'Emergency stop',coffin:'Measured for his own'}});
 hook({mis:'measure',day:'even',period:4,room:'toilets',who:'tez',label:'Ask Tez about Mr. Oakes',look:{x:292,dir:-1,pose:'lean'},cond:()=>!D.f.oak1,run:async()=>{
  scene('toilets',{tez:[292,-1,{pose:'lean',y:146}],you:[260,1,{y:154}]});
- await say('tez','Oakes measured me in Year 7. Shoulders, height, “depth”. Said he’d have it ready for when I left.','smirk');
- await say('tez','Six years in Year 11. I’m not leaving. He can’t finish my coffin. That’s my whole retirement plan.','smirk');
+ await say('tez','Oakes measured me in sixth grade. Shoulders, height, “depth”. Said he’d have it ready for when I left.','smirk');
+ await say('tez','Six years in tenth grade. I’m not leaving. He can’t finish my coffin. That’s my whole retirement plan.','smirk');
  await say('tez','The lathe in his room has an emergency stop. Big red button. He’s taped over it. Here.','smirk');
  give('tapepeel');ITEMS.tapepeel='A thumbnail with nothing under it (for peeling tape)';
  await N('He shows you his thumbnail. It’s very long. He says you’ll need one like it. He lends you a nail file and tells you to keep it.');
@@ -337,7 +337,7 @@ hook({mis:'measure',day:'even',period:5,room:'woodwork',who:'auto',run:async()=>
    await N('He backs into his own blank coffin. It tips. He tips. The lid drops shut on top of him, and the latch, which he made himself, very well, clicks.');
    prop({t:'coffin',x:262,y:146});A.oakes.vis=false;D.dead.oakes=1;
    await say('oakes','(muffled) …It’s a perfect fit.','sad');
-   await say('angelo','I’ve got nails. Two quid. I’m not saying do it. I’m saying I’ve got nails.','smirk');
+   await say('angelo','I’ve got nails. Two bucks. I’m not saying do it. I’m saying I’ve got nails.','smirk');
    await classOut(c);await complete('measure','coffin');return}}
  if(A.dheva){SFX.squelch();shake(1.4);blood(A.dheva.x,A.dheva.y-24,60,1,120,A.dheva.y+2);kill('dheva','crush',{pool:30});await N('The lathe takes the string, then the hood, then Dheva. Mr. Oakes turns it off with his foot and writes a number on the blank tag.')}
  await say('oakes','Five eight. Quick job.','smirk');
@@ -421,7 +421,7 @@ hook({mis:'talent',day:'even',period:6,room:'hall',who:'auto',run:async()=>{
  const run_={
   paul:async()=>{put('paul',334,-1,{y:100});await walk('paul',190,90);put('kenneth',-14,1,{y:100});await walk('kenneth',150,90);pose('paul','grab');await hop('kenneth',18,500);A.kenneth.pose='lie';SFX.thud();shake(1);await say('paul','THANK YOU, HIGHGATE.','happy');heat+=1;remove('paul');A.kenneth.pose=null;remove('kenneth')},
   marcus:async()=>{put('marcus',334,-1,{y:100});await walk('marcus',170,80);await say('marcus','Good afternoon. I’m Marcus. This is a family show, so I’ve prepared eleven minutes of material about sausages.','smirk');const r=await meter('Laugh at the right moment',{speed:1.1});heat+=r?1:0;await say('marcus',r?'Thank you. You’ve been a firm crowd.':'…Tough room. Tough, dry room.','smirk');remove('marcus')},
-  kayden:async()=>{put('kayden',334,-1,{y:100});await walk('kayden',170,80);await say('kayden','(rapping) Highgate Hittaz, we don’t do maths, we do STRAPS, which are water pistols, we are not a real gang, please do not arrest my cousin—','smirk');heat+=Math.random()<.5?1:0;remove('kayden')},
+  kayden:async()=>{put('kayden',334,-1,{y:100});await walk('kayden',170,80);await say('kayden','(rapping) Highgate Hittaz, we don’t do math, we do STRAPS, which are water pistols, we are not a real gang, please do not arrest my cousin—','smirk');heat+=Math.random()<.5?1:0;remove('kayden')},
   sean:async()=>{put('sean',334,-1,{y:100});put('stella',344,-1,{y:100});await walk('sean',176,80);await walk('stella',152,80);face('stella',1);cue('romance');fxState.romance=.4;await say('sean','(singing, the voice coming up through the floor) “…our Fridays, our friends…”','closed');await say('stella','(singing with him) “…let Friday pass.”','love');fxState.romance=0;cue('hall');heat+=2;remove('sean');remove('stella')}
  };
  for(const a of order)if(run_[a]&&!D.dead[a]){await run_[a]();SFX.cheer();await wait(300)}

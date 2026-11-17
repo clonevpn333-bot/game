@@ -103,7 +103,7 @@ const ROOMS={
   lock(4,6,212);lock(232,6,226);
   // classroom doors with number plates and a glimpse inside
   const door_=(x,label,inside)=>{R(x-3,40,32,72,'#6a5a48');R(x,43,26,69,'#8a5e3a');R(x+1,44,24,1,'#a87a52');R(x+12,44,1,66,'rgba(0,0,0,.15)');R(x+6,50,14,20,'#2a2a30');R(x+7,51,12,18,inside);R(x+7,51,12,1,'rgba(255,255,255,.5)');R(x+20,80,3,2,'#d8c890');R(x+3,30,20,8,'#2a2a3a');pxc(label,x+13,32,'#f0e0a0');R(x-3,110,32,2,'rgba(0,0,0,.25)')};
-  door_(104,'ENG','#7a8a5a');door_(196,'MATHS','#e8c4cc');
+  door_(104,'ENG','#7a8a5a');door_(196,'MATH','#e8c4cc');
   // notice board & trophies
   R(138,40,52,37,'#8a5e3a');R(140,42,48,33,'#c8a070');poster(142,44,21,15,'#e05a5a',['BAKE','SALE']);poster(165,44,21,15,'#5a8ae0',['VOTE','DAVID']);poster(142,60,21,14,'#f0d070',['LOST','CAT'],'#3a2a1a');poster(165,60,21,14,'#7a5ab0',['PROM','?']);
   R(140,78,48,30,'#3a2a20');R(142,80,44,26,'#9ac0d8');R(142,80,44,1,'#e0f0ff');R(142,92,44,1,'#5a4a3a');for(let i=0;i<4;i++){R(146+i*10,84,6,8,'#e8c040');R(147+i*10,82,4,2,'#e8c040');R(148+i*10,84,1,6,'#fff09a');R(146+i*10,96,6,8,'#c8c8d0')}R(142,105,44,1,'#5a4a3a');
@@ -122,9 +122,9 @@ const ROOMS={
   wood('#8a6a48','#7a5a38');lightShaft(250,56);
   R(18,120,50,4,'#6a4a2a');R(20,124,46,22,'#7a5a3a');R(20,124,46,1,'#9a7a5a');R(28,112,14,8,'#f4f0e6');R(30,110,10,2,'#f4f0e6');R(50,114,6,6,'#c83030');R(52,112,2,2,'#3a8a3a');
  },items:classroomDesks()},
- maths:{name:'Maths — Ms. Shermian',music:'class',bg(){
+ maths:{name:'Math — Ms. Shermian',music:'class',bg(){
   wall('#e8c4cc','#a87a8a');lights(3);
-  board(96,22,124,56,[['MATHS :)','#c04070'],['2X + 3 = 11'],['X = ?'],['BE NICE','#c04070'],['OR ELSE','#c04070']]);
+  board(96,22,124,56,[['MATH :)','#c04070'],['2X + 3 = 11'],['X = ?'],['BE NICE','#c04070'],['OR ELSE','#c04070']]);
   R(232,22,74,52,'#fff');R(232,22,74,6,'#c04070');pxc('SEATING PLAN',269,23,'#fff');for(let r=0;r<4;r++)for(let c=0;c<5;c++){R(236+c*14,32+r*10,12,8,(r*5+c)%4?'#f0d8e0':'#e8b0c4');R(238+c*14,35+r*10,8,1,'#8a6a7a')}
   R(10,24,46,40,'#f4e8c8');R(14,28,38,22,'#d8a868');R(20,32,10,10,'#e8c8a0');R(22,30,2,2,'#d8a868');R(28,30,2,2,'#d8a868');pxc('MR BISCUITS',33,54,'#802040');
   windowPane(236,80,70,24);clock(82,14);
@@ -156,7 +156,7 @@ const ROOMS={
   const bub=Math.sin(T*3);R(244,118,58,6,'#5a5a5a');R(246,124,54,26,'#4a4a4a');R(246,124,54,1,'#6a6a6a');R(248,114,50,6,'#6aff8a');for(let i=0;i<5;i++){const q=(T*1.3+i*.37)%1;R(252+i*10,116-q*8,2,2,'rgba(160,255,180,'+(1-q)+')')}g.globalAlpha=.12+bub*.04;R(236,90,74,30,'#6aff8a');g.globalAlpha=1;pxc('ACID',273,134,'#e8e070');
   R(90,120,90,4,'#1a1a1a');R(92,124,86,20,'#3a3a3a');
  },items:[{y:158,d:()=>{R(100,145,120,4,'#1a1a1a');R(102,149,116,11,'#3a3a3a');R(102,149,116,1,'#5a5a5a')}}]},
- canteen:{name:'Canteen',music:'canteen',bg(){
+ canteen:{name:'Cafeteria',music:'canteen',bg(){
   wall('#d8e0e8','#8a98a8');lights(4);for(let i=0;i<W;i+=10)R(i,0,1,106,'rgba(0,0,0,.04)');for(let j=0;j<106;j+=10)R(0,j,W,1,'rgba(0,0,0,.04)');
   R(16,18,96,40,'#2a2a2a');R(18,20,92,36,'#1a3a2a');px('TODAY:',22,23,'#f0f0a0');px('MYSTERY NUGGETS',22,31,'#fff');px('GREY PASTA',22,39,'#fff');px('PAT\'S STEW (?)',22,47,'#e06a6a');
   R(10,70,150,36,'#9aa0aa');R(10,70,150,3,'#c8ccd0');for(let i=0;i<6;i++){R(16+i*24,62,20,8,'#c8ccd0');R(18+i*24,64,16,4,['#e8c04a','#a8a088','#c86a3a','#7a9a3a','#e8e0c8','#8a5a3a'][i])}R(10,70,150,1,'#fff');
@@ -191,7 +191,7 @@ const ROOMS={
   R(124,48,72,52,'#2a2030');for(let i=0;i<3;i++){R(130+i*22,58,18,14,'#1a1a2a');R(131+i*22,59,16,10,'#4a8ac0');R(137+i*22,72,4,4,'#555')}R(126,78,68,3,'#7a5a3a');
   wood('#7a5238','#6a4228');
  },items:[{y:160,d:()=>{R(110,146,100,4,'#8a6a48');R(112,150,96,2,'#6a4a2a');R(118,152,2,10,'#4a3a2a');R(200,152,2,10,'#4a3a2a');R(130,142,10,4,'#a03030');R(170,141,8,5,'#3050a0')}}]},
- office:{name:'Head of Year’s Office',music:'office',bg(){
+ office:{name:'Vice Principal’s Office',music:'office',bg(){
   wall('#4a2a24','#2a1410');for(let i=0;i<W;i+=16)R(i,30,1,76,'rgba(0,0,0,.2)');R(0,30,W,2,'#6a3a2a');
   R(126,8,64,46,'#c8a040');R(130,12,56,38,'#3a2a3a');drawKid(K.sherman,158,52,{dir:1,still:1,ex:'smirk'});pxc('OUR LEADER',158,56,'#e8c060');
   R(14,24,70,82,'#5a3a2a');R(16,26,66,78,'#2a1a1a');for(let r=0;r<4;r++){R(16,44+r*19,66,2,'#5a3a2a');for(let i=0;i<7;i++)R(19+i*9,30+r*19,6,10,['#262938','#c03030','#e0c040','#262938','#40a0e0','#262938','#aaa'][(i+r)%7])}R(16,26,66,78,'rgba(150,200,255,.08)');pxc('CONFISCATED',49,18,'#e8c060');
@@ -199,7 +199,7 @@ const ROOMS={
   tiles('#5a3a30','#4a2a24',22);
   if(!((typeof D!=="undefined"&&D)&&D.f&&D.f.pitOpen)){R(128,156,60,3,'rgba(0,0,0,.35)');R(128,156,1,14,'rgba(0,0,0,.3)');R(187,156,1,14,'rgba(0,0,0,.3)');R(128,169,60,1,'rgba(0,0,0,.3)')}else{R(128,156,60,14,'#030204');R(130,158,56,2,'#1a0a0a')}
  },items:[{y:150,d:()=>{R(110,118,96,5,'#3a1a10');R(112,123,92,26,'#5a2a1a');R(112,123,92,1,'#7a4a3a');R(150,128,16,6,'#3a1a10');R(156,114,4,4,'#333');R(157,110,2,4,'#555');R(168,116,6,3,'#c02020');R(124,113,12,5,'#f4f0e6');R(186,112,6,6,'#e8e2d6')}}]},
- toilets:{name:'Boys’ Toilets',music:'toilets',bg(){
+ toilets:{name:'Boys’ Bathroom',music:'toilets',bg(){
   const fl=Math.sin(T*23)>.85&&Math.sin(T*3)>0;
   R(0,0,W,112,fl?'#8a9aa0':'#b8c8cc');for(let i=0;i<W;i+=8)R(i,0,1,112,'rgba(0,0,0,.07)');for(let j=0;j<112;j+=8)R(0,j,W,1,'rgba(0,0,0,.07)');R(0,0,W,4,'#6a7a80');
   for(let i=0;i<4;i++){const x=150+i*42;R(x,26,38,86,'#5a7a8a');R(x+2,30,34,82,'#6a8a9a');R(x+30,66,3,4,'#ccc');if(i===2){R(x+6,40,24,8,'#3a3a3a');px('AIDAN',x+8,42,'#fff')}}

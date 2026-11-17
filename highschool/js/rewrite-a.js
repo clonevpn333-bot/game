@@ -7,7 +7,7 @@
 function dropHooks(mis){for(let i=HOOKS.length-1;i>=0;i--)if(HOOKS[i].mis===mis)HOOKS.splice(i,1)}
 async function talk(lines){for(const l of lines){if(typeof l==='function')await l();else await say(l[0],l[1],l[2])}}
 function classLaugh(ms){SFX.cheer();const who=Object.keys(A).filter(k=>k!=='you'&&!A[k].dead&&!TEACHERS.includes(k));const old={};who.forEach(k=>{old[k]=A[k].ex;A[k].ex='laugh'});setTimeout(()=>who.forEach(k=>{if(A[k]&&A[k].ex==='laugh')A[k].ex=old[k]}),ms||1400)}
-Object.assign(ITEMS,{watch:'Omer’s watch (his mum’s birthday present)'});
+Object.assign(ITEMS,{watch:'Omer’s watch (his mom’s birthday present)'});
 
 /* =================================================================
    AIDAN'S BAD DAY
@@ -72,7 +72,7 @@ hook({mis:'bully',period:1,room:'english',who:'auto',run:async()=>{
  if(p===2){
   A.aidan.pose=null;await tw(A.aidan,{y:150},200);
   await say('aidan','Sorry, Miss. I’ve left my—');
-  await N('He sits back down for his other sheet. You pull. He meets the floor at the speed of everyone’s favourite memory.');
+  await N('He sits back down for his other sheet. You pull. He meets the floor at the speed of everyone’s favorite memory.');
   A.aidan.pose='lie';A.aidan.dir=1;SFX.thud();shake(.6);classLaugh();
   await wait(900);
   await N('He doesn’t use his hands to get up. He just sort of… unfolds, all in one piece, like someone pulling a sheet off a bed.');
@@ -121,7 +121,7 @@ hook({mis:'bully',period:1,room:'english',who:'auto',run:async()=>{
   await say('balduf','“Could HAVE.” I did tell you, darling. It’s on the board.','evil');
   await die('redpen');
  }
- if(r===2){await say('you','“Ms. Balduf, your cardigan is green, like the leaves in a spring we’ll never deserve.”');await say('balduf','…That’s the most beautiful thing anyone has said to me since 1996. A-star.','cry')}
+ if(r===2){await say('you','“Ms. Balduf, your cardigan is green, like the leaves in a spring we’ll never deserve.”');await say('balduf','…That’s the most beautiful thing anyone has said to me since 1996. A-plus.','cry')}
  else{await say('you','“O lunch. Twelve-twenty. I think about you all morning.”');await say('balduf','Relatable. C.')}
  c.stay=['aidan'];await classOut(c);
  if(A.aidan){A.aidan.pose=null;await tw(A.aidan,{y:150},200);await walk('aidan',A.you.x-12,60);face('aidan',1)}
@@ -139,13 +139,13 @@ hook({mis:'bully',period:2,room:'field',who:'omer',label:'Show Omer the video',c
  await say('omer','Again.','angry');
  await N('On the third time he mouths along with one line. The one about the creases.');
  pose('you',null);
- await say('omer','She does iron creases in my shorts. She does it on Sunday nights, while the football’s on. Nobody knows that.','sad');
+ await say('omer','She does iron creases in my shorts. She does it on Sunday nights, while the soccer’s on. Nobody knows that.','sad');
  await say('omer','How does HE know that?','angry');
  await walk('jacob',170,40);
- await say('jacob','That’s about your mum. That’s out of order. I’m getting angry and it’s not even my mum.','angry');
+ await say('jacob','That’s about your mom. That’s out of order. I’m getting angry and it’s not even my mom.','angry');
  pose('omer','reach');await wait(300);pose('omer',null);
  await N('Omer takes his watch off. Carefully. Like it’s the only thing he owns that he’s scared of breaking.');
- await say('omer','Hold this. My mum got it me for my birthday. I don’t want anything on it.','sad');
+ await say('omer','Hold this. My mom got it me for my birthday. I don’t want anything on it.','sad');
  give('watch');
  A.omer.shake=1;SFX.crunch();await wait(300);A.omer.shake=0;
  await say('omer','Lunch. The lockers. Tell everyone.','angry');
@@ -155,7 +155,7 @@ hook({mis:'bully',period:2,room:'field',who:'omer',label:'Show Omer the video',c
  D.f.fight=1;
  if(c===0){D.f.crowd=2;await say('omer','Good. I want an audience. I want it on the news.')}
  if(c===1){D.f.crowd=2;D.f.hold=1;await say('omer','You hold him. I do the rest. Like a team.')}
- if(c===2){D.f.crowd=1;await say('omer','Did he leave it? Did he leave my MUM out of it?','yell');await say('you','…No.');await say('omer','Then I’m not leaving it.')}
+ if(c===2){D.f.crowd=1;await say('omer','Did he leave it? Did he leave my MOM out of it?','yell');await say('you','…No.');await say('omer','Then I’m not leaving it.')}
  if(c===3){D.f.crowd=2;D.f.padlock=1;take('padlock');hold('omer','padlock');await say('omer','…Where did you even get this.','shock');await say('you','Locker 13.');await say('omer','Angelo sells padlocks in socks. Of course he does.','smirk')}
  await say('jacob','(already walking off to tell people) Lockers. Lunch. Omer versus the bowl.','angry');
  await remove('jacob');
@@ -170,9 +170,9 @@ hook({mis:'bully',period:4,room:'corridor',who:'auto',cond:()=>D.f.fight,run:asy
  await N('Lunch. The main corridor. Aidan is at locker 217 with the door open, standing very still, looking into it like it’s a window.');
  for(const n of[4,7,10,big?16:9]){crowd.n=n;await wait(350)}
  crowd.front=big?7:3;crowd.phones=true;
- await N(big?'It fills up fast. Year 7s on the radiators. Year 11s on the stairs. Somebody’s brought crisps.':'A few people heard. A few people came.');
+ await N(big?'It fills up fast. sixth graders on the radiators. tenth graders on the stairs. Somebody’s brought chips.':'A few people heard. A few people came.');
  put('nivaan',334,-1,{y:156,pose:'film'});walk('nivaan',236,80);
- await say('nivaan',big?'We are LIVE. Four hundred. Five hundred. Chat is feral. Chat wants blood.':'We’re live. Thirty-one viewers. Hi, Mum.','happy');
+ await say('nivaan',big?'We are LIVE. Four hundred. Five hundred. Chat is feral. Chat wants blood.':'We’re live. Thirty-one viewers. Hi, Mom.','happy');
  put('omer',-14,1,{y:150});
  crowd.cheer=true;cue('fight');
  await crowdSay('FIGHT! FIGHT! FIGHT!');
@@ -207,7 +207,7 @@ hook({mis:'bully',period:4,room:'corridor',who:'auto',cond:()=>D.f.fight,run:asy
   pose('aidan','grab');await walk('aidan',50,80);SFX.locker();shake(.9);wallSplat(30,70,8);
   A.omer.pose='lie';A.omer.hurt=3;SFX.thud();A.omer.bleed=1;crowd.cheer=false;
   await crowdSay('…oh.');
-  await say('omer','(from the floor) …Mum…','cry');
+  await say('omer','(from the floor) …Mom…','cry');
   put('sherman',334,-1,{y:150});await walk('sherman',250,60);
   await say('sherman','WHAT is going ON in my corridor?','yell');
   await say('sherman','Omer. Lying down. On school property. Detention.','angry');
@@ -243,7 +243,7 @@ hook({mis:'bully',period:4,room:'corridor',who:'auto',cond:()=>D.f.fight,run:asy
  cue('dead');crowd.cheer=false;
  await N('On the fifth slam something gives. It isn’t the locker door.');
  await say('nivaan','(very quietly) …Stream got banned. I’ve been banned from the internet.','shock');
- await say('omer','(looking at his hands) He shouldn’t have said that about my mum.','sad');
+ await say('omer','(looking at his hands) He shouldn’t have said that about my mom.','sad');
  await N('You hold out his watch. He looks at it for a long time. Then he puts it in his pocket instead of on his wrist.');
  take('watch');
  put('sherman',334,-1,{y:150});await walk('sherman',190,50);
@@ -261,15 +261,15 @@ hook({mis:'bully',period:4,room:'corridor',who:'auto',cond:()=>D.f.fight,run:asy
 dropHooks('seat');
 Object.assign(MIS.seat,{
  blurb:'Ms. Shermian has a new seating plan. It splits up Corey, Arjun, Alex, Dheva and Marcus, which is the point. Her mood flips faster than the strip light.',
- parts:['Period 3, Maths: the new plan','Lunch, Maths: her drawer','Period 7, Maths: the swap'],
- tips:['Period 3, Maths. She’ll call you up one at a time.','Lunch, the Maths room. She’s on canteen duty. Dheva and Marcus are already in there.','Period 7, Maths. Keep her sweet. Do something about Arjun’s mouth (Angelo sells tape).']});
+ parts:['Period 3, Math: the new plan','Lunch, Math: her drawer','Period 7, Math: the swap'],
+ tips:['Period 3, Math. She’ll call you up one at a time.','Lunch, the Math room. She’s on cafeteria duty. Dheva and Marcus are already in there.','Period 7, Math. Keep her sweet. Do something about Arjun’s mouth (Angelo sells tape).']});
 
 hook({mis:'seat',period:3,room:'maths',who:'auto',run:async()=>{
  const line=['corey','arjun','alex','dheva','marcus','tyler'].filter(n=>!D.dead[n]);
  const cast={shermian:[44,1,{pose:'hips',y:146,hold:'clipboard'}]};
  line.forEach((n,i)=>cast[n]=[96+i*24,-1,{y:126}]);cast.you=[96+line.length*24,-1,{y:126}];
  scene('maths',cast,true);cue('class');
- await N('Period 3. Maths. The desks have been pushed into new rows. Nobody is allowed to sit down. Everyone stands along the back wall like it’s an identity parade.');
+ await N('Period 3. Math. The desks have been pushed into new rows. Nobody is allowed to sit down. Everyone stands along the back wall like it’s an identity parade.');
  await say('shermian','Good morning, my angels! NEW SEATING PLAN! Isn’t that exciting?','happy');
  await say('marcus','I love it when she rearranges things. Gets everyone worked up.','smirk');
  const send=async(id,row,i,line_,ex_)=>{await say('shermian',line_,ex_||'happy');if(!A[id])return;A[id].pose=null;await Promise.all([walk(id,seatOf(row,i).x,70),tw(A[id],{y:seatOf(row,i).y},600)]);sitAt(id,row,i,-1)};
@@ -291,9 +291,9 @@ hook({mis:'seat',period:3,room:'maths',who:'auto',run:async()=>{
  await sweet('shermian');
  await say('shermian','Lovely. Sit up straight, sweetie.','happy');
  face('arjun',1);
- await say('arjun','(to Dheva, across the front row) Should’ve used more powder, mate. Your hair’s louder than you are.','smirk');
+ await say('arjun','(to Dheva, across the front row) Should’ve used more powder, bro. Your hair’s louder than you are.','smirk');
  ex('dheva','sad');face('arjun',-1);
- await say('arjun','Miss. Is your husband still staying at his mum’s? Asking for the whole class.','smirk');
+ await say('arjun','Miss. Is your husband still staying at his mom’s? Asking for the whole class.','smirk');
  await evil('shermian');
  await say('shermian','What. Did. You. Say.','evil');
  const c=await choose(['“Miss! Is that a picture of your cat?”','Say nothing.']);
@@ -312,7 +312,7 @@ hook({mis:'seat',period:3,room:'maths',who:'auto',run:async()=>{
   await say('shermian','Come here, sweetie. Hugs.','happy');
   await wait(500);SFX.crunch();shake(1);flash('#fff',.3);
   kill('tyler','lie',{pool:10,bleed:0,spray:2});A.tyler.ex='dead';pose('shermian',null);
-  await N('It sounds exactly like someone opening a bag of crisps.');
+  await N('It sounds exactly like someone opening a bag of chips.');
   await say('shermian','Seat fourteen is available, everyone!','happy');
   await say('arjun','…Okay. That one’s on me. I accept that.','shock');
   await Promise.all([walk('shermian',44,70),tw(A.shermian,{y:146},400)]);face('shermian',1);A.shermian.pose='hips';
@@ -328,7 +328,7 @@ hook({mis:'seat',period:3,room:'maths',who:'auto',run:async()=>{
 
 hook({mis:'seat',period:4,room:'maths',who:'dheva',label:'Ask Dheva about the plan',look:{pose:'cover',ex:'sad'},cond:()=>D.f.seat1&&!D.f.seat2,run:async()=>{
  scene('maths',{dheva:[160,1,{y:146}],marcus:[200,-1,{y:146}],you:[124,1,{y:152}]});
- await say('dheva','She’s on canteen duty till quarter to. The drawer’s locked, but it’s a rubbish lock. It’s a diary lock. It’s a lock you get free with a magazine.');
+ await say('dheva','She’s on cafeteria duty till quarter to. The drawer’s locked, but it’s a garbage lock. It’s a diary lock. It’s a lock you get free with a magazine.');
  await say('marcus','I’ve never been in a teacher’s drawers before.','smirk');
  await say('marcus','…I heard it as I said it. I’m keeping it.','smirk');
  const w=await choose(['Marcus watches the door.','Dheva watches the door.'],'Someone has to watch the door window.');
@@ -353,7 +353,7 @@ hook({mis:'seat',period:4,room:'maths',who:'dheva',label:'Ask Dheva about the pl
   await die('seat');
  }
  SFX.pick();pose('you',null);hold('you','plan');
- await N('Seating Plan, version fourteen. Every friend group in Year 10, split down the middle. Little hearts next to the kids she’s “keeping an eye on”. Some of the hearts have been crossed out. Tyler’s has been crossed out today, in different ink.');
+ await N('Seating Plan, version fourteen. Every friend group in ninth grade, split down the middle. Little hearts next to the kids she’s “keeping an eye on”. Some of the hearts have been crossed out. Tyler’s has been crossed out today, in different ink.');
  await walk(look_,190,60);
  await say('dheva','Right. Back row, five seats. Rules.');
  await say('dheva','I’m not sitting next to Corey. His curl cream smells like grape and it makes me hungry.');
@@ -392,7 +392,7 @@ hook({mis:'seat',period:6,room:'maths',who:'auto',cond:()=>D.f.seat2&&!D.dead.ar
  order.forEach((n,i)=>cast[n]=[96+i*24,-1,{y:126}]);
  scene('maths',cast,true);cue('class');
  if(D.dead.tyler){prop({t:'flower',x:seatOf('back',1).x,y:SEATS.backY-12,layer:20});await N('Period 7. Tyler’s seat has a pencil case on it and a single flower someone picked from the field. Ms. Shermian has put a sticker on the flower.')}
- else await N('Period 7. Maths again. The same room, with the light coming in lower.');
+ else await N('Period 7. Math again. The same room, with the light coming in lower.');
  await say('shermian','New plan, angels! Let’s see… Alex. Dheva. Arjun. Marcus. Corey. All in the back row. Hm.','smirk');
  for(let i=0;i<order.length;i++){const n=order[i],s=seatOf('back',['alex','dheva','arjun','marcus','corey'].indexOf(n));A[n].pose=null;await Promise.all([walk(n,s.x,90),tw(A[n],{y:s.y},400)]);sitAt(n,'back',['alex','dheva','arjun','marcus','corey'].indexOf(n),-1)}
  await say('shermian','I don’t remember writing this.','smirk');
@@ -426,13 +426,13 @@ hook({mis:'seat',period:6,room:'maths',who:'auto',cond:()=>D.f.seat2&&!D.dead.ar
   await say('marcus','Seat four. Next to Arjun. Close. Warm. I’ve never been happier.','smirk');
   await complete('seat','perfect');return;
  }
- if(k===1){await N('You kick his chair. It only makes him louder.');await say('arjun','OW. And it’s TRUE, Miss, he’s at his mum’s because—','angry')}
+ if(k===1){await N('You kick his chair. It only makes him louder.');await say('arjun','OW. And it’s TRUE, Miss, he’s at his mom’s because—','angry')}
  A.shermian.pose=null;await Promise.all([walk('shermian',A.arjun.x-14,70),tw(A.shermian,{y:126},400)]);face('shermian',1);
  await say('shermian','Arjun, sweetie. Look at me.','evil');
  hold('shermian','book');pose('shermian','slam');
  for(let i=0;i<3;i++){SFX.crunch();shake(.9);blood(A.arjun.x,A.arjun.y-18,14,1,60,A.arjun.y+3);A.arjun.hurt=3;await wait(320)}
  kill('arjun','crush',{pool:26});hold('shermian',null);pose('shermian',null);
- await N('She uses the Year 10 textbook. Hardback. Six hundred pages. She finds his page number afterwards and writes it on the board, so he can catch up.');
+ await N('She uses the ninth grade textbook. Hardback. Six hundred pages. She finds his page number afterwards and writes it on the board, so he can catch up.');
  await sweet('shermian');
  await say('shermian','Four little angels. Even better!','happy');
  await say('dheva','…We’re together.','shock');

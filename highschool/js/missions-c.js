@@ -8,7 +8,7 @@
    HAT-TRICK — Alex
    ================================================================= */
 mission('alex',{name:'Hat-Trick',icon:'⚽',who:['alex','jacob','omer'],
- blurb:'Alex needs a hat-trick or he’s retiring from football. Jacob is in goal. Jacob does not like being scored on.',
+ blurb:'Alex needs a hat-trick or he’s retiring from soccer. Jacob is in goal. Jacob does not like being scored on.',
  parts:['Period 5 (PE): three goals past Jacob'],tips:['Period 5 (PE), on the field. Nobody’s supervising. Cross it to Alex.']});
 
 hook({mis:'alex',period:5,room:'field',who:'alex',label:'Help Alex get his hat-trick',run:async()=>{
@@ -47,7 +47,7 @@ hook({mis:'alex',period:5,room:'field',who:'alex',label:'Help Alex get his hat-t
 mission('dheva',{name:'Texture',icon:'💇',who:['dheva'],
  blurb:'Dheva’s texture powder is gone. His hair is just… hair now. Lying there. Giving up.',
  parts:['Before school: hair emergency','Break: get the powder back off Arjun','Lunch: give it back'],
- tips:['Before school, the toilets.','Break, main corridor. Arjun.','Lunch, maths room. Dheva’s hiding in there.'],
+ tips:['Before school, the bathroom.','Break, main corridor. Arjun.','Lunch, math room. Dheva’s hiding in there.'],
  doneTip:'Dheva gives you his emergency powder now. It burns if it gets in someone’s eyes.'});
 
 hook({mis:'dheva',period:0,room:'toilets',who:'dheva',label:'Ask Dheva what’s wrong',cond:()=>!D.f.dheva1,run:async()=>{
@@ -196,17 +196,17 @@ hook({mis:'kenneth',period:2,room:'gym',who:'kenneth',label:'Play Kenneth one-on
    ================================================================= */
 mission('jacob',{name:'Pushed',icon:'😤',who:['jacob','hasan'],
  blurb:'Everybody pushes Jacob around. Physically. Constantly. Nobody makes fun of him, though. Nobody would dare.',
- parts:['Lunch: the canteen'],tips:['Lunch, canteen. Sit with Jacob.'],
+ parts:['Lunch: the cafeteria'],tips:['Lunch, cafeteria. Sit with Jacob.'],
  variants:{rage:'The vending machine',calm:'Breathe'}});
 
 hook({mis:'jacob',period:4,room:'canteen',who:'jacob',label:'Sit with Jacob',cond:()=>!D.dead.arjun,run:async()=>{
  scene('canteen',{pat:[90,1,{y:140}],shermian:[140,1,{pose:'cross',y:140}],hasan:[176,1,{y:146}],arjun:[204,-1,{pose:'cross',y:146}],jacob:[240,-1,{pose:'carry',y:150,hold:'tray'}],kid4:[290,-1,{y:146}],you:[268,-1,{y:156}]});
  await say('jacob','Sit. Sit with me. Everyone else just pushes past.','sad');
  await walk('kid4',250,90);await tw(A.jacob,{x:A.jacob.x-6},100);SFX.thud();
- await say('kid4','Move, mate.');
+ await say('kid4','Move, bro.');
  await walk('kid4',340,90);remove('kid4');
  face('arjun',-1);
- await say('arjun','Hasan, your dad works nights so he doesn’t have to look at you. I’ve done the maths.','smirk');
+ await say('arjun','Hasan, your dad works nights so he doesn’t have to look at you. I’ve done the math.','smirk');
  ex('hasan','sad');
  face('arjun',1);await walk('arjun',230,60);SFX.thud();await tw(A.jacob,{x:A.jacob.x+4},100);
  hold('jacob',null);const t=prop({t:'tray',x:A.jacob.x,y:A.jacob.y-24});await tw(t,{y:A.jacob.y},250,'in');SFX.glass();
@@ -214,11 +214,11 @@ hook({mis:'jacob',period:4,room:'canteen',who:'jacob',label:'Sit with Jacob',con
  await N('Arjun’s elbow tips Jacob’s tray straight down his front. Gravy. Peas. A yoghurt, somehow upside down.');
  A.jacob.shake=1;ex('jacob','angry');
  await say('jacob','Everyone. Keeps. PUSHING. ME.','yell');
- await N('Nobody laughs. The whole canteen goes still. You don’t laugh at Jacob. Nobody’s ever even tried.');
+ await N('Nobody laughs. The whole cafeteria goes still. You don’t laugh at Jacob. Nobody’s ever even tried.');
  await say('arjun','Nobody’s laughing, Jacob. Seriously. Nobody would EVER.','scared');
  const c=await choose(['Let him go.','Calm him down.','Push him back.']);
  if(c===2){
-  await say('you','Mate, it’s just peas—');pose('you','grab');SFX.thud();
+  await say('you','Bro, it’s just peas—');pose('you','grab');SFX.thud();
   await N('You push Jacob. Everybody pushes Jacob. You are the first person who has ever done it while he was already angry.');
   pose('jacob','hold');await hop('you',20,350);
   SFX.glass();shake(1.4);A.you.x=300;A.you.y=126;A.you.hurt=3;blood(300,110,50,1,100,150);
@@ -232,7 +232,7 @@ hook({mis:'jacob',period:4,room:'canteen',who:'jacob',label:'Sit with Jacob',con
   await hop('arjun',22,500);await tw(A.arjun,{x:290,y:126},300);SFX.glass();shake(1.4);
   A.arjun.hurt=3;A.arjun.pose='lie';blood(290,110,40,1,80,146);
   await N('Jacob picks Arjun up with one hand and throws him through the front of the vending machine.');
-  await say('arjun','(from inside the machine, among the crisps) …that’s fair. That one’s fair.','hurt');
+  await say('arjun','(from inside the machine, among the chips) …that’s fair. That one’s fair.','hurt');
   await evil('shermian');
   await say('shermian','JACOB!','evil');
   await sweet('shermian','canteen');
@@ -268,7 +268,7 @@ hook({mis:'calling',period:7,room:'bus',who:'aidan',label:'…Aidan?',cond:()=>D
  await N('You don’t remember walking back inside. The corridor is empty. All the lights are off except one.');
  await say('you','Aidan, I— we didn’t—');
  pose('aidan','grab');await walk('aidan',108,30);A.you.ex='scared';
- await N('Locker 217 is open. There’s no back to it. It goes down a long way, and at the bottom, somebody is calling your name in your mum’s voice.');
+ await N('Locker 217 is open. There’s no back to it. It goes down a long way, and at the bottom, somebody is calling your name in your mom’s voice.');
  await tw(A.you,{x:86},500);A.you.vis=false;SFX.locker();shake(1);
  fxState.dark=1;
  await N('Next Friday, at 8:25, the 43 pulls in. Everyone gets off. Hasan is laughing at something you know he’s about to say.');
@@ -287,7 +287,7 @@ hook({mis:'calling',period:7,room:'bus',who:'aidan',label:'Ask Aidan about Frida
  await say('aidan','Every Friday you lot do something to me. So I keep the Friday. I keep it and keep it until somebody gets it right.','evil');
  fxState.red=.6;SFX.static();
  if(A.hasan)await say('hasan','What’s he on about? What’s “keep the Friday”? Is that a TikTok thing?','shock');
- if(A.arjun)await say('arjun','He’s lost it. Finally. I called this in Year 7. I have it in writing.','smirk');
+ if(A.arjun)await say('arjun','He’s lost it. Finally. I called this in sixth grade. I have it in writing.','smirk');
  await say('aidan','They don’t remember. Only you. You’re the only one who’s ever noticed.','sad');
  if(P.intel.ollie)await say('aidan','Well. You and Ollie. He was the first. He told you, didn’t he. He told you it was lonely.','sad');
  fxState.red=0;
@@ -298,7 +298,7 @@ hook({mis:'calling',period:7,room:'bus',who:'aidan',label:'Ask Aidan about Frida
   await say('aidan','…You don’t mean that. Nobody means that.','sad');
   if(A.omer)await say('omer','He means it. I mean it. Shorts on Monday too. Shorts in solidarity.','happy');
   if(A.david)await say('david','You wrote the best bit of our presentation. You’re in. It’s in the minutes.','happy');
-  if(A.arjun){await say('arjun','…','smirk');await say('arjun','Fine. FINE. But I’m sitting opposite him so I can see the fringe coming.','smirk')}
+  if(A.arjun){await say('arjun','…','smirk');await say('arjun','Fine. FINE. But I’m sitting opposite him so I can see the bangs coming.','smirk')}
   for(const n of Object.keys(A))if(n!=='aidan'&&n!=='you'&&FRIENDS.includes(n)){walk(n,clamp(A.aidan.x+(A[n].x<180?-30:30)+rand(-14,14),10,310),60)}
   ex('aidan','cry');cue('romance');fxState.romance=.4;
   await say('aidan','(crying, laughing, not sure which) Okay. Okay. Monday.','cry');
@@ -336,15 +336,15 @@ async function ending(id){
   await say('you','It’s Monday.');
   await say('aidan','Same table?','happy');
   await say('omer','Same table.','happy');
-  await say('arjun','Your fringe still looks like your mum did it with her eyes shut.','smirk');
+  await say('arjun','Your bangs still looks like your mom did it with her eyes shut.','smirk');
   await say('aidan','She did.','laugh');
   await say('arjun','…Respect.','smirk');
  }else if(id==='locker'){
   scene('corridor',{you:[120,1,{y:154}],arjun:[200,-1,{y:146,pose:'cross'}],hasan:[230,-1,{y:146}]});
   await card('MONDAY','IT CAME. IT ISN’T RIGHT.',2400,'death');
   await N('Monday comes. Then Tuesday. The loop is gone. So is Aidan.');
-  await N('Nobody mentions him. Not once. His name isn’t on the register. His seat in English is just a seat.');
-  await say('arjun','Did we… have a mate called Aidan? I feel like I used to be horrible to someone called Aidan.','shock');
+  await N('Nobody mentions him. Not once. His name isn’t on the attendance list. His seat in English is just a seat.');
+  await say('arjun','Did we… have a bro called Aidan? I feel like I used to be horrible to someone called Aidan.','shock');
   await say('hasan','You’re horrible to everyone.','smirk');
   await N('Locker 217 is always cold. You never walk past it. You always walk past it.');
  }else if(id==='forever'){
@@ -368,13 +368,13 @@ ENDINGS.calling={name:'The Calling',desc:'You killed him and went to him anyway.
    ================================================================= */
 function coll(id,o){COLL[id]=o;if(!o.room)return;spot({room:o.room,period:o.period,x:o.x,y:o.y||146,sparkle:1,label:'Look at the sparkly thing',short:'?',cond:()=>!P.coll[id]&&(!o.cond||o.cond()),run:async()=>{SFX.pick();await N(o.name+'. '+o.desc);P.coll[id]=1;save();toast('Collectible '+Object.keys(P.coll).length+'/'+Object.keys(COLL).length+': '+o.name);return 'stay'}})}
 coll('ticket',{room:'bus',period:0,x:300,y:156,name:'A bus 43 ticket',desc:'Punched so many times it’s mostly hole. Every punch is dated Friday.',hint:'Before school, by the road.'});
-coll('prices',{room:'corridor',period:0,x:96,y:150,name:'Angelo’s price list',desc:'“FAKE NOTE £3. REAL NOTE £5. ESSAY £10. ALIBI £20. ARJUN’S DIARY: PRICELESS.”',hint:'Before school, near locker 13.'});
-coll('notebook',{room:'toilets',x:260,y:150,name:'Marcus’s notebook (DO NOT OPEN)',desc:'You open it. It’s three hundred pages of extremely good poems about bread. You close it. You respect him more and less.',hint:'The toilets. Any time.'});
-coll('nugget',{room:'canteen',period:2,x:40,y:150,name:'A mystery nugget',desc:'It moved. You definitely saw it move. You put it in your pocket anyway.',hint:'Canteen, at break.'});
+coll('prices',{room:'corridor',period:0,x:96,y:150,name:'Angelo’s price list',desc:'“FAKE NOTE $3. REAL NOTE $5. ESSAY $10. ALIBI $20. ARJUN’S DIARY: PRICELESS.”',hint:'Before school, near locker 13.'});
+coll('notebook',{room:'toilets',x:260,y:150,name:'Marcus’s notebook (DO NOT OPEN)',desc:'You open it. It’s three hundred pages of extremely good poems about bread. You close it. You respect him more and less.',hint:'The bathroom. Any time.'});
+coll('nugget',{room:'canteen',period:2,x:40,y:150,name:'A mystery nugget',desc:'It moved. You definitely saw it move. You put it in your pocket anyway.',hint:'Cafeteria, at break.'});
 coll('tooth',{room:'field',period:4,x:30,y:160,name:'A tooth (not yours)',desc:'Adult molar. Coach’s javelin target is right next to it. You don’t think about it.',hint:'The field, at lunch, far left.'});
-coll('trainer',{room:'gym',period:2,x:290,y:150,name:'Gary Pritchard’s left trainer',desc:'Still laced. Still warm. Nobody’s seen the rest of Gary since the beep test.',hint:'Sports hall, at break, under the hoop.'});
-coll('overdue',{room:'library',period:[1,3,6],x:40,y:150,name:'An overdue book',desc:'“Due back: 14th March 1987.” The fine is £11,402. Ms. Sherman signed it out.',hint:'Library, during a lesson you’re bunking.'});
-coll('collar',{room:'maths',period:4,x:30,y:150,name:'Mr. Biscuits’ collar',desc:'The little bell is still on it. The tag says “If found, I will find YOU.”',hint:'Maths room, at lunch.'});
+coll('trainer',{room:'gym',period:2,x:290,y:150,name:'Gary Pritchard’s left sneaker',desc:'Still laced. Still warm. Nobody’s seen the rest of Gary since the beep test.',hint:'Sports hall, at break, under the hoop.'});
+coll('overdue',{room:'library',period:[1,3,6],x:40,y:150,name:'An overdue book',desc:'“Due back: 14th March 1987.” The fine is $11,402. Ms. Sherman signed it out.',hint:'Library, during a lesson you’re bunking.'});
+coll('collar',{room:'maths',period:4,x:30,y:150,name:'Mr. Biscuits’ collar',desc:'The little bell is still on it. The tag says “If found, I will find YOU.”',hint:'Math room, at lunch.'});
 coll('kevin',{room:'chem',period:4,x:140,y:150,name:'A jar labelled KEVIN',desc:'It’s just teeth. Lots of teeth. Some of them are baby teeth.',hint:'Chem lab, at lunch.'});
 coll('combo',{room:'corridor',period:4,x:72,y:150,cond:()=>!D.f.fight,name:'Locker 217’s combination',desc:'Written on a Post-it in Aidan’s handwriting: “0-4-1-7. It’s always Friday.”',hint:'Main corridor at lunch, on a quiet day.'});
 coll('dentures',{name:'Ms. Sherman’s dentures',desc:'Still clacking. Recovered from the edge of the pit.',hint:'Get back at Ms. Sherman.'});
@@ -392,7 +392,7 @@ Object.assign(DEATHS,{
  mug:{name:'Earl Grey',desc:'You drank from Ms. Loach’s mug. She keeps the big scissors in the top drawer.',hint:'Drink something that isn’t yours.'},
  beep:{name:'Cut',desc:'You dropped out of the beep test. Coach cut you. From everything.',hint:'Miss too many beeps.'},
  vat:{name:'Volunteer',desc:'Mr. Voss needed collagen. You had collagen.',hint:'Get caught by Mr. Voss.'},
- cleaver:{name:'No Seconds',desc:'Dinner Lady Pat has one good eye and one good arm.',hint:'Steal from Pat where she can see you.'},
+ cleaver:{name:'No Seconds',desc:'Lunch Lady Pat has one good eye and one good arm.',hint:'Steal from Pat where she can see you.'},
  pa:{name:'Off Air',desc:'Ms. Sherman ended the announcements. And you.',hint:'Let Ms. Sherman through the door.'},
  rumble:{name:'Piledriver',desc:'Paul said sorry. Paul meant it.',hint:'Lose Paul’s rumble.'},
  jacob:{name:'Collateral',desc:'You pushed Jacob. Nobody pushes Jacob when he’s already angry.',hint:'Push the wrong person at the wrong time.'},

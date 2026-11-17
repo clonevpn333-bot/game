@@ -61,7 +61,7 @@ function give(it,label){if(!has(it))D.items.push(it);SFX.pick();toast('Got: '+(I
 function take(it){D.items=D.items.filter(i=>i!==it)}
 const ITEMS={video:'Hasan’s video of Aidan’s poem',ball:'STRIKE ONE (Stella’s lucky ball)',powder:'Dheva’s texture powder',spare:'Dheva’s emergency powder',plan:'The seating plan (v14)',newplan:'The NEW seating plan',tape:'Duct tape',energy:'Monster energy (warm)',key:'Mr. Voss’s fridge key',cookies:'A tray of Pat’s cookies',note:'Sean’s note',swap:'Kenneth’s PE bib',detention:'Detention slip (P3, Office)',padlock:'A padlock'};
 function intel(id){if(!P.intel[id]){P.intel[id]=1;save();toast('You’ll remember this: '+(INTEL[id]||id))}}
-const INTEL={aidanPoem:'Aidan’s poem says every Friday is the same Friday.',aidanJars:'Voss has fourteen jars labelled AIDAN.',aidanLocker:'Aidan remembers locker 217.',loachMug:'Ms. Loach only cares about her mug.',shermianCat:'Ms. Shermian’s cat is called Mr. Biscuits.',shermianDrawer:'Shermian keeps the seating plan in her desk drawer.',shermanPit:'Ms. Sherman’s desk has a red button. The floor in front of it opens.',vossKey:'Voss keeps the fridge key on his lanyard.',beepDial:'The beep-test speed dial is in the PE cupboard.',patBlind:'Dinner Lady Pat is blind in her left eye.',arjunBall:'Arjun nicked Stella’s ball out of Sean’s bag.',arjunPowder:'Arjun stole Dheva’s powder for a laugh.',kennethSwap:'Kenneth will swap PE partners for a buzzer-beater.',javelin:'Coach throws javelins at the field at 12:40.'};
+const INTEL={aidanPoem:'Aidan’s poem says every Friday is the same Friday.',aidanJars:'Voss has fourteen jars labelled AIDAN.',aidanLocker:'Aidan remembers locker 217.',loachMug:'Ms. Loach only cares about her mug.',shermianCat:'Ms. Shermian’s cat is called Mr. Biscuits.',shermianDrawer:'Shermian keeps the seating plan in her desk drawer.',shermanPit:'Ms. Sherman’s desk has a red button. The floor in front of it opens.',vossKey:'Voss keeps the fridge key on his lanyard.',beepDial:'The beep-test speed dial is in the PE closet.',patBlind:'Lunch Lady Pat is blind in her left eye.',arjunBall:'Arjun nicked Stella’s ball out of Sean’s bag.',arjunPowder:'Arjun stole Dheva’s powder for a laugh.',kennethSwap:'Kenneth will swap PE partners for a buzzer-beater.',javelin:'Coach throws javelins at the field at 12:40.'};
 function part(mis,n,quiet){D.mp[mis]=Math.max(D.mp[mis]||0,n);const was=P.parts[mis]||0;P.parts[mis]=Math.max(was,n);save();if(!quiet)toast(MIS[mis].name+' — part '+n+' of '+MIS[mis].parts.length+' done')}
 async function complete(mis,variant,big){
  const first=!P.done[mis];D.done[mis]=variant||1;P.done[mis]=P.done[mis]||variant||1;part(mis,MIS[mis].parts.length,true);
@@ -231,22 +231,22 @@ $('bSet').onclick=()=>{audio();openSettings()};
 /* ---------------- generic chats (flavour, bonds, Arjun being Arjun) ---------------- */
 const CHAT={
  hasan:['I’ve had the weirdest déjà vu since the bus. Like I’ve already been bored of today.','If Ms. Balduf asks, I did the reading. I did not do the reading.','Don’t look at my head. I know you’re looking at my head.','I’ve got a phone full of evidence on everyone. Insurance.'],
- arjun:['What are you looking at? Oh, you. Never mind, I thought it was someone important.','I’m not mean. I’m accurate. There’s a difference and you’re on the wrong side of it.','Hasan’s dad works nights so he doesn’t have to look at Hasan. That’s not a joke. That’s a schedule.','David’s mum still introduces him as “the first one”. Like a practice go.','Nivaan’s got forty viewers and three of them are his mum on different accounts.','Sean’s only got a girlfriend because she’s never seen him in daylight.'],
- david:['I’m running for Year Rep. My policy is “no”.','I have a theory about today and I hate it.','My glasses keep fogging up near Ms. Shermian. I think it’s fear.'],
- omer:['Shorts in November. It’s a lifestyle. My legs don’t get cold, they get respect.','If anyone says anything about my mum today I’m going to do something I’ll be proud of.','I’ve been doing push-ups. Not for anything. Just in case.'],
+ arjun:['What are you looking at? Oh, you. Never mind, I thought it was someone important.','I’m not mean. I’m accurate. There’s a difference and you’re on the wrong side of it.','Hasan’s dad works nights so he doesn’t have to look at Hasan. That’s not a joke. That’s a schedule.','David’s mom still introduces him as “the first one”. Like a practice go.','Nivaan’s got forty viewers and three of them are his mom on different accounts.','Sean’s only got a girlfriend because she’s never seen him in daylight.'],
+ david:['I’m running for class president. My policy is “no”.','I have a theory about today and I hate it.','My glasses keep fogging up near Ms. Shermian. I think it’s fear.'],
+ omer:['Shorts in November. It’s a lifestyle. My legs don’t get cold, they get respect.','If anyone says anything about my mom today I’m going to do something I’ll be proud of.','I’ve been doing push-ups. Not for anything. Just in case.'],
  nivaan:['We’re live. Say hi to chat. Chat says you look like a thumb.','Ninety-one viewers. Ninety-one! That’s basically famous.','If anyone fights today I need a ten-second warning to get the angle.'],
  corey:['I’m fine. My hair is fine. Everything’s fine.','Abby’s in my PE group. That’s not information. That’s just a fact I said.','Do you think purple curl cream is too much for a Friday?'],
  sean:['She’s HERE. In PERSON. Like, with a body.','I practiced saying hi to the mirror. The mirror said it back better.','Strike one. That’s our thing. Don’t make it weird.'],
  stella:['Sean talks a lot more on the phone. In person he just sort of… vibrates.','I lost my lucky ball. If you see a ball that looks lucky, it’s mine.','Is your friend group always this loud or is it a Friday thing?'],
- abby:['Corey keeps walking past me and then walking past me again from the other direction.','I play guitar at three in the morning. My neighbours have stopped complaining. I think they’ve moved.','My dog’s called Morrissey. He bites. He has opinions.'],
+ abby:['Corey keeps walking past me and then walking past me again from the other direction.','I play guitar at three in the morning. My neighbors have stopped complaining. I think they’ve moved.','My dog’s called Morrissey. He bites. He has opinions.'],
  aidan:['…','You’ve said that to me before.','Locker 217 is very cold. I don’t know how I know that.','Every Friday is the same Friday. Have you noticed? I’ve noticed.','It’s nice that you talk to me. You won’t at lunch.'],
  angelo:['Locker 13. Open nine till half three. Cash, cookies or favours.','I don’t sell anything illegal. I sell things that are illegal in this building. Different.','You want a fake doctor’s note? I’ve got one signed by an actual dentist.'],
- alex:['Hat-trick at break or I’m quitting football. I won’t quit football.','Coach says my left foot is a weapon. He says it like he’s going to confiscate it.','I can run a 5k but I can’t ask anyone out. Weird how bodies work.'],
+ alex:['Hat-trick at break or I’m quitting soccer. I won’t quit soccer.','Coach says my left foot is a weapon. He says it like he’s going to confiscate it.','I can run a 5k but I can’t ask anyone out. Weird how bodies work.'],
  dheva:['If one more person touches my hair I’m going to commit something.','It’s not gel. Never gel. Texture powder. It’s about the matte finish.','Track pants are formal wear if you commit.'],
  marcus:['Morning. Or as I call it: “the hard part”. Heh.','Ms. Shermian said “take it out” about my phone and I’ve been thinking about it ever since.','I could tell you about my weekend but there are children present. You. You’re the children.','I love Science. All that handling equipment.'],
- paul:['Do you want to wrestle? That was a warning, not a question.','I put Kenneth through a table this morning. It was his table. He was fine about it.','My arms are too long. My mum has to buy me shirts from a giraffe.'],
- kenneth:['I am six foot in my head and five foot seven everywhere else.','Basketball is just maths that makes girls look at you.','If Coach asks, I have asthma. I don’t have asthma.'],
- jacob:['Don’t push me. Everyone pushes me. I’m not a door.','Someone shoved me into a bin this morning. Nobody laughed, though. Which is respectful.','I’m calm. I’m so calm. Look at how calm I am.'],
+ paul:['Do you want to wrestle? That was a warning, not a question.','I put Kenneth through a table this morning. It was his table. He was fine about it.','My arms are too long. My mom has to buy me shirts from a giraffe.'],
+ kenneth:['I am six foot in my head and five foot seven everywhere else.','Basketball is just math that makes girls look at you.','If Coach asks, I have asthma. I don’t have asthma.'],
+ jacob:['Don’t push me. Everyone pushes me. I’m not a door.','Someone shoved me into a trash can this morning. Nobody laughed, though. Which is respectful.','I’m calm. I’m so calm. Look at how calm I am.'],
  tyler:['Is Ms. Shermian in a good mood? I can never tell until it’s too late.'],
  balduf:['A comma splice is a crime, dear. Not metaphorically.','You could of done better — no. No. Say it right or don’t say it at all.'],
  shermian:['Hello, sweetie! Don’t run. Running makes me sad. You don’t want me sad.','Seating plans are love. Love is a seating plan.'],
@@ -266,21 +266,21 @@ async function chat(id){
  if((P.bond[id]||0)>=3&&BONDLINE[id]&&D.chat[id]===1)await say(id,BONDLINE[id],'happy');
 }
 const ARJUN_AT={
- you:['You’ve got the face of someone who peaks at a Year 9 disco.','Do your parents still pretend you were planned?'],
+ you:['You’ve got the face of someone who peaks at an eighth grader disco.','Do your parents still pretend you were planned?'],
  hasan:['Hasan, your dad works nights so he doesn’t have to look at you. Thought you should know why.','Hasan, your head’s shaped like a gear-stick and you still can’t get anywhere.'],
- david:['David, your mum still introduces you as “the first one”. Like a practice go.','David, your glasses are the only thing in your life that’s got a prescription for you.'],
- omer:['Omer, your mum buys you shorts because she can’t afford the rest of the trousers.','Omer, you’re short because God ran out of interest.'],
- nivaan:['Nivaan, forty viewers and three of them are your mum on different accounts.','Nivaan, your stream has a bigger following than you’ll ever have at your funeral.'],
- corey:['Corey, all that hair and still nothing upstairs.','Corey, she doesn’t look at you, mate. She looks through you. Like a window you forgot to clean.'],
+ david:['David, your mom still introduces you as “the first one”. Like a practice go.','David, your glasses are the only thing in your life that’s got a prescription for you.'],
+ omer:['Omer, your mom buys you shorts because she can’t afford the rest of the trousers.','Omer, you’re short because God ran out of interest.'],
+ nivaan:['Nivaan, forty viewers and three of them are your mom on different accounts.','Nivaan, your stream has a bigger following than you’ll ever have at your funeral.'],
+ corey:['Corey, all that hair and still nothing upstairs.','Corey, she doesn’t look at you, bro. She looks through you. Like a window you forgot to clean.'],
  sean:['Sean, she only likes you because she hasn’t seen you in daylight yet.','Sean, your voice cracks like your parents’ marriage.'],
- stella:['Stella, you know he practised saying hi to a mirror? And lost?'],
+ stella:['Stella, you know he practiced saying hi to a mirror? And lost?'],
  abby:['Abby, your songs are about being lonely and I can see why.'],
- aidan:['Aidan, your mum cut that fringe with her eyes closed so she didn’t have to look.','Aidan, even your shadow walks two steps behind you.'],
+ aidan:['Aidan, your mom cut that bangs with her eyes closed so she didn’t have to look.','Aidan, even your shadow walks two steps behind you.'],
  angelo:['Angelo, you sell fake watches because a real one would remind you how long you’ve wasted.'],
  alex:['Alex, your dad comes to every match and still can’t tell which one you are.'],
  dheva:['Dheva, your hair looks like a wet doormat that gave up.','Dheva, that powder’s doing more work than your personality.'],
  marcus:['Marcus, you make sex jokes because it’s the closest you’ll get.'],
- paul:['Paul, your arms are so long your mum can’t hug you without a ladder. Not that she tries.'],
+ paul:['Paul, your arms are so long your mom can’t hug you without a ladder. Not that she tries.'],
  kenneth:['Kenneth, five foot seven and you still look down on yourself. Correctly.'],
  jacob:['Jacob, move. Not a joke. Just move.']
 };
@@ -310,7 +310,7 @@ const LESSON={
  balduf:[[['balduf','Poetry. Feelings in a straight line. Open to page twelve.'],['$','Miss, could we just—'],['balduf','“Could we just”. Not “could of”. I’m watching you. I’m always watching your grammar.','evil']],[['balduf','Today we write an ode. An ode is love you’re not allowed to touch.'],['hasan','Miss, that’s just being single.'],['balduf','Detention, Hasan. With love.','smirk']]],
  shermian:[[['shermian','Good morning, my little angels!','happy'],['$','Morning, miss.'],['shermian','Did I say you could answer? DID I?','evil'],['shermian','…Sorry. Lovely. Page six, sweeties.','happy']],[['shermian','Who’s been touching my stapler? I count the staples. I count EVERY staple.','evil']]],
  loach:[[['loach','Page forty-seven.'],['$','Miss, Paul’s licking the Bunsen burner.'],['loach','Mm.']],[['loach','…'],['loach','Page forty-seven.']]],
- coach:[[['coach','LINE UP. Tallest at the back, weakest in the bin.','yell'],['$','Sir, there’s no bin.'],['coach','There will be.','evil']]],
+ coach:[[['coach','LINE UP. Tallest at the back, weakest in the trash can.','yell'],['$','Sir, there’s no trash can.'],['coach','There will be.','evil']]],
  voss:[[['voss','Today we’re testing reactions. Your reactions. To me.','smirk'],['$','Sir, why is the fridge humming?'],['voss','It’s singing. It’s happy.','evil']]],
  default:[[['$','…']]]
 };
@@ -329,7 +329,7 @@ async function dayIntro(died){
   await N(pick(['You gasp awake on the 43, both hands on your neck. Still attached.','You wake up on the bus. The radio’s playing the same song. Your body remembers how it died.','The bus. The bell. Friday. Your mouth tastes like pennies.']));
   if(D.day===3)await N('It’s Friday again. Maybe it always will be.');
  }else{
-  await N(pick(['Friday. Again. The 43 smells like Lynx and wet coats.','Friday. Hasan is already laughing at something you know he’s about to say.','Friday. You could recite the next ten minutes. You do, under your breath.']));
+  await N(pick(['Friday. Again. The 43 smells like Axe and wet coats.','Friday. Hasan is already laughing at something you know he’s about to say.','Friday. You could recite the next ten minutes. You do, under your breath.']));
  }
  if(P.intel.aidanLocker&&!D.f.aidanSaid){D.f.aidanSaid=1;put('aidan',260,-1,{y:146});await say('aidan','Locker 217 is very cold. Did you know? You know.','smirk');remove('aidan')}
 }
@@ -462,7 +462,7 @@ async function curtainCall(endingId){
  await card('CURTAIN CALL',ENDINGS[endingId]?ENDINGS[endingId].name.toUpperCase():'',2000);
  const cast=['hasan','arjun','david','omer','nivaan','corey','sean','stella','abby','aidan','angelo','alex','dheva','marcus','paul','kenneth','jacob','you'].filter(id=>!(window.EDITION_CUT||[]).includes(id));
  const teachers=['balduf','shermian','sherman','loach','voss','coach','pat'];
- const LINE={hasan:'Hasan — still has the video. Still won’t delete it.',arjun:'Arjun — said something unforgivable on every single day. Consistent, at least.',david:'David — ran for Year Rep on a policy of “no”. Won.',omer:'Omer — shorts. Every day. Every Friday. Every loop.',nivaan:'Nivaan — 91 viewers. Peak. Never again.',corey:'Corey — got it in PE. Both versions.',sean:'Sean — said hi in person. Eventually.',stella:'Stella — kept the ball. Kept the boy.',abby:'Abby — wrote a song called “Friday, again”.',aidan:'Aidan — kept the day. Gave it back. Maybe.',angelo:'Angelo — locker 13 is still open. Cash only.',alex:'Alex — hat-trick. Left foot. Weapon.',dheva:'Dheva — matte finish. Not gel. Never gel.',marcus:'Marcus — read the lunch menu like it owed him money.',paul:'Paul — wrestled everyone. Lost to no one. Lost to Kenneth once (fake).',kenneth:'Kenneth — five foot seven of buzzer beater.',jacob:'Jacob — got pushed around. Nobody laughed. Ever.',you:'You — lived the same Friday '+P.loops+' times. Died '+P.stats.deaths+'.'};
+ const LINE={hasan:'Hasan — still has the video. Still won’t delete it.',arjun:'Arjun — said something unforgivable on every single day. Consistent, at least.',david:'David — ran for class president on a policy of “no”. Won.',omer:'Omer — shorts. Every day. Every Friday. Every loop.',nivaan:'Nivaan — 91 viewers. Peak. Never again.',corey:'Corey — got it in PE. Both versions.',sean:'Sean — said hi in person. Eventually.',stella:'Stella — kept the ball. Kept the boy.',abby:'Abby — wrote a song called “Friday, again”.',aidan:'Aidan — kept the day. Gave it back. Maybe.',angelo:'Angelo — locker 13 is still open. Cash only.',alex:'Alex — hat-trick. Left foot. Weapon.',dheva:'Dheva — matte finish. Not gel. Never gel.',marcus:'Marcus — read the lunch menu like it owed him money.',paul:'Paul — wrestled everyone. Lost to no one. Lost to Kenneth once (fake).',kenneth:'Kenneth — five foot seven of buzzer beater.',jacob:'Jacob — got pushed around. Nobody laughed. Ever.',you:'You — lived the same Friday '+P.loops+' times. Died '+P.stats.deaths+'.'};
  for(let i=0;i<cast.length;i++){
   const id=cast[i];put(id,-14,1,{y:150});
   await walk(id,160,90);hop(id,4,240);pose(id,'wave');sub((window.EDITION_LINE||{})[id]||LINE[id]);SFX.blip(K[id].v||300);
@@ -483,7 +483,7 @@ async function curtainCall(endingId){
 /* ---------------- Angelo’s shop ---------------- */
 async function angeloShop(){
  await say('angelo','Locker 13 is open for business. What you need?','smirk');
- const stock=[['tape',2,'Duct tape (£2)'],['energy',2,'Monster energy, warm (£2)'],['padlock',1,'A padlock in a sock (£1)']];
+ const stock=[['tape',2,'Duct tape ($2)'],['energy',2,'Monster energy, warm ($2)'],['padlock',1,'A padlock in a sock ($1)']];
  const o=stock.map(s=>({t:s[2],dis:D.money<s[1]||has(s[0]),why:has(s[0])?'got it':'skint'}));o.push({t:'Nothing'});
  const i=await choose(o,'You have £'+D.money);
  if(i<stock.length){D.money-=stock[i][1];give(stock[i][0]);await say('angelo',pick(['Pleasure doing business.','No refunds. No receipts. No questions.','Tell your friends. Don’t tell Ms. Sherman.']));updateLoc()}

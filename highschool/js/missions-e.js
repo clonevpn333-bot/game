@@ -3,16 +3,16 @@
    HIGHSCHOOL — missions E: the made-up kids (Tez, Ollie, Kayden),
    Fair City Mall after school, more collectibles and deaths
    ===================================================================== */
-Object.assign(ITEMS,{compass:'Compass shiv (Tez)',chucks:'Ruler-chucks (Tez)',extinguisher:'A fire extinguisher (Tez)',soaker:'A Super Soaker full of Lynx Africa'});
+Object.assign(ITEMS,{compass:'Compass shiv (Tez)',chucks:'Ruler-chucks (Tez)',extinguisher:'A fire extinguisher (Tez)',soaker:'A Super Soaker full of Axe body spray'});
 Object.assign(INTEL,{adamMonday:'Mr. Adam has “arrangements” for Monday’s inspection.',bombWire:'Never cut red. Cut the gold one — the thing he loves.',ollie:'Ollie Finch has been stuck in Friday since 1987.',tezPass:'Tez’s password is “I’m twenty-one, leave me alone”.'});
 
 /* =================================================================
    THE ARMOURY — Tez
    ================================================================= */
 mission('armoury',{name:'The Armoury',icon:'🗡️',who:['tez'],
- blurb:'Tez has been in Year 11 for six years. He’s twenty-one. He has a moustache and a business in the end cubicle: things that keep you alive when the teachers turn.',
+ blurb:'Tez has been in tenth grade for six years. He’s twenty-one. He has a moustache and a business in the end cubicle: things that keep you alive when the teachers turn.',
  parts:['Before school: find Tez’s office','Pick your weapon'],
- tips:['Before school, the toilets. End cubicle.','Break, lunch or PE, the toilets. Bring £2 or be ready to do a favour.'],
+ tips:['Before school, the bathroom. End cubicle.','Break, lunch or PE, the bathroom. Bring $2 or be ready to do a favour.'],
  doneTip:'Weapons change how some deaths go. A compass for Voss or Pratt. Ruler-chucks for Coach. An extinguisher for Pat or a bomb.'});
 
 hook({mis:'armoury',period:0,room:'toilets',who:'tez',label:'Knock on the end cubicle',cond:()=>!D.f.tez1,run:async()=>{
@@ -21,9 +21,9 @@ hook({mis:'armoury',period:0,room:'toilets',who:'tez',label:'Knock on the end cu
  await say('you','…I don’t know the password.');
  await say('tez','It’s “I’m twenty-one, leave me alone”. Everyone knows it. Teachers know it.','smirk');
  intel('tezPass');
- await say('tez','Year 11. Six years running. I’ve seen things. I’ve seen Coach cut a lad in half over a beep. I’ve seen Kettle bake a prefect.','smirk');
+ await say('tez','tenth grade. Six years running. I’ve seen things. I’ve seen Coach cut a lad in half over a beep. I’ve seen Kettle bake a prefect.','smirk');
  await say('tez','So I sell protection. Not drugs. I’m not an animal. Stationery. Weaponised.','happy');
- await say('tez','Come back at break and pick something. Two quid, or a favour. I’m flexible. I’m twenty-one.');
+ await say('tez','Come back at break and pick something. Two bucks, or a favour. I’m flexible. I’m twenty-one.');
  D.f.tez1=1;part('armoury',1);
 }});
 
@@ -33,7 +33,7 @@ hook({mis:'armoury',period:[2,4,5],room:'toilets',who:'tez',label:'Buy a weapon 
  await say('tez','Menu.','smirk');
  const c=await choose(['The Compass Shiv. (“Geometry, but personal.”)','Ruler-Chucks. (Two thirty-centimetre rulers and a shoelace.)','The Fire Extinguisher. (“It’s not a weapon. It’s a lifestyle.”)']);
  const it=['compass','chucks','extinguisher'][c];
- const pay=await choose([{t:'Pay £2.',dis:D.money<2,why:'skint'},{t:'“What’s the favour?”'}]);
+ const pay=await choose([{t:'Pay $2.',dis:D.money<2,why:'skint'},{t:'“What’s the favour?”'}]);
  if(pay===0){D.money-=2;updateLoc()}
  else{
   await say('tez','Write my English essay. “Is Macbeth to blame?” Six years I’ve been doing that essay. I don’t know anymore. I don’t know if anyone’s to blame.','sad');
@@ -48,12 +48,12 @@ hook({mis:'armoury',period:[2,4,5],room:'toilets',who:'tez',label:'Buy a weapon 
 /* =================================================================
    REGISTER — Ollie, the boy nobody else can see
    ================================================================= */
-mission('register',{name:'Register',icon:'👻',who:['ollie','aidan'],hidden:1,lockText:'There’s a Year 7 in the library during lessons. Nobody else looks at him.',
- blurb:'Ollie Finch is in Year 7. His uniform is from 1987. He’s always in the library. Nobody else ever looks at him.',
+mission('register',{name:'Register',icon:'👻',who:['ollie','aidan'],hidden:1,lockText:'There’s a sixth grader in the library during lessons. Nobody else looks at him.',
+ blurb:'Ollie Finch is in sixth grade. His uniform is from 1987. He’s always in the library. Nobody else ever looks at him.',
  parts:['Period 1: the boy in the library','Later: give him back what he lost'],
  tips:['Bunk Period 1 in the library.','Find the overdue book (it’s a collectible in the library), then come back in Period 3 or 7.']});
 
-hook({mis:'register',period:1,room:'library',who:'ollie',label:'Ask the Year 7 if he’s lost',cond:()=>!D.f.ollie1,run:async()=>{
+hook({mis:'register',period:1,room:'library',who:'ollie',label:'Ask the sixth grade if he’s lost',cond:()=>!D.f.ollie1,run:async()=>{
  scene('library',{ollie:[250,-1,{y:146}],kid3:[150,1,{pose:'sit',y:150}],you:[220,1,{y:154}]});
  cue('library');
  await say('ollie','You can see me? Nobody can see me. Well. One other person.','shock');
@@ -61,7 +61,7 @@ hook({mis:'register',period:1,room:'library',who:'ollie',label:'Ask the Year 7 i
  await say('kid3','(looking up from her book, straight through Ollie) Who are you talking to?','shock');
  await say('ollie','See? Nobody.','sad');
  await say('ollie','I went to her office. She told me to stand on the rug.','sad');
- await N('His jumper has a name tag sewn into it. The name tag says 1987.');
+ await N('His sweater has a name tag sewn into it. The name tag says 1987.');
  await say('ollie','It’s always Friday for me. It has been for ages. Is it always Friday for you, too?','sad');
  D.f.ollie1=1;part('register',1);
 }});
@@ -88,12 +88,12 @@ hook({mis:'register',period:[3,6],room:'library',who:'ollie',label:'Give Ollie h
 mission('opps',{name:'Opps',icon:'💦',who:['kayden'],
  blurb:'Kayden is four foot eleven, wears a puffer jacket in July, and runs a “gang” called the Highgate Hittaz. Membership: Kayden. Weapon: a Super Soaker.',
  parts:['Break: get jumped in to the Highgate Hittaz','After school: the drive-by at the mall'],
- tips:['Break, the field.','After school, Fair City Mall roof car park. Watch out for Big Glen.'],variants:{wet:'The Year 9s got soaked',glen:'Big Glen joined the gang'}});
+ tips:['Break, the field.','After school, Fair City Mall rooftop parking. Watch out for Big Glen.'],variants:{wet:'The eighth graders got soaked',glen:'Big Glen joined the gang'}});
 
 hook({mis:'opps',period:2,room:'field',who:'kayden',label:'Ask Kayden what he’s doing',cond:()=>!D.f.kay1,run:async()=>{
  scene('field',{kayden:[100,1,{y:152,pose:'cross'}],omer:[150,-1,{pose:'cross',y:146}],jacob:[200,-1,{y:146}],you:[124,-1,{y:156}]});
  await say('kayden','Highgate Hittaz. HGH. We’re recruiting. Well. I’m recruiting. Currently it’s just me and my cousin, but he lives in Wales.','smirk');
- await say('kayden','The Year 9s are opps. They called my puffer “a sleeping bag with arms”. That’s violence. That’s a declaration of war.','angry');
+ await say('kayden','The eighth graders are opps. They called my puffer “a sleeping bag with arms”. That’s violence. That’s a declaration of war.','angry');
  await say('omer','It does look like a sleeping bag with arms.');
  await say('kayden','I’ll put you in the dirt, Omer. Respectfully. Please don’t hit me.','scared');
  await say('kayden','You want in? Initiation’s simple. Say the oath.','smirk');
@@ -102,9 +102,9 @@ hook({mis:'opps',period:2,room:'field',who:'kayden',label:'Ask Kayden what he’
  await say('you','Highgate Hittaz till I die.');
  await say('kayden','WELCOME, brother. Here’s your strap.','happy');
  give('soaker');
- await N('It’s a Super Soaker. It’s full of Lynx Africa and semi-skimmed milk. It smells like a Year 9 changing room’s worst nightmare.');
+ await N('It’s a Super Soaker. It’s full of Axe body spray and semi-skimmed milk. It smells like an eighth grader changing room’s worst nightmare.');
  await say('jacob','(quietly) That’s the most dangerous thing I’ve seen today, and I watched Coach do the beep test.','shock');
- await say('kayden','After school. The mall. Roof car park. We ride at four.','smirk');
+ await say('kayden','After school. The mall. Roof parking lot. We ride at four.','smirk');
  D.f.kay1=1;part('opps',1);
 }});
 
@@ -112,7 +112,7 @@ hook({mis:'opps',period:8,room:'carpark',who:'kayden',label:'Ride out with Kayde
  scene('carpark',{kayden:[40,1,{y:150}],you:[20,1,{y:156}],kid1:[230,-1,{y:148}],kid2:[252,-1,{y:150}],glen:[300,-1,{pose:'cross',y:150}]});
  if(!D.dead.arjun)put('arjun',160,1,{pose:'sit',y:104});
  cue('arcade');
- await say('kayden','There they are. The opps. Year Nine. Look at them. Laughing. Existing.','angry');
+ await say('kayden','There they are. The opps. eighth grade. Look at them. Laughing. Existing.','angry');
  prop({t:'scooter',follow:'kayden',x:0,y:0,layer:.5});prop({t:'scooter',follow:'you',x:0,y:0,layer:.5});hold('kayden','soaker');hold('you','soaker');
  await say('kayden','We roll up on the scooters, we spray, we get out. Nobody gets hurt. Everybody gets moist.','smirk');
  await Promise.all([walk('kayden',190,140),walk('you',176,140)]);
@@ -132,7 +132,7 @@ hook({mis:'opps',period:8,room:'carpark',who:'kayden',label:'Ride out with Kayde
   SFX.static();shake(1.2);flash('#c8e8ff',.6);A.you.shake=1;
   await N('Big Glen tasers you. Then he keeps going, because he’s never been taught when to stop.');
   kill('you','lie',{pool:4,bleed:0,spray:0});
-  await say('kayden','(from behind a bin) Rest in peace, Hittaz Number Two. We ride for you.','cry');
+  await say('kayden','(from behind a trash can) Rest in peace, Hittaz Number Two. We ride for you.','cry');
   await die('taser');
  }
  await Promise.all([walk('you',20,160),walk('kayden',40,160)]);
@@ -149,8 +149,8 @@ hook({mis:'opps',period:8,room:'carpark',who:'kayden',label:'Ride out with Kayde
    FAIR CITY MALL — after school. The real stuff.
    ================================================================= */
 mission('alone',{name:'Arjun, Alone',icon:'🌇',who:['arjun'],
- blurb:'Arjun says the worst things anyone has ever said to anyone. After school, he sits on the edge of the mall car park on his own.',
- parts:['After school: the roof car park'],tips:['After school, Fair City Mall roof car park. He’s on the wall.']});
+ blurb:'Arjun says the worst things anyone has ever said to anyone. After school, he sits on the edge of the mall parking lot on his own.',
+ parts:['After school: the rooftop parking'],tips:['After school, Fair City Mall rooftop parking. He’s on the wall.']});
 hook({mis:'alone',period:8,room:'carpark',who:'arjun',label:'Sit with Arjun',cond:()=>!D.dead.arjun,run:async()=>{
  scene('carpark',{arjun:[160,1,{pose:'sit',y:104}],you:[178,-1,{pose:'sit',y:104}]});
  cue('sunset');
@@ -160,11 +160,11 @@ hook({mis:'alone',period:8,room:'carpark',who:'arjun',label:'Sit with Arjun',con
  await say('arjun','…Fair.','sad');
  await say('arjun','My dad says worse. Every night. At dinner. Like seasoning. “Your forehead’s an embarrassment.” “Your marks are an embarrassment.” “I’m embarrassed when people ask how many kids I’ve got.”','sad');
  await say('arjun','So I say it first. To everyone. If I say it first, it’s a joke. If he says it, it’s just… true.','sad');
- const c=await choose(['“That doesn’t make it okay, mate.”','“You don’t have to do that with us.”','“You’re still a dick, though.”']);
- if(c===0){await say('you','That doesn’t make it okay. What you said to Hasan today. About his dad.');await say('arjun','…I know. I know it doesn’t. I’ll say sorry. I won’t say sorry. I’ll buy him a Greggs. That’s sorry in Hasan.','sad')}
+ const c=await choose(['“That doesn’t make it okay, bro.”','“You don’t have to do that with us.”','“You’re still a dick, though.”']);
+ if(c===0){await say('you','That doesn’t make it okay. What you said to Hasan today. About his dad.');await say('arjun','…I know. I know it doesn’t. I’ll say sorry. I won’t say sorry. I’ll buy him a burger. That’s sorry in Hasan.','sad')}
  if(c===1){await say('you','You don’t have to do that with us. Nobody in the group’s your dad.');await say('arjun','(very quietly) Don’t be nice to me. I don’t know what to do with my face when people are nice to me.','cry')}
  if(c===2){await say('you','You’re still a dick, though.');ex('arjun','laugh');await say('arjun','(actually laughing, for the first time all day) Yeah. Yeah, I am. Thanks. Honestly. That’s the nicest thing anyone’s said.','laugh')}
- await N('You sit there until the car park lights come on. He doesn’t say anything cruel the whole time. It’s the longest he’s ever gone.');
+ await N('You sit there until the parking lot lights come on. He doesn’t say anything cruel the whole time. It’s the longest he’s ever gone.');
  bond('arjun',1);
  await complete('alone');
 }});
@@ -209,7 +209,7 @@ hook({mis:'striketwo',period:8,room:'arcade',who:'sean',label:'Hang out with Sea
  await say('stella','So I kept it. Like, if I kept the one thing he forgot, he’d have to come back for it.','sad');
  await say('sean','…He’s an idiot. Not for leaving. For forgetting you were the best thing in the house.','sad');
  await say('stella','You can’t just SAY things like that in an arcade.','cry');
- await say('sean','I practised it on your voicemail.','blush');
+ await say('sean','I practiced it on your voicemail.','blush');
  await say('stella','You did not.','laugh');
  await say('sean','Number thirty-four.','blush');
  await walk('sean',290,40);await walk('stella',300,40);
@@ -239,13 +239,13 @@ hook({mis:'smallhours',period:8,room:'foodcourt',who:'abby',label:'Listen to Abb
  await complete('smallhours');
 }});
 
-mission('omermum',{name:'Omer’s Mum',icon:'🛍️',who:['omer'],
- blurb:'Omer’s mum is buying him clothes in the mall. She picks them. Everyone knows. Nobody’s ever met her. Today you do.',
+mission('omermum',{name:'Omer’s Mom',icon:'🛍️',who:['omer'],
+ blurb:'Omer’s mom is buying him clothes in the mall. She picks them. Everyone knows. Nobody’s ever met her. Today you do.',
  parts:['After school: the food court'],tips:['After school, Fair City Mall food court.']});
-hook({mis:'omermum',period:8,room:'foodcourt',who:'omermum',label:'Say hi to Omer’s mum',cond:()=>!D.dead.omer,run:async()=>{
+hook({mis:'omermum',period:8,room:'foodcourt',who:'omermum',label:'Say hi to Omer’s mom',cond:()=>!D.dead.omer,run:async()=>{
  scene('foodcourt',{omer:[60,1,{y:150}],omermum:[86,-1,{y:150,hold:'paper'}],you:[110,-1,{y:156}]});
  await say('omermum','Oh! A FRIEND! Omer never brings friends! Omer, you said you had friends but I thought you meant online!','happy');
- await say('omer','Mum. MUM.','blush');
+ await say('omer','Mom. MOM.','blush');
  await say('omermum','I’m buying him shorts. He only wears shorts. Since he was four. He says it’s “for speed”.','happy');
  await say('omer','It IS for speed.','angry');
  if(D.mp.bully>=3||D.f.aidanDead){
@@ -253,7 +253,7 @@ hook({mis:'omermum',period:8,room:'foodcourt',who:'omermum',label:'Say hi to Ome
   await say('omer','…Nothing. Fell over.','sad');
   if(D.f.aidanDead){
    await N('Omer looks at you. You both know what happened at the lockers.');
-   await say('omer','Mum… I did something really bad today.','cry');
+   await say('omer','Mom… I did something really bad today.','cry');
    await N('She doesn’t ask what. She just puts her arms round him in the middle of the food court, shopping bags and all, and holds on.');
    await say('omermum','Then tomorrow you do something really good. That’s how it works. That’s the only way it works.','sad');
   }else{
@@ -262,8 +262,8 @@ hook({mis:'omermum',period:8,room:'foodcourt',who:'omermum',label:'Say hi to Ome
    await say('omermum','I DO pick your clothes. You look very handsome. Next time, let them talk, eh?','happy');
   }
  }else{
-  await say('omermum','Is he nice at school? Tell me the truth. He’s nice at home. He hoovers.','happy');
-  const c=await choose(['“He’s the best one of us.”','“He hits people, Mrs. Omer’s Mum.”']);
+  await say('omermum','Is he nice at school? Tell me the truth. He’s nice at home. He vacuums.','happy');
+  const c=await choose(['“He’s the best one of us.”','“He hits people, Mrs. Omer’s Mom.”']);
   if(c===0)await say('omermum','(eyes filling up) I KNEW it.','cry');
   else await say('omermum','Only people who deserve it, I hope.','smirk');
  }
@@ -290,8 +290,8 @@ hook({mis:'jacobken',period:8,room:'arcade',who:'jacob',label:'Shoot hoops with 
 /* ---------- more collectibles & deaths ---------- */
 coll('loyalty',{room:'foodcourt',period:8,x:300,y:160,name:'A Fair City Mall loyalty card',desc:'Stamped four hundred times. Every stamp is from a Friday. Free coffee on the next one. There isn’t a next one.',hint:'After school, the food court.'});
 coll('goldticket',{room:'arcade',period:8,x:20,y:158,name:'A golden arcade ticket',desc:'Worth 10,000 points. The prize desk says it’s “not valid on Fridays”.',hint:'After school, the arcade.'});
-coll('ring',{room:'carpark',period:8,x:300,y:158,name:'Mr. Adam’s wedding ring',desc:'Somebody threw it off the roof of the car park. Inside it says “Forever. — J.”',hint:'After school, roof car park.'});
-coll('wire',{room:'library',period:4,x:290,y:150,name:'A Nectar receipt',desc:'Forty metres of wire, a kitchen timer, one Twirl. Points earned: 312. Customer: ADAM.',hint:'Library, at lunch.'});
+coll('ring',{room:'carpark',period:8,x:300,y:158,name:'Mr. Adam’s wedding ring',desc:'Somebody threw it off the roof of the parking lot. Inside it says “Forever. — J.”',hint:'After school, rooftop parking.'});
+coll('wire',{room:'library',period:4,x:290,y:150,name:'A store receipt',desc:'Forty meters of wire, a kitchen timer, one Twirl. Points earned: 312. Customer: ADAM.',hint:'Library, at lunch.'});
 Object.assign(DEATHS,{
  oven:{name:'Star Baker',desc:'Gas mark nine. Lovely crackling.',hint:'Bake the worst sponge in Food Tech.'},
  method:{name:'Method',desc:'Mr. Pratt finally got a death scene he believed.',hint:'Refuse to play Macbeth properly.'},

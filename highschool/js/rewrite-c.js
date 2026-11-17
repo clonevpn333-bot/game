@@ -16,14 +16,14 @@ hook({mis:'method',period:3,room:'drama',who:'auto',run:async()=>{
  await say('pratt','Macbeth. Act Two. The murder of King Duncan. And we are NOT using props. Props are for cowards and children’s television.','yell');
  hold('pratt','dagger');
  await say('kayden','Sir. Is that a real knife?','scared');
- await say('pratt','“Is this a dagger which I see before me?” YES. Sheffield steel. Forty quid. I sharpened it during Countdown.','happy');
- await say('pratt','Our Duncan today is… you. Year Nine. Up you get. Onto the stage. Lie down. Close your eyes. Trust the craft.','smirk');
+ await say('pratt','“Is this a dagger which I see before me?” YES. Sheffield steel. Forty bucks. I sharpened it during Jeopardy.','happy');
+ await say('pratt','Our Duncan today is… you. eighth grade. Up you get. Onto the stage. Lie down. Close your eyes. Trust the craft.','smirk');
  A.kid1.pose=null;await Promise.all([walk('kid1',200,60),tw(A.kid1,{y:104},700)]);A.kid1.pose='lie';A.kid1.dir=-1;
  await say('kid1','(lying on the stage) Sir? Sir, it’s quite pointy—','scared');
  await walk('pratt',188,40);pose('pratt','slam');SFX.squelch();await wait(220);SFX.squelch();
  kill('kid1','lie',{pool:20});pose('pratt',null);
  await say('pratt','And SCENE! Do you SEE? Do you FEEL it? THAT is theatre!','happy');
- await say('mia','He’s killed a Year Nine. In a lesson. With an audience.','shock');
+ await say('mia','He’s killed an eighth grader. In a lesson. With an audience.','shock');
  await walk('pratt',150,60);face('pratt',-1);
  await say('pratt','Next scene. You. You’re Macbeth. Mia’s Banquo. Banquo dies. Make me believe it.','evil');
  A.you.pose=null;await Promise.all([walk('you',130,60),tw(A.you,{y:106},600)]);
@@ -41,8 +41,8 @@ hook({mis:'method',period:3,room:'drama',who:'auto',run:async()=>{
  }
  if(ch===1){
   await N('Mia follows your eyes up to the rig. Six lamps, on a bar, on two clips. She nods once. Cadets.');
-  await say('mia','Sir, I need the toilet.');
-  await say('pratt','Banquo doesn’t NEED the toilet. Banquo needs DEATH.','yell');
+  await say('mia','Sir, I need the bathroom.');
+  await say('pratt','Banquo doesn’t NEED the bathroom. Banquo needs DEATH.','yell');
   await walk('mia',30,80);await tw(A.mia,{y:24},700);
   await say('pratt','Where is my BANQUO?','yell');
   const r=await meter('Mia’s on the clips. Tell her when.',{speed:1.25});
@@ -83,7 +83,7 @@ hook({mis:'beep',period:6,room:'gym',who:'auto',run:async()=>{
  const c=await classIn('gym',{kids,fixed:Object.fromEntries(kids.map((n,i)=>[n,i+1])),you:0});
  cue('gym');hold('coach','cleaver');
  prop({t:'cd',x:160,y:110});
- await N('Period 7. The sports hall. Two lines of tape, twenty metres apart. A CD player on a chair. Coach Dunmore is holding a meat cleaver like a clipboard.');
+ await N('Period 7. The sports hall. Two lines of tape, twenty meters apart. A CD player on a chair. Coach Dunmore is holding a meat cleaver like a clipboard.');
  await say('coach','BEEP TEST. You run between the lines. You’re on the line by the beep. Miss a beep, you’re CUT.','evil');
  await N('He taps the cleaver against his whistle. Ting. Ting.');
  if(D.f.beepRig){

@@ -18,16 +18,16 @@ Object.assign(K,{
    DARREN
    ================================================================= */
 mission('darren',{name:'Darren',icon:'🥽',who:['hasan','darren'],
- blurb:'Someone has left Hasan a note. It says 4pm, the mall, “wear something blue”. It’s signed “D”. Hasan has read it forty times and gone a colour you can see from space.',
- parts:['Before school: the note','Break, canteen: the chips','Lunch, the field: the question'],
- tips:['Before school, bus loop. Hasan’s holding something.','Break, canteen. Stay near Hasan.','Lunch, canteen. Hasan’s been summoned to the field.'],
+ blurb:'Someone has left Hasan a note. It says 4pm, the mall, “wear something blue”. It’s signed “D”. Hasan has read it forty times and gone a color you can see from space.',
+ parts:['Before school: the note','Break, cafeteria: the fries','Lunch, the field: the question'],
+ tips:['Before school, bus loop. Hasan’s holding something.','Break, cafeteria. Stay near Hasan.','Lunch, cafeteria. Hasan’s been summoned to the field.'],
  variants:{friends:'Mates',shake:'A milkshake'}});
 hook({mis:'darren',period:0,room:'bus',who:'hasan',label:'Ask Hasan what he’s holding',look:{hold:'letter',ex:'blush',pose:null},cond:()=>!D.f.dar1,run:async()=>{
  scene('bus',{hasan:[58,1,{y:146,hold:'letter',ex:'blush'}],you:[84,-1,{y:152}]});
  await say('hasan','(holding a folded note like it might explode) This was in my blazer pocket. On the bus. Someone put it IN my pocket. While I was IN the blazer.','scared');
  hold('hasan',null);
  await N('It’s written in blue gel pen, very neatly. “Hasan. Fair City Mall. 4pm. Wear something blue, it suits you. — D.”');
- await say('hasan','It suits me. SOMETHING suits me. Nobody has ever said anything suits me. My mum says I “carry clothes”.','blush');
+ await say('hasan','It suits me. SOMETHING suits me. Nobody has ever said anything suits me. My mom says I “carry clothes”.','blush');
  await say('hasan','What if it’s a prank. What if it’s ARJUN. Arjun’s middle name could be D. I don’t know Arjun’s middle name.','scared');
  const c=await choose(['“It’s not Arjun. Arjun doesn’t own a gel pen.”','“Whoever it is, they like you. That’s allowed.”','“Want me to find out who D is?”']);
  if(c===0)await say('hasan','…That’s true. Arjun writes in pencil so he can rub out compliments.','smirk');
@@ -35,28 +35,28 @@ hook({mis:'darren',period:0,room:'bus',who:'hasan',label:'Ask Hasan what he’s 
  if(c===2)await say('hasan','YES. No. Yes. Don’t make it weird. Make it a bit weird. Find out.','scared');
  D.f.dar1=1;part('darren',1);
 }});
-hook({mis:'darren',period:2,room:'canteen',who:'hasan',label:'Queue with Hasan',look:{ex:'scared'},cond:()=>D.f.dar1&&!D.f.dar2,run:async()=>{
+hook({mis:'darren',period:2,room:'canteen',who:'hasan',label:'Line with Hasan',look:{ex:'scared'},cond:()=>D.f.dar1&&!D.f.dar2,run:async()=>{
  scene('canteen',{pat:[90,1,{y:140}],hasan:[150,-1,{y:146}],you:[176,-1,{y:150}]});
  cue('canteen');
  await walk('hasan',112,50);
  await say('pat','(sliding a tray over without looking up) Here you go, love. Special order.','smirk');
  hold('hasan','tray');prop({t:'chips',x:112,y:118,layer:30});
- await N('His chips have been arranged, one by one, into letters. They spell HASAN. The ketchup is a heart. The heart has been done with care.');
+ await N('His fries have been arranged, one by one, into letters. They spell HASAN. The ketchup is a heart. The heart has been done with care.');
  await say('hasan','Pat. PAT. Who did this.','shock');
  await say('pat','Can’t say. He paid in cash and he paid in respect.','smirk');
  put('darren',334,-1,{y:150});await walk('darren',140,60);
  await N('A boy with curly ginger hair and prescription swimming goggles pushed up on his forehead walks over like he’s been rehearsing the walk. He has.');
- await say('darren','Hi. It’s me. D. Darren. Swim team. Year 8, at the pool, you went back into the deep end for my goggles when nobody else would.','blush');
+ await say('darren','Hi. It’s me. D. Darren. Swim team. seventh grade, at the pool, you went back into the deep end for my goggles when nobody else would.','blush');
  await say('hasan','I— I don’t— I mean I remember the goggles. I didn’t know they were— YOURS—','shock');
- await say('darren','You don’t have to remember. I remember for both of us. I’ve been building up to this for two years. The chips were step one.','happy');
+ await say('darren','You don’t have to remember. I remember for both of us. I’ve been building up to this for two years. The fries were step one.','happy');
  await say('hasan','How many steps ARE there?','scared');
  await say('darren','Eleven.','happy');
  props=props.filter(p=>p.t!=='chips');hold('hasan',null);
  await walk('hasan',-16,110);remove('hasan');
- await say('darren','(watching him go) …He’s going to the toilets. That’s okay. That’s in the plan. That’s step four.','blush');
+ await say('darren','(watching him go) …He’s going to the bathroom. That’s okay. That’s in the plan. That’s step four.','blush');
  const c=await choose(['Go after Hasan.','Talk to Darren.']);
  if(c===0){scene('toilets',{hasan:[150,1,{y:146,pose:'cover'}],you:[120,1,{y:152}]});await say('hasan','He went into the DEEP END for my— no, I went in for HIS— I don’t even like swimming. I just didn’t want him to lose his goggles.','scared');await say('you','So you’re just a nice person who got caught being nice.');await say('hasan','(through his hands) …I hate that that’s exactly it.','blush')}
- else{await say('darren','Is he okay? I can skip to step ten. Step ten is just a normal conversation. I wasn’t sure he’d want that.','sad');await say('you','Maybe lead with the normal conversation, mate.');await say('darren','(writing on his hand in gel pen) Lead. With. Normal.','happy')}
+ else{await say('darren','Is he okay? I can skip to step ten. Step ten is just a normal conversation. I wasn’t sure he’d want that.','sad');await say('you','Maybe lead with the normal conversation, bro.');await say('darren','(writing on his hand in gel pen) Lead. With. Normal.','happy')}
  D.f.dar2=1;part('darren',2);
 }});
 hook({mis:'darren',period:4,room:'canteen',who:'hasan',label:'Ask Hasan why he’s staring at his phone',look:{pose:'phone',ex:'shock'},cond:()=>D.f.dar2&&!D.done.darren,run:async()=>{
@@ -75,16 +75,16 @@ hook({mis:'darren',period:4,room:'canteen',who:'hasan',label:'Ask Hasan why he�
  await say('darren','(holding half a question mark) …That was step nine. There’s no step ten now. I panicked about step ten anyway.','sad');
  face('hasan',-1);
  await say('hasan','(very quietly, to you) What do I do. I’ve never been asked anything. Nobody’s ever asked me anything that wasn’t “can you move”.','scared');
- const c=await choose(['“Tell him the truth, whatever it is. He’s been brave. You can be too.”','“Say yes to a milkshake. As mates. See what happens.”','“Run.”']);
- if(c===2){await walk('hasan',-16,120);await N('Hasan runs. He gets about ten metres, stops, stands there for a second with his hands on his head, and walks back.');await walk('hasan',60,60);await say('hasan','I can’t run. He made me chips into my NAME.','sad')}
+ const c=await choose(['“Tell him the truth, whatever it is. He’s been brave. You can be too.”','“Say yes to a milkshake. As friends. See what happens.”','“Run.”']);
+ if(c===2){await walk('hasan',-16,120);await N('Hasan runs. He gets about ten meters, stops, stands there for a second with his hands on his head, and walks back.');await walk('hasan',60,60);await say('hasan','I can’t run. He made me fries into my NAME.','sad')}
  await walk('hasan',140,50);face('hasan',1);
  if(c===0||c===2){
   await say('hasan','Darren. That’s the nicest anyone’s ever been to me. Ever. I mean it. But I don’t— I don’t think I like anyone like that. Yet. Or maybe ever. I don’t know.','sad');
   await say('darren','(nodding, very fast) That’s okay. That’s actually okay. I just wanted you to know you’re the kind of person someone does eleven steps for.','happy');
-  await say('hasan','…Can we still be mates? You can teach me to swim. Properly. Without the deep end.','happy');
+  await say('hasan','…Can we still be friends? You can teach me to swim. Properly. Without the deep end.','happy');
   await say('darren','(pulling the goggles off his head and holding them out) Lucky goggles. Prescription. You’ll see everything blurry. It’s great.','happy');
  }else{
-  await say('hasan','A milkshake. Yeah. As mates. As… let’s just see. I don’t know what I am. I know I want a milkshake with someone who did eleven steps for me.','blush');
+  await say('hasan','A milkshake. Yeah. As friends. As… let’s just see. I don’t know what I am. I know I want a milkshake with someone who did eleven steps for me.','blush');
   await say('darren','(dropping the half question mark) STRAWBERRY. I mean. Whatever flavour. I mean strawberry.','love');
   D.f.darShake=1;
  }
@@ -115,7 +115,7 @@ Object.assign(ITEMS,{cupcake:'A birthday cupcake with DAD on it'});
 mission('nightshift',{name:'Night Shift',icon:'🎂',who:['hasan','pat'],
  blurb:'Hasan’s dad drives a cab at night. He’s asleep when Hasan’s up and gone when Hasan gets home. Today’s his birthday. Hasan hasn’t said happy birthday to his face in three years.',
  parts:['Break: Hasan’s quiet','Lunch: Pat’s kitchen','Home time: the cab'],
- tips:['Break, canteen. Hasan’s the quiet one.','Lunch, canteen. Ask Pat. She’s softer than she looks.','Home time, bus loop. Wait with Hasan.']});
+ tips:['Break, cafeteria. Hasan’s the quiet one.','Lunch, cafeteria. Ask Pat. She’s softer than she looks.','Home time, bus loop. Wait with Hasan.']});
 hook({mis:'nightshift',period:2,room:'canteen',who:'hasan',label:'Ask Hasan why he’s quiet',look:{pose:'phone',ex:'sad'},cond:()=>!D.f.ns1,run:async()=>{
  scene('canteen',{hasan:[240,-1,{y:146,pose:'phone',ex:'sad'}],you:[214,1,{y:152}]});
  await say('hasan','(showing you his phone) He sends me one every morning. Same time. Before he goes to sleep.');
@@ -140,7 +140,7 @@ hook({mis:'nightshift',period:4,room:'canteen',who:'pat',label:'Ask Pat for a fa
  SFX.fire();await N('Pat puts them in the big oven. While you wait, she tells you about her dad’s jam sandwiches. You’ve never heard her say this many words. Nobody has.');
  const r2=await meter('Pipe DAD on the top',{speed:1.15,zone:.24});
  give('cupcake');
- await say('pat',r2?'(looking at it for a long time) …That’s a proper one. He’ll keep that in the cab till it goes hard.':'It says DAB. It’s fine. He’ll know.','sad');
+ await say('pat',r2?'(looking at it for a long time) …That’s a real one. He’ll keep that in the cab till it goes hard.':'It says DAB. It’s fine. He’ll know.','sad');
  if(A.hasan)await say('hasan','Thank you, Pat. Seriously. You’re… not what everyone says.','happy');
  await say('pat','Tell anyone and I’ll fry you.','smirk');
  part('nightshift',2);
@@ -161,7 +161,7 @@ hook({mis:'nightshift',period:7,room:'bus',who:'hasan',label:'Wait with Hasan',l
  await N('He hugs Hasan in the middle of the bus loop, in front of everyone. Hasan hugs him back with the cupcake still in one hand.');
  await say('hasandad','I drive nights so you can have days. That’s all it is. I’m sorry I miss them.','cry');
  await say('hasan','Can you come to the mall? For ten minutes? Before your shift?','happy');
- await say('hasandad','(checking his watch, then not checking it) …Get in. You too, mate.','happy');
+ await say('hasandad','(checking his watch, then not checking it) …Get in. You too, bro.','happy');
  pose('hasan',null);pose('hasandad',null);
  if(A.arjun){await N('Across the loop, Arjun is watching. For once he doesn’t say anything. After a while he looks at the ground.');await say('arjun','(to nobody) …Happy birthday, Mr. Hasan’s dad.','sad')}
  bond('hasan',1);
