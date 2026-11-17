@@ -144,6 +144,34 @@ body.touch .pad{display:flex}
  #clock{font-size:12px;padding:4px 7px}
  #pbody{gap:8px}
 }
+
+/* ---------- full-screen game; the text box floats over the bottom ---------- */
+#app{display:block}
+#view{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+body.portrait #view{align-items:flex-start;padding-top:calc(max(8px,env(safe-area-inset-top)) + 48px)}
+#panel{position:absolute;z-index:5;left:50%;transform:translateX(-50%);bottom:max(10px,env(safe-area-inset-bottom));width:min(94vw,900px);height:auto!important;max-height:48vh;background:#141120eb;border:3px solid var(--edge);border-left:5px solid var(--edge2);box-shadow:0 10px 40px #000a;padding:0 12px 10px}
+#panel[data-mode=none]{display:none}
+#panel[data-mode=roam]{width:min(94vw,640px);background:#141120cc;padding-bottom:8px}
+#ptools{padding:6px 0 4px;min-height:0}
+#pbody,#roam{max-width:none}
+#ptext{max-height:calc(48vh - 64px)}
+#mini{justify-content:center;padding-bottom:0}
+#panel{background:#141120d6}
+#panel[data-mode=roam]{background:#141120b0}
+body.portrait #panel{top:calc(var(--cb,60vh) + 10px);bottom:auto;max-height:calc(100vh - var(--cb,60vh) - 20px)}
+body.portrait #roam{flex-wrap:wrap;justify-content:space-between}
+body.portrait #hint{order:-1;flex-basis:100%;text-align:center}
+body.portrait #ptext{max-height:calc(100vh - var(--cb,60vh) - 90px)}
+@media (max-height:500px){
+ #panel{max-height:60vh;padding:0 8px 6px;width:min(96vw,760px)}
+ #ptext{max-height:calc(60vh - 44px)}
+ #ptools{padding:3px 0 2px}#ptools .tb{padding:2px 6px;font-size:10px}
+ #text{font-size:14px;line-height:1.35}#name{font-size:10px;margin-bottom:2px;padding:1px 6px}
+ #choices{gap:3px}#choices button{font-size:13px;padding:3px 8px;line-height:1.25}
+ #portraitBox{width:44px;height:44px}
+ #hud .tb{padding:3px 6px;font-size:10px}#clock{font-size:10px;padding:3px 6px}#clock small{font-size:9px}
+ .pad button{min-height:40px;min-width:48px}
+}
 </style>
 </head>
 <body>
@@ -153,6 +181,7 @@ body.touch .pad{display:flex}
   <div id="hud" hidden>
    <div id="clock"></div>
    <div id="topbtns">
+    <button class="tb" id="bFull" title="Fullscreen (F)">⛶</button>
     <button class="tb" id="bMap" title="Map (M)">MAP</button>
     <button class="tb" id="bQuest" title="Quest log (Q)">QUESTS</button>
     <button class="tb" id="bSet" title="Settings (Esc)">SETTINGS</button>
@@ -346,7 +375,7 @@ function speed(){return TEST?60:(skipping()?7:1)}
 let DL=null,CH=null,BACKLOG=[],speaker=null,panelMode='none';
 const NAMECOL={};
 function lineHash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
-function setPanel(m){panelMode=m;$('pbody').style.display=m==='talk'?'flex':'none';$('roam').classList.toggle('on',m==='roam')}
+function setPanel(m){panelMode=m;$('panel').dataset.mode=m;$('pbody').style.display=m==='talk'?'flex':'none';$('roam').classList.toggle('on',m==='roam')}
 function nameOf(who){const k=(typeof K!=="undefined")&&K[who];return k?k.n:who}
 function say(who,text,ex){
  if(ex&&A[who])A[who].ex=ex;
@@ -451,6 +480,7 @@ addEventListener('keydown',e=>{
   if(k==='Enter'||k===' '||k==='e'||k==='E'){e.preventDefault();if(CH.sel>=0)pickChoice(CH.sel);return}
  }
  if(k==='l'||k==='L'){openBacklog();return}
+ if(k==='f'||k==='F'){goFullscreen();return}
  if(k==='Escape'){INPUT&&INPUT.settings&&INPUT.settings();return}
  if(DL){
   if(k===' '||k==='Enter'||k==='e'||k==='E'||k==='ArrowRight'&&false){e.preventDefault();if(!e.repeat)advance();return}
@@ -472,6 +502,7 @@ function tapAdvance(e){audio();if(MINI)return;if(DL){advance()}}
 $('view').addEventListener('pointerdown',e=>{if(e.target.closest('button'))return;tapAdvance(e)});
 $('pbody').addEventListener('pointerdown',e=>{if(e.target.closest('button'))return;tapAdvance(e)});
 $('bLog').onclick=()=>{audio();openBacklog()};
+$('bFull').onclick=()=>{audio();goFullscreen()};
 $('bAuto').onclick=()=>{audio();setAuto(!autoOn)};
 $('bSkip').onclick=()=>{audio();setSkip(!skipOn)};
 function holdBtn(id,key){const b=$(id);const on=e=>{e.preventDefault();audio();keys[key]=1;b.classList.add('on')},off=()=>{keys[key]=0;b.classList.remove('on')};b.addEventListener('pointerdown',on);b.addEventListener('pointerup',off);b.addEventListener('pointercancel',off);b.addEventListener('pointerleave',off)}
@@ -550,16 +581,13 @@ function rhythm(title,o){
 
 /* ---------------- canvas fitting: whole-number device pixels per art pixel ---------------- */
 function fit(){
- const dpr=window.devicePixelRatio||1,vw=innerWidth,vh=innerHeight,portrait=vw/vh<1.05,panel=$('panel'),view=$('view');
- const minPanel=portrait?200:150;
- let s=Math.max(1,Math.floor(Math.min(vw*dpr/W,(vh-minPanel)*dpr/H)));
- const hudRow=portrait?50:0;
- while(s>1&&vh-H*s/dpr-hudRow<minPanel)s--;
- const cw=W*s/dpr,ch=H*s/dpr;
- view.style.flex='0 0 '+Math.floor(ch+hudRow)+'px';panel.style.height=Math.max(minPanel,Math.floor(vh-ch-hudRow))+'px';
- cv.style.width=cw+'px';cv.style.height=ch+'px';
- document.documentElement.style.setProperty('--panelH',Math.max(minPanel,Math.floor(vh-ch-hudRow))+'px');
+ const vw=innerWidth,vh=innerHeight,portrait=vw/vh<1.05;document.body.classList.toggle('portrait',portrait);
+ const s=Math.min(vw/W,(portrait?vh-60:vh)/H);
+ cv.style.width=Math.floor(W*s)+'px';cv.style.height=Math.floor(H*s)+'px';
+ requestAnimationFrame(()=>{const r=cv.getBoundingClientRect();document.documentElement.style.setProperty('--cb',Math.round(r.bottom)+'px')});
 }
+function goFullscreen(on){const d=document,e=d.documentElement;try{if(on===false||(on==null&&(d.fullscreenElement||d.webkitFullscreenElement))){(d.exitFullscreen||d.webkitExitFullscreen)?.call(d)?.catch?.(()=>{})}else if(!(d.fullscreenElement||d.webkitFullscreenElement)){(e.requestFullscreen||e.webkitRequestFullscreen)?.call(e)?.catch?.(()=>{})}}catch(err){}}
+document.addEventListener('fullscreenchange',()=>setTimeout(fit,60));
 addEventListener('resize',fit);addEventListener('orientationchange',()=>setTimeout(fit,200));
 
 /* ---------------- main loop ---------------- */
@@ -1557,7 +1585,7 @@ function openSettings(){
  row('Skip button skips','skipAll',[0,1],['Read text only','Everything']);
  const act=o.querySelector('.actions');
  const btn=(t,f,alt)=>{const b=document.createElement('button');b.className='mb'+(alt?' alt':'');b.textContent=t;b.onclick=f;act.appendChild(b)};
- btn('Fullscreen',()=>{const e=document.documentElement;try{if(document.fullscreenElement)document.exitFullscreen();else(e.requestFullscreen||e.webkitRequestFullscreen).call(e)}catch(err){}},1);
+ btn('Fullscreen',()=>goFullscreen(),1);
  btn('Save & quit to title',()=>{o.hidden=true;if(D&&D.period!=null&&!busy){P.cur=P.cur||JSON.parse(JSON.stringify(D))}save();title()},1);
  btn('Erase all progress',()=>{if(confirm('Erase every loop, mission, collectible and ending?')){localStorage.removeItem(SAVE_KEY);loadP();o.hidden=true;title()}},1);
  const note=document.createElement('p');note.style.cssText='color:#a99aa8;font-size:12px;line-height:1.6;margin-top:14px';note.textContent='Keys: ←/→ walk · E/Space talk & advance · M map · Q quests · L backlog · A auto · S skip (or hold Ctrl) · Esc settings. The game saves at the start of every period.';o.querySelector('.box').appendChild(note);
@@ -1575,9 +1603,9 @@ async function title(){
  const done=Object.keys(P.done).length,total=Object.keys(MIS).length;
  m.innerHTML='<div class="eyebrow">A Calling of Aidan story</div><h1>HIGHSCHOOL</h1><p>One Friday. It keeps happening. The teachers are worse than you remember, and something is wrong with Aidan.</p><p class="eyebrow" style="font-size:11px;letter-spacing:.14em">'+(P.loops?'Day '+P.loops+' · '+done+'/'+total+' missions · '+Object.keys(P.endings).length+' endings':'')+'</p><div class="actions"></div>';
  const a=m.querySelector('.actions');
- const btn=(t,f,alt)=>{const b=document.createElement('button');b.className='mb'+(alt?' alt':'');b.textContent=t;b.onclick=()=>{audio();SFX.click();f()};a.appendChild(b)};
- if(P.cur)btn('Continue',()=>{m.hidden=true;D=P.cur;busy=false;startPeriod(D.period,true)});
- btn(P.loops?'Start a new Friday':'Start',()=>{m.hidden=true;busy=false;newDay()},!!P.cur);
+ const btn=(t,f,alt,fs)=>{const b=document.createElement('button');b.className='mb'+(alt?' alt':'');b.textContent=t;b.onclick=()=>{audio();SFX.click();if(fs&&!TEST)goFullscreen(true);f()};a.appendChild(b)};
+ if(P.cur)btn('Continue',()=>{m.hidden=true;D=P.cur;busy=false;startPeriod(D.period,true)},false,true);
+ btn(P.loops?'Start a new Friday':'Start',()=>{m.hidden=true;busy=false;newDay()},!!P.cur,true);
  btn('Quest log',()=>{D=D||freshD();openQuest()},1);
  btn('Settings',openSettings,1);
 }

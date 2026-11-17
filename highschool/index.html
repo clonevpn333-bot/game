@@ -139,6 +139,34 @@ body.touch .pad{display:flex}
  #clock{font-size:12px;padding:4px 7px}
  #pbody{gap:8px}
 }
+
+/* ---------- full-screen game; the text box floats over the bottom ---------- */
+#app{display:block}
+#view{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+body.portrait #view{align-items:flex-start;padding-top:calc(max(8px,env(safe-area-inset-top)) + 48px)}
+#panel{position:absolute;z-index:5;left:50%;transform:translateX(-50%);bottom:max(10px,env(safe-area-inset-bottom));width:min(94vw,900px);height:auto!important;max-height:48vh;background:#141120eb;border:3px solid var(--edge);border-left:5px solid var(--edge2);box-shadow:0 10px 40px #000a;padding:0 12px 10px}
+#panel[data-mode=none]{display:none}
+#panel[data-mode=roam]{width:min(94vw,640px);background:#141120cc;padding-bottom:8px}
+#ptools{padding:6px 0 4px;min-height:0}
+#pbody,#roam{max-width:none}
+#ptext{max-height:calc(48vh - 64px)}
+#mini{justify-content:center;padding-bottom:0}
+#panel{background:#141120d6}
+#panel[data-mode=roam]{background:#141120b0}
+body.portrait #panel{top:calc(var(--cb,60vh) + 10px);bottom:auto;max-height:calc(100vh - var(--cb,60vh) - 20px)}
+body.portrait #roam{flex-wrap:wrap;justify-content:space-between}
+body.portrait #hint{order:-1;flex-basis:100%;text-align:center}
+body.portrait #ptext{max-height:calc(100vh - var(--cb,60vh) - 90px)}
+@media (max-height:500px){
+ #panel{max-height:60vh;padding:0 8px 6px;width:min(96vw,760px)}
+ #ptext{max-height:calc(60vh - 44px)}
+ #ptools{padding:3px 0 2px}#ptools .tb{padding:2px 6px;font-size:10px}
+ #text{font-size:14px;line-height:1.35}#name{font-size:10px;margin-bottom:2px;padding:1px 6px}
+ #choices{gap:3px}#choices button{font-size:13px;padding:3px 8px;line-height:1.25}
+ #portraitBox{width:44px;height:44px}
+ #hud .tb{padding:3px 6px;font-size:10px}#clock{font-size:10px;padding:3px 6px}#clock small{font-size:9px}
+ .pad button{min-height:40px;min-width:48px}
+}
 </style>
 </head>
 <body>
@@ -148,6 +176,7 @@ body.touch .pad{display:flex}
   <div id="hud" hidden>
    <div id="clock"></div>
    <div id="topbtns">
+    <button class="tb" id="bFull" title="Fullscreen (F)">⛶</button>
     <button class="tb" id="bMap" title="Map (M)">MAP</button>
     <button class="tb" id="bQuest" title="Quest log (Q)">QUESTS</button>
     <button class="tb" id="bSet" title="Settings (Esc)">SETTINGS</button>

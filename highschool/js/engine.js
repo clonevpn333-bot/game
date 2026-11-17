@@ -151,7 +151,7 @@ function speed(){return TEST?60:(skipping()?7:1)}
 let DL=null,CH=null,BACKLOG=[],speaker=null,panelMode='none';
 const NAMECOL={};
 function lineHash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
-function setPanel(m){panelMode=m;$('pbody').style.display=m==='talk'?'flex':'none';$('roam').classList.toggle('on',m==='roam')}
+function setPanel(m){panelMode=m;$('panel').dataset.mode=m;$('pbody').style.display=m==='talk'?'flex':'none';$('roam').classList.toggle('on',m==='roam')}
 function nameOf(who){const k=(typeof K!=="undefined")&&K[who];return k?k.n:who}
 function say(who,text,ex){
  if(ex&&A[who])A[who].ex=ex;
@@ -256,6 +256,7 @@ addEventListener('keydown',e=>{
   if(k==='Enter'||k===' '||k==='e'||k==='E'){e.preventDefault();if(CH.sel>=0)pickChoice(CH.sel);return}
  }
  if(k==='l'||k==='L'){openBacklog();return}
+ if(k==='f'||k==='F'){goFullscreen();return}
  if(k==='Escape'){INPUT&&INPUT.settings&&INPUT.settings();return}
  if(DL){
   if(k===' '||k==='Enter'||k==='e'||k==='E'||k==='ArrowRight'&&false){e.preventDefault();if(!e.repeat)advance();return}
@@ -277,6 +278,7 @@ function tapAdvance(e){audio();if(MINI)return;if(DL){advance()}}
 $('view').addEventListener('pointerdown',e=>{if(e.target.closest('button'))return;tapAdvance(e)});
 $('pbody').addEventListener('pointerdown',e=>{if(e.target.closest('button'))return;tapAdvance(e)});
 $('bLog').onclick=()=>{audio();openBacklog()};
+$('bFull').onclick=()=>{audio();goFullscreen()};
 $('bAuto').onclick=()=>{audio();setAuto(!autoOn)};
 $('bSkip').onclick=()=>{audio();setSkip(!skipOn)};
 function holdBtn(id,key){const b=$(id);const on=e=>{e.preventDefault();audio();keys[key]=1;b.classList.add('on')},off=()=>{keys[key]=0;b.classList.remove('on')};b.addEventListener('pointerdown',on);b.addEventListener('pointerup',off);b.addEventListener('pointercancel',off);b.addEventListener('pointerleave',off)}
@@ -355,16 +357,13 @@ function rhythm(title,o){
 
 /* ---------------- canvas fitting: whole-number device pixels per art pixel ---------------- */
 function fit(){
- const dpr=window.devicePixelRatio||1,vw=innerWidth,vh=innerHeight,portrait=vw/vh<1.05,panel=$('panel'),view=$('view');
- const minPanel=portrait?200:150;
- let s=Math.max(1,Math.floor(Math.min(vw*dpr/W,(vh-minPanel)*dpr/H)));
- const hudRow=portrait?50:0;
- while(s>1&&vh-H*s/dpr-hudRow<minPanel)s--;
- const cw=W*s/dpr,ch=H*s/dpr;
- view.style.flex='0 0 '+Math.floor(ch+hudRow)+'px';panel.style.height=Math.max(minPanel,Math.floor(vh-ch-hudRow))+'px';
- cv.style.width=cw+'px';cv.style.height=ch+'px';
- document.documentElement.style.setProperty('--panelH',Math.max(minPanel,Math.floor(vh-ch-hudRow))+'px');
+ const vw=innerWidth,vh=innerHeight,portrait=vw/vh<1.05;document.body.classList.toggle('portrait',portrait);
+ const s=Math.min(vw/W,(portrait?vh-60:vh)/H);
+ cv.style.width=Math.floor(W*s)+'px';cv.style.height=Math.floor(H*s)+'px';
+ requestAnimationFrame(()=>{const r=cv.getBoundingClientRect();document.documentElement.style.setProperty('--cb',Math.round(r.bottom)+'px')});
 }
+function goFullscreen(on){const d=document,e=d.documentElement;try{if(on===false||(on==null&&(d.fullscreenElement||d.webkitFullscreenElement))){(d.exitFullscreen||d.webkitExitFullscreen)?.call(d)?.catch?.(()=>{})}else if(!(d.fullscreenElement||d.webkitFullscreenElement)){(e.requestFullscreen||e.webkitRequestFullscreen)?.call(e)?.catch?.(()=>{})}}catch(err){}}
+document.addEventListener('fullscreenchange',()=>setTimeout(fit,60));
 addEventListener('resize',fit);addEventListener('orientationchange',()=>setTimeout(fit,200));
 
 /* ---------------- main loop ---------------- */

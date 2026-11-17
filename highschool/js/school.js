@@ -421,7 +421,7 @@ function openSettings(){
  row('Skip button skips','skipAll',[0,1],['Read text only','Everything']);
  const act=o.querySelector('.actions');
  const btn=(t,f,alt)=>{const b=document.createElement('button');b.className='mb'+(alt?' alt':'');b.textContent=t;b.onclick=f;act.appendChild(b)};
- btn('Fullscreen',()=>{const e=document.documentElement;try{if(document.fullscreenElement)document.exitFullscreen();else(e.requestFullscreen||e.webkitRequestFullscreen).call(e)}catch(err){}},1);
+ btn('Fullscreen',()=>goFullscreen(),1);
  btn('Save & quit to title',()=>{o.hidden=true;if(D&&D.period!=null&&!busy){P.cur=P.cur||JSON.parse(JSON.stringify(D))}save();title()},1);
  btn('Erase all progress',()=>{if(confirm('Erase every loop, mission, collectible and ending?')){localStorage.removeItem(SAVE_KEY);loadP();o.hidden=true;title()}},1);
  const note=document.createElement('p');note.style.cssText='color:#a99aa8;font-size:12px;line-height:1.6;margin-top:14px';note.textContent='Keys: ←/→ walk · E/Space talk & advance · M map · Q quests · L backlog · A auto · S skip (or hold Ctrl) · Esc settings. The game saves at the start of every period.';o.querySelector('.box').appendChild(note);
@@ -439,9 +439,9 @@ async function title(){
  const done=Object.keys(P.done).length,total=Object.keys(MIS).length;
  m.innerHTML='<div class="eyebrow">A Calling of Aidan story</div><h1>HIGHSCHOOL</h1><p>One Friday. It keeps happening. The teachers are worse than you remember, and something is wrong with Aidan.</p><p class="eyebrow" style="font-size:11px;letter-spacing:.14em">'+(P.loops?'Day '+P.loops+' · '+done+'/'+total+' missions · '+Object.keys(P.endings).length+' endings':'')+'</p><div class="actions"></div>';
  const a=m.querySelector('.actions');
- const btn=(t,f,alt)=>{const b=document.createElement('button');b.className='mb'+(alt?' alt':'');b.textContent=t;b.onclick=()=>{audio();SFX.click();f()};a.appendChild(b)};
- if(P.cur)btn('Continue',()=>{m.hidden=true;D=P.cur;busy=false;startPeriod(D.period,true)});
- btn(P.loops?'Start a new Friday':'Start',()=>{m.hidden=true;busy=false;newDay()},!!P.cur);
+ const btn=(t,f,alt,fs)=>{const b=document.createElement('button');b.className='mb'+(alt?' alt':'');b.textContent=t;b.onclick=()=>{audio();SFX.click();if(fs&&!TEST)goFullscreen(true);f()};a.appendChild(b)};
+ if(P.cur)btn('Continue',()=>{m.hidden=true;D=P.cur;busy=false;startPeriod(D.period,true)},false,true);
+ btn(P.loops?'Start a new Friday':'Start',()=>{m.hidden=true;busy=false;newDay()},!!P.cur,true);
  btn('Quest log',()=>{D=D||freshD();openQuest()},1);
  btn('Settings',openSettings,1);
 }
