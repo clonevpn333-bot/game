@@ -3286,7 +3286,7 @@ async function inviteRivalry(key){
  for(const other of Object.keys(FRIEND_STORIES))if(other!==key&&FRIEND_STORIES[other].cast.some(id=>def.cast.includes(id))){s[other].invited=false;for(const id of FRIEND_STORIES[other].cast)delete s.goals[id]}
  q.invited=true;
  def.cast.forEach((id,i)=>{s.goals[id]={floor,x:x+(i?17:-17)};S.talked.add(id);A_[id].sit=false;A_[id].phone=0;A_[id].pose=null;A_[id].idleTarget=null;A_[id].yogaUntil=0});
- socialSave();await cameraBack();sub('Follow '+def.cast.map(id=>K[id].n).join(' and ')+' to '+place+'.');
+ socialSave();await cameraBack();sub('Follow '+def.cast.filter(id=>!(def.absent&&(def.absent[q.step]||[]).includes(id))).map(id=>K[id].n).join(' and ')+' to '+place+'.');
 }
 async function playRivalry(key){
  const def=FRIEND_STORIES[key],s=socialState(),q=s[key];
@@ -6054,7 +6054,7 @@ FRIEND_SCENES.abby=[
 /* ---------- a calmer HUD: one objective, one next step ---------- */
 function nextStep(){if(!S.play||busy||!socialRoam())return '';if(S.errand)return S.errand.label;
  if(S.chaos)return '!! '+CHAOS[S.chaos].t;if(S.lead)return S.lead.label;const s=socialState();
- for(const k of questKeys()){const q=s[k];if(q&&q.invited){const d=FRIEND_STORIES[k];return 'Meet '+d.cast.map(id=>K[id].n).join(' & ')+' at '+(d.places[q.step]||'the meeting spot')+'.'}}
+ for(const k of questKeys()){const q=s[k];if(q&&q.invited){const d=FRIEND_STORIES[k];return 'Meet '+d.cast.filter(id=>!(d.absent&&(d.absent[q.step]||[]).includes(id))).map(id=>K[id].n).join(' & ')+' at '+(d.places[q.step]||'the meeting spot')+'.'}}
  const todo=S.todo&&Object.values(S.todo)[0];if(todo)return todo;const ch=coreyHint&&coreyHint();if(ch)return ch;
  if(questsTaken().length<2&&applesLeft()>0)return 'Walk up to a friend with a ! above them to start a quest.';return ''}
 {const _h=hud;hud=function(){_h();if(!S.play||busy){return}const base=S.obj||'',nx=nextStep();$('obj').textContent=base+(nx?'\n▶ '+nx:'')+(socialRoam()?'\n[Q] Quest log':'')}}
@@ -7918,6 +7918,25 @@ FRIEND_SCENES.drafts=[
 {const _tf=transformScene;transformScene=async function(){const r=store.run;await _tf();if(r.draftsDeleted)await N('He reaches for something taller. Something faster. They aren’t there any more. You deleted them. He has to make do with this.');else if(r.draftsLoose)await N('Outside, at the bottom of the garden, something the height of a pylon is watching the window. Waiting to be let in.')}}
 {const _w=whereNow;whereNow=function(){const L=_w(),r=store.run||{};if(r.hasanParalysed&&!A_.hasan.dead){const i=L.findIndex(l=>l.includes('<b>HASAN</b>'));if(i>=0)L[i]+=' Uses a wheelchair now — the Forehead Express. Still beats everyone at FIFA. Still won’t go near the woods.'}return L}}
 {const _st=socialSmalltalk;socialSmalltalk=function(id){const r=store.run||{};if(r.hasanParalysed){if(id==='hasan'&&Math.random()<.4)return one(['Push me somewhere. Anywhere. I’m bored of this corner.','I keep trying to cross my legs. Then I remember.','The Forehead Express does not have brakes. I’ve checked.']);if((id==='corey'||id==='nivaan')&&Math.random()<.3)return one(['I can still hear it. “Are you coming.”','I deleted the clip. I’ve still got the clip. I can’t delete the clip.'])}return _st(id)}}
+
+/* ================= PASS 45: CONTINUITY — people are where the story says they are ================= */
+/* a quest can mark cast members as absent from a meeting: they don't walk there, and the scene places them itself */
+FRIEND_STORIES.triple.absent={0:['sean'],1:['sean']};
+const absentAt=(key)=>{const d=FRIEND_STORIES[key],q=socialState()[key];return (d&&d.absent&&d.absent[q?q.step:0])||[]};
+{const _ma=meetingArrived;meetingArrived=function(key){const ab=absentAt(key);if(!ab.length)return _ma(key);const [floor,x]=meetingFor(key);return FRIEND_STORIES[key].cast.filter(id=>!ab.includes(id)).every(id=>A_[id].floor===floor&&Math.abs(A_[id].x-x)<38)}}
+{const _ir=inviteRivalry;inviteRivalry=async function(key){await _ir(key);const s=socialState();if(s[key]&&s[key].invited)for(const id of absentAt(key)){delete s.goals[id];if(key==='triple'&&id==='sean')seanToShower()}}}
+/* Sean in the shower: out of sight in the upstairs bathroom, water running */
+function seanToShower(){const se=A_.sean;if(!se||se.dead)return;Object.assign(se,{floor:1,x:830,y:158,vis:false,tx:null,moving:false,sit:false,phone:0,pose:null});store.run.seanShower=socialPhase();save()}
+{const _u=update;update=function(dt){_u(dt);const r=store.run;if(!r||r.seanShower==null)return;const se=A_.sean;if(!se||se.dead){r.seanShower=null;return}
+ if(socialPhase()!==r.seanShower&&!busy){se.vis=true;r.seanShower=null;return}
+ if(S.floor===1&&Math.random()<.5)emit(830+(Math.random()-.5)*16,118+Math.random()*10,1,['rgba(230,236,245,.5)','rgba(210,220,235,.4)'],{vx:(Math.random()-.5)*6,vy:-8,sx:4,sy:3,g:-4,life:1.6})}}
+/* the towel: bare arms and legs, a towel round the middle */
+{const _dk=drawKid;drawKid=function(k,x,y,o){if(k&&k.towel){const k2=Object.assign({},k,{top:k.skin,pants:k.skin,towel:false,collar:0,hood:0,zip:0,cuff:0});const r=_dk(k2,x,y,o);if(!(o&&(o.lie||o.sit))){const hh=k.h||0,lr=Math.round(hh/2),legH=7+lr,bw=k.wide?14:10,bx=Math.round(x)-(bw>>1),yy=Math.round(y);R(bx-1,yy-legH-2,bw+2,6,'#f2f2ee');R(bx-1,yy-legH-2,bw+2,1,'#ffffff');R(bx+bw-3,yy-legH-1,2,5,'#d8d8d0');R(bx+2,yy-legH+2,1,2,'#d8d8d0')}return r}return _dk(k,x,y,o)}}
+/* part 1 starts with the shower running; part 2 starts with him walking out of the bathroom in a towel */
+{const p0=FRIEND_SCENES.triple[0];FRIEND_SCENES.triple[0]=async(q,s)=>{if(A_.sean.vis!==false)seanToShower();if(!FAST)noise(2.5,.05,4200,.6);await p0(q,s)}}
+{const p1=FRIEND_SCENES.triple[1];FRIEND_SCENES.triple[1]=async(q,s)=>{const se=A_.sean;store.run.seanShower=null;Object.assign(se,{floor:S.floor,x:830,y:158,vis:true,sit:false,pose:null,phone:0,dir:-1,lie:0});K.sean.towel=true;SFX.creak();
+  const near=Math.min(...['arjun','corey'].map(i=>A_[i].x));await walk(se,Math.max(near+40,770),60);se.phone=1;try{await p1(q,s)}finally{K.sean.towel=false;se.phone=0}}}
+{const _pk=paceOK;paceOK=function(key,st){if(key==='triple'&&st.step===1)return true;return _pk(key,st)}}
 
 /* ================= THE LAMP TIMELINE (only when built as lamp.html) ================= */
 if(window.LAMP_TIMELINE){
