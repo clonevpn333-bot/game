@@ -162,7 +162,7 @@ hook({mis:'corey',period:2,room:'canteen',who:'corey',label:'Get Corey to talk t
  pose('abby','kneel');jar.hide=1;await wait(300);pose('abby',null);hold('abby','powder');
  await say('abby','C.U.R.L.? Bro.','smirk');
  await say('corey','That’s— for emergencies.','blush');
- await say('abby','Mine are natural. I just wake up like this.','smirk');
+ await say('abby','I wash my hair and hope. Yours is a whole project.','smirk');
  hold('abby','tray');
  await say('abby','See you in PE. I’ll be the one not dying.','happy');
  await walk('abby',330,50);remove('abby');
