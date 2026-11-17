@@ -237,13 +237,14 @@ const BLOOD=['#5e0a12','#8a0d16','#b3121e','#d21f2b'];
 /* ---------------- input ---------------- */
 const keys={l:0,r:0};
 let INPUT=null; // school.js sets {act,map,quest} handlers for roam mode
-function anyOverlay(){return['quest','backlog','settings','map','menu'].some(id=>!$(id).hidden)}
+function anyOverlay(){return['quest','backlog','settings','map','menu','phoneov'].some(id=>!$(id).hidden)}
 function closeOverlays(){for(const id of['quest','backlog','settings','map'])$(id).hidden=true}
 addEventListener('keydown',e=>{
  audio();
  const k=e.key;
  if(k==='Control'){ctrlHeld=true;if(DL&&(SEEN.has(DL.h)||P.set.skipAll))finishLine()}
  if(MINI&&MINI.key&&(k===' '||k==='Enter'||k==='e'||k==='E')){e.preventDefault();if(!e.repeat)MINI.key();return}
+ if(!$('phoneov').hidden){if(k===' '||k==='Enter'||k==='e'||k==='E'){e.preventDefault();if(!e.repeat&&PHONENEXT)PHONENEXT()}return}
  if(!$('menu').hidden){if(k==='Enter'){const b=$('menu').querySelector('.mb');if(b){e.preventDefault();b.click()}}return}
  if(anyOverlay()){if(k==='Escape'||((k==='q'||k==='Q')&&!$('quest').hidden)||((k==='l'||k==='L')&&!$('backlog').hidden)||((k==='m'||k==='M')&&!$('map').hidden)){e.preventDefault();closeOverlays()}return}
  if(CH){
@@ -281,6 +282,21 @@ $('pA').onclick=()=>{audio();INPUT&&INPUT.act()};
 $('pMap').onclick=()=>{audio();INPUT&&INPUT.map()};
 if(matchMedia('(pointer:coarse)').matches||'ontouchstart'in window)document.body.classList.add('touch');
 addEventListener('touchstart',()=>document.body.classList.add('touch'),{once:true,passive:true});
+
+/* ---------------- phone: DMs and group chats ---------------- */
+let PHONENEXT=null;
+function dms(title,sub_,msgs){
+ msgs.forEach(m=>BACKLOG.push({n:'📱 '+(m[0]==='me'?'You':m[0]==='them'?title:m[0]==='note'?'':(K[m[0]]?K[m[0]].n:m[0])),t:m[1],c:'#6b4a7a'}));
+ if(TEST)return Promise.resolve();
+ setSkip(false);
+ return new Promise(res=>{
+  const o=$('phoneov');o.hidden=false;o.innerHTML='<div class="ph"><div class="phh"></div><div class="phm"></div><button class="mb phb">NEXT ▸</button></div>';
+  const h=o.querySelector('.phh');h.textContent=title;const sm=document.createElement('small');sm.textContent=sub_||'';h.appendChild(sm);
+  const box=o.querySelector('.phm'),b=o.querySelector('.phb');let i=0;
+  const next=()=>{if(i>=msgs.length){o.hidden=true;PHONENEXT=null;SFX.click();res();return}const [w,t]=msgs[i++];const d=document.createElement('div');d.className='bub'+(w==='me'?' me':w==='note'?' nt':'');if(w!=='me'&&w!=='them'&&w!=='note'){const n=document.createElement('b');n.textContent=K[w]?K[w].n:w;d.appendChild(n)}d.appendChild(document.createTextNode(t));box.appendChild(d);box.scrollTop=box.scrollHeight;SFX.blip(w==='me'?620:880,'sine');b.textContent=i>=msgs.length?'CLOSE':'NEXT ▸'};
+  PHONENEXT=next;b.onclick=next;o.onclick=e=>{if(e.target===o)next()};next();
+ });
+}
 
 /* ---------------- mini-games (big buttons, keyboard or touch) ---------------- */
 let MINI=null;
@@ -385,7 +401,7 @@ function draw(){
  for(const p of parts)R(p.x,p.y,p.s,p.s,p.c);
  if(room&&room.over)room.over();
  if(fxState.romance>0){g.globalAlpha=fxState.romance*.22;R(0,0,W,H,'#ff8fb8');g.globalAlpha=1;drawPetals(fxState.romance)}
- if(fxState.red>0){g.globalAlpha=fxState.red*.28;R(0,0,W,H,'#9a0010');g.globalAlpha=fxState.red*.5;R(0,0,W,6,'#000');R(0,H-6,W,6,'#000');R(0,0,8,H,'#000');R(W-8,0,8,H,'#000');g.globalAlpha=1}
+ if(fxState.red>0){g.globalAlpha=fxState.red*.16;R(0,0,W,H,'#2a0a12');g.globalAlpha=fxState.red*.5;R(0,0,W,6,'#000');R(0,H-6,W,6,'#000');R(0,0,8,H,'#000');R(W-8,0,8,H,'#000');g.globalAlpha=1}
  if(fxState.dark>0){g.globalAlpha=fxState.dark;R(0,0,W,H,'#05040a');g.globalAlpha=1}
  if(fxState.tint&&fxState.tintA>0){g.globalAlpha=fxState.tintA;R(0,0,W,H,fxState.tint);g.globalAlpha=1}
  if(speaker&&A[speaker]&&A[speaker].vis&&!A[speaker].dead)drawTalkMark(A[speaker]);

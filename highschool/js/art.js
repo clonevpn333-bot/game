@@ -15,7 +15,7 @@ const K={
  stella:{n:'Stella',col:'#c0408a',skin:'#f0c8a8',hair:'#f0d070',hs:'long',top:'#c0408a',pants:'#3a4a7a',girl:1,seed:11,v:520,vw:'triangle'},
  abby:{n:'Abby',col:'#3f7a5e',skin:'#e9c09a',hair:'#5a2e1a',hs:'curlyl',top:'#2f5a46',pants:'#25252e',girl:1,seed:12,v:470,vw:'triangle'},
  aidan:{n:'Aidan',col:'#2456c8',skin:'#e6c2a2',hair:'#4a2f1a',hs:'bowl',top:'#2456c8',pants:'#0c0c10',tight:1,h:4,zip:1,seed:9,v:175,vw:'sawtooth'},
- angelo:{n:'Angelo',col:'#a8873a',skin:'#d7a77a',hair:'#141010',hs:'slick',top:'#8a6f3a',pants:'#1d1d22',chain:1,seed:13,v:330},
+ angelo:{n:'Angelo',col:'#9a6a3a',skin:'#c8946a',hair:'#141010',hs:'straight',top:'#7a5234',pants:'#141416',baggy:1,tee:1,seed:13,v:330},
  alex:{n:'Alex',col:'#2b6bd6',skin:'#f3cdb0',hair:'#e3c15a',hs:'wavyb',top:'#2b6bd6',pants:'#1f2a44',shorts:1,tee:1,num:'9',seed:14,v:305},
  dheva:{n:'Dheva',col:'#565663',skin:'#9a6440',hair:'#121010',hs:'texture',top:'#0f0f12',pants:'#2a2a33',baggy:1,stripe:1,tee:1,seed:15,v:268},
  marcus:{n:'Marcus',col:'#5b7a8c',skin:'#f0d0a8',hair:'#0e0c0c',hs:'fringe',top:'#e8e8ea',pants:'#2a2f3a',tie:1,squint:1,seed:16,v:455},
@@ -47,7 +47,7 @@ function drawHead(k,x,hy,d,o){
  if(o.crushed){R(hx-1,hy+hd-4,hw+2,4,BLOOD[1]);R(hx,hy+hd-5,hw,2,S);R(hx+2,hy+hd-6,3,2,k.hair);R(hx+6,hy+hd-5,3,1,'#f1e6da');R(hx-3,hy+hd-2,hw+6,2,BLOOD[0]);return}
  R(hx+1,hy,hw-2,1,S);R(hx,hy+1,hw,hd-2,S);R(hx+1,hy+hd-1,hw-2,1,S);R(d>0?hx:hx+hw-1,hy+2,1,hd-4,'rgba(0,0,0,.12)');
  if(k.old){R(hx+1,hy+hd-3,3,1,'rgba(0,0,0,.14)');R(hx+hw-4,hy+hd-3,3,1,'rgba(0,0,0,.14)');R(hx+3,hy+2,6,1,'rgba(0,0,0,.08)')}
- const ex_=o.ex==='scream'?'yell':(o.ex||'n'),ey=hy+(k.knob?6:5),ex=x+d,blink=((T*1.3+k.seed*.7)%5)<.12;
+ let ex_=o.ex==='scream'?'yell':(o.ex||'n');if(k.adult&&ex_==='evil')ex_='cold';const ey=hy+(k.knob?6:5),ex=x+d,blink=((T*1.3+k.seed*.7)%5)<.12;
  const ink='#1a1410',mouthC='#7a3a2a',dark='#4a1418';
  // evil: face darkens from the top
  if(ex_==='evil'){g.fillStyle='rgba(30,0,10,.38)';g.fillRect(hx,hy,hw,6)}
@@ -57,6 +57,7 @@ function drawHead(k,x,hy,d,o){
  // eyes
  if(ex_==='dead'||o.deadFace){R(ex-5,ey-1,1,1,ink);R(ex-3,ey-1,1,1,ink);R(ex-4,ey,1,1,ink);R(ex-5,ey+1,1,1,ink);R(ex-3,ey+1,1,1,ink);R(ex+2,ey-1,1,1,ink);R(ex+4,ey-1,1,1,ink);R(ex+3,ey,1,1,ink);R(ex+2,ey+1,1,1,ink);R(ex+4,ey+1,1,1,ink)}
  else if(ex_==='evil'){const gl=Math.sin(T*9)>0?'#ff2a2a':'#ff6a4a';R(ex-4,ey,2,2,gl);R(ex+2,ey,2,2,gl);R(ex-4,ey-1,2,1,'#fff3');}
+ else if(ex_==='cold'){R(ex-4,ey,2,2,ink);R(ex+2,ey,2,2,ink);R(ex-4,ey+2,2,1,'rgba(90,60,70,.35)');R(ex+2,ey+2,2,1,'rgba(90,60,70,.35)')}
  else if(ex_==='shock'||ex_==='scared'){R(ex-4,ey-1,2,3,'#fff');R(ex+2,ey-1,2,3,'#fff');R(ex-3,ey,1,1,'#111');R(ex+2,ey,1,1,'#111')}
  else if(ex_==='closed'||blink||ex_==='happy'&&k.squint||ex_==='laugh'){R(ex-4,ey+1,2,1,ink);R(ex+2,ey+1,2,1,ink);if(ex_==='laugh'){R(ex-5,ey,1,1,ink);R(ex+4,ey,1,1,ink)}}
  else if(ex_==='smirk'||ex_==='sly'||k.squint||k.tired){R(ex-4,ey+1,2,1,ink);R(ex+2,ey+1,2,1,ink);R(ex-4,ey,2,1,'rgba(0,0,0,.35)');R(ex+2,ey,2,1,'rgba(0,0,0,.35)');if(k.tired){R(ex-4,ey+2,2,1,'#9a7a8a');R(ex+2,ey+2,2,1,'#9a7a8a')}}
@@ -71,6 +72,7 @@ function drawHead(k,x,hy,d,o){
  if(ex_==='dead'||o.deadFace){R(ex-1,my,3,2,'#3a0508');R(ex,my+2,1,2,'#c84a5a')}
  else if(o.talk&&Math.sin(T*15)>0&&ex_!=='evil')R(ex-1,my,3,2,dark);
  else if(ex_==='evil'){R(ex-3,my-1,7,3,'#2a0408');R(ex-2,my-1,1,1,'#fff');R(ex,my-1,1,1,'#fff');R(ex+2,my-1,1,1,'#fff');R(ex-1,my+1,1,1,'#fff');R(ex+1,my+1,1,1,'#fff')}
+ else if(ex_==='cold'){R(ex-2,my,4,1,mouthC);R(ex-3,my-1,1,1,mouthC);R(ex+2,my-1,1,1,mouthC)}
  else if(ex_==='happy'||ex_==='love'||ex_==='laugh'){R(ex-2,my,4,1,dark);R(ex-3,my-1,1,1,dark);R(ex+2,my-1,1,1,dark);if(ex_==='laugh')R(ex-1,my+1,3,1,dark)}
  else if(ex_==='angry'||ex_==='sad'||ex_==='cry'){R(ex-2,my,4,1,dark);R(ex-3,my+1,1,1,dark);R(ex+2,my+1,1,1,dark)}
  else if(ex_==='shock'){R(ex-1,my,2,3,dark)}
@@ -110,6 +112,7 @@ function drawHead(k,x,hy,d,o){
  else if(hs==='side'){R(hx-1,hy-2,hw+2,3,c);R(hx-1,hy+1,2,3,c);R(hx+hw-1,hy+1,2,3,c);R(hx+3,hy-2,1,2,'rgba(0,0,0,.3)');R(hx+4,hy+1,5,1,c)}
  else if(hs==='buzz'){R(hx,hy-1,hw,2,c);R(hx+1,hy-2,hw-2,1,c);R(hx,hy+1,1,2,c);R(hx+hw-1,hy+1,1,2,c)}
  else if(hs==='manbun'){R(hx-1,hy-2,hw+2,3,c);R(hx+3,hy-6,5,4,c);R(hx-1,hy+1,2,2,c);R(hx+hw-1,hy+1,2,2,c)}
+ else if(hs==='straight'){R(hx-1,hy-2,hw+2,4,c);R(hx,hy-3,hw,1,c);R(hx-2,hy,2,6,c);R(hx+hw,hy,2,6,c);R(d>0?hx+hw-6:hx,hy+2,6,1,c);R(hx+2,hy-2,4,1,'rgba(255,255,255,.18)')}
  else if(hs==='net'){R(hx-1,hy-3,hw+2,5,c);for(let i=0;i<hw+2;i+=2)R(hx-1+i,hy-3,1,5,'rgba(255,255,255,.25)');R(hx-1,hy-1,hw+2,1,'rgba(90,90,120,.4)')}
  if(k.tache)R(ex-3,ey+2,7,1,k.tacheC||k.hair);
  if(k.beard){R(hx,hy+hd-5,2,4,k.hair);R(hx+hw-2,hy+hd-5,2,4,k.hair);R(hx+2,hy+hd-2,hw-4,2,k.hair)}
@@ -233,7 +236,7 @@ function drawActor(a){
  const k=a.k;if(!k)return;
  if(a.alpha<1)g.globalAlpha=Math.max(0,a.alpha);
  if(k.ghost)g.globalAlpha=Math.min(g.globalAlpha,.62+Math.sin(T*3+a.x)*.12);
- let messy=false;if(k.adam){const L=adamLvl();messy=L>=3;if(!a.ex)a._ex=['happy','smirk','shock','smirk','yell','evil','shock','evil','sad'][L];if(L>=5)a.bloody=1}
+ let messy=false;if(k.adam){const L=adamLvl();messy=L>=3;if(!a.ex)a._ex=['happy','smirk','shock','smirk','yell','evil','shock','evil','sad'][L];if(L>=5)a.hurt=0}
  const y=Math.round(a.y-(a.z||0));
  if(a.dead||a.pose==='lie'){
   if(a.pool!=null&&P.set.gore){const w=a.pool;R(a.x-w/2,a.y-1,w,3,BLOOD[1]);R(a.x-w/2+2,a.y,w-4,1,BLOOD[2]);R(a.x-w*.3,a.y+2,w*.5,1,BLOOD[0])}

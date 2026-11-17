@@ -17,7 +17,7 @@ S skip (or hold Ctrl) · Esc settings. Touch: on-screen ◀ ▶ / TALK / MAP, ta
 - **Mr. Adam**, the headteacher, loses his mind a little more every period: PA announcements, bursting
   into lessons, digging holes on the field, and a bomb at the bus loop at home time. Everyone talks about it.
 - **Every lesson goes wrong:** random chaos, teachers killing kids in the background, Mr. Adam interruptions.
-- **29 missions** (most in parts across the day), **17 deaths**, **16 collectibles**, **4 endings**,
+- **34 missions** (most in parts across the day), **17 deaths**, **16 collectibles**, **4 endings**,
   friendship bonds, cross-loop memories, and a curtain call.
   - *Aidan's Bad Day:* Ms. Balduf's English with Hasan, Corey and Aidan → show Omer the video →
     the fight at the lockers, with the whole school chanting and filming.
@@ -32,6 +32,9 @@ S skip (or hold Ctrl) · Esc settings. Touch: on-screen ◀ ▶ / TALK / MAP, ta
     how some deaths go), *Register* (Ollie, the Year 7 from 1987 nobody else can see), *Opps* (Kayden's
     four-foot-eleven "gang" and a Super Soaker drive-by at the mall).
   - At the mall: *Arjun, Alone* · *Hasan's Shot* · *Strike Two* · *Small Hours* · *Omer's Mum* · *Pushed Around*.
+  - Catfishing and school drama: *@highgate.tea* (who runs the gossip account posting everyone's secrets
+    every period?), *Jess from Fair City* (Kenneth is catfished), *Kai Vibes* (Nivaan's fake famous collab),
+    *Screenshots* (the group-chat leak), *The Rumour* (Sean vs Corey). DMs and group chats open on a phone screen.
   - *The Calling:* the finale at home time, once you know why Friday keeps happening.
 
 ## Files

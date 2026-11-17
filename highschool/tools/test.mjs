@@ -35,7 +35,7 @@ const res = await page.evaluate(async (RUNS) => {
       const D = HS.freshD();
       D.period = Array.isArray(h.period) ? h.period[0] : h.period; D.room = h.room;
       // a rich random state
-      for (const f of ['seat1', 'seat2', 'fight', 'stella1', 'corey1', 'swap', 'beep1', 'beepRig', 'loach1', 'detention', 'rewired', 'angelo1', 'dheva1', 'hold', 'padlock', 'bullied', 'aidanIncluded', 'adam1', 'adam2', 'adamKind', 'tez1', 'ollie1', 'kay1']) if (Math.random() < .6) D.f[f] = 1;
+      for (const f of ['seat1', 'seat2', 'fight', 'stella1', 'corey1', 'swap', 'beep1', 'beepRig', 'loach1', 'detention', 'rewired', 'angelo1', 'dheva1', 'hold', 'padlock', 'bullied', 'aidanIncluded', 'adam1', 'adam2', 'adamKind', 'tez1', 'ollie1', 'kay1', 'tea1', 'tea3', 'teaProof', 'jess1', 'jess2', 'kai1', 'gc1', 'rum1']) if (Math.random() < .6) D.f[f] = 1;
       D.f.crowd = Math.random() < .5 ? 2 : 1;
       for (const it of ITEMS) if (Math.random() < .5) D.items.push(it);
       D.money = Math.floor(Math.random() * 6);

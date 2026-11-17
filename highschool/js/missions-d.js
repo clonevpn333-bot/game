@@ -164,7 +164,7 @@ LESSON.pratt=[
 const LESSON_KILLS={
  balduf:{victim:'kid1',line:'Miss, I could of— I mean—',kill:'pen',after:'Could HAVE. There. Now he’ll never forget. He’ll never do anything again, but he’ll never forget.'},
  shermian:{victim:'kid2',line:'(chewing gum very loudly)',kill:'neck',after:'Bin, sweetie. Gum goes in the bin. You go in the other bin.'},
- loach:{victim:'kid3',line:'(reaching for the mug to see what happens)',kill:'bite',after:'Page forty-seven.'},
+ loach:{victim:'kid3',line:'(reaching for the mug to see what happens)',kill:'scissors',after:'Page forty-seven.'},
  coach:{victim:'kid4',line:'Sir, I’m tired—',kill:'ball',after:'TIRED is a word for people who are going to DIE. Like Darren.'},
  voss:{victim:'kid1',line:'Sir, I volunteer! For anything!',kill:'vat',after:'Lovely. Very… absorbent.'},
  kettle:{victim:'brandon',line:'Miss, mine’s a bit raw in the middle—',kill:'oven',after:'So are you, dear. Gas mark eight.'},
@@ -179,7 +179,7 @@ async function lessonKill(t){
  if(L.kill==='neck'){pose(t,'hug');await wait(300);SFX.crunch();kill(L.victim,'lie',{pool:8,bleed:0,spray:3})}
  else if(L.kill==='vat'||L.kill==='oven'){pose(t,'grab');SFX.whoosh();await tw(v,{alpha:0,x:316},500);v.vis=false;D.dead[L.victim]=1;SFX.scream();await wait(300);SFX.fire();prop({t:'smoke',x:306,y:120})}
  else if(L.kill==='ball'){pose(t,'throw');await wait(250);SFX.crunch();kill(L.victim,'crush',{pool:22})}
- else if(L.kill==='bite'){pose(t,'choke');SFX.scream();await wait(250);kill(L.victim,'lie',{pool:30,bleed:3})}
+ else if(L.kill==='scissors'){hold(t,'knife');pose(t,'slam');SFX.squelch();await wait(250);kill(L.victim,'lie',{pool:30,bleed:3});hold(t,null)}
  else if(L.kill==='sword'){pose(t,'punch');A[t].punchT=T+.4;SFX.squelch();await behead(L.victim,1)}
  else{hold(t,'pen');pose(t,'slam');await wait(250);kill(L.victim,'lie',{pool:24})}
  pose(t,null);

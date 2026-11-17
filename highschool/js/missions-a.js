@@ -473,7 +473,7 @@ hook({mis:'oldbat',period:4,room:'library',who:'david',label:'Ask David to help 
   await say('david','Ah— no— that’s the wrong—','shock');
   D.f.pitOpen=1;SFX.rumble();shake(1);
   A.you.ex='scared';await tw(A.you,{y:200},500,'in');A.you.vis=false;
-  await N('The floor opens under you. You fall for a long time. At the bottom, something is chewing. It stops chewing to say hello.');
+  await N('The floor opens under you. You fall for a long time. It’s a coal chute from when the school had a furnace. At the bottom there are other kids. Some of them have uniforms from the eighties. None of them are moving.');
   await die('pit');
  }
  SFX.ding();
@@ -497,7 +497,7 @@ hook({mis:'oldbat',period:6,room:'office',who:'auto',cond:()=>D.f.detention,run:
   D.f.pitOpen=1;SFX.rumble();shake(1);A.you.ex='scared';
   await tw(A.you,{y:210},500,'in');A.you.vis=false;
   await say('sherman','(calling down the hole) Say hello to Gary!','happy');
-  await N('Something at the bottom is chewing. It sounds full. It isn’t.');
+  await N('At the bottom, under forty years of dust, there’s a pile of school bags. Some of them still have names on.');
   await die('pit');
  }
  SFX.rumble();shake(1.2);
@@ -509,7 +509,7 @@ hook({mis:'oldbat',period:6,room:'office',who:'auto',cond:()=>D.f.detention,run:
  await say('sherman','(falling) YOU LITTLE SHIIIIIIIII—','yell');
  await tw(dent,{y:162},500,'in');SFX.click();
  await wait(800);
- SFX.squelch();await N('A long way down, something starts chewing. It sounds delighted.');
+ SFX.squelch();await N('A long way down there’s a crunch, and then nothing. Forty-one years of practice, and she never once checked the wiring.');
  cue('class');
  await N('Her dentures land at your feet, still clacking. The glass cabinet clicks open on its own. Forty-one years of phones.');
  if(!P.coll.dentures){P.coll.dentures=1;save();SFX.pick();toast('Collectible: Ms. Sherman’s dentures')}
@@ -553,8 +553,8 @@ hook({mis:'loach',period:3,room:'science',who:'auto',run:async()=>{
  if(c===1){await say('you','Miss. The school is on fire.');await say('loach','It is.');await say('loach','Mm.')}
  if(c===2){
   await walk('you',82,80);pose('you','reach');
-  ex('loach','evil');SFX.sting();fxState.dark=.5;
-  await N('She moves faster than anything you have ever seen. Her hand is around your wrist before you finish the thought.');
+  ex('loach','evil');SFX.sting();fxState.dark=.3;
+  await N('Her hand is round your wrist before you finish the thought. She doesn’t squeeze. She doesn’t need to. She looks at you like she’s deciding which drawer you’d fit in.');
   await say('loach','Don’t.','evil');
   fxState.dark=0;ex('loach',null);pose('you',null);
   await say('loach','Page forty-seven.');
@@ -579,11 +579,11 @@ hook({mis:'loach',period:6,room:'science',who:'auto',cond:()=>D.f.loach1,run:asy
   await say('you','Mmm. Earl Grey.');
   hold('you',null);pose('you',null);
   await evil('loach','evil');fxState.dark=.4;
-  await N('Ms. Loach stands up. It takes a long time, because there is more of her than there was.');
-  await walk('loach',74,200);pose('loach','choke');A.you.ex='scared';
+  await N('Ms. Loach stands up. She opens her desk drawer. She takes out a pair of scissors, the big orange ones, and she doesn’t hurry at all.');
+  hold('loach','knife');await walk('loach',74,60);pose('loach','slam');A.you.ex='scared';
   SFX.scream();await wait(300);SFX.squelch();blood(A.you.x,A.you.y-24,60,1,120,A.you.y+2);wallSplat(96,70,10);
   kill('you','lie',{pool:30});
-  await N('Her jaw goes down past her collarbone. You see the inside of her for a second. There’s tea in there. There’s a lot of tea.');
+  await N('She does it the way she marks books. Neatly. Without looking up. When she’s done she rinses the scissors in the sink and dries them on her cardigan.');hold('loach',null);
   fxState.dark=0;pose('loach','sit');A.loach.x=66;A.loach.y=132;ex('loach',null);
   await say('loach','Page forty-seven.');
   await die('mug');
@@ -593,15 +593,15 @@ hook({mis:'loach',period:6,room:'science',who:'auto',cond:()=>D.f.loach1,run:asy
  await say('hasan','Mmmm. Earl Grey. Bit cold. Four sugars? Miss, that’s a cry for help.','happy');
  D.f.mugGone=1;
  await evil('loach','evil');fxState.dark=.4;
- await N('Ms. Loach stands up. It takes a long time, because there is more of her than there was.');
- await walk('loach',74,200);
+ await N('Ms. Loach stands up. She opens her desk drawer. She takes out a pair of scissors, the big orange ones, and she doesn’t hurry at all.');
+ hold('loach','knife');await walk('loach',74,60);
  hold('hasan',null);pose('hasan',null);ex('hasan','scared');
- await say('hasan','Miss? Miss, your mouth is doing a thing—','scared');
- pose('loach','choke');SFX.scream();await wait(250);
+ await say('hasan','Miss? Miss, why have you got the scissors—','scared');
+ pose('loach','slam');SFX.scream();await wait(250);
  SFX.squelch();blood(A.hasan.x,A.hasan.y-24,70,1,120,A.hasan.y+2);wallSplat(100,70,12);shake(1.2);
  kill('hasan','lie',{pool:36,bleed:3});
- await N('Her jaw unhinges like a snake’s. She takes Hasan’s throat out in one bite and swallows it with the tea.');
- await N('Then she wipes her mouth on her cardigan, picks the mug up off the floor, and sits back down.');
+ await N('Three times, in the neck. She never changes her face. It’s the face she uses for page forty-seven.');
+ await N('Then she rinses the scissors in the sink, picks her mug up off the floor, and sits back down.');hold('loach',null);
  fxState.dark=0;pose('loach','sit');A.loach.x=66;A.loach.y=132;ex('loach',null);hold('loach','mug');
  SFX.slurp();
  await say('loach','Page forty-seven.');

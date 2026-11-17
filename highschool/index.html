@@ -123,6 +123,16 @@ body.touch .pad{display:flex}
 #mini .fill{position:absolute;left:0;top:0;bottom:0;background:#d8555d}
 #mini .mbtn{font-size:18px;padding:12px 26px;background:#f08a72;color:#1c0c10;border:2px solid #ffc0a6;box-shadow:3px 3px #3a1622;touch-action:none}
 #mini .info{font-size:12px;color:var(--dim);margin-top:6px}
+#phoneov{background:#0b0912d9;justify-content:center}
+.ph{width:min(360px,94vw);height:min(620px,86vh);background:#1a1626;border:4px solid #6b5a86;box-shadow:6px 6px #000;display:flex;flex-direction:column}
+.phh{padding:10px 12px;background:#2b2240;border-bottom:3px solid #4e4266;font-size:15px;color:#ffe1a8}
+.phh small{display:block;color:var(--dim);font-size:11px}
+.phm{flex:1;overflow:auto;padding:10px;display:flex;flex-direction:column;gap:8px}
+.bub{max-width:82%;padding:7px 10px;font-size:14px;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere;border:2px solid #4e4266;background:#2a2238;align-self:flex-start}
+.bub.me{align-self:flex-end;background:#6b4a7a;border-color:#a98ac0;color:#fff3da}
+.bub.nt{align-self:center;background:none;border:0;color:#8a7a92;font-size:11px;text-align:center}
+.bub b{display:block;font-weight:normal;font-size:11px;color:#f6cf8e;margin-bottom:2px}
+.phb{margin:8px}
 #toast{position:fixed;left:50%;top:max(56px,calc(env(safe-area-inset-top) + 48px));transform:translateX(-50%);z-index:30;background:#1d1729f2;border:2px solid var(--edge2);padding:8px 14px;font-size:14px;color:#ffe9c4;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90vw;text-align:center}
 @media (max-width:640px){
  .tb{padding:5px 7px;font-size:11px}
@@ -174,6 +184,7 @@ body.touch .pad{display:flex}
 <div id="settings" class="ov" hidden></div>
 <div id="map" class="ov" hidden></div>
 <div id="mini" hidden></div>
+<div id="phoneov" class="ov" hidden></div>
 <div id="toast"></div>
 <script src="js/engine.js"></script>
 <script src="js/art.js"></script>
@@ -184,6 +195,7 @@ body.touch .pad{display:flex}
 <script src="js/missions-c.js"></script>
 <script src="js/missions-d.js"></script>
 <script src="js/missions-e.js"></script>
+<script src="js/missions-f.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>
