@@ -66,11 +66,13 @@ Object.assign(INTEL,{abbyBird:'Abby draws a little bird on the Trailer window in
 const winStage=()=>(P.win&&P.win.stage)||0;
 function winSet(n){P.win=P.win||{};P.win.stage=Math.max(winStage(),n);P.win.looks=(P.win.looks||0)+1;save()}
 
-/* Abby, as she is in The Calling of Aidan: long black hair, dark clothes,
-   headphones (one blue cup, one purple), purple eyeliner */
+/* Abby, as she is in The Calling of Aidan: long black hair with subtle faded
+   strands of blue (one side) and purple (the other), purple eyeliner */
 {const dh=drawHead;drawHead=function(k,x,hy,d,o){dh(k,x,hy,d,o);if(o&&o.crushed)return;
  if(k.liner&&o.ex!=='dead'&&!o.deadFace){const ey=hy+5,ex=x+d;R(ex-5,ey-1,3,1,'#8a3fe0');R(ex+2,ey-1,3,1,'#8a3fe0')}
- if(k.phones){R(x-6,hy-2,12,1,'#7a35c9');R(x-7,hy-1,1,3,'#7a35c9');R(x+6,hy-1,1,3,'#7a35c9');R(x-8,hy+3,2,6,'#2b4fd6');R(x-8,hy+3,2,1,'#5a7ae8');R(x+6,hy+3,2,6,'#7a35c9');R(x+6,hy+3,2,1,'#a06ae8')}}}
+ if(k.streaks&&!o.noHead){const ga=g.globalAlpha;
+  for(let i=0;i<13;i++){const a=.75*(1-i/15);g.globalAlpha=ga*a;R(x-7,hy+1+i,1,1,'#3a5ae0');if(i%3!==1)R(x-6,hy+2+i,1,1,'#2b4fd6');g.globalAlpha=ga*a*.9;R(x+6,hy+1+i,1,1,'#8a45e0');if(i%3!==0)R(x+5,hy+2+i,1,1,'#7a35c9')}
+  g.globalAlpha=ga*.6;R(x-1,hy-1,2,1,'#8a45e0');R(x-2,hy,1,1,'#7a35c9');g.globalAlpha=ga}}}
 /* the drawing on the glass */
 {const _dp=drawProp;drawProp=function(p){
  if(p.t==='glassbird'){const x=Math.round(p.x),y=Math.round(p.y),n=p.n||1;
