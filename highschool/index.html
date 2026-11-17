@@ -19,6 +19,8 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 #hud{position:absolute;left:0;right:0;top:0;display:flex;justify-content:space-between;align-items:flex-start;padding:max(8px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) 0 max(10px,env(safe-area-inset-left));pointer-events:none;z-index:3}
 #clock{background:#141120e6;border:2px solid var(--edge);padding:5px 9px;font-size:13px;line-height:1.35;color:var(--gold);pointer-events:none;max-width:52vw}
 #clock small{display:block;color:var(--dim);font-size:11px}
+#clock .story{color:#ffe1a8;font-size:11px;margin-top:3px;border-top:1px solid #4e4266;padding-top:3px;max-width:44vw;line-height:1.35}
+.storybox{border-color:#cab38c!important;background:#221a2c!important;margin-bottom:8px}
 #topbtns{display:flex;gap:5px;pointer-events:auto}
 .tb{background:#141120e6;border:2px solid var(--edge);padding:6px 9px;font-size:12px;letter-spacing:.06em;color:var(--ink)}
 .tb:hover{background:#2b2240}
@@ -239,6 +241,9 @@ body.portrait #ptext{max-height:calc(100vh - var(--cb,60vh) - 90px)}
 <script src="js/evenday.js"></script>
 <script src="js/evenday-missions.js"></script>
 <script src="js/gfx.js"></script>
+<script src="js/story.js"></script>
+<script src="js/hasan.js"></script>
+<script src="js/fun.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>
