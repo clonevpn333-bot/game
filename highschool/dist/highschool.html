@@ -1355,7 +1355,7 @@ function roamHint(){
 function updateLoc(){
  const p=PERIODS[D.period],r=ROOMS[D.room||'bus'];
  $('clock').innerHTML='FRIDAY · '+p.time+'<small>'+p.name+' — '+(r?r.name:'')+'</small>';
- $('ploc').textContent='DAY '+D.day+' · £'+D.money+(D.items.length?' · '+D.items.length+' item'+(D.items.length>1?'s':''):'');
+ $('ploc').textContent='DAY '+D.day+' · $'+D.money+(D.items.length?' · '+D.items.length+' item'+(D.items.length>1?'s':''):'');
 }
 function availableHooks(room,who){return HOOKS.filter(h=>h.room===room&&(h.period===D.period||(Array.isArray(h.period)&&h.period.includes(D.period)))&&h.who===who&&(!h.cond||h.cond()))}
 function interactables(){
@@ -1632,7 +1632,7 @@ function openQuest(){
  }else if(questTab==='today'){
   if(!D){body.appendChild(el('div','li no','No day in progress.'))}else{
   const l=el('div','list');body.appendChild(l);
-  l.appendChild(el('div','li','Day '+D.day+' · '+PERIODS[D.period].name+' · £'+D.money));
+  l.appendChild(el('div','li','Day '+D.day+' · '+PERIODS[D.period].name+' · $'+D.money));
   l.appendChild(el('div','li',D.items.length?'Carrying: '+D.items.map(i=>ITEMS[i]||i).join(', '):'Pockets: empty.'));
   const act=Object.keys(D.mp).filter(m=>!D.done[m]);l.appendChild(el('div','li',act.length?'In progress: '+act.map(m=>MIS[m].name+' ('+D.mp[m]+'/'+MIS[m].parts.length+')').join(', '):'Nothing started today.'));
   if(Object.keys(D.done).length)l.appendChild(el('div','li','Finished today: '+Object.keys(D.done).map(m=>MIS[m].name).join(', ')));
@@ -1728,7 +1728,7 @@ async function angeloShop(){
  await say('angelo','Locker 13 is open for business. What you need?','smirk');
  const stock=[['tape',2,'Duct tape ($2)'],['energy',2,'Monster energy, warm ($2)'],['padlock',1,'A padlock in a sock ($1)']];
  const o=stock.map(s=>({t:s[2],dis:D.money<s[1]||has(s[0]),why:has(s[0])?'got it':'skint'}));o.push({t:'Nothing'});
- const i=await choose(o,'You have £'+D.money);
+ const i=await choose(o,'You have $'+D.money);
  if(i<stock.length){D.money-=stock[i][1];give(stock[i][0]);await say('angelo',pick(['Pleasure doing business.','No refunds. No receipts. No questions.','Tell your friends. Don’t tell Ms. Sherman.']));updateLoc()}
  else await say('angelo','Window shopper. Respect.');
 }
@@ -7177,6 +7177,658 @@ hook({mis:'darren',period:4,room:'canteen',who:'hasan',label:'Ask Hasan why he�
  bond('hasan',1);
  await complete('darren',D.f.darShake?'shake':'friends');
 }});
+
+</script>
+<script>
+/* js/crushes.js */
+'use strict';
+/* =====================================================================
+   HIGHSCHOOL — Toby likes Sean. Arjun loses his phone.
+   ===================================================================== */
+Object.assign(K,{
+ toby:{n:'Toby',col:'#3a9a8a',skin:'#d8a880',hair:'#2a1a12',hs:'curly',top:'#e8d8a8',cardigan:1,pants:'#4a5a3a',seed:61,v:340,vw:'triangle'}
+});
+K.toby.id='toby';
+{const _dh=drawHeld;drawHeld=function(it,x,y,d){
+ if(it==='bracelet'){R(x-2,y-2,5,3,'#e05a9a');R(x-1,y-1,3,1,'#f0e040');return}
+ if(it==='onion'){R(x-2,y-4,5,5,'#c8a0c0');R(x-1,y-5,3,1,'#e0c8e0');R(x,y-7,1,2,'#6a9a3a');return}
+ if(it==='ketchup'){R(x-1,y-6,3,8,'#c02020');R(x,y-8,1,2,'#f0f0f0');return}
+ return _dh(it,x,y,d)}}
+{const _dp=drawProp;drawProp=function(p){const x=Math.round(p.x),y=Math.round(p.y);
+ if(p.t==='mower'){R(x-14,y-12,28,10,'#3a8a3a');R(x-14,y-12,28,2,'#5aaa5a');R(x-10,y-2,6,6,'#1a1a1a');R(x+4,y-2,6,6,'#1a1a1a');R(x-16,y-22,2,12,'#444');R(x-18,y-22,6,2,'#444');px('MOW',x-5,y-10,'#f0e040');if(p.on)for(let i=0;i<3;i++)R(x+14+Math.random()*8,y-6+Math.random()*4,2,1,p.red?'#a01020':'#5aaa3a');return}
+ if(p.t==='ketchup'){R(x-8,y,16,3,'#a01818');R(x-5,y-1,10,1,'#c02020');return}
+ return _dp(p)}}
+
+/* =================================================================
+   TOBY LIKES SEAN
+   ================================================================= */
+mission('toby',{name:'Toby Likes Sean',icon:'🧶',who:['sean','toby','stella'],
+ blurb:'There’s a new kid called Toby. He transferred from Ohio on Monday. It’s been Friday ever since, so it’s still his first week. He likes Sean. He’s not shy about it. Sean has a girlfriend and absolutely no idea what to do.',
+ parts:['Before school: the bracelet','Break, library: forty tabs','Lunch, the field: the plan'],
+ tips:['Before school, bus loop. Sit near Sean.','Break, the library. Sean is hiding from Stella behind the biography section.','Lunch, the field. Whatever plan Sean picked, he’s doing it now.'],
+ variants:{honest:'Honest',third:'Third wheel',mower:'The mower'}});
+
+hook({mis:'toby',period:0,room:'bus',who:'sean',label:'Sit with Sean',look:{ex:'happy'},cond:()=>!D.f.toby1&&!D.dead.sean,run:async()=>{
+ scene('bus',{sean:[172,1,{y:146}],you:[150,1,{y:152}]});
+ await say('sean','(doing the hair flip) Big day. Me and Stella. Two months on Monday. If Monday ever comes.','happy');
+ put('toby',-14,1,{y:150});await walk('toby',196,70);face('toby',-1);
+ await N('A kid you’ve seen exactly once before gets off a different bus and walks straight over. Cardigan. Curly hair. Walks like he’s already decided something.');
+ await say('toby','Hey. Sean, right? I’m Toby. New. Ohio. I made you this.','happy');
+ hold('toby','bracelet');await wait(300);hold('toby',null);hold('sean','bracelet');
+ await N('A friendship bracelet. Pink and yellow. The beads spell SEAN 10/10.');
+ await say('sean','Oh! Cool! Thanks, man. That’s— what’s the ten out of ten for?','happy');
+ await say('toby','You. I like you. Like, LIKE like. Sorry, I don’t really do secrets. I spent all of eighth grade keeping one and it gave me a stomach ulcer.','love');
+ await say('toby','No pressure. Genuinely. Have a good day. Your hair is incredible.','happy');
+ await walk('toby',-16,70);remove('toby');
+ A.sean.ex='shock';SFX.static();
+ await N('Sean doesn’t move. He doesn’t blink. You can practically hear a fan spinning up inside his head, like a laptop running too many tabs.');
+ await say('sean','(very quietly) …My hair IS incredible.','shock');
+ await say('sean','Wait. No. That’s not the— I have a GIRLFRIEND. Do I tell Stella? Do I give it back? Do I wear it? If I don’t wear it is that rude? If I DO wear it does that mean something?','scared');
+ await say('you','It’s a bracelet, Sean.');
+ await say('sean','It’s not a BRACELET. It’s a DECISION.','yell');
+ hold('sean',null);D.f.toby1=1;part('toby',1);
+}});
+
+hook({mis:'toby',period:2,room:'library',who:'sean',label:'Ask Sean why he’s hiding behind a shelf',look:{pose:'phone',ex:'scared'},cond:()=>D.f.toby1&&!D.f.toby2&&!D.dead.sean,run:async()=>{
+ const cast={sean:[200,-1,{y:144,pose:'phone'}],you:[176,1,{y:152}]};if(!D.dead.stella)cast.stella=[290,-1,{y:144}];
+ scene('library',cast);
+ await say('sean','(whispering) Don’t look at me. Stella’s over there. If she looks at me she’ll KNOW.','scared');
+ await say('you','Know what?');
+ await say('sean','I don’t KNOW what she’ll know. That’s the problem.','scared');
+ await N('He shows you his phone. Forty-one tabs. “what does it mean if a guy says you have nice hair”. “is a bracelet legally binding”. “ohio boys what are they like”. “how to tell your girlfriend a guy likes you without dying”. “fake your own death free no download”.');
+ await say('sean','I’m forty tabs deep. Forty-one. I’ve watched a video of a man explaining feelings with a whiteboard. I took a quiz that said I’m a Capricorn. I’m not a Capricorn.','scared');
+ await say('sean','I made a group chat. I need advice. Everyone’s answering at once.','sad');
+ await dms('SEAN HELP (urgent)','Sean, Nivaan, Kenneth, Paul, Hasan, Arjun',[
+  ['sean','guys a guy likes me. new kid. toby. he gave me a bracelet. i have a gf. what do i do'],
+  ['nivaan','go live and ask chat. chat knows everything. chat once diagnosed my cousin'],
+  ['kenneth','fake ur death. my uncle did it twice. he lives in arizona now with a different name'],
+  ['paul','make urself ugly. eat a whole raw onion. nobody can like a guy who smells like onion'],
+  ['arjun','LMAOOOOO'],
+  ['arjun','10/10 for what. effort?'],
+  ['hasan','just be honest with him?? he sounds nice. it was brave to say that'],
+  ['kenneth','or fake ur death'],
+  ['paul','or onion']
+ ]);
+ await say('sean','Okay. So my options are: be honest, fake my death, or eat an onion. Those are the options. What do I do?','scared');
+ const c=await choose(['“Be honest. Tell Toby you’re with Stella. Nicely.”','“…The onion. Do the onion.”','“Fake your death.”','“Just tell Stella. Let her deal with it.”']);
+ D.f.tobyPlan=['honest','onion','dead','stella'][c];
+ if(c===0){await say('sean','Honest. Okay. Honest. I’m going to need a presentation.','scared');await say('you','You don’t need a—');await say('sean','I need a PRESENTATION.','yell')}
+ else if(c===1){await say('sean','Okay. Okay. Pat’s got a whole bag of onions in the back. I’ll get one at lunch. For science. For love. For the opposite of love.','scared')}
+ else if(c===2){await say('sean','Kenneth’s uncle did it TWICE. How hard can it be. I just need ketchup. Lots of ketchup. And a reason to be lying on the field.','smirk')}
+ else{await say('sean','Yeah. Yeah, she’s my girlfriend, she should know. She’s also terrifying. Okay. Okay.','scared')}
+ if(A.stella){await walk('stella',226,60);face('stella',-1);await say('stella','Why are you two hiding behind the biographies?','smirk');pose('sean',null);
+  hold('sean','bracelet');SFX.click();await N('Sean drops his phone, then picks it up, and in the process the bracelet falls out of his hoodie pocket and lands right at Stella’s feet. SEAN 10/10.');hold('sean',null);
+  await say('stella','(picking it up) …Ten out of ten. Who made you this?','shock');
+  await say('sean','NOBODY. Me. I made it. For me. I’m… I rate myself. I’m doing a self-esteem thing.','scared');
+  await say('stella','(narrowing her eyes, putting it in her own pocket) Interesting.','angry')}
+ D.f.toby2=1;part('toby',2);return 'stay';
+}});
+
+hook({mis:'toby',period:4,room:'field',who:'sean',label:'Ask Sean what the plan is',look:{ex:'scared'},cond:()=>D.f.toby2&&!D.done.toby&&!D.dead.sean,run:async()=>{
+ const plan=D.f.tobyPlan||'honest';
+ const cast={sean:[140,1,{y:146}],you:[110,1,{y:152}]};
+ if(!D.dead.stella)cast.stella=[220,-1,{y:146}];if(!D.dead.coach)cast.coach=[300,-1,{y:140,hold:'javelin'}];if(!D.dead.omer)cast.omer=[260,1,{y:150,pose:'cross'}];if(!D.dead.nivaan)cast.nivaan=[60,1,{y:154,pose:'film'}];
+ scene('field',cast);cue('field');
+ put('toby',334,-1,{y:146});await walk('toby',180,60);face('toby',-1);face('sean',1);
+ await say('toby','Hey! I wasn’t going to come over, but you waved.','happy');
+ await say('sean','I wasn’t waving, I was— okay. Okay. It’s happening. It’s happening now.','scared');
+ if(plan==='honest'){
+  pose('sean','phone');
+  await N('Sean takes out his phone and turns the screen round. It is a slideshow. He has made a slideshow. The first slide says WHY I AM UNAVAILABLE: A PRESENTATION in WordArt.');
+  await say('sean','Slide one. I have a girlfriend. Slide two: here she is. Slide three is just her baseball, because she always has it. Slide four—','scared');
+  await say('toby','Did you make me a PowerPoint?','shock');
+  await say('sean','It’s fourteen slides. There’s a transition. The transition is a star wipe.','scared');
+  await say('toby','(hand on his chest) Sean. This is the nicest rejection I have ever had. I’ve had nine.','love');
+  pose('sean',null);
+  if(A.stella){await walk('stella',200,60);await say('stella','Why is there a presentation about me? Why is my BASEBALL in it?','angry')}
+ }else if(plan==='onion'){
+  hold('sean','onion');await N('Sean takes a whole raw onion out of his hoodie pocket, makes eye contact with Toby, and bites into it like an apple.');
+  for(let i=0;i<3;i++){SFX.crunch();await wait(300)}
+  A.sean.ex='cry';
+  await N('His eyes start streaming immediately. He keeps going. He eats the whole thing, skin and all, crying, staring at Toby the entire time, like a man in a war film.');
+  hold('sean',null);
+  await say('toby','(slowly) …You’re crying. Are you… crying about me?','love');
+  await say('sean','(sobbing, onion breath) NO. It’s the ONION. I’m being UNATTRACTIVE.','cry');
+  await say('toby','That’s the most romantic thing anyone has ever done for me. In Ohio nobody cries for you. You just get a casserole.','love');
+  if(A.stella){await walk('stella',200,60);await say('stella','Why do you smell like the inside of a sandwich shop? Why are you crying at the new kid?','angry')}
+ }else if(plan==='dead'){
+  hold('sean','ketchup');await N('Sean squeezes an entire bottle of ketchup down his front, screams “OH NO, MY HEART”, and falls face-first into the grass.');
+  hold('sean',null);A.sean.pose='lie';SFX.thud();prop({t:'ketchup',x:144,y:150,layer:-1});
+  if(A.stella){A.stella.ex='shock';await say('stella','SEAN? SEAN!','shock')}
+  if(A.coach){await walk('coach',170,90);pose('coach','kneel');await wait(400);await say('coach','(two fingers on his neck, for one second) Yeah, he’s dead. I’ll start digging.','angry');pose('coach',null);await walk('coach',240,60);pose('coach','reach')}
+  if(A.nivaan)await say('nivaan','(filming) Chat. CHAT. RIP Sean. Type F. TYPE F.','scared');
+  pose('toby','kneel');
+  await say('toby','(holding Sean’s hand) I only knew you for four hours. But they were the best four hours of my week. Which is also four hours. Because it’s still Friday.','cry');
+  await say('toby','(singing, softly, beautifully) ♪ And I will always love yooou ♪','cry');
+  await N('He can really sing. It’s not fair how well he can sing. Sean lasts eight seconds.');
+  pose('toby',null);A.sean.pose=null;A.sean.bloody=1;
+  await say('sean','(sitting up, covered in ketchup) STOP SINGING. YOU’RE REALLY GOOD AT IT AND IT’S MAKING IT WORSE.','yell');
+  if(A.stella){await walk('stella',200,60);await say('stella','You faked your DEATH? In FRONT of me? Coach was getting a SHOVEL.','angry')}
+ }else{
+  if(A.stella){await walk('stella',200,60);face('stella',-1)}
+  await say('sean','(very fast) Stella. This is Toby. He likes me. I like you. I didn’t know what to do so I’m telling you so you can do it.','scared');
+ }
+ if(A.stella){
+  await say('stella','(taking the bracelet out of her pocket, holding it up) So YOU made this.','angry');
+  await say('toby','I did. Sorry. I didn’t know he had a girlfriend. I don’t know anything. I’ve been here one Friday.','sad');
+  await N('A long silence. Omer, from a distance, puts his hands up like he’s ready to referee a fight.');
+  await say('stella','…The beads are really even. How did you get the beads so even?','smirk');
+  await say('toby','Oh! There’s a trick. You thread from the back. I can show you. Do you like Taylor Swift?','happy');
+  await say('stella','Do I LIKE— Sean, he likes Taylor Swift. Why didn’t you SAY he likes Taylor Swift.','happy');
+  await N('In under a minute they are sitting on the grass together, talking about bridge lyrics, ignoring Sean completely.');
+  await say('stella','(not looking up) He does the hair flip when he’s nervous. Have you noticed?','smirk');
+  await say('toby','(not looking up) Constantly. It’s so much. I love it but it’s so much.','smirk');
+ }
+ const c=await choose(['Sean, just tell Toby the truth. Kindly.','Sean, RUN.','Sean, sit down. Let them be friends.']);
+ if(c===0){
+  await say('sean','Toby. You’re actually really cool. And I’m flattered. Like, genuinely. But I’m with Stella, and I’m staying with Stella. Can we just be friends?','sad');
+  await say('toby','Yeah, of course. Respect. That was way better than the presentation. Can I still say your hair is a ten?','happy');
+  if(A.stella)await say('stella','It’s an eight.','smirk');
+  await say('sean','(hand in his hair, quietly) …It’s a nine.','smirk');
+  bond('sean',1);await complete('toby','honest');return;
+ }
+ if(c===1){
+  A.sean.ex='scared';
+  const m=pprop({t:'mower',x:340,y:150,on:1,layer:2});
+  await N('Sean makes a noise like a kettle and runs. Across the field. Away from all of it. Straight across the path of the big ride-on mower, which nobody is driving, because the groundskeeper is having his lunch.');
+  await Promise.all([walk('sean',300,140),tw(m,{x:290},900)]);
+  SFX.scream();m.red=1;shake(1.6);
+  for(let i=0;i<5;i++){SFX.squelch();blood(296,130,40,1,140,152);await wait(220)}
+  A.sean.x=300;kill('sean','lie',{pool:50,bleed:6,spray:80});
+  await tw(m,{x:340},1500);
+  await N('The mower goes on across the field like nothing happened. It leaves a stripe behind it. The stripe is not green.');
+  if(A.toby)await say('toby','(very quietly) Ohio was never like this.','shock');
+  if(A.coach)await say('coach','(still holding the javelin) That’s why we don’t run on the field at lunch.','angry');
+  await complete('toby','mower');return;
+ }
+ A.sean.pose='sit';
+ await say('sean','(sitting down on the grass next to them) …Do you guys want to talk to me, or—','sad');
+ await say('stella','(to Toby) Wait, so what did the ex in Ohio SAY.','smirk');
+ await N('Nobody answers him. Sean sits there for the rest of lunch, slightly behind them, like a bodyguard nobody hired. They have a group chat by the end of lunch. It’s called SEAN’S HAIR SUPPORT GROUP. He isn’t in it.');
+ D.f.thirdWheel=1;await complete('toby','third');
+}});
+hook({mis:'toby',period:8,room:'arcade',who:'sean',label:'Ask Sean why he’s holding three bags',look:{ex:'sad'},cond:()=>D.f.thirdWheel&&!D.dead.sean,run:async()=>{
+ scene('arcade',{sean:[60,1,{y:148}],you:[36,1,{y:154}]});
+ put('toby',150,-1,{y:146,pose:'cheer'});if(!D.dead.stella)put('stella',172,-1,{y:146,pose:'cheer'});
+ await N('Toby and Stella are on the dance machine together, absolutely destroying a song on Expert. Sean is holding both their backpacks and his own.');
+ await say('sean','They’ve got a handshake now. It’s eleven moves. I’m not in the handshake.','sad');
+ await say('sean','I wanted to not be in a love triangle. Now I’m not in a love triangle. I’m just next to one. Holding bags.','sad');
+ D.f.thirdWheel=0;return 'stay';
+}});
+
+/* =================================================================
+   CONFISCATED — Arjun’s phone
+   ================================================================= */
+mission('phone',{name:'Confiscated',icon:'📵',who:['arjun','shermian','kenneth','hasan','nivaan'],
+ blurb:'Highgate has a strict no-phones policy. Arjun’s phone fell out of his pocket in front of Ms. Shermian. She took it. Simple, right? Arjun will do anything to get it back. He will also say anything.',
+ parts:['Break, corridor: the drop','Lunch, cafeteria: the drawer'],
+ tips:['Break, main corridor. Ms. Shermian is on duty and Arjun is standing right in front of her.','Lunch, cafeteria. She’s on cafeteria duty. Her keys are on her lanyard. How Arjun has treated people today decides who will help him.'],
+ variants:{sorry:'He said sorry',got:'Got it back',policy:'Policy is policy',drawer:'The drawer'}});
+function mean(line){D.f.arjMean=(D.f.arjMean||0)+1;toast(D.f.arjMean>=3?'😠 People are really going off Arjun now.':'😠 That one landed. People remember things like that.');return line}
+const ARJUN_REACT={
+ kenneth:[['kenneth','(not looking up) Is Arjun with you? Then I’m busy. I’m always busy now. Since break.','sad']],
+ nivaan:[['nivaan','I clipped what Arjun said about my stream. 4K. Chat’s voting on what I do with it.','angry']],
+ hasan:[['hasan','I know he’s stressed about his phone. I KNOW. But you can’t just say that stuff to people.','sad']],
+ dheva:[['dheva','Arjun said my hair looks like a dead hamster wearing a wig. I’ve been in the bathroom for twenty minutes.','sad']],
+ tyler:[['tyler','I laughed for ONE second. He’s been staring at me ever since. I can feel it on my neck.','scared']]
+};
+{const _c=chat;chat=async function(id){if(D&&D.f.arjMean>=2&&ARJUN_REACT[id]&&!(D.f.arjR||{})[id]&&!D.dead.arjun){D.f.arjR=D.f.arjR||{};D.f.arjR[id]=1;for(const l of ARJUN_REACT[id])await say(l[0],l[1],l[2])}return _c(id)}}
+
+hook({mis:'phone',period:2,room:'corridor',who:'arjun',label:'Stand with Arjun',look:{ex:'smirk',pose:'cross'},cond:()=>!D.f.ph1&&!D.dead.arjun&&!D.dead.shermian,run:async()=>{
+ const cast={arjun:[110,1,{y:146,pose:'cross'}],you:[86,1,{y:152}],shermian:[220,-1,{y:146,pose:'hips'}]};
+ for(const [n,x] of[['nivaan',150],['kenneth',180],['dheva',250]])if(!D.dead[n])cast[n]=[x,-1,{y:150}];
+ scene('corridor',cast);
+ await say('arjun','So I told him, I said, bro, your mom’s Facebook is the most dangerous website on the internet—','smirk');
+ SFX.click();pose('arjun',null);
+ const ph=pprop({t:'phone',x:114,y:130});await tw(ph,{y:150},250,'in');SFX.glass();
+ await N('His phone slips out of his pocket, bounces once on the tiles, and lands screen-up between his feet. The screen lights up. His alarm. The alarm is a recording of his own voice going “ARJUN. YOU ARE HIM.”');
+ for(const n of['nivaan','kenneth','dheva'])if(A[n])A[n].ex='laugh';SFX.cheer();
+ await walk('shermian',128,70);pose('shermian','reach');ph.hide=1;hold('shermian','phone');pose('shermian',null);
+ await say('shermian','No phones, sweetie. Policy. Policy is love.','happy');
+ await say('arjun','Miss, it FELL. It wasn’t out. It was falling. Falling isn’t out!','shock');
+ await say('shermian','It’s going in Miss’s drawer. You can have it back at the end of the day.','happy');
+ await say('shermian','(leaning in) Or the end of the year. Or the end of you. Miss hasn’t decided.','evil');
+ await walk('shermian',336,70);remove('shermian');
+ await say('arjun','(turning on everyone) What are you LAUGHING at?','angry');
+ if(A.kenneth)await say('arjun',mean('Kenneth, you can’t laugh at ANYONE’S phone. The whole internet has YOUR dad’s name. Your dad’s name is the most-searched thing in our state.'),'angry');
+ if(A.kenneth){A.kenneth.ex='sad';await N('Kenneth stops laughing. He doesn’t say anything. He just looks at his shoes.')}
+ if(A.dheva)await say('arjun',mean('And Dheva, your hair looks like a dead hamster wearing a wig.'),'angry');
+ if(A.dheva)A.dheva.ex='sad';
+ const c=await choose(['“Bro. Calm down. That was too far.”','“We’ll get it back. I’ve got you.”','Say nothing.']);
+ if(c===0){await say('arjun','Too far? TOO FAR? Everything I have is in that phone. My streak. My notes. My notes are VERY important. You don’t get it.','angry');await say('arjun','…Whatever. Fine. Sorry, Kenneth. Fine. Happy?','angry');if(A.kenneth)await say('kenneth','No.','sad')}
+ else if(c===1){D.f.phHelp=1;await say('arjun','(grabbing your shoulders) Lunch. She’s on cafeteria duty. Her keys are on that lanyard. We get the keys. We get the phone. Easy.','smirk')}
+ else{if(A.nivaan)await say('arjun',mean('And Nivaan, if you clip that I’ll tell everyone your stream has eleven viewers and four of them are your mom on different accounts.'),'angry');if(A.nivaan)A.nivaan.ex='angry'}
+ await N('Arjun storms off. The corridor is quiet for a while after he goes.');
+ await walk('arjun',-16,90);remove('arjun');
+ D.f.ph1=1;part('phone',1);return 'stay';
+}});
+
+hook({mis:'phone',period:4,room:'canteen',who:'arjun',label:'Ask Arjun what the plan is',look:{ex:'angry'},cond:()=>D.f.ph1&&!D.done.phone&&!D.dead.arjun,run:async()=>{
+ const m=D.f.arjMean||0;
+ const cast={arjun:[204,-1,{y:146}],you:[228,-1,{y:152}]};if(!D.dead.shermian)cast.shermian=[140,1,{y:140,pose:'cross'}];if(!D.dead.pat)cast.pat=[90,1,{y:140}];
+ for(const [n,x] of[['hasan',176],['kenneth',260],['jacob',290]])if(!D.dead[n])cast[n]=[x,-1,{y:146}];
+ scene('canteen',cast);
+ await say('arjun','(eyes fixed on the lanyard) Plan A: I ask nicely. Watch this. I’m very charming.','smirk');
+ if(A.shermian){
+  await walk('arjun',164,60);face('arjun',-1);
+  await say('arjun','Miss! You look… very… is that a new cardigan? It really, um, it hides a lot.','smirk');
+  await say('shermian','(smiling with her teeth) Does it, sweetie.','evil');
+  await walk('arjun',204,90);
+ }
+ await say('arjun','Plan A has failed. Plan B: someone distracts her, I take the keys.','angry');
+ const o=[
+  {t:'Ask Kenneth to distract her.',dis:m>=1||!A.kenneth,why:'Kenneth isn’t speaking to Arjun'},
+  {t:'Ask Hasan to distract her.',dis:m>=3||!A.hasan,why:'Hasan has had enough of Arjun today'},
+  {t:'Ask her about Mr. Biscuits yourself.',dis:!P.intel.shermianCat,why:'you don’t know about the cat'},
+  {t:'Let Arjun start a food fight.',tag:'🍝'}];
+ const c=await choose(o,m>=2?'Nobody at the nearby tables will look at Arjun.':'Who’s going to distract her?');
+ if(c===0){await walk('kenneth',160,60);await say('kenneth','Miss, I think someone’s doxxing me again. In real life. Can you help? Can you come and stand near me for a while?','scared');await say('arjun','(quietly, as he goes) …Thanks, Kenneth. Seriously.','sad')}
+ else if(c===1){await walk('hasan',160,60);await say('hasan','Miss, quick question, is it true that a seating plan is a form of love? Because my dad and me were arguing about it.','happy')}
+ else if(c===2){await walk('you',160,60);await say('you','Miss, how is Mr. Biscuits?');await say('shermian','Oh! He’s NINE! He has a croissant bed! Let me show you four hundred pictures!','happy')}
+ else{
+  await say('arjun',mean('(standing on a chair) JACOB EATS WITH HIS MOUTH OPEN AND I’M SICK OF IT. FOOD FIIIIGHT!'),'yell');
+  SFX.splat();if(A.jacob){A.jacob.bloody=1;A.jacob.ex='angry'}
+  await N('He throws a whole tray of spaghetti at Jacob. Jacob was not involved in anything. Jacob was just eating. Now the whole cafeteria is throwing things, and none of them are aimed at Arjun, because nobody wants to touch him.');
+ }
+ if(A.shermian){pose('arjun','reach');SFX.pick();await wait(300);pose('arjun',null)}
+ await N('In the chaos, Arjun unclips the lanyard. He doesn’t even look at the keys. He just runs, and you run after him.');
+ await walk('arjun',-16,110);
+ /* the math room */
+ const mc={arjun:[60,1,{y:146}],you:[30,1,{y:152}]};scene('maths',mc,true);cue('tension');
+ await walk('arjun',56,60);pose('arjun','reach');SFX.locker();
+ await N('Ms. Shermian’s desk. The forever drawer. The third key fits.');
+ await N('Inside: Arjun’s phone. A cat collar that says MR. BISCUITS. A seating plan with eleven names crossed out in red pen. And phones. Dozens of them. Flip phones. A pager. A brick-sized thing with an antenna and a sticker dated 1987.');
+ hold('arjun','phone');pose('arjun','phone');
+ await say('arjun','(clutching it) Oh thank God. Oh, thank GOD. Hi, baby. Hi. Daddy’s here.','happy');
+ await N('Then his face changes. He has 63 notifications. All from the same group chat. The class group chat.');
+ await say('arjun','…Someone’s been on my phone. Someone posted from my phone.','shock');
+ const lines=[['them','(screenshot of Arjun’s notes app: “PEOPLE I CAN’T STAND”, a list of 31 names)'],['them','(screenshot: “why kenneth looks like a thumb with glasses”)'],['them','(voice memo: Arjun practicing insults in the mirror)']];
+ lines.push(['kenneth','wow']);if(m>=1)lines.push(['dheva','dead hamster wig. cool. glad it was in the notes first']);if(m>=2)lines.push(['nivaan','clipped. posted. 41k views']);lines.push(['hasan','arjun is this real']);lines.push(['them','Miss Shermian 💗: Sharing is caring, sweeties! 💗']);
+ await dms('MATH P3 🧮','23 members',lines,{live:lines.length});
+ SFX.door();put('shermian',-14,1,{y:146});await walk('shermian',24,60);
+ await say('shermian','Did somebody touch Miss’s drawer?','happy');
+ await evil('shermian');
+ const ch=await choose(['RUN with the phone.','Give it back. “Policy is policy, Miss.”','Push Arjun towards her and run.']);
+ if(ch===2){
+  await say('arjun','WHAT ARE YOU— NO—','scared');
+  await walk('you',300,110);
+  await N('Behind you, the drawer opens and closes. Opens and closes. Opens and closes. It’s a heavy drawer. It wasn’t designed to fit a whole head. It does, eventually.');
+  pose('shermian','slam');for(let i=0;i<4;i++){SFX.crunch();blood(A.arjun.x,A.arjun.y-24,30,null,90,A.arjun.y+2);shake(.8);await wait(320)}
+  kill('arjun','lie',{pool:44,bleed:5,spray:40});pose('shermian',null);
+  await say('shermian','(sweetly, to the drawer) There. Now it’s all in one place.','happy');
+  await complete('phone','drawer');return;
+ }
+ if(ch===1){
+  pose('arjun',null);hold('arjun',null);
+  await say('arjun','(handing it over, very quietly) …Policy is policy, Miss.','sad');
+  await sweet('shermian');
+  await say('shermian','GOOD boy! Back at three-fifteen, sweetie. Maybe. Run along.','happy');
+  await N('Arjun walks back to the cafeteria with no phone. Every single person in there has read the group chat. Nobody says anything. Nobody needs to.');
+  await complete('phone','policy');return;
+ }
+ const ok=await mash('Out the door with the phone!',{need:20,time:5,info:'She’s between you and the door. MASH!'});
+ if(!ok){
+  SFX.crunch();shake(1.2);
+  await N('She catches you both by the collars at the same time. One hand each. She’s very strong. She’s always been very strong.');
+  await say('shermian','Everyone gets a seat in Miss’s drawer.','evil');
+  kill('arjun','lie',{pool:44,bleed:5,spray:40});
+  await die('seat');return;
+ }
+ scene('corridor',{arjun:[150,1,{y:146,hold:'phone'}],you:[176,-1,{y:152}]},true);
+ await N('You get out. You get all the way to the corridor before either of you breathes. He has his phone back. He’s holding it in both hands, staring at the group chat.');
+ const ap=await choose(['“Say sorry. In the chat. Properly.”','Leave it.']);
+ if(ap===0){
+  pose('arjun','phone');
+  await say('arjun','(typing slowly, deleting, typing) …“sorry. it was me. i wrote all of that. i say stuff so people laugh at them before they can laugh at me. that’s not an excuse. i’m sorry kenneth. i’m sorry dheva. i’m sorry everyone.”','sad');
+  const r=[['arjun','sorry. it was me. i say stuff so people laugh at them before they laugh at me. thats not an excuse. im sorry kenneth. im sorry dheva. im sorry everyone']];
+  if(m>=3)r.push(['note','Seen by 22']);else{r.push(['kenneth','ok']);r.push(['kenneth','thanks for saying it']);r.push(['hasan','proud of u bro. still mad. but proud'])}
+  await dms('MATH P3 🧮','23 members',r,{live:r.length});
+  await N(m>=3?'Nobody replies. Seen by 22. It’ll take more than one message. He knows that.':'It’s not fixed. But it’s something. It’s the first true thing he’s typed all year.');
+  pose('arjun',null);bond('arjun',1);
+  await complete('phone','sorry');return;
+ }
+ await say('arjun','(pocketing it) Got it back. That’s all that matters. Right? That’s all that matters.','smirk');
+ await N('He walks into lunch with his phone in his hand. Every table goes quiet as he walks past. He sits down on his own and scrolls, very fast, not reading anything.');
+ await complete('phone','got');
+}});
+
+</script>
+<script>
+/* js/lockdown.js */
+'use strict';
+/* =====================================================================
+   HIGHSCHOOL — your own timetable, skipping class, the woods,
+   and LOCKDOWN (the intruder).
+   ===================================================================== */
+
+/* ---------- your timetable: the bell takes you to YOUR class ---------- */
+const MYCLASS={odd:{1:'english',3:'maths',5:'gym',6:'chem'},even:{1:'history',3:'ict',5:'pool',6:'hall'}};
+function myClass(){const t=(D&&D.dayType)||'odd';return MYCLASS[t][D.period]}
+{
+ const _om=openMap;
+ openMap=function(forced){
+  if(forced&&D&&PERIODS[D.period]&&PERIODS[D.period].lesson&&!openMap.skip&&myClass())return bell();
+  openMap.skip=0;return _om(forced);
+ };
+}
+async function bell(){
+ const r=myClass(),t=TEACH[D.period]&&TEACH[D.period][r];
+ if(D.period===3&&lockdownDue()){D.room=r;return runHook(LOCKHOOK)}
+ if(!TEST&&ROOM!=='corridor'){D.room='corridor';buildRoom('corridor');updateLoc()}
+ const tname=t&&K[t]?K[t].n:'';
+ const c=await choose([
+  {t:'Go to class: '+ROOMS[r].name.split(' —')[0]+(tname?' with '+tname:'')+'.'},
+  {t:'Skip class. Sneak around the school.',tag:'skip'},
+  {t:'Skip class. Run out the back gate, into the woods.',tag:'run'}
+ ],'The bell. '+PERIODS[D.period].name+'. You’re meant to be in '+ROOMS[r].name.split(' —')[0]+'.');
+ if(c===0)return enterRoom(r);
+ D.f.skipped=(D.f.skipped||0)+1;
+ if(c===1){toast('Skipping '+ROOMS[r].name.split(' —')[0]+'. Don’t get caught.');openMap.skip=1;return openMap(true)}
+ return runToWoods();
+}
+async function runToWoods(){
+ D.room='forest';updateLoc();buildRoom('forest');
+ A.you.x=-10;busy=true;setPanel('talk');
+ await walk('you',60,90);
+ busy=false;
+ if(!D.f.woodsSeen){D.f.woodsSeen=1;toast('The woods behind the field. Nobody comes out here. Nobody can see you.')}
+ roam();
+}
+
+/* ---------- the woods ---------- */
+ROOMS.forest={name:'The Woods (behind school)',music:'sad',bg(){
+ const p=D?D.period:0,eve=p>=7;
+ skyBands(eve?['#2a1a3a','#5a2a4a','#8a3a4a']:['#7aa8c8','#9ab8c8','#b0c8c0'],0,40);
+ R(0,36,W,26,'#26402a');for(let i=0;i<16;i++){const x=i*22-8+(i%3)*4,h=40+hsh(i)*30;R(x,40-h*.2,18,h,'#2a4a2a');R(x+4,32-h*.2,10,8,'#2a4a2a')}
+ for(let i=0;i<12;i++){const x=i*28+(i%2)*10,y=20+hsh(i+3)*20;R(x,y,22,22,'#3a5a32');R(x+3,y-5,16,6,'#3a5a32');R(x+5,y+3,6,4,'#4a6a3a')}
+ R(0,60,W,90,'#3a4a2a');for(let i=0;i<60;i++)R(hsh(i)*W,62+hsh(i+7)*86,2,1,i%3?'#4a5a32':'#5a4a2a');
+ for(let i=0;i<7;i++){const x=10+i*48+(i%2)*14;R(x,24,8,128,'#4a3a2a');R(x+1,24,2,128,'#5a4a36');R(x+6,24,2,128,'#3a2a1e');R(x-6,40+i*3,8,2,'#4a3a2a');R(x+8,52+i*2,10,2,'#4a3a2a');R(x-14,20,36,22,'#2e4a28');R(x-10,14,28,10,'#36522e');R(x-4,24,10,6,'#40603a')}
+ R(0,122,W,10,'#5a4a32');for(let i=0;i<W;i+=7)R(i,124+(i%3),4,1,'#6a5a3a');
+ R(230,104,30,3,'#6a4a2a');R(232,107,2,10,'#4a3a2a');R(256,107,2,10,'#4a3a2a');R(226,112,38,2,'#6a4a2a');
+ R(276,100,10,16,'#3a5a3a');R(276,100,10,2,'#5a7a5a');R(278,104,6,1,'#2a3a2a');px('BEAR',272,84,'#c8c8b0');px('PROOF?',268,90,'#c8c8b0');
+ R(0,150,W,30,'#2e3a22');for(let i=0;i<40;i++)R(hsh(i+20)*W,152+hsh(i+30)*26,3,1,['#8a4a2a','#a86a2a','#6a3a1a'][i%3]);
+ for(let i=0;i<5;i++){const q=(T*.3+i/5)%1;R((hsh(i)*W+Math.sin(T+i)*10)|0,(q*150)|0,2,1,'#a86a2a')}
+}};
+ROSTER.forEach((r,i)=>{if(r&&i>=1&&i<=6)r.forest=r.forest||[]});
+ROSTER[1].forest=[['tez',250,-1,'smoke',150]];
+if(typeof LIGHT!=='undefined')LIGHT.forest=()=>{const p=D?D.period:0;return p>=7?{amb:.6,tint:[60,20,60],src:[[160,20,200,.2,[255,190,140]]]}:{amb:.78,tint:[20,50,30],src:[[150,0,160,.25,[240,255,200]]]}};
+spot({room:'forest',x:160,y:150,label:'Lie in the leaves until the bell',short:'LEAVES',run:async()=>{
+ pose('you','lie');await N(pick(['You lie in the leaves and watch the branches. Somewhere a long way off, a bell. It isn’t for you.','You lie down. The leaves smell like rain and old cigarettes. For forty minutes nobody needs you to be anything.','The ground is cold. You don’t care. Up in the branches a bird is doing the same three notes over and over, like it’s also stuck on a Friday.']));
+ pose('you',null);
+}});
+spot({room:'forest',x:280,y:150,label:'Read the sign',short:'SIGN',run:async()=>{
+ await N('A sign nailed to a tree. Someone has crossed out BEAR PROOF and written RACCOON PROOF. Someone else has crossed that out and written “LOL NOTHING IS”.');return 'stay';
+}});
+{const _dp=drawProp;drawProp=function(p){const x=Math.round(p.x),y=Math.round(p.y);
+ if(p.t==='raccoon'){const d=p.dir||1,bob=p.still?0:(Math.sin(T*12)>0?1:0);
+  R(x-7,y-8+bob,14,8,'#7a7a80');R(x-6,y-9+bob,12,2,'#8a8a90');R(x-5,y-1,2,2,'#2a2a2a');R(x+3,y-1,2,2,'#2a2a2a');
+  for(let i=0;i<4;i++)R(x-d*(8+i*3),y-9+i%2,3,4,i%2?'#2a2a2a':'#9a9aa0');
+  const hx=x+d*7;R(hx-4,y-12+bob,8,7,'#9a9aa0');R(hx-5,y-14+bob,3,3,'#7a7a80');R(hx+2,y-14+bob,3,3,'#7a7a80');R(hx-4,y-10+bob,8,2,'#1a1a1a');R(hx-2,y-10+bob,1,1,p.glow?'#f0f080':'#fff');R(hx+1,y-10+bob,1,1,p.glow?'#f0f080':'#fff');R(hx+d*4,y-8+bob,2,2,'#1a1a1a');
+  if(p.food){R(hx+d*4-1,y-6+bob,6,3,'#c88a3a');R(hx+d*4,y-6+bob,4,1,'#e8b060')}
+  return}
+ if(p.t==='eyes'){if(Math.sin(T*1.3+x)>-.8){R(x,y,1,1,'#f0f080');R(x+3,y,1,1,'#f0f080')}return}
+ if(p.t==='bangfx'){const q=(T-p.t0);if(q>.6)return;g.globalAlpha=Math.max(0,1-q/.6);g.save();g.translate(x,y);g.scale(3,3);px('BANG',-8,-3,'#fff');g.restore();g.globalAlpha=1;return}
+ if(p.t==='under'){R(x,y,26,3,'rgba(0,0,0,.6)');R(x+4,y-1,16,1,'rgba(0,0,0,.4)');return}
+ if(p.t==='barricade'){R(x-20,y-44,40,44,'#5a3a24');for(let i=0;i<4;i++){R(x-18,y-42+i*11,36,1,'#3a2414');for(let j=0;j<6;j++)R(x-17+j*6,y-40+i*11,4,8,['#8a2a2a','#2a4a8a','#3a6a3a','#c8a040'][(i+j)%4])}return}
+ if(p.t==='machete'){g.save();g.translate(x,y);g.rotate(p.rot||0);R(-6,-1,4,3,'#2a2a2a');R(-2,-1,12,2,'#d0d4d8');R(8,0,2,1,'#fff');g.restore();return}
+ return _dp(p)}}
+{const _dh=drawHeld;drawHeld=function(it,x,y,d){
+ if(it==='cleaver'||it==='machete'){R(x-1,y-1,2,3,'#2a2a2a');R(x+d*1,y-6,d*7,5,'#d0d4d8');R(x+d*1,y-6,d*7,1,'#fff');return}
+ if(it==='katana'){R(x-1,y-2,2,4,'#2a2a2a');for(let i=0;i<14;i++)R(x+d*(i+1),y-2-(i>>2),1,1,'#e0e4e8');return}
+ if(it==='bat'){for(let i=0;i<12;i++)R(x+d*i,y-1-(i>>1),i>6?2:1,i>6?2:1,'#b8b8c0');return}
+ if(it==='scissors'){R(x-1,y-1,3,2,'#e04040');R(x+d*2,y-2,d*4,1,'#c8c8c8');return}
+ if(it==='straps'){R(x-2,y-2,5,3,'#30a0e0');R(x+d*3,y-2,2,1,'#f0c020');R(x-1,y+1,2,2,'#30a0e0');return}
+ if(it==='spray'){R(x-1,y-4,3,6,'#e0c020');R(x-1,y-5,3,1,'#2a2a2a');return}
+ if(it==='light'){R(x-1,y-1,4,2,'#3a3a3a');return}
+ return _dh(it,x,y,d)}}
+SFX.bang=()=>{noise(.7,.55,160,1,'lowpass');tone(70,.5,'sawtooth',.14,28)};
+async function bang(big){SFX.bang();shake(big?1.6:1);flash('#fff',big?.25:.12);prop({t:'bangfx',x:160,y:60,layer:999});await wait(500)}
+
+/* ---------- LOCKDOWN ---------- */
+mission('lockdown',{name:'Lockdown',icon:'🔒',who:['shermian','angelo','kayden','omer','marcus','arjun'],
+ blurb:'Some Fridays, in Period 3, something gets into the school. Nobody sees it. Everybody hears it.',
+ parts:['Period 3: lockdown'],
+ tips:['It happens every third Friday, at the Period 3 bell. Day 3, day 6, day 9…','Run, fight, or hide. You won’t know what it is until the very end.'],
+ variants:{woods:'Ran for the woods',fought:'Fought it',letgo:'Let it go',hid:'Hid'}});
+Object.assign(DEATHS,{fence:{name:'Over the Fence',desc:'The top of the back fence is not decorative.',hint:'Lockdown. Run. Don’t be slow on the fence.'}});
+function lockdownDue(){return !TEST&&D&&D.day>0&&D.day%3===0&&!D.f.lockdownDone}
+const LOCKHOOK={mis:'lockdown',period:3,room:'library',who:'auto',cond:()=>false,run:async()=>{
+ D.f.lockdownDone=1;
+ const want=['shermian','arjun','angelo','kayden','omer','marcus','dheva','hasan','nivaan'],alive=want.filter(n=>!D.dead[n]);
+ /* the corridor, between lessons */
+ const cc={you:[160,1,{y:154}]};alive.forEach((n,i)=>cc[n]=[30+i*32,i%2?-1:1,{y:142+(i%3)*4}]);
+ scene('corridor',cc,true);cue('class');
+ await N('The bell for Period 3. The corridor is the usual river of backpacks. Somebody is eating a whole cucumber. Somebody is crying in a fun way.');
+ await bang(true);
+ for(const k in A)if(k!=='you'){A[k].ex='shock';face(k,-1)}
+ await N('From somewhere further down the building: a BANG. Not a dropped-book bang. A bang you feel in your teeth.');
+ await say('nivaan','…Chat, what was that.','scared');
+ await bang(false);fxState.dark=.25;SFX.static();
+ await say('adam','(on the PA, breathing hard) LOCKDOWN. LOCKDOWN. This is NOT a drill. There is an INTRUDER in the building. Get in a room. Lock the door. Lights off. Do NOT— (BANG) —oh my God it’s in the office— it’s in my— LOCKDOWN!','yell');
+ cue('tension');
+ for(const k in A)if(k!=='you')walk(k,-20,120+Math.random()*30);
+ await walk('you',-20,110);
+ /* the library */
+ const lc={you:[150,1,{y:154}],shermian:[40,1,{y:146,hold:null}]};alive.filter(n=>n!=='shermian').forEach((n,i)=>lc[n]=[90+i*26,i%2?1:-1,{y:140+(i%4)*5,pose:i%3===0?'kneel':null}]);
+ scene('library',lc,true);fxState.dark=.45;
+ const bar=pprop({t:'barricade',x:-30,y:150,layer:10});
+ if(A.shermian){hold('shermian',null);await walk('shermian',30,60);pose('shermian','grab');await tw(bar,{x:22},700);pose('shermian',null);face('shermian',1)}
+ await N('Ms. Shermian drags a full bookshelf across the door. On her own. It weighs about four hundred pounds. She doesn’t even take her cardigan off.');
+ if(A.shermian)await say('shermian','Lights off, sweeties. Nobody breathes unless Miss says breathe.','evil');
+ fxState.dark=.6;
+ await bang(false);
+ await N('Silence. Then, out in the corridor: scratching. Low down. Something dragging itself along the lockers. Then a metal crash, like a trash can getting thrown.');
+ const un=pprop({t:'under',x:-26,y:150,layer:-5});await tw(un,{x:20},1400);await tw(un,{x:-30},900);
+ await N('A shadow passes under the door. It stops. It sniffs. You can hear it sniffing. Then it moves on.');
+ if(A.hasan)await say('hasan','(whispering) It sniffed. Why did it SNIFF. People don’t sniff.','scared');
+ if(A.arjun)await say('arjun','(whispering) Some people sniff. Kenneth sniffs.','angry');
+ /* the contraband */
+ await N('Then, very quietly, everybody starts unzipping their bags.');
+ if(A.angelo){hold('angelo','machete');await say('angelo','(laying things out on a beanbag) Machete. Nunchucks. Brass knuckles, adult size, kid size. I sell them. I don’t USE them. Today I use them.','smirk')}
+ if(A.omer){hold('omer','bat');await say('omer','(sliding an aluminum bat out of his gym bag) It’s for baseball.','angry');await say('you','You don’t play baseball.');await say('omer','I play baseball NOW.','angry')}
+ if(A.marcus){hold('marcus','katana');await say('marcus','My uncle’s katana. He said never bring it to school. So I knew it was important.','smirk')}
+ if(A.kayden){hold('kayden','straps');await say('kayden','Two straps. Water pistols. One’s got bleach in. I’m not saying which one. Even I don’t know which one.','smirk')}
+ if(A.dheva){hold('dheva','spray');await say('dheva','Pepper spray. It’s for my hair. Don’t ask.','sad')}
+ if(A.arjun){hold('arjun','scissors');await say('arjun','(holding up round-ended safety scissors) Shut up. SHUT UP. They were the only ones in the drawer.','angry')}
+ if(A.shermian){hold('shermian','cleaver');await say('shermian','(taking a meat cleaver out of her handbag) Teachers are allowed, sweetie.','happy')}
+ await bang(true);
+ await N('BANG. Right outside. The door rattles in its frame. Something heavy hits the bookshelf, once, and books slide off the top.');
+ const c=await choose([{t:'Run. Out the back window, over the field, into the woods.',tag:'run'},{t:'Fight. Arm up. Go and find it.',tag:'🩸'},{t:'Hide. Stay quiet. Wait.',tag:'hide'}],'It’s right outside.');
+ if(c===0)return lockRun();
+ if(c===1)return lockFight();
+ return lockHide();
+}};
+HOOKS.push(LOCKHOOK);
+
+async function reveal(x,y,food,line){
+ fxState.dark=0;SFX.power();flash('#fff',.4);
+ const r=pprop({t:'raccoon',x,y,dir:-1,food,layer:2});
+ await wait(400);
+ await N(line);
+ return r;
+}
+
+async function lockRun(){
+ await walk('you',300,90);
+ await N('You climb out of the back window. Nobody follows you. Behind you, through the glass, you hear the bookshelf start to go.');
+ scene('field',{you:[20,1,{y:150}]},true);cue('fight');
+ await bang(false);
+ await N('The field is empty. The whole school is in lockdown and you are running across the middle of the field like an idiot, in full view of every window.');
+ await walk('you',290,120);
+ const ok=await mash('Over the back fence!',{need:20,time:5,info:'The top of the fence is the pointy kind. MASH!'});
+ if(!ok){
+  SFX.squelch();blood(A.you.x,A.you.y-28,40,1,90,A.you.y+2);shake(1.2);
+  await N('You get one leg over. The other one doesn’t. The pointy bit goes in just above the knee and comes out somewhere you didn’t know you had.');
+  await N('You hang there for a long time. From up here you can see the whole school. Nothing comes out. Nothing ever comes out.');
+  await die('fence');return;
+ }
+ scene('forest',{you:[20,1,{y:150}]},true);cue('sad');fxState.dark=.3;
+ await walk('you',150,80);
+ await N('The woods. You run until the school is just a roof through the trees. Your lungs are on fire. You sit down behind a log.');
+ await N('It’s quiet out here. Birds. A plane. Your heartbeat, very loud.');
+ const e=pprop({t:'eyes',x:236,y:116});
+ await bang(false);
+ await N('BANG. Right by the picnic table. The metal trash can goes over. Something is in the trash. Two little eyes in the dark under the bench, looking straight at you.');
+ await say('you','(whispering) …Please. I have a family. I have a— I have a very small family.');
+ e.hide=1;
+ await reveal(236,128,1,'It steps into the light.');
+ await N('It’s a raccoon. It’s holding a cinnamon roll from Fair City Mall in both hands like a steering wheel. It looks at you like YOU’RE the one who’s in the wrong place.');
+ await say('you','…Was that you? Was the whole school… you?');
+ await N('It takes a bite of the cinnamon roll, maintaining eye contact, and waddles back into the trees.');
+ await say('adam','(very faint, from the school PA, across the field) …all clear… all clear… it was a… it was a RACCOON… Coach, put the javelin DOWN—','shock');
+ await complete('lockdown','woods');
+}
+
+async function lockFight(){
+ const fighters=['omer','angelo','marcus','kayden','shermian','arjun','hasan','dheva','nivaan'].filter(n=>A[n]);
+ await N('Nobody votes. Everybody just stands up at once. Ms. Shermian pulls the bookshelf back like a curtain.');
+ const cc={you:[60,1,{y:154}]};fighters.forEach((n,i)=>cc[n]=[20+i*14,1,{y:140+(i%3)*5,hold:A[n].hold}]);
+ scene('corridor',cc,true);fxState.dark=.7;cue('fight');
+ await N('The corridor lights are out. The only light is phone flashlights, swinging everywhere. Every locker is a person. Every person is a locker.');
+ await bang(true);
+ await N('BANG. Down the far end, by the cafeteria. A vending machine is lying on its face. Something is moving behind it. Fast. Low.');
+ for(const n of fighters)walk(n,A[n].x+120,70);await walk('you',180,70);
+ if(A.kayden&&A.hasan){pose('kayden','point');SFX.whoosh();await say('kayden','THERE IT IS— (fires)','yell');A.hasan.ex='shock';await say('hasan','IT’S ME. IT’S HASAN. WHY DOES IT SMELL LIKE A POOL. KAYDEN. WHICH ONE WAS THE BLEACH ONE.','yell');pose('kayden',null)}
+ if(A.omer&&A.angelo){pose('omer','throw');SFX.crunch();shake(1);blood(A.angelo.x,A.angelo.y-26,30,null,80,A.angelo.y+2);A.angelo.hurt=3;A.angelo.ex='hurt';await N('Something moves behind Omer. He swings the bat without looking. It’s Angelo. It was always going to be Angelo.');await say('angelo','(holding his face together) I SELL YOU YOUR GUM, MAN.','hurt');pose('omer',null)}
+ if(A.marcus){pose('marcus','throw');SFX.glass();flash('#fff',.5);await N('Marcus swings the katana at a noise and takes the top off a fire extinguisher. White powder everywhere. Now nobody can see anything at all.');pose('marcus',null)}
+ fxState.dark=.8;
+ if(A.shermian&&A.kayden){
+  await N('In the white fog: a wet, short sound. Then Ms. Shermian’s voice, very calm.');
+  kill('kayden','lie',{pool:40,bleed:4,spray:60});
+  await say('shermian','Kayden ran at Miss. Kayden shouldn’t run in the corridor. I thought he was the intruder, sweeties.','happy');
+  await say('shermian','(wiping the cleaver on her cardigan) I didn’t, but I thought it.','evil');
+ }
+ await bang(true);await bang(true);
+ await N('BANG. BANG. The cafeteria. The big steel pots are coming off the shelves one at a time. Whatever it is, it is in the kitchen, and it is HUNGRY.');
+ const left=Object.keys(A).filter(k=>k!=='you'&&!A[k].dead);
+ const kc={you:[200,-1,{y:154}]};if(!D.dead.pat)kc.pat=[60,1,{y:140}];left.forEach((n,i)=>kc[n]=[210+i*12,-1,{y:142+(i%3)*5,hold:A[n].hold,hurt:A[n].hurt}]);
+ scene('canteen',kc,true);fxState.dark=.75;
+ const e=pprop({t:'eyes',x:96,y:96});
+ await N('Behind the counter, in the dark, two little eyes catch the flashlights. Everybody raises everything they have.');
+ await say('you','(whispering) On three. One… two…');
+ e.hide=1;
+ const r=await reveal(96,112,1,'Pat flips the cafeteria lights on.');
+ await N('It’s a raccoon. It’s on the counter. It is holding a corn dog in both hands. It has knocked over eleven pots to get one corn dog. It is completely, perfectly calm.');
+ await N('Everybody looks at each other. Everybody is covered in blood, bleach, and fire extinguisher. Most of the blood is from each other.');
+ if(A.omer)await say('omer','…I hit Angelo for a RACCOON?','shock');
+ if(A.arjun)await say('arjun','(lowering the safety scissors) Nobody is telling anyone about today. Ever.','angry');
+ const c=await choose(['Fight it. It knows what it did.','Let it go. Open the fire exit.']);
+ if(c===0){
+  await N('You lunge. Everybody lunges. The raccoon doesn’t lunge. It doesn’t have to.');
+  SFX.scream();shake(1.4);
+  const vic=['omer','marcus','arjun','hasan','dheva','nivaan'].find(n=>A[n]&&!A[n].dead);
+  if(vic){A[vic].pose='hurt';A[vic].hurt=3;blood(A[vic].x,A[vic].y-26,40,null,90,A[vic].y+2);await N('It goes for '+K[vic].n+'’s face first. It is a blur. It is mostly claws. '+K[vic].n+' screams a note nobody knew he could reach.')}
+  if(A.marcus&&!A.marcus.dead){hold('marcus',null);await N('When it’s over, the raccoon is on top of the fridge, and it has the katana. Nobody knows how. It has the katana and the corn dog and it is looking at you.')}
+  await tw(r,{x:-20},1400);
+  await N('It drags the katana out of the fire exit like a little samurai going home. The door swings shut.');
+  await complete('lockdown','fought');return;
+ }
+ await walk('you',40,70);SFX.door();
+ await N('You prop the fire exit open. The raccoon looks at the door. Looks at you. Gets down off the counter, slowly, corn dog first, and waddles out into the sunshine.');
+ await tw(r,{x:-20},2000);
+ if(A.shermian&&!A.shermian.dead)await say('shermian','(putting the cleaver back in her handbag) Well! That was fun. Period 3 is cancelled, sweeties. Go and wash each other off.','happy');
+ await complete('lockdown','letgo');
+}
+
+async function lockHide(){
+ for(const k in A)if(k!=='you'&&!A[k].dead&&k!=='shermian')A[k].pose='kneel';pose('you','kneel');
+ await N('You get down behind the reading beanbags. Everyone does. Ms. Shermian stands facing the door with the cleaver held behind her back, smiling at it.');
+ await bang(false);
+ await N('Twenty minutes. Thirty. The scratching comes back three times. Every time, it stops right outside the door. Every time, it sniffs.');
+ if(A.arjun){await say('arjun','(not whispering enough) If it gets in, I’m pushing Nivaan at it. He’s the smallest. It’ll be full.','angry');if(A.nivaan)await say('nivaan','(whispering) Chat heard that. Chat’s got it saved.','angry')}
+ await bang(true);
+ const bar=props.find(p=>p.t==='barricade');
+ await N('The door handle turns. Very slowly. Something on the other side is turning it.');
+ if(bar&&A.dheva){
+  SFX.crunch();shake(1.6);await tw(bar,{x:A.dheva.x},300,'in');bar.hide=1;
+  kill('dheva','crush',{pool:36,bleed:3,spray:50});
+  await N('The bookshelf comes down. It doesn’t fall towards the door. It falls the other way. Onto Dheva. Four hundred pounds of books, mostly about the Tudors.');
+  await say('shermian','(not even looking round) Library books are heavy, sweeties. That’s why we RESPECT them.','happy');
+ }
+ await N('The handle stops turning. Something scampers away down the corridor. Then nothing. Nothing for a long time.');
+ fxState.dark=.2;
+ await say('adam','(on the PA, exhausted) All clear. All… clear. The intruder has been… detained. By Coach. With his bare hands.','sad');
+ SFX.door();
+ const r=pprop({t:'raccoon',x:-10,y:118,dir:1,still:1,layer:4});
+ put('coach',-18,1,{y:150});await walk('coach',30,60);
+ r.x=36;r.y=122;fxState.dark=0;SFX.power();flash('#fff',.3);
+ await N('Coach walks past the library door with it in a headlock. It’s a raccoon. It’s a raccoon. The whole school was locked down for an hour and a half because of a raccoon.');
+ await say('coach','(to the raccoon) Good HUSTLE. Good effort. You’d make the team.','smirk');
+ await N('Coach and the raccoon go off down the corridor together. Nobody moves for a while. Then everybody, very quietly, puts their weapons back in their bags.');
+ for(const k in A)if(k!=='you'&&A[k]&&!A[k].dead){A[k].pose=null;A[k].hold=null}
+ pose('you',null);
+ await complete('lockdown','hid');
+}
+
+/* ---------- the woods, drawn properly (static layers cached once) ---------- */
+{
+ const LEAF={far:['#5d7a70','#68857a','#74907f','#82a08a'],mid:['#22392a','#2c4a32','#3a5e3a','#4c7444'],near:['#16281a','#203a22','#2f5a2c','#4a7e3a'],sun:['#2a4a26','#3e6a32','#5e8e40','#94b858']};
+ function blob(cx,cy,rx,ry,cols,seed){for(let y=-ry;y<=ry;y+=2)for(let x=-rx;x<=rx;x+=2){const d=x*x/(rx*rx)+y*y/(ry*ry),n=hsh(seed+x*3.1+y*7.7);if(d>1-n*.4)continue;const l=(-x/rx*.4-y/ry*.7)+n*.55;R(cx+x,cy+y,2,2,l>.75?cols[3]:l>.3?cols[2]:l>-.2?cols[1]:cols[0])}}
+ function trunk(x,w,top,bot,seed,c){c=c||['#2a1e16','#3e2e22','#56422e','#6a5238'];
+  R(x,top,w,bot-top,c[1]);R(x,top,Math.max(1,w>>2),bot-top,c[2]);R(x+1,top,1,bot-top,c[3]);R(x+w-Math.max(1,w>>2),top,Math.max(1,w>>2),bot-top,c[0]);
+  for(let i=0;i<(bot-top)/5;i++){const yy=top+i*5+hsh(seed+i)*4,xx=x+1+hsh(seed+i*2)*(w-2);R(xx,yy,1,3+hsh(seed+i*3)*4,c[0])}
+  for(let i=0;i<3;i++){const yy=top+hsh(seed+40+i)*(bot-top-10);R(x,yy,Math.ceil(w*.4),4+i,'#4a6a30');R(x,yy,1,3,'#6a8a40')}
+  R(x-3,bot-5,w+6,5,c[1]);R(x-5,bot-2,w+10,2,c[1]);R(x-5,bot-2,3,2,c[0]);R(x+w+2,bot-2,3,2,c[0]);R(x-3,bot-5,2,3,c[2]);R(x,bot,w,1,'rgba(0,0,0,.35)');R(x-6,bot+1,w+12,2,'rgba(0,0,0,.25)')}
+ function fern(x,y,s,cols){for(let a=-3;a<=3;a++){const len=(10-Math.abs(a)*1.6)*s;for(let i=0;i<len;i++){const fx=x+a*i*.55,fy=y-i*(1-Math.abs(a)*.12)+(i*i)/(len*1.6)*Math.abs(a)*.6;R(fx,fy,1,1,i%3?cols[1]:cols[2]);if(i%2&&i<len-2){R(fx-1,fy+1,1,1,cols[0]);R(fx+1,fy+1,1,1,cols[0])}}}}
+ function shroom(x,y,c){R(x,y-3,1,3,'#e8dcc8');R(x-2,y-5,5,2,c);R(x-1,y-6,3,1,c);R(x-1,y-5,1,1,'#fff')}
+ function drawStatic(){
+  for(let y=0;y<112;y++){const t=y/112;R(0,y,W,1,`rgb(${Math.round(176-t*60)},${Math.round(204-t*56)},${Math.round(184-t*60)})`)}
+  for(let i=0;i<26;i++){const x=hsh(i+300)*W,w=2+hsh(i+310)*3;R(x,10,w,100,'#7d9890');R(x,10,1,100,'#8aa49a')}
+  for(let i=0;i<14;i++)blob(hsh(i+320)*W,8+hsh(i+330)*30,18+hsh(i)*10,10+hsh(i+1)*6,LEAF.far,i*13);
+  g.globalAlpha=.3;R(0,40,W,72,'#c8dcd0');g.globalAlpha=1;
+  for(let i=0;i<11;i++){const x=i*31+hsh(i+350)*14-6,w=4+hsh(i+360)*4;trunk(x,w,16,112,i*7,['#28322a','#34423a','#46564a','#52624f']);blob(x+w/2,14+hsh(i+370)*10,16,9,LEAF.mid,i*29)}
+  g.globalAlpha=.14;R(0,60,W,52,'#c8dcd0');g.globalAlpha=1;
+  /* forest floor */
+  for(let y=104;y<H;y++){const t=(y-104)/76;R(0,y,W,1,`rgb(${Math.round(70-t*22)},${Math.round(78-t*26)},${Math.round(40-t*14)})`)}
+  for(let i=0;i<70;i++){const x=hsh(i+400)*W,y=106+hsh(i+410)*70;R(x,y,3+hsh(i)*6,1,'#566a2e')}
+  /* creek, back right */
+  for(let y=106;y<116;y++){const x0=230+(y-106)*2.4;R(x0,y,W-x0,1,y<108?'#8aa8a8':'#5a7a86')}R(226,105,W,1,'#3a4a2a');R(230,116,W,1,'#5a4a32');
+  for(let i=0;i<8;i++)R(240+i*10,112+(i%2),4,2,'#6a6a62');
+  /* the side trail going back into the trees */
+  for(let y=112;y<140;y++){const t=(y-112)/28,cx=200-t*24,w=6+t*34;R(cx-w/2,y,w,1,t<.15?'#6a5a40':'#74603f');if(y%3===0){R(cx-w/2,y,1,1,'#4e3e28');R(cx+w/2-1,y,1,1,'#4e3e28')}}
+  /* the main trail */
+  for(let y=136;y<164;y++){const wob=Math.sin(y*.35)*2;R(0,y,W,1,y<139||y>160?'#5c4a32':'#7a6544');R(0,y,W,1,'rgba(0,0,0,0)')}
+  for(let x=0;x<W;x+=1){const e1=136+Math.round(Math.sin(x*.07)*2+hsh(x)*1.5),e2=161+Math.round(Math.sin(x*.05+2)*2+hsh(x+9)*1.5);R(x,e1-3,1,4,'#4c5a28');R(x,e1,1,1,'#5c4a32');R(x,e2,1,1,'#5c4a32');R(x,e2+1,1,3,'#3e4a22')}
+  for(let i=0;i<120;i++){const x=hsh(i+500)*W,y=140+hsh(i+510)*20;R(x,y,hsh(i+520)<.3?2:1,1,hsh(i+530)<.5?'#8a7454':'#5a4830')}
+  for(let i=0;i<14;i++){const x=hsh(i+540)*W,y=142+hsh(i+550)*16;R(x,y,3,2,'#8a8a80');R(x,y,2,1,'#a8a8a0')}
+  R(0,148,W,1,'rgba(90,70,40,.35)');R(0,153,W,1,'rgba(90,70,40,.35)');
+  /* fallen mossy log, back left */
+  R(14,124,74,9,'#4a3626');R(14,124,74,2,'#5e4630');R(14,131,74,2,'#2e2018');for(let i=0;i<9;i++)R(18+i*8,125,4,1,'#3a2a1e');
+  R(10,123,8,11,'#6a5238');R(12,125,4,7,'#8a6e4a');R(13,127,2,3,'#6a5238');
+  for(let i=0;i<10;i++)R(20+i*7,122+(i%2),6,3,i%3?'#4e7a32':'#6a9a3a');shroom(40,124,'#c03028');shroom(46,124,'#c03028');shroom(70,124,'#d8a040');
+  /* picnic area: table, can, sign tree */
+  R(222,118,46,3,'#7a5a3a');R(222,118,46,1,'#9a7650');R(224,121,2,9,'#5a402a');R(264,121,2,9,'#5a402a');R(218,124,54,2,'#6a4c30');R(218,124,54,1,'#86643e');R(220,126,2,4,'#4a3422');R(268,126,2,4,'#4a3422');R(222,130,46,1,'rgba(0,0,0,.3)');
+  R(274,112,11,16,'#2e5a3a');R(274,112,11,2,'#4a7a54');R(275,115,1,12,'#447050');R(283,115,1,12,'#1e4028');for(let i=0;i<3;i++)R(274,117+i*4,11,1,'#244a30');R(273,111,13,2,'#3a6a48');R(274,128,11,1,'rgba(0,0,0,.35)');
+  /* the big near trees */
+  const near=[[2,13],[96,9],[150,7],[296,15]];
+  for(const [i,[x,w]] of near.entries())trunk(x,w,0,134+(i%2)*2,i*31+5);
+  R(270,64,27,15,'#8a6a44');R(270,64,27,1,'#a88858');R(270,78,27,1,'#5a4428');R(272,66,1,1,'#ccc');R(294,66,1,1,'#ccc');
+  px('BEAR',275,66,'#2a1e14');px('PROOF',273,72,'#2a1e14');R(274,68,16,1,'#a02020');px('?',292,72,'#a02020');
+  /* canopy band across the top */
+  for(let i=0;i<16;i++)blob(i*22+hsh(i+600)*10-6,6+hsh(i+610)*14,20,12,i%4===1?LEAF.sun:LEAF.near,i*41);
+  for(let i=0;i<9;i++){const x=hsh(i+620)*W,l=18+hsh(i+630)*30;for(let y=10;y<10+l;y+=2)R(x+Math.sin(y*.3)*1.5,y,1,2,y%6?'#2e5a2c':'#4a7e3a')}
+  /* ferns and undergrowth along the trail */
+  const F=[['#1e3a1e','#2e5a2a','#4a7a36']];
+  for(let i=0;i<12;i++){const x=hsh(i+700)*W,y=136+hsh(i+710)*2;fern(x,y,.9+hsh(i+720)*.5,F[0])}
+  for(let i=0;i<6;i++)shroom(hsh(i+730)*W,136,i%2?'#c03028':'#d8b060');
+  for(let i=0;i<60;i++){const x=hsh(i+800)*W,y=164+hsh(i+810)*15;R(x,y,2,1,['#8a4a2a','#a86a2a','#6a3a1a','#7a6a2a'][i%4])}
+ }
+ let cache=null;
+ ROOMS.forest.bg=function(){
+  if(!cache){const c=document.createElement('canvas');c.width=W;c.height=H;const og=g;g=c.getContext('2d');g.imageSmoothingEnabled=false;try{drawStatic()}finally{g=og}cache=c}
+  g.drawImage(cache,0,0);
+  /* light shafts, dust, creek glints, falling leaves */
+  g.globalAlpha=.06;for(const [x0,w] of[[70,14],[178,10],[250,18]])for(let i=0;i<60;i++)R(x0-i*.9,20+i*2,w+i*.5,2,'#fff6c8');g.globalAlpha=1;
+  for(let i=0;i<10;i++){const q=(T*.05+i/10)%1;g.globalAlpha=.5*Math.sin(q*Math.PI);R(70+hsh(i)*30-q*30,30+q*100,1,1,'#fff8d8');g.globalAlpha=1}
+  for(let i=0;i<6;i++){if(Math.sin(T*3+i*2)>.6)R(240+i*13+Math.sin(T+i)*3,109+(i%3)*2,3,1,'#d8f0f0')}
+  for(let i=0;i<7;i++){const q=(T*.12+i/7)%1,x=(hsh(i+900)*W+Math.sin(T*1.5+i)*8+q*40)%W;R(x,q*170,2,1,['#c8782a','#a85a22','#d8a040'][i%3])}
+  if(D&&D.period>=7)for(let i=0;i<10;i++){if(Math.sin(T*2+i*1.7)>.2){g.globalAlpha=.8;R(hsh(i+950)*W+Math.sin(T*.7+i)*10,100+hsh(i+960)*50+Math.cos(T*.9+i)*6,1,1,'#f0f080');g.globalAlpha=1}}
+ };
+ ROOMS.forest.items=[
+  {y:179,d:()=>{fern(8,180,1.6,['#0e1e10','#1a3018','#2a4a24']);fern(26,182,1.2,['#0e1e10','#1a3018','#2a4a24'])}},
+  {y:179,d:()=>{fern(306,181,1.7,['#0e1e10','#1a3018','#2a4a24']);fern(288,183,1.1,['#0e1e10','#1a3018','#2a4a24'])}}
+ ];
+}
 
 </script>
 <script>

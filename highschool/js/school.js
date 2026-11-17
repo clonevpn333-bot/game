@@ -112,7 +112,7 @@ function roamHint(){
 function updateLoc(){
  const p=PERIODS[D.period],r=ROOMS[D.room||'bus'];
  $('clock').innerHTML='FRIDAY · '+p.time+'<small>'+p.name+' — '+(r?r.name:'')+'</small>';
- $('ploc').textContent='DAY '+D.day+' · £'+D.money+(D.items.length?' · '+D.items.length+' item'+(D.items.length>1?'s':''):'');
+ $('ploc').textContent='DAY '+D.day+' · $'+D.money+(D.items.length?' · '+D.items.length+' item'+(D.items.length>1?'s':''):'');
 }
 function availableHooks(room,who){return HOOKS.filter(h=>h.room===room&&(h.period===D.period||(Array.isArray(h.period)&&h.period.includes(D.period)))&&h.who===who&&(!h.cond||h.cond()))}
 function interactables(){
@@ -389,7 +389,7 @@ function openQuest(){
  }else if(questTab==='today'){
   if(!D){body.appendChild(el('div','li no','No day in progress.'))}else{
   const l=el('div','list');body.appendChild(l);
-  l.appendChild(el('div','li','Day '+D.day+' · '+PERIODS[D.period].name+' · £'+D.money));
+  l.appendChild(el('div','li','Day '+D.day+' · '+PERIODS[D.period].name+' · $'+D.money));
   l.appendChild(el('div','li',D.items.length?'Carrying: '+D.items.map(i=>ITEMS[i]||i).join(', '):'Pockets: empty.'));
   const act=Object.keys(D.mp).filter(m=>!D.done[m]);l.appendChild(el('div','li',act.length?'In progress: '+act.map(m=>MIS[m].name+' ('+D.mp[m]+'/'+MIS[m].parts.length+')').join(', '):'Nothing started today.'));
   if(Object.keys(D.done).length)l.appendChild(el('div','li','Finished today: '+Object.keys(D.done).map(m=>MIS[m].name).join(', ')));
@@ -485,7 +485,7 @@ async function angeloShop(){
  await say('angelo','Locker 13 is open for business. What you need?','smirk');
  const stock=[['tape',2,'Duct tape ($2)'],['energy',2,'Monster energy, warm ($2)'],['padlock',1,'A padlock in a sock ($1)']];
  const o=stock.map(s=>({t:s[2],dis:D.money<s[1]||has(s[0]),why:has(s[0])?'got it':'skint'}));o.push({t:'Nothing'});
- const i=await choose(o,'You have £'+D.money);
+ const i=await choose(o,'You have $'+D.money);
  if(i<stock.length){D.money-=stock[i][1];give(stock[i][0]);await say('angelo',pick(['Pleasure doing business.','No refunds. No receipts. No questions.','Tell your friends. Don’t tell Ms. Sherman.']));updateLoc()}
  else await say('angelo','Window shopper. Respect.');
 }
