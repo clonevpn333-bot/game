@@ -1587,12 +1587,12 @@ async function curtainCall(endingId){
  busy=true;setHud(false);setPanel('talk');cue('curtain');
  scene.keepMusic=1;scene('stage',{});scene.keepMusic=0;
  await card('CURTAIN CALL',ENDINGS[endingId]?ENDINGS[endingId].name.toUpperCase():'',2000);
- const cast=['hasan','arjun','david','omer','nivaan','corey','sean','stella','abby','aidan','angelo','alex','dheva','marcus','paul','kenneth','jacob','you'];
+ const cast=['hasan','arjun','david','omer','nivaan','corey','sean','stella','abby','aidan','angelo','alex','dheva','marcus','paul','kenneth','jacob','you'].filter(id=>!(window.EDITION_CUT||[]).includes(id));
  const teachers=['balduf','shermian','sherman','loach','voss','coach','pat'];
  const LINE={hasan:'Hasan — still has the video. Still won’t delete it.',arjun:'Arjun — said something unforgivable on every single day. Consistent, at least.',david:'David — ran for Year Rep on a policy of “no”. Won.',omer:'Omer — shorts. Every day. Every Friday. Every loop.',nivaan:'Nivaan — 91 viewers. Peak. Never again.',corey:'Corey — got it in PE. Both versions.',sean:'Sean — said hi in person. Eventually.',stella:'Stella — kept the ball. Kept the boy.',abby:'Abby — wrote a song called “Friday, again”.',aidan:'Aidan — kept the day. Gave it back. Maybe.',angelo:'Angelo — locker 13 is still open. Cash only.',alex:'Alex — hat-trick. Left foot. Weapon.',dheva:'Dheva — matte finish. Not gel. Never gel.',marcus:'Marcus — read the lunch menu like it owed him money.',paul:'Paul — wrestled everyone. Lost to no one. Lost to Kenneth once (fake).',kenneth:'Kenneth — five foot seven of buzzer beater.',jacob:'Jacob — got pushed around. Nobody laughed. Ever.',you:'You — lived the same Friday '+P.loops+' times. Died '+P.stats.deaths+'.'};
  for(let i=0;i<cast.length;i++){
   const id=cast[i];put(id,-14,1,{y:150});
-  await walk(id,160,90);hop(id,4,240);pose(id,'wave');sub(LINE[id]);SFX.blip(K[id].v||300);
+  await walk(id,160,90);hop(id,4,240);pose(id,'wave');sub((window.EDITION_LINE||{})[id]||LINE[id]);SFX.blip(K[id].v||300);
   await wait(skipping()?60:1400);pose(id,null);
   const slot=12+i*(296/(cast.length-1));A[id].y=136+(i%2)*6;await walk(id,slot,120);face(id,1);
  }

@@ -7,7 +7,7 @@ import { fileURLToPath } from 'url';
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
 const here = path.dirname(fileURLToPath(import.meta.url));
-const url = 'file://' + path.resolve(here, '..', 'index.html');
+const url = process.env.HS_URL || ('file://' + path.resolve(here, '..', 'index.html'));
 const RUNS = +process.argv[2] || 14, DAYS = +process.argv[3] || 6;
 
 const browser = await chromium.launch();
@@ -102,6 +102,11 @@ console.log('autoplay: days', auto.loops, 'guard', auto.guard, 'missions done', 
 console.log(auto.log.slice(-25).join('\n'));
 
 const testErrs = await page.evaluate(() => window.HS_TEST.errs);
+if (await page.evaluate(() => window.EDITION === 'noabby')) {
+  const leaks = await page.evaluate(() => BACKLOG.filter(l => /abby/i.test(l.n + ' ' + l.t)).map(l => l.n + ': ' + l.t));
+  console.log('no-Abby edition: lines mentioning Abby =', leaks.length, '| corey romance missions present =', await page.evaluate(() => !!(HS.MIS.corey || HS.MIS.smallhours)));
+  for (const l of leaks.slice(0, 5)) testErrs.push('Abby leak: ' + l);
+}
 const all = [...errors, ...res.errs, ...testErrs];
 if (all.length) { console.log('\nERRORS (' + all.length + '):'); for (const e of [...new Set(all)].slice(0, 30)) console.log(e + '\n'); }
 else console.log('\nNo errors.');

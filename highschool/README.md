@@ -54,5 +54,7 @@ autoplays whole days in headless Chromium, failing on any error.
 - `dist/highschool.html` — the whole game in one file (font and scripts inlined). Works offline.
 - `dist/highschool-blob.html` — a launcher with one button that opens the game in a new tab from a `blob:` URL.
   If pop-ups are blocked it opens in the same tab instead.
+- `dist/highschool-noabby.html` and `dist/highschool-noabby-blob.html` — the **No-Abby edition**: Abby doesn't exist and
+  Corey's love life never comes up (no *Corey Gets It*, no *Small Hours*). It's the normal game plus `js/edition-noabby.js`.
 
 Re-run the build after changing anything in `js/`.
