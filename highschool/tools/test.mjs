@@ -42,6 +42,7 @@ const res = await page.evaluate(async (RUNS) => {
       if (h.mis === 'calling' && Math.random() < .3) D.f.aidanDead = 1;
       if (Math.random() < .5) { D.done.instella = 1; D.done.corey = 'kiss'; }
       if (Math.random() < .5) HS.P.coll.overdue = 1;
+      D.dayType = h.day || 'odd'; applyDay(D.dayType); if (h.day === 'even') { D.f.pitch1 = 1; D.f.del1 = 1; D.f.oak1 = 1; D.f.tal1 = 1; if (Math.random() < .5) { D.f.delPass = 1; D.f.pitchCoach = 1; } D.f.talOrder = ['paul', 'marcus', 'sean']; }
       HS.D = D;
       HS.P.intel.aidanPoem = 1; HS.P.intel.aidanJars = 1;
       try { HS.buildRoom(h.room); } catch (e) { out.errs.push('build ' + e); }

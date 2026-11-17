@@ -42,3 +42,6 @@ say=function(who,text,e){
  }
  return _sayNA(who,text,e);
 };
+/* even-day classes and class whispers too */
+if(typeof DAYSET!=='undefined')for(const t in DAYSET)for(const i in DAYSET[t]){const s=DAYSET[t][i];if(s&&s.cls)for(const r in s.cls)s.cls[r]=s.cls[r].filter(x=>x!=='abby')}
+if(typeof WHISPER!=='undefined')delete WHISPER.abby;

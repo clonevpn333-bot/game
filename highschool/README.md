@@ -11,8 +11,14 @@ S skip (or hold Ctrl) · Esc settings. Touch: on-screen ◀ ▶ / TALK / MAP, ta
 
 ## What's in it
 
-- **The day:** Before School → Period 1 → Break → Period 2 → Lunch → PE → Period 3 → Home Time →
-  After School at **Fair City Mall** (food court, arcade, roof car park).
+- **Odd and even days:** every new Friday you choose. Odd days run Periods 1, 3, 5 (PE) and 7; even days run
+  Periods 2, 4, 6 and 8 with eight different classes and teachers: History (Mr. Grieve), Art (Miss Dahl), Music
+  (Mr. Fenwick), ICT (Mrs. Byte), Swimming (Mrs. Tarn), Woodwork (Mr. Oakes), Psychology (Dr. Lyle) and Assembly.
+  Before school, break, lunch, home time and After School at **Fair City Mall** happen on both.
+- **Classes are playable:** you pick who to sit next to, the teacher teaches, something goes wrong because of who's
+  in the room, your neighbour whispers something real, and the bell sends everyone out.
+- **The Highgate Archive:** 12 lore pages about what really happened on Friday 13 March 1987. Find them all for
+  the secret ending.
   Each period you pick where to go. A mission scene ends the period, and dying restarts the day.
 - **Mr. Adam**, the headteacher, loses his mind a little more every period: PA announcements, bursting
   into lessons, digging holes on the field, and a bomb at the bus loop at home time. Everyone talks about it.

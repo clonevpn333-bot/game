@@ -344,7 +344,7 @@ function openMap(forced){
   const b=document.createElement('button');b.className='loc'+(r===D.room?' here':'');
   const who=new Set(rosterFor(D.period,r).map(e=>e[0]));if(TEACH[D.period]&&TEACH[D.period][r])who.add(TEACH[D.period][r]);(CLASS[D.period]&&CLASS[D.period][r]||[]).forEach(k=>who.add(k));
   const names=[...who].filter(k=>!D.dead[k]&&!(k==='aidan'&&D.f.aidanDead)&&K[k]&&!/^kid/.test(k)).map(k=>K[k].n);
-  const icons=new Set(HOOKS.filter(h=>h.room===r&&(h.period===D.period||(Array.isArray(h.period)&&h.period.includes(D.period)))&&(!h.cond||h.cond())).map(h=>MIS[h.mis]?MIS[h.mis].icon:'★'));
+  const icons=new Set(HOOKS.filter(h=>(!h.day||h.day===(D.dayType||'odd'))&&h.room===r&&(h.period===D.period||(Array.isArray(h.period)&&h.period.includes(D.period)))&&(!h.cond||h.cond())).map(h=>MIS[h.mis]?MIS[h.mis].icon:'★'));
   const lesson=TEACH[D.period]&&TEACH[D.period][r];
   b.innerHTML='<b></b><span></span>'+(icons.size?'<em></em>':'');
   b.querySelector('b').textContent=ROOMS[r].name+(lesson?' (lesson)':'');
