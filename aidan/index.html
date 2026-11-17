@@ -7559,9 +7559,9 @@ let MODAL=null,BACKLOG=[],FFHOLD=false,FFTOG=false,lastFF=0,seenDirty=0;
  if(!SET.shake)S.shake=0;if(!SET.flash){GL.t=0;GL.next=Math.max(GL.next,5);S.flash=0;CINE.fl=null}
  if(MG&&!muted)MG.gain.value=.65*SET.vol;if(seenDirty>40){seenDirty=0;save()}}}
 /* dialogue box buttons: AUTO and SKIP */
-const dlgBtns=document.createElement('div');dlgBtns.id='dlgbtns';dlgBtns.style.cssText='position:absolute;right:8px;top:4px;display:flex;gap:4px;z-index:3';
+const dlgBtns=document.createElement('div');dlgBtns.id='dlgbtns';dlgBtns.style.cssText='position:fixed;display:none;gap:4px;z-index:900';
 dlgBtns.innerHTML='<button id="bAuto" style="font:9px KenPixel,monospace;padding:3px 6px;background:#100d16e8;color:#e8e0d0;border:1px solid #8f6d6b">AUTO</button><button id="bSkip" style="font:9px KenPixel,monospace;padding:3px 6px;background:#100d16e8;color:#e8e0d0;border:1px solid #8f6d6b">SKIP ⏩</button><button id="bLog" style="font:9px KenPixel,monospace;padding:3px 6px;background:#100d16e8;color:#e8e0d0;border:1px solid #8f6d6b">LOG</button>';
-$('dlg').style.position=$('dlg').style.position||'';$('dlg').appendChild(dlgBtns);
+document.body.appendChild(dlgBtns);(function placeDlgBtns(){const d=$('dlg');if(!d||d.hidden||MODAL||QLOG)dlgBtns.style.display='none';else{const r=d.getBoundingClientRect();dlgBtns.style.display='flex';dlgBtns.style.left=Math.round(r.right-dlgBtns.offsetWidth)+'px';dlgBtns.style.top=Math.round(r.top-dlgBtns.offsetHeight-4)+'px'}requestAnimationFrame(placeDlgBtns)})();
 function syncDlgBtns(){$('bAuto').style.background=SET.auto?'#6a3a2a':'#100d16e8';$('bSkip').style.background=FFTOG?'#6a3a2a':'#100d16e8'}
 for(const [id,fn] of [['bAuto',()=>{SET.auto=!SET.auto;save()}],['bSkip',()=>{FFTOG=!FFTOG}],['bLog',()=>openBacklog()]]){const b=$(id);b.onclick=e=>{e.stopPropagation();fn();syncDlgBtns()};b.onpointerdown=e=>e.stopPropagation()}syncDlgBtns();
 /* modals */
