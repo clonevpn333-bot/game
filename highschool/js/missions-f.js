@@ -2,7 +2,7 @@
 /* =====================================================================
    HIGHSCHOOL — missions F: catfishing and school drama
    @highgate.tea, "Jess from Fair City", Kai Vibes, the group chat,
-   the rumour
+   Kenneth's leak
    ===================================================================== */
 ROSTER[8].foodcourt.push(['nivaan',120,1,'phone',156]);
 Object.assign(INTEL,{teaDavid:'@highgate.tea is run from David’s laptop.',jessArjun:'“Jess from Fair City” is a perfume model from Spain. The recovery email starts with “a” and ends in “n.the.great”.'});
@@ -12,7 +12,7 @@ const TEA=[
  'morning highgate ☕ new day new tea. it’s friday. it’s always friday lol',
  'SPOTTED: corey buying purple CURL CREAM at the mall like it’s contraband 🧴😭',
  'stella’s dad walked out when she was 9 and she STILL carries his ball around everywhere 😭 seek help bestie',
- 'corey & stella. library. HUGGING. 👀📸 sean who??',
+ 'aidan has been standing at locker 217 for 40 minutes. not opening it. just standing 👀',
  'omer’s mum DOES pick his clothes. we have the receipts 🩳🧾',
  'kenneth’s “girlfriend” jess from fair city types EXACTLY like someone we know 👀',
  'vote DAVID for year rep. he’s the only one we’ve got nothing on 😇',
@@ -268,42 +268,6 @@ hook({mis:'groupchat',period:4,room:'canteen',who:'arjun',label:'Warn Arjun befo
 }});
 
 /* =================================================================
-   THE RUMOUR — Sean vs Corey
-   ================================================================= */
-mission('rumour',{name:'The Rumour',icon:'📸',who:['sean','corey','stella'],
- blurb:'@highgate.tea posted a photo of Corey hugging Stella in the library. Sean has seen it. Sean has seen it eleven times.',
- parts:['PE: Sean has seen the post','After school: get Sean and Corey in the same room'],
- tips:['PE, on the field.','After school, the arcade. Corey owes Sean an explanation. Corey doesn’t know that yet.']});
-hook({mis:'rumour',period:5,room:'field',who:'sean',label:'Ask Sean what’s wrong',cond:()=>D.f.tea3&&!D.f.rum1&&!D.dead.corey,run:async()=>{
- scene('field',{sean:[212,1,{pose:'phone',y:146}],stella:[236,-1,{y:146}],you:[186,1,{y:154}]});
- await dms('@highgate.tea','posted 3 hours ago',[['them','corey & stella. library. HUGGING. 👀📸 sean who??'],['note','The photo is blurry. Corey’s hair is unmistakable. Stella’s face is in his hoodie.'],['note','2,844 likes']]);
- await say('sean','Corey. COREY. My boy. My brother. Who I told about the VOICEMAILS.','angry');
- await say('stella','Sean, it’s not— that was—','scared');
- await say('sean','Don’t. I don’t want to hear it from you. I want to hear it from HIM.','cry');
- await walk('sean',300,80);remove('sean');
- await say('stella','(to you) That photo’s from LAST week. I was crying about my dad. Corey was the only one in the library. He just… gave me a hug and didn’t say anything. That’s it.','cry');
- await say('stella','Sean’s going to the arcade after school. Corey always goes to the arcade. Please.','sad');
- D.f.rum1=1;part('rumour',1);
-}});
-hook({mis:'rumour',period:8,room:'arcade',who:'sean',label:'Get Sean and Corey to talk',cond:()=>D.f.rum1&&!D.dead.corey&&!D.dead.sean,run:async()=>{
- scene('arcade',{sean:[150,1,{y:150,pose:'cross'}],you:[124,1,{y:156}]});
- put('corey',330,-1,{y:150});await walk('corey',182,60);
- await say('corey','Yo. Why’s everyone looking at me like I killed someone? I haven’t killed anyone today. That I know of.','shock');
- await say('sean','You hugged her. In the library. Stella.','angry');
- await say('corey','I— yeah? Last week. She was crying about her dad and I was the only one there. What was I meant to do, give her a leaflet?','shock');
- await say('sean','There’s a PHOTO, Corey. Two thousand people have seen a photo.','cry');
- await say('corey','Sean. Listen to me. I’m in love with ABBY, you absolute melon. I’ve been in love with Abby since Year 8. I get a nosebleed when she says my NAME.','angry');
- await say('sean','…Last week?','shock');
- await say('corey','The photo’s a week old. The account’s lying. That’s the whole thing it does.','sad');
- await N('Sean looks at the floor of the arcade for a very long time. The carpet is purple with little planets on it. He’s never noticed the planets before.');
- await say('sean','I’m sorry. I’m an idiot. I’ve never had anything I was scared of losing before.','cry');
- await say('corey','Come here, you melon.','happy');
- pose('sean','hug');pose('corey','hug');SFX.heart();
- if(!D.dead.stella){put('stella',-14,1,{y:150});await walk('stella',110,70);await say('stella','You thought I’d go off with COREY? Corey uses CURL CREAM, Sean.','laugh');await say('corey','It’s for EMERGENCIES.','blush')}
- await complete('rumour');
-}});
-
-/* =================================================================
    LEAKED — Kenneth told a stranger everything, and the stranger posted it
    ================================================================= */
 mission('leaked',{name:'Leaked',icon:'🔓',who:['kenneth','nivaan','kayden'],
@@ -370,4 +334,92 @@ hook({mis:'leaked',period:8,room:'carpark',who:'kayden',label:'Make Kayden ring 
  await say('you','He’s going to find out anyway. Better from you than from a stranger who says “see you at Highgate”.');
  if(A.kenneth){pose('kenneth','phone');await say('kenneth','(on the phone) Dad? Yeah. No, I’m fine. I did something stupid. Can you pick me up from the mall?','cry');await N('You hear his dad’s voice, very small, through the phone. It doesn’t sound angry. It sounds like someone getting his keys.')}
  await complete('leaked','dad');
+}});
+
+/* =================================================================
+   EMERGENCIES ONLY — mess with Corey’s purple C.U.R.L. curl cream
+   ================================================================= */
+Object.assign(ITEMS,{curl:'Corey’s purple C.U.R.L. tub (stolen)'});
+mission('emergency',{name:'Emergencies Only',icon:'🧴',who:['corey','tez','abby'],
+ blurb:'Corey keeps a tub of purple C.U.R.L. curl cream in his black zip-up hoodie. He says it’s “for emergencies”. He has an emergency every hour. Today, the emergency is you.',
+ parts:['Before school: nick the tub out of his hoodie','Break: Tez helps you “improve” it','Home time: Corey fixes his hair in front of Abby'],
+ tips:['Before school, main corridor. He checks his curls in the door window.','Break, the toilets. Tez has supplies.','Home time, bus loop. He always does a last touch-up before the 43.'],
+ variants:{mayo:'Mayonnaise',glue:'Superglue',paint:'Purple paint'}});
+
+hook({mis:'emergency',period:0,room:'corridor',who:'corey',label:'Nick Corey’s curl cream',cond:()=>!has('curl')&&!D.f.curlSwap,run:async()=>{
+ scene('corridor',{corey:[150,1,{y:146}],kayden:[196,-1,{y:152}],abby:[240,-1,{y:146}],you:[176,-1,{y:154}]});
+ face('corey',-1);
+ await N('Corey is checking his curls in the window of the English door. Left side. Right side. Left side again. The tub of C.U.R.L. sits in the front pocket of his black hoodie, the zip half open.');
+ await say('corey','It’s not product. It’s maintenance.','smirk');
+ await say('kayden','(whispering) Bro’s about to take the man’s lifeblood. I respect it. I fear for you.','shock');
+ await walk('you',160,30);pose('you','reach');
+ const r=await meter('Lift the tub out of his hoodie pocket',{speed:1.2});
+ pose('you',null);
+ if(!r){
+  face('corey',1);
+  await say('corey','…That’s for emergencies.','angry');
+  await N('He zips the hoodie all the way up, looks at you like you’ve let him down personally, and walks off without a word. That’s worse than shouting. Corey knows it’s worse.');
+  bond('corey',-1);
+  return;
+ }
+ SFX.pick();give('curl');
+ await walk('you',200,60);
+ await say('corey','(patting his pocket, not looking down) Emergency kit: check. Curls: perfect. Today: mine.','smirk');
+ await say('abby','(passing him) Morning, Corey.','happy');
+ await say('corey','(to the door, very quietly, after she’s gone) Morning, Abby.','blush');
+ part('emergency',1);
+}});
+
+hook({mis:'emergency',period:2,room:'toilets',who:'tez',label:'Ask Tez to help with Corey’s curl cream',cond:()=>has('curl')&&!D.f.curlSwap,run:async()=>{
+ scene('toilets',{tez:[200,-1,{pose:'lean',y:146}],you:[170,1,{y:154,hold:'powder'}]});
+ await say('tez','C.U.R.L.? Corey’s C.U.R.L.? Oh, you’re evil. I like you. I’m twenty-one and I like you.','smirk');
+ await say('tez','Options. I’ve got a mayonnaise sachet from 2019. I’ve got superglue. And I’ve got purple poster paint from the Year 7 art cupboard. Same colour as the tub. He’ll never know.','smirk');
+ const c=await choose(['Mayonnaise.','Superglue.','Purple poster paint.']);
+ D.f.curlSwap=['mayo','glue','paint'][c];
+ await N(['You scoop out the curl cream and fill the tub with very old mayonnaise. It smells like a car boot sale.','Tez stirs half a tube of superglue into the curl cream with a lolly stick. It goes a bit shiny. It goes very shiny.','You fill the tub with purple poster paint. It looks exactly the same. It is not the same.'][c]);
+ take('curl');hold('you',null);
+ await say('tez','Put it back in his locker. He does a last touch-up before the bus every day. Every day. I’ve been watching him do it for three years.','smirk');
+ part('emergency',2);
+}});
+
+hook({mis:'emergency',period:7,room:'bus',who:'corey',label:'Watch Corey do his last touch-up',cond:()=>D.f.curlSwap&&!D.done.emergency&&!D.dead.corey,run:async()=>{
+ const cast={corey:[166,1,{y:150}],you:[140,1,{y:156}]};for(const [n,x] of [['abby',192],['hasan',100],['arjun',78],['paul',236],['nivaan',120]])if(!D.dead[n])cast[n]=[x,x<166?1:-1,{y:146}];
+ scene('bus',cast);
+ await say('corey','One second. Emergency.','smirk');
+ hold('corey','powder');pose('corey','reach');await wait(700);hold('corey',null);pose('corey',null);
+ const v=D.f.curlSwap;
+ if(v==='mayo'){
+  A.corey.hs='wetcurl';SFX.squelch();
+  await N('The curls collapse. Slowly. One at a time. They glisten. A seagull lands on the bus shelter and stares at Corey with real interest.');
+  if(A.abby)await say('abby','…Corey, why do you smell like a chicken sandwich?','shock');
+  if(A.arjun)await say('arjun','CURL-FIL-A! Ha! HA! I’ve been waiting my whole life for this!','laugh');
+  if(A.hasan)await say('hasan','(crying, on the floor) He’s— he’s seasoned—','laugh');
+  await say('corey','It’s… a new formula.','blush');
+ }else if(v==='glue'){
+  A.corey.hs='helmet';SFX.thud();
+  await N('The curls set. All of them, at once, in one solid shiny shape. Corey taps it. It goes tok.');
+  if(A.paul){await walk('paul',180,60);await say('paul','Can I— (he knocks on it like a door)','happy');SFX.thud();await say('paul','Somebody’s home.','laugh')}
+  if(A.abby){await say('abby','Can I knock?','smirk');SFX.thud();await say('abby','…I kind of like it, actually. You look like a Lego man. A sad one.','laugh');ex('corey','blush')}
+  await say('corey','I can’t move my head. I physically cannot turn my head.','scared');
+ }else{
+  A.corey.hairC='#9a4ae0';SFX.drip();
+  await N('His hair goes purple. Properly purple. It runs down his forehead in two neat stripes like war paint.');
+  if(A.nivaan){pose('nivaan','film');await say('nivaan','PURPLE COREY. We’re live. We are SO live. Chat is spamming grapes.','laugh')}
+  if(A.abby)await say('abby','(trying very hard not to laugh) …It matches your little flower. The one by the kerb. That you water.','smirk');
+  await say('corey','What flower? I don’t know about a flower.','blush');
+ }
+ await walk('corey',152,40);face('corey',-1);
+ await say('corey','(quietly, just to you) Was this you?','sad');
+ const c=await choose(['“Yeah. It was me.”','“No idea, mate. Probably Arjun.”']);
+ if(c===0){
+  await say('corey','…','sad');
+  await say('corey','My nan bought me my first tub. Year 8. She said “you’ve got your grandad’s hair, look after it”. I’ve been looking after it ever since.','sad');
+  await say('corey','…It’s fine. It was a good one. I’d have done it to you.','smirk');
+  await say('corey','(zipping his hoodie up to his chin) I’m going to get you back, though. Not today. When you don’t expect it. Like the Curlfather.','smirk');
+ }else{
+  if(A.arjun)await say('arjun','For ONCE in my life it wasn’t me! I’ve got witnesses! I was being nice all day!','angry');
+  await say('corey','(looking at you a beat too long) …Right.','sad');
+  bond('corey',-1);
+ }
+ await complete('emergency',v);
 }});

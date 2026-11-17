@@ -85,7 +85,7 @@ function drawHead(k,x,hy,d,o){
  if(k.glasses){const c=k.adult?'#2a1a24':'#15151a';for(const gx of[ex-5,ex+1]){R(gx,ey-1,4,1,c);R(gx,ey+2,4,1,c);R(gx,ey-1,1,4,c);R(gx+3,ey-1,1,4,c)}R(ex-1,ey,2,1,c)}
  if(k.goggles){R(hx-1,ey-2,hw+2,1,'#3a5a4a');R(ex-5,ey-1,4,3,'rgba(150,230,200,.55)');R(ex+1,ey-1,4,3,'rgba(150,230,200,.55)');R(ex-5,ey-1,4,1,'#3a5a4a');R(ex+1,ey-1,4,1,'#3a5a4a')}
  // hair
- const hs=o.noHair?'':(o.hs||k.hs),c=k.hair;
+ const hs=o.noHair?'':(o.hs||k.hs),c=o.hairC||k.hair;
  if(hs==='bowl'){R(hx-1,hy-2,hw+2,6,c);R(hx,hy-3,hw,1,c);R(hx+2,hy-4,hw-4,1,c);R(hx-1,hy+4,2,2,c);R(hx+hw-1,hy+4,2,2,c);R(hx+2,hy-2,4,1,'rgba(255,255,255,.3)')}
  else if(hs==='long'){R(hx-1,hy-2,hw+2,4,c);R(hx+1,hy-3,hw-2,1,c);R(hx-2,hy,3,hd+3,c);R(hx+hw-1,hy,3,hd+3,c);R(hx+1,hy+2,3,2,c);R(hx+7,hy+2,3,1,c);if(k.girl)R(hx+2,hy-2,3,1,'rgba(255,255,255,.3)')}
  else if(hs==='curly'){R(hx-1,hy-1,hw+2,3,c);for(let i=0;i<5;i++)R(hx-2+i*3,hy-3-(i%2),3,3,c);R(hx-2,hy+1,2,3,c);R(hx+hw,hy+1,2,3,c);R(hx+2,hy+2,2,1,c);R(hx+7,hy+2,2,1,c)}
@@ -113,6 +113,8 @@ function drawHead(k,x,hy,d,o){
  else if(hs==='buzz'){R(hx,hy-1,hw,2,c);R(hx+1,hy-2,hw-2,1,c);R(hx,hy+1,1,2,c);R(hx+hw-1,hy+1,1,2,c)}
  else if(hs==='manbun'){R(hx-1,hy-2,hw+2,3,c);R(hx+3,hy-6,5,4,c);R(hx-1,hy+1,2,2,c);R(hx+hw-1,hy+1,2,2,c)}
  else if(hs==='straight'){R(hx-1,hy-2,hw+2,4,c);R(hx,hy-3,hw,1,c);R(hx-2,hy,2,6,c);R(hx+hw,hy,2,6,c);R(d>0?hx+hw-6:hx,hy+2,6,1,c);R(hx+2,hy-2,4,1,'rgba(255,255,255,.18)')}
+ else if(hs==='helmet'){R(hx-3,hy-5,hw+6,8,c);R(hx-1,hy-7,hw+2,2,c);R(hx-3,hy+3,3,4,c);R(hx+hw,hy+3,3,4,c);for(let i=0;i<6;i++)R(hx-2+i*3,hy-6+(i%2),1,1,'#f4f4f4');R(hx+1,hy-4,4,1,'rgba(255,255,255,.55)')}
+ else if(hs==='wetcurl'){R(hx-1,hy-1,hw+2,3,c);for(let i=0;i<5;i++)R(hx-1+i*3,hy-2,2,2,c);R(hx-2,hy+1,2,6,c);R(hx+hw,hy+1,2,6,c);R(hx+3,hy+2,1,3,c);R(hx+8,hy+2,1,4,c);R(hx+2,hy-1,5,1,'#f4ecc8');R(hx+hw,hy+7,1,2,'#f4ecc8')}
  else if(hs==='net'){R(hx-1,hy-3,hw+2,5,c);for(let i=0;i<hw+2;i+=2)R(hx-1+i,hy-3,1,5,'rgba(255,255,255,.25)');R(hx-1,hy-1,hw+2,1,'rgba(90,90,120,.4)')}
  if(k.tache)R(ex-3,ey+2,7,1,k.tacheC||k.hair);
  if(k.beard){R(hx,hy+hd-5,2,4,k.hair);R(hx+hw-2,hy+hd-5,2,4,k.hair);R(hx+2,hy+hd-2,hw-4,2,k.hair)}
@@ -250,7 +252,7 @@ function drawActor(a){
   g.globalAlpha=1;return;
  }
  if(!a.sitHigh&&a.pose!=='sit'&&a.pose!=='write'){const zz=a.z||0,sw_=Math.max(4,12-zz*.4);g.globalAlpha=Math.min(g.globalAlpha,.22);R(a.x-sw_/2,a.y,sw_,2,'#000');g.globalAlpha=k.ghost?Math.min(1,.62+Math.sin(T*3+a.x)*.12):(a.alpha<1?Math.max(0,a.alpha):1)}
- drawKid(k,a.x,y,{fast:a.fast,messy,dir:a.dir,moving:a.moving,walk:a.walk,pose:a.air&&!a.pose?'up':a.pose,ex:a.ex||a._ex||(a.air?'shock':null),talk:a.talk,hold:a.hold,hurt:a.hurt,bloody:a.bloody,shake:a.shake,punchT:a.punchT,still:a.still,hs:a.hs||(a.id==='dheva'&&(typeof D!=="undefined"&&D)&&D.f&&!D.f.dhevaFixed?'limp':null)});
+ drawKid(k,a.x,y,{fast:a.fast,messy,dir:a.dir,moving:a.moving,walk:a.walk,pose:a.air&&!a.pose?'up':a.pose,ex:a.ex||a._ex||(a.air?'shock':null),talk:a.talk,hold:a.hold,hurt:a.hurt,bloody:a.bloody,shake:a.shake,punchT:a.punchT,still:a.still,hairC:a.hairC,hs:a.hs||(a.id==='dheva'&&(typeof D!=="undefined"&&D)&&D.f&&!D.f.dhevaFixed?'limp':null)});
 
  g.globalAlpha=1;
 }

@@ -27,6 +27,7 @@ S skip (or hold Ctrl) · Esc settings. Touch: on-screen ◀ ▶ / TALK / MAP, ta
   - *In Person* (Sean & Stella), *Corey Gets It* (Corey & Abby, PE).
   - New kids: *Locker 13* (Angelo), *Hat-Trick* (Alex), *Texture* (Dheva),
     *Good Morning, Highgate* (Marcus), *Royal Rumble* (Paul), *Buzzer Beater* (Kenneth), *Pushed* (Jacob).
+  - *Emergencies Only:* sabotage Corey's purple C.U.R.L. curl cream and watch it go wrong at the bus loop in front of Abby.
   - *Head Case* (Mr. Adam's bomb), *Bake Off* (Mrs. Kettle, Food Tech), *Method* (Mr. Pratt, Drama).
   - Made-up students: *The Armoury* (Tez, 21, still in Year 11, sells weaponised stationery that changes
     how some deaths go), *Register* (Ollie, the Year 7 from 1987 nobody else can see), *Opps* (Kayden's
@@ -34,7 +35,7 @@ S skip (or hold Ctrl) · Esc settings. Touch: on-screen ◀ ▶ / TALK / MAP, ta
   - At the mall: *Arjun, Alone* · *Hasan's Shot* · *Strike Two* · *Small Hours* · *Omer's Mum* · *Pushed Around*.
   - Catfishing and school drama: *@highgate.tea* (who runs the gossip account posting everyone's secrets
     every period?), *Jess from Fair City* (Kenneth is catfished), *Kai Vibes* (Nivaan's fake famous collab),
-    *Screenshots* (the group-chat leak), *The Rumour* (Sean vs Corey), *Leaked* (Kenneth trusts a stranger online who then posts his whole life). DMs and group chats open on a phone screen.
+    *Screenshots* (the group-chat leak), *Leaked* (Kenneth trusts a stranger online who then posts his whole life). DMs and group chats open on a phone screen.
   - *The Calling:* the finale at home time, once you know why Friday keeps happening.
 
 ## Files
