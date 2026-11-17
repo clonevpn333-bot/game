@@ -4,7 +4,7 @@
    Seat Wars, The Old Bat, Any Reaction, Group Project
    ===================================================================== */
 /* ---------- staging helpers ---------- */
-const seatOf=(row,i)=>({x:SEATS[row][i],y:row==='back'?SEATS.backY:SEATS.frontY});
+const seatOf=(row,i)=>(typeof ROOM!=='undefined'&&ROOM==='trailer'&&typeof TRSEAT!=='undefined')?TRSEAT(row,i):({x:SEATS[row][i],y:row==='back'?SEATS.backY:SEATS.frontY});
 function sitAt(id,row,i,dir){const s=seatOf(row,i);const a=A[id]||put(id,s.x,dir||1);a.x=s.x;a.y=s.y;a.pose='sit';a.dir=dir||1;return a}
 async function standTo(id,x,y,sp){const a=A[id];if(!a)return;a.pose=null;if(y!=null)await tw(a,{y},160);if(x!=null)await walk(id,x,sp)}
 async function hit(a,b,o){o=o||{};const p=A[a],q=A[b];if(!p||!q)return;face(a,b);p.pose=o.pose||'punch';p.punchT=T+.25;(o.sfx||SFX.punch)();shake(o.shake||.45);q.hurt=Math.min(3,(q.hurt||0)+(o.dmg==null?1:o.dmg));if(!q.dead)q.ex=o.ex||'hurt';const d=Math.sign(q.x-p.x)||1;blood(q.x,q.y-22,o.blood==null?8:o.blood,d,70,q.y+2);if(o.push!==0)tw(q,{x:q.x+d*(o.push||5)},110);await wait(o.ms||300)}
