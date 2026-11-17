@@ -139,7 +139,10 @@ const realWait=ms=>new Promise(r=>setTimeout(r,TEST?0:ms));
 /* ---------------- timers & tweens (run on game clock, so skip speeds them up) ---------------- */
 let timers=[],tweens=[];
 function wait(ms){return new Promise(r=>timers.push({t:ms/1000,r}))}
-function tw(o,props,ms,ease){return new Promise(r=>{const from={};for(const k in props)from[k]=o[k];tweens.push({o,from,props,t:0,d:Math.max(.001,ms/1000),r,ease})})}
+function tw(o,props,ms,ease){return new Promise(r=>{const from={};for(const k in props)from[k]=o[k];const w={o,from,props,t:0,d:Math.max(.001,ms/1000),r,ease};
+ /* People never slide: moving an actor sideways either walks/runs them (stagger, shove) or throws them through the air. */
+ if(o&&o.k&&'x' in props&&!('y' in props&&Math.abs(props.y-o.y)>6)&&Math.abs(props.x-o.x)>=1){const dist=Math.abs(props.x-o.x),spd=dist/w.d;w.move=spd;w.z0=o.z||0;w.arc=(spd>150&&!o.dead&&o.pose!=='lie')?Math.min(22,6+dist*.14):0;if(o.pose==='lie'||o.dead)w.drag=1}
+ tweens.push(w)})}
 let skipOn=false,autoOn=false,ctrlHeld=false;
 function skipping(){return skipOn||ctrlHeld||!!(TEST)}
 function speed(){return TEST?60:(skipping()?7:1)}
@@ -368,9 +371,10 @@ addEventListener('resize',fit);addEventListener('orientationchange',()=>setTimeo
 let last=performance.now(),HOOK={update:null,drawOver:null,drawUnder:null};
 function update(dt,rdt){
  for(let i=timers.length-1;i>=0;i--){const t=timers[i];t.t-=dt;if(t.t<=0){timers.splice(i,1);t.r()}}
- for(let i=tweens.length-1;i>=0;i--){const w=tweens[i];w.t+=dt;let q=Math.min(1,w.t/w.d);const e=w.ease==='in'?q*q:w.ease==='out'?1-(1-q)*(1-q):q<.5?2*q*q:1-2*(1-q)*(1-q);for(const k in w.props)w.o[k]=w.from[k]+(w.props[k]-w.from[k])*e;if(q>=1){tweens.splice(i,1);w.r()}}
+ for(let i=tweens.length-1;i>=0;i--){const w=tweens[i];w.t+=dt;let q=Math.min(1,w.t/w.d);
+  if(w.move){const o=w.o;if(w.arc){o.z=w.z0+Math.sin(q*Math.PI)*w.arc;o.air=q<1;o.moving=false}else if(!w.drag){o.moving=q<1;o.fast=w.move>85;o.walk+=dt*Math.min(30,9+w.move/7)}if(q>=1){o.moving=false;o.fast=false;o.air=false;if(w.arc)o.z=w.z0}}const e=w.ease==='in'?q*q:w.ease==='out'?1-(1-q)*(1-q):q<.5?2*q*q:1-2*(1-q)*(1-q);for(const k in w.props)w.o[k]=w.from[k]+(w.props[k]-w.from[k])*e;if(q>=1){tweens.splice(i,1);w.r()}}
  for(const id in A){const a=A[id];
-  if(a.tx!=null){const d=a.tx-a.x;if(Math.abs(d)<1){a.x=a.tx;a.tx=null;a.moving=false;const r=a.res;a.res=null;r&&r()}else{a.dir=Math.sign(d);a.moving=true;a.x+=Math.sign(d)*Math.min(Math.abs(d),(a.wsp||a.sp)*dt);a.walk+=dt*11}}
+  if(a.tx!=null){const d=a.tx-a.x;a.fast=(a.wsp||a.sp)>=85;if(Math.abs(d)<1){a.x=a.tx;a.tx=null;a.moving=false;a.fast=false;const r=a.res;a.res=null;r&&r()}else{a.dir=Math.sign(d);a.moving=true;a.x+=Math.sign(d)*Math.min(Math.abs(d),(a.wsp||a.sp)*dt);a.walk+=dt*(a.fast?17:11)}}
   if(a.bleed>0&&P.set.gore){a.bleedT=(a.bleedT||0)+dt;if(a.bleedT>.12){a.bleedT=0;a.bleed-=.12;parts.push({x:a.x+rand(-4,4),y:a.y-(a.dead?3:16),vx:rand(-8,8),vy:rand(-10,5),c:BLOOD[1+(Math.random()*3|0)],s:1,fy:a.y+rand(-1,3),life:2})}}
   if(a.pool!=null&&a.pool<a.poolMax)a.pool=Math.min(a.poolMax,a.pool+dt*5);
  }

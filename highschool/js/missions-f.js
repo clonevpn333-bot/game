@@ -302,3 +302,72 @@ hook({mis:'rumour',period:8,room:'arcade',who:'sean',label:'Get Sean and Corey t
  if(!D.dead.stella){put('stella',-14,1,{y:150});await walk('stella',110,70);await say('stella','You thought I’d go off with COREY? Corey uses CURL CREAM, Sean.','laugh');await say('corey','It’s for EMERGENCIES.','blush')}
  await complete('rumour');
 }});
+
+/* =================================================================
+   LEAKED — Kenneth told a stranger everything, and the stranger posted it
+   ================================================================= */
+mission('leaked',{name:'Leaked',icon:'🔓',who:['kenneth','nivaan','kayden'],
+ blurb:'Last night a guy online said “yo it’s me, new account” and Kenneth believed him. He told him everything. Then the guy realised Kenneth wasn’t who he thought, got angry, and posted all of it.',
+ parts:['Before school: Kenneth’s seen the post','Lunch: trace the account','After school: make them take it down'],
+ tips:['Before school, bus loop.','Lunch, main corridor. Nivaan can trace anything.','After school, the roof car park. Someone there knows the guy.'],
+ variants:{reported:'Reported and deleted',dad:'Told his dad'}});
+
+hook({mis:'leaked',period:0,room:'bus',who:'kenneth',label:'Ask Kenneth why he looks sick',cond:()=>!D.f.leak1&&!D.dead.kenneth,run:async()=>{
+ scene('bus',{kenneth:[236,-1,{pose:'phone',y:146,ex:'scared'}],paul:[212,1,{y:142}],you:[258,-1,{y:154}]});
+ await say('kenneth','Don’t look at my phone. Actually look at my phone. I need someone to look at my phone and tell me it’s fine.','scared');
+ await dms('xX_V1PER_Xx','Block Wars · last night',[
+  ['them','yo kenny its me new account lol. got banned on the old one'],['me','oh hey!! wait who'],['them','bruh. from school. remember'],['me','ohhh yeah haha sorry'],
+  ['them','remind me ur full name again for the clan form'],['me','kenneth duncan bramble 💀 dont laugh at duncan'],['them','and ur dads name for the parent thing'],['me','graham. why does the clan need my dad'],
+  ['them','what school u at now'],['me','highgate high obviously lol. year 10. ms loach for science'],['them','where do u live again'],['me','fair city. same as always'],
+  ['them','wait. ur not kenny B. kenny B is from cardiff'],['me','who’s kenny b??'],['them','u wasted my time. watch this'],
+  ['note','— 2:14am —'],['them','(posted publicly) KENNETH DUNCAN BRAMBLE. HIGHGATE HIGH, FAIR CITY. YEAR 10. DAD: GRAHAM BRAMBLE. SCIENCE TEACHER: MS LOACH. 5FT 7. SLEEPS WITH A NIGHTLIGHT. SPAM HIM 😂'],['note','312 shares']]);
+ await say('kenneth','He said he was my mate. I thought he was someone from school who got a new account. People do that. People DO that.','cry');
+ await say('kenneth','I told him my middle name. Nobody knows my middle name. My middle name is DUNCAN.','cry');
+ await say('paul','I won’t tell anyone about Duncan. I’ll take it to my grave. I’ll take it to YOUR grave if anyone else finds out.','angry');
+ await say('kenneth','People are messaging me. Strangers. They know my dad’s name. One of them said “see you at Highgate”.','scared');
+ D.f.leak1=1;part('leaked',1);
+}});
+
+hook({mis:'leaked',period:4,room:'corridor',who:'nivaan',label:'Ask Nivaan to trace the guy who leaked Kenneth',cond:()=>D.f.leak1&&!D.f.leak2,run:async()=>{
+ scene('corridor',{nivaan:[150,-1,{pose:'phone',y:146}],you:[124,1,{y:154}]});
+ await say('nivaan','xX_V1PER_Xx. Account’s two days old. Profile picture’s… hang on.','smirk');
+ await wait(500);SFX.ding();
+ await say('nivaan','It’s a drawing of a Super Soaker with “HGH” on it. Highgate Hittaz.','shock');
+ await say('nivaan','And the IP’s in Wales.','shock');
+ await N('There is exactly one member of the Highgate Hittaz who lives in Wales.');
+ await say('nivaan','Kayden’s cousin. Kayden’s cousin doxxed Kenneth because he thought Kenneth was a different Kenny who owes him twenty quid in Cardiff.','shock');
+ await say('nivaan','Kayden’s always at the mall car park after school. Make him ring his cousin.');
+ D.f.leak2=1;part('leaked',2);
+}});
+
+hook({mis:'leaked',period:8,room:'carpark',who:'kayden',label:'Make Kayden ring his cousin',cond:()=>D.f.leak2&&!D.dead.kayden,run:async()=>{
+ scene('carpark',{kayden:[60,1,{y:150}],you:[90,-1,{y:156}]});
+ await say('you','Your cousin doxxed Kenneth. Full name, his dad, his school, where he lives. Ring him. Now.');
+ await say('kayden','RHYS? Rhys did that? Rhys cries at Bambi.','shock');
+ pose('kayden','phone');
+ await say('Rhys (on speaker)','alright kay. what','smirk');
+ await say('kayden','Did you post a kid’s whole life online last night? Kenneth? From MY school?','angry');
+ await say('Rhys (on speaker)','he pretended to be kenny B. kenny B owes me twenty quid','smirk');
+ await say('kayden','He didn’t pretend anything! YOU messaged HIM! You said “it’s me”! He’s just nice! He thought you were a mate!','yell');
+ await say('Rhys (on speaker)','…oh','shock');
+ await say('kayden','Take it down. Now. Or you’re out of the Hittaz. And I’m telling Nan.','angry');
+ await say('Rhys (on speaker)','not nan. mate. not nan','scared');
+ await N('Thirty seconds later the post is gone. The account is gone. The screenshots aren’t. Screenshots never are.');
+ pose('kayden',null);
+ if(!D.dead.kenneth){put('kenneth',330,-1,{y:150});await walk('kenneth',120,60)}
+ if(A.kenneth){
+  await say('kenneth','Is it gone?','scared');
+  await say('kayden','It’s gone, bro. I’m sorry. On God. He’s my cousin and he’s an idiot. Hittaz don’t do that.','sad');
+  await say('kenneth','I told him everything because he said he was my mate. I just… I wanted someone to message me back at two in the morning.','sad');
+ }
+ const c=await choose(['“Report the screenshots. All of them.”','“Tell your dad, Ken. Tonight.”']);
+ if(c===0){
+  await N('The three of you sit on the car park floor and report every screenshot you can find. It takes forty minutes. Twelve get taken down. Kayden reports one of his own posts by accident and doesn’t say anything.');
+  await say('kenneth','Next time someone online says “it’s me”, I’m going to say “prove it” and then I’m going to log off and go outside.','sad');
+  await complete('leaked','reported');return;
+ }
+ await say('kenneth','My dad? He’ll go mental. His NAME was on there.','scared');
+ await say('you','He’s going to find out anyway. Better from you than from a stranger who says “see you at Highgate”.');
+ if(A.kenneth){pose('kenneth','phone');await say('kenneth','(on the phone) Dad? Yeah. No, I’m fine. I did something stupid. Can you pick me up from the mall?','cry');await N('You hear his dad’s voice, very small, through the phone. It doesn’t sound angry. It sounds like someone getting his keys.')}
+ await complete('leaked','dad');
+}});

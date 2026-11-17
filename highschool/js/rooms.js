@@ -11,8 +11,26 @@ function pxc(s,cx,y,c,sc){px(s,cx-pxw(s,sc)/2,y,c,sc)}
 /* ---------- shared pieces ---------- */
 function period(){return (typeof D!=="undefined"&&D)?D.period:0}
 function wall(c,trim){R(0,0,W,112,c);R(0,0,W,5,'rgba(0,0,0,.18)');R(0,106,W,6,trim||'rgba(0,0,0,.25)');R(0,105,W,1,'rgba(255,255,255,.12)')}
-function tiles(c1,c2,s){R(0,112,W,68,c1);s=s||16;for(let r=0;r<5;r++){const y=112+r*r*2.6+r*6|0,h=(112+(r+1)*(r+1)*2.6+(r+1)*6|0)-y;for(let i=-1;i<W/s+1;i++)if((i+r)%2)R(i*s+(r*3)%s,y,s,h,c2)}R(0,112,W,1,'rgba(0,0,0,.3)')}
-function wood(c1,c2){R(0,112,W,68,c1);for(let r=0;r<9;r++){const y=112+r*8;R(0,y,W,1,c2);for(let i=0;i<6;i++)R(((i*61+r*37)%W),y,1,8,c2)}}
+/* floors in perspective: lines run to a vanishing point above the middle of the room */
+const VPY=48,FROWS=[112,115,119,124,130,137,145,154,164,175,187];
+const fx=(i,B,y)=>160+i*B*(y-VPY)/(180-VPY);
+function tiles(c1,c2,s){
+ s=s||16;const B=s*2.3;R(0,112,W,68,c1);
+ for(let r=0;r<FROWS.length-1;r++){const y0=FROWS[r],y1=Math.min(180,FROWS[r+1]);
+  for(let y=y0;y<y1;y++)for(let i=-14;i<14;i++){if((i+r)&1)continue;const a=fx(i,B,y),b=fx(i+1,B,y);if(b<0||a>W)continue;R(a,y,b-a,1,c2)}
+  R(0,y0,W,1,'rgba(0,0,0,.10)')}
+ for(let y=112;y<180;y++){g.globalAlpha=.10*(1-(y-112)/68);R(0,y,W,1,'#000')}g.globalAlpha=1;
+ R(0,112,W,2,'rgba(0,0,0,.25)');
+}
+function wood(c1,c2){
+ R(0,112,W,68,c1);const B=34;
+ for(let r=0;r<FROWS.length-1;r++){const y0=FROWS[r],y1=Math.min(180,FROWS[r+1]);R(0,y0,W,1,c2);
+  for(let y=y0;y<y1;y++)for(let i=-14;i<14;i++){const x=fx(i+((r*3)%4)/4,B,y);if(x>=0&&x<W)R(x,y,1,1,c2)}
+  if(r%2){g.globalAlpha=.06;R(0,y0+1,W,y1-y0-1,'#fff');g.globalAlpha=1}}
+ for(let y=112;y<180;y++){g.globalAlpha=.10*(1-(y-112)/68);R(0,y,W,1,'#000')}g.globalAlpha=1;
+ R(0,112,W,2,'rgba(0,0,0,.28)');
+}
+function floorShine(xs){for(const x of xs)for(let y=114;y<170;y+=2){g.globalAlpha=.07*(1-(y-114)/56);R(fx((x-160)/40,40,y)-6,y,12,1,'#fff')}g.globalAlpha=1}
 function lights(n){for(let i=0;i<n;i++){const x=20+i*(280/(n-1||1));R(x-14,2,28,3,'#e8eef0');R(x-14,5,28,1,'#b8c0c4');g.globalAlpha=.05;R(x-30,6,60,40,'#fff');g.globalAlpha=1}}
 function windowPane(x,y,w,h,o){o=o||{};R(x-2,y-2,w+4,h+4,o.frame||'#e8e4dc');const p=period(),sky=o.sky||(p>=7?'#f0a070':p===0?'#a8d0f0':'#8ec4ee');R(x,y,w,h,sky);R(x,y+h*.6,w,h*.4,p>=7?'#e08a60':'#b8dcf4');
  for(let i=0;i<3;i++){const cx=x+((i*37+T*2)%(w+20))-10;R(cx,y+4+i*5,10,3,'rgba(255,255,255,.75)');R(cx+3,y+2+i*5,5,2,'rgba(255,255,255,.75)')}
@@ -51,13 +69,34 @@ const ROOMS={
   const bx=p>=7?-120:-170;R(bx+40,82,150,64,'#c8302a');R(bx+40,82,150,4,'#a8201a');for(let i=0;i<6;i++){R(bx+48+i*22,92,18,18,'#2a3a4a');R(bx+49+i*22,93,16,6,'#7aa0c0')}R(bx+176,92,12,40,'#2a3a4a');R(bx+177,94,10,36,'#5a7a9a');R(bx+150,84,30,6,'#1a1a1a');px('43',bx+160,85,'#f0d070');R(bx+60,138,14,14,'#1a1a1a');R(bx+150,138,14,14,'#1a1a1a');R(bx+64,142,6,6,'#777');R(bx+154,142,6,6,'#777')
  }},
  corridor:{name:'Main Corridor',music:'corridor',bg(){
-  wall('#e6dcc4','#8a7a5a');lights(4);
-  lockers(4,42,6,'#3a5a8a',true,212);lockers(232,42,6,'#3a5a8a',true,226);
-  door(104,'#7a5a3a','ENG');door(196,'#7a5a3a','MATHS');
-  R(140,34,48,40,'#a8784a');R(142,36,44,36,'#c8a878');poster(144,38,18,14,'#e05a5a',['BAKE','SALE']);poster(165,38,18,14,'#5a8ae0',['VOTE','DAVID']);poster(144,55,18,14,'#f0d070',['LOST','CAT'],'#3a2a1a');poster(165,55,18,14,'#7a5ab0',['PROM?'],'#fff');
-  R(140,80,48,26,'#3a2a20');R(142,82,44,22,'#9ac0d8');for(let i=0;i<4;i++){R(146+i*10,92,6,8,'#e8c040');R(147+i*10,88,4,4,'#e8c040')}pxc('TROPHIES',164,76,'#5a4a3a');
-  tiles('#b8b0a0','#a8a090',20);
-  for(const x of[60,270])R(x-14,112,1,1,'rgba(0,0,0,.2)');
+  // ceiling: tiles, vents, strip lights
+  R(0,0,W,16,'#d8d4c8');for(let i=0;i<W;i+=20)R(i,0,1,16,'rgba(0,0,0,.08)');R(0,8,W,1,'rgba(0,0,0,.08)');R(0,15,W,1,'rgba(0,0,0,.25)');
+  for(const x of[46,160,274]){R(x-18,3,36,4,'#f4f8f8');R(x-18,7,36,1,'#a8b0b4');g.globalAlpha=.06;for(let k=0;k<5;k++)R(x-24-k*6,16+k*8,48+k*12,8,'#fffbe8');g.globalAlpha=1}
+  R(110,4,10,6,'#b8b4a8');for(let k=0;k<3;k++)R(111,5+k*2,8,1,'#8a867c');
+  // breeze-block wall with a painted band
+  R(0,16,W,96,'#e9dfc6');for(let r=0;r<12;r++){const y=16+r*8;R(0,y,W,1,'rgba(120,100,70,.18)');for(let x=(r%2)*12;x<W;x+=24)R(x,y,1,8,'rgba(120,100,70,.14)')}
+  R(0,36,W,3,'#4a6a9a');R(0,39,W,1,'#2a4a7a');
+  // exit sign, clock, CCTV
+  R(146,20,36,10,'#1a7a3a');R(147,21,34,8,'#2aa84a');px('EXIT',152,22,'#e8ffe8');R(176,22,4,4,'#e8ffe8');
+  clock(226,26);
+  R(300,18,10,5,'#2a2a2a');R(306,19,6,3,'#3a3a3a');R(309,20,2,1,Math.sin(T*3)>0?'#ff2020':'#601010');R(302,23,2,4,'#555');
+  // lockers, with depth, vents, stickers and a few scars
+  const lock=(x0,n,start)=>{R(x0-2,42,n*15+3,66,'#2a3a5a');for(let i=0;i<n;i++){const x=x0+i*15,num=start+i;R(x,44,14,62,'#3e5f92');R(x,44,14,2,'#6a8ac0');R(x,104,14,2,'#2a3f66');R(x+13,44,1,62,'#24365a');R(x,44,1,62,'#5a7ab0');
+   for(let j=0;j<4;j++)R(x+3,48+j*2,8,1,'#24365a');px(String(num),x+2,57,'#e8eef8');R(x+10,72,2,6,'#c8ccd4');R(x+10,72,2,1,'#fff');
+   if((num*7)%5===0)R(x+2,84,5,4,['#e05a7a','#f0d050','#5ad0a0'][num%3]);if(num%4===1){R(x+3,92,6,1,'#24365a');R(x+5,93,3,1,'#24365a')}
+   if(num===217){R(x+2,64,10,1,'#c8d0e0');px('A',x+4,66,'#c8d0e0');R(x+9,76,3,4,'#c8b040')}}
+   R(x0-2,106,n*15+3,2,'#1a2a44')};
+  lock(4,6,212);lock(232,6,226);
+  // classroom doors with number plates and a glimpse inside
+  const door_=(x,label,inside)=>{R(x-3,40,32,72,'#6a5a48');R(x,43,26,69,'#8a5e3a');R(x+1,44,24,1,'#a87a52');R(x+12,44,1,66,'rgba(0,0,0,.15)');R(x+6,50,14,20,'#2a2a30');R(x+7,51,12,18,inside);R(x+7,51,12,1,'rgba(255,255,255,.5)');R(x+20,80,3,2,'#d8c890');R(x+3,30,20,8,'#2a2a3a');pxc(label,x+13,32,'#f0e0a0');R(x-3,110,32,2,'rgba(0,0,0,.25)')};
+  door_(104,'ENG','#7a8a5a');door_(196,'MATHS','#e8c4cc');
+  // notice board & trophies
+  R(138,40,52,37,'#8a5e3a');R(140,42,48,33,'#c8a070');poster(142,44,21,15,'#e05a5a',['BAKE','SALE']);poster(165,44,21,15,'#5a8ae0',['VOTE','DAVID']);poster(142,60,21,14,'#f0d070',['LOST','CAT'],'#3a2a1a');poster(165,60,21,14,'#7a5ab0',['PROM','?']);
+  R(140,78,48,30,'#3a2a20');R(142,80,44,26,'#9ac0d8');R(142,80,44,1,'#e0f0ff');R(142,92,44,1,'#5a4a3a');for(let i=0;i<4;i++){R(146+i*10,84,6,8,'#e8c040');R(147+i*10,82,4,2,'#e8c040');R(148+i*10,84,1,6,'#fff09a');R(146+i*10,96,6,8,'#c8c8d0')}R(142,105,44,1,'#5a4a3a');
+  // fire extinguisher, water fountain, bin
+  R(134,90,4,13,'#c02020');R(134,88,4,2,'#2a2a2a');R(135,91,1,8,'#e05050');R(133,86,2,2,'#2a2a2a');
+  R(0,106,W,6,'#6a5a48');R(0,106,W,1,'#8a7a62');
+  tiles('#c8c0b0','#b4ac9c',14);floorShine([46,160,274]);
  }},
  english:{name:'English — Ms. Balduf',music:'class',bg(){
   wall('#7a8a5a','#4a5a3a');lights(3);
