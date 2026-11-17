@@ -75,7 +75,7 @@ async function classOut(c,line){
  if(line&&A[c.t])await say(c.t,line);
  await N(pick(['The bell. Chairs scrape. Everyone moves at once like they rehearsed it.','The bell goes. Nobody waits to be dismissed. Nobody ever has.','The bell. Bags on, chairs back, gone.']));
  const out=c.seats.filter(s=>s.who&&s.who!=='you'&&A[s.who]&&!A[s.who].dead);
- out.forEach((s,i)=>{const a=A[s.who];setTimeout(()=>{if(!A[s.who])return;a.pose=null;tw(a,{y:150},250);walk(s.who,-18,70+(i%3)*8)},i*120)});
+ out.forEach((s,i)=>{const a=A[s.who];if(c.stay&&c.stay.includes(s.who))return;timers.push({t:i*.12,r:()=>{if(A[s.who]!==a||a.dead)return;a.pose=null;tw(a,{y:150},250);walk(s.who,-18,70+(i%3)*8)}})});
  await wait(900);
 }
 

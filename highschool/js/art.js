@@ -115,6 +115,7 @@ function drawHead(k,x,hy,d,o){
  else if(hs==='straight'){R(hx-1,hy-2,hw+2,4,c);R(hx,hy-3,hw,1,c);R(hx-2,hy,2,6,c);R(hx+hw,hy,2,6,c);R(d>0?hx+hw-6:hx,hy+2,6,1,c);R(hx+2,hy-2,4,1,'rgba(255,255,255,.18)')}
  else if(hs==='helmet'){R(hx-3,hy-5,hw+6,8,c);R(hx-1,hy-7,hw+2,2,c);R(hx-3,hy+3,3,4,c);R(hx+hw,hy+3,3,4,c);for(let i=0;i<6;i++)R(hx-2+i*3,hy-6+(i%2),1,1,'#f4f4f4');R(hx+1,hy-4,4,1,'rgba(255,255,255,.55)')}
  else if(hs==='wetcurl'){R(hx-1,hy-1,hw+2,3,c);for(let i=0;i<5;i++)R(hx-1+i*3,hy-2,2,2,c);R(hx-2,hy+1,2,6,c);R(hx+hw,hy+1,2,6,c);R(hx+3,hy+2,1,3,c);R(hx+8,hy+2,1,4,c);R(hx+2,hy-1,5,1,'#f4ecc8');R(hx+hw,hy+7,1,2,'#f4ecc8')}
+ else if(hs==='cone'){for(let i=0;i<14;i++){const w=Math.max(2,hw+4-i*1.1);R(x-w/2,hy+2-i,w,1,i===5||i===6||i===10?'#f4f4f0':'#f07a20')}R(hx-3,hy+2,hw+6,2,'#e06a10')}
  else if(hs==='net'){R(hx-1,hy-3,hw+2,5,c);for(let i=0;i<hw+2;i+=2)R(hx-1+i,hy-3,1,5,'rgba(255,255,255,.25)');R(hx-1,hy-1,hw+2,1,'rgba(90,90,120,.4)')}
  if(k.tache)R(ex-3,ey+2,7,1,k.tacheC||k.hair);
  if(k.beard){R(hx,hy+hd-5,2,4,k.hair);R(hx+hw-2,hy+hd-5,2,4,k.hair);R(hx+2,hy+hd-2,hw-4,2,k.hair)}

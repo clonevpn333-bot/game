@@ -249,7 +249,7 @@ function remove(id){const a=A[id];if(!a)return Promise.resolve();if(a.dead||!a.v
  a.pose=null;a.hold=a.hold;return walk(id,a.x<160?-16:336,90).then(()=>{if(A[id]===a)delete A[id]})}
 function arrive(id){return new Promise(r=>{const chk=()=>{const a=A[id];if(!a||a.tx==null)r();else timers.push({t:.03,r:chk})};chk()})}
 function settle(cap){let left=cap||3.5;return new Promise(r=>{const chk=()=>{left-=.03;if(left<=0||!Object.values(A).some(a=>a.tx!=null&&a.x>-10&&a.x<330))r();else timers.push({t:.03,r:chk})};chk()})}
-function walk(id,x,sp){const a=A[id];if(!a)return Promise.resolve();return new Promise(r=>{a.tx=Math.round(x);a.wsp=sp||a.sp;a.res=r;a.pose=a.pose==='sit'?null:a.pose;a.sit=false})}
+function walk(id,x,sp){const a=A[id];if(!a)return Promise.resolve();if(a.res){const old=a.res;a.res=null;old()}return new Promise(r=>{a.tx=Math.round(x);a.wsp=sp||a.sp;a.res=r;a.pose=a.pose==='sit'?null:a.pose;a.sit=false})}
 const walks=(...ws)=>Promise.all(ws.map(w=>walk(...w)));
 function face(id,d){if(A[id])A[id].dir=typeof d==='string'?(A[d]&&A[d].x<A[id].x?-1:1):d}
 function pose(id,p,ms){const a=A[id];if(!a)return Promise.resolve();a.pose=p;if(ms)return wait(ms).then(()=>{if(a.pose===p)a.pose=null});return Promise.resolve()}
