@@ -51,7 +51,7 @@ hook({mis:'armoury',period:[2,4,5],room:'toilets',who:'tez',label:'Buy a weapon 
 mission('register',{name:'Register',icon:'👻',who:['ollie','aidan'],hidden:1,lockText:'There’s a Year 7 in the library during lessons. Nobody else looks at him.',
  blurb:'Ollie Finch is in Year 7. His uniform is from 1987. He’s always in the library. Nobody else ever looks at him.',
  parts:['Period 1: the boy in the library','Later: give him back what he lost'],
- tips:['Bunk Period 1 in the library.','Find the overdue book (it’s a collectible in the library), then come back in Period 2 or 3.']});
+ tips:['Bunk Period 1 in the library.','Find the overdue book (it’s a collectible in the library), then come back in Period 3 or 7.']});
 
 hook({mis:'register',period:1,room:'library',who:'ollie',label:'Ask the Year 7 if he’s lost',cond:()=>!D.f.ollie1,run:async()=>{
  scene('library',{ollie:[250,-1,{y:146}],kid3:[150,1,{pose:'sit',y:150}],you:[220,1,{y:154}]});
@@ -113,6 +113,7 @@ hook({mis:'opps',period:8,room:'carpark',who:'kayden',label:'Ride out with Kayde
  if(!D.dead.arjun)put('arjun',160,1,{pose:'sit',y:104});
  cue('arcade');
  await say('kayden','There they are. The opps. Year Nine. Look at them. Laughing. Existing.','angry');
+ prop({t:'scooter',follow:'kayden',x:0,y:0,layer:.5});prop({t:'scooter',follow:'you',x:0,y:0,layer:.5});hold('kayden','soaker');hold('you','soaker');
  await say('kayden','We roll up on the scooters, we spray, we get out. Nobody gets hurt. Everybody gets moist.','smirk');
  await Promise.all([walk('kayden',190,140),walk('you',176,140)]);
  pose('you','hold');pose('kayden','hold');
@@ -221,7 +222,7 @@ mission('smallhours',{name:'Small Hours',icon:'🎸',who:['corey','abby'],
  blurb:'Abby busks in the food court on Fridays. Corey has a medicine ball-shaped bruise and a tissue up each nostril. She wants him to sing.',
  parts:['After school: the food court'],tips:['Finish “Corey Gets It” with the kiss, then find Abby in the food court.']});
 hook({mis:'smallhours',period:8,room:'foodcourt',who:'abby',label:'Listen to Abby play',cond:()=>D.done.corey==='kiss'&&!D.dead.corey,run:async()=>{
- scene('foodcourt',{abby:[250,-1,{y:150,pose:'sit'}],corey:[220,1,{y:150,hurt:2}],you:[190,1,{y:156}]});
+ scene('foodcourt',{abby:[196,-1,{y:138,pose:'sit',hold:'guitar'}],corey:[170,1,{y:150,hurt:2}],you:[146,1,{y:156}]});
  cue('romance');
  await N('Abby sits on the edge of the fountain with a guitar case open in front of her. Somebody has put in a bus ticket and a single Skittle.');
  await say('abby','This one’s called “Small Hours”. It’s about being awake when nobody else is.','happy');
@@ -234,7 +235,7 @@ hook({mis:'smallhours',period:8,room:'foodcourt',who:'abby',label:'Listen to Abb
  await say('corey','I’m bad at this. I hate it. I want to keep being bad at it. With you.','blush');
  await say('abby','That’s the first thing you’ve said all day that wasn’t trying to be cool.','love');
  await say('abby','It was cooler than all the other stuff.','love');
- pose('abby','kiss');pose('corey','kiss');SFX.kiss();prop({t:'heart',x:236,y:120});
+ hold('abby',null);A.abby.pose=null;await tw(A.abby,{y:150},250);pose('abby','kiss');pose('corey','kiss');await tw(A.abby,{x:180},300);SFX.kiss();prop({t:'heart',x:176,y:120});
  await complete('smallhours');
 }});
 

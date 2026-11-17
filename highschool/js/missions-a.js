@@ -8,7 +8,7 @@ const seatOf=(row,i)=>({x:SEATS[row][i],y:row==='back'?SEATS.backY:SEATS.frontY}
 function sitAt(id,row,i,dir){const s=seatOf(row,i);const a=A[id]||put(id,s.x,dir||1);a.x=s.x;a.y=s.y;a.pose='sit';a.dir=dir||1;return a}
 async function standTo(id,x,y,sp){const a=A[id];if(!a)return;a.pose=null;if(y!=null)await tw(a,{y},160);if(x!=null)await walk(id,x,sp)}
 async function hit(a,b,o){o=o||{};const p=A[a],q=A[b];if(!p||!q)return;face(a,b);p.pose=o.pose||'punch';p.punchT=T+.25;(o.sfx||SFX.punch)();shake(o.shake||.45);q.hurt=Math.min(3,(q.hurt||0)+(o.dmg==null?1:o.dmg));if(!q.dead)q.ex=o.ex||'hurt';const d=Math.sign(q.x-p.x)||1;blood(q.x,q.y-22,o.blood==null?8:o.blood,d,70,q.y+2);if(o.push!==0)tw(q,{x:q.x+d*(o.push||5)},110);await wait(o.ms||300)}
-function kill(id,type,o){const a=A[id];if(!a)return;o=o||{};a.dead=type||'lie';a.pose='lie';a.pool=0;a.poolMax=o.pool||26;a.bleed=o.bleed==null?2:o.bleed;a.talk=false;if(id!=='you')D.dead[id]=1;P.stats.kills++;SFX.squelch();shake(.8);flash('#a00010',.35);blood(a.x,a.y-14,o.spray||26,null,90,a.y+2)}
+function kill(id,type,o){const a=A[id];if(!a)return;o=o||{};if(id!=='you'&&D){(D.bodies=D.bodies||[]).push({room:ROOM,id,x:Math.round(a.x),y:a.y,dir:a.dir,type:type||'lie',pool:o.pool||26,period:D.period})}a.dead=type||'lie';a.pose='lie';a.pool=0;a.poolMax=o.pool||26;a.bleed=o.bleed==null?2:o.bleed;a.talk=false;if(id!=='you')D.dead[id]=1;P.stats.kills++;SFX.squelch();shake(.8);flash('#a00010',.35);blood(a.x,a.y-14,o.spray||26,null,90,a.y+2)}
 async function behead(id,dir){const a=A[id];if(!a)return;const d=dir||1;const h=prop({t:'head',id,x:a.x,y:a.y-26,rot:0});kill(id,'head',{spray:40});blood(a.x,a.y-22,30,d,110,a.y+2);await Promise.all([tw(h,{x:a.x+d*40},700,'out'),tw(h,{y:a.y-46},350,'out').then(()=>tw(h,{y:a.y-2},350,'in')),tw(h,{rot:d*6},700)]);SFX.thud();splat(h.x,a.y+1,6)}
 async function evil(id,music){ex(id,'evil');SFX.sting();cue(music||'evil');fxState.red=1;shake(.35);await wait(250)}
 async function sweet(id,music){ex(id,'happy');SFX.sweet();fxState.red=0;cue(music||'class');await wait(200)}
@@ -241,13 +241,13 @@ hook({mis:'bully',period:4,room:'corridor',who:'auto',cond:()=>D.f.fight,run:asy
    ================================================================= */
 mission('seat',{name:'Seat Wars',icon:'🪑',who:['corey','arjun','alex','dheva','marcus'],
  blurb:'Ms. Shermian loves a seating plan. She loves splitting up friends. Her mood flips faster than her ruler.',
- parts:['Period 2: survive Ms. Shermian’s seating plan','Lunch: steal and rewrite the plan','Period 3: get all five sat together'],
- tips:['Period 2, Maths. Watch her mood.','Lunch, maths room. She’s on canteen duty; the plan lives in her desk drawer. Pick your lookout carefully.','Period 3, Maths. Keep her sweet. Arjun’s mouth needs shutting — Angelo sells tape.'],
+ parts:['Period 3: survive Ms. Shermian’s seating plan','Lunch: steal and rewrite the plan','Period 7: get all five sat together'],
+ tips:['Period 3, Maths. Watch her mood.','Lunch, maths room. She’s on canteen duty; the plan lives in her desk drawer. Pick your lookout carefully.','Period 7, Maths. Keep her sweet. Arjun’s mouth needs shutting — Angelo sells tape.'],
  variants:{perfect:'All five together',minus:'Together, minus one'}});
 
 hook({mis:'seat',period:3,room:'maths',who:'auto',run:async()=>{
  scene('maths',{shermian:[44,1,{pose:'hips',y:146,hold:'clipboard'}],corey:[110,-1,{y:150}],arjun:[134,-1,{y:150,pose:'cross'}],alex:[158,-1,{y:150}],dheva:[182,-1,{y:150}],marcus:[206,-1,{y:150}],tyler:[230,-1,{y:150}],you:[254,-1,{y:150}]});
- await N('Period 2. Maths. Ms. Shermian’s room is pink, warm, and smells like a candle called “Patience”.');
+ await N('Period 3. Maths. Ms. Shermian’s room is pink, warm, and smells like a candle called “Patience”.');
  await say('shermian','Good morning, my little angels! New seating plan! Isn’t that EXCITING?','happy');
  await say('marcus','I love it when she rearranges things. Gets everyone all worked up.','smirk');
  await say('shermian','Corey, sweetie — by the window.','happy');
@@ -429,8 +429,8 @@ hook({mis:'seat',period:6,room:'maths',who:'auto',cond:()=>D.f.seat2&&!D.dead.ar
    ================================================================= */
 mission('oldbat',{name:'The Old Bat',icon:'👵',who:['david','nivaan'],
  blurb:'Ms. Sherman has run this school for forty-one years like a prison she personally hates. Survive her. Then get her back.',
- parts:['Before school: earn a detention','Lunch: rewire her office with David','Period 3: detention'],
- tips:['Before school, bus loop. Talk back to her.','Lunch, library. David knows wires. She’s on corridor duty.','Period 3, her office. Stand on the rug.']});
+ parts:['Before school: earn a detention','Lunch: rewire her office with David','Period 7: detention'],
+ tips:['Before school, bus loop. Talk back to her.','Lunch, library. David knows wires. She’s on corridor duty.','Period 7, her office. Stand on the rug.']});
 
 hook({mis:'oldbat',period:0,room:'bus',who:'sherman',label:'Talk back to Ms. Sherman',cond:()=>!D.f.detention,run:async()=>{
  scene('bus',{sherman:[230,-1,{pose:'hips',y:150}],nivaan:[150,1,{pose:'film',y:146}],david:[180,1,{y:144}],you:[205,1,{y:154}]});
@@ -523,13 +523,13 @@ hook({mis:'oldbat',period:6,room:'office',who:'auto',cond:()=>D.f.detention,run:
    ================================================================= */
 mission('loach',{name:'Any Reaction',icon:'☕',who:['paul','kenneth','jacob','angelo','abby','hasan'],
  blurb:'Ms. Loach doesn’t care what you do. So the class decides to do the worst thing possible, just to see what she does.',
- parts:['Period 2: escalate','Period 3: the worst thing possible'],
- tips:['Period 2, Science. Go big.','Period 3, Science. You know what she cares about. Hasan doesn’t.'],
+ parts:['Period 3: escalate','Period 7: the worst thing possible'],
+ tips:['Period 3, Science. Go big.','Period 7, Science. You know what she cares about. Hasan doesn’t.'],
  variants:{hasan:'Hasan drinks the tea'}});
 
 hook({mis:'loach',period:3,room:'science',who:'auto',run:async()=>{
  scene('science',{loach:[66,1,{pose:'sit',y:132}],paul:[150,-1,{y:146}],kenneth:[176,-1,{y:146}],jacob:[204,-1,{y:150}],angelo:[232,-1,{y:146}],abby:[262,-1,{y:150}],you:[290,-1,{y:154}]});
- await N('Period 2. Science. Ms. Loach is marking. She has been marking since 2009.');
+ await N('Period 3. Science. Ms. Loach is marking. She has been marking since 2009.');
  await say('loach','Page forty-seven.');
  await say('paul','Bet I can make her react. Kenneth. Kenneth, come here.','smirk');
  await say('kenneth','No.');
@@ -569,7 +569,7 @@ hook({mis:'loach',period:6,room:'science',who:'auto',cond:()=>D.f.loach1,run:asy
  const cast={loach:[66,1,{pose:'sit',y:132}],you:[290,-1,{y:154}]};
  if(!D.dead.hasan)cast.hasan=[150,-1,{y:146}];if(!D.dead.abby)cast.abby=[190,-1,{y:150}];if(!D.dead.sean)cast.sean=[226,-1,{y:146}];if(!D.dead.stella)cast.stella=[256,-1,{y:150}];
  scene('science',cast);
- await N('Period 3. Science. Same room. The window is still broken from this morning. Ms. Loach has not noticed.');
+ await N('Period 7. Science. Same room. The window is still broken from this morning. Ms. Loach has not noticed.');
  await say('loach','Page forty-seven.');
  const o=[{t:'Get Hasan to drink from her mug.',dis:!A.hasan,why:'Hasan isn’t here'},{t:'Drink from her mug yourself.'},{t:'Flood the room from every tap.'}];
  const c=await choose(o,'The worst thing possible.');
@@ -612,12 +612,12 @@ hook({mis:'loach',period:6,room:'science',who:'auto',cond:()=>D.f.loach1,run:asy
 }});
 
 /* =================================================================
-   GROUP PROJECT — the whole friend group, Ms. Balduf, Period 2
+   GROUP PROJECT — the whole friend group, Ms. Balduf, Period 3
    ================================================================= */
 mission('group',{name:'Group Project',icon:'📽️',who:['hasan','david','nivaan','omer','sean','stella','aidan'],
  blurb:'Ms. Balduf wants a presentation on “What Friendship Means”. Everybody has to do something. Everybody has to do the RIGHT something.',
  parts:['Give everyone a job','Present it before Ms. Balduf snaps'],
- tips:['Period 2, English. Who’s good at what? You’ve met them all.',''],
+ tips:['Period 3, English. Who’s good at what? You’ve met them all.',''],
  variants:{aidan:'With Aidan',without:'Without Aidan'}});
 
 hook({mis:'group',period:3,room:'english',who:'auto',run:async()=>{
@@ -625,7 +625,7 @@ hook({mis:'group',period:3,room:'english',who:'auto',run:async()=>{
  const cast={balduf:[40,1,{pose:'hips',y:146}],you:[seatOf('front',2).x,1,{pose:'sit',y:SEATS.frontY}]};
  ppl.forEach((n,i)=>{const row=i<5?'back':'front',ii=i<5?i:[0,4][i-5];cast[n]=[seatOf(row,ii).x,1,{pose:'sit',y:seatOf(row,ii).y}]});
  scene('english',cast);
- await N('Period 2. English. Ms. Balduf has pushed the desks together. That’s never good.');
+ await N('Period 3. English. Ms. Balduf has pushed the desks together. That’s never good.');
  await say('balduf','Group project, darlings! “What Friendship Means.” You present in twenty minutes.','happy');
  await say('balduf','If it is bad… I’ll know.','evil');fxState.red=1;SFX.sting();await wait(300);fxState.red=0;ex('balduf','happy');
  if(A.hasan)await say('hasan',(D.mp.bully?'(waving a bandaged hand) ':'')+'Right. Jobs. Who does what. Don’t give me anything with my hands.');

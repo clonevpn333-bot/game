@@ -124,7 +124,7 @@ function drawHead(k,x,hy,d,o){
 /* ---------- full body ---------- */
 function drawKid(k,x,y,o){
  o=o||{};x=Math.round(x);y=Math.round(y);
- const d=o.dir||1,p=o.pose,G=kidGeom(k,o),{legH,bodyH,bw}=G,top=k.top,sk=k.skin;
+ const d=o.dir||1,p=o.pose,G=kidGeom(k,o),{legH,bodyH,bw}=G,top=o.topC||k.top,sk=k.skin;
  if(o.shake)x+=Math.round(Math.sin(T*38));
  const mv=o.moving,ph=o.walk||0,st=mv?Math.sin(ph):0,ct=mv?Math.cos(ph):0;
  const bob=o.still||p==='sit'||p==='write'?0:mv?(Math.abs(st)>.6?1:0):(Math.sin(T*2.2+k.seed)>.6?1:0);
@@ -189,6 +189,13 @@ function drawKid(k,x,y,o){
   case'headbutt':R(bs-d*2,by+2,2,6,sl);R(fs-d*2,by+2,2,6,sl);R(bs-d*2,by+8,2,2,sk);hx=-99;break;
   case'kick':R(bx-4,by+2,4,2,sl);R(bx+bw,by+2,4,2,sl);hx=-99;break;
   case'reach':back();R(d>0?bx+bw:bx-4,by-1,4,3,sl);R(d>0?bx+bw+2:bx-5,by-6,3,6,sl);R(d>0?bx+bw+2:bx-5,by-9,3,3,sk);hx=d>0?bx+bw+2:bx-5;hy=by-9;break;
+  case'zombie':R(d>0?bx+bw:bx-8,by+2,8,2,sl);R(d>0?bx+bw+8:bx-10,by+1,2,3,sk);R(d>0?bx+bw-3:bx-5,by+4,8,2,sl);R(d>0?bx+bw+5:bx-7,by+3,2,3,sk);hx=-99;break;
+  case'conduct':{back();const w=Math.sin(T*8);R(fs,by-3,2,6,sl);R(fs+d*Math.round(w*2),by-6,2,3,sk);R(fs+d*(Math.round(w*2)+1),by-14,1,9,'#f4f0e6');hx=-99;break}
+  case'paint':{back();const w=Math.sin(T*6)*2|0;R(d>0?bx+bw:bx-6,by+1+w,6,2,sl);R(d>0?bx+bw+6:bx-8,by+w,2,3,sk);R(d>0?bx+bw+7:bx-10,by-2+w,1,4,'#8a6a3a');R(d>0?bx+bw+7:bx-10,by-3+w,1,1,'#e04060');hx=-99;break}
+  case'type':{const a1=Math.sin(T*16)>0?1:0;R(d>0?bx+bw-2:bx-4,by+5-a1,6,2,sl);R(d>0?bx+bw+3:bx-5,by+5-a1,2,2,sk);R(d>0?bx+bw-6:bx,by+6-(1-a1),6,2,sl);R(d>0?bx+bw-1:bx-1,by+6-(1-a1),2,2,sk);hx=-99;break}
+  case'swim':{const a1=Math.sin(T*5);R(bx-2,by-6+Math.round(a1*3),2,8,sl);R(bx-2,by-8+Math.round(a1*3),2,2,sk);R(bx+bw,by-6-Math.round(a1*3),2,8,sl);R(bx+bw,by-8-Math.round(a1*3),2,2,sk);hx=-99;break}
+  case'saw':{const a1=Math.sin(T*10)*2|0;R(d>0?bx+bw-2+a1:bx-6+a1,by+4,8,2,sl);R(d>0?bx+bw+6+a1:bx-8+a1,by+3,2,3,sk);back();hx=d>0?bx+bw+7+a1:bx-8+a1;hy=by+3;break}
+  case'sing':R(bx-1,by+3,bw+2,2,sl);R(x-1+lean,by+3,3,3,sk);R(bx-2,by+1,2,3,top);R(bx+bw,by+1,2,3,top);hx=-99;break;
   case'kneel':R(bx-2,by+1,2,6,sl);R(bx-2,by+7,2,2,sk);R(fs,by+2,2,4,sl);R(fs+d*2,by+5,2,2,sk);hx=fs+d*2;hy=by+5;break;
   default:
    if(run){const s2=Math.round(st*3);R(bx-2+s2,by+1,2,4,top);R(bx-2+s2+d,by+5,2,2,sl);R(bx-2+s2+d,by+6,2,2,sk);R(bx+bw-s2,by+1,2,4,top);R(bx+bw-s2+d,by+5,2,2,sl);R(bx+bw-s2+d,by+6,2,2,sk);hx=-99;break}
@@ -231,6 +238,13 @@ function drawHeld(it,x,y,d){
   case'phone':R(x-1,y-3,3,5,'#262938');R(x,y-2,1,3,'#bfe8ff');break;
   case'flower':R(x,y-6,1,6,'#3a8a3a');R(x-1,y-8,3,2,'#9a4ae0');R(x,y-9,1,1,'#c88aff');break;
   case'guitarpick':R(x-1,y-1,3,2,'#e05a3a');break;
+  case'guitar':R(x-7,y-1,10,6,'#8a4a2a');R(x-6,y,8,4,'#a8603a');R(x-3,y+1,3,2,'#2a1a10');R(x+3,y-3,9,2,'#5a3a20');R(x+11,y-4,2,3,'#3a2a1a');break;
+  case'football':R(x-2,y-2,5,5,'#f4f4f0');R(x,y-1,1,1,'#1a1a1a');R(x-2,y+1,1,1,'#1a1a1a');R(x+2,y+1,1,1,'#1a1a1a');break;
+  case'brush':R(x,y-6,1,7,'#8a6a3a');R(x,y-7,1,1,'#e04060');break;
+  case'baton':R(x,y-9,1,9,'#f4f0e6');break;
+  case'plank':R(x-10,y-1,22,3,'#c8985a');R(x-10,y-1,22,1,'#e8b878');break;
+  case'watch':{const sw=Math.sin(T*3)*5;R(x,y,1,6,'#c8b040');R(x+Math.round(sw)-1,y+6,4,4,'#e8d060');R(x+Math.round(sw),y+7,2,2,'#fff8c0');break}
+  case'laptop':R(x-4,y-1,8,2,'#3a3a44');R(x-4,y-6,8,5,'#2a2a34');R(x-3,y-5,6,3,'#7ab0e0');break;
   case'clipboard':R(x-3,y-4,6,8,'#a8784a');R(x-2,y-3,4,6,'#f4f0e6');R(x-1,y-5,2,1,'#888');break;
  }
 }
@@ -252,7 +266,7 @@ function drawActor(a){
   g.globalAlpha=1;return;
  }
  if(!a.sitHigh&&a.pose!=='sit'&&a.pose!=='write'){const zz=a.z||0,sw_=Math.max(4,12-zz*.4);g.globalAlpha=Math.min(g.globalAlpha,.22);R(a.x-sw_/2,a.y,sw_,2,'#000');g.globalAlpha=k.ghost?Math.min(1,.62+Math.sin(T*3+a.x)*.12):(a.alpha<1?Math.max(0,a.alpha):1)}
- drawKid(k,a.x,y,{fast:a.fast,messy,dir:a.dir,moving:a.moving,walk:a.walk,pose:a.air&&!a.pose?'up':a.pose,ex:a.ex||a._ex||(a.air?'shock':null),talk:a.talk,hold:a.hold,hurt:a.hurt,bloody:a.bloody,shake:a.shake,punchT:a.punchT,still:a.still,hairC:a.hairC,hs:a.hs||(a.id==='dheva'&&(typeof D!=="undefined"&&D)&&D.f&&!D.f.dhevaFixed?'limp':null)});
+ drawKid(k,a.x,y,{fast:a.fast,messy,dir:a.dir,moving:a.moving,walk:a.walk,pose:a.air&&!a.pose?'up':a.pose,ex:a.ex||a._ex||(a.air?'shock':null),talk:a.talk,hold:a.hold,hurt:a.hurt,bloody:a.bloody,shake:a.shake,punchT:a.punchT,still:a.still,hairC:a.hairC,topC:a.topC,hs:a.hs||(a.id==='dheva'&&(typeof D!=="undefined"&&D)&&D.f&&!D.f.dhevaFixed?'limp':null)});
 
  g.globalAlpha=1;
 }

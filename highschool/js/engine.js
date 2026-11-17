@@ -154,6 +154,7 @@ function lineHash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeA
 function setPanel(m){panelMode=m;$('panel').dataset.mode=m;$('pbody').style.display=m==='talk'?'flex':'none';$('roam').classList.toggle('on',m==='roam')}
 function nameOf(who){const k=(typeof K!=="undefined")&&K[who];return k?k.n:who}
 function say(who,text,ex){
+ if(!TEST&&!say._w){const a=who?A[who]:null;if((a&&a.tx!=null)||(!who&&Object.values(A).some(b=>b.tx!=null&&b.x>-10&&b.x<330)))return(who?arrive(who):settle()).then(()=>{say._w=1;const p=say(who,text,ex);say._w=0;return p})}
  if(ex&&A[who])A[who].ex=ex;
  const k=(typeof K!=="undefined")&&K[who],name=who?nameOf(who):'',h=lineHash(name+'|'+text),seen=SEEN.has(h);
  BACKLOG.push({n:name,t:text,c:k?k.col:'#6b4a7a'});if(BACKLOG.length>400)BACKLOG.shift();
@@ -176,6 +177,7 @@ function advance(){
  const r=DL.res;if(A[DL.who])A[DL.who].talk=false;DL=null;speaker=null;SFX.click();r();
 }
 function choose(opts,prompt){
+ if(!TEST&&!choose._w&&Object.values(A).some(b=>b.tx!=null&&b.x>-10&&b.x<330))return settle().then(()=>{choose._w=1;const p=choose(opts,prompt);choose._w=0;return p});
  opts=opts.map(o=>typeof o==='string'?{t:o}:o);
  if(TEST){const i=TEST.pick?TEST.pick(opts,prompt):-1;const ok=opts.map((o,i)=>o.dis?-1:i).filter(i=>i>=0);const r=i>=0&&!opts[i].dis?i:pick(ok);BACKLOG.push({n:'',t:'→ '+opts[r].t,c:'#333'});return Promise.resolve(r)}
  setSkip(false);setPanel('talk');
@@ -219,9 +221,34 @@ function lighten(c){try{const n=parseInt(c.slice(1),16),r=n>>16,gg=n>>8&255,b=n&
 const A={};
 let ROOM='bus',decals=[],parts=[],props=[],fxState={shake:0,flash:0,flashC:'#fff',tint:null,tintA:0,bars:0,dark:0,red:0,romance:0},crowd=null;
 function clearStage(){for(const k in A)delete A[k];decals=[];parts=[];props=[];crowd=null;fxState.tint=null;fxState.tintA=0;fxState.red=0;fxState.romance=0;fxState.dark=0}
-function scene(room,cast){clearStage();ROOM=room;if(cast)for(const id in cast){const c=cast[id];if(Array.isArray(c))put(id,c[0],c[1],c[2]);else put(id,c.x,c.dir,c)}if((typeof ROOMS!=="undefined")&&ROOMS[room]&&!scene.keepMusic)cue(ROOMS[room].music)}
+/* A scene in the room you're already in carries on from what's on screen:
+   people who are here stay here (or walk to their marks), newcomers walk in from the nearest edge,
+   and nobody blinks out of existence. A different room (or fresh=true) starts clean. */
+function scene(room,cast,fresh){
+ const merge=!fresh&&room===ROOM&&Object.keys(A).length>0;
+ if(!merge){clearStage();ROOM=room;if(cast)for(const id in cast){const c=cast[id];if(Array.isArray(c))put(id,c[0],c[1],c[2]);else put(id,c.x,c.dir,c)}if((typeof ROOMS!=="undefined")&&ROOMS[room]&&!scene.keepMusic)cue(ROOMS[room].music);return}
+ if(!cast)return;
+ for(const id in cast){
+  const c=cast[id],arr=Array.isArray(c),x=arr?c[0]:c.x,dir=arr?c[1]:c.dir,o=Object.assign({},arr?c[2]:c);delete o.x;delete o.dir;
+  const a=A[id],still=o.pose==='sit'||o.pose==='lie'||o.pose==='kneel';
+  if(a&&a.vis&&!a.dead){
+   const ty=o.y;delete o.y;Object.assign(a,o);if(!('pose' in o)&&a.pose==='sit')a.pose=null;
+   const far=Math.abs(a.x-x)>2;
+   if(still||!far){a.x=x;if(ty!=null)a.y=ty;if(dir)a.dir=dir}
+   else{const p=o.pose||null;a.pose=null;if(ty!=null)tw(a,{y:ty},Math.max(160,Math.abs(a.x-x)/85*1000));walk(id,x,85).then(()=>{if(!A[id])return;if(dir)A[id].dir=dir;A[id].pose=p})}
+  }else if(!a){
+   const onStage=still||id==='you'||(o.y!=null&&o.y<132)||o.vis===false;
+   if(onStage)put(id,x,dir,o);
+   else{const p=o.pose||null;put(id,x<160?-14:334,dir,Object.assign(o,{pose:null}));walk(id,x,85).then(()=>{if(!A[id])return;if(dir)A[id].dir=dir;A[id].pose=p})}
+  }else put(id,x,dir,o);
+ }
+}
 function put(id,x,dir,o){A[id]=Object.assign({id,k:K[id],x,y:150,z:0,dir:dir||1,pose:null,ex:null,vis:true,walk:0,moving:false,tx:null,sp:46,sit:false,dead:null,talk:false,hold:null,hurt:0,shake:0,rot:0,alpha:1,bleed:0,punchT:0},o||{});if(A[id].x==null)A[id].x=160;return A[id]}
-function remove(id){delete A[id]}
+/* leaving is walking off, never vanishing */
+function remove(id){const a=A[id];if(!a)return Promise.resolve();if(a.dead||!a.vis||a.x<-6||a.x>326||id==='you'){delete A[id];return Promise.resolve()}
+ a.pose=null;a.hold=a.hold;return walk(id,a.x<160?-16:336,90).then(()=>{if(A[id]===a)delete A[id]})}
+function arrive(id){return new Promise(r=>{const chk=()=>{const a=A[id];if(!a||a.tx==null)r();else timers.push({t:.03,r:chk})};chk()})}
+function settle(cap){let left=cap||3.5;return new Promise(r=>{const chk=()=>{left-=.03;if(left<=0||!Object.values(A).some(a=>a.tx!=null&&a.x>-10&&a.x<330))r();else timers.push({t:.03,r:chk})};chk()})}
 function walk(id,x,sp){const a=A[id];if(!a)return Promise.resolve();return new Promise(r=>{a.tx=Math.round(x);a.wsp=sp||a.sp;a.res=r;a.pose=a.pose==='sit'?null:a.pose;a.sit=false})}
 const walks=(...ws)=>Promise.all(ws.map(w=>walk(...w)));
 function face(id,d){if(A[id])A[id].dir=typeof d==='string'?(A[d]&&A[d].x<A[id].x?-1:1):d}

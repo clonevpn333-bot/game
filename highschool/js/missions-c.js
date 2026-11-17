@@ -9,7 +9,7 @@
    ================================================================= */
 mission('alex',{name:'Hat-Trick',icon:'⚽',who:['alex','jacob','omer'],
  blurb:'Alex needs a hat-trick or he’s retiring from football. Jacob is in goal. Jacob does not like being scored on.',
- parts:['PE: three goals past Jacob'],tips:['PE, on the field. Nobody’s supervising. Cross it to Alex.']});
+ parts:['Period 5 (PE): three goals past Jacob'],tips:['Period 5 (PE), on the field. Nobody’s supervising. Cross it to Alex.']});
 
 hook({mis:'alex',period:5,room:'field',who:'alex',label:'Help Alex get his hat-trick',run:async()=>{
  scene('field',{alex:[150,1,{y:146,hold:'ball'}],jacob:[262,-1,{y:140}],omer:[200,1,{y:150,pose:'cross'}],nivaan:[60,1,{y:150,pose:'film'}],aidan:[300,-1,{y:132}],you:[110,1,{y:154}]});
@@ -329,7 +329,7 @@ hook({mis:'calling',period:7,room:'bus',who:'aidan',label:'Ask Aidan about Frida
 async function ending(id){
  const e=ENDINGS[id];P.endings[id]=(P.endings[id]||0)+1;P.done.calling=P.done.calling||1;P.parts.calling=2;P.cur=null;save();
  if(id==='monday'){
-  scene('bus',{hasan:[60,1,{y:146}],arjun:[84,1,{y:144,pose:'cross'}],omer:[108,1,{y:150}],david:[132,1,{y:144}],nivaan:[150,1,{y:148,pose:'film'}],corey:[170,1,{y:146}],abby:[188,-1,{y:146}],sean:[206,1,{y:146}],stella:[222,-1,{y:148}],aidan:[246,-1,{y:144}],you:[270,-1,{y:154}]});
+  scene('bus',{hasan:[60,1,{y:146}],arjun:[84,1,{y:144,pose:'cross'}],omer:[108,1,{y:150}],david:[132,1,{y:144}],nivaan:[150,1,{y:148,pose:'film'}],corey:[170,1,{y:146}],abby:[188,-1,{y:146}],sean:[206,1,{y:146}],stella:[222,-1,{y:148}],aidan:[246,-1,{y:144}],you:[270,-1,{y:154}]},true);
   fxState.dark=1;await tw(fxState,{dark:0},1200);
   await card('MONDAY','8:25 AM',2200);
   await say('hasan','It’s… Monday? It feels like it hasn’t been Monday in about a year.','shock');

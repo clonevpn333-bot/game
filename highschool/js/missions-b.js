@@ -145,8 +145,8 @@ hook({mis:'instella',period:4,room:'field',who:'sean',label:'Give Sean the ball'
    ================================================================= */
 mission('corey',{name:'Corey Gets It',icon:'🏐',who:['corey','abby','kenneth'],
  blurb:'Corey has looked at Abby every day since Year 8. Today she’s in his PE group. Today, one way or another, Corey gets it.',
- parts:['Break: the canteen queue','Lunch: get Kenneth to swap PE partners','PE: medicine-ball dodgeball'],
- tips:['Break, canteen. Corey’s in the queue behind her.','Lunch, sports hall. Kenneth will swap for a buzzer-beater.','PE, sports hall. When the ball comes, put Corey in front of it.'],
+ parts:['Break: the canteen queue','Lunch: get Kenneth to swap PE partners','Period 5 (PE): medicine-ball dodgeball'],
+ tips:['Break, canteen. Corey’s in the queue behind her.','Lunch, sports hall. Kenneth will swap for a buzzer-beater.','Period 5 (PE), sports hall. When the ball comes, put Corey in front of it.'],
  variants:{kiss:'He gets the girl',ball:'He gets the ball'}});
 
 hook({mis:'corey',period:2,room:'canteen',who:'corey',label:'Get Corey to talk to Abby',cond:()=>!D.f.corey1,run:async()=>{
@@ -280,8 +280,8 @@ hook({mis:'corey',period:5,room:'gym',who:'auto',cond:()=>D.f.corey1&&!D.dead.co
    ================================================================= */
 mission('beep',{name:'The Beep Test',icon:'📢',who:['alex','paul','kenneth','jacob'],
  blurb:'Coach Dunmore keeps a list. Anyone who drops out of the beep test gets cut. Not from the team.',
- parts:['Break: find out about the cut list','Period 3: the beep test'],
- tips:['Break, sports hall. Alex looks like he hasn’t slept.','Period 3, sports hall. If you rigged it, let Coach show you how it’s done. Energy drinks help.'],
+ parts:['Break: find out about the cut list','Period 7: the beep test'],
+ tips:['Break, sports hall. Alex looks like he hasn’t slept.','Period 7, sports hall. If you rigged it, let Coach show you how it’s done. Energy drinks help.'],
  variants:{coach:'Coach demonstrates',survive:'You survived it'}});
 
 hook({mis:'beep',period:2,room:'gym',who:'alex',label:'Ask Alex what’s wrong',cond:()=>!D.f.beep1,run:async()=>{
@@ -369,8 +369,8 @@ hook({mis:'beep',period:6,room:'gym',who:'auto',run:async()=>{
    ================================================================= */
 mission('voss',{name:'The Back Fridge',icon:'🧪',who:['corey','david','nivaan','dheva'],
  blurb:'Mr. Voss makes Corey’s curl cream. He says it’s collagen. He says it’s from “volunteers”. He has a fridge nobody’s allowed to open.',
- parts:['Lunch: get the key off Mr. Voss','Period 3: open the back fridge'],
- tips:['Lunch, chem lab. Corey’s buying something.','Period 3, chem lab. You’ll need something to throw in his eyes. Dheva never leaves home without his powder.']});
+ parts:['Lunch: get the key off Mr. Voss','Period 7: open the back fridge'],
+ tips:['Lunch, chem lab. Corey’s buying something.','Period 7, chem lab. You’ll need something to throw in his eyes. Dheva never leaves home without his powder.']});
 
 hook({mis:'voss',period:4,room:'chem',who:'corey',label:'Ask Corey what he’s doing in here',cond:()=>!has('key'),run:async()=>{
  scene('chem',{voss:[180,-1,{pose:'hips',y:142}],corey:[120,1,{y:148,hold:'powder'}],you:[90,1,{y:154}]});

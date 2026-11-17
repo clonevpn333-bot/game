@@ -135,7 +135,7 @@ hook({mis:'catfish',period:4,room:'corridor',who:'nivaan',label:'Ask Nivaan to l
 }});
 
 hook({mis:'catfish',period:8,room:'arcade',who:'kenneth',label:'Wait for Jess with Kenneth',cond:()=>D.f.jess1&&!D.dead.kenneth,run:async()=>{
- scene('arcade',{kenneth:[236,1,{y:150}],jacob:[284,-1,{y:150}],you:[210,1,{y:156}]});
+ scene('arcade',{kenneth:[236,1,{y:150,topC:'#c8202c'}],jacob:[284,-1,{y:150}],you:[210,1,{y:156}]});
  await say('kenneth','(in a brand-new red hoodie, next to the claw machine) Do I look tall? Be honest. Lie.','scared');
  const c=await choose([{t:'Tell him the truth before she “arrives”.',dis:!D.f.jess2,why:'you don’t know anything yet'},{t:'Let it play out.'}]);
  if(c===0){

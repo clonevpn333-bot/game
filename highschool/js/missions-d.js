@@ -90,7 +90,7 @@ ROSTER[8]={foodcourt:[['omer',60,1,null,148],['omermum',82,-1,null,148],['hasan'
  arcade:[['sean',60,1,null,148],['stella',80,-1,null,148],['marcus',140,1,null,146],['paul',190,-1,null,146],['jacob',284,-1,null,150],['kenneth',300,-1,'dribble',154]],
  carpark:[['arjun',160,1,'sit',104],['kayden',60,1,null,150],['kid1',230,-1,null,148],['kid2',252,-1,null,150],['glen',300,-1,'cross',150]]};
 const _build=buildRoom;
-buildRoom=function(room){_build(room);if(D.period===8&&room==='foodcourt'&&D.done.headcase&&!A.adam)put('adam',300,-1,{y:150,pose:'sit',hold:'cookie'});if(D.period===8&&room==='foodcourt'&&!D.done.corey){remove('abby');}};
+buildRoom=function(room){_build(room);if(D.period===8&&room==='foodcourt'&&D.done.headcase&&!A.adam)put('adam',300,-1,{y:150,pose:'sit',hold:'cookie'});if(D.period===8&&room==='foodcourt'&&!D.done.corey){delete A.abby}};
 
 /* ---------- Mr. Adam: every period he's a bit further gone ---------- */
 const ADAM_PA=[
@@ -380,7 +380,7 @@ hook({mis:'bakeoff',period:1,room:'foodtech',who:'auto',run:async()=>{
    ================================================================= */
 mission('method',{name:'Method',icon:'🎭',who:['mia','kayden'],
  blurb:'Mr. Pratt doesn’t believe in fake blood, fake swords or fake deaths. He’s doing Macbeth. Everyone is going to remember it.',
- parts:['Period 2: survive Macbeth'],tips:['Period 2, Drama. The lighting rig is heavy. Mia can climb.'],variants:{rig:'Exit, pursued by a lighting rig',stab:'The critic'}});
+ parts:['Period 3: survive Macbeth'],tips:['Period 3, Drama. The lighting rig is heavy. Mia can climb.'],variants:{rig:'Exit, pursued by a lighting rig',stab:'The critic'}});
 hook({mis:'method',period:3,room:'drama',who:'auto',run:async()=>{
  scene('drama',{pratt:[160,1,{pose:'hips',y:150}],kid1:[200,-1,{y:104}],mia:[60,1,{y:150,pose:'cross'}],kayden:[90,1,{y:156}],kid3:[260,-1,{y:150}],you:[120,1,{y:158}]});
  cue('tension');

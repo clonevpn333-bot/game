@@ -6,10 +6,10 @@ const PERIODS=[
  {id:'bus',name:'Before School',time:'8:25',free:1,locs:['bus','corridor','toilets']},
  {id:'p1',name:'Period 1',time:'9:00',lesson:1,locs:['english','maths','science','library','toilets','corridor']},
  {id:'break',name:'Break',time:'10:20',free:1,locs:['corridor','canteen','field','gym','library','toilets']},
- {id:'p2',name:'Period 2',time:'10:40',lesson:1,locs:['english','maths','science','library','toilets']},
+ {id:'p2',name:'Period 3',time:'10:40',lesson:1,locs:['english','maths','science','library','toilets']},
  {id:'lunch',name:'Lunch',time:'12:20',free:1,locs:['canteen','corridor','field','gym','library','maths','chem','toilets']},
  {id:'pe',name:'PE',time:'13:20',lesson:1,locs:['gym','field','toilets']},
- {id:'p3',name:'Period 3',time:'14:20',lesson:1,locs:['maths','science','gym','chem','office','library','toilets']},
+ {id:'p3',name:'Period 7',time:'14:20',lesson:1,locs:['maths','science','gym','chem','office','library','toilets']},
  {id:'home',name:'Home Time',time:'15:15',free:1,locs:['bus']},
  {id:'mall',name:'After School',time:'15:50',free:1,mall:1,locs:['foodcourt','arcade','carpark']}
 ];
@@ -83,7 +83,7 @@ function bond(id,n){P.bond[id]=clamp((P.bond[id]||0)+(n||1),0,5);save()}
 let busy=false,roamTarget=null;
 function rosterFor(period,room){return(ROSTER[period]&&ROSTER[period][room])||[]}
 function buildRoom(room){
- scene(room);
+ scene(room,null,true);
  const per=D.period;
  const lesson=TEACH[per]&&TEACH[per][room];
  for(const [id,x,dir,ps,y] of rosterFor(per,room)){
@@ -96,8 +96,12 @@ function buildRoom(room){
  else for(const [id,x,dir,ps,y] of rosterFor(per,room))if(TEACHERS.includes(id)&&!A[id]&&!D.dead[id])put(id,x,dir,{pose:ps||null,y:y||146});
  if(A.aidan&&D.f.aidanDead){A.aidan.hurt=3;A.aidan.bloody=1;A.aidan.ex='evil';A.aidan.hs=null}
  if(A.dheva&&!D.f.dhevaFixed&&D.f.dheva1)A.dheva.hs='limp';
+ for(const b of(D.bodies||[]))if(b.room===room){if(b.period===D.period&&!A[b.id]){const a=put(b.id,b.x,b.dir,{y:b.y,pose:'lie',dead:b.type,pool:b.pool,poolMax:b.pool,hurt:3})}else if(b.period!==D.period){splat(b.x,b.y+1,7)}}
  put('you',D.x||30,1,{y:160,sp:62});
+ applyLooks();
 }
+/* whoever has something going on looks like it: the prompt always matches the picture */
+function applyLooks(){for(const id in A){if(id==='you'||A[id].dead)continue;const h=availableHooks(D.room,id).find(h=>h.look);if(h){const L=typeof h.look==='function'?h.look():h.look;Object.assign(A[id],L)}}if(typeof roomDressing==='function')roomDressing()}
 function roamHint(){
  const p=PERIODS[D.period],near=roamTarget;
  let s=near?('<b>'+(document.body.classList.contains('touch')?'TALK':'E')+'</b> '+near.label+' · '):'';
@@ -149,7 +153,11 @@ async function runHook(h){
  if(r==='ended')return;
  return endPeriod();
 }
-function backToRoom(){const x=A.you?A.you.x:D.x;buildRoom(D.room);if(A.you)A.you.x=x;roam()}
+function backToRoom(){
+ if(ROOM!==D.room||!A.you){const x=A.you?A.you.x:D.x;buildRoom(D.room);if(A.you)A.you.x=x;return roam()}
+ for(const id in A){const a=A[id];if(id==='you'||a.dead)continue;if(a.x<-6||a.x>326||!a.vis){delete A[id];continue}const r=rosterFor(D.period,D.room).find(e=>e[0]===id);a.pose=r?r[3]||null:null;a.hold=null;a.ex=null;a.z=0;a.shake=0}
+ Object.assign(A.you,{pose:null,hold:null,z:0,ex:null});D.x=Math.round(A.you.x);props=props.filter(p=>p.keep);applyLooks();roam()
+}
 function roam(){busy=false;setPanel('roam');setHud(true);fxState.bars=0;updateLoc();roamTarget=null;roamHint()}
 async function enterRoom(room){
  D.room=room;D.x=24;updateLoc();buildRoom(room);
@@ -286,7 +294,7 @@ async function genericLesson(room){
   await say('sherman','Did I SUMMON you? I don’t remember summoning you. I remember everyone I summon. I keep their teeth.','angry');
   await say('you','I just—');
   await say('sherman','OUT.','yell');
-  await N('You spend the rest of Period 3 sitting outside her door. She coughs every few minutes, like a threat.');
+  await N('You spend the rest of Period 7 sitting outside her door. She coughs every few minutes, like a threat.');
   return;
  }
  const cast=seatAll(kids.slice(0,9));cast[t]=[40,1,{pose:'hips',y:146}];cast.you=[260,1,{pose:'sit',y:SEATS.frontY}];
@@ -309,7 +317,7 @@ const LESSON={
 
 /* ---------------- dawn: start of each loop ---------------- */
 async function dayIntro(died){
- scene('bus',{you:[180,1,{y:160}]});setHud(false);
+ scene('bus',{you:[180,1,{y:160}]},true);setHud(false);
  fxState.dark=1;tw(fxState,{dark:0},1500);
  if(P.loops===1){
   await card('HIGHSCHOOL','A CALLING OF AIDAN STORY',2600);
@@ -432,7 +440,7 @@ async function title(){
  closeOverlays();setHud(false);setPanel('none');busy=true;
  D=D||freshD();
  const saveD=D;D=Object.assign(freshD(),{period:0});
- scene('bus',{hasan:[70,1,{y:146}],arjun:[96,-1,{pose:'cross',y:144}],omer:[120,1,{y:150,pose:'cross'}],corey:[148,1,{y:146}],sean:[176,1,{y:144}],stella:[196,-1,{y:146}],aidan:[246,-1,{y:140}],paul:[220,-1,{y:148,pose:'hips'}],dheva:[274,-1,{y:150}],marcus:[296,-1,{y:146}]});
+ scene('bus',{hasan:[70,1,{y:146}],arjun:[96,-1,{pose:'cross',y:144}],omer:[120,1,{y:150,pose:'cross'}],corey:[148,1,{y:146}],sean:[176,1,{y:144}],stella:[196,-1,{y:146}],aidan:[246,-1,{y:140}],paul:[220,-1,{y:148,pose:'hips'}],dheva:[274,-1,{y:150}],marcus:[296,-1,{y:146}]},true);
  D=saveD;
  cue('title');
  const m=$('menu');m.hidden=false;
@@ -449,7 +457,7 @@ async function title(){
 /* ---------------- curtain call ---------------- */
 async function curtainCall(endingId){
  busy=true;setHud(false);setPanel('talk');cue('curtain');
- scene.keepMusic=1;scene('stage',{});scene.keepMusic=0;
+ scene.keepMusic=1;scene('stage',{},true);scene.keepMusic=0;
  await card('CURTAIN CALL',ENDINGS[endingId]?ENDINGS[endingId].name.toUpperCase():'',2000);
  const cast=['hasan','arjun','david','omer','nivaan','corey','sean','stella','abby','aidan','angelo','alex','dheva','marcus','paul','kenneth','jacob','you'].filter(id=>!(window.EDITION_CUT||[]).includes(id));
  const teachers=['balduf','shermian','sherman','loach','voss','coach','pat'];
