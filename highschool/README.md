@@ -46,3 +46,13 @@ settings, curtain call) · `js/missions-*.js` (all the content; `missions-d.js` 
 
 `node tools/test.mjs [runsPerScene] [days]` runs every mission scene with random choices and
 autoplays whole days in headless Chromium, failing on any error.
+
+## Single-file builds
+
+`python3 tools/build.py` writes:
+
+- `dist/highschool.html` — the whole game in one file (font and scripts inlined). Works offline.
+- `dist/highschool-blob.html` — a launcher with one button that opens the game in a new tab from a `blob:` URL.
+  If pop-ups are blocked it opens in the same tab instead.
+
+Re-run the build after changing anything in `js/`.
