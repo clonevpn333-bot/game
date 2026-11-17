@@ -20,3 +20,5 @@ function storyNow(){for(let i=0;i<STORY.length;i++){if(!STORY[i].done())return{i
 /* when a chapter finishes, say so */
 let storyLast=null;
 ON_PERIOD.push(async()=>{const s=storyNow(),k=s?s.i:STORY.length;if(storyLast!=null&&k>storyLast){SFX.good();toast('★ Main story: '+STORY[storyLast].t+' — done. Next: '+(s?s.t:'the end'))}storyLast=k});
+/* safety net: if nothing is happening and you can't move, give control back */
+{let stuckT=0;const _hu=HOOK.update;HOOK.update=(dt,rdt)=>{_hu&&_hu(dt,rdt);const idle=!busy&&panelMode!=='roam'&&!DL&&!CH&&!MINI&&!anyOverlay()&&D&&D.room&&$('menu').hidden;stuckT=idle?stuckT+rdt:0;if(stuckT>2.5){stuckT=0;roam()}}}

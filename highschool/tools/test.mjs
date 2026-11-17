@@ -97,8 +97,10 @@ const auto = await page.evaluate(async (DAYS) => {
     if (D.period === 8) { HS.boardBus(true); continue; }
     HS.endPeriod();
   }
-  return { log: log.slice(-60), loops: HS.P.loops - startLoops, done: Object.keys(HS.P.done), parts: HS.P.parts, coll: Object.keys(HS.P.coll).length, guard };
+  const stuck = { busy: HS.busy, mode: HS.panelMode, period: HS.D.period, room: HS.D.room, map: !document.getElementById('map').hidden, menu: !document.getElementById('menu').hidden, phone: !document.getElementById('phoneov').hidden, mini: !document.getElementById('mini').hidden, last: BACKLOG.slice(-3).map(l => l.n + ': ' + l.t).join(' | ') };
+  return { stuck, log: log.slice(-60), loops: HS.P.loops - startLoops, done: Object.keys(HS.P.done), parts: HS.P.parts, coll: Object.keys(HS.P.coll).length, guard };
 }, DAYS);
+console.log('stuck state:', JSON.stringify(auto.stuck));
 console.log('autoplay: days', auto.loops, 'guard', auto.guard, 'missions done', auto.done.join(','), 'collectibles', auto.coll);
 console.log(auto.log.slice(-25).join('\n'));
 
