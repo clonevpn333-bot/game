@@ -133,6 +133,11 @@ body.touch .pad{display:flex}
 .bub.nt{align-self:center;background:none;border:0;color:#8a7a92;font-size:11px;text-align:center}
 .bub b{display:block;font-weight:normal;font-size:11px;color:#f6cf8e;margin-bottom:2px}
 .phb{margin:8px}
+.bub .tm{display:block;font-style:normal;font-size:10px;color:#8a7a92;text-align:right;margin-top:3px}
+.bub.me .tm{color:#d8c0e8}
+.bub.typing span{display:inline-block;margin:0 2px;animation:tdot 1s infinite}
+.bub.typing span:nth-child(2){animation-delay:.2s}.bub.typing span:nth-child(3){animation-delay:.4s}
+@keyframes tdot{0%,100%{opacity:.25}50%{opacity:1}}
 #toast{position:fixed;left:50%;top:max(56px,calc(env(safe-area-inset-top) + 48px));transform:translateX(-50%);z-index:30;background:#1d1729f2;border:2px solid var(--edge2);padding:8px 14px;font-size:14px;color:#ffe9c4;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90vw;text-align:center}
 @media (max-width:640px){
  .tb{padding:5px 7px;font-size:11px}
@@ -226,6 +231,7 @@ body.portrait #ptext{max-height:calc(100vh - var(--cb,60vh) - 90px)}
 <script src="js/missions-e.js"></script>
 <script src="js/missions-f.js"></script>
 <script src="js/immersion.js"></script>
+<script src="js/classes.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

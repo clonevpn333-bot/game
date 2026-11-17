@@ -315,18 +315,33 @@ $('pMap').onclick=()=>{audio();INPUT&&INPUT.map()};
 if(matchMedia('(pointer:coarse)').matches||'ontouchstart'in window)document.body.classList.add('touch');
 addEventListener('touchstart',()=>document.body.classList.add('touch'),{once:true,passive:true});
 
-/* ---------------- phone: DMs and group chats ---------------- */
+/* ---------------- phone: DMs and group chats ----------------
+   msgs: [who, text, time?]. who = 'me' | 'them' | 'note' | a character id (group chats).
+   Everything before opts.live is history: it's already on the phone when you open it.
+   From opts.live on, messages arrive while you watch, each after a typing bubble. */
 let PHONENEXT=null;
-function dms(title,sub_,msgs){
+function dms(title,sub_,msgs,opts){
+ opts=opts||{};const live=opts.live==null?msgs.length:opts.live;
  msgs.forEach(m=>BACKLOG.push({n:'📱 '+(m[0]==='me'?'You':m[0]==='them'?title:m[0]==='note'?'':(K[m[0]]?K[m[0]].n:m[0])),t:m[1],c:'#6b4a7a'}));
  if(TEST)return Promise.resolve();
  setSkip(false);
  return new Promise(res=>{
-  const o=$('phoneov');o.hidden=false;o.innerHTML='<div class="ph"><div class="phh"></div><div class="phm"></div><button class="mb phb">NEXT ▸</button></div>';
+  const o=$('phoneov');o.hidden=false;o.innerHTML='<div class="ph"><div class="phh"></div><div class="phm"></div><button class="mb phb"></button></div>';
   const h=o.querySelector('.phh');h.textContent=title;const sm=document.createElement('small');sm.textContent=sub_||'';h.appendChild(sm);
-  const box=o.querySelector('.phm'),b=o.querySelector('.phb');let i=0;
-  const next=()=>{if(i>=msgs.length){o.hidden=true;PHONENEXT=null;SFX.click();res();return}const [w,t]=msgs[i++];const d=document.createElement('div');d.className='bub'+(w==='me'?' me':w==='note'?' nt':'');if(w!=='me'&&w!=='them'&&w!=='note'){const n=document.createElement('b');n.textContent=K[w]?K[w].n:w;d.appendChild(n)}d.appendChild(document.createTextNode(t));box.appendChild(d);box.scrollTop=box.scrollHeight;SFX.blip(w==='me'?620:880,'sine');b.textContent=i>=msgs.length?'CLOSE':'NEXT ▸'};
-  PHONENEXT=next;b.onclick=next;o.onclick=e=>{if(e.target===o)next()};next();
+  const box=o.querySelector('.phm'),b=o.querySelector('.phb');
+  const bubble=([w,t,time])=>{const d=document.createElement('div');d.className='bub'+(w==='me'?' me':w==='note'?' nt':'');if(w!=='me'&&w!=='them'&&w!=='note'){const n=document.createElement('b');n.textContent=K[w]?K[w].n:w;d.appendChild(n)}d.appendChild(document.createTextNode(t));if(time&&w!=='note'){const tm=document.createElement('i');tm.className='tm';tm.textContent=time;d.appendChild(tm)}box.appendChild(d);box.scrollTop=box.scrollHeight;return d};
+  for(let i=0;i<live;i++)bubble(msgs[i]);
+  let i=live,busy_=false;
+  const close=()=>{o.hidden=true;PHONENEXT=null;SFX.click();res()};
+  const label=()=>{b.textContent=i>=msgs.length?'CLOSE':'…'};
+  const next=()=>{if(busy_)return;if(i>=msgs.length){close();return}busy_=true;b.textContent='…';
+   const m=msgs[i++];
+   if(m[0]==='me'||m[0]==='note'){bubble(m);SFX.blip(m[0]==='me'?620:400,'sine');busy_=false;label();if(i<msgs.length)setTimeout(next,500);return}
+   const ty=document.createElement('div');ty.className='bub typing';ty.innerHTML='<span>•</span><span>•</span><span>•</span>';box.appendChild(ty);box.scrollTop=box.scrollHeight;
+   setTimeout(()=>{ty.remove();bubble(m);SFX.blip(880,'sine');busy_=false;label();if(i<msgs.length)setTimeout(next,450)},Math.min(2200,500+m[1].length*28));
+  };
+  PHONENEXT=()=>{if(i>=msgs.length&&!busy_)close()};b.onclick=PHONENEXT;o.onclick=e=>{if(e.target===o)PHONENEXT()};
+  label();if(i<msgs.length)setTimeout(next,500);
  });
 }
 

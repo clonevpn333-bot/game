@@ -41,11 +41,25 @@ function poster(x,y,w,h,c,lines,tc){R(x,y,w,h,c);R(x,y,w,1,'rgba(255,255,255,.25
 function door(x,col,label,glass){R(x-2,40,30,72,'#5a5048');R(x,42,26,70,col||'#8a6a4a');R(x+3,45,20,1,'rgba(255,255,255,.15)');if(glass!==false){R(x+7,50,12,16,'#9ac0d8');R(x+7,50,12,1,'#d8eef8')}R(x+21,78,3,2,'#d8c890');if(label){R(x+3,30,20,8,'#2a2a3a');pxc(label,x+13,32,'#f0e0a0')}}
 function clock(x,y){R(x-5,y-5,11,11,'#2a2a2a');R(x-4,y-4,9,9,'#f4f4f0');const p=period(),hr=[8.4,9,10.3,10.7,12.3,13.3,14.3,15.2,15.8][p]||9;const a=hr/12*6.283-1.57,b=(hr%1)*6.283-1.57;R(x+Math.round(Math.cos(a)*2),y+Math.round(Math.sin(a)*2),1,1,'#111');R(x+Math.round(Math.cos(b)*3),y+Math.round(Math.sin(b)*3),1,1,'#c00');R(x,y,1,1,'#111')}
 function lockers(x0,y0,n,c,nums,start){for(let i=0;i<n;i++){const x=x0+i*15;R(x,y0,14,112-y0-6,c);R(x,y0,14,1,'rgba(255,255,255,.2)');R(x+13,y0,1,112-y0-6,'rgba(0,0,0,.3)');for(let j=0;j<3;j++)R(x+3,y0+4+j*2,8,1,'rgba(0,0,0,.3)');R(x+10,y0+20,2,4,'#c8c8c8');if(nums)px(String(start+i),x+2,y0+12,'rgba(255,255,255,.7)')}}
-function desk(x,y,top){R(x-12,y-13,24,2,top||'#c8a878');R(x-12,y-11,24,1,'#8a6a48');R(x-11,y-10,22,6,'#7a8090');R(x-11,y-10,22,1,'#9aa0aa');R(x-11,y-4,1,4,'#555');R(x+10,y-4,1,4,'#555')}
-function chairBack(x,y){R(x-5,y-18,10,7,'#3a4a8a');R(x-5,y-18,10,1,'#5a6aaa');R(x-4,y-11,1,7,'#888');R(x+3,y-11,1,7,'#888')}
+/* school desk: laminate top with an edge, metal frame, stuff on it that belongs to whoever sits there */
+function desk(x,y,top){
+ const t=top||'#d4b486';
+ R(x-13,y-14,26,1,'#e8d0a8');R(x-13,y-13,26,3,t);R(x-13,y-10,26,1,'#8a6a48');
+ R(x-12,y-9,24,5,'#6e7684');R(x-12,y-9,24,1,'#8e96a4');R(x-12,y-5,24,1,'#555c68');
+ R(x-12,y-4,2,5,'#4a4f58');R(x+10,y-4,2,5,'#4a4f58');R(x-13,y,4,1,'#2a2a30');R(x+9,y,4,1,'#2a2a30');
+ const k=(x*7+y*3)%5;
+ if(k===0){R(x-9,y-16,7,2,'#a03030');R(x-9,y-17,7,1,'#c85050')}
+ else if(k===1){R(x+3,y-17,3,4,'#3a8ac8');R(x+3,y-17,3,1,'#c8c8d0')}
+ else if(k===2){R(x-6,y-15,10,2,'#f4f0e6');R(x-5,y-15,6,1,'#9aa0b8')}
+ else if(k===3){R(x-10,y-16,9,2,'#3a5a3a');R(x+4,y-15,5,1,'#e8c040')}
+ R(x-11,y-3,22,1,'rgba(0,0,0,.18)');
+}
+function chairBack(x,y){R(x-6,y-19,12,7,'#34407a');R(x-6,y-19,12,1,'#5a6aaa');R(x-6,y-13,12,1,'#262f5c');R(x-5,y-12,1,8,'#8a8e98');R(x+4,y-12,1,8,'#8a8e98');R(x-6,y-4,12,1,'#5a5e68')}
+function bag(x,y,c){R(x-4,y-5,8,5,c);R(x-3,y-6,6,1,c);R(x-2,y-7,4,1,'#2a2a30');R(x-4,y-3,8,1,'rgba(0,0,0,.25)')}
+function lightShaft(x0,w,c){g.globalAlpha=.07;for(let i=0;i<34;i++){const y=112+i*2;R(x0-i*2.2,y,w+i*1.2,2,c||'#fff6d0')}g.globalAlpha=1}
 function shadow(x,y,w){R(x-w/2,y,w,2,'rgba(0,0,0,.18)')}
 const SEATS={back:[100,140,180,220,260],backY:134,front:[100,140,180,220,260],frontY:158};
-function classroomDesks(extra){const its=[];for(const row of[['back',SEATS.backY],['front',SEATS.frontY]])for(const x of SEATS[row[0]]){const y=row[1];its.push({y:y-8,d:()=>chairBack(x,y)});its.push({y:y+.5,d:()=>desk(x,y+8)})}return its.concat(extra||[])}
+function classroomDesks(extra){const its=[];for(const row of[['back',SEATS.backY],['front',SEATS.frontY]])for(const x of SEATS[row[0]]){const y=row[1];its.push({y:y-8,d:()=>chairBack(x,y)});its.push({y:y+.5,d:()=>{desk(x,y+8);if(row[0]==='front'&&(x/40)%2===1)bag(x+14,y+12,['#2a3a5a','#5a2a3a','#2a2a2a'][(x/40|0)%3])}})}return its.concat(extra||[])}
 
 const ROOMS={
  bus:{name:'Bus Loop',music:'bus',bg(){
@@ -105,7 +119,7 @@ const ROOMS={
   R(6,28,2,76,'#6a4a2a');R(64,28,2,76,'#6a4a2a');
   poster(232,24,34,26,'#f4e8c8',['GRAMMAR','SAVES','LIVES'],'#802020');poster(272,24,40,26,'#3a3a5a',['READ','OR','ELSE'],'#f0d070');
   windowPane(234,58,76,40,{trees:1});clock(84,14);
-  wood('#8a6a48','#7a5a38');
+  wood('#8a6a48','#7a5a38');lightShaft(250,56);
   R(18,120,50,4,'#6a4a2a');R(20,124,46,22,'#7a5a3a');R(20,124,46,1,'#9a7a5a');R(28,112,14,8,'#f4f0e6');R(30,110,10,2,'#f4f0e6');R(50,114,6,6,'#c83030');R(52,112,2,2,'#3a8a3a');
  },items:classroomDesks()},
  maths:{name:'Maths — Ms. Shermian',music:'class',bg(){
@@ -114,7 +128,7 @@ const ROOMS={
   R(232,22,74,52,'#fff');R(232,22,74,6,'#c04070');pxc('SEATING PLAN',269,23,'#fff');for(let r=0;r<4;r++)for(let c=0;c<5;c++){R(236+c*14,32+r*10,12,8,(r*5+c)%4?'#f0d8e0':'#e8b0c4');R(238+c*14,35+r*10,8,1,'#8a6a7a')}
   R(10,24,46,40,'#f4e8c8');R(14,28,38,22,'#d8a868');R(20,32,10,10,'#e8c8a0');R(22,30,2,2,'#d8a868');R(28,30,2,2,'#d8a868');pxc('MR BISCUITS',33,54,'#802040');
   windowPane(236,80,70,24);clock(82,14);
-  tiles('#c8b8bc','#b8a8ac',18);
+  tiles('#c8b8bc','#b8a8ac',18);lightShaft(250,50,'#ffeef4');
   R(16,120,52,4,'#7a4a5a');R(18,124,48,22,'#8a5a6a');R(18,124,48,1,'#aa7a8a');R(36,130,12,3,'#5a3a4a');R(40,131,4,1,'#d8c890');R(24,114,8,8,'#f4f0e6');R(26,116,4,4,'#d8a868');R(52,116,6,4,'#c04070');
  },items:classroomDesks()},
  science:{name:'Science — Ms. Loach',music:'class',bg(){
@@ -123,7 +137,7 @@ const ROOMS={
   R(14,26,26,72,'#e8e4d8');R(25,28,6,7,'#f0ece0');R(26,30,1,1,'#222');R(29,30,1,1,'#222');R(27,35,2,30,'#e8e4d8');for(let i=0;i<5;i++)R(22,38+i*3,12,1,'#d8d4c8');R(21,40,2,20,'#e8e4d8');R(33,40,2,20,'#e8e4d8');R(24,66,2,28,'#e8e4d8');R(30,66,2,28,'#e8e4d8');R(14,26,26,1,'#888');
   windowPane(236,24,72,46,{trees:1});clock(78,14);
   poster(236,78,34,22,'#4a6a4a',['SAFETY','FIRST'],'#f0f0a0');poster(274,78,34,22,'#6a4a4a',['NO','EATING'],'#fff');
-  tiles('#a8b0a0','#98a090',18);
+  tiles('#a8b0a0','#98a090',18);lightShaft(258,54);
   R(46,118,52,4,'#5a5a50');R(48,122,48,22,'#6a6a60');R(48,122,48,1,'#8a8a80');R(54,114,10,6,'#f4f0e6');
   if(!((typeof D!=="undefined"&&D)&&D.f&&D.f.mugGone)){R(82,113,6,7,'#e8e2d6');R(88,115,2,3,'#e8e2d6');R(82,113,6,1,'#6a3a1a');pxc('#1',85,116,'#a02020')}
  },items:(()=>{const its=[];for(const row of[[SEATS.backY],[SEATS.frontY]])for(const x of[120,200,280]){const y=row[0];its.push({y:y+.5,d:()=>{R(x-26,y-13,52,3,'#2a2a2a');R(x-26,y-10,52,10,'#d8d4c8');R(x-26,y-10,52,1,'#f0ece0');R(x-4,y-17,1,4,'#888');R(x-4,y-17,4,1,'#888');R(x-20,y-12,8,2,'#5a5a6a')}})}return its})()},

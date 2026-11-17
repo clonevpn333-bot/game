@@ -34,7 +34,7 @@ hook({mis:'tea',period:2,room:'library',who:'stella',label:'Ask Stella what’s 
  const cast={stella:[246,-1,{y:144,ex:'cry'}],you:[220,1,{y:154}],david:[140,1,{pose:'sit',y:150}]};if(!D.dead.sean)cast.sean=[200,1,{y:144}];
  scene('library',cast);cue('sad');
  await say('stella','Somebody posted about my dad. On that account. With a crying emoji. A CRYING emoji.','cry');
- await dms('@highgate.tea','4,211 followers',[['them','stella’s dad walked out when she was 9 and she STILL carries his ball around everywhere 😭 seek help bestie'],['note','1,402 likes · 213 comments'],['them','(top comment, from an account with no picture) “this is so true lmaooo”']]);
+ await dms('@highgate.tea','4,211 followers',[['them','stella’s dad walked out when she was 9 and she STILL carries his ball around everywhere 😭 seek help bestie','10:20'],['note','1,402 likes · 213 comments'],['them','(top comment, from an account with no picture) “this is so true lmaooo”']]);
  if(A.sean)await say('sean','When I find out who runs that account I’m going to do something I’ll have to explain to a judge.','angry');
  await say('stella','I only ever told, like, four people that. In the whole school. Four.','cry');
  await say('david','(from his desk, without looking up) That’s awful. Truly awful. That’s why I’m running for Year Rep. For a kinder Highgate.','smirk');
@@ -112,8 +112,8 @@ hook({mis:'catfish',period:2,room:'gym',who:'kenneth',label:'Ask Kenneth who he 
  await say('paul','You’re five foot seven.','smirk');
  await say('kenneth','She doesn’t KNOW that, Paul.','angry');
  await dms('Jess 💕','Fair City · online 3 min ago',[
-  ['them','hey ken 😊 cant stop thinking abt ur free throws'],['me','haha yh i’m pretty good tbh'],['them','ur not pretty good ur the best in highgate. everyone says ur hairline is unique'],
-  ['me','thank u?? 😳'],['them','meet me at the arcade after school?? 4pm. by the claw machine. i’ll wear red 🔴'],['me','100%'],['them','cant wait 2 see u in person. finally 🥺'],
+  ['them','hey ken 😊 cant stop thinking abt ur free throws','Thu 23:41'],['me','haha yh i’m pretty good tbh','Thu 23:42'],['them','ur not pretty good ur the best in highgate. everyone says ur hairline is unique','Thu 23:52'],
+  ['me','thank u?? 😳','Thu 23:52'],['them','meet me at the arcade after school?? 4pm. by the claw machine. i’ll wear red 🔴','Fri 07:02'],['me','100%','Fri 07:03'],['them','cant wait 2 see u in person. finally 🥺','Fri 07:04'],
   ['note','She has never sent a voice note. Or a video. Or a photo that wasn’t taken on a beach in Spain.']]);
  await say('you','Has she ever video called you?');
  await say('kenneth','She’s shy. Shy people don’t video call. Shy people type “ur” instead of “your”. It’s cute.','happy');
@@ -155,7 +155,7 @@ hook({mis:'catfish',period:8,room:'arcade',who:'kenneth',label:'Wait for Jess wi
   await complete('catfish','chips');return;
  }
  SFX.blip(880,'sine');
- await dms('Jess 💕','online now',[['them','im here 👀'],['them','turn around 🔴']]);
+ await dms('Jess 💕','online now',[['them','see u at 4 😘','15:12'],['note','— now —'],['them','im here 👀'],['them','turn around 🔴']],{live:2});
  put('arjun',330,-1,{y:150,pose:'film'});await walk('arjun',270,60);
  await say('arjun','(filming, in a red jumper) HIIIII KEN. It’s me! Jess! From Fair City! I love your HAIRLINE—','laugh');
  await N('Arjun is wearing red. He planned the red. He planned it three months ago.');
@@ -184,9 +184,9 @@ hook({mis:'kaivibes',period:0,room:'bus',who:'nivaan',label:'Ask Nivaan why he�
  scene('bus',{nivaan:[122,-1,{pose:'phone',y:146}],hasan:[96,1,{y:146}],you:[150,-1,{y:154}]});
  await say('nivaan','KAI VIBES. KAI VIBES DMED ME. ONE POINT TWO MILLION FOLLOWERS. HE KNOWS MY NAME.','yell');
  await dms('KAI VIBES ✔','1.2M followers',[
-  ['them','yo nivaan 🔥 been watching ur streams fr fr'],['them','u got that dawg in u no cap'],['me','OMG HI KAI. BIG FAN. HUGE. MASSIVE.'],
-  ['them','collab?? fair city mall food court 4pm. bring snacks'],['them','specifically haribo. specifically the tangfastics'],['me','i will bring every tangfastic in the country'],
-  ['them','also dont tell anyone. especially not kayden from year 8. hes a hater'],['note','The blue tick is slightly the wrong blue.']]);
+  ['them','yo nivaan 🔥 been watching ur streams fr fr','07:58'],['them','u got that dawg in u no cap','07:58'],['me','OMG HI KAI. BIG FAN. HUGE. MASSIVE.','08:01'],
+  ['them','collab?? fair city mall food court 4pm. bring snacks','08:02'],['them','specifically haribo. specifically the tangfastics','08:02'],['me','i will bring every tangfastic in the country','08:03'],
+  ['them','also dont tell anyone. especially not kayden from year 8. hes a hater','08:04'],['note','The blue tick is slightly the wrong blue.']]);
  await say('hasan','Why would a man with a million followers specifically hate a Year 8 called Kayden?','shock');
  await say('nivaan','Because Kayden is a HATER, Hasan. Keep up.','happy');
  D.f.kai1=1;part('kaivibes',1);
@@ -227,8 +227,8 @@ hook({mis:'groupchat',period:2,room:'field',who:'omer',label:'Ask Omer why he’
  scene('field',{omer:[150,1,{pose:'phone',y:146}],jacob:[200,-1,{y:146}],you:[124,1,{y:154}]});
  await say('omer','Someone sent me this. Look.','angry');
  await dms('THE LADS 🚫AIDAN','8 members',[
-  ['hasan','who’s going mall after'],['corey','me'],['david','me. campaigning'],['arjun','omer’s mum dresses him like she’s getting him ready to be sold at auction 💀'],
-  ['david','😂😂'],['hasan','bro'],['corey','not cool man'],['arjun','what it’s a joke he’s not even in this chat'],['note','Omer is in the chat. Omer has always been in the chat.']]);
+  ['hasan','who’s going mall after','Thu 21:03'],['corey','me','21:03'],['david','me. campaigning','21:04'],['arjun','omer’s mum dresses him like she’s getting him ready to be sold at auction 💀','21:16'],
+  ['david','😂😂','21:16'],['hasan','bro','21:17'],['corey','not cool man','21:17'],['arjun','what it’s a joke he’s not even in this chat','21:19'],['note','Omer is in the chat. Omer has always been in the chat.']]);
  await say('omer','“He’s not even in this chat.” I MADE the chat. I made it in Year 7. I named it.','angry');
  await say('omer','And David laughed. Two crying emojis. Two.','angry');
  await say('jacob','That’s out of order. That’s really out of order.','angry');
@@ -280,10 +280,10 @@ hook({mis:'leaked',period:0,room:'bus',who:'kenneth',label:'Ask Kenneth why he l
  scene('bus',{kenneth:[236,-1,{pose:'phone',y:146,ex:'scared'}],paul:[212,1,{y:142}],you:[258,-1,{y:154}]});
  await say('kenneth','Don’t look at my phone. Actually look at my phone. I need someone to look at my phone and tell me it’s fine.','scared');
  await dms('xX_V1PER_Xx','Block Wars · last night',[
-  ['them','yo kenny its me new account lol. got banned on the old one'],['me','oh hey!! wait who'],['them','bruh. from school. remember'],['me','ohhh yeah haha sorry'],
-  ['them','remind me ur full name again for the clan form'],['me','kenneth duncan bramble 💀 dont laugh at duncan'],['them','and ur dads name for the parent thing'],['me','graham. why does the clan need my dad'],
-  ['them','what school u at now'],['me','highgate high obviously lol. year 10. ms loach for science'],['them','where do u live again'],['me','fair city. same as always'],
-  ['them','wait. ur not kenny B. kenny B is from cardiff'],['me','who’s kenny b??'],['them','u wasted my time. watch this'],
+  ['them','yo kenny its me new account lol. got banned on the old one','Thu 23:58'],['me','oh hey!! wait who','23:58'],['them','bruh. from school. remember','23:59'],['me','ohhh yeah haha sorry','23:59'],
+  ['them','remind me ur full name again for the clan form','Fri 00:03'],['me','kenneth duncan bramble 💀 dont laugh at duncan','00:03'],['them','and ur dads name for the parent thing','00:04'],['me','graham. why does the clan need my dad','00:04'],
+  ['them','what school u at now','00:06'],['me','highgate high obviously lol. year 10. ms loach for science','00:06'],['them','where do u live again','00:09'],['me','fair city. same as always','00:10'],
+  ['them','wait. ur not kenny B. kenny B is from cardiff','00:11'],['me','who’s kenny b??','00:11'],['them','u wasted my time. watch this','02:14'],
   ['note','— 2:14am —'],['them','(posted publicly) KENNETH DUNCAN BRAMBLE. HIGHGATE HIGH, FAIR CITY. YEAR 10. DAD: GRAHAM BRAMBLE. SCIENCE TEACHER: MS LOACH. 5FT 7. SLEEPS WITH A NIGHTLIGHT. SPAM HIM 😂'],['note','312 shares']]);
  await say('kenneth','He said he was my mate. I thought he was someone from school who got a new account. People do that. People DO that.','cry');
  await say('kenneth','I told him my middle name. Nobody knows my middle name. My middle name is DUNCAN.','cry');
