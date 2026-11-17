@@ -1,10 +1,10 @@
 'use strict';
 /* =====================================================================
-   HIGHSCHOOL — the No-Abby edition.
+   HIGHSCHOOL — the safe version.
    Abby doesn't exist, and Corey's love life never comes up.
-   Only included by tools/build.py in dist/highschool-noabby*.html.
+   Only included by tools/build.py in dist/highschool-safe*.html.
    ===================================================================== */
-window.EDITION='noabby';
+window.EDITION='safe';
 window.EDITION_CUT=['abby'];
 window.EDITION_LINE={corey:'Corey — the curls survived every single Friday. Mostly.'};
 const ROMANCE=/\babby\b|morrissey/i;

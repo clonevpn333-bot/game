@@ -4,8 +4,8 @@
 
 dist/highschool.html               the whole game in one file (font + scripts inlined), works offline
 dist/highschool-blob.html          a launcher: one button that opens the game in a new tab from a blob: URL
-dist/highschool-noabby.html        the No-Abby edition: no Abby, and Corey's love life never comes up
-dist/highschool-noabby-blob.html   its blob: launcher
+dist/highschool-safe.html          the safe version: no Abby, and Corey's love life never comes up
+dist/highschool-safe-blob.html     its blob: launcher
 """
 import base64, pathlib, re
 root = pathlib.Path(__file__).resolve().parent.parent
@@ -65,8 +65,8 @@ def build(src, name, title):
 
 
 build(html, 'highschool', 'Highschool')
-noabby = html.replace('<script src="js/main.js"></script>', '<script src="js/edition-noabby.js"></script>\n<script src="js/main.js"></script>')
-assert noabby != html
-build(noabby, 'highschool-noabby', 'Highschool')
-for f in ('highschool.html', 'highschool-blob.html', 'highschool-noabby.html', 'highschool-noabby-blob.html'):
+safe = html.replace('<script src="js/main.js"></script>', '<script src="js/edition-safe.js"></script>\n<script src="js/main.js"></script>')
+assert safe != html
+build(safe, 'highschool-safe', 'Highschool')
+for f in ('highschool.html', 'highschool-blob.html', 'highschool-safe.html', 'highschool-safe-blob.html'):
     print(f, round((dist / f).stat().st_size / 1024), 'KB')

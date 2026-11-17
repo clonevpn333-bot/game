@@ -102,9 +102,9 @@ console.log('autoplay: days', auto.loops, 'guard', auto.guard, 'missions done', 
 console.log(auto.log.slice(-25).join('\n'));
 
 const testErrs = await page.evaluate(() => window.HS_TEST.errs);
-if (await page.evaluate(() => window.EDITION === 'noabby')) {
+if (await page.evaluate(() => window.EDITION === 'safe')) {
   const leaks = await page.evaluate(() => BACKLOG.filter(l => /abby/i.test(l.n + ' ' + l.t)).map(l => l.n + ': ' + l.t));
-  console.log('no-Abby edition: lines mentioning Abby =', leaks.length, '| corey romance missions present =', await page.evaluate(() => !!(HS.MIS.corey || HS.MIS.smallhours)));
+  console.log('safe version: lines mentioning Abby =', leaks.length, '| corey romance missions present =', await page.evaluate(() => !!(HS.MIS.corey || HS.MIS.smallhours)));
   for (const l of leaks.slice(0, 5)) testErrs.push('Abby leak: ' + l);
 }
 const all = [...errors, ...res.errs, ...testErrs];
