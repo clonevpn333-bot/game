@@ -111,7 +111,7 @@ function roamHint(){
 }
 function updateLoc(){
  const p=PERIODS[D.period],r=ROOMS[D.room||'bus'];
- $('clock').innerHTML='FRIDAY · '+p.time+'<small>'+p.name+' — '+(r?r.name:'')+'</small>';
+ $('clock').innerHTML=(window.dayLabel?dayLabel():'FRIDAY')+' · '+p.time+'<small>'+p.name+' — '+(r?r.name:'')+'</small>';
  $('ploc').textContent='DAY '+D.day+' · $'+D.money+(D.items.length?' · '+D.items.length+' item'+(D.items.length>1?'s':''):'');
 }
 function availableHooks(room,who){return HOOKS.filter(h=>h.room===room&&(h.period===D.period||(Array.isArray(h.period)&&h.period.includes(D.period)))&&h.who===who&&(!h.cond||h.cond()))}
@@ -170,7 +170,7 @@ async function enterRoom(room){
 async function startPeriod(i,resume){
  D.period=i;D.room=null;P.cur=JSON.parse(JSON.stringify(D));save();
  const p=PERIODS[i];closeOverlays();setHud(true);
- if(!resume){SFX.bell();await card(p.name.toUpperCase(),'FRIDAY · '+p.time+(i===0?'  ·  DAY '+D.day:''),1500)}
+ if(!resume){SFX.bell();await card(p.name.toUpperCase(),(window.dayLabel?dayLabel():'FRIDAY')+' · '+p.time+(i===0&&window.weekOf?'  ·  WEEK '+weekOf()+', DAY '+D.day:''),1500)}
  for(const f of ON_PERIOD)await f(i,resume);
  if(i===0)return enterRoom('bus');
  if(i===7)return enterRoom('bus');
@@ -195,7 +195,7 @@ async function boardBus(fromMall){
  if(!D.done.headcase&&D.period>=7)await N('Somewhere behind you, back at school, something goes BANG. Nobody on the bus looks up. Nobody ever does.');
  await N('Somewhere around the roundabout you close your eyes for one second.');
  fxState.dark=0;await tw(fxState,{dark:1},900);
- await card('FRIDAY','AGAIN',1600);
+ {const nc=window.nextDayCard?nextDayCard():['FRIDAY','AGAIN'];await card(nc[0],nc[1],1600)}
  fxState.dark=0;busy=false;
  return newDay();
 }
@@ -462,7 +462,7 @@ async function curtainCall(endingId){
  await card('CURTAIN CALL',ENDINGS[endingId]?ENDINGS[endingId].name.toUpperCase():'',2000);
  const cast=['hasan','arjun','david','omer','nivaan','corey','sean','stella','abby','aidan','angelo','alex','dheva','marcus','paul','kenneth','jacob','you'].filter(id=>!(window.EDITION_CUT||[]).includes(id));
  const teachers=['balduf','shermian','sherman','loach','voss','coach','pat'];
- const LINE={hasan:'Hasan — still has the video. Still won’t delete it.',arjun:'Arjun — said something unforgivable on every single day. Consistent, at least.',david:'David — ran for class president on a policy of “no”. Won.',omer:'Omer — shorts. Every day. Every Friday. Every loop.',nivaan:'Nivaan — 91 viewers. Peak. Never again.',corey:'Corey — got it in PE. Both versions.',sean:'Sean — said hi in person. Eventually.',stella:'Stella — kept the ball. Kept the boy.',abby:'Abby — wrote a song called “Friday, again”.',aidan:'Aidan — kept the day. Gave it back. Maybe.',angelo:'Angelo — locker 13 is still open. Cash only.',alex:'Alex — hat-trick. Left foot. Weapon.',dheva:'Dheva — matte finish. Not gel. Never gel.',marcus:'Marcus — read the lunch menu like it owed him money.',paul:'Paul — wrestled everyone. Lost to no one. Lost to Kenneth once (fake).',kenneth:'Kenneth — five foot seven of buzzer beater.',jacob:'Jacob — got pushed around. Nobody laughed. Ever.',you:'You — lived the same Friday '+P.loops+' times. Died '+P.stats.deaths+'.'};
+ const LINE={hasan:'Hasan — still has the video. Still won’t delete it.',arjun:'Arjun — said something unforgivable on every single day. Consistent, at least.',david:'David — ran for class president on a policy of “no”. Won.',omer:'Omer — shorts. Every day. Every week. Even in the snow.',nivaan:'Nivaan — 91 viewers. Peak. Never again.',corey:'Corey — got it in PE. Both versions.',sean:'Sean — said hi in person. Eventually.',stella:'Stella — kept the ball. Kept the boy.',abby:'Abby — drew a bird on every window in the school.',aidan:'Aidan — kept the day. Gave it back. Maybe.',angelo:'Angelo — locker 13 is still open. Cash only.',alex:'Alex — hat-trick. Left foot. Weapon.',dheva:'Dheva — matte finish. Not gel. Never gel.',marcus:'Marcus — read the lunch menu like it owed him money.',paul:'Paul — wrestled everyone. Lost to no one. Lost to Kenneth once (fake).',kenneth:'Kenneth — five foot seven of buzzer beater.',jacob:'Jacob — got pushed around. Nobody laughed. Ever.',you:'You — lived '+P.loops+' days at Highgate. Died '+P.stats.deaths+' times.'};
  for(let i=0;i<cast.length;i++){
   const id=cast[i];put(id,-14,1,{y:150});
   await walk(id,160,90);hop(id,4,240);pose(id,'wave');sub((window.EDITION_LINE||{})[id]||LINE[id]);SFX.blip(K[id].v||300);
@@ -474,7 +474,7 @@ async function curtainCall(endingId){
  for(const id of teachers)pose(id,'wave');
  for(const id of cast)pose(id,'cheer');
  SFX.cheer();
- await say('hasan','Same time next Friday?','happy');
+ await say('hasan','Same time next week?','happy');
  await say('arjun','Shut up, Hasan.','smirk');
  await card('HIGHSCHOOL','THANKS FOR PLAYING · '+Object.keys(P.endings).length+' / '+Object.keys(ENDINGS).length+' ENDINGS',3200);
  busy=false;P.cur=null;save();return title();

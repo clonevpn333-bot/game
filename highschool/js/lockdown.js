@@ -89,9 +89,9 @@ async function bang(big){SFX.bang();shake(big?1.6:1);flash('#fff',big?.25:.12);p
 
 /* ---------- LOCKDOWN ---------- */
 mission('lockdown',{name:'Lockdown',icon:'🔒',who:['shermian','angelo','kayden','omer','marcus','arjun'],
- blurb:'Some Fridays, in Period 3, something gets into the school. Nobody sees it. Everybody hears it.',
+ blurb:'On the Wednesdays, at the Period 3 bell, something gets into the school. Nobody sees it. Everybody hears it.',
  parts:['Period 3: lockdown'],
- tips:['It happens every third Friday, at the Period 3 bell. Day 3, day 6, day 9…','Run, fight, or hide. You won’t know what it is until the very end.'],
+ tips:['It happens on Wednesday of each week (day 3 and day 10), at the Period 3 bell.','Run, fight, or hide. You won’t know what it is until the very end.'],
  variants:{woods:'Ran for the woods',fought:'Fought it',letgo:'Let it go',hid:'Hid'}});
 Object.assign(DEATHS,{fence:{name:'Over the Fence',desc:'The top of the back fence is not decorative.',hint:'Lockdown. Run. Don’t be slow on the fence.'}});
 function lockdownDue(){return !TEST&&D&&D.day>0&&D.day%3===0&&!D.f.lockdownDone}

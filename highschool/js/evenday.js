@@ -137,4 +137,4 @@ async function pickDay(){
 }
 {const _di=dayIntro;dayIntro=async function(died){await _di(died);D.dayType=await pickDay();applyDay(D.dayType);toast(D.dayType==='even'?'Even day: History or Art, Music or ICT, Swimming or Woodwork, Psychology or Assembly.':'Odd day: Periods 1, 3, 5 and 7.')}}
 {const _sp=startPeriod;startPeriod=async function(i,resume){applyDay((D&&D.dayType)||'odd');return _sp(i,resume)}}
-{const _ul=updateLoc;updateLoc=function(){_ul();const c=$('clock');if(c&&D)c.innerHTML=c.innerHTML.replace('FRIDAY ·','FRIDAY ('+((D.dayType||'odd').toUpperCase())+') ·')}}
+/* (the day label now comes from calendar.js) */

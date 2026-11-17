@@ -9,7 +9,7 @@ Object.assign(INTEL,{teaDavid:'@highgate.tea is run from David’s laptop.',jess
 
 /* ---------- @highgate.tea posts something every period, until somebody stops it ---------- */
 const TEA=[
- 'morning highgate ☕ new day new tea. it’s friday. it’s always friday lol',
+ 'morning highgate ☕ new day new tea. inspection in two weeks. act natural lol',
  'SPOTTED: corey buying purple CURL CREAM at the mall like it’s contraband 🧴😭',
  'stella’s dad walked out when she was 9 and she STILL carries his ball around everywhere 😭 seek help bestie',
  'aidan has been standing at locker 217 for 40 minutes. not opening it. just standing 👀',

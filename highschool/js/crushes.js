@@ -20,7 +20,7 @@ K.toby.id='toby';
    TOBY LIKES SEAN
    ================================================================= */
 mission('toby',{name:'Toby Likes Sean',icon:'🧶',who:['sean','toby','stella'],
- blurb:'There’s a new kid called Toby. He transferred from Ohio on Monday. It’s been Friday ever since, so it’s still his first week. He likes Sean. He’s not shy about it. Sean has a girlfriend and absolutely no idea what to do.',
+ blurb:'There’s a new kid called Toby. He transferred from Ohio last week. He likes Sean. He’s not shy about it. Sean has a girlfriend and absolutely no idea what to do.',
  parts:['Before school: the bracelet','Break, library: forty tabs','Lunch, the field: the plan'],
  tips:['Before school, bus loop. Sit near Sean.','Break, the library. Sean is hiding from Stella behind the biography section.','Lunch, the field. Whatever plan Sean picked, he’s doing it now.'],
  variants:{honest:'Honest',third:'Third wheel',mower:'The mower'}});
@@ -115,7 +115,7 @@ hook({mis:'toby',period:4,room:'field',who:'sean',label:'Ask Sean what the plan 
   if(A.coach){await walk('coach',170,90);pose('coach','kneel');await wait(400);await say('coach','(two fingers on his neck, for one second) Yeah, he’s dead. I’ll start digging.','angry');pose('coach',null);await walk('coach',240,60);pose('coach','reach')}
   if(A.nivaan)await say('nivaan','(filming) Chat. CHAT. RIP Sean. Type F. TYPE F.','scared');
   pose('toby','kneel');
-  await say('toby','(holding Sean’s hand) I only knew you for four hours. But they were the best four hours of my week. Which is also four hours. Because it’s still Friday.','cry');
+  await say('toby','(holding Sean’s hand) I only knew you for four hours. But they were the best four hours of my week. I’ve been here four days. Two of them were weekends.','cry');
   await say('toby','(singing, softly, beautifully) ♪ And I will always love yooou ♪','cry');
   await N('He can really sing. It’s not fair how well he can sing. Sean lasts eight seconds.');
   pose('toby',null);A.sean.pose=null;A.sean.bloody=1;
@@ -127,7 +127,7 @@ hook({mis:'toby',period:4,room:'field',who:'sean',label:'Ask Sean what the plan 
  }
  if(A.stella){
   await say('stella','(taking the bracelet out of her pocket, holding it up) So YOU made this.','angry');
-  await say('toby','I did. Sorry. I didn’t know he had a girlfriend. I don’t know anything. I’ve been here one Friday.','sad');
+  await say('toby','I did. Sorry. I didn’t know he had a girlfriend. I don’t know anything. I’ve been here a week.','sad');
   await N('A long silence. Omer, from a distance, puts his hands up like he’s ready to referee a fight.');
   await say('stella','…The beads are really even. How did you get the beads so even?','smirk');
   await say('toby','Oh! There’s a trick. You thread from the back. I can show you. Do you like Taylor Swift?','happy');
