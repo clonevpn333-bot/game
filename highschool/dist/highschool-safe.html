@@ -9098,6 +9098,18 @@ hook({mis:'flimbus',period:2,room:'corridor',who:'arjun',label:'Ask Arjun why he
   await walk('shermian',334,60);remove('shermian');
  }
  await say('arjun','(the second she’s gone) She’s never going to find out. It doesn’t mean anything. That’s the beauty of it.','smirk');
+ if(!D.dead.aidan&&!D.f.aidanDead){
+  put('aidan',334,-1,{y:146});await walk('aidan',150,60);face('arjun',1);
+  await N('Aidan walks down the middle of the corridor, slowly, and stops right next to Arjun for no reason. He just stands there. Breathing through his mouth.');
+  await say('arjun','Move, Aidan. MOVE. You stupid mickther.','angry');
+  await say('aidan','(very calmly) Mickther.','smirk');
+  await say('aidan','I’ve been called a lot of things. Nobody’s ever called me that. I’m going to write it down.','smirk');
+  pose('aidan','write');await wait(500);pose('aidan',null);
+  if(A.hasan)await say('hasan','(whispering) Why is he writing it down. Why is he WRITING it DOWN.','scared');
+  await say('aidan','(walking away) See you later, mickthers.','happy');
+  await walk('aidan',-16,60);remove('aidan');
+  await say('arjun','…He used it right. How did he use it right? He used it better than me.','shock');
+ }
  D.f.flim1=1;part('flimbus',1);return 'stay';
 }});
 
@@ -9146,6 +9158,7 @@ hook({mis:'flimbus',period:7,room:'bus',who:'arjun',label:'Ask Arjun why he’s 
   await complete('flimbus','detention');return 'stay';
  }
  await say('arjun','(wiping his eyes) We’re legends. We’re actual legends. They’re going to write about us on the bathroom walls.','happy');
+ if(!D.dead.aidan&&!D.f.aidanDead){put('aidan',-14,1,{y:146});await walk('aidan',60,60);await say('aidan','(from right behind Arjun, very close) Bye, mickther.','smirk');await say('arjun','(jumping a foot in the air) AIDAN. YOU DON’T GET TO SAY IT. YOU STUPID MICKTHER.','yell');await walk('aidan',-16,60);remove('aidan')}
  pose('arjun',null);pose('hasan',null);
  bond('arjun',1);bond('hasan',1);
  await complete('flimbus','legend');return 'stay';
