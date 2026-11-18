@@ -6,11 +6,11 @@
    ===================================================================== */
 window.EDITION='safe';
 window.EDITION_CUT=['abby'];
-window.EDITION_LINE={corey:'Corey — the curls survived every single Friday. Mostly.'};
+window.EDITION_LINE={corey:'Corey — the curls survived every single day. Mostly.'};
 const ROMANCE=/\babby\b|morrissey/i;
 
 /* the two Corey romance missions are gone */
-for(const m of['corey','smallhours','window'])delete MIS[m];
+for(const m of['corey','smallhours','window','brett'])delete MIS[m];
 if(typeof MYCLASS!=='undefined')MYCLASS.odd[3]='english';  /* your Period 3 is someone else’s: English */
 for(let i=HOOKS.length-1;i>=0;i--)if(!MIS[HOOKS[i].mis])HOOKS.splice(i,1);
 for(const m of Object.values(MIS))m.who=m.who.filter(w=>w!=='abby');
@@ -22,7 +22,7 @@ for(const per of ROSTER)if(per)for(const r in per)per[r]=per[r].filter(e=>e[0]!=
 for(const p in CLASS)for(const r in CLASS[p])CLASS[p][r]=CLASS[p][r].filter(x=>x!=='abby');
 for(let i=ADAM_REACT.length-1;i>=0;i--)if(ADAM_REACT[i][0]==='abby')ADAM_REACT.splice(i,1);
 delete CHAT.abby;delete BONDLINE.abby;delete ARJUN_AT.abby;
-CHAT.corey=['I’m fine. My hair is fine. Everything’s fine.','Do you think purple curl cream is too much for a Friday?','I give my seat up on the 43 every morning. Nobody’s ever said thanks. I don’t need thanks. I need someone to notice.','It’s not product. It’s maintenance.'];
+CHAT.corey=['I’m fine. My hair is fine. Everything’s fine.','Do you think purple curl cream is too much for a school day?','I give my seat up on the 43 every morning. Nobody’s ever said thanks. I don’t need thanks. I need someone to notice.','It’s not product. It’s maintenance.'];
 ARJUN_AT.corey=['Corey, all that hair and still nothing upstairs.','Corey, you use more product than a hairdresser’s trash can.'];
 
 /* Corey’s curl-cream prank is about the curls, not about anyone watching */

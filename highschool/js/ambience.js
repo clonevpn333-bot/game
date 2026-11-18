@@ -117,15 +117,16 @@ function makeExtra(i){const s=(cal()*31+i*17+(D.period||0)*7)>>>0,h=n=>Math.floo
  const girl=h(1)%2===0,hs=girl?pick(['long','ponytail','bob','curlyl']):pick(EX_HS.filter(x=>!['long','ponytail','bob'].includes(x)));
  const id='x'+i;K[id]={n:'Some kid',col:'#7a7a8a',skin:EX_SK[h(2)%EX_SK.length],hair:EX_HR[h(3)%EX_HR.length],hs,top:EX_TOP[h(4)%EX_TOP.length],pants:['#2a2a33','#34405a','#3a3a3a','#4a3a2a'][h(5)%4],girl:girl?1:0,seed:200+i,v:300+h(6)%200,h:(h(7)%5)-2};K[id].id=id;return id}
 const GOSSIP=()=>{const g=['did you see the raccoon in the ceiling','my mom says this school is “a lot”','who keeps writing AIDAN WAS HERE on every desk','apparently the trailer moved four inches','bro the pizza today was green','i heard tyler’s mom came in. she was crying','don’t go in the library after lunch, the old kid is in there','mrs. tarn held her breath for nine minutes. i timed it','ms. sherman looked at me. i felt it in my teeth','mr. adam was screaming on the roof again','someone said the boiler room’s haunted','is it true about the jars in chem?','omer wears shorts in the SNOW','nivaan’s stream got 900 views. for a sandwich','i failed the beep test before it even started'];
- if(P.done.beef)g.push('did you SEE omer’s kick at the bus loop','i can’t stop thinking about the head. the HEAD');
- if(P.done.flimbus)g.push('mickther','you’re such a mickther','mr. adam said mickther on the PA lmao');
- if(P.done.pits)g.push('FEMA came. FEMA. for a SMELL','aidan’s pits are a war crime');
- if(P.done.darren)g.push('darren and hasan?? the drone thing?? I’M SICK');
- if(P.done.staffroom)g.push('ms. loach is out sick. like, OUT out','coach and pat. the supply closet. i’m just saying');
- if(P.done.vapes)g.push('somebody’s been killing the vape kids','i quit vaping. for my safety');
- if(P.done.lockdown)g.push('it was a RACCOON. the whole lockdown');
+ if(D&&D.done&&D.done.beef)g.push('did you SEE omer’s kick at the bus loop','i can’t stop thinking about the head. the HEAD');
+ if(D&&D.done&&D.done.flimbus)g.push('mickther','you’re such a mickther','mr. adam said mickther on the PA lmao');
+ if(D&&D.done&&D.done.pits)g.push('FEMA came. FEMA. for a SMELL','aidan’s pits are a war crime');
+ if(D&&D.done&&D.done.darren)g.push('darren and hasan?? the drone thing?? I’M SICK');
+ if(D&&D.done&&D.done.staffroom)g.push('ms. loach is out sick. like, OUT out','coach and pat. the supply closet. i’m just saying');
+ if(D&&D.done&&D.done.vapes)g.push('somebody’s been killing the vape kids','i quit vaping. for my safety');
+ if(D&&D.done&&D.done.lockdown)g.push('it was a RACCOON. the whole lockdown');
  if(D&&D.dead&&Object.keys(D.dead).some(k=>FRIENDS.includes(k)))g.push('is it true '+K[Object.keys(D.dead).find(k=>FRIENDS.includes(k))].n.toLowerCase()+' is… you know','where’s '+K[Object.keys(D.dead).find(k=>FRIENDS.includes(k))].n.toLowerCase()+'? he wasn’t on the bus');
  if(typeof crewEvidence==='function'&&crewEvidence()>2)g.push('somebody’s making a FILE on the teachers','i heard david’s got proof. like, real proof');
+ if(typeof MOREGOSSIP==='function')g.push(...MOREGOSSIP());
  if(D&&D.f&&D.f.aidanStache)g.push('why does aidan have a mustache','aidan’s mustache is kind of working??');
  return g};
 function spawnExtras(room,walkIn){

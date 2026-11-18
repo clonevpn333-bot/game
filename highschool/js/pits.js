@@ -127,7 +127,7 @@ hook({mis:'darren',period:2,room:'canteen',who:'hasan',label:'Get in the lunch l
  await N('A boy with ginger curls and prescription goggles on his forehead slides the full length of the table on a lunch tray and stops exactly in front of Hasan. He has practiced the stop. You can tell.');
  await say('darren','Hi. Darren. Swim team. Step five: the entrance. Eighth grade, the pool — you went into the deep end for my goggles when nobody else would.','love');
  await say('hasan','I don’t SWIM. I just didn’t want you to lose your goggles—','shock');
- await say('darren','Exactly. EXACTLY. There are eleven steps. This is five. Nine is at lunch.','love');
+ await say('darren','Exactly. EXACTLY. There are eleven steps. This is five. Nine is another day. At lunch. Good things take days, Hasan.','love');
  props=props.filter(p=>p.t!=='chips');hold('hasan',null);
  await walk('hasan',-16,140);remove('hasan');
  for(const n of['kid1','kid2','kid3','kid4'])if(A[n]){A[n].pose=null;remove(n)}

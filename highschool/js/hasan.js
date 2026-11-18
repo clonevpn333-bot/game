@@ -26,7 +26,7 @@ hook({mis:'darren',period:0,room:'bus',who:'hasan',label:'Ask Hasan what he’s 
  scene('bus',{hasan:[58,1,{y:146,hold:'letter',ex:'blush'}],you:[84,-1,{y:152}]});
  await say('hasan','(holding a folded note like it might explode) This was in my blazer pocket. On the bus. Someone put it IN my pocket. While I was IN the blazer.','scared');
  hold('hasan',null);
- await N('It’s written in blue gel pen, very neatly. “Hasan. Fair City Mall. 4pm. Wear something blue, it suits you. — D.”');
+ await N('It’s written in blue gel pen, very neatly. “Hasan. This week you are getting eleven steps. Wear something blue, it suits you. — D.”');
  await say('hasan','It suits me. SOMETHING suits me. Nobody has ever said anything suits me. My mom says I “carry clothes”.','blush');
  await say('hasan','What if it’s a prank. What if it’s ARJUN. Arjun’s middle name could be D. I don’t know Arjun’s middle name.','scared');
  const c=await choose(['“It’s not Arjun. Arjun doesn’t own a gel pen.”','“Whoever it is, they like you. That’s allowed.”','“Want me to find out who D is?”']);

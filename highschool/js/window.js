@@ -172,6 +172,7 @@ hook({mis:'window',period:3,room:'trailer',who:'auto',cond:()=>winAvail()&&winSt
  await walk('shermian',28,70);A.shermian.pose='hips';face('shermian',1);await sweet('shermian');
  b2.hide=1;
  await say('corey','(whispering, white) Two birds. She drew two birds.','blush');
+ if(D.f.br>=1&&!D.f.brettDead)await say('corey','(whispering) She has a boyfriend. She has a BRETT. And she drew two birds anyway.','blush');
  await classOut(c);
  D.f.winToday=1;winSet(2);part('window',2);
 }});
@@ -179,6 +180,7 @@ hook({mis:'window',period:3,room:'trailer',who:'auto',cond:()=>winAvail()&&winSt
 /* ---------------- FRIDAY THREE ---------------- */
 hook({mis:'window',period:3,room:'trailer',who:'auto',cond:()=>winAvail()&&winStage()===2,run:async()=>{
  const c=await winClass();
+ if(D.f.brettDead){pprop({t:'poster',x:300,y:34,stache:1,layer:-200});await N('There’s a MISSING poster taped to the inside of the Trailer door now. Brett, smiling with too many teeth. Abby walked past it this morning without looking at it.')}
  await N('Period 3. The Trailer. This time, Abby moves first. Before Corey even turns round, a folded note lands on his desk. It flew the whole way across the room.');
  await say('corey','(unfolding it with two fingers like it might explode) It says: “do you ever feel like today already happened?”','shock');
  await say('corey','What do I say? What do I SAY?','scared');
@@ -282,6 +284,14 @@ hook({mis:'window',period:7,room:'bus',who:'abby',label:'Get on the 43 behind Ab
  await say('corey','(laughing, dying) There’s a GRAPH?','happy');
  await say('abby','I moved here in seventh grade. Middle of the year. Nobody talks to the new girl in the middle of the year. I started drawing the bird on the window so there’d be one thing in that trailer that was mine.','sad');
  await say('abby','Nobody ever drew one back. For three years. Then you did.','cry');
+ if(D.f.brettDead){
+  await say('abby','Can I say one more thing? Brett used to read my phone every night. He counted my messages the way you counted my looks. Except he wasn’t counting because he liked them.','sad');
+  await say('abby','(very quietly) The day he went missing, you came in the next morning with dirt under your nails. You’ve still got some. There.','sad');
+  await N('Corey looks down at his hands. There is still a line of dark earth under one thumbnail. He has scrubbed it every night.');
+  await say('corey','Abby—','scared');
+  await say('abby','Don’t. I don’t want to know. I just want you to know that I know. And I’m still sitting here.','love');
+  await N('Nobody has ever buried anything for her before. She holds his good hand a little harder.');
+ }
  await N('Corey doesn’t say anything clever. He doesn’t try to. He just squeezes her hand so hard it probably hurts his broken one.');
  SFX.door();
  put('reilly',-14,1,{y:150});
@@ -317,7 +327,7 @@ K.reilly=K.reilly||{n:'Mrs. Reilly',col:'#8a7aa8',skin:'#e8c8b0',hair:'#d8d8e0',
 
 /* if Seat Wars is waiting too, you choose which Period 3 this is */
 {const _er=enterRoom;enterRoom=async function(room){
- if(!TEST&&room==='trailer'&&D.period===3&&winAvail()&&winStage()<4&&!P.done.seat&&!D.f.seat1){
+ if(!TEST&&room==='trailer'&&D.period===3&&winAvail()&&winStage()<4&&(typeof winReady!=='function'||winReady())&&!P.done.seat&&!D.f.seat1){
   const c=await choose(['Sit across from Corey (The Window Seat).','Line up along the back wall (Seat Wars).'],'Period 3, the Trailer.');
   if(c===1)D.f.seatPick=1;
  }

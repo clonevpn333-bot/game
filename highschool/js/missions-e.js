@@ -201,8 +201,8 @@ mission('striketwo',{name:'Strike Two',icon:'📸',who:['sean','stella'],
 hook({mis:'striketwo',period:8,room:'arcade',who:'sean',label:'Hang out with Sean and Stella',cond:()=>D.done.instella&&!D.dead.sean&&!D.dead.stella,run:async()=>{
  scene('arcade',{sean:[220,1,{y:150}],stella:[244,-1,{y:150}],you:[180,1,{y:156}]});
  cue('romance');
- await say('sean','We’re doing the claw machine. I’ve spent eleven pounds. I will spend my entire inheritance.','happy');
- await N('On the twelfth pound, the claw closes on the ugliest stuffed duck in Fair City. It has one eye. Sean holds it up like the World Cup.');
+ await say('sean','We’re doing the claw machine. I’ve spent eleven dollars. I will spend my entire inheritance.','happy');
+ await N('On the twelfth dollar, the claw closes on the ugliest stuffed duck in Fair City. It has one eye. Sean holds it up like the World Cup.');
  hold('sean','flower');
  await say('stella','It’s horrible. I love it. I’m calling it Strike Two.','laugh');
  await say('stella','My dad left when I was nine. He took everything except that ball. I think he forgot it.','sad');

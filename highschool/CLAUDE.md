@@ -17,6 +17,10 @@ so check every line.
 - Two-week calendar (14 days). Monday’s odd/even pick sets the week, alternating. Weekends have side quests.
 - Dying replays the same day from its start. NPC deaths last for the rest of that week; everyone is back after the weekend.
 - Quest progress carries across days: a quest picks up where it was left, never restarts.
+- Quests reset every two weeks (a new run). Deaths reset every weekend.
+- Big quests and romances take days: one step per school day (`LONG` in `js/romance.js`). Lines must not promise a next step “at lunch” or “after school” today.
+- Show how quests turned out during the two weeks: couples together around school, posters, gossip, changed chat lines.
+- Small talk should differ from day to day.
 - Later quest steps should be available at every sensible time (break and lunch, etc.), not one slot.
 - Quest steps must not appear before the scene that sets them up.
 - Never refer to “always Friday” or a repeating Friday for the living characters (only the 1987 ghost lore keeps it).
