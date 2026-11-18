@@ -30,7 +30,7 @@ HOOK.update=(dt,rdt)=>{
  if(panelMode!=='roam'||busy||!A.you)return;
  const a=A.you,vx=(keys.r-keys.l),vy=(keys.d-keys.u);
  if(vx||vy){
-  if(vx)a.dir=vx;a.moving=true;
+  if(vx)a.dir=vx;a.back=vy<0&&!vx?1:(vx||vy>0?0:a.back);a.moving=true;
   const f=floorOf(D.room);
   a.x=clamp(a.x+vx*62*rdt,10,310);a.y=clamp(a.y+vy*40*rdt,f[0],f[1]);
   a.walk+=rdt*11;D.x=Math.round(a.x);

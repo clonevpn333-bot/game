@@ -83,8 +83,8 @@ const witnessesNow=()=>Object.keys(A).filter(k=>k!=='you'&&A[k]&&!A[k].dead&&A[k
  if(wit<=2)return _lk(t);              /* nobody to see it: she doesn’t bother hiding it */
  if(Math.random()<.5)return;
  const v=A[L.victim]||put(L.victim,300,-1,{y:146});
- await say(t,pick(['(sweetly) '+K[L.victim].n+', sweetie, could you help Miss carry something to the supply closet? Just you. Just for a minute.','(not looking up) '+K[L.victim].n+'. Stay behind a second when I take the register to the office. You can carry it.','(smiling with no teeth) '+K[L.victim].n+'. Hall pass. Come with me. It’s about your… behavior.']),'happy');
- await say(L.victim,pick(['…Okay, Miss.','Can someone else come?','Is it heavy?']),'scared');
+ await say(t,pick(['(sweetly) '+K[L.victim].n+', {PET}, could you help {ME} carry something to the supply closet? Just you. Just for a minute.','(not looking up) '+K[L.victim].n+'. Stay behind a second when I take the register to the office. You can carry it.','(smiling with no teeth) '+K[L.victim].n+'. Hall pass. Come with me. It’s about your… behavior.']),'happy');
+ await say(L.victim,pick(['…Okay.','Can someone else come?','Is it heavy?']),'scared');
  await Promise.all([walk(t,334,70),walk(L.victim,322,60)]);
  A[t].vis=false;v.vis=false;
  await N(pick(['The door clicks shut behind them. Somebody keeps writing. Somebody stops writing.','The door shuts. For about a minute the only sound is the clock. Then, from down the corridor, one short thump. Then a second, longer one.','Nobody says anything. Through the wall, very faintly, something heavy gets dragged.']));
@@ -95,18 +95,18 @@ const witnessesNow=()=>Object.keys(A).filter(k=>k!=='you'&&A[k]&&!A[k].dead&&A[k
   scene('closet',{you:[40,1,{y:156}]},true);fxState.dark=.35;
   put(L.victim,200,-1,{y:150});put(t,176,1,{y:146});
   await toes(L.victim,t);
-  await say(t,'(not turning round) This little piggy went to market. And this little piggy got a seat in Miss’s drawer.','evil');
+  await say(t,'(not turning round) This little piggy went to market. And this little piggy stayed after class.','evil');
   const run=await mash('Get back to class. Don’t make a sound.',{need:16,time:4,info:'MASH, quietly!'});
-  if(!run){face(t,-1);await say(t,'(turning, very slowly) Oh, sweetie. You don’t have a hall pass.','evil');SFX.squelch();blood(A.you.x,A.you.y-24,40,null,100,A.you.y+2);await die(DEATHS.closet?'closet':'seat');return}
+  if(!run){face(t,-1);await say(t,'(turning, very slowly) Oh, {PET}. You don’t have a hall pass.','evil');SFX.squelch();blood(A.you.x,A.you.y-24,40,null,100,A.you.y+2);await die(DEATHS.closet?'closet':'seat');return}
   D.dead[L.victim]=1;fxState.dark=0;
   scene(snap.room,null,true);for(const k in snap.A)if(k!==L.victim&&k!==t)A[k]=snap.A[k];props=snap.props;decals=snap.decals;if(snap.A[t]){A[t]=snap.A[t];A[t].vis=false}
-  await N('You get back to your seat. Your heart is going so hard your pen is shaking. Twenty minutes later, '+K[t].n+' comes back in alone, wiping her hands on a paper towel that keeps getting redder.');
+  await N('You get back to your seat. Your heart is going so hard your pen is shaking. Twenty minutes later, '+K[t].n+' comes back in alone, wiping '+HIS(t)+' hands on a paper towel that keeps getting redder.');
   if(A[t]){A[t].vis=true;A[t].x=300;await walk(t,TEACHER_SPOT[ROOM]?TEACHER_SPOT[ROOM][0]:44,70)}
   return;
  }
  D.dead[L.victim]=1;
  await wait(600);A[t].vis=true;A[t].x=300;await walk(t,TEACHER_SPOT[ROOM]?TEACHER_SPOT[ROOM][0]:44,70);
- await say(t,pick(['(back, alone, wiping her hands on a paper towel) Where were we, sweeties?','(back alone, slightly out of breath) '+K[L.victim].n+' went home. Wasn’t feeling well. Isn’t feeling anything now. Page twelve.','(back alone, a little smear of something on her cuff) Let’s carry on.']),'happy');
+ await say(t,pick(['(back, alone, wiping hands on a paper towel) Where were we, {PETS}?','(back alone, slightly out of breath) '+K[L.victim].n+' went home. Wasn’t feeling well. Isn’t feeling anything now. Page twelve.','(back alone, a little smear of something on one cuff) Let’s carry on.']),'happy');
  const w=witnessesNow().filter(k=>FRIENDS.includes(k));if(w.length)await say(pick(w),pick(['(whispering, not looking up) Did… did they come back?','(whispering) I’m not asking. I’m not asking. Someone else ask.','(whispering) That’s three this week. Three.']),'scared');
 }}
 ROOMS.closet={name:'Supply Closet',music:'evil',bg(){

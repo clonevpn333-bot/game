@@ -94,14 +94,14 @@ buildRoom=function(room){_build(room);if(D.period===8&&room==='foodcourt'&&D.don
 
 /* ---------- Mr. Adam: every period he's a bit further gone ---------- */
 const ADAM_PA=[
- 'Good morning, Highgate! Today is Friday. It is ALWAYS Friday. Have a normal one. A NORMAL one.',
+ 'Good morning, Highgate! Reminder: the state inspection is coming. Act normal. Have a normal one. A NORMAL one.',
  'This is your principal. Please stop looking at me through the walls. I can feel it. I can feel all four hundred of you.',
- 'Break time. The inspectors are coming on Monday. Monday is CANCELLED. I have cancelled Monday. That is all.',
+ 'Break time. The inspectors are coming. Please stop dying until then. Die AFTER. That is all.',
  'Would the boy who keeps laughing inside my head please report to my office. Bring a sandwich. I haven’t eaten since Tuesday.',
  'Lunch is served. I have eaten the attendance list. Attendance is now one hundred percent. You’re ALL inside me now.',
  'PE. Run. RUN. The inspectors can smell fear and lanyards.',
  'Final lesson. I have been on the roof. The roof understands me. The roof has never once asked for a data report.',
- 'Home time. Nobody goes home. Have a lovely weekend. There is no weekend.',
+ 'Home time. Go home. Please. Go home. I never go home.',
  ''
 ];
 const ADAM_REACT=[
@@ -230,7 +230,7 @@ hook({mis:'headcase',period:2,room:'corridor',who:'adam',label:'Ask Mr. Adam if 
  await say('adam','So no. Monday is not happening. I’ve made… arrangements.','evil');
  const c=await choose(['“Sir, you’re a good head. Genuinely.”','“Sir, you’re actually insane.”','“What arrangements?”']);
  if(c===0){await say('adam','…Nobody’s ever said that. Twenty-two years.','cry');await say('adam','Doesn’t change the arrangements, though. Lovely of you.','smirk');D.f.adamKind=1}
- if(c===1){await say('adam','INSANE? I’m the only SANE one! It’s FRIDAY! It’s been Friday for WEEKS and nobody else has NOTICED!','evil');await say('aidan','(very quietly, behind you) He’s noticed.','smirk')}
+ if(c===1){await say('adam','INSANE? I’m the only SANE one! Every day in this building is the SAME day, and nobody else has NOTICED!','evil');await say('aidan','(very quietly, behind you) He’s noticed.','smirk')}
  if(c===2){await say('adam','Arrangements. In the boiler room. Ticking arrangements. Shh.','smirk');D.f.adamBoiler=1}
  intel('adamMonday');
  D.f.adam1=1;part('headcase',1);

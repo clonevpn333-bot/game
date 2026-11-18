@@ -22,20 +22,20 @@ const CLASS_ACTS=[
   const t=teacherOf(c);if(t){await tw(pb,{x:A[t].x,y:A[t].y-26},380);pb.hide=1;SFX.thud();await evil(t);
    await say(t,'Who. Threw. That.','evil');
    const w=await choose(['“It was me.”','Point at the kid next to you.']);
-   if(w===0){await say('you','It was me.');await say(t,'(very close to your face) Honesty is lovely, sweetie. Next time Miss throws something back. And Miss doesn’t throw paper.','evil')}
+   if(w===0){await say('you','It was me.');await say(t,'(very close to your face) Honesty is lovely, {PET}. Next time {ME} throws something back. And {ME} doesn’t throw paper.','evil')}
    else{const nb=c.nb[0];if(nb){pose('you','point');await say(nb,'(betrayed) WHAT? I was literally writing the date.','shock');await say(t,nb===c.t?'':'Detention, '+K[nb].n+'. And then the other kind of detention.','evil');pose('you',null)}}
    await sweet(t)}else pb.hide=1;
  }},
  {t:'Pass a note to a friend.',tag:'✉️',run:async c=>{
   const fr=kidsIn(c).filter(k=>FRIENDS.includes(k));const to=fr.length?pick(fr):null;if(!to)return;
   const m=await choose(['“this class is a war crime”','“do u think the teacher has a family”','A drawing of the teacher as a horse.'],'The note to '+K[to].n+':');
-  const msg=['this class is a war crime','do u think the teacher has a family','(a drawing of the teacher as a horse, with a speech bubble that says “neigh, sweetie”)'][m];
+  const msg=['this class is a war crime','do u think the teacher has a family','(a drawing of the teacher as a horse, with a speech bubble that says “NEIGH. DETENTION.”)'][m];
   const pl=pprop({t:'plane',x:A.you.x,y:A.you.y-22,layer:30});await tw(pl,{x:A[to].x,y:A[to].y-22},500);pl.hide=1;
   const t=teacherOf(c);
   if(t&&Math.random()<.4){
    await walk(t,A[to].x-12,80);hold(t,'note');await evil(t);
    await say(t,'(reading it out loud to the whole room) “'+msg+'.”','evil');classLaugh(1000);
-   await say(t,m===2?'(looking at the drawing for a long, long time) …The likeness is good. That’s what upsets Miss.':'Notes are for people who don’t love Miss. Who doesn’t love Miss?','evil');hold(t,null);await sweet(t);
+   await say(t,m===2?'(looking at the drawing for a long, long time) …The likeness is good. That’s what upsets {ME}.':'Notes are for people who don’t respect {ME}. Who doesn’t respect {ME}?','evil');hold(t,null);await sweet(t);
   }else{
    const R_={0:['lmao it really is','(underneath, smaller) help'],1:['no. they live here. they sleep in the cupboard','i’ve seen the cupboard'],2:['IM GOING TO DIE LAUGHING','(a second drawing: you, as a smaller horse)']};
    await dms(K[to].n,'a folded note',[['me',msg],...R_[m].map(x=>['them',x])],{live:R_[m].length});
@@ -47,16 +47,16 @@ const CLASS_ACTS=[
   if(r){const ans={arjun:'Every single answer: “mickther”. Question 9 is a drawing of Hasan.',hasan:'He’s drawn a little heart next to every answer he isn’t sure about. Every answer has a heart.',corey:'He’s written a curl cream routine. In steps. It’s numbered.',nivaan:'Every answer: “like and subscribe”. He got the first one right somehow.',aidan:'Every answer is “1987”. Including the one about fractions. He’s underlined it twice.',kenneth:'Blank. Completely blank. He’s written his own full name, school and dad’s name at the top out of habit, then crossed it out.',omer:'He’s written the answers in a really aggressive font. Most of them are right.',david:'Perfect. Every one. In fountain pen. He’s also written “I know you’re looking” at the bottom.'};
    await N(ans[nb]||'Their answers are worse than yours. Somehow. You copy one anyway out of respect.');return}
   const t=teacherOf(c);if(!t)return;await evil(t);
-  await say(t,'Eyes on your OWN paper, sweetie. Miss has eyes on hers. Miss has eyes on everyone’s.','evil');
-  await N('She takes your quiz, rips it in half, and puts both halves in her mouth. She chews them while she walks back to the front.');await sweet(t);
+  await say(t,'Eyes on your OWN paper, {PET}. {ME} has eyes on everyone’s.','evil');
+  await N(K[t].n+' takes your quiz, rips it in half, and puts both halves in '+HIS(t)+' mouth. Chewing, all the way back to the front.');await sweet(t);
  }},
  {t:'Put your head down. Just for a second.',tag:'💤',run:async c=>{
   const t=teacherOf(c);pose('you','sit');fxState.dark=0;await tw(fxState,{dark:.85},700);
   await N(pick(['You dream you’re in a hallway made entirely of lockers. Every one is 217. Aidan is inside all of them, knocking politely.','You dream that Mr. Biscuits the cat is teaching the class. He’s better at it. Everyone loves him. Ms. Shermian is in the back row, crying.','You dream the bell rings and everyone leaves and you can’t stand up because your legs are made of trays. Pat is there. She says, “It’s fine, love. It’s fine.”','You dream about absolutely nothing for the first time in weeks. It’s amazing.']));
   await tw(fxState,{dark:0},400);
-  if(t){await walk(t,A.you.x+14,90);face(t,-1);await say(t,'(standing right over you) Are we BORED, sweetie? Is Miss BORING?','evil');
-   const r=await choose(['“No, Miss. I was thinking about the lesson.”','Wipe the drool off your desk with your sleeve and say nothing.']);
-   await say(t,r?'(watching the drool) …Gross. Lovely. Gross.':'Thinking with your EYES CLOSED? Miss thinks like that too. In the night. About all of you.','evil')}
+  if(t){await walk(t,A.you.x+14,90);face(t,-1);await say(t,'(standing right over you) Are we BORED, {PET}? Is {ME} BORING?','evil');
+   const r=await choose(['“No, '+SIRMISS(t)+'. I was thinking about the lesson.”','Wipe the drool off your desk with your sleeve and say nothing.']);
+   await say(t,r?'(watching the drool) …Gross. Lovely. Gross.':'Thinking with your EYES CLOSED? {ME} thinks like that too. In the night. About all of you.','evil')}
  }},
  {t:'Draw something on your desk.',tag:'✏️',run:async c=>{
   const m=await choose(['A little heart with initials in it.','The teacher as a horse.','“AIDAN WAS HERE”']);
@@ -75,18 +75,18 @@ const CLASS_ACTS=[
  {t:'Actually answer the teacher’s question.',tag:'✋',run:async c=>{
   const t=teacherOf(c);if(!t)return;
   const Q=[['What’s 7 × 8?',['56','54','A lot.'],0],['What’s the past tense of “run”?',['Ran','Runned','Escaped'],0],['What does a plant need to make food?',['Sunlight','Vibes','Pat'],0],['What year did the boiler at this school blow up?',['1987','1978','What boiler?'],2]];
-  const q=pick(Q);await say(t,'Who can tell Miss: '+q[0],'happy');pose('you','up');
+  const q=pick(Q);await say(t,'Who can tell {ME}: '+q[0],'happy');pose('you','up');
   const a=await choose(q[1]);pose('you',null);
-  if(a===q[2]){await say(t,q[0].includes('boiler')?'(very still) …Good answer, sweetie. There was no boiler. Good.':'Correct! Gold star! Gold stars are love.','happy');bond(t,1)}
-  else{await evil(t);await say(t,q[0].includes('boiler')?'(very quietly, writing your name down) How does a child know that.':'(writing your name on the board, slowly, in red) Wrong, sweetie. Miss will remember this one.','evil');await sweet(t)}
+  if(a===q[2]){await say(t,q[0].includes('boiler')?'(very still) …Good answer, {PET}. There was no boiler. Good.':'Correct! Gold star, {PET}.','happy');bond(t,1)}
+  else{await evil(t);await say(t,q[0].includes('boiler')?'(very quietly, writing your name down) How does a child know that.':'(writing your name on the board, slowly, in red) Wrong, {PET}. {ME} will remember this one.','evil');await sweet(t)}
  }}
 ];
 /* ---------------- things that just happen ---------------- */
 const CLASS_EVENTS=[
  async c=>{const ks=kidsIn(c);if(!ks.length)return;const v=pick(ks);SFX.buzz?SFX.buzz():SFX.static();await N('A wasp comes in through the window and lands on '+K[v].n+'’s pencil case. Nobody breathes.');A[v].ex='scared';await say(v,'(frozen, whispering) Is it on me. Don’t tell me if it’s on me. Tell me if it’s on me.','scared');const t=teacherOf(c);if(t){await walk(t,A[v].x-10,90);SFX.smack();await N(K[t].n+' crushes it with a bare hand. Then wipes the hand on '+K[v].n+'’s shirt, and goes back to the board.')}},
- async c=>{const ks=kidsIn(c);if(!ks.length)return;const v=pick(ks);SFX.beep();await N('Somebody’s phone goes off. Full volume. The ringtone is a man screaming “WAKE UP, KING” over a bass drop. It’s '+K[v].n+'’s.');A[v].ex='shock';const t=teacherOf(c);if(t){await walk(t,A[v].x-10,90);hold(t,'phone');await say(t,'No phones, sweetie. It goes in Miss’s drawer. With the others. The drawer is very full.','evil');hold(t,null);await walk(t,TEACHER_SPOT[c.room]?TEACHER_SPOT[c.room][0]:44,80)}},
+ async c=>{const ks=kidsIn(c);if(!ks.length)return;const v=pick(ks);SFX.beep();await N('Somebody’s phone goes off. Full volume. The ringtone is a man screaming “WAKE UP, KING” over a bass drop. It’s '+K[v].n+'’s.');A[v].ex='shock';const t=teacherOf(c);if(t){await walk(t,A[v].x-10,90);hold(t,'phone');await say(t,'No phones, {PET}. It goes in {ME}’s drawer. With the others. The drawer is very full.','evil');hold(t,null);await walk(t,TEACHER_SPOT[c.room]?TEACHER_SPOT[c.room][0]:44,80)}},
  async c=>{if(D.dead.aidan||D.f.aidanDead)return;await N('In the little window in the classroom door: Aidan. Just his face. He isn’t in this class. He waves. Slowly. Everyone sees. Everyone decides not to have seen.');const ks=kidsIn(c);if(ks.length)await say(pick(ks),'(not looking at the door) Don’t look at the door.','scared')},
- async c=>{const ks=kidsIn(c);if(ks.length<2)return;const v=pick(ks);SFX.splat();await N(K[v].n+' throws up. Into their own backpack. With incredible accuracy. The smell gets to the next desk, and then the next one, and it becomes a chain.');for(const k of ks.filter(k=>k!==v).slice(0,2)){A[k].ex='hurt';SFX.splat();await wait(300)}const t=teacherOf(c);if(t)await say(t,'(not looking up) Bodies are beautiful, sweeties. Keep working.','happy')},
+ async c=>{const ks=kidsIn(c);if(ks.length<2)return;const v=pick(ks);SFX.splat();await N(K[v].n+' throws up. Into their own backpack. With incredible accuracy. The smell gets to the next desk, and then the next one, and it becomes a chain.');for(const k of ks.filter(k=>k!==v).slice(0,2)){A[k].ex='hurt';SFX.splat();await wait(300)}const t=teacherOf(c);if(t)await say(t,'(not looking up) Bodies are beautiful, {PETS}. Keep working.','happy')},
  async c=>{const ks=kidsIn(c);if(!ks.length)return;const v=pick(ks);blood(A[v].x,A[v].y-24,14,null,40,A[v].y+2);A[v].ex='shock';await N(K[v].n+'’s nose starts bleeding all over the worksheet, out of nowhere, like a tap.');const t=teacherOf(c);if(t)await say(t,'(taking the bloody worksheet, delighted) Extra credit! That’s commitment.','happy')},
  async c=>{SFX.bell();SFX.bell();await N('The fire alarm. Everyone files out into the rain and stands in lines on the field for twenty minutes. Nobody was on fire. When you file back in, the teacher counts heads twice and gets a different number each time.');}
 ];
@@ -179,7 +179,7 @@ for(const id of['brayden','kaylee','jaxon'])for(const room of['toilets','field',
    D.f.vapeDone[id]=1;vapeScore('clean');return 'stay';
   }else await VKILL[room].run(id);
   D.f.vapeDone[id]=1;vapeScore('kill');
-  if(teach.length){const t=teach[0];await say(t,pick(['(nodding) Vaping is a disgusting habit, sweetie. Miss would have done the same. Miss HAS done the same.','(not even looking up) Good. Clean that up before the bell.','(slow clap) Initiative. I like initiative.']),'happy')}
+  if(teach.length){const t=teach[0];await say(t,pick(['(nodding) Vaping is a disgusting habit, {PET}. {ME} would have done the same. {ME} HAS done the same.','(not even looking up) Good. Clean that up before the bell.','(slow clap) Initiative. I like initiative.']),'happy')}
   const ks=Object.keys(A).filter(k=>FRIENDS.includes(k)&&!A[k].dead);if(ks.length)await say(pick(ks),pick(['…Okay. Okay. We didn’t see that. Did we see that?','I’m never vaping. I was never going to vape. I’m extra never vaping now.','Bro. BRO. It was watermelon flavor.']),'shock');
   return 'stay';
  }});
