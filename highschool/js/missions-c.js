@@ -132,7 +132,7 @@ hook({mis:'marcus',period:0,room:'bus',who:'marcus',label:'Ask Marcus where he�
    ================================================================= */
 mission('paul',{name:'Royal Rumble',icon:'🤼',who:['paul','kenneth','alex'],
  blurb:'Paul loves wrestling people. Paul especially loves wrestling people who didn’t agree to it.',
- parts:['Lunch: last one on the mats'],tips:['Lunch, sports hall. Paul’s doing a rumble. Mash.']});
+ parts:['Lunch: last one on the mats'],tips:['Lunch, gym. Paul’s doing a rumble. Mash.']});
 
 hook({mis:'paul',period:4,room:'gym',who:'paul',label:'Enter Paul’s Royal Rumble',run:async()=>{
  scene('gym',{paul:[200,-1,{pose:'hips',y:144}],kenneth:[150,1,{y:146}],alex:[250,-1,{y:146}],you:[120,1,{y:152}]});
@@ -155,12 +155,12 @@ hook({mis:'paul',period:4,room:'gym',who:'paul',label:'Enter Paul’s Royal Rumb
   await hop('you',22,400);A.you.pose='lie';SFX.crunch();shake(1.4);
   await say('paul','Sorry. SORRY. Instinct.','shock');
   A.you.ex='dead';kill('you','lie',{pool:14,bleed:1,spray:6});
-  await N('Paul piledrives you on to the sports hall floor. It isn’t a mat. It’s never been a mat.');
+  await N('Paul piledrives you on to the gym floor. It isn’t a mat. It’s never been a mat.');
   await die('rumble');
  }
  await hop('paul',10,400);A.paul.pose='lie';A.paul.dir=1;SFX.thud();shake(1);
  await say('paul','(from the floor, crying happy tears) I let you win. I didn’t. You won. I’m so PROUD of you.','cry');
- await N('He gets up, picks you up like a toddler, and carries you round the sports hall twice.');
+ await N('He gets up, picks you up like a toddler, and carries you round the gym twice.');
  await complete('paul');
 }});
 
@@ -169,7 +169,7 @@ hook({mis:'paul',period:4,room:'gym',who:'paul',label:'Enter Paul’s Royal Rumb
    ================================================================= */
 mission('kenneth',{name:'Buzzer Beater',icon:'🏀',who:['kenneth','alex','paul'],
  blurb:'Kenneth is five foot seven of pure confidence. He says nobody has ever beaten him one-on-one. That isn’t true. Nobody’s been allowed to say so.',
- parts:['Break: beat Kenneth one-on-one'],tips:['Break, sports hall.']});
+ parts:['Break: beat Kenneth one-on-one'],tips:['Break, gym.']});
 
 hook({mis:'kenneth',period:2,room:'gym',who:'kenneth',label:'Play Kenneth one-on-one',run:async()=>{
  scene('gym',{kenneth:[220,-1,{pose:'dribble',y:146}],paul:[150,1,{y:144,pose:'hips'}],alex:[120,1,{y:146}],you:[190,1,{y:152}]});
@@ -372,7 +372,7 @@ coll('prices',{room:'corridor',period:0,x:96,y:150,name:'Angelo’s price list',
 coll('notebook',{room:'toilets',x:260,y:150,name:'Marcus’s notebook (DO NOT OPEN)',desc:'You open it. It’s three hundred pages of extremely good poems about bread. You close it. You respect him more and less.',hint:'The bathroom. Any time.'});
 coll('nugget',{room:'canteen',period:2,x:40,y:150,name:'A mystery nugget',desc:'It moved. You definitely saw it move. You put it in your pocket anyway.',hint:'Cafeteria, at break.'});
 coll('tooth',{room:'field',period:4,x:30,y:160,name:'A tooth (not yours)',desc:'Adult molar. Coach’s javelin target is right next to it. You don’t think about it.',hint:'The field, at lunch, far left.'});
-coll('trainer',{room:'gym',period:2,x:290,y:150,name:'Gary Pritchard’s left sneaker',desc:'Still laced. Still warm. Nobody’s seen the rest of Gary since the beep test.',hint:'Sports hall, at break, under the hoop.'});
+coll('trainer',{room:'gym',period:2,x:290,y:150,name:'Gary Pritchard’s left sneaker',desc:'Still laced. Still warm. Nobody’s seen the rest of Gary since the beep test.',hint:'gym, at break, under the hoop.'});
 coll('overdue',{room:'library',period:[1,3,6],x:40,y:150,name:'An overdue book',desc:'“Due back: 14th March 1987.” The fine is $11,402. Ms. Sherman signed it out.',hint:'Library, during a lesson you’re bunking.'});
 coll('collar',{room:'maths',period:4,x:30,y:150,name:'Mr. Biscuits’ collar',desc:'The little bell is still on it. The tag says “If found, I will find YOU.”',hint:'Math room, at lunch.'});
 coll('kevin',{room:'chem',period:4,x:140,y:150,name:'A jar labelled KEVIN',desc:'It’s just teeth. Lots of teeth. Some of them are baby teeth.',hint:'Chem lab, at lunch.'});

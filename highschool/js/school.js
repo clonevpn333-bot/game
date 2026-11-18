@@ -105,7 +105,7 @@ function applyLooks(){for(const id in A){if(id==='you'||A[id].dead)continue;cons
 function roamHint(){
  const p=PERIODS[D.period],near=roamTarget;
  let s=near?('<b>'+(document.body.classList.contains('touch')?'TALK':'E')+'</b> '+near.label+' · '):'';
- s+=document.body.classList.contains('touch')?'◀ ▶ walk · MAP to move':'<b>←/→</b> walk · <b>M</b> map · <b>Q</b> quests';
+ s+=document.body.classList.contains('touch')?'◀ ▶ ▲ ▼ walk · MAP to move':'<b>←/→/↑/↓</b> walk · <b>M</b> map · <b>Q</b> quests';
  if(p.lesson&&!TEACH[D.period]?.[D.room])s+=' · <i style="color:#e9a">bunking</i>';
  $('hint').innerHTML=s;
 }

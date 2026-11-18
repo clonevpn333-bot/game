@@ -83,7 +83,7 @@ hook({mis:'beep',period:6,room:'gym',who:'auto',run:async()=>{
  const c=await classIn('gym',{kids,fixed:Object.fromEntries(kids.map((n,i)=>[n,i+1])),you:0});
  cue('gym');hold('coach','cleaver');
  prop({t:'cd',x:160,y:110});
- await N('Period 7. The sports hall. Two lines of tape, twenty meters apart. A CD player on a chair. Coach Dunmore is holding a meat cleaver like a clipboard.');
+ await N('Period 7. The gym. Two lines of tape, twenty meters apart. A CD player on a chair. Coach Dunmore is holding a meat cleaver like a clipboard.');
  await say('coach','BEEP TEST. You run between the lines. You’re on the line by the beep. Miss a beep, you’re CUT.','evil');
  await N('He taps the cleaver against his whistle. Ting. Ting.');
  if(D.f.beepRig){

@@ -144,7 +144,7 @@ hook({mis:'stilllife',day:'even',period:1,room:'art',who:'auto',run:async()=>{
    ================================================================= */
 mission('pitch',{name:'Perfect Pitch',icon:'🎼',who:['kenneth','sean','stella'],
  blurb:'Mr. Fenwick has perfect pitch, a tuning fork, and no tolerance. Kenneth has a solo. Kenneth has never once sung in tune.',
- parts:['Break: Kenneth is panicking','Period 4, Music: the solo'],tips:['Even day, break, sports hall. Kenneth needs a coach. Sean has the voice.','Even day, Period 4, Music. Stay on the beat.'],
+ parts:['Break: Kenneth is panicking','Period 4, Music: the solo'],tips:['Even day, break, gym. Kenneth needs a coach. Sean has the voice.','Even day, Period 4, Music. Stay on the beat.'],
  variants:{sang:'He sang',duet:'Sean and Stella take it',fork:'Tuned'}});
 hook({mis:'pitch',day:'even',period:2,room:'gym',who:'kenneth',label:'Ask Kenneth why he’s humming',look:{pose:null,ex:'scared'},cond:()=>!D.f.pitch1,run:async()=>{
  scene('gym',{kenneth:[220,-1,{y:146,ex:'scared'}],you:[196,1,{y:152}]});
@@ -395,7 +395,7 @@ DEATHS.window={name:'A Lovely Day for Flying',desc:'You looked at the watch.',hi
    ================================================================= */
 mission('talent',{name:'Highgate’s Got Talent',icon:'🎤',who:['paul','marcus','kayden','sean','stella'],
  blurb:'Mr. Adam has turned Period 8 into a talent show for the inspectors. There are no inspectors. There’s a Zoom link on the projector that goes nowhere.',
- parts:['Lunch: sign the acts up','Period 8, Assembly: the show'],tips:['Even day, lunch, sports hall. Paul’s doing the sign-up sheet. Pick the running order.','Even day, Period 8, the hall.'],
+ parts:['Lunch: sign the acts up','Period 8, Assembly: the show'],tips:['Even day, lunch, gym. Paul’s doing the sign-up sheet. Pick the running order.','Even day, Period 8, the hall.'],
  variants:{win:'Standing ovation',adam:'Mr. Adam’s act'}});
 hook({mis:'talent',day:'even',period:4,room:'gym',who:'paul',label:'Look at Paul’s sign-up sheet',look:{hold:'clipboard',pose:null},cond:()=>!D.f.tal1,run:async()=>{
  scene('gym',{paul:[200,-1,{y:144,hold:'clipboard'}],you:[176,1,{y:152}]});

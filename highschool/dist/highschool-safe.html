@@ -25,6 +25,7 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 #clock{background:#141120e6;border:2px solid var(--edge);padding:5px 9px;font-size:13px;line-height:1.35;color:var(--gold);pointer-events:none;max-width:52vw}
 #clock small{display:block;color:var(--dim);font-size:11px}
 #clock .story{color:#ffe1a8;font-size:11px;margin-top:3px;border-top:1px solid #4e4266;padding-top:3px;max-width:44vw;line-height:1.35}
+@media (max-width:640px){#clock{font-size:10px;max-width:58vw}#clock small{font-size:9px}#clock .story{font-size:9px;max-width:56vw;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}}
 .storybox{border-color:#cab38c!important;background:#221a2c!important;margin-bottom:8px}
 #topbtns{display:flex;gap:5px;pointer-events:auto}
 .tb{background:#141120e6;border:2px solid var(--edge);padding:6px 9px;font-size:12px;letter-spacing:.06em;color:var(--ink)}
@@ -67,6 +68,7 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 body.touch .pad{display:flex}
 .pad button{min-width:58px;min-height:52px;background:#231b33;border:2px solid #6b5a86;font-size:18px;touch-action:none}
 .pad button.on,.pad button:active{background:#5a3d6e}
+.pad .dir{min-width:44px;padding:0}
 .pad .act{min-width:76px;background:#5a2b38;border-color:#c47b72;font-size:14px}
 /* ---------- overlays ---------- */
 .ov{position:fixed;inset:0;z-index:20;background:#0b0912f2;display:flex;flex-direction:column;align-items:center;padding:max(14px,env(safe-area-inset-top)) 12px 14px;overflow:auto}
@@ -213,7 +215,7 @@ body.portrait #ptext{max-height:calc(100vh - var(--cb,60vh) - 90px)}
    </div>
   </div>
   <div id="roam">
-   <div class="pad"><button id="pL" aria-label="Walk left">◀</button><button id="pR" aria-label="Walk right">▶</button></div>
+   <div class="pad"><button id="pL" class="dir" aria-label="Walk left">◀</button><button id="pU" class="dir" aria-label="Walk up">▲</button><button id="pD" class="dir" aria-label="Walk down">▼</button><button id="pR" class="dir" aria-label="Walk right">▶</button></div>
    <div id="hint"></div>
    <div class="pad"><button id="pMap" aria-label="Map">MAP</button><button id="pA" class="act" aria-label="Talk or use">TALK</button></div>
   </div>
@@ -1185,7 +1187,7 @@ const ROOMS={
   windowPane(180,20,74,44,{trees:1});
   tiles('#c8d0c8','#b8c0b8',16);
  },items:[{y:146,d:()=>{R(60,132,200,4,'#a87a4a');R(60,136,200,2,'#7a5a3a');R(70,138,2,10,'#555');R(248,138,2,10,'#555')}},{y:176,d:()=>{R(40,160,240,4,'#a87a4a');R(40,164,240,2,'#7a5a3a');R(50,166,2,10,'#555');R(268,166,2,10,'#555')}}]},
- gym:{name:'Sports Hall',music:'gym',bg(){
+ gym:{name:'Gym',music:'gym',bg(){
   wall('#c8b8a0','#8a7a60');for(let i=0;i<5;i++){R(20+i*64,6,40,14,'#8ab0d0');R(20+i*64,6,40,1,'#d0e8f8')}
   for(let i=0;i<10;i++)R(8+i*5,30,2,76,'#b88a5a');for(let j=0;j<12;j++)R(6,34+j*6,52,2,'#b88a5a');
   R(282,24,28,22,'#fff');R(282,24,28,22,'#fff');R(284,26,24,18,'#fff');R(288,32,16,10,'rgba(0,0,0,.08)');R(290,46,12,2,'#e0502a');for(let i=0;i<4;i++)R(290+i*3,48,1,8,'#eee');
@@ -1348,7 +1350,7 @@ function applyLooks(){for(const id in A){if(id==='you'||A[id].dead)continue;cons
 function roamHint(){
  const p=PERIODS[D.period],near=roamTarget;
  let s=near?('<b>'+(document.body.classList.contains('touch')?'TALK':'E')+'</b> '+near.label+' · '):'';
- s+=document.body.classList.contains('touch')?'◀ ▶ walk · MAP to move':'<b>←/→</b> walk · <b>M</b> map · <b>Q</b> quests';
+ s+=document.body.classList.contains('touch')?'◀ ▶ ▲ ▼ walk · MAP to move':'<b>←/→/↑/↓</b> walk · <b>M</b> map · <b>Q</b> quests';
  if(p.lesson&&!TEACH[D.period]?.[D.room])s+=' · <i style="color:#e9a">bunking</i>';
  $('hint').innerHTML=s;
 }
@@ -2563,7 +2565,7 @@ hook({mis:'instella',period:4,room:'field',who:'sean',label:'Give Sean the ball'
 mission('corey',{name:'Corey Gets It',icon:'🏐',who:['corey','abby','kenneth'],
  blurb:'Corey has looked at Abby every day since seventh grade. Today she’s in his PE group. Today, one way or another, Corey gets it.',
  parts:['Break: the cafeteria line','Lunch: get Kenneth to swap PE partners','Period 5 (PE): medicine-ball dodgeball'],
- tips:['Break, cafeteria. Corey’s in the line behind her.','Lunch, sports hall. Kenneth will swap for a buzzer-beater.','Period 5 (PE), sports hall. When the ball comes, put Corey in front of it.'],
+ tips:['Break, cafeteria. Corey’s in the line behind her.','Lunch, gym. Kenneth will swap for a buzzer-beater.','Period 5 (PE), gym. When the ball comes, put Corey in front of it.'],
  variants:{kiss:'He gets the girl',ball:'He gets the ball'}});
 
 hook({mis:'corey',period:2,room:'canteen',who:'corey',label:'Get Corey to talk to Abby',cond:()=>!D.f.corey1,run:async()=>{
@@ -2698,7 +2700,7 @@ hook({mis:'corey',period:5,room:'gym',who:'auto',cond:()=>D.f.corey1&&!D.dead.co
 mission('beep',{name:'The Beep Test',icon:'📢',who:['alex','paul','kenneth','jacob'],
  blurb:'Coach Dunmore keeps a list. Anyone who drops out of the beep test gets cut. Not from the team.',
  parts:['Break: find out about the cut list','Period 7: the beep test'],
- tips:['Break, sports hall. Alex looks like he hasn’t slept.','Period 7, sports hall. If you rigged it, let Coach show you how it’s done. Energy drinks help.'],
+ tips:['Break, gym. Alex looks like he hasn’t slept.','Period 7, gym. If you rigged it, let Coach show you how it’s done. Energy drinks help.'],
  variants:{coach:'Coach demonstrates',survive:'You survived it'}});
 
 hook({mis:'beep',period:2,room:'gym',who:'alex',label:'Ask Alex what’s wrong',cond:()=>!D.f.beep1,run:async()=>{
@@ -3047,7 +3049,7 @@ hook({mis:'marcus',period:0,room:'bus',who:'marcus',label:'Ask Marcus where he�
    ================================================================= */
 mission('paul',{name:'Royal Rumble',icon:'🤼',who:['paul','kenneth','alex'],
  blurb:'Paul loves wrestling people. Paul especially loves wrestling people who didn’t agree to it.',
- parts:['Lunch: last one on the mats'],tips:['Lunch, sports hall. Paul’s doing a rumble. Mash.']});
+ parts:['Lunch: last one on the mats'],tips:['Lunch, gym. Paul’s doing a rumble. Mash.']});
 
 hook({mis:'paul',period:4,room:'gym',who:'paul',label:'Enter Paul’s Royal Rumble',run:async()=>{
  scene('gym',{paul:[200,-1,{pose:'hips',y:144}],kenneth:[150,1,{y:146}],alex:[250,-1,{y:146}],you:[120,1,{y:152}]});
@@ -3070,12 +3072,12 @@ hook({mis:'paul',period:4,room:'gym',who:'paul',label:'Enter Paul’s Royal Rumb
   await hop('you',22,400);A.you.pose='lie';SFX.crunch();shake(1.4);
   await say('paul','Sorry. SORRY. Instinct.','shock');
   A.you.ex='dead';kill('you','lie',{pool:14,bleed:1,spray:6});
-  await N('Paul piledrives you on to the sports hall floor. It isn’t a mat. It’s never been a mat.');
+  await N('Paul piledrives you on to the gym floor. It isn’t a mat. It’s never been a mat.');
   await die('rumble');
  }
  await hop('paul',10,400);A.paul.pose='lie';A.paul.dir=1;SFX.thud();shake(1);
  await say('paul','(from the floor, crying happy tears) I let you win. I didn’t. You won. I’m so PROUD of you.','cry');
- await N('He gets up, picks you up like a toddler, and carries you round the sports hall twice.');
+ await N('He gets up, picks you up like a toddler, and carries you round the gym twice.');
  await complete('paul');
 }});
 
@@ -3084,7 +3086,7 @@ hook({mis:'paul',period:4,room:'gym',who:'paul',label:'Enter Paul’s Royal Rumb
    ================================================================= */
 mission('kenneth',{name:'Buzzer Beater',icon:'🏀',who:['kenneth','alex','paul'],
  blurb:'Kenneth is five foot seven of pure confidence. He says nobody has ever beaten him one-on-one. That isn’t true. Nobody’s been allowed to say so.',
- parts:['Break: beat Kenneth one-on-one'],tips:['Break, sports hall.']});
+ parts:['Break: beat Kenneth one-on-one'],tips:['Break, gym.']});
 
 hook({mis:'kenneth',period:2,room:'gym',who:'kenneth',label:'Play Kenneth one-on-one',run:async()=>{
  scene('gym',{kenneth:[220,-1,{pose:'dribble',y:146}],paul:[150,1,{y:144,pose:'hips'}],alex:[120,1,{y:146}],you:[190,1,{y:152}]});
@@ -3287,7 +3289,7 @@ coll('prices',{room:'corridor',period:0,x:96,y:150,name:'Angelo’s price list',
 coll('notebook',{room:'toilets',x:260,y:150,name:'Marcus’s notebook (DO NOT OPEN)',desc:'You open it. It’s three hundred pages of extremely good poems about bread. You close it. You respect him more and less.',hint:'The bathroom. Any time.'});
 coll('nugget',{room:'canteen',period:2,x:40,y:150,name:'A mystery nugget',desc:'It moved. You definitely saw it move. You put it in your pocket anyway.',hint:'Cafeteria, at break.'});
 coll('tooth',{room:'field',period:4,x:30,y:160,name:'A tooth (not yours)',desc:'Adult molar. Coach’s javelin target is right next to it. You don’t think about it.',hint:'The field, at lunch, far left.'});
-coll('trainer',{room:'gym',period:2,x:290,y:150,name:'Gary Pritchard’s left sneaker',desc:'Still laced. Still warm. Nobody’s seen the rest of Gary since the beep test.',hint:'Sports hall, at break, under the hoop.'});
+coll('trainer',{room:'gym',period:2,x:290,y:150,name:'Gary Pritchard’s left sneaker',desc:'Still laced. Still warm. Nobody’s seen the rest of Gary since the beep test.',hint:'gym, at break, under the hoop.'});
 coll('overdue',{room:'library',period:[1,3,6],x:40,y:150,name:'An overdue book',desc:'“Due back: 14th March 1987.” The fine is $11,402. Ms. Sherman signed it out.',hint:'Library, during a lesson you’re bunking.'});
 coll('collar',{room:'maths',period:4,x:30,y:150,name:'Mr. Biscuits’ collar',desc:'The little bell is still on it. The tag says “If found, I will find YOU.”',hint:'Math room, at lunch.'});
 coll('kevin',{room:'chem',period:4,x:140,y:150,name:'A jar labelled KEVIN',desc:'It’s just teeth. Lots of teeth. Some of them are baby teeth.',hint:'Chem lab, at lunch.'});
@@ -4178,7 +4180,7 @@ hook({mis:'tea',period:7,room:'bus',who:'david',label:'Confront David about @hig
 mission('catfish',{name:'Jess from Fair City',icon:'🎣',who:['kenneth','arjun','nivaan'],
  blurb:'Kenneth has been texting “Jess, 16, Fair City” every night for three months. She’s perfect. She’s meeting him at the arcade after school. She has never once sent a voice note.',
  parts:['Break: Kenneth shows you the messages','Lunch: Nivaan runs the photos','After school: Jess arrives'],
- tips:['Break, sports hall.','Lunch, main corridor. Nivaan can find anyone.','After school, the arcade. Get there before the punchline does.'],
+ tips:['Break, gym.','Lunch, main corridor. Nivaan can find anyone.','After school, the arcade. Get there before the punchline does.'],
  variants:{chips:'Fries with Arjun',claw:'The claw machine'}});
 
 hook({mis:'catfish',period:2,room:'gym',who:'kenneth',label:'Ask Kenneth who he keeps texting',cond:()=>!D.f.jess1,run:async()=>{
@@ -5557,7 +5559,7 @@ hook({mis:'beep',period:6,room:'gym',who:'auto',run:async()=>{
  const c=await classIn('gym',{kids,fixed:Object.fromEntries(kids.map((n,i)=>[n,i+1])),you:0});
  cue('gym');hold('coach','cleaver');
  prop({t:'cd',x:160,y:110});
- await N('Period 7. The sports hall. Two lines of tape, twenty meters apart. A CD player on a chair. Coach Dunmore is holding a meat cleaver like a clipboard.');
+ await N('Period 7. The gym. Two lines of tape, twenty meters apart. A CD player on a chair. Coach Dunmore is holding a meat cleaver like a clipboard.');
  await say('coach','BEEP TEST. You run between the lines. You’re on the line by the beep. Miss a beep, you’re CUT.','evil');
  await N('He taps the cleaver against his whistle. Ting. Ting.');
  if(D.f.beepRig){
@@ -6073,7 +6075,7 @@ hook({mis:'stilllife',day:'even',period:1,room:'art',who:'auto',run:async()=>{
    ================================================================= */
 mission('pitch',{name:'Perfect Pitch',icon:'🎼',who:['kenneth','sean','stella'],
  blurb:'Mr. Fenwick has perfect pitch, a tuning fork, and no tolerance. Kenneth has a solo. Kenneth has never once sung in tune.',
- parts:['Break: Kenneth is panicking','Period 4, Music: the solo'],tips:['Even day, break, sports hall. Kenneth needs a coach. Sean has the voice.','Even day, Period 4, Music. Stay on the beat.'],
+ parts:['Break: Kenneth is panicking','Period 4, Music: the solo'],tips:['Even day, break, gym. Kenneth needs a coach. Sean has the voice.','Even day, Period 4, Music. Stay on the beat.'],
  variants:{sang:'He sang',duet:'Sean and Stella take it',fork:'Tuned'}});
 hook({mis:'pitch',day:'even',period:2,room:'gym',who:'kenneth',label:'Ask Kenneth why he’s humming',look:{pose:null,ex:'scared'},cond:()=>!D.f.pitch1,run:async()=>{
  scene('gym',{kenneth:[220,-1,{y:146,ex:'scared'}],you:[196,1,{y:152}]});
@@ -6324,7 +6326,7 @@ DEATHS.window={name:'A Lovely Day for Flying',desc:'You looked at the watch.',hi
    ================================================================= */
 mission('talent',{name:'Highgate’s Got Talent',icon:'🎤',who:['paul','marcus','kayden','sean','stella'],
  blurb:'Mr. Adam has turned Period 8 into a talent show for the inspectors. There are no inspectors. There’s a Zoom link on the projector that goes nowhere.',
- parts:['Lunch: sign the acts up','Period 8, Assembly: the show'],tips:['Even day, lunch, sports hall. Paul’s doing the sign-up sheet. Pick the running order.','Even day, Period 8, the hall.'],
+ parts:['Lunch: sign the acts up','Period 8, Assembly: the show'],tips:['Even day, lunch, gym. Paul’s doing the sign-up sheet. Pick the running order.','Even day, Period 8, the hall.'],
  variants:{win:'Standing ovation',adam:'Mr. Adam’s act'}});
 hook({mis:'talent',day:'even',period:4,room:'gym',who:'paul',label:'Look at Paul’s sign-up sheet',look:{hold:'clipboard',pose:null},cond:()=>!D.f.tal1,run:async()=>{
  scene('gym',{paul:[200,-1,{y:144,hold:'clipboard'}],you:[176,1,{y:152}]});
@@ -9162,6 +9164,173 @@ hook({mis:'flimbus',period:7,room:'bus',who:'arjun',label:'Ask Arjun why he’s 
  pose('arjun',null);pose('hasan',null);
  bond('arjun',1);bond('hasan',1);
  await complete('flimbus','legend');return 'stay';
+}});
+
+</script>
+<script>
+/* js/walk.js */
+'use strict';
+/* =====================================================================
+   HIGHSCHOOL — walking, and errands.
+   1) Quests that need a trigger now actually wait for it.
+   2) Walk up and down as well as left and right.
+   3) Items lying around rooms that you walk to, pick up, and bring to
+      somebody.
+   ===================================================================== */
+
+/* ---------- 1. later parts wait for the thing that sets them up ---------- */
+{
+ const need=(mis,per,who,f)=>{for(const h of HOOKS)if(h.mis===mis&&(h.period===per||(Array.isArray(h.period)&&h.period.includes(per)))&&h.who===who){const old=h.cond;h.cond=()=>f()&&(!old||old())}};
+ need('beep',6,'auto',()=>D.f.beep1);           /* Beep test: Alex at break first */
+ need('pitch',3,'auto',()=>D.f.pitch1);         /* Perfect Pitch: Kenneth humming at break */
+ need('delete',3,'auto',()=>D.f.del1);          /* HIGHGATE OS: Nivaan at break */
+ need('measure',5,'auto',()=>D.f.oak1);         /* Mr. Oakes: Tez at lunch */
+ need('talent',6,'auto',()=>D.f.tal1);          /* Talent show: Paul’s sign-up sheet at lunch */
+ need('headcase',7,'adam',()=>D.f.adam2);       /* Mr. Adam’s box: only after Mia at lunch */
+}
+
+/* ---------- 2. up and down ---------- */
+keys.u=0;keys.d=0;
+addEventListener('keydown',e=>{if(panelMode!=='roam'||DL||busy)return;const k=e.key;if(k==='ArrowUp'||k==='w'||k==='W'){keys.u=1;e.preventDefault()}if(k==='ArrowDown'||k==='s'||k==='S'){keys.d=1;e.preventDefault()}});
+addEventListener('keyup',e=>{const k=e.key;if(k==='ArrowUp'||k==='w'||k==='W')keys.u=0;if(k==='ArrowDown'||k==='s'||k==='S')keys.d=0});
+addEventListener('blur',()=>{keys.u=keys.d=0});
+if($('pU')){holdBtn('pU','u');holdBtn('pD','d')}
+const FLOOR={bus:[140,168],corridor:[136,168],canteen:[136,168],field:[132,170],gym:[134,168],library:[136,168],toilets:[138,166],trailer:[128,170],english:[134,166],maths:[134,166],science:[136,166],chem:[138,166],office:[140,166],forest:[132,170],lake:[134,160],party:[134,168],bedroom:[134,166],boiler:[136,166],carpark:[134,168],foodcourt:[136,168],arcade:[136,168],hall:[134,168],pool:[140,166]};
+const floorOf=r=>FLOOR[r]||[136,168];
+HOOK.update=(dt,rdt)=>{
+ if(panelMode!=='roam'||busy||!A.you)return;
+ const a=A.you,vx=(keys.r-keys.l),vy=(keys.d-keys.u);
+ if(vx||vy){
+  if(vx)a.dir=vx;a.moving=true;
+  const f=floorOf(D.room);
+  a.x=clamp(a.x+vx*62*rdt,10,310);a.y=clamp(a.y+vy*40*rdt,f[0],f[1]);
+  a.walk+=rdt*11;D.x=Math.round(a.x);
+ }else a.moving=false;
+ let best=null,bd=1e9;
+ for(const it of interactables()){
+  const ty=it.id?(A[it.id]?A[it.id].y:a.y):(it.spot.y||a.y);
+  const dx=Math.abs(it.x-a.x),dy=Math.abs(ty-a.y);
+  if(dx<18&&dy<(it.spot?(it.spot.item?14:24):34)){const d=dx+dy*.6;if(d<bd){bd=d;best=it}}
+ }
+ if(best!==roamTarget&&(!best||!roamTarget||best.label!==roamTarget.label||best.x!==roamTarget.x)){roamTarget=best;roamHint()}else roamTarget=best;
+};
+
+/* (keep the safety net from story.js: if nothing is happening and you can't move, give control back) */
+{let stuckT=0;const _hu=HOOK.update;HOOK.update=(dt,rdt)=>{_hu&&_hu(dt,rdt);const idle=!busy&&panelMode!=='roam'&&!DL&&!CH&&!MINI&&!anyOverlay()&&D&&D.room&&$('menu').hidden;stuckT=idle?stuckT+rdt:0;if(stuckT>2.5){stuckT=0;roam()}}}
+
+/* ---------- 3. items you can see, walk to and pick up ---------- */
+Object.assign(ITEMS,{inhaler:'Kenneth’s inhaler',thermos:'Hasan’s dad’s thermos',ladle:'Pat’s lucky ladle',shorts:'Omer’s shorts'});
+{const _dh=drawHeld;drawHeld=function(it,x,y,d){
+ if(it==='inhaler'){R(x-2,y-4,3,6,'#3a7ad8');R(x-2,y+1,6,2,'#3a7ad8');R(x-2,y-4,3,1,'#9ac0f0');return}
+ if(it==='thermos'){R(x-2,y-8,5,10,'#b8bcc4');R(x-2,y-8,5,2,'#3a4a6a');R(x-1,y-5,1,6,'#e8ecf0');R(x+3,y-5,1,4,'#8a8e98');return}
+ if(it==='ladle'){R(x-1,y-9,1,8,'#c8ccd4');R(x-3,y-1,5,3,'#c8ccd4');R(x-2,y,3,1,'#9a9ea8');return}
+ if(it==='shorts'){R(x-4,y-4,9,3,'#1a2a6a');R(x-4,y-1,4,4,'#1a2a6a');R(x+1,y-1,4,4,'#1a2a6a');R(x-4,y-4,9,1,'#f0f0f0');return}
+ return _dh(it,x,y,d)}}
+const takeItem=it=>{D.items=D.items.filter(i=>i!==it);updateLoc()};
+{const _do=HOOK.drawOver;HOOK.drawOver=(...args)=>{_do&&_do(...args);if(panelMode!=='roam'||busy||!D)return;
+ for(const s of SPOTS)if(s.item&&s.room===D.room&&(s.period==null||s.period===D.period||(Array.isArray(s.period)&&s.period.includes(D.period)))&&(!s.cond||s.cond())){
+  const ix=s.ix||s.x,iy=(s.iy||s.y)+Math.round(Math.sin(T*3)*1);
+  g.globalAlpha=.3;R(ix-5,(s.iy||s.y)+2,11,2,'#000');g.globalAlpha=1;drawHeld(s.item,ix,iy,1);drawProp({t:'sparkle',x:ix+4,y:iy-8});
+ }}}
+function errand(o){
+ mission(o.id,{name:o.name,icon:o.icon,who:o.who,blurb:o.blurb,parts:['Find out what’s missing','Bring it back'],tips:o.tips,variants:o.variants||{}});
+}
+
+/* ---- Kenneth’s inhaler ---- */
+errand({id:'inhaler',name:'Puffer',icon:'💨',who:['kenneth','coach'],
+ blurb:'Coach made Kenneth run laps at break for “breathing wrong”. Now he actually can’t breathe. His inhaler is somewhere in the library.',
+ tips:['Break, the Gym. Kenneth is lying on the floor.','Break, the Library. Under the beanbags at the back. Walk right up to them. Then get back to the Gym before break ends.']});
+hook({mis:'inhaler',period:2,room:'gym',who:'kenneth',label:'Ask Kenneth why he’s lying on the floor',look:{pose:'lie',ex:'hurt'},cond:()=>!D.f.inh1&&!D.done.inhaler,run:async()=>{
+ await say('kenneth','(wheezing) Coach made me do laps. For breathing wrong. Now I’m breathing wrong for real.','hurt');
+ await say('kenneth','My inhaler. Library. I left it under the beanbags in Period 1. Blue. Please. Before Coach sees me lying down and makes me do a lap for that.','hurt');
+ if(A.coach)await say('coach','(not looking) Kenneth, the floor is not a muscle group.','angry');
+ D.f.inh1=1;part('inhaler',1);return 'stay';
+}});
+spot({room:'library',period:2,x:286,y:164,item:'inhaler',label:'Pick up the blue inhaler under the beanbag',short:'INHALER',cond:()=>D.f.inh1&&!has('inhaler')&&!D.done.inhaler,run:async()=>{
+ give('inhaler');await N('Under the beanbag: a blue inhaler, two pound coins, and a note in Aidan’s handwriting that just says “hi”. You take the inhaler. You leave the note.');return 'stay';
+}});
+hook({mis:'inhaler',period:2,room:'gym',who:'kenneth',label:'Give Kenneth his inhaler',look:{pose:'lie',ex:'hurt'},cond:()=>has('inhaler')&&!D.done.inhaler,run:async()=>{
+ takeItem('inhaler');A.kenneth.pose=null;
+ await N('Two puffs. Kenneth sits up like someone plugged him back in.');
+ await say('kenneth','I can see colors again. You’re a hero. You’re the only person in this school who has ever brought me anything.','happy');
+ if(A.coach)await say('coach','Kenneth! Since you’re up. One lap. For lying down.','angry');
+ await say('kenneth','(already running) WORTH IT.','happy');
+ bond('kenneth',1);await complete('inhaler');return 'stay';
+}});
+
+/* ---- Hasan’s dad’s thermos ---- */
+errand({id:'thermos',name:'The Thermos',icon:'☕',who:['hasan','hasandad'],
+ blurb:'Hasan’s dad dropped him off on the way home from his night shift and his thermos fell out of the cab. Ms. Sherman took it to Lost Property. It was Hasan’s grandad’s.',
+ tips:['Before school, the bus loop. Hasan is staring at the road.','Break or lunch, the Main Corridor. The Lost Property box at the far left, against the back wall. Then find Hasan in the Cafeteria.']});
+hook({mis:'thermos',period:0,room:'bus',who:'hasan',label:'Ask Hasan why he’s staring at the road',look:{ex:'sad'},cond:()=>!D.f.th1&&!D.done.thermos,run:async()=>{
+ await say('hasan','My dad’s thermos fell out of the cab when he dropped me off. Ms. Sherman picked it up and put it in Lost Property. She said “finders keepers” and laughed for a really long time.','sad');
+ await say('hasan','It was my grandad’s. It’s got a dent where he dropped it on the ferry in 1979. Dad drinks his tea out of it every night at four a.m. He’ll notice. He’ll pretend he didn’t notice.','sad');
+ D.f.th1=1;part('thermos',1);return 'stay';
+}});
+spot({room:'corridor',period:[2,4],x:30,y:138,item:'thermos',label:'Dig the thermos out of Lost Property',short:'LOST PROPERTY',cond:()=>D.f.th1&&!has('thermos')&&!D.done.thermos,run:async()=>{
+ pose('you','reach');await wait(300);pose('you',null);
+ give('thermos');await N('Lost Property: forty-one single gloves, a retainer, a whole trumpet, and at the bottom, a dented silver thermos that still smells like cardamom.');return 'stay';
+}});
+hook({mis:'thermos',period:[2,4],room:'canteen',who:'hasan',label:'Give Hasan the thermos',look:{ex:'sad'},cond:()=>has('thermos')&&!D.done.thermos,run:async()=>{
+ takeItem('thermos');hold('hasan','thermos');
+ await say('hasan','(holding it with both hands) The ferry dent. That’s the ferry dent.','cry');
+ await say('hasan','I’m going to put it back in the cab before he wakes up. He’ll never know it was gone. That’s the best version. Him never knowing.','happy');
+ hold('hasan',null);bond('hasan',1);await complete('thermos');return 'stay';
+}});
+
+/* ---- Pat’s ladle ---- */
+errand({id:'ladle',name:'The Lucky Ladle',icon:'🥄',who:['pat','coach'],
+ blurb:'Lunch Lady Pat has served with the same ladle for twenty-two years. Coach “borrowed” it for drills. It’s on his equipment cart in the Gym. Coach is standing right there.',
+ tips:['Break, the Cafeteria. Pat is serving with a spoon.','Break, the Gym. The ladle is on the cart by the back wall. Coach watches the front of the gym. Stay at the back (walk up) when you grab it.'],variants:{clean:'Nobody saw',caught:'Twenty push-ups'}});
+hook({mis:'ladle',period:2,room:'canteen',who:'pat',label:'Ask Pat why she’s serving with a spoon',look:{ex:'angry'},cond:()=>!D.f.la1&&!D.done.ladle,run:async()=>{
+ await say('pat','Twenty-two years. Same ladle. Never missed a scoop. Then HE comes in here and takes it. For “drills.” What drill needs a LADLE.','angry');
+ await say('pat','It’s on his cart in the Gym. Get it back and there’s a cookie in it for you. A warm one. From the back. The good tray.','smirk');
+ D.f.la1=1;part('ladle',1);return 'stay';
+}});
+spot({room:'gym',period:2,x:30,y:136,item:'ladle',label:'Grab the ladle off Coach’s cart',short:'LADLE',cond:()=>D.f.la1&&!has('ladle')&&!D.done.ladle,run:async()=>{
+ const sneaky=A.you.y<=144;
+ pose('you','reach');await wait(250);pose('you',null);
+ if(sneaky||!A.coach||A.coach.dead){give('ladle');D.f.laClean=1;await N('You stay flat against the back wall and lift it off the cart like you’re defusing a bomb. Coach is yelling at a medicine ball. He doesn’t see a thing.');return 'stay'}
+ face('coach','you');
+ await say('coach','OI. That is TRAINING EQUIPMENT. Twenty push-ups. NOW.','angry');
+ pose('you','lie');
+ const ok=await mash('Twenty push-ups',{need:20,time:6,info:'You walked across the front of the gym. He saw everything. MASH!'});
+ pose('you',null);
+ if(ok){give('ladle');await say('coach','…Twenty. Fine. Take the spoon thing. Respect.','smirk')}
+ else await say('coach','Eleven? ELEVEN? Come back when you’re a man. The ladle stays.','angry');
+ return 'stay';
+}});
+hook({mis:'ladle',period:[2,4],room:'canteen',who:'pat',label:'Give Pat her ladle back',look:{ex:'angry'},cond:()=>has('ladle')&&!D.done.ladle,run:async()=>{
+ takeItem('ladle');hold('pat','ladle');
+ await say('pat','(holding it up to the light) Hello, old friend.','happy');
+ await N('Pat serves the next forty kids with a speed and precision you’ve never seen. Every scoop is the same size. Every scoop lands with a little ting.');
+ await say('pat','Cookie. From the back. Don’t tell anyone. Especially not him.','smirk');
+ D.money+=1;updateLoc();hold('pat',null);
+ await complete('ladle',D.f.laClean?'clean':'caught');return 'stay';
+}});
+
+/* ---- Omer’s shorts ---- */
+errand({id:'shorts',name:'Shorts',icon:'🩳',who:['omer','arjun'],
+ blurb:'Omer wears shorts every day. In the snow. Today someone stole them out of his bag and he’s had to wear JEANS. The shorts are hanging off the soccer goal on the field.',
+ tips:['Break, the Field. Omer is in jeans. He is not okay.','Break or lunch, the Field. Walk up to the goal and climb it. Then give them back to Omer.']});
+hook({mis:'shorts',period:2,room:'field',who:'omer',label:'Ask Omer why he’s wearing jeans',look:{ex:'angry',pose:'cross'},cond:()=>!D.f.sh1&&!D.done.shorts,run:async()=>{
+ await say('omer','Somebody took my shorts. Out of my BAG. I’ve had to wear my brother’s jeans. I can’t feel my legs. I can’t feel ANYTHING.','angry');
+ await say('omer','(pointing at the goal, shaking) They’re up there. On the crossbar. Like a flag. Like a FLAG of my shame.','angry');
+ if(!D.dead.arjun)await say('omer','I know it was Arjun. I don’t have proof. I have a feeling. The feeling is Arjun.','angry');
+ D.f.sh1=1;part('shorts',1);return 'stay';
+}});
+spot({room:'field',period:[2,4],x:262,y:140,ix:262,iy:88,item:'shorts',label:'Climb the goal and get Omer’s shorts',short:'GOAL',cond:()=>D.f.sh1&&!has('shorts')&&!D.done.shorts,run:async()=>{
+ pose('you','up');
+ const ok=await mash('Climb the goalpost',{need:16,time:5,info:'Hand over hand. MASH!'});
+ pose('you',null);
+ if(!ok){SFX.thud();shake(.6);A.you.hurt=1;await N('You get halfway up and fall off onto your back. Some sixth graders clap. Try again.');return 'stay'}
+ give('shorts');await N('You get to the crossbar and pull them down. They’re navy. They’re warm from the sun. Somebody has written ARJUN WAS HERE on the inside in Sharpie.');return 'stay';
+}});
+hook({mis:'shorts',period:[2,4],room:'field',who:'omer',label:'Give Omer his shorts',look:{ex:'angry',pose:'cross'},cond:()=>has('shorts')&&!D.done.shorts,run:async()=>{
+ takeItem('shorts');
+ await say('omer','(reading the Sharpie) ARJUN. WAS. HERE.','angry');
+ await say('omer','(very calm, putting them on over the jeans) Thank you. I’m going to go and have a conversation with Arjun now. A long one. With my hands.','angry');
+ bond('omer',1);await complete('shorts');return 'stay';
 }});
 
 </script>

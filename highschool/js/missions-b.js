@@ -146,7 +146,7 @@ hook({mis:'instella',period:4,room:'field',who:'sean',label:'Give Sean the ball'
 mission('corey',{name:'Corey Gets It',icon:'🏐',who:['corey','abby','kenneth'],
  blurb:'Corey has looked at Abby every day since seventh grade. Today she’s in his PE group. Today, one way or another, Corey gets it.',
  parts:['Break: the cafeteria line','Lunch: get Kenneth to swap PE partners','Period 5 (PE): medicine-ball dodgeball'],
- tips:['Break, cafeteria. Corey’s in the line behind her.','Lunch, sports hall. Kenneth will swap for a buzzer-beater.','Period 5 (PE), sports hall. When the ball comes, put Corey in front of it.'],
+ tips:['Break, cafeteria. Corey’s in the line behind her.','Lunch, gym. Kenneth will swap for a buzzer-beater.','Period 5 (PE), gym. When the ball comes, put Corey in front of it.'],
  variants:{kiss:'He gets the girl',ball:'He gets the ball'}});
 
 hook({mis:'corey',period:2,room:'canteen',who:'corey',label:'Get Corey to talk to Abby',cond:()=>!D.f.corey1,run:async()=>{
@@ -281,7 +281,7 @@ hook({mis:'corey',period:5,room:'gym',who:'auto',cond:()=>D.f.corey1&&!D.dead.co
 mission('beep',{name:'The Beep Test',icon:'📢',who:['alex','paul','kenneth','jacob'],
  blurb:'Coach Dunmore keeps a list. Anyone who drops out of the beep test gets cut. Not from the team.',
  parts:['Break: find out about the cut list','Period 7: the beep test'],
- tips:['Break, sports hall. Alex looks like he hasn’t slept.','Period 7, sports hall. If you rigged it, let Coach show you how it’s done. Energy drinks help.'],
+ tips:['Break, gym. Alex looks like he hasn’t slept.','Period 7, gym. If you rigged it, let Coach show you how it’s done. Energy drinks help.'],
  variants:{coach:'Coach demonstrates',survive:'You survived it'}});
 
 hook({mis:'beep',period:2,room:'gym',who:'alex',label:'Ask Alex what’s wrong',cond:()=>!D.f.beep1,run:async()=>{

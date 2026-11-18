@@ -103,7 +103,7 @@ hook({mis:'tea',period:7,room:'bus',who:'david',label:'Confront David about @hig
 mission('catfish',{name:'Jess from Fair City',icon:'🎣',who:['kenneth','arjun','nivaan'],
  blurb:'Kenneth has been texting “Jess, 16, Fair City” every night for three months. She’s perfect. She’s meeting him at the arcade after school. She has never once sent a voice note.',
  parts:['Break: Kenneth shows you the messages','Lunch: Nivaan runs the photos','After school: Jess arrives'],
- tips:['Break, sports hall.','Lunch, main corridor. Nivaan can find anyone.','After school, the arcade. Get there before the punchline does.'],
+ tips:['Break, gym.','Lunch, main corridor. Nivaan can find anyone.','After school, the arcade. Get there before the punchline does.'],
  variants:{chips:'Fries with Arjun',claw:'The claw machine'}});
 
 hook({mis:'catfish',period:2,room:'gym',who:'kenneth',label:'Ask Kenneth who he keeps texting',cond:()=>!D.f.jess1,run:async()=>{
