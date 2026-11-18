@@ -130,7 +130,7 @@ function drawKid(k,x,y,o){
  const mv=o.moving,ph=o.walk||0,st=mv?Math.sin(ph):0,ct=mv?Math.cos(ph):0;
  const bob=o.still||p==='sit'||p==='write'?0:mv?(Math.abs(st)>.6?1:0):(Math.sin(T*2.2+k.seed)>.6?1:0);
  const run=o.fast&&mv&&!p;
- let lean=run?d:0;if(p==='lean'||p==='hurt')lean=-d*2;if(p==='headbutt')lean=d*(Math.sin(T*10)>0?4:2);if(p==='kiss')lean=d*2;if(p==='punch'&&o.punchT>T)lean=d;if(k.old)lean+=d;
+ let lean=run?d:0;if(p==='lean'||p==='hurt'||p==='drag')lean=-d*2;if(p==='stab'||p==='overhead')lean=d;if(p==='headbutt')lean=d*(Math.sin(T*10)>0?4:2);if(p==='kiss')lean=d*2;if(p==='punch'&&o.punchT>T)lean=d;if(k.old)lean+=d;
  const bx=x-(bw>>1)+lean,lw=k.baggy?5:k.tight?3:4;
  /* legs */
  const shoe=k.tight?'#ddd':k.adult?'#1a1418':'#2a2a30';
@@ -138,6 +138,8 @@ function drawKid(k,x,y,o){
  if(p==='sit'||p==='write'){R(x-3,y-4,bw-2,3,k.pants);R(x+d*4-1,y-3,lw,4,k.shorts?sk:k.pants);R(x+d*4-1,y,lw+1,1,shoe);R(x-1,y-4,lw,4,k.pants)}
  else if(p==='kneel'){R(bx+1,y-3,bw-2,3,k.pants);R(bx-(d>0?2:-bw+3),y-1,5,1,shoe)}
  else if(p==='kick'){const kk=Math.sin(T*12)>0;R(bx+(d>0?1:bw-1-lw),y-legH,lw,legH,k.pants);R(bx+(d>0?1:bw-1-lw)-(d<0?1:0),y-1,lw+1,1,shoe);if(kk){R(d>0?bx+bw-2:bx-8,y-legH+1,10,lw-1,k.pants);R(d>0?bx+bw+7:bx-10,y-legH,3,lw,shoe)}else{R(bx+bw-1-lw,y-legH,lw,legH-2,k.pants)}}
+ else if(p==='stomp'){const up=Math.sin(T*9)>0;R(bx+(d>0?1:bw-1-lw),y-legH,lw,legH,k.pants);R(bx+(d>0?1:bw-1-lw)-(d<0?1:0),y-1,lw+1,1,shoe);const kx=bx+(d>0?bw-1-lw:1);if(up){R(kx,y-legH,lw,legH-4,k.pants);R(kx+d*2,y-legH+legH-6,lw,3,k.pants);R(kx+d*2-(d<0?1:0),y-5,lw+1,2,shoe)}else{R(kx,y-legH,lw,legH,k.pants);R(kx-(d<0?1:0),y-1,lw+2,1,shoe)}}
+ else if(p==='drag'){R(bx+1-d,y-legH,lw,legH,k.pants);R(bx-d,y-1,lw+1,1,shoe);R(bx+bw-1-lw-d*2,y-legH+1,lw,legH-1,k.pants);R(bx+bw-1-lw-d*3,y-1,lw+1,1,shoe)}
  else if(p==='lean'){R(bx+2,y-legH,lw,legH,k.pants);R(bx+1,y-1,lw+1,1,shoe);R(bx+4,y-legH,lw,legH-3,k.pants);R(bx+1+d,y-3,lw,2,k.pants);R(bx+d,y-2,lw+1,1,shoe)}
  else{const sx=Math.round(st*(run?3:2))*d,lf=[ct>.3?(run?-3:-2):0,ct<-.3?(run?-3:-2):0],lxs=[bx+1+sx,bx+bw-1-lw-sx];for(let i=0;i<2;i++)leg(lxs[i],0,legH,lf[i])}
  /* body */
@@ -197,6 +199,10 @@ function drawKid(k,x,y,o){
   case'swim':{const a1=Math.sin(T*5);R(bx-2,by-6+Math.round(a1*3),2,8,sl);R(bx-2,by-8+Math.round(a1*3),2,2,sk);R(bx+bw,by-6-Math.round(a1*3),2,8,sl);R(bx+bw,by-8-Math.round(a1*3),2,2,sk);hx=-99;break}
   case'saw':{const a1=Math.sin(T*10)*2|0;R(d>0?bx+bw-2+a1:bx-6+a1,by+4,8,2,sl);R(d>0?bx+bw+6+a1:bx-8+a1,by+3,2,3,sk);back();hx=d>0?bx+bw+7+a1:bx-8+a1;hy=by+3;break}
   case'sing':R(bx-1,by+3,bw+2,2,sl);R(x-1+lean,by+3,3,3,sk);R(bx-2,by+1,2,3,top);R(bx+bw,by+1,2,3,top);hx=-99;break;
+  case'overhead':{const sw=Math.sin(T*10)>.2;const ty=sw?by-12:by-4;R(x-2+lean,ty,2,by-ty+2,sl);R(x+1+lean,ty,2,by-ty+2,sl);R(x-1+lean,ty-2,4,3,sk);hx=x+lean+d;hy=ty-2;break}
+  case'stab':{back();const ph_=Math.sin(T*14)>0;const ex_=ph_?7:3;R(d>0?bx+bw:bx-ex_,by+3,ex_,2,sl);R(d>0?bx+bw+ex_:bx-ex_-2,by+3,2,3,sk);hx=d>0?bx+bw+ex_:bx-ex_-2;hy=by+5;break}
+  case'drag':R(d>0?bx-7:bx+bw,by+4,7,2,sl);R(d>0?bx-9:bx+bw+7,by+3,2,3,sk);R(fs,by+1,2,5,sl);hx=d>0?bx-9:bx+bw+7;hy=by+4;break;
+  case'stomp':R(bx-4,by+1,4,2,sl);R(bx-5,by-1,2,2,sk);R(bx+bw,by+1,4,2,sl);R(bx+bw+3,by-1,2,2,sk);hx=-99;break;
   case'kneel':R(bx-2,by+1,2,6,sl);R(bx-2,by+7,2,2,sk);R(fs,by+2,2,4,sl);R(fs+d*2,by+5,2,2,sk);hx=fs+d*2;hy=by+5;break;
   default:
    if(run){const s2=Math.round(st*3);R(bx-2+s2,by+1,2,4,top);R(bx-2+s2+d,by+5,2,2,sl);R(bx-2+s2+d,by+6,2,2,sk);R(bx+bw-s2,by+1,2,4,top);R(bx+bw-s2+d,by+5,2,2,sl);R(bx+bw-s2+d,by+6,2,2,sk);hx=-99;break}

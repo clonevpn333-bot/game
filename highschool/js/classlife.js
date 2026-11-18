@@ -143,7 +143,7 @@ for(const id of['brayden','kaylee','jaxon'])for(const room of['toilets','field',
   if(!A[id]){put(id,200,-1,{y:140,hold:'vape',pose:'lean'});prop({t:'vapecloud',follow:id,x:0,y:0})}
   await say(id,LINES[id],'smirk');
   const room=D.room,teach=Object.keys(A).filter(k=>K[k]&&K[k].adult&&!A[k].dead&&k!==id);
-  const o=[{t:'“No thanks.”'},{t:'Take a hit.'},{t:'Snatch it and throw it away.'},{t:'Tell a teacher.'},{t:VKILL[room].t,tag:'🩸'}];
+  const o=[{t:'“No thanks.”'},{t:'Take a hit.'},{t:'Snatch it and throw it away.'},{t:'Tell a teacher.'},{t:VKILL[room].t,tag:'🩸'},{t:'Take their head off with the art room paper cutter. Then kick it.',tag:'🩸'},{t:'Borrow the groundskeeper’s shears. Their toes. One at a time.',tag:'🩸'}];
   const c=await choose(o,'They’re holding it out to you.');
   D.f.vapeDone=D.f.vapeDone||{};
   if(c===0){await say(id,pick(['Okay, narc.','Your loss. Your lungs’ win, or whatever.','You’re so boring. You’re like a substitute teacher.']),'smirk');return 'stay'}
@@ -163,7 +163,21 @@ for(const id of['brayden','kaylee','jaxon'])for(const room of['toilets','field',
    await Promise.all([walk('sherman',334,60),walk(id,320,60)]);remove('sherman');remove(id);
    await N('About a minute later, from somewhere deep inside the building, one short scream. Then the PA plays the bell for no reason.');
    D.f.vapeDone[id]=1;vapeScore('clean');return 'stay'}
-  await VKILL[room].run(id);
+  if(c===5){
+   hold('you','cleaver');pose('you','overhead');await say(id,'(the vape still in their mouth) Bro, what is that. Is that from ART?','scared');
+   await wait(300);pose('you','stab');SFX.whoosh();await wait(150);
+   const h=await gHead(id,A.you.x<A[id].x?1:-1);hold('you',null);pose('you',null);
+   await liftHead('you',h,'You pick it up by the hair. The vape is still in its mouth. It’s still glowing. Blue Razz Ice.');
+   await kickHead('you',h,140);
+   await N('It bounces three times and comes to rest with the vape still in. Somewhere, a kid films the whole thing and posts it with a sad violin sound.');
+  }else if(c===6){
+   pose('you','grab');await wait(200);pose('you',null);A[id].pose='lie';
+   await say(id,'WAIT. WAIT WAIT WAIT. I’LL STOP. I’LL STOP VAPING.','scared');
+   await toes(id,'you');
+   await say(id,'(from the floor, very small) …I’m switching to gum.','hurt');
+   await N('You leave them alive. Five toes in a little line on the floor, like they were waiting for a bus. Every kid who walks past for the rest of the day steps around them very carefully.');
+   D.f.vapeDone[id]=1;vapeScore('clean');return 'stay';
+  }else await VKILL[room].run(id);
   D.f.vapeDone[id]=1;vapeScore('kill');
   if(teach.length){const t=teach[0];await say(t,pick(['(nodding) Vaping is a disgusting habit, sweetie. Miss would have done the same. Miss HAS done the same.','(not even looking up) Good. Clean that up before the bell.','(slow clap) Initiative. I like initiative.']),'happy')}
   const ks=Object.keys(A).filter(k=>FRIENDS.includes(k)&&!A[k].dead);if(ks.length)await say(pick(ks),pick(['…Okay. Okay. We didn’t see that. Did we see that?','I’m never vaping. I was never going to vape. I’m extra never vaping now.','Bro. BRO. It was watermelon flavor.']),'shock');

@@ -256,7 +256,7 @@ function pose(id,p,ms){const a=A[id];if(!a)return Promise.resolve();a.pose=p;if(
 function ex(id,e){if(A[id])A[id].ex=e}
 function hold(id,it){if(A[id])A[id].hold=it}
 function hop(id,h=6,ms=260){const a=A[id];if(!a)return Promise.resolve();return tw(a,{z:h},ms/2).then(()=>tw(a,{z:0},ms/2))}
-function prop(o){props.push(Object.assign({t0:T},o));return o}
+function prop(o){if(o.t0==null)o.t0=T;props.push(o);return o}
 function shake(s){if(P.set.shake)fxState.shake=Math.max(fxState.shake,s)}
 function flash(c,a){fxState.flashC=c||'#fff';fxState.flash=a||.8}
 function blood(x,y,n,dir,spd,floorY){if(!P.set.gore)n=Math.ceil(n/4);const cols=BLOOD;for(let i=0;i<n;i++){const a=(dir==null?rand(-Math.PI,0):(dir>0?rand(-1.2,.2):rand(Math.PI-.2,Math.PI+1.2))),v=rand(.3,1)*(spd||60);parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-rand(0,25),c:P.set.gore?cols[i%4]:'#6a6a7a',s:Math.random()<.25?2:1,fy:(floorY||152)+rand(-3,4),life:3})}}

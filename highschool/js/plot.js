@@ -172,7 +172,7 @@ BEATS[11]=async()=>{
 BEATS[12]=async()=>{await inspectionDay()};
 
 /* ---------------- the objectives ---------------- */
-const onOrAfter=d=>cal()>=d&&cal()<12;
+const onOrAfter=d=>cal()>=d&&cal()<12&&!!crew()['beat'+d];   /* only after the crew meeting that sets it up */
 spot({room:'maths',period:4,x:60,y:150,label:'Search Ms. Shermian’s desk and bin',short:'DESK',cond:()=>onOrAfter(1)&&!crew().ev.retainer,run:async()=>{
  pose('you','reach');SFX.pick();await wait(400);pose('you',null);
  await N('Her desk is spotless. Her bin is not. Under a layer of red pen lids and pencil shavings there’s a little plastic retainer case. TYLER M., written on it in Sharpie.');
