@@ -10,9 +10,10 @@ window.EDITION_LINE={corey:'Corey — the curls survived every single day. Mostl
 const ROMANCE=/\babby\b|morrissey/i;
 
 /* the two Corey romance missions are gone */
-for(const m of['corey','smallhours','window','brett'])delete MIS[m];
+for(const m of['corey','smallhours','window','brett','mended'])delete MIS[m];
 if(typeof MYCLASS!=='undefined')MYCLASS.odd[3]='english';  /* your Period 3 is someone else’s: English */
 for(let i=HOOKS.length-1;i>=0;i--)if(!MIS[HOOKS[i].mis])HOOKS.splice(i,1);
+for(let i=SPOTS.length-1;i>=0;i--)if(SPOTS[i].mis&&!MIS[SPOTS[i].mis])SPOTS.splice(i,1);
 for(const m of Object.values(MIS))m.who=m.who.filter(w=>w!=='abby');
 delete INTEL.kennethSwap;
 
