@@ -133,7 +133,7 @@ async function passingTo(room){
  D.passing.ev.forEach((id,i)=>{const p=PASS.find(q=>q.id===id);if(!A[p.who])put(p.who,spots[i],i?-1:1,{y:144+(i%2)*4,pose:id==='aidan'?'lean':id==='rating'?'write':id==='crying'?'sit':null})});
  for(let i=0;i<4;i++){const id=['kid1','kid2','kid3','kid4'][i];if(A[id])continue;const a=put(id,i%2?-16:336,i%2?1:-1,{y:140+i*4});walk(id,i%2?336:-16,50+i*10)}
  updateLoc();
- toast('Between classes. You’ve got '+(D.apples||2)+' 🍎 before you’re late. Walk right to get to '+ROOMS[room].name.split(' —')[0]+'.');
+ toast('Between classes. You’ve got '+(D.apples||2)+' 🍎 before you’re late. The '+ROOMS[room].name.split(' —')[0]+' door is on the right.');
  roam();
 }
 /* the bell: “Go to class” walks the hallway first */

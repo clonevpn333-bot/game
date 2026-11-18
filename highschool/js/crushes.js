@@ -177,9 +177,9 @@ hook({mis:'toby',period:8,room:'arcade',who:'sean',label:'Ask Sean why he’s ho
    CONFISCATED — Arjun’s phone
    ================================================================= */
 mission('phone',{name:'Confiscated',icon:'📵',who:['arjun','shermian','kenneth','hasan','nivaan'],
- blurb:'Highgate has a strict no-phones policy. Arjun’s phone fell out of his pocket in front of Ms. Shermian. She took it. Simple, right? Arjun will do anything to get it back. He will also say anything.',
+ blurb:'Highgate has a strict no-phones policy. Arjun’s phone fell out of his pocket in front of Ms. Sherman. She took it. Simple, right? Arjun will do anything to get it back. He will also say anything.',
  parts:['Break, corridor: the drop','Lunch, cafeteria: the drawer'],
- tips:['Break, main corridor. Ms. Shermian is on duty and Arjun is standing right in front of her.','Lunch, cafeteria. She’s on cafeteria duty. Her keys are on her lanyard. How Arjun has treated people today decides who will help him.'],
+ tips:['Break, main corridor. Ms. Sherman is on duty and Arjun is standing right in front of her.','Lunch, cafeteria. She’s on cafeteria duty. Her keys are on her lanyard. How Arjun has treated people today decides who will help him.'],
  variants:{sorry:'He said sorry',got:'Got it back',policy:'Policy is policy',drawer:'The drawer'}});
 function mean(line){D.f.arjMean=(D.f.arjMean||0)+1;toast(D.f.arjMean>=3?'😠 People are really going off Arjun now.':'😠 That one landed. People remember things like that.');return line}
 const ARJUN_REACT={
@@ -253,14 +253,14 @@ hook({mis:'phone',period:4,room:'canteen',who:'arjun',label:'Ask Arjun what the 
  /* the math room */
  const mc={arjun:[60,1,{y:146}],you:[30,1,{y:152}]};scene('maths',mc,true);cue('tension');
  await walk('arjun',56,60);pose('arjun','reach');SFX.locker();
- await N('Ms. Shermian’s desk. The forever drawer. The third key fits.');
+ await N('Ms. Sherman’s desk. The forever drawer. The third key fits.');
  await N('Inside: Arjun’s phone. A cat collar that says MR. BISCUITS. A seating plan with eleven names crossed out in red pen. And phones. Dozens of them. Flip phones. A pager. A brick-sized thing with an antenna and a sticker dated 1987.');
  hold('arjun','phone');pose('arjun','phone');
  await say('arjun','(clutching it) Oh thank God. Oh, thank GOD. Hi, baby. Hi. Daddy’s here.','happy');
  await N('Then his face changes. He has 63 notifications. All from the same group chat. The class group chat.');
  await say('arjun','…Someone’s been on my phone. Someone posted from my phone.','shock');
  const lines=[['them','(screenshot of Arjun’s notes app: “PEOPLE I CAN’T STAND”, a list of 31 names)'],['them','(screenshot: “why kenneth looks like a thumb with glasses”)'],['them','(voice memo: Arjun practicing insults in the mirror)']];
- lines.push(['kenneth','wow']);if(m>=1)lines.push(['dheva','dead hamster wig. cool. glad it was in the notes first']);if(m>=2)lines.push(['nivaan','clipped. posted. 41k views']);lines.push(['hasan','arjun is this real']);lines.push(['them','Miss Shermian 💗: Sharing is caring, sweeties! 💗']);
+ lines.push(['kenneth','wow']);if(m>=1)lines.push(['dheva','dead hamster wig. cool. glad it was in the notes first']);if(m>=2)lines.push(['nivaan','clipped. posted. 41k views']);lines.push(['hasan','arjun is this real']);lines.push(['them','Miss Sherman 💗: Sharing is caring, sweeties! 💗']);
  await dms('MATH P3 🧮','23 members',lines,{live:lines.length});
  SFX.door();put('shermian',-14,1,{y:146});await walk('shermian',24,60);
  await say('shermian','Did somebody touch Miss’s drawer?','happy');

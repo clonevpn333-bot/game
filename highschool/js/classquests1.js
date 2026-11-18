@@ -99,7 +99,7 @@ cq('english',{id:'en_bin',name:'The Burn Bin',who:'stella',hint:'(whispering) Ba
  else{A.you.hurt=2;await N('You pull your hand back too late. Your sleeve catches. You slap it out on the desk. Your essay is ash.')}
 }});
 
-/* ================= THE TRAILER — Ms. Shermian ================= */
+/* ================= THE TRAILER — Ms. Sherman ================= */
 cq('trailer',{id:'tr_bucket',name:'The Bucket',who:'marcus',hint:'(whispering) The bucket under the AC unit. It’s never been emptied. Not once. It’s been there since the trailer.',opt:'Kick the bucket under the AC.',run:async c=>{
  const b=prop({t:'bucket',x:250,y:118,layer:3});
  await walk('you',238,70);pose('you','kick');SFX.splat();await tw(b,{x:262},160);pose('you',null);
@@ -118,7 +118,7 @@ cq('trailer',{id:'tr_jump',name:'Four Inches',who:'alex',hint:'(whispering) If e
 }});
 cq('trailer',{id:'tr_calc',name:'The Calculator',who:'dheva',need:['arjun'],hint:'(whispering) Arjun typed something on his calculator and he won’t show anyone. He keeps giggling.',opt:'Grab Arjun’s calculator.',run:async c=>{
  await walk('you',A.arjun.x-10,60);pose('you','grab');await wait(250);pose('you',null);
- await N('He’s calculated the number of days until Ms. Shermian retires. 4,180. Underneath, he’s worked out how many days until she dies. The calculator says ERROR.');
+ await N('He’s calculated the number of days until Ms. Sherman retires. 4,180. Underneath, he’s worked out how many days until she dies. The calculator says ERROR.');
  await say('arjun','(snatching it back) It says ERROR every time. Every. Time. I’ve tried it four ways.','scared');
 }});
 cq('trailer',{id:'tr_dead',name:'Playing Dead',who:'alex',need:['tyler'],hint:'(whispering) Tyler hasn’t moved in twenty minutes. Is he okay? Should someone poke him?',opt:'Poke Tyler.',run:async c=>{
@@ -152,7 +152,7 @@ cq('trailer',{id:'tr_cat',name:'Mr. Biscuits Is Watching',who:'marcus',hint:'(wh
  await say(c.t,'(pressing a gold star onto your forehead) Mr. Biscuits likes you back. That’s very rare. That might keep you alive.','happy');
  D.f.shermFav=1;
 }});
-cq('trailer',{id:'tr_division',name:'Long Division',who:'arjun',hint:'(whispering) Bet you a dollar she can’t do long division without the answer key. She keeps the answer key in her cardigan. Always.',opt:'Ask Ms. Shermian to do a problem without the answer key.',run:async c=>{
+cq('trailer',{id:'tr_division',name:'Long Division',who:'arjun',hint:'(whispering) Bet you a dollar she can’t do long division without the answer key. She keeps the answer key in her cardigan. Always.',opt:'Ask Ms. Sherman to do a problem without the answer key.',run:async c=>{
  await say('you','Miss, can you do question nine? Without the answer key?');
  await walk(c.t,90,60);pose(c.t,'reach');
  await N('She writes 7,482 ÷ 29 on the board. She stares at it. She stares at it for a really long time.');
@@ -174,7 +174,7 @@ cq('trailer',{id:'tr_ac',name:'Rubber Band',who:'dheva',need:['corey'],hint:'(wh
 cq('trailer',{id:'tr_notes',name:'She Knows',who:'alex',hint:'(whispering) Someone keeps leaving notes in the textbooks. Old ones. They all say the same thing.',opt:'Flip through your textbook for the notes.',run:async c=>{
  pose('you','write');await wait(400);pose('you',null);
  await N('Page 12, in old blue pen: “she knows.” Page 30, in pencil: “don’t sit in seat 14.” Page 51: “the trailer is on top of something.”');
- await N('The last page, in fresh pen, in handwriting you recognize from the board this morning: Tyler’s. “help me.”');
+ await N('The last page, in fresh pen, in handwriting you know from a hundred passed notes: Tyler’s. “help me.”');
  if(typeof crew==='function'){intel('shermianList')}
 }});
 

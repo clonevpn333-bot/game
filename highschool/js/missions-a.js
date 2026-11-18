@@ -237,17 +237,17 @@ hook({mis:'bully',period:4,room:'corridor',who:'auto',cond:()=>D.f.fight,run:asy
 }});
 
 /* =================================================================
-   SEAT WARS — Ms. Shermian
+   SEAT WARS — Ms. Sherman
    ================================================================= */
 mission('seat',{name:'Seat Wars',icon:'🪑',who:['corey','arjun','alex','dheva','marcus'],
- blurb:'Ms. Shermian loves a seating plan. She loves splitting up friends. Her mood flips faster than her ruler.',
- parts:['Period 3: survive Ms. Shermian’s seating plan','Lunch: steal and rewrite the plan','Period 7: get all five sat together'],
+ blurb:'Ms. Sherman loves a seating plan. She loves splitting up friends. Her mood flips faster than her ruler.',
+ parts:['Period 3: survive Ms. Sherman’s seating plan','Lunch: steal and rewrite the plan','Period 7: get all five sat together'],
  tips:['Period 3, Math. Watch her mood.','Lunch, maths room. She’s on canteen duty; the plan lives in her desk drawer. Pick your lookout carefully.','Period 7, Math. Keep her sweet. Arjun’s mouth needs shutting — Angelo sells tape.'],
  variants:{perfect:'All five together',minus:'Together, minus one'}});
 
 hook({mis:'seat',period:3,room:'maths',who:'auto',run:async()=>{
  scene('maths',{shermian:[44,1,{pose:'hips',y:146,hold:'clipboard'}],corey:[110,-1,{y:150}],arjun:[134,-1,{y:150,pose:'cross'}],alex:[158,-1,{y:150}],dheva:[182,-1,{y:150}],marcus:[206,-1,{y:150}],tyler:[230,-1,{y:150}],you:[254,-1,{y:150}]});
- await N('Period 3. Math. Ms. Shermian’s room is pink, warm, and smells like a candle called “Patience”.');
+ await N('Period 3. Math. Ms. Sherman’s room is pink, warm, and smells like a candle called “Patience”.');
  await say('shermian','Good morning, my little angels! New seating plan! Isn’t that EXCITING?','happy');
  await say('marcus','I love it when she rearranges things. Gets everyone all worked up.','smirk');
  await say('shermian','Corey, sweetie — by the window.','happy');
@@ -395,7 +395,7 @@ hook({mis:'seat',period:6,room:'maths',who:'auto',cond:()=>D.f.seat2&&!D.dead.ar
  await say('arjun','This is the best seat I’ve ever had, miss. Better than your marriage.','smirk');
  await evil('shermian');
  const o=[{t:'Tape Arjun’s mouth shut.',dis:!has('tape'),why:'no tape',tag:'🩹'},{t:'Kick Arjun under the desk.'},{t:'Let him talk. He’s earned this.'}];
- const k=await choose(o,'Ms. Shermian is walking down the row.');
+ const k=await choose(o,'Ms. Sherman is walking down the row.');
  if(k===0){
   take('tape');await standTo('you',A.arjun.x+12,SEATS.backY+2,120);face('you',-1);pose('you','hold');
   SFX.whoosh();await wait(200);SFX.whoosh();
@@ -569,7 +569,7 @@ hook({mis:'loach',period:6,room:'science',who:'auto',cond:()=>D.f.loach1,run:asy
  const cast={loach:[66,1,{pose:'sit',y:132}],you:[290,-1,{y:154}]};
  if(!D.dead.hasan)cast.hasan=[150,-1,{y:146}];if(!D.dead.abby)cast.abby=[190,-1,{y:150}];if(!D.dead.sean)cast.sean=[226,-1,{y:146}];if(!D.dead.stella)cast.stella=[256,-1,{y:150}];
  scene('science',cast);
- await N('Period 7. Science. Same room. The window is still broken from this morning. Ms. Loach has not noticed.');
+ await N('Period 7. Science. Same room. The window is still broken. Ms. Loach has not noticed.');
  await say('loach','Page forty-seven.');
  const o=[{t:'Get Hasan to drink from her mug.',dis:!A.hasan,why:'Hasan isn’t here'},{t:'Drink from her mug yourself.'},{t:'Flood the room from every tap.'}];
  const c=await choose(o,'The worst thing possible.');

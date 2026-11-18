@@ -116,7 +116,7 @@ const LOCKHOOK={mis:'lockdown',period:3,room:'library',who:'auto',cond:()=>false
  scene('library',lc,true);fxState.dark=.45;
  const bar=pprop({t:'barricade',x:-30,y:150,layer:10});
  if(A.shermian){hold('shermian',null);await walk('shermian',30,60);pose('shermian','grab');await tw(bar,{x:22},700);pose('shermian',null);face('shermian',1)}
- await N('Ms. Shermian drags a full bookshelf across the door. On her own. It weighs about four hundred pounds. She doesn’t even take her cardigan off.');
+ await N('Ms. Sherman drags a full bookshelf across the door. On her own. It weighs about four hundred pounds. She doesn’t even take her cardigan off.');
  if(A.shermian)await say('shermian','Lights off, sweeties. Nobody breathes unless Miss says breathe.','evil');
  fxState.dark=.6;
  await bang(false);
@@ -184,7 +184,7 @@ async function lockRun(){
 
 async function lockFight(){
  const fighters=['omer','angelo','marcus','kayden','shermian','arjun','hasan','dheva','nivaan'].filter(n=>A[n]);
- await N('Nobody votes. Everybody just stands up at once. Ms. Shermian pulls the bookshelf back like a curtain.');
+ await N('Nobody votes. Everybody just stands up at once. Ms. Sherman pulls the bookshelf back like a curtain.');
  const cc={you:[60,1,{y:154}]};fighters.forEach((n,i)=>cc[n]=[20+i*14,1,{y:140+(i%3)*5,hold:A[n].hold}]);
  scene('corridor',cc,true);fxState.dark=.7;cue('fight');
  await N('The corridor lights are out. The only light is phone flashlights, swinging everywhere. Every locker is a person. Every person is a locker.');
@@ -196,7 +196,7 @@ async function lockFight(){
  if(A.marcus){pose('marcus','throw');SFX.glass();flash('#fff',.5);await N('Marcus swings the katana at a noise and takes the top off a fire extinguisher. White powder everywhere. Now nobody can see anything at all.');pose('marcus',null)}
  fxState.dark=.8;
  if(A.shermian&&A.kayden){
-  await N('In the white fog: a wet, short sound. Then Ms. Shermian’s voice, very calm.');
+  await N('In the white fog: a wet, short sound. Then Ms. Sherman’s voice, very calm.');
   kill('kayden','lie',{pool:40,bleed:4,spray:60});
   await say('shermian','Kayden ran at Miss. Kayden shouldn’t run in the corridor. I thought he was the intruder, sweeties.','happy');
   await say('shermian','(wiping the cleaver on her cardigan) I didn’t, but I thought it.','evil');
@@ -235,7 +235,7 @@ async function lockFight(){
 
 async function lockHide(){
  for(const k in A)if(k!=='you'&&!A[k].dead&&k!=='shermian')A[k].pose='kneel';pose('you','kneel');
- await N('You get down behind the reading beanbags. Everyone does. Ms. Shermian stands facing the door with the cleaver held behind her back, smiling at it.');
+ await N('You get down behind the reading beanbags. Everyone does. Ms. Sherman stands facing the door with the cleaver held behind her back, smiling at it.');
  await bang(false);
  await N('Twenty minutes. Thirty. The scratching comes back three times. Every time, it stops right outside the door. Every time, it sniffs.');
  if(A.arjun){await say('arjun','(not whispering enough) If it gets in, I’m pushing Nivaan at it. He’s the smallest. It’ll be full.','angry');if(A.nivaan)await say('nivaan','(whispering) Chat heard that. Chat’s got it saved.','angry')}

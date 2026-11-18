@@ -39,7 +39,7 @@ async function arjunGives(item,line){
  const c=await choose(['“Give it back or I read your sixth grade diary out loud.”','Wrestle it off him.',{t:'“Two bucks.”',dis:D.money<2,why:'skint'}]);
  if(c===0){
   await say('arjun','You haven’t got my diary.','smirk');
-  await say('you','“Dear Diary. Today Ms. Shermian smiled at me and I think she’s the only person who gets me.”');
+  await say('you','“Dear Diary. Today Ms. Sherman smiled at me and I think she’s the only person who gets me.”');
   await say('arjun','…','shock');
   pose('arjun','throw');await wait(250);pose('arjun',null);
   await say('arjun','TAKE it. Take it and die.','angry');

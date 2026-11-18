@@ -121,7 +121,7 @@ mission('staffroom',{name:'The Staff Room',icon:'☕',who:['loach','shermian','p
  blurb:'The teachers have beef with each other too. Somebody ate Ms. Loach’s yogurt. Somebody sat on Mr. Voss’s lap at the Christmas party. Today Ms. Loach is going to do something about it.',
  parts:['Before school: the shouting in the parking lot','Break: Pat explains','Lunch: the staff room'],
  tips:['Before school, the bus loop. Listen to the teachers in the parking lot.','Break, the Cafeteria. Ask Pat what that was.','Lunch, the Main Corridor. The staff room door is by the trophy cabinet.'],
- variants:{swap:'Swapped the mugs',toes:'Warned Ms. Shermian',immune:'Did nothing'}});
+ variants:{swap:'Swapped the mugs',toes:'Warned Ms. Sherman',immune:'Did nothing'}});
 spot({room:'bus',period:0,x:296,y:148,label:'Listen to the teachers shouting in the parking lot',short:'SHOUTING',cond:()=>!D.f.st1&&!D.dead.loach&&!D.dead.shermian,run:async()=>{
  await N('Behind the bus shelter, in the staff parking lot, two teachers are screaming at each other over the roof of a Kia.');
  await say('loach','It had an L on it, Debra. An L. For LOACH.','angry');
@@ -144,7 +144,7 @@ hook({mis:'staffroom',period:2,room:'canteen',who:'pat',label:'Ask Pat what the 
   ['pat','🍿']
  ]);
  await say('pat','And between you and me, love, Ms. Loach bought something from the hardware store this morning. Brown bottle. Skull on it. She asked the man if it “tastes of anything.”','smirk');
- await say('pat','Staff room. Lunch. Ms. Shermian always has her coffee at 12:30. In the “World’s Best Teacher” mug. She bought it for herself.','happy');
+ await say('pat','Staff room. Lunch. Ms. Sherman always has her coffee at 12:30. In the “World’s Best Teacher” mug. She bought it for herself.','happy');
  D.f.st2=1;part('staffroom',2);return 'stay';
 }});
 spot({room:'corridor',period:4,x:132,y:148,label:'Sneak into the staff room',short:'STAFF ROOM',cond:()=>D.f.st2&&!D.done.staffroom&&!D.dead.loach&&!D.dead.shermian,run:async()=>{
@@ -153,14 +153,14 @@ spot({room:'corridor',period:4,x:132,y:148,label:'Sneak into the staff room',sho
  await N('She takes a little brown bottle out of her cardigan. There’s a skull drawn on it in Sharpie. She tips most of it into the WORLD’S BEST TEACHER mug.');
  await say('loach','(stirring, to the mug) Love, Debra. All love.','evil');
  hold('loach',null);
- const c=await choose(['Swap the mugs when she turns round.','Warn Ms. Shermian.','Stay behind the couch. Do nothing.']);
+ const c=await choose(['Swap the mugs when she turns round.','Warn Ms. Sherman.','Stay behind the couch. Do nothing.']);
  put('shermian',-14,1,{y:146});
  if(c===0){
   await N('Ms. Loach turns to get the milk. You reach over the couch and switch the WORLD’S BEST TEACHER mug with hers. Your hands have never been steadier. Your heart has never been louder.');
   await walk('shermian',110,60);await say('shermian','(picking up the World’s Best mug) Ooh, Linda, you made Miss a coffee? That’s so sweet. Cheers, sweetie.','happy');
   await say('loach','(smiling, sipping her own) Cheers, Debra.','evil');
   await wait(600);A.loach.ex='shock';A.loach.shake=1;SFX.gasp();
-  await N('Ms. Loach puts her mug down. She looks at it. She looks at Ms. Shermian. She looks at the mug.');
+  await N('Ms. Loach puts her mug down. She looks at it. She looks at Ms. Sherman. She looks at the mug.');
   for(let i=0;i<4;i++){SFX.squelch();blood(A.loach.x,A.loach.y-26,20,null,80,A.loach.y+2);shake(.7);await wait(280)}
   await N('It comes out of her nose first. Then her eyes. Then everywhere. It’s green and red and it foams. She grips the counter. The counter wins.');
   kill('loach','lie',{pool:44,bleed:5,spray:60});

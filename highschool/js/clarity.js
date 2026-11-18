@@ -32,7 +32,7 @@ dayText=function(who,t){
  await _di(died);
  if(cal()===1&&!died&&!P.day1Told){
   P.day1Told=1;save();
-  await N('Over the weekend, Tyler from your Period 3 class didn’t come home. His mom has been posting MISSING on Facebook since Saturday.');
+  await N('On Friday, Tyler, a kid from the math class in the Trailer, didn’t come home. His mom has been posting MISSING on Facebook since Saturday.');
   await say('adam','(on the PA, too loud) Good morning, Highgate! The STATE INSPECTION is in two weeks. Friday after next. Everybody will be normal. Everybody will be PRESENT. Everybody will be ALIVE.','scared');
   await N('Your friends are going to want to talk about Tyler. They’ll find you at break, in the library.');
  }

@@ -5,7 +5,7 @@
 mission('flimbus',{name:'Mickther',icon:'🤬',who:['arjun','hasan','shermian','adam'],
  blurb:'In sixth grade, Arjun and Hasan made up a word. It doesn’t mean anything. They say it like it’s the worst thing a person can say. Today a teacher hears it.',
  parts:['Break: the word','Lunch: what does it MEAN','Home time: the announcement'],
- tips:['Break, Main Corridor. Arjun wants to teach you something.','Lunch, Cafeteria. Arjun and Hasan have been summoned. Ms. Shermian is “concerned”.','Home time, the bus loop. Mr. Adam is about to make an announcement.'],
+ tips:['Break, Main Corridor. Arjun wants to teach you something.','Lunch, Cafeteria. Arjun and Hasan have been summoned. Ms. Sherman is “concerned”.','Home time, the bus loop. Mr. Adam is about to make an announcement.'],
  variants:{legend:'Became legends',detention:'Five hundred lines'}});
 
 hook({mis:'flimbus',period:2,room:'corridor',who:'arjun',label:'Ask Arjun why he’s grinning like that',look:{ex:'smirk',pose:'cross'},cond:()=>!D.f.flim1&&!D.dead.arjun,run:async()=>{
@@ -26,7 +26,7 @@ hook({mis:'flimbus',period:2,room:'corridor',who:'arjun',label:'Ask Arjun why he
   await say('arjun','(at full volume, both of them, at each other) YOU STUPID MIIIIIIICKTHER.','yell');
   await say('hasan','(at full volume) NO, YOU’RE THE STUPID MICKTHEEEEEEER.','yell');pose('arjun',null);pose('hasan',null)}
  if(A.shermian){
-  await N('Every head in the corridor turns. At the far end, Ms. Shermian stops. She turns, very slowly, like a sprinkler.');
+  await N('Every head in the corridor turns. At the far end, Ms. Sherman stops. She turns, very slowly, like a sprinkler.');
   await walk('shermian',150,60);
   await say('shermian','What did you just say, sweeties?','evil');
   await say('arjun','Nothing, Miss. A pasta. It’s a pasta.','scared');
@@ -58,7 +58,7 @@ hook({mis:'flimbus',period:4,room:'canteen',who:'arjun',label:'Ask Arjun why Mr.
  const cast={arjun:[204,-1,{y:146}],you:[228,-1,{y:152}]};if(!D.dead.hasan)cast.hasan=[176,1,{y:146}];if(!D.dead.pat)cast.pat=[90,1,{y:140}];if(!D.dead.shermian)cast.shermian=[140,1,{y:140,pose:'cross'}];
  scene('canteen',cast);
  put('adam',-14,1,{y:146,hold:'paper'});await walk('adam',150,80);
- await say('adam','Arjun. Hasan. Ms. Shermian has reported a WORD.','angry');
+ await say('adam','Arjun. Hasan. Ms. Sherman has reported a WORD.','angry');
  if(A.shermian)await say('shermian','(reading from her tiny notebook) “You stupid mickther.” “No, YOU’RE the stupid mickther.” At ten twenty-two. In MY corridor.','evil');
  await say('adam','I looked it up. I looked it up on Urban Dictionary. Do you know what it says?','shock');
  await say('arjun','(very quietly, to Hasan) It shouldn’t say anything. Nobody’s ever written it down. Has anyone written it down?','scared');
@@ -68,7 +68,7 @@ hook({mis:'flimbus',period:4,room:'canteen',who:'arjun',label:'Ask Arjun why Mr.
  await say('adam','I am going to ask you ONE time. What. Does. Mickther. MEAN.','yell');
  const c=await choose(['“Sir, a mickther is when you sneeze and it goes back in.”','“Sir, it’s a type of pasta. Long. With a hole in it.”','“Sir, you can only understand it when you’re dead.”']);
  if(c===0){await say('arjun','(nodding, way too fast) Yes. That. When you sneeze and it goes back in. That’s a mickther. It’s medical.','scared');await say('adam','(after a long pause) …That HAS happened to me.','shock')}
- else if(c===1){await say('hasan','IT’S A PASTA. We told Ms. Shermian. It’s a pasta. My dad makes it. With a hole in it.','scared');await say('pat','(from behind the counter) We had mickther on the menu in 1998. Kids loved it.','happy')}
+ else if(c===1){await say('hasan','IT’S A PASTA. We told Ms. Sherman. It’s a pasta. My dad makes it. With a hole in it.','scared');await say('pat','(from behind the counter) We had mickther on the menu in 1998. Kids loved it.','happy')}
  else{await say('arjun','(dead serious) Sir. You can only understand mickther when you’re dead. That’s why we can’t tell you.','closed');if(A.shermian)await say('shermian','(very sweetly) Miss can arrange that, sweetie.','evil')}
  await N('Somewhere at the back of the cafeteria, a small boy whispers it. Then a table says it. Then the table next to that table.');
  for(let i=0;i<3;i++){SFX.cheer();shake(.3);await wait(260)}

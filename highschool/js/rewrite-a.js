@@ -260,7 +260,7 @@ hook({mis:'bully',period:4,room:'corridor',who:'auto',cond:()=>D.f.fight,run:asy
    ================================================================= */
 dropHooks('seat');
 Object.assign(MIS.seat,{
- blurb:'Ms. Shermian has a new seating plan. It splits up Corey, Arjun, Alex, Dheva and Marcus, which is the point. Her mood flips faster than the strip light.',
+ blurb:'Ms. Sherman has a new seating plan. It splits up Corey, Arjun, Alex, Dheva and Marcus, which is the point. Her mood flips faster than the strip light.',
  parts:['Period 3, Math: the new plan','Lunch, Math: her drawer','Period 7, Math: the swap'],
  tips:['Period 3, Math. She’ll call you up one at a time.','Lunch, the Math room. She’s on cafeteria duty. Dheva and Marcus are already in there.','Period 7, Math. Keep her sweet. Do something about Arjun’s mouth (Angelo sells tape).']});
 
@@ -319,7 +319,8 @@ hook({mis:'seat',period:3,room:'maths',who:'auto',run:async()=>{
  }else await sweet('shermian');
  await say('shermian','Nobody. Touches. My drawer. The plan lives in my drawer. The plan is FOREVER.','evil');intel('shermianDrawer');
  await sweet('shermian');
- await N('You have to sit next to Tyler for the rest of the lesson. Nobody moves him. She teaches simultaneous equations around him like he’s a puddle.');
+ if(A.tyler&&A.tyler.dead)await N('You have to sit next to Tyler for the rest of the lesson. Nobody moves him. She teaches simultaneous equations around him like he’s a puddle.');
+ else await N('You sit next to the empty chair. Tyler’s chair. She teaches simultaneous equations around it like it’s a puddle.');
  await say('corey','(across the room, mouthing) We need to get back together. Not like— you know what I mean.');
  await say('alex','(whispering to the wall) Five of us. Back row. That’s all I want from life.','sad');
  await classOut({seats:seatsFor('maths').map((s,i)=>Object.assign(s,{who:['alex','tyler','you','x','corey','arjun','x','x','x','dheva'][i]})),t:'shermian'});
@@ -353,7 +354,7 @@ hook({mis:'seat',period:4,room:'maths',who:'dheva',label:'Ask Dheva about the pl
   await die('seat');
  }
  SFX.pick();pose('you',null);hold('you','plan');
- await N('Seating Plan, version fourteen. Every friend group in ninth grade, split down the middle. Little hearts next to the kids she’s “keeping an eye on”. Some of the hearts have been crossed out. Tyler’s has been crossed out today, in different ink.');
+ await N('Seating Plan, version fourteen. Every friend group in ninth grade, split down the middle. Little hearts next to the kids she’s “keeping an eye on”. Some of the hearts have been crossed out. Tyler’s has been crossed out, in different ink.');
  await walk(look_,190,60);
  await say('dheva','Right. Back row, five seats. Rules.');
  await say('dheva','I’m not sitting next to Corey. His curl cream smells like grape and it makes me hungry.');
@@ -391,7 +392,7 @@ hook({mis:'seat',period:6,room:'maths',who:'auto',cond:()=>D.f.seat2&&!D.dead.ar
  const cast={shermian:[44,1,{pose:'hips',y:146,hold:'plan'}],you:[seatOf('front',2).x,-1,{pose:'sit',y:SEATS.frontY}]};
  order.forEach((n,i)=>cast[n]=[96+i*24,-1,{y:126}]);
  scene('maths',cast,true);cue('class');
- if(D.dead.tyler){prop({t:'flower',x:seatOf('back',1).x,y:SEATS.backY-12,layer:20});await N('Period 7. Tyler’s seat has a pencil case on it and a single flower someone picked from the field. Ms. Shermian has put a sticker on the flower.')}
+ if(D.dead.tyler){prop({t:'flower',x:seatOf('back',1).x,y:SEATS.backY-12,layer:20});await N('Period 7. Tyler’s seat has a pencil case on it and a single flower someone picked from the field. Ms. Sherman has put a sticker on the flower.')}
  else await N('Period 7. Math again. The same room, with the light coming in lower.');
  await say('shermian','New plan, angels! Let’s see… Alex. Dheva. Arjun. Marcus. Corey. All in the back row. Hm.','smirk');
  for(let i=0;i<order.length;i++){const n=order[i],s=seatOf('back',['alex','dheva','arjun','marcus','corey'].indexOf(n));A[n].pose=null;await Promise.all([walk(n,s.x,90),tw(A[n],{y:s.y},400)]);sitAt(n,'back',['alex','dheva','arjun','marcus','corey'].indexOf(n),-1)}
@@ -412,7 +413,7 @@ hook({mis:'seat',period:6,room:'maths',who:'auto',cond:()=>D.f.seat2&&!D.dead.ar
  await say('corey','(whispering) We did it. We actually—','happy');
  await say('arjun','Best seat I’ve ever had, Miss. Better than your marriage.','smirk');
  await evil('shermian');
- const k=await choose([{t:'Tape Arjun’s mouth shut.',dis:!has('tape'),why:'no tape',tag:'🩹'},{t:'Kick Arjun’s chair.'},{t:'Let him talk. He’s earned this.'}],'Ms. Shermian is walking down the row.');
+ const k=await choose([{t:'Tape Arjun’s mouth shut.',dis:!has('tape'),why:'no tape',tag:'🩹'},{t:'Kick Arjun’s chair.'},{t:'Let him talk. He’s earned this.'}],'Ms. Sherman is walking down the row.');
  if(k===0){
   take('tape');A.you.pose=null;await Promise.all([walk('you',A.arjun.x+12,120),tw(A.you,{y:SEATS.backY+2},300)]);face('you',-1);pose('you','hold');
   SFX.whoosh();await wait(200);SFX.whoosh();

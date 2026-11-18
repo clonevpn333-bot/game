@@ -122,7 +122,7 @@ const ROOMS={
   wood('#8a6a48','#7a5a38');lightShaft(250,56);
   R(18,120,50,4,'#6a4a2a');R(20,124,46,22,'#7a5a3a');R(20,124,46,1,'#9a7a5a');R(28,112,14,8,'#f4f0e6');R(30,110,10,2,'#f4f0e6');R(50,114,6,6,'#c83030');R(52,112,2,2,'#3a8a3a');
  },items:classroomDesks()},
- maths:{name:'Math — Ms. Shermian',music:'class',bg(){
+ maths:{name:'Math — Ms. Sherman',music:'class',bg(){
   wall('#e8c4cc','#a87a8a');lights(3);
   board(96,22,124,56,[['MATH :)','#c04070'],['2X + 3 = 11'],['X = ?'],['BE NICE','#c04070'],['OR ELSE','#c04070']]);
   R(232,22,74,52,'#fff');R(232,22,74,6,'#c04070');pxc('SEATING PLAN',269,23,'#fff');for(let r=0;r<4;r++)for(let c=0;c<5;c++){R(236+c*14,32+r*10,12,8,(r*5+c)%4?'#f0d8e0':'#e8b0c4');R(238+c*14,35+r*10,8,1,'#8a6a7a')}

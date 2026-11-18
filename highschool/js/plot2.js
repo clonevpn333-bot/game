@@ -21,7 +21,7 @@ spot({room:'corridor',period:0,x:96,y:150,label:'Help the woman at locker 214',s
  scene('corridor',cast,true);cue('sad');
  await N('A woman in a green coat is taking things out of locker 214 one at a time and putting them in a supermarket bag. A gym shirt. A calculator. A photo of a dog.');
  await say('tylermom','(not looking round) The school says he ran away. Tyler won’t even sleep over at his cousin’s. He doesn’t run anywhere. He has asthma.','sad');
- if(A.hasan)await say('hasan','(quietly) Do you want help, Mrs. M? We sit near him. In Math.','sad');
+ if(A.hasan)await say('hasan','(quietly) Do you want help, Mrs. M? We know him. From the bus.','sad');
  await say('tylermom','He said he sat next to a nice boy in Math. Was that you? He said the nice boy shared his eraser.','cry');
  pose('tylermom',null);hold('tylermom','book');
  await N('At the bottom of the locker there’s a notebook. Math, on the cover. Inside, after the equations, the writing changes. Smaller. Pressed hard into the paper.');
@@ -57,7 +57,7 @@ hook({mis:'crew_dark',period:8,room:'foodcourt',who:'nivaan',label:'Ask Nivaan w
  await N('The classroom doors all have little windows in them. You don’t want to look. You look.');
  await N('In English, Ms. Balduf is sitting at her desk in the dark. Not marking. Not moving. Her eyes are open. Her red pen is tapping, once a second, on nothing.');
  if(A.kenneth)await say('kenneth','(barely breathing) They don’t go home. They don’t GO home.','scared');
- await N('In Math, Ms. Shermian is sitting in a student’s chair, Tyler’s chair, facing the wall. Smiling at it.');
+ await N('In Math, Ms. Sherman is sitting in a student’s chair, Tyler’s chair, facing the wall. Smiling at it.');
  if(A.omer)await say('omer','(whispering) I want to go home. I’m not scared. I want to go home in a brave way.','scared');
  scene('office',{you:[120,1,{y:156}],kenneth:[150,1,{y:150,pose:'type'}]},true);fxState.dark=.5;
  if(!A.kenneth)put('nivaan',150,1,{y:150,pose:'type'});
@@ -89,6 +89,7 @@ spot({room:'corridor',period:4,x:206,y:150,label:'Knock on Mr. Adam’s office d
  await say('adam','March 13th, 1987. I was twelve. I was in seventh grade. I had detention that Friday, with Ollie Finch and three other kids.','sad');
  await say('adam','I skipped it. I went to the arcade instead. Ollie went. He always did what he was told. He brought his library book so he’d have something to read.','cry');
  await say('adam','At 3:15 the boiler went. Ms. Sherman was getting a coffee. She was twenty-three. She came back and the door was too hot to open. She never said a word to anybody about it. Neither did I.','cry');
+ await say('adam','(very quietly) Have you looked at her? Really looked? She was twenty-three that day. She’s still twenty-three. Thirty-nine years and not one gray hair. The building keeps her too.','scared');
  await say('adam','I came back here to teach because I thought if I stayed close, I could… I don’t know what I thought. Then I got old here. Then they all got… like they are. And kids keep disappearing, and I keep writing letters home that say “ran away.”','cry');
  await say('adam','(wiping his face) Do you want my name on it?','sad');
  const c=await choose(['“Yes. Your name. You have to stand behind it.”','“No. We’ll keep you anonymous.”']);

@@ -24,7 +24,7 @@ const K={
  jacob:{n:'Jacob',col:'#c8202c',skin:'#6b4428',hair:'#120e0c',hs:'fade',top:'#c8202c',pants:'#22252c',h:2,hood:1,seed:19,v:198},
  tyler:{n:'Tyler',col:'#5a7a5a',skin:'#e8c4a0',hair:'#8a5a2a',hs:'short',top:'#5a7a5a',pants:'#33384a',seed:20,v:350},
  balduf:{n:'Ms. Balduf',col:'#b5462a',skin:'#f0cfb0',hair:'#b5462a',hs:'bob',top:'#4b6b3a',pants:'#3a2f2a',skirt:1,glasses:1,cardigan:1,adult:1,girl:1,seed:31,v:410,vw:'triangle'},
- shermian:{n:'Ms. Shermian',col:'#d06a8e',skin:'#efd2bc',hair:'#3a2418',hs:'bun',top:'#e3a9bd',pants:'#2f2f3a',skirt:1,pearls:1,adult:1,girl:1,seed:32,v:490,vw:'triangle'},
+ shermian:{n:'Ms. Sherman',col:'#d06a8e',skin:'#efd2bc',hair:'#3a2418',hs:'bun',top:'#e3a9bd',pants:'#2f2f3a',skirt:1,pearls:1,adult:1,girl:1,seed:32,v:490,vw:'triangle'},
  sherman:{n:'Ms. Sherman',col:'#7a4a7a',skin:'#e6c9b5',hair:'#cfcac8',hs:'perm',top:'#5a3a5a',pants:'#3a2a3a',skirt:1,glasses:1,old:1,adult:1,girl:1,wide:1,seed:33,v:205,vw:'sawtooth'},
  loach:{n:'Ms. Loach',col:'#6f7a6a',skin:'#d8c4b4',hair:'#6e6a58',hs:'limp',top:'#6f7a6a',pants:'#4a4a44',cardigan:1,tired:1,adult:1,girl:1,seed:34,v:165,vw:'sine'},
  voss:{n:'Mr. Voss',col:'#8aa0a8',skin:'#e2d0c0',hair:'#9a9088',hs:'bald',top:'#ecebe4',pants:'#2a2a2a',coat:1,goggles:1,adult:1,thin:1,seed:35,v:150,vw:'sawtooth'},

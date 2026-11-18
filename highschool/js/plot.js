@@ -17,13 +17,13 @@ K.insp1.id='insp1';K.insp2.id='insp2';
 
 /* ---------------- the chapters ---------------- */
 const CHAPTERS=[
- {day:1,t:'The Empty Seat',goal:'Lunch: search Ms. Shermian’s classroom (Math) for anything of Tyler’s.',done:()=>crew().ev.retainer},
+ {day:1,t:'The Empty Seat',goal:'Lunch: search Ms. Sherman’s classroom (Math) for anything of Tyler’s.',done:()=>crew().ev.retainer},
  {day:2,t:'The File',goal:'Lunch: get a photo of Mr. Voss’s back fridge (Chem Lab).',done:()=>crew().ev.jars},
  {day:3,t:'Muscle',goal:'Break or lunch: get a lockpick from Angelo (Main Corridor).',done:()=>crew().pick},
  {day:4,t:'The Office',goal:'Lunch: pick the lock on Ms. Sherman’s office (Main Corridor).',done:()=>crew().ev.register},
  {day:5,t:'Mr. Adam Knows',goal:'Get to home time alive. Get on the 43.',done:()=>crew().fri1},
  {day:6,t:'The Weekend',goal:'No school. The crew is texting. Do something stupid.',done:()=>cal()>7},
- {day:8,t:'The Leak',goal:'Lunch: wipe the group chat off the phones in Ms. Shermian’s drawer (Math).',done:()=>crew().wiped},
+ {day:8,t:'The Leak',goal:'Lunch: wipe the group chat off the phones in Ms. Sherman’s drawer (Math).',done:()=>crew().wiped},
  {day:9,t:'Lookouts',goal:'Lunch: get the Inspection Day rota from Lunch Lady Pat (Cafeteria).',done:()=>crew().ev.rota},
  {day:10,t:'The Boiler Room',goal:'Lunch: go down the old hatch by the pool doors (Main Corridor).',done:()=>crew().ev.boiler},
  {day:11,t:'The Plan',goal:'Break, the Library: give everyone a job. Then live until tomorrow.',done:()=>crew().roles},
@@ -60,12 +60,13 @@ async function aidanTries(line,reply){
 }
 
 BEATS[1]=async()=>{
- crewScene(['david','hasan','nivaan','stella','sean','kenneth','arjun']);
+ crewScene(['david','hasan','corey','nivaan','stella','sean','kenneth','arjun']);
  await N('Break. The back of the library, behind Biographies. David has called a meeting. David has never called a meeting before. He’s holding a clipboard he took from the office.');
- await say('david','Tyler wasn’t in on Friday. He’s not in today. His mom posted on Facebook. “MISSING”. In capitals. With the crying emoji.','sad');
- await say('hasan','Ms. Shermian looked right at his desk this morning and said, “Seat fourteen is available, sweeties.” Then she winked. At the DESK.','scared');
+ await say('david','Tyler didn’t come home on Friday. He’s not in today. His mom posted on Facebook all weekend. “MISSING”. In capitals. With the crying emoji.','sad');
+ await say('corey','He’s in my math class. In the Trailer. On Friday Ms. Sherman kept him behind after the bell. I waited for him by the steps. He never came out.','scared');
+ await say('hasan','Never came out? It’s a TRAILER. It’s got one door.','scared');
  await say('stella','Bethany Cole last year. That kid with the trumpet the year before. Nobody ever says it out loud. Kids just… stop being here.','angry');
- await say('kenneth','It’s the teachers. It’s been the teachers the whole time. Everyone knows. We just say “haha, Ms. Shermian’s scary” like it’s a joke.','scared');
+ await say('kenneth','It’s the teachers. It’s been the teachers the whole time. Everyone knows. We just say “haha, Ms. Sherman’s scary” like it’s a joke.','scared');
  await say('arjun','It IS a joke. It’s a joke where the punchline is Tyler.','angry');
  await say('david','There’s a school inspection in two weeks. Next Friday. Two people from the state, in suits, with clipboards bigger than this one.','happy');
  await say('david','If we can prove it by then. Real proof. In front of them. In front of everyone.','yell');
@@ -73,7 +74,7 @@ BEATS[1]=async()=>{
  await say('kenneth','We need a folder. Somewhere safe. I know what happens when stuff gets out on the internet. This time, it gets out on purpose.','angry');
  await say('sean','So we’re a crew. We’re a crew now? I’ve always wanted to be in a crew.','happy');
  await aidanTries('Hi. I heard “crew”. Can I be in the crew?',['Everyone','No.']);
- await say('david','Okay. First thing. Lunch. Ms. Shermian’s on cafeteria duty, so her classroom is empty. Somebody go and look for anything of Tyler’s.','happy');
+ await say('david','Okay. First thing. Lunch. Ms. Sherman’s on cafeteria duty, so her classroom is empty. Somebody go and look for anything of Tyler’s.','happy');
  await say('david','(looking at you) Somebody.','smirk');
  toast('★ Main story: The Crew. Two weeks until Inspection Day.');
 };
@@ -91,7 +92,7 @@ BEATS[3]=async()=>{
  crewScene(['david','angelo','marcus','omer','dheva','alex','paul']);
  await N('The crew is getting bigger. Angelo has brought his bag. The bag clanks.');
  await say('angelo','Crew discount. Lockpicks, two dollars. Nunchucks, five. Brass knuckles, adult size, I’ll throw them in free. Don’t tell my uncle.','smirk');
- await say('marcus','I’m in because this is the most interesting thing that has ever happened at this school. And because Shermian moved my seat. Twice.','smirk');
+ await say('marcus','I’m in because this is the most interesting thing that has ever happened at this school. And because Sherman moved my seat. Twice.','smirk');
  await say('dheva','Alex and me are in. We’re a package. Don’t split us up. Everybody keeps splitting us up.','sad');
  await say('paul','I’m in. I don’t know what we’re doing. I’ll lift something. I’ll lift whatever.','happy');
  await say('david','Ms. Sherman’s office. Tomorrow. We need to get in there. We need a lockpick.','happy');
@@ -112,7 +113,7 @@ BEATS[5]=async()=>{
  await N('Mr. Adam walks into the library and closes the door behind him. Then he locks it. Then he checks it’s locked. Three times.');
  await say('adam','I know what you’re doing. The File. The little meetings behind Biographies. I know.','scared');
  await say('david','Sir, we’re just a study group—','scared');
- await say('adam','THEY know too. Ms. Shermian reads everyone’s phones. She has a drawer full of them. Every phone she’s ever confiscated, she keeps. And she READS them.','yell');
+ await say('adam','THEY know too. Ms. Sherman reads everyone’s phones. She has a drawer full of them. Every phone she’s ever confiscated, she keeps. And she READS them.','yell');
  await say('adam','(quieter, almost crying) The inspection is next Friday. If you’re going to do it… do it then. In front of the state. Not before. Before, they’ll just… tidy you up.','sad');
  await say('hasan','Sir. Are you… helping us?','shock');
  await say('adam','I’m the principal. I’m not allowed to help you. (He leaves the library door unlocked on his way out.)','sad');
@@ -123,10 +124,10 @@ BEATS[5]=async()=>{
 BEATS[8]=async()=>{
  crewScene(['david','arjun','hasan','stella','kenneth','omer','nivaan']);
  cue('fight');
- await say('stella','Ms. Shermian said something to me in the Trailer. She said, “Nice FILE, sweetie.” She said File. With a capital F. You could HEAR the capital.','angry');
+ await say('stella','Ms. Sherman stopped me in the corridor this morning. She said, “Nice FILE, sweetie.” She said File. With a capital F. You could HEAR the capital.','angry');
  await say('kenneth','Someone leaked. Someone’s phone. She’s got someone’s phone.','scared');
- await say('omer','(turning to Arjun) Who had their phone taken last week?','angry');
- await say('arjun','It FELL. It fell out of my pocket. That’s not leaking, that’s GRAVITY.','angry');
+ await say('omer','(turning to Arjun) Whose phone does she ALWAYS take? Whose phone is in that drawer RIGHT NOW?','angry');
+ await say('arjun',(P.done.phone||D.f.ph1)?'It FELL. It fell out of my pocket. That’s not leaking, that’s GRAVITY.':'She took it off my desk last week. I didn’t even have it OUT. It was RESTING.','angry');
  const c=await choose(['Defend Arjun. It wasn’t his fault.','“Arjun, it was your phone. Own it.”','Blame Aidan. Somehow.']);
  if(c===0){await say('you','Anyone’s phone could’ve fallen out. She takes everyone’s. This is on her, not him.');await say('arjun','(quietly, surprised) …Thanks.','sad');crew().arjunOk=1}
  else if(c===1){await say('arjun','Fine. FINE. It was my phone. I’m sorry. Okay? I’m sorry. I’ll fix it.','sad');crew().arjunOk=1}
@@ -164,7 +165,7 @@ BEATS[11]=async()=>{
  const c=await choose(alive(['omer','jacob','marcus']).map(n=>'The doors: '+K[n].n),'Who holds the doors?');roles.door=alive(['omer','jacob','marcus'])[c];
  crew().roles=roles;save();
  if(roles.pa)await say(roles.pa,roles.pa==='david'?'I was born for this. I was literally class president for this.':roles.pa==='arjun'?'Finally. A microphone. You’re all going to regret this.':'Chat is going to LOSE it.','happy');
- if(roles.dis)await say(roles.dis,roles.dis==='stella'?'I’ll throw my ball at Coach. He has to chase it. It’s like a dog thing.':roles.dis==='arjun'?'I’m going to say the worst thing anyone has ever said to Ms. Shermian. I’ve been saving it.':'I’ll pick up Mr. Voss. Just pick him up. And walk.','smirk');
+ if(roles.dis)await say(roles.dis,roles.dis==='stella'?'I’ll throw my ball at Coach. He has to chase it. It’s like a dog thing.':roles.dis==='arjun'?'I’m going to say the worst thing anyone has ever said to Ms. Sherman. I’ve been saving it.':'I’ll pick up Mr. Voss. Just pick him up. And walk.','smirk');
  if(roles.door)await say(roles.door,roles.door==='omer'?'Nobody gets through that door. Not teachers. Not wind.':roles.door==='jacob'?'I’ll hold it. I’m very heavy. I’ve been told.':'I’ll guard the door with my uncle’s katana. I’m legally not allowed to say that out loud.','angry');
  await aidanTries('What’s my job?',['Everyone','You don’t have one, Aidan.']);
  await say('david','(rolling up the pizza box) Tomorrow, everybody. Don’t die tonight.','happy');
@@ -173,7 +174,7 @@ BEATS[12]=async()=>{await inspectionDay()};
 
 /* ---------------- the objectives ---------------- */
 const onOrAfter=d=>cal()>=d&&cal()<12&&!!crew()['beat'+d];   /* only after the crew meeting that sets it up */
-spot({room:'maths',period:4,x:60,y:150,label:'Search Ms. Shermian’s desk and bin',short:'DESK',cond:()=>onOrAfter(1)&&!crew().ev.retainer,run:async()=>{
+spot({room:'maths',period:4,x:60,y:150,label:'Search Ms. Sherman’s desk and bin',short:'DESK',cond:()=>onOrAfter(1)&&!crew().ev.retainer,run:async()=>{
  pose('you','reach');SFX.pick();await wait(400);pose('you',null);
  await N('Her desk is spotless. Her bin is not. Under a layer of red pen lids and pencil shavings there’s a little plastic retainer case. TYLER M., written on it in Sharpie.');
  await N('The retainer is still inside. There’s dried blood on the wire.');
@@ -214,7 +215,7 @@ spot({room:'corridor',period:4,x:278,y:150,label:'Pick the lock on Ms. Sherman�
  D.room='corridor';buildRoom('corridor');return 'stay';
 }});
 ON_PERIOD.push(async(i)=>{if(i===7&&cal()===5&&!D.weekend){crew().fri1=1;save()}});
-spot({room:'maths',period:4,x:84,y:150,label:'Wipe the phones in Ms. Shermian’s drawer',short:'DRAWER',cond:()=>onOrAfter(8)&&!crew().wiped,run:async()=>{
+spot({room:'maths',period:4,x:84,y:150,label:'Wipe the phones in Ms. Sherman’s drawer',short:'DRAWER',cond:()=>onOrAfter(8)&&!crew().wiped,run:async()=>{
  pose('you','reach');SFX.locker();await wait(300);
  await N('Her drawer. Phones. Dozens of them. Flip phones, a pager, Arjun’s phone with the cracked case. They’re all still charged. She charges them.');
  const ok=await mash('Factory reset every phone',{need:18,time:6,info:'Hold power + volume on every single one. MASH!'});
@@ -227,7 +228,7 @@ hook({mis:'crew',period:4,room:'canteen',who:'pat',label:'Ask Pat about the staf
  await say('pat','(not looking up from the gravy) The rota. For Friday. Yeah, I’ve got it.','smirk');
  await say('pat','I’ve been serving these people for twenty-two years, love. I’ve seen what goes in the stew. I’ve seen who doesn’t come back for seconds.','angry');
  hold('pat','plan');await wait(300);hold('pat',null);
- await N('She hands it to you folded inside a napkin. Every teacher, every minute of Friday. Next to Ms. Shermian’s name, someone has drawn a tiny skull.');
+ await N('She hands it to you folded inside a napkin. Every teacher, every minute of Friday. Next to Ms. Sherman’s name, someone has drawn a tiny skull.');
  evidence('rota','The Inspection Day rota');intel('crewRota');
  await say('pat','Now take a cookie and go away. Smile. Look normal. Nobody looks at the dinner lady.','happy');
  return 'stay';
@@ -288,7 +289,7 @@ async function inspectionDay(){
  if(A.kenneth)await say('kenneth','(at the projector, typing very fast) The File is up. Everyone look at the wall.','smirk');
  if(A.nivaan)await say('nivaan','(phone up) We’re live. Three thousand people watching. Chat, say hi to the inspectors.','happy');
  const ev=c.ev;
- const shown=[];if(ev.retainer)shown.push('Tyler’s retainer, with blood on the wire, from Ms. Shermian’s bin');if(ev.jars)shown.push('Mr. Voss’s fridge: fourteen jars labelled AIDAN, and one labelled TYLER');if(P.intel.shermianList)shown.push('Ms. Shermian’s list: NOT PASSING, with names crossed out');if(ev.register)shown.push('the 1987 detention register: four names, crossed out in red');if(ev.boiler)shown.push('four names scratched into the boiler-room wall');if(ev.notebook)shown.push('Tyler’s notebook: “if I tell anyone she says I get a seat in her drawer”');if(ev.footage)shown.push('night camera footage: Mr. Voss wheeling a laundry cart into the chem lab at 3 a.m., and every teacher in the building sitting in the dark, not moving');if(ev.confession)shown.push(c.adamNamed?'a voice memo: Mr. Adam, crying, telling the whole story of 1987':'a voice memo: an anonymous adult, crying, telling the whole story of 1987');if(ev.rota)shown.push('the staff rota, with a little skull next to Ms. Shermian');
+ const shown=[];if(ev.retainer)shown.push('Tyler’s retainer, with blood on the wire, from Ms. Sherman’s bin');if(ev.jars)shown.push('Mr. Voss’s fridge: fourteen jars labelled AIDAN, and one labelled TYLER');if(P.intel.shermianList)shown.push('Ms. Sherman’s list: NOT PASSING, with names crossed out');if(ev.register)shown.push('the 1987 detention register: four names, crossed out in red');if(ev.boiler)shown.push('four names scratched into the boiler-room wall');if(ev.notebook)shown.push('Tyler’s notebook: “if I tell anyone she says I get a seat in her drawer”');if(ev.footage)shown.push('night camera footage: Mr. Voss wheeling a laundry cart into the chem lab at 3 a.m., and every teacher in the building sitting in the dark, not moving');if(ev.confession)shown.push(c.adamNamed?'a voice memo: Mr. Adam, crying, telling the whole story of 1987':'a voice memo: an anonymous adult, crying, telling the whole story of 1987');if(ev.rota)shown.push('the staff rota, with a little skull next to Ms. Sherman');
  if(!shown.length)shown.push('a slideshow that is mostly memes, because the File is nearly empty');
  for(const s of shown){SFX.click();await N('Click. On the wall: '+s+'.')}
  if(ev.boiler){await say('you','(standing up) Ollie Finch. Raj Patel. Danny Mason. Louise Okafor. March 13, 1987. They were in detention in the boiler room. Ms. Sherman left them there.');
@@ -319,7 +320,7 @@ async function inspectionDay(){
   if(A.shermian){
    await walk('shermian',A.insp1.x+12,120);
    SFX.squelch();blood(A.insp1.x,A.insp1.y-24,50,null,100,A.insp1.y+2);kill('insp1','lie',{pool:40,bleed:4,spray:60});
-   await N('Ms. Shermian gets to Inspector Hale before anyone can move. It takes her four seconds. His clipboard lands face-up in the blood. He had given the school a “Good”.');
+   await N('Ms. Sherman gets to Inspector Hale before anyone can move. It takes her four seconds. His clipboard lands face-up in the blood. He had given the school a “Good”.');
    if(A.omer){SFX.punch();shake(1.2);await N('Then Omer, Marcus, Paul and about forty other kids land on her at the same time. It takes all of them. It takes the whole school.')}
   }
   await say('adam','(on the floor of the stage, crying with relief, into the microphone) Thank you. Thank you. Thank you. Everybody gets the rest of the day off. Everybody gets the rest of the YEAR off.','cry');

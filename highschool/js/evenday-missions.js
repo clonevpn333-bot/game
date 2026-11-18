@@ -202,14 +202,14 @@ hook({mis:'pitch',day:'even',period:3,room:'music',who:'auto',run:async()=>{
    ================================================================= */
 mission('delete',{name:'Ctrl+Alt+Delete',icon:'💻',who:['nivaan','mia','kayden'],
  blurb:'Mrs. Byte has replaced the attendance list with an AI called HIGHGATE OS. It grades every student in real time. The lowest score gets “deleted”. Nobody knows what that means yet.',
- parts:['Break: Nivaan and Mia have a plan','Period 4, ICT: log in as admin'],tips:['Even day, break, main corridor. You’ll need the admin password. Ms. Shermian’s cat might help.','Even day, Period 4, ICT.'],
+ parts:['Break: Nivaan and Mia have a plan','Period 4, ICT: log in as admin'],tips:['Even day, break, main corridor. You’ll need the admin password. Ms. Sherman’s cat might help.','Even day, Period 4, ICT.'],
  variants:{admin:'Admin access',spark:'Hard reset'}});
 hook({mis:'delete',day:'even',period:2,room:'corridor',who:'nivaan',label:'Ask Nivaan what he’s typing',look:{pose:'phone',ex:'angry'},cond:()=>!D.f.del1,run:async()=>{
  scene('corridor',{nivaan:[120,-1,{pose:'phone',y:146}],mia:[148,-1,{y:146,pose:'cross'}],you:[96,1,{y:154}]},true);
  await say('nivaan','HIGHGATE OS. Byte’s AI. It’s been scoring us. Live. I’m on 41. Kayden’s on 3. Three, out of a hundred.','scared');
- await say('mia','Yesterday Tyler was bottom. Today he’s not on the attendance list. Not absent. Not on it. Like he never existed.','angry');
+ await say('mia','Last week Tyler was bottom. Now he’s not on the attendance list. Not absent. Not on it. Like he never existed.','angry');
  await say('nivaan','If I can get admin, I can turn the scoring off. I just need the password. It’s some teacher’s. They all use the same one.','smirk');
- const c=await choose([{t:'“Mr. Biscuits.” Shermian’s dead cat.',dis:!P.intel.shermianCat,why:'you don’t know the cat’s name'},{t:'“Password123.”'},{t:'“I don’t know.”'}]);
+ const c=await choose([{t:'“Mr. Biscuits.” Sherman’s dead cat.',dis:!P.intel.shermianCat,why:'you don’t know the cat’s name'},{t:'“Password123.”'},{t:'“I don’t know.”'}]);
  if(c===0){D.f.delPass=1;await say('nivaan','MrBiscuits1… capital M… exclamation mark… WE’RE IN. Oh my God. All the teachers use it. The PRINCIPAL uses it.','happy')}
  else if(c===1){await say('nivaan','Account locked. Account locked for twenty minutes. Thanks.','angry')}
  else await say('mia','Then we do it the cadet way. We pull the plug.','smirk');

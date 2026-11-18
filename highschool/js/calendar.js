@@ -83,7 +83,7 @@ async function weekendDay(died){
  fxState.dark=1;tw(fxState,{dark:0},1200);
  await card(dayName().toUpperCase(),'WEEK '+weekOf()+' · NO SCHOOL',1800);
  if(died)await N('You wake up in your own bed, gasping. It’s still '+dayName()+'. You died, and you got the day back. Even on weekends.');
- else await N(pick(['No alarm. No 43. No Ms. Shermian. Your phone is going off like a fire alarm.','You wake up at 11:40. You’ve never felt so alive. Your phone has 63 messages.','The weekend. Your mom has left a note on the door that just says “CLEAN”. Your phone is buzzing.']));
+ else await N(pick(['No alarm. No 43. No Ms. Sherman. Your phone is going off like a fire alarm.','You wake up at 11:40. You’ve never felt so alive. Your phone has 63 messages.','The weekend. Your mom has left a note on the door that just says “CLEAN”. Your phone is buzzing.']));
  const open=WEEKEND.filter(q=>!weekendDone(q.id)&&(!q.cond||q.cond()));
  const list=(open.length?open:WEEKEND).slice().sort(()=>Math.random()-.5).slice(0,4);
  await dms('THE GROUP CHAT','weekend plans',list.map(q=>[q.who_||'hasan',q.text||q.blurb]),{live:list.length});

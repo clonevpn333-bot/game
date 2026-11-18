@@ -272,7 +272,7 @@ hook({mis:'headcase',period:7,room:'bus',who:'adam',label:'What’s in the box, 
   }
   if(c===1){
    await say('you','Sir. You’re not doing this because of the inspectors. You’re doing it because nobody ever told you you did alright.');
-   if(D.f.adamKind){await say('adam','…You said I was good. This morning. You said it.','cry');await say('adam','I don’t know how to turn it OFF. I made it off YouTube. They never show the off bit.','cry')}
+   if(D.f.adamKind){await say('adam','…You said I was good. Earlier. You said it.','cry');await say('adam','I don’t know how to turn it OFF. I made it off YouTube. They never show the off bit.','cry')}
    else{await say('adam','Don’t you DARE be nice to me now. Where were you at break? Where was ANYONE?','evil');await say('adam','It doesn’t turn off anyway. They never show you the off bit.','evil')}
    c=0;
   }

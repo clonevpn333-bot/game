@@ -725,7 +725,7 @@ const K={
  jacob:{n:'Jacob',col:'#c8202c',skin:'#6b4428',hair:'#120e0c',hs:'fade',top:'#c8202c',pants:'#22252c',h:2,hood:1,seed:19,v:198},
  tyler:{n:'Tyler',col:'#5a7a5a',skin:'#e8c4a0',hair:'#8a5a2a',hs:'short',top:'#5a7a5a',pants:'#33384a',seed:20,v:350},
  balduf:{n:'Ms. Balduf',col:'#b5462a',skin:'#f0cfb0',hair:'#b5462a',hs:'bob',top:'#4b6b3a',pants:'#3a2f2a',skirt:1,glasses:1,cardigan:1,adult:1,girl:1,seed:31,v:410,vw:'triangle'},
- shermian:{n:'Ms. Shermian',col:'#d06a8e',skin:'#efd2bc',hair:'#3a2418',hs:'bun',top:'#e3a9bd',pants:'#2f2f3a',skirt:1,pearls:1,adult:1,girl:1,seed:32,v:490,vw:'triangle'},
+ shermian:{n:'Ms. Sherman',col:'#d06a8e',skin:'#efd2bc',hair:'#3a2418',hs:'bun',top:'#e3a9bd',pants:'#2f2f3a',skirt:1,pearls:1,adult:1,girl:1,seed:32,v:490,vw:'triangle'},
  sherman:{n:'Ms. Sherman',col:'#7a4a7a',skin:'#e6c9b5',hair:'#cfcac8',hs:'perm',top:'#5a3a5a',pants:'#3a2a3a',skirt:1,glasses:1,old:1,adult:1,girl:1,wide:1,seed:33,v:205,vw:'sawtooth'},
  loach:{n:'Ms. Loach',col:'#6f7a6a',skin:'#d8c4b4',hair:'#6e6a58',hs:'limp',top:'#6f7a6a',pants:'#4a4a44',cardigan:1,tired:1,adult:1,girl:1,seed:34,v:165,vw:'sine'},
  voss:{n:'Mr. Voss',col:'#8aa0a8',skin:'#e2d0c0',hair:'#9a9088',hs:'bald',top:'#ecebe4',pants:'#2a2a2a',coat:1,goggles:1,adult:1,thin:1,seed:35,v:150,vw:'sawtooth'},
@@ -1151,7 +1151,7 @@ const ROOMS={
   wood('#8a6a48','#7a5a38');lightShaft(250,56);
   R(18,120,50,4,'#6a4a2a');R(20,124,46,22,'#7a5a3a');R(20,124,46,1,'#9a7a5a');R(28,112,14,8,'#f4f0e6');R(30,110,10,2,'#f4f0e6');R(50,114,6,6,'#c83030');R(52,112,2,2,'#3a8a3a');
  },items:classroomDesks()},
- maths:{name:'Math — Ms. Shermian',music:'class',bg(){
+ maths:{name:'Math — Ms. Sherman',music:'class',bg(){
   wall('#e8c4cc','#a87a8a');lights(3);
   board(96,22,124,56,[['MATH :)','#c04070'],['2X + 3 = 11'],['X = ?'],['BE NICE','#c04070'],['OR ELSE','#c04070']]);
   R(232,22,74,52,'#fff');R(232,22,74,6,'#c04070');pxc('SEATING PLAN',269,23,'#fff');for(let r=0;r<4;r++)for(let c=0;c<5;c++){R(236+c*14,32+r*10,12,8,(r*5+c)%4?'#f0d8e0':'#e8b0c4');R(238+c*14,35+r*10,8,1,'#8a6a7a')}
@@ -1312,7 +1312,7 @@ function give(it,label){if(!has(it))D.items.push(it);SFX.pick();toast('Got: '+(I
 function take(it){D.items=D.items.filter(i=>i!==it)}
 const ITEMS={video:'Hasan’s video of Aidan’s poem',ball:'STRIKE ONE (Stella’s lucky ball)',powder:'Dheva’s texture powder',spare:'Dheva’s emergency powder',plan:'The seating plan (v14)',newplan:'The NEW seating plan',tape:'Duct tape',energy:'Monster energy (warm)',key:'Mr. Voss’s fridge key',cookies:'A tray of Pat’s cookies',note:'Sean’s note',swap:'Kenneth’s PE bib',detention:'Detention slip (P3, Office)',padlock:'A padlock'};
 function intel(id){if(!P.intel[id]){P.intel[id]=1;save();toast('You’ll remember this: '+(INTEL[id]||id))}}
-const INTEL={aidanPoem:'Aidan’s poem says every Friday is the same Friday.',aidanJars:'Voss has fourteen jars labelled AIDAN.',aidanLocker:'Aidan remembers locker 217.',loachMug:'Ms. Loach only cares about her mug.',shermianCat:'Ms. Shermian’s cat is called Mr. Biscuits.',shermianDrawer:'Shermian keeps the seating plan in her desk drawer.',shermanPit:'Ms. Sherman’s desk has a red button. The floor in front of it opens.',vossKey:'Voss keeps the fridge key on his lanyard.',beepDial:'The beep-test speed dial is in the PE closet.',patBlind:'Lunch Lady Pat is blind in her left eye.',arjunBall:'Arjun nicked Stella’s ball out of Sean’s bag.',arjunPowder:'Arjun stole Dheva’s powder for a laugh.',kennethSwap:'Kenneth will swap PE partners for a buzzer-beater.',javelin:'Coach throws javelins at the field at 12:40.'};
+const INTEL={aidanPoem:'Aidan’s poem says every Friday is the same Friday.',aidanJars:'Voss has fourteen jars labelled AIDAN.',aidanLocker:'Aidan remembers locker 217.',loachMug:'Ms. Loach only cares about her mug.',shermianCat:'Ms. Sherman’s cat is called Mr. Biscuits.',shermianDrawer:'Sherman keeps the seating plan in her desk drawer.',shermanPit:'Ms. Sherman’s desk has a red button. The floor in front of it opens.',vossKey:'Voss keeps the fridge key on his lanyard.',beepDial:'The beep-test speed dial is in the PE closet.',patBlind:'Lunch Lady Pat is blind in her left eye.',arjunBall:'Arjun nicked Stella’s ball out of Sean’s bag.',arjunPowder:'Arjun stole Dheva’s powder for a laugh.',kennethSwap:'Kenneth will swap PE partners for a buzzer-beater.',javelin:'Coach throws javelins at the field at 12:40.'};
 function part(mis,n,quiet){D.mp[mis]=Math.max(D.mp[mis]||0,n);const was=P.parts[mis]||0;P.parts[mis]=Math.max(was,n);save();if(!quiet)toast(MIS[mis].name+' — part '+n+' of '+MIS[mis].parts.length+' done')}
 async function complete(mis,variant,big){
  const first=!P.done[mis];D.done[mis]=variant||1;P.done[mis]=P.done[mis]||variant||1;part(mis,MIS[mis].parts.length,true);
@@ -1483,7 +1483,7 @@ $('bSet').onclick=()=>{audio();openSettings()};
 const CHAT={
  hasan:['I’ve had the weirdest déjà vu since the bus. Like I’ve already been bored of today.','If Ms. Balduf asks, I did the reading. I did not do the reading.','Don’t look at my head. I know you’re looking at my head.','I’ve got a phone full of evidence on everyone. Insurance.'],
  arjun:['What are you looking at? Oh, you. Never mind, I thought it was someone important.','I’m not mean. I’m accurate. There’s a difference and you’re on the wrong side of it.','Hasan’s dad works nights so he doesn’t have to look at Hasan. That’s not a joke. That’s a schedule.','David’s mom still introduces him as “the first one”. Like a practice go.','Nivaan’s got forty viewers and three of them are his mom on different accounts.','Sean’s only got a girlfriend because she’s never seen him in daylight.'],
- david:['I’m running for class president. My policy is “no”.','I have a theory about today and I hate it.','My glasses keep fogging up near Ms. Shermian. I think it’s fear.'],
+ david:['I’m running for class president. My policy is “no”.','I have a theory about today and I hate it.','My glasses keep fogging up near Ms. Sherman. I think it’s fear.'],
  omer:['Shorts in November. It’s a lifestyle. My legs don’t get cold, they get respect.','If anyone says anything about my mom today I’m going to do something I’ll be proud of.','I’ve been doing push-ups. Not for anything. Just in case.'],
  nivaan:['We’re live. Say hi to chat. Chat says you look like a thumb.','Ninety-one viewers. Ninety-one! That’s basically famous.','If anyone fights today I need a ten-second warning to get the angle.'],
  corey:['I’m fine. My hair is fine. Everything’s fine.','Abby’s in my PE group. That’s not information. That’s just a fact I said.','Do you think purple curl cream is too much for a Friday?'],
@@ -1494,11 +1494,11 @@ const CHAT={
  angelo:['Locker 13. Open nine till half three. Cash, cookies or favours.','I don’t sell anything illegal. I sell things that are illegal in this building. Different.','You want a fake doctor’s note? I’ve got one signed by an actual dentist.'],
  alex:['Hat-trick at break or I’m quitting soccer. I won’t quit soccer.','Coach says my left foot is a weapon. He says it like he’s going to confiscate it.','I can run a 5k but I can’t ask anyone out. Weird how bodies work.'],
  dheva:['If one more person touches my hair I’m going to commit something.','It’s not gel. Never gel. Texture powder. It’s about the matte finish.','Track pants are formal wear if you commit.'],
- marcus:['Morning. Or as I call it: “the hard part”. Heh.','Ms. Shermian said “take it out” about my phone and I’ve been thinking about it ever since.','I could tell you about my weekend but there are children present. You. You’re the children.','I love Science. All that handling equipment.'],
+ marcus:['Morning. Or as I call it: “the hard part”. Heh.','Ms. Sherman said “take it out” about my phone and I’ve been thinking about it ever since.','I could tell you about my weekend but there are children present. You. You’re the children.','I love Science. All that handling equipment.'],
  paul:['Do you want to wrestle? That was a warning, not a question.','I put Kenneth through a table this morning. It was his table. He was fine about it.','My arms are too long. My mom has to buy me shirts from a giraffe.'],
  kenneth:['I am six foot in my head and five foot seven everywhere else.','Basketball is just math that makes girls look at you.','If Coach asks, I have asthma. I don’t have asthma.'],
  jacob:['Don’t push me. Everyone pushes me. I’m not a door.','Someone shoved me into a trash can this morning. Nobody laughed, though. Which is respectful.','I’m calm. I’m so calm. Look at how calm I am.'],
- tyler:['Is Ms. Shermian in a good mood? I can never tell until it’s too late.'],
+ tyler:['Is Ms. Sherman in a good mood? I can never tell until it’s too late.'],
  balduf:['A comma splice is a crime, dear. Not metaphorically.','You could of done better — no. No. Say it right or don’t say it at all.'],
  shermian:['Hello, sweetie! Don’t run. Running makes me sad. You don’t want me sad.','Seating plans are love. Love is a seating plan.'],
  sherman:['Forty-one years in this building. I’ve outlived three heads, two fires and a boy called Gary.','Your mother rang. She wants a refund.','Walk. Don’t run. Don’t breathe so loud.'],
@@ -1983,17 +1983,17 @@ hook({mis:'bully',period:4,room:'corridor',who:'auto',cond:()=>D.f.fight,run:asy
 }});
 
 /* =================================================================
-   SEAT WARS — Ms. Shermian
+   SEAT WARS — Ms. Sherman
    ================================================================= */
 mission('seat',{name:'Seat Wars',icon:'🪑',who:['corey','arjun','alex','dheva','marcus'],
- blurb:'Ms. Shermian loves a seating plan. She loves splitting up friends. Her mood flips faster than her ruler.',
- parts:['Period 3: survive Ms. Shermian’s seating plan','Lunch: steal and rewrite the plan','Period 7: get all five sat together'],
+ blurb:'Ms. Sherman loves a seating plan. She loves splitting up friends. Her mood flips faster than her ruler.',
+ parts:['Period 3: survive Ms. Sherman’s seating plan','Lunch: steal and rewrite the plan','Period 7: get all five sat together'],
  tips:['Period 3, Math. Watch her mood.','Lunch, maths room. She’s on canteen duty; the plan lives in her desk drawer. Pick your lookout carefully.','Period 7, Math. Keep her sweet. Arjun’s mouth needs shutting — Angelo sells tape.'],
  variants:{perfect:'All five together',minus:'Together, minus one'}});
 
 hook({mis:'seat',period:3,room:'maths',who:'auto',run:async()=>{
  scene('maths',{shermian:[44,1,{pose:'hips',y:146,hold:'clipboard'}],corey:[110,-1,{y:150}],arjun:[134,-1,{y:150,pose:'cross'}],alex:[158,-1,{y:150}],dheva:[182,-1,{y:150}],marcus:[206,-1,{y:150}],tyler:[230,-1,{y:150}],you:[254,-1,{y:150}]});
- await N('Period 3. Math. Ms. Shermian’s room is pink, warm, and smells like a candle called “Patience”.');
+ await N('Period 3. Math. Ms. Sherman’s room is pink, warm, and smells like a candle called “Patience”.');
  await say('shermian','Good morning, my little angels! New seating plan! Isn’t that EXCITING?','happy');
  await say('marcus','I love it when she rearranges things. Gets everyone all worked up.','smirk');
  await say('shermian','Corey, sweetie — by the window.','happy');
@@ -2141,7 +2141,7 @@ hook({mis:'seat',period:6,room:'maths',who:'auto',cond:()=>D.f.seat2&&!D.dead.ar
  await say('arjun','This is the best seat I’ve ever had, miss. Better than your marriage.','smirk');
  await evil('shermian');
  const o=[{t:'Tape Arjun’s mouth shut.',dis:!has('tape'),why:'no tape',tag:'🩹'},{t:'Kick Arjun under the desk.'},{t:'Let him talk. He’s earned this.'}];
- const k=await choose(o,'Ms. Shermian is walking down the row.');
+ const k=await choose(o,'Ms. Sherman is walking down the row.');
  if(k===0){
   take('tape');await standTo('you',A.arjun.x+12,SEATS.backY+2,120);face('you',-1);pose('you','hold');
   SFX.whoosh();await wait(200);SFX.whoosh();
@@ -2315,7 +2315,7 @@ hook({mis:'loach',period:6,room:'science',who:'auto',cond:()=>D.f.loach1,run:asy
  const cast={loach:[66,1,{pose:'sit',y:132}],you:[290,-1,{y:154}]};
  if(!D.dead.hasan)cast.hasan=[150,-1,{y:146}];if(!D.dead.abby)cast.abby=[190,-1,{y:150}];if(!D.dead.sean)cast.sean=[226,-1,{y:146}];if(!D.dead.stella)cast.stella=[256,-1,{y:150}];
  scene('science',cast);
- await N('Period 7. Science. Same room. The window is still broken from this morning. Ms. Loach has not noticed.');
+ await N('Period 7. Science. Same room. The window is still broken. Ms. Loach has not noticed.');
  await say('loach','Page forty-seven.');
  const o=[{t:'Get Hasan to drink from her mug.',dis:!A.hasan,why:'Hasan isn’t here'},{t:'Drink from her mug yourself.'},{t:'Flood the room from every tap.'}];
  const c=await choose(o,'The worst thing possible.');
@@ -2464,7 +2464,7 @@ async function arjunGives(item,line){
  const c=await choose(['“Give it back or I read your sixth grade diary out loud.”','Wrestle it off him.',{t:'“Two bucks.”',dis:D.money<2,why:'skint'}]);
  if(c===0){
   await say('arjun','You haven’t got my diary.','smirk');
-  await say('you','“Dear Diary. Today Ms. Shermian smiled at me and I think she’s the only person who gets me.”');
+  await say('you','“Dear Diary. Today Ms. Sherman smiled at me and I think she’s the only person who gets me.”');
   await say('arjun','…','shock');
   pose('arjun','throw');await wait(250);pose('arjun',null);
   await say('arjun','TAKE it. Take it and die.','angry');
@@ -2951,7 +2951,7 @@ hook({mis:'alex',period:5,room:'field',who:'alex',label:'Help Alex get his hat-t
   else{await tw(b,{x:A.jacob.x,y:A.jacob.y-14},250,'in');b.hide=1;pose('jacob','hold');await say('jacob',pick(['MINE.','Not today.','Wall. Angry wall.']),'angry');pose('jacob',null)}
   pose('alex',null);
  }
- if(goals<3){await say('alex','I’m retiring.','sad');await say('omer','You said that yesterday.');await say('alex','There was no yesterday. It’s always today.','sad');return}
+ if(goals<3){await say('alex','I’m retiring.','sad');await say('omer','You said that last week.');await say('alex','And I meant it last week too.','sad');return}
  ex('jacob','yell');A.jacob.shake=1;
  await say('jacob','EVERYONE. KEEPS. SCORING. ON. ME.','yell');
  const b=prop({t:'ball',x:A.jacob.x,y:A.jacob.y-6});pose('jacob','kick');SFX.thud();shake(.8);
@@ -3024,7 +3024,7 @@ hook({mis:'marcus',period:0,room:'bus',who:'marcus',label:'Ask Marcus where he�
  SFX.static();
  await say('marcus','(on the PA) Good morning, Highgate. This is Marcus with your morning announcements.','smirk');
  await say('marcus','Today’s lunch is sausages. Big ones. Served firm. Please handle with care.','smirk');
- await say('marcus','Ms. Shermian would like whoever’s been touching her stapler to stop. Or to keep going, but gentler.','smirk');
+ await say('marcus','Ms. Sherman would like whoever’s been touching her stapler to stop. Or to keep going, but gentler.','smirk');
  await say('marcus','Netball is cancelled because all the balls are flat. Kenneth, we’re so sorry for your loss.','smirk');
  SFX.door();shake(.5);
  await say('sherman','(outside, getting closer at a speed that shouldn’t be possible) MARCUS!','yell');
@@ -3309,7 +3309,7 @@ coll('flower',{room:'bus',period:7,x:22,y:156,name:'Corey’s purple flower',des
 Object.assign(DEATHS,{
  redpen:{name:'Red Pen',desc:'Ms. Balduf corrected your grammar. Through your eye.',hint:'Say something ungrammatical in English.'},
  fminus:{name:'F-Minus',desc:'Ms. Balduf wrote your grade on your forehead. Then through it.',hint:'Mess up the group project completely.'},
- seat:{name:'Assigned Seating',desc:'Ms. Shermian found you somewhere you weren’t meant to be.',hint:'Get on the wrong side of Ms. Shermian’s seating plan.'},
+ seat:{name:'Assigned Seating',desc:'Ms. Sherman found you somewhere you weren’t meant to be.',hint:'Get on the wrong side of Ms. Sherman’s seating plan.'},
  ring:{name:'Ringside',desc:'You got in the ring. Aidan doesn’t fight fair. Aidan doesn’t fight human.',hint:'Join the fight at the lockers yourself.'},
  pit:{name:'The Rug',desc:'Ms. Sherman’s pit is an old coal chute. You aren’t the first kid down it.',hint:'Stand on the wrong side of a red button.'},
  mug:{name:'Earl Grey',desc:'You drank from Ms. Loach’s mug. She keeps the big scissors in the top drawer.',hint:'Drink something that isn’t yours.'},
@@ -3602,7 +3602,7 @@ hook({mis:'headcase',period:7,room:'bus',who:'adam',label:'What’s in the box, 
   }
   if(c===1){
    await say('you','Sir. You’re not doing this because of the inspectors. You’re doing it because nobody ever told you you did alright.');
-   if(D.f.adamKind){await say('adam','…You said I was good. This morning. You said it.','cry');await say('adam','I don’t know how to turn it OFF. I made it off YouTube. They never show the off bit.','cry')}
+   if(D.f.adamKind){await say('adam','…You said I was good. Earlier. You said it.','cry');await say('adam','I don’t know how to turn it OFF. I made it off YouTube. They never show the off bit.','cry')}
    else{await say('adam','Don’t you DARE be nice to me now. Where were you at break? Where was ANYONE?','evil');await say('adam','It doesn’t turn off anyway. They never show you the off bit.','evil')}
    c=0;
   }
@@ -5053,7 +5053,7 @@ hook({mis:'bully',period:4,room:'corridor',who:'auto',cond:()=>D.f.fight,run:asy
    ================================================================= */
 dropHooks('seat');
 Object.assign(MIS.seat,{
- blurb:'Ms. Shermian has a new seating plan. It splits up Corey, Arjun, Alex, Dheva and Marcus, which is the point. Her mood flips faster than the strip light.',
+ blurb:'Ms. Sherman has a new seating plan. It splits up Corey, Arjun, Alex, Dheva and Marcus, which is the point. Her mood flips faster than the strip light.',
  parts:['Period 3, Math: the new plan','Lunch, Math: her drawer','Period 7, Math: the swap'],
  tips:['Period 3, Math. She’ll call you up one at a time.','Lunch, the Math room. She’s on cafeteria duty. Dheva and Marcus are already in there.','Period 7, Math. Keep her sweet. Do something about Arjun’s mouth (Angelo sells tape).']});
 
@@ -5112,7 +5112,8 @@ hook({mis:'seat',period:3,room:'maths',who:'auto',run:async()=>{
  }else await sweet('shermian');
  await say('shermian','Nobody. Touches. My drawer. The plan lives in my drawer. The plan is FOREVER.','evil');intel('shermianDrawer');
  await sweet('shermian');
- await N('You have to sit next to Tyler for the rest of the lesson. Nobody moves him. She teaches simultaneous equations around him like he’s a puddle.');
+ if(A.tyler&&A.tyler.dead)await N('You have to sit next to Tyler for the rest of the lesson. Nobody moves him. She teaches simultaneous equations around him like he’s a puddle.');
+ else await N('You sit next to the empty chair. Tyler’s chair. She teaches simultaneous equations around it like it’s a puddle.');
  await say('corey','(across the room, mouthing) We need to get back together. Not like— you know what I mean.');
  await say('alex','(whispering to the wall) Five of us. Back row. That’s all I want from life.','sad');
  await classOut({seats:seatsFor('maths').map((s,i)=>Object.assign(s,{who:['alex','tyler','you','x','corey','arjun','x','x','x','dheva'][i]})),t:'shermian'});
@@ -5146,7 +5147,7 @@ hook({mis:'seat',period:4,room:'maths',who:'dheva',label:'Ask Dheva about the pl
   await die('seat');
  }
  SFX.pick();pose('you',null);hold('you','plan');
- await N('Seating Plan, version fourteen. Every friend group in ninth grade, split down the middle. Little hearts next to the kids she’s “keeping an eye on”. Some of the hearts have been crossed out. Tyler’s has been crossed out today, in different ink.');
+ await N('Seating Plan, version fourteen. Every friend group in ninth grade, split down the middle. Little hearts next to the kids she’s “keeping an eye on”. Some of the hearts have been crossed out. Tyler’s has been crossed out, in different ink.');
  await walk(look_,190,60);
  await say('dheva','Right. Back row, five seats. Rules.');
  await say('dheva','I’m not sitting next to Corey. His curl cream smells like grape and it makes me hungry.');
@@ -5184,7 +5185,7 @@ hook({mis:'seat',period:6,room:'maths',who:'auto',cond:()=>D.f.seat2&&!D.dead.ar
  const cast={shermian:[44,1,{pose:'hips',y:146,hold:'plan'}],you:[seatOf('front',2).x,-1,{pose:'sit',y:SEATS.frontY}]};
  order.forEach((n,i)=>cast[n]=[96+i*24,-1,{y:126}]);
  scene('maths',cast,true);cue('class');
- if(D.dead.tyler){prop({t:'flower',x:seatOf('back',1).x,y:SEATS.backY-12,layer:20});await N('Period 7. Tyler’s seat has a pencil case on it and a single flower someone picked from the field. Ms. Shermian has put a sticker on the flower.')}
+ if(D.dead.tyler){prop({t:'flower',x:seatOf('back',1).x,y:SEATS.backY-12,layer:20});await N('Period 7. Tyler’s seat has a pencil case on it and a single flower someone picked from the field. Ms. Sherman has put a sticker on the flower.')}
  else await N('Period 7. Math again. The same room, with the light coming in lower.');
  await say('shermian','New plan, angels! Let’s see… Alex. Dheva. Arjun. Marcus. Corey. All in the back row. Hm.','smirk');
  for(let i=0;i<order.length;i++){const n=order[i],s=seatOf('back',['alex','dheva','arjun','marcus','corey'].indexOf(n));A[n].pose=null;await Promise.all([walk(n,s.x,90),tw(A[n],{y:s.y},400)]);sitAt(n,'back',['alex','dheva','arjun','marcus','corey'].indexOf(n),-1)}
@@ -5205,7 +5206,7 @@ hook({mis:'seat',period:6,room:'maths',who:'auto',cond:()=>D.f.seat2&&!D.dead.ar
  await say('corey','(whispering) We did it. We actually—','happy');
  await say('arjun','Best seat I’ve ever had, Miss. Better than your marriage.','smirk');
  await evil('shermian');
- const k=await choose([{t:'Tape Arjun’s mouth shut.',dis:!has('tape'),why:'no tape',tag:'🩹'},{t:'Kick Arjun’s chair.'},{t:'Let him talk. He’s earned this.'}],'Ms. Shermian is walking down the row.');
+ const k=await choose([{t:'Tape Arjun’s mouth shut.',dis:!has('tape'),why:'no tape',tag:'🩹'},{t:'Kick Arjun’s chair.'},{t:'Let him talk. He’s earned this.'}],'Ms. Sherman is walking down the row.');
  if(k===0){
   take('tape');A.you.pose=null;await Promise.all([walk('you',A.arjun.x+12,120),tw(A.you,{y:SEATS.backY+2},300)]);face('you',-1);pose('you','hold');
   SFX.whoosh();await wait(200);SFX.whoosh();
@@ -6139,14 +6140,14 @@ hook({mis:'pitch',day:'even',period:3,room:'music',who:'auto',run:async()=>{
    ================================================================= */
 mission('delete',{name:'Ctrl+Alt+Delete',icon:'💻',who:['nivaan','mia','kayden'],
  blurb:'Mrs. Byte has replaced the attendance list with an AI called HIGHGATE OS. It grades every student in real time. The lowest score gets “deleted”. Nobody knows what that means yet.',
- parts:['Break: Nivaan and Mia have a plan','Period 4, ICT: log in as admin'],tips:['Even day, break, main corridor. You’ll need the admin password. Ms. Shermian’s cat might help.','Even day, Period 4, ICT.'],
+ parts:['Break: Nivaan and Mia have a plan','Period 4, ICT: log in as admin'],tips:['Even day, break, main corridor. You’ll need the admin password. Ms. Sherman’s cat might help.','Even day, Period 4, ICT.'],
  variants:{admin:'Admin access',spark:'Hard reset'}});
 hook({mis:'delete',day:'even',period:2,room:'corridor',who:'nivaan',label:'Ask Nivaan what he’s typing',look:{pose:'phone',ex:'angry'},cond:()=>!D.f.del1,run:async()=>{
  scene('corridor',{nivaan:[120,-1,{pose:'phone',y:146}],mia:[148,-1,{y:146,pose:'cross'}],you:[96,1,{y:154}]},true);
  await say('nivaan','HIGHGATE OS. Byte’s AI. It’s been scoring us. Live. I’m on 41. Kayden’s on 3. Three, out of a hundred.','scared');
- await say('mia','Yesterday Tyler was bottom. Today he’s not on the attendance list. Not absent. Not on it. Like he never existed.','angry');
+ await say('mia','Last week Tyler was bottom. Now he’s not on the attendance list. Not absent. Not on it. Like he never existed.','angry');
  await say('nivaan','If I can get admin, I can turn the scoring off. I just need the password. It’s some teacher’s. They all use the same one.','smirk');
- const c=await choose([{t:'“Mr. Biscuits.” Shermian’s dead cat.',dis:!P.intel.shermianCat,why:'you don’t know the cat’s name'},{t:'“Password123.”'},{t:'“I don’t know.”'}]);
+ const c=await choose([{t:'“Mr. Biscuits.” Sherman’s dead cat.',dis:!P.intel.shermianCat,why:'you don’t know the cat’s name'},{t:'“Password123.”'},{t:'“I don’t know.”'}]);
  if(c===0){D.f.delPass=1;await say('nivaan','MrBiscuits1… capital M… exclamation mark… WE’RE IN. Oh my God. All the teachers use it. The PRINCIPAL uses it.','happy')}
  else if(c===1){await say('nivaan','Account locked. Account locked for twenty minutes. Thanks.','angry')}
  else await say('mia','Then we do it the cadet way. We pull the plug.','smirk');
@@ -7368,9 +7369,9 @@ hook({mis:'toby',period:8,room:'arcade',who:'sean',label:'Ask Sean why he’s ho
    CONFISCATED — Arjun’s phone
    ================================================================= */
 mission('phone',{name:'Confiscated',icon:'📵',who:['arjun','shermian','kenneth','hasan','nivaan'],
- blurb:'Highgate has a strict no-phones policy. Arjun’s phone fell out of his pocket in front of Ms. Shermian. She took it. Simple, right? Arjun will do anything to get it back. He will also say anything.',
+ blurb:'Highgate has a strict no-phones policy. Arjun’s phone fell out of his pocket in front of Ms. Sherman. She took it. Simple, right? Arjun will do anything to get it back. He will also say anything.',
  parts:['Break, corridor: the drop','Lunch, cafeteria: the drawer'],
- tips:['Break, main corridor. Ms. Shermian is on duty and Arjun is standing right in front of her.','Lunch, cafeteria. She’s on cafeteria duty. Her keys are on her lanyard. How Arjun has treated people today decides who will help him.'],
+ tips:['Break, main corridor. Ms. Sherman is on duty and Arjun is standing right in front of her.','Lunch, cafeteria. She’s on cafeteria duty. Her keys are on her lanyard. How Arjun has treated people today decides who will help him.'],
  variants:{sorry:'He said sorry',got:'Got it back',policy:'Policy is policy',drawer:'The drawer'}});
 function mean(line){D.f.arjMean=(D.f.arjMean||0)+1;toast(D.f.arjMean>=3?'😠 People are really going off Arjun now.':'😠 That one landed. People remember things like that.');return line}
 const ARJUN_REACT={
@@ -7444,14 +7445,14 @@ hook({mis:'phone',period:4,room:'canteen',who:'arjun',label:'Ask Arjun what the 
  /* the math room */
  const mc={arjun:[60,1,{y:146}],you:[30,1,{y:152}]};scene('maths',mc,true);cue('tension');
  await walk('arjun',56,60);pose('arjun','reach');SFX.locker();
- await N('Ms. Shermian’s desk. The forever drawer. The third key fits.');
+ await N('Ms. Sherman’s desk. The forever drawer. The third key fits.');
  await N('Inside: Arjun’s phone. A cat collar that says MR. BISCUITS. A seating plan with eleven names crossed out in red pen. And phones. Dozens of them. Flip phones. A pager. A brick-sized thing with an antenna and a sticker dated 1987.');
  hold('arjun','phone');pose('arjun','phone');
  await say('arjun','(clutching it) Oh thank God. Oh, thank GOD. Hi, baby. Hi. Daddy’s here.','happy');
  await N('Then his face changes. He has 63 notifications. All from the same group chat. The class group chat.');
  await say('arjun','…Someone’s been on my phone. Someone posted from my phone.','shock');
  const lines=[['them','(screenshot of Arjun’s notes app: “PEOPLE I CAN’T STAND”, a list of 31 names)'],['them','(screenshot: “why kenneth looks like a thumb with glasses”)'],['them','(voice memo: Arjun practicing insults in the mirror)']];
- lines.push(['kenneth','wow']);if(m>=1)lines.push(['dheva','dead hamster wig. cool. glad it was in the notes first']);if(m>=2)lines.push(['nivaan','clipped. posted. 41k views']);lines.push(['hasan','arjun is this real']);lines.push(['them','Miss Shermian 💗: Sharing is caring, sweeties! 💗']);
+ lines.push(['kenneth','wow']);if(m>=1)lines.push(['dheva','dead hamster wig. cool. glad it was in the notes first']);if(m>=2)lines.push(['nivaan','clipped. posted. 41k views']);lines.push(['hasan','arjun is this real']);lines.push(['them','Miss Sherman 💗: Sharing is caring, sweeties! 💗']);
  await dms('MATH P3 🧮','23 members',lines,{live:lines.length});
  SFX.door();put('shermian',-14,1,{y:146});await walk('shermian',24,60);
  await say('shermian','Did somebody touch Miss’s drawer?','happy');
@@ -7621,7 +7622,7 @@ const LOCKHOOK={mis:'lockdown',period:3,room:'library',who:'auto',cond:()=>false
  scene('library',lc,true);fxState.dark=.45;
  const bar=pprop({t:'barricade',x:-30,y:150,layer:10});
  if(A.shermian){hold('shermian',null);await walk('shermian',30,60);pose('shermian','grab');await tw(bar,{x:22},700);pose('shermian',null);face('shermian',1)}
- await N('Ms. Shermian drags a full bookshelf across the door. On her own. It weighs about four hundred pounds. She doesn’t even take her cardigan off.');
+ await N('Ms. Sherman drags a full bookshelf across the door. On her own. It weighs about four hundred pounds. She doesn’t even take her cardigan off.');
  if(A.shermian)await say('shermian','Lights off, sweeties. Nobody breathes unless Miss says breathe.','evil');
  fxState.dark=.6;
  await bang(false);
@@ -7689,7 +7690,7 @@ async function lockRun(){
 
 async function lockFight(){
  const fighters=['omer','angelo','marcus','kayden','shermian','arjun','hasan','dheva','nivaan'].filter(n=>A[n]);
- await N('Nobody votes. Everybody just stands up at once. Ms. Shermian pulls the bookshelf back like a curtain.');
+ await N('Nobody votes. Everybody just stands up at once. Ms. Sherman pulls the bookshelf back like a curtain.');
  const cc={you:[60,1,{y:154}]};fighters.forEach((n,i)=>cc[n]=[20+i*14,1,{y:140+(i%3)*5,hold:A[n].hold}]);
  scene('corridor',cc,true);fxState.dark=.7;cue('fight');
  await N('The corridor lights are out. The only light is phone flashlights, swinging everywhere. Every locker is a person. Every person is a locker.');
@@ -7701,7 +7702,7 @@ async function lockFight(){
  if(A.marcus){pose('marcus','throw');SFX.glass();flash('#fff',.5);await N('Marcus swings the katana at a noise and takes the top off a fire extinguisher. White powder everywhere. Now nobody can see anything at all.');pose('marcus',null)}
  fxState.dark=.8;
  if(A.shermian&&A.kayden){
-  await N('In the white fog: a wet, short sound. Then Ms. Shermian’s voice, very calm.');
+  await N('In the white fog: a wet, short sound. Then Ms. Sherman’s voice, very calm.');
   kill('kayden','lie',{pool:40,bleed:4,spray:60});
   await say('shermian','Kayden ran at Miss. Kayden shouldn’t run in the corridor. I thought he was the intruder, sweeties.','happy');
   await say('shermian','(wiping the cleaver on her cardigan) I didn’t, but I thought it.','evil');
@@ -7740,7 +7741,7 @@ async function lockFight(){
 
 async function lockHide(){
  for(const k in A)if(k!=='you'&&!A[k].dead&&k!=='shermian')A[k].pose='kneel';pose('you','kneel');
- await N('You get down behind the reading beanbags. Everyone does. Ms. Shermian stands facing the door with the cleaver held behind her back, smiling at it.');
+ await N('You get down behind the reading beanbags. Everyone does. Ms. Sherman stands facing the door with the cleaver held behind her back, smiling at it.');
  await bang(false);
  await N('Twenty minutes. Thirty. The scratching comes back three times. Every time, it stops right outside the door. Every time, it sniffs.');
  if(A.arjun){await say('arjun','(not whispering enough) If it gets in, I’m pushing Nivaan at it. He’s the smallest. It’ll be full.','angry');if(A.nivaan)await say('nivaan','(whispering) Chat heard that. Chat’s got it saved.','angry')}
@@ -7848,11 +7849,11 @@ async function lockHide(){
    two weeks. Progress is kept between days (P.win), one step per odd day.
    ===================================================================== */
 /* ---------------- THE TRAILER ----------------
-   Odd days, Period 3: Ms. Shermian’s math class is in the portable
+   Odd days, Period 3: Ms. Sherman’s math class is in the portable
    classroom out by the field. You and Corey (and Abby) are in it.  */
 /* Laid out from the real trailer: four tables along the back wall under the
    windows (Abby: left side of the third one, window behind her), the door in
-   the back-right corner, two little tables on the left wall (Ms. Shermian’s),
+   the back-right corner, two little tables on the left wall (Ms. Sherman’s),
    and four round tables in the middle. You and Corey: the round one, front left. */
 const TR_WALL=[[33,78],[114,159],[166,224],[233,278]];        /* back-wall tables, x from-to */
 const TR_ROUND=[[154,137],[250,139],[189,161],[86,163]];      /* round tables, centre x,y */
@@ -7873,7 +7874,7 @@ function roundTable(cx,cy){
  const k=(cx*3)%4;if(k===0){R(cx-10,ty-2,9,3,'#f4f0e6');R(cx-9,ty-1,6,1,'#9aa0b8')}else if(k===1){R(cx+6,ty-4,3,5,'#3a8ac8');R(cx+6,ty-4,3,1,'#c8c8d0')}else if(k===2){R(cx-8,ty-1,7,2,'#a03030')}else{R(cx-4,ty-2,8,3,'#3a5a3a');R(cx+6,ty,4,1,'#e8c040')}
 }
 function wallTable(x0,x1){const w=x1-x0;R(x0,114,w,2,'#e0d0b0');R(x0,116,w,3,'#b8a07a');R(x0,119,w,1,'#7a6a52');R(x0+1,120,2,7,'#5a5e68');R(x1-3,120,2,7,'#5a5e68');g.globalAlpha=.25;R(x0,127,w,2,'#000');g.globalAlpha=1}
-ROOMS.trailer={name:'The Trailer — Ms. Shermian',music:'class',bg(){
+ROOMS.trailer={name:'The Trailer — Ms. Sherman',music:'class',bg(){
  R(0,0,W,112,'#b08a5a');for(let i=0;i<W;i+=20){R(i,6,1,100,'#8a6a42');R(i+10,6,1,100,'rgba(255,255,255,.06)')}for(let i=0;i<40;i++)R(hsh(i+70)*W,10+hsh(i+71)*90,1,3+hsh(i+72)*5,'#9a7448');
  R(0,0,W,8,'#d8d4c8');for(let i=0;i<W;i+=24){R(i,0,1,8,'#b8b4a8')}R(0,8,W,1,'#8a8478');
  R(130,1,60,3,'#eef2f0');R(130,4,60,1,'#b8c0c4');if(Math.sin(T*9)>.85&&Math.sin(T*2.3)>0){g.globalAlpha=.1;R(100,6,120,60,'#000');g.globalAlpha=1}else{g.globalAlpha=.05;R(110,6,100,40,'#fff');g.globalAlpha=1}
@@ -7932,9 +7933,9 @@ function winSet(n){P.win=P.win||{};P.win.stage=Math.max(winStage(),n);P.win.look
 mission('window',{name:'The Window Seat',icon:'🐦',who:['corey','abby','shermian'],
  blurb:'Period 3 is in the Trailer. Abby sits by the window. Corey sits across the room, looking at her. He has looked at her every day since seventh grade. Every odd day you’re there, he gets one more look.',
  parts:['Odd day one: one second','Odd day two: the other bird','Odd day three: the notes','Odd day four: the window','The 43, home time: until…'],
- tips:['Odd day, Period 3, the Trailer. Watch the window.','The next odd day, Period 3, the Trailer. You know about the bird now. Corey needs to answer it.','The next odd day, Period 3, the Trailer. The notes. Keep Arjun’s hands off them.','The next odd day, Period 3, the Trailer. Ms. Shermian has noticed. She has a new seating plan.','Same day, home time, the 43. Back seat.'],
+ tips:['Odd day, Period 3, the Trailer. Watch the window.','The next odd day, Period 3, the Trailer. You know about the bird now. Corey needs to answer it.','The next odd day, Period 3, the Trailer. The notes. Keep Arjun’s hands off them.','The next odd day, Period 3, the Trailer. Ms. Sherman has noticed. She has a new seating plan.','Same day, home time, the 43. Back seat.'],
  variants:{kiss:'Two birds',hands:'Holding hands'}});
-DEATHS.windowsill={name:'Sill',desc:'Ms. Shermian closed the window. You were in it.',hint:'The Window Seat. Don’t fight Ms. Shermian with your bare hands.'};
+DEATHS.windowsill={name:'Sill',desc:'Ms. Sherman closed the window. You were in it.',hint:'The Window Seat. Don’t fight Ms. Sherman with your bare hands.'};
 
 const only=(kids,f)=>Object.fromEntries(Object.entries(f).filter(([k])=>kids.includes(k)));
 const winAvail=()=>D&&(D.dayType||'odd')==='odd'&&!D.f.winToday&&!D.dead.corey&&!D.dead.abby&&!D.dead.shermian&&winStage()<4&&!D.f.seatPick;
@@ -7959,13 +7960,13 @@ async function drawBird(n,o){
 /* ---------------- FRIDAY ONE ---------------- */
 hook({mis:'window',period:3,room:'trailer',who:'auto',cond:()=>winAvail()&&winStage()===0,run:async()=>{
  const c=await winClass();
- await N('Period 3. The Trailer. The AC unit is dripping into a bucket. The whole room wobbles when anyone walks. Ms. Shermian is writing on the board in her loopy, frightening handwriting.');
+ await N('Period 3. The Trailer. The AC unit is dripping into a bucket. The whole room wobbles when anyone walks. Ms. Sherman is writing on the board in her loopy, frightening handwriting.');
  await N('Abby sits at the back, by the window. Corey sits at the front, on the other side of the room. To look at her, he has to turn all the way round in his chair. He does. Constantly.');
  const b=await drawBird(1);
  await N('Abby breathes on the window. With one finger, she draws a little bird in the fog. She looks at it for a second. Then she rubs it out with her sleeve, before anyone can see.');
  await say('corey','(whispering, to you, not looking away from her) She does that every day. The bird. Since seventh grade. Every single day. She never draws anything else.','blush');
  intel('abbyBird');b.hide=1;
- await glance(1,'Abby turns round. Just for a second. Their eyes meet across the room, over twenty-six desks and Tyler.');
+ await glance(1,'Abby turns round. Just for a second. Their eyes meet across the room, over the desks and Tyler’s empty chair.');
  SFX.thud();shake(.4);A.corey.pose='lie';
  await N('Corey turns back so fast that he falls off his chair.');
  await evil('shermian');
@@ -7990,11 +7991,10 @@ hook({mis:'window',period:3,room:'trailer',who:'auto',cond:()=>winAvail()&&winSt
  const b=await drawBird(1);
  await N('There it is. She breathes on the glass. The little bird.');
  await say('you','(whispering) Corey. Draw one back.');
- await say('corey','(whispering) Draw WHAT back? On WHAT? I’m nowhere near a window. I’m near Tyler.','scared');
- const ch=await choose(['“Fold her a bird. Out of paper. Pass it back.”','“Breathe on Tyler’s glasses and draw it on those.”']);
- if(ch===1&&A.tyler){
-  await N('Corey leans over, breathes on Tyler’s glasses, and draws a tiny bird on the left lens with his pinky.');
-  await say('tyler','(not moving, terrified) I can’t see anything. I can’t see the board. If she asks me a question I’m dead.','scared');
+ await say('corey','(whispering) Draw WHAT back? On WHAT? I’m nowhere near a window. I’m next to an empty chair.','scared');
+ const ch=await choose(['“Fold her a bird. Out of paper. Pass it back.”','“Draw one on your hand. Hold it up.”']);
+ if(ch===1){
+  pose('corey','up');await N('Corey draws a tiny bird on the back of his hand in pen and holds it up. She can’t see it from there. He keeps holding it up anyway, until his arm shakes.');pose('corey','sit');
  }
  pose('corey','write');await wait(400);pose('corey','sit');
  await N('Corey tears a page out of the back of his textbook and folds it into a paper bird, under the desk, with shaking hands. It takes him four tries. The fourth one is beautiful.');
@@ -8063,7 +8063,7 @@ hook({mis:'window',period:3,room:'trailer',who:'auto',cond:()=>winAvail()&&winSt
  const kids=['corey','arjun','alex','dheva','marcus','tyler','abby'].filter(n=>!D.dead[n]);
  const c=await classIn('trailer',{kids,fixed:only(kids,{corey:4,abby:5,arjun:7,tyler:1,alex:0,dheva:9,marcus:3}),you:6});
  cue('tension');
- await N('Period 3. The Trailer. Everything is wrong. The desks have moved. Corey is by the window now. Abby is at the front, right next to Ms. Shermian’s desk, where she can touch her.');
+ await N('Period 3. The Trailer. Everything is wrong. The desks have moved. Corey is by the window now. Abby is at the front, right next to Ms. Sherman’s desk, where she can touch her.');
  put('shermian',A.abby.x-14,1,{y:A.abby.y-2,pose:'hips'});A.shermian.x=A.abby.x-14;
  await say('shermian','(one hand on Abby’s shoulder) Abby’s Miss’s now. Isn’t that lovely? Abby doesn’t need a window. Abby’s got Miss.','happy');
  face('corey',-1);
@@ -8083,7 +8083,7 @@ hook({mis:'window',period:3,room:'trailer',who:'auto',cond:()=>winAvail()&&winSt
  SFX.scream();
  await say('abby','(standing up, knocking her chair over) LEAVE HIM ALONE!','yell');
  for(const k of['dheva','marcus','alex','tyler','arjun'])if(A[k]){A[k].pose=null;A[k].ex='shock'}
- await N('Nobody has ever shouted at Ms. Shermian. The room goes completely silent. Then everything happens at once. Marcus flips his desk for no reason. Tyler starts crying. Dheva sprays something. Arjun films it.');
+ await N('Nobody has ever shouted at Ms. Sherman. The room goes completely silent. Then everything happens at once. Marcus flips his desk for no reason. Alex starts crying. Dheva sprays something. Arjun films it.');
  const ch=await choose([{t:'Throw the window open. Get them out.',tag:'run'},{t:'Grab her arm. Fight her.',tag:'🩸'},{t:'Stay in your seat.'}],'She’s still holding his hand on the sill.');
  if(ch===1){
   await walk('you',A.shermian.x-10,110);pose('you','grab');
@@ -8092,7 +8092,7 @@ hook({mis:'window',period:3,room:'trailer',who:'auto',cond:()=>winAvail()&&winSt
   await die('windowsill');return;
  }
  if(ch===2){
-  await N('You stay in your seat. Everyone does. After a while, Ms. Shermian lets go of his hand, wipes the window with her cardigan sleeve, and carries on with the lesson.');
+  await N('You stay in your seat. Everyone does. After a while, Ms. Sherman lets go of his hand, wipes the window with her cardigan sleeve, and carries on with the lesson.');
   await N('Corey sits by the window for the rest of Period 3 holding his hand in his lap. Abby doesn’t turn round once. She doesn’t draw anything. It’s the first time in three years she hasn’t drawn the bird.');
   await sweet('shermian');
   await classOut(c);D.f.winToday=1;return;
@@ -8150,7 +8150,7 @@ hook({mis:'window',period:7,room:'bus',who:'abby',label:'Get on the 43 behind Ab
  }else{
   await N('He holds her hand. Their knuckles are white because the bus is swerving and they’re both standing. Neither of them lets go. At the roundabout, she leans her head on his shoulder.');
  }
- await say('abby','(quietly) Monday. Period 3. Ms. Shermian’s going to kill us.','blush');
+ await say('abby','(quietly) Monday. Period 3. Ms. Sherman’s going to kill us.','blush');
  await say('corey','Then I’ll look at you first. Before the bell. Before anything. Before she kills us.','blush');
  await N('Outside the window the sun is going down orange over Fair City. On the glass, in the fog, somebody has drawn two little birds.');
  pose('corey',null);pose('abby',null);fxState.romance=0;
@@ -8258,7 +8258,7 @@ async function weekendDay(died){
  fxState.dark=1;tw(fxState,{dark:0},1200);
  await card(dayName().toUpperCase(),'WEEK '+weekOf()+' · NO SCHOOL',1800);
  if(died)await N('You wake up in your own bed, gasping. It’s still '+dayName()+'. You died, and you got the day back. Even on weekends.');
- else await N(pick(['No alarm. No 43. No Ms. Shermian. Your phone is going off like a fire alarm.','You wake up at 11:40. You’ve never felt so alive. Your phone has 63 messages.','The weekend. Your mom has left a note on the door that just says “CLEAN”. Your phone is buzzing.']));
+ else await N(pick(['No alarm. No 43. No Ms. Sherman. Your phone is going off like a fire alarm.','You wake up at 11:40. You’ve never felt so alive. Your phone has 63 messages.','The weekend. Your mom has left a note on the door that just says “CLEAN”. Your phone is buzzing.']));
  const open=WEEKEND.filter(q=>!weekendDone(q.id)&&(!q.cond||q.cond()));
  const list=(open.length?open:WEEKEND).slice().sort(()=>Math.random()-.5).slice(0,4);
  await dms('THE GROUP CHAT','weekend plans',list.map(q=>[q.who_||'hasan',q.text||q.blurb]),{live:list.length});
@@ -8337,7 +8337,7 @@ function dayText(who,t){
    or to hide with their friends. Something different happens in each.
    ===================================================================== */
 const RETURNS=[];
-Object.assign(INTEL,{shermianList:'Ms. Shermian keeps a list called NOT PASSING. Tyler is crossed out.',byteWatching:'Mrs. Byte watches every webcam in the school.',adamKey:'Mr. Adam carries the key to the PA system. He wants to tell everyone.'});
+Object.assign(INTEL,{shermianList:'Ms. Sherman keeps a list called NOT PASSING. Tyler is crossed out.',byteWatching:'Mrs. Byte watches every webcam in the school.',adamKey:'Mr. Adam carries the key to the PA system. He wants to tell everyone.'});
 function ret(o){
  const mis='ret_'+o.id;
  mission(mis,{name:'Return: '+o.name,icon:'🎟️',who:o.who||[],blurb:o.blurb,parts:['Period 3: take a return to '+ROOMS[o.room].name.split(' —')[0]],tips:['At the Period 3 bell, take a return pass. Go to '+ROOMS[o.room].name.split(' —')[0]+'.'],variants:o.variants||{}});
@@ -8392,10 +8392,10 @@ Object.assign(DEATHS,{
 });
 
 ret({id:'key',room:'maths',name:'The Answer Key',who:['marcus','paul'],hint:'The lights are off. Somebody’s whispering.',
- blurb:'Ms. Shermian is teaching out in the Trailer, so her real classroom is empty. Marcus and Paul are in it, looking for the answer key.',
+ blurb:'Ms. Sherman is teaching out in the Trailer, so her real classroom is empty. Marcus and Paul are in it, looking for the answer key.',
  variants:{key:'Got the key',cat:'Met Mr. Biscuits'},run:async()=>{
  put('marcus',150,1,{y:146,pose:'reach'});put('paul',196,-1,{y:150});
- await N('Ms. Shermian’s real classroom, with the lights off. She’s out in the Trailer. Marcus is going through her desk. Paul is holding the door shut with his whole body, even though nobody is trying to open it.');
+ await N('Ms. Sherman’s real classroom, with the lights off. She’s out in the Trailer. Marcus is going through her desk. Paul is holding the door shut with his whole body, even though nobody is trying to open it.');
  await say('marcus','Answer key for Friday’s test. It’s in here. A woman like that keeps things close.','smirk');
  await say('paul','If she comes back I’m jumping out the window. I’ve decided. I’ve made peace with it.','scared');
  const c=await choose(['Check the top drawer.','Check the bottom drawer. The locked one.','Check the little fridge behind her desk.']);
@@ -8497,7 +8497,7 @@ ret({id:'stream',room:'ict',name:'Live From the ICT Room',who:['nivaan'],hint:'N
  const c=await choose(['Lick the keyboard.','Tell chat about the teachers.','Do the worm.']);
  if(c===0){SFX.slurp();await N('You lick the keyboard. The whole row from Q to P. It tastes like eleven years of hands.');await say('nivaan','CHAT IS GOING CRAZY. 40 viewers. FORTY. Do the spacebar.','happy');await complete('ret_stream','viral');return}
  if(c===1){
-  await say('you','The teachers here are killing kids. Ms. Shermian. Mr. Voss. Coach. All of them.');
+  await say('you','The teachers here are killing kids. Ms. Sherman. Mr. Voss. Coach. All of them.');
   SFX.static();await N('The stream cuts out. Every monitor in the room goes blue. Then, one at a time, they all show the same thing: a webcam image of you, from behind. Taken right now.');
   await say('byte','(over the speakers, sweetly) Learners! Livestreaming is against the acceptable use policy. Your account has been deleted. Nivaan, you’re next, sweetie.','evil');
   await say('nivaan','(unplugging everything) Chat, I love you, if I die tell my mom I had 14 viewers.','scared');
@@ -8562,7 +8562,7 @@ ret({id:'speech',room:'hall',name:'Rehearsal',who:['adam'],hint:'Mr. Adam is alo
  await say('adam','(to the empty hall) Inspectors! Welcome to Highgate High, where every child is safe, and every child is… is… where every child is.','happy');
  await say('adam','(seeing you) OH. An audience. Sit. Sit down. Tell me if this is good.','shock');
  await say('adam','“Highgate has a ZERO percent disappearance rate.” That’s good, right? It’s a good number. Zero is the best number.','scared');
- await say('adam','“Our teachers are passionate.” Too passionate. They’re SO passionate. Ms. Shermian is passionate about necks. Is that— should I cut that line?','scared');
+ await say('adam','“Our teachers are passionate.” Too passionate. They’re SO passionate. Ms. Sherman is passionate about necks. Is that— should I cut that line?','scared');
  const c=await choose(['“Mr. Adam, are you okay?”','“The speech is great, sir.”']);
  if(c===0){await say('adam','(after a very long time) No. No, I’m not. Two weeks. Two weeks until they come and look at everything. I’ve got a key to the PA system in my pocket and I keep thinking, what if I just… told everyone.','sad');await N('He holds out a little brass key. Then he puts it back in his pocket, and laughs too loud.');intel('adamKey')}
  else await say('adam','GREAT. It’s GREAT. I’m going to be GREAT. (He isn’t.)','happy');
@@ -8636,13 +8636,13 @@ K.insp1.id='insp1';K.insp2.id='insp2';
 
 /* ---------------- the chapters ---------------- */
 const CHAPTERS=[
- {day:1,t:'The Empty Seat',goal:'Lunch: search Ms. Shermian’s classroom (Math) for anything of Tyler’s.',done:()=>crew().ev.retainer},
+ {day:1,t:'The Empty Seat',goal:'Lunch: search Ms. Sherman’s classroom (Math) for anything of Tyler’s.',done:()=>crew().ev.retainer},
  {day:2,t:'The File',goal:'Lunch: get a photo of Mr. Voss’s back fridge (Chem Lab).',done:()=>crew().ev.jars},
  {day:3,t:'Muscle',goal:'Break or lunch: get a lockpick from Angelo (Main Corridor).',done:()=>crew().pick},
  {day:4,t:'The Office',goal:'Lunch: pick the lock on Ms. Sherman’s office (Main Corridor).',done:()=>crew().ev.register},
  {day:5,t:'Mr. Adam Knows',goal:'Get to home time alive. Get on the 43.',done:()=>crew().fri1},
  {day:6,t:'The Weekend',goal:'No school. The crew is texting. Do something stupid.',done:()=>cal()>7},
- {day:8,t:'The Leak',goal:'Lunch: wipe the group chat off the phones in Ms. Shermian’s drawer (Math).',done:()=>crew().wiped},
+ {day:8,t:'The Leak',goal:'Lunch: wipe the group chat off the phones in Ms. Sherman’s drawer (Math).',done:()=>crew().wiped},
  {day:9,t:'Lookouts',goal:'Lunch: get the Inspection Day rota from Lunch Lady Pat (Cafeteria).',done:()=>crew().ev.rota},
  {day:10,t:'The Boiler Room',goal:'Lunch: go down the old hatch by the pool doors (Main Corridor).',done:()=>crew().ev.boiler},
  {day:11,t:'The Plan',goal:'Break, the Library: give everyone a job. Then live until tomorrow.',done:()=>crew().roles},
@@ -8679,12 +8679,13 @@ async function aidanTries(line,reply){
 }
 
 BEATS[1]=async()=>{
- crewScene(['david','hasan','nivaan','stella','sean','kenneth','arjun']);
+ crewScene(['david','hasan','corey','nivaan','stella','sean','kenneth','arjun']);
  await N('Break. The back of the library, behind Biographies. David has called a meeting. David has never called a meeting before. He’s holding a clipboard he took from the office.');
- await say('david','Tyler wasn’t in on Friday. He’s not in today. His mom posted on Facebook. “MISSING”. In capitals. With the crying emoji.','sad');
- await say('hasan','Ms. Shermian looked right at his desk this morning and said, “Seat fourteen is available, sweeties.” Then she winked. At the DESK.','scared');
+ await say('david','Tyler didn’t come home on Friday. He’s not in today. His mom posted on Facebook all weekend. “MISSING”. In capitals. With the crying emoji.','sad');
+ await say('corey','He’s in my math class. In the Trailer. On Friday Ms. Sherman kept him behind after the bell. I waited for him by the steps. He never came out.','scared');
+ await say('hasan','Never came out? It’s a TRAILER. It’s got one door.','scared');
  await say('stella','Bethany Cole last year. That kid with the trumpet the year before. Nobody ever says it out loud. Kids just… stop being here.','angry');
- await say('kenneth','It’s the teachers. It’s been the teachers the whole time. Everyone knows. We just say “haha, Ms. Shermian’s scary” like it’s a joke.','scared');
+ await say('kenneth','It’s the teachers. It’s been the teachers the whole time. Everyone knows. We just say “haha, Ms. Sherman’s scary” like it’s a joke.','scared');
  await say('arjun','It IS a joke. It’s a joke where the punchline is Tyler.','angry');
  await say('david','There’s a school inspection in two weeks. Next Friday. Two people from the state, in suits, with clipboards bigger than this one.','happy');
  await say('david','If we can prove it by then. Real proof. In front of them. In front of everyone.','yell');
@@ -8692,7 +8693,7 @@ BEATS[1]=async()=>{
  await say('kenneth','We need a folder. Somewhere safe. I know what happens when stuff gets out on the internet. This time, it gets out on purpose.','angry');
  await say('sean','So we’re a crew. We’re a crew now? I’ve always wanted to be in a crew.','happy');
  await aidanTries('Hi. I heard “crew”. Can I be in the crew?',['Everyone','No.']);
- await say('david','Okay. First thing. Lunch. Ms. Shermian’s on cafeteria duty, so her classroom is empty. Somebody go and look for anything of Tyler’s.','happy');
+ await say('david','Okay. First thing. Lunch. Ms. Sherman’s on cafeteria duty, so her classroom is empty. Somebody go and look for anything of Tyler’s.','happy');
  await say('david','(looking at you) Somebody.','smirk');
  toast('★ Main story: The Crew. Two weeks until Inspection Day.');
 };
@@ -8710,7 +8711,7 @@ BEATS[3]=async()=>{
  crewScene(['david','angelo','marcus','omer','dheva','alex','paul']);
  await N('The crew is getting bigger. Angelo has brought his bag. The bag clanks.');
  await say('angelo','Crew discount. Lockpicks, two dollars. Nunchucks, five. Brass knuckles, adult size, I’ll throw them in free. Don’t tell my uncle.','smirk');
- await say('marcus','I’m in because this is the most interesting thing that has ever happened at this school. And because Shermian moved my seat. Twice.','smirk');
+ await say('marcus','I’m in because this is the most interesting thing that has ever happened at this school. And because Sherman moved my seat. Twice.','smirk');
  await say('dheva','Alex and me are in. We’re a package. Don’t split us up. Everybody keeps splitting us up.','sad');
  await say('paul','I’m in. I don’t know what we’re doing. I’ll lift something. I’ll lift whatever.','happy');
  await say('david','Ms. Sherman’s office. Tomorrow. We need to get in there. We need a lockpick.','happy');
@@ -8731,7 +8732,7 @@ BEATS[5]=async()=>{
  await N('Mr. Adam walks into the library and closes the door behind him. Then he locks it. Then he checks it’s locked. Three times.');
  await say('adam','I know what you’re doing. The File. The little meetings behind Biographies. I know.','scared');
  await say('david','Sir, we’re just a study group—','scared');
- await say('adam','THEY know too. Ms. Shermian reads everyone’s phones. She has a drawer full of them. Every phone she’s ever confiscated, she keeps. And she READS them.','yell');
+ await say('adam','THEY know too. Ms. Sherman reads everyone’s phones. She has a drawer full of them. Every phone she’s ever confiscated, she keeps. And she READS them.','yell');
  await say('adam','(quieter, almost crying) The inspection is next Friday. If you’re going to do it… do it then. In front of the state. Not before. Before, they’ll just… tidy you up.','sad');
  await say('hasan','Sir. Are you… helping us?','shock');
  await say('adam','I’m the principal. I’m not allowed to help you. (He leaves the library door unlocked on his way out.)','sad');
@@ -8742,10 +8743,10 @@ BEATS[5]=async()=>{
 BEATS[8]=async()=>{
  crewScene(['david','arjun','hasan','stella','kenneth','omer','nivaan']);
  cue('fight');
- await say('stella','Ms. Shermian said something to me in the Trailer. She said, “Nice FILE, sweetie.” She said File. With a capital F. You could HEAR the capital.','angry');
+ await say('stella','Ms. Sherman stopped me in the corridor this morning. She said, “Nice FILE, sweetie.” She said File. With a capital F. You could HEAR the capital.','angry');
  await say('kenneth','Someone leaked. Someone’s phone. She’s got someone’s phone.','scared');
- await say('omer','(turning to Arjun) Who had their phone taken last week?','angry');
- await say('arjun','It FELL. It fell out of my pocket. That’s not leaking, that’s GRAVITY.','angry');
+ await say('omer','(turning to Arjun) Whose phone does she ALWAYS take? Whose phone is in that drawer RIGHT NOW?','angry');
+ await say('arjun',(P.done.phone||D.f.ph1)?'It FELL. It fell out of my pocket. That’s not leaking, that’s GRAVITY.':'She took it off my desk last week. I didn’t even have it OUT. It was RESTING.','angry');
  const c=await choose(['Defend Arjun. It wasn’t his fault.','“Arjun, it was your phone. Own it.”','Blame Aidan. Somehow.']);
  if(c===0){await say('you','Anyone’s phone could’ve fallen out. She takes everyone’s. This is on her, not him.');await say('arjun','(quietly, surprised) …Thanks.','sad');crew().arjunOk=1}
  else if(c===1){await say('arjun','Fine. FINE. It was my phone. I’m sorry. Okay? I’m sorry. I’ll fix it.','sad');crew().arjunOk=1}
@@ -8783,7 +8784,7 @@ BEATS[11]=async()=>{
  const c=await choose(alive(['omer','jacob','marcus']).map(n=>'The doors: '+K[n].n),'Who holds the doors?');roles.door=alive(['omer','jacob','marcus'])[c];
  crew().roles=roles;save();
  if(roles.pa)await say(roles.pa,roles.pa==='david'?'I was born for this. I was literally class president for this.':roles.pa==='arjun'?'Finally. A microphone. You’re all going to regret this.':'Chat is going to LOSE it.','happy');
- if(roles.dis)await say(roles.dis,roles.dis==='stella'?'I’ll throw my ball at Coach. He has to chase it. It’s like a dog thing.':roles.dis==='arjun'?'I’m going to say the worst thing anyone has ever said to Ms. Shermian. I’ve been saving it.':'I’ll pick up Mr. Voss. Just pick him up. And walk.','smirk');
+ if(roles.dis)await say(roles.dis,roles.dis==='stella'?'I’ll throw my ball at Coach. He has to chase it. It’s like a dog thing.':roles.dis==='arjun'?'I’m going to say the worst thing anyone has ever said to Ms. Sherman. I’ve been saving it.':'I’ll pick up Mr. Voss. Just pick him up. And walk.','smirk');
  if(roles.door)await say(roles.door,roles.door==='omer'?'Nobody gets through that door. Not teachers. Not wind.':roles.door==='jacob'?'I’ll hold it. I’m very heavy. I’ve been told.':'I’ll guard the door with my uncle’s katana. I’m legally not allowed to say that out loud.','angry');
  await aidanTries('What’s my job?',['Everyone','You don’t have one, Aidan.']);
  await say('david','(rolling up the pizza box) Tomorrow, everybody. Don’t die tonight.','happy');
@@ -8792,7 +8793,7 @@ BEATS[12]=async()=>{await inspectionDay()};
 
 /* ---------------- the objectives ---------------- */
 const onOrAfter=d=>cal()>=d&&cal()<12&&!!crew()['beat'+d];   /* only after the crew meeting that sets it up */
-spot({room:'maths',period:4,x:60,y:150,label:'Search Ms. Shermian’s desk and bin',short:'DESK',cond:()=>onOrAfter(1)&&!crew().ev.retainer,run:async()=>{
+spot({room:'maths',period:4,x:60,y:150,label:'Search Ms. Sherman’s desk and bin',short:'DESK',cond:()=>onOrAfter(1)&&!crew().ev.retainer,run:async()=>{
  pose('you','reach');SFX.pick();await wait(400);pose('you',null);
  await N('Her desk is spotless. Her bin is not. Under a layer of red pen lids and pencil shavings there’s a little plastic retainer case. TYLER M., written on it in Sharpie.');
  await N('The retainer is still inside. There’s dried blood on the wire.');
@@ -8833,7 +8834,7 @@ spot({room:'corridor',period:4,x:278,y:150,label:'Pick the lock on Ms. Sherman�
  D.room='corridor';buildRoom('corridor');return 'stay';
 }});
 ON_PERIOD.push(async(i)=>{if(i===7&&cal()===5&&!D.weekend){crew().fri1=1;save()}});
-spot({room:'maths',period:4,x:84,y:150,label:'Wipe the phones in Ms. Shermian’s drawer',short:'DRAWER',cond:()=>onOrAfter(8)&&!crew().wiped,run:async()=>{
+spot({room:'maths',period:4,x:84,y:150,label:'Wipe the phones in Ms. Sherman’s drawer',short:'DRAWER',cond:()=>onOrAfter(8)&&!crew().wiped,run:async()=>{
  pose('you','reach');SFX.locker();await wait(300);
  await N('Her drawer. Phones. Dozens of them. Flip phones, a pager, Arjun’s phone with the cracked case. They’re all still charged. She charges them.');
  const ok=await mash('Factory reset every phone',{need:18,time:6,info:'Hold power + volume on every single one. MASH!'});
@@ -8846,7 +8847,7 @@ hook({mis:'crew',period:4,room:'canteen',who:'pat',label:'Ask Pat about the staf
  await say('pat','(not looking up from the gravy) The rota. For Friday. Yeah, I’ve got it.','smirk');
  await say('pat','I’ve been serving these people for twenty-two years, love. I’ve seen what goes in the stew. I’ve seen who doesn’t come back for seconds.','angry');
  hold('pat','plan');await wait(300);hold('pat',null);
- await N('She hands it to you folded inside a napkin. Every teacher, every minute of Friday. Next to Ms. Shermian’s name, someone has drawn a tiny skull.');
+ await N('She hands it to you folded inside a napkin. Every teacher, every minute of Friday. Next to Ms. Sherman’s name, someone has drawn a tiny skull.');
  evidence('rota','The Inspection Day rota');intel('crewRota');
  await say('pat','Now take a cookie and go away. Smile. Look normal. Nobody looks at the dinner lady.','happy');
  return 'stay';
@@ -8907,7 +8908,7 @@ async function inspectionDay(){
  if(A.kenneth)await say('kenneth','(at the projector, typing very fast) The File is up. Everyone look at the wall.','smirk');
  if(A.nivaan)await say('nivaan','(phone up) We’re live. Three thousand people watching. Chat, say hi to the inspectors.','happy');
  const ev=c.ev;
- const shown=[];if(ev.retainer)shown.push('Tyler’s retainer, with blood on the wire, from Ms. Shermian’s bin');if(ev.jars)shown.push('Mr. Voss’s fridge: fourteen jars labelled AIDAN, and one labelled TYLER');if(P.intel.shermianList)shown.push('Ms. Shermian’s list: NOT PASSING, with names crossed out');if(ev.register)shown.push('the 1987 detention register: four names, crossed out in red');if(ev.boiler)shown.push('four names scratched into the boiler-room wall');if(ev.notebook)shown.push('Tyler’s notebook: “if I tell anyone she says I get a seat in her drawer”');if(ev.footage)shown.push('night camera footage: Mr. Voss wheeling a laundry cart into the chem lab at 3 a.m., and every teacher in the building sitting in the dark, not moving');if(ev.confession)shown.push(c.adamNamed?'a voice memo: Mr. Adam, crying, telling the whole story of 1987':'a voice memo: an anonymous adult, crying, telling the whole story of 1987');if(ev.rota)shown.push('the staff rota, with a little skull next to Ms. Shermian');
+ const shown=[];if(ev.retainer)shown.push('Tyler’s retainer, with blood on the wire, from Ms. Sherman’s bin');if(ev.jars)shown.push('Mr. Voss’s fridge: fourteen jars labelled AIDAN, and one labelled TYLER');if(P.intel.shermianList)shown.push('Ms. Sherman’s list: NOT PASSING, with names crossed out');if(ev.register)shown.push('the 1987 detention register: four names, crossed out in red');if(ev.boiler)shown.push('four names scratched into the boiler-room wall');if(ev.notebook)shown.push('Tyler’s notebook: “if I tell anyone she says I get a seat in her drawer”');if(ev.footage)shown.push('night camera footage: Mr. Voss wheeling a laundry cart into the chem lab at 3 a.m., and every teacher in the building sitting in the dark, not moving');if(ev.confession)shown.push(c.adamNamed?'a voice memo: Mr. Adam, crying, telling the whole story of 1987':'a voice memo: an anonymous adult, crying, telling the whole story of 1987');if(ev.rota)shown.push('the staff rota, with a little skull next to Ms. Sherman');
  if(!shown.length)shown.push('a slideshow that is mostly memes, because the File is nearly empty');
  for(const s of shown){SFX.click();await N('Click. On the wall: '+s+'.')}
  if(ev.boiler){await say('you','(standing up) Ollie Finch. Raj Patel. Danny Mason. Louise Okafor. March 13, 1987. They were in detention in the boiler room. Ms. Sherman left them there.');
@@ -8938,7 +8939,7 @@ async function inspectionDay(){
   if(A.shermian){
    await walk('shermian',A.insp1.x+12,120);
    SFX.squelch();blood(A.insp1.x,A.insp1.y-24,50,null,100,A.insp1.y+2);kill('insp1','lie',{pool:40,bleed:4,spray:60});
-   await N('Ms. Shermian gets to Inspector Hale before anyone can move. It takes her four seconds. His clipboard lands face-up in the blood. He had given the school a “Good”.');
+   await N('Ms. Sherman gets to Inspector Hale before anyone can move. It takes her four seconds. His clipboard lands face-up in the blood. He had given the school a “Good”.');
    if(A.omer){SFX.punch();shake(1.2);await N('Then Omer, Marcus, Paul and about forty other kids land on her at the same time. It takes all of them. It takes the whole school.')}
   }
   await say('adam','(on the floor of the stage, crying with relief, into the microphone) Thank you. Thank you. Thank you. Everybody gets the rest of the day off. Everybody gets the rest of the YEAR off.','cry');
@@ -8983,7 +8984,7 @@ spot({room:'corridor',period:0,x:96,y:150,label:'Help the woman at locker 214',s
  scene('corridor',cast,true);cue('sad');
  await N('A woman in a green coat is taking things out of locker 214 one at a time and putting them in a supermarket bag. A gym shirt. A calculator. A photo of a dog.');
  await say('tylermom','(not looking round) The school says he ran away. Tyler won’t even sleep over at his cousin’s. He doesn’t run anywhere. He has asthma.','sad');
- if(A.hasan)await say('hasan','(quietly) Do you want help, Mrs. M? We sit near him. In Math.','sad');
+ if(A.hasan)await say('hasan','(quietly) Do you want help, Mrs. M? We know him. From the bus.','sad');
  await say('tylermom','He said he sat next to a nice boy in Math. Was that you? He said the nice boy shared his eraser.','cry');
  pose('tylermom',null);hold('tylermom','book');
  await N('At the bottom of the locker there’s a notebook. Math, on the cover. Inside, after the equations, the writing changes. Smaller. Pressed hard into the paper.');
@@ -9019,7 +9020,7 @@ hook({mis:'crew_dark',period:8,room:'foodcourt',who:'nivaan',label:'Ask Nivaan w
  await N('The classroom doors all have little windows in them. You don’t want to look. You look.');
  await N('In English, Ms. Balduf is sitting at her desk in the dark. Not marking. Not moving. Her eyes are open. Her red pen is tapping, once a second, on nothing.');
  if(A.kenneth)await say('kenneth','(barely breathing) They don’t go home. They don’t GO home.','scared');
- await N('In Math, Ms. Shermian is sitting in a student’s chair, Tyler’s chair, facing the wall. Smiling at it.');
+ await N('In Math, Ms. Sherman is sitting in a student’s chair, Tyler’s chair, facing the wall. Smiling at it.');
  if(A.omer)await say('omer','(whispering) I want to go home. I’m not scared. I want to go home in a brave way.','scared');
  scene('office',{you:[120,1,{y:156}],kenneth:[150,1,{y:150,pose:'type'}]},true);fxState.dark=.5;
  if(!A.kenneth)put('nivaan',150,1,{y:150,pose:'type'});
@@ -9051,6 +9052,7 @@ spot({room:'corridor',period:4,x:206,y:150,label:'Knock on Mr. Adam’s office d
  await say('adam','March 13th, 1987. I was twelve. I was in seventh grade. I had detention that Friday, with Ollie Finch and three other kids.','sad');
  await say('adam','I skipped it. I went to the arcade instead. Ollie went. He always did what he was told. He brought his library book so he’d have something to read.','cry');
  await say('adam','At 3:15 the boiler went. Ms. Sherman was getting a coffee. She was twenty-three. She came back and the door was too hot to open. She never said a word to anybody about it. Neither did I.','cry');
+ await say('adam','(very quietly) Have you looked at her? Really looked? She was twenty-three that day. She’s still twenty-three. Thirty-nine years and not one gray hair. The building keeps her too.','scared');
  await say('adam','I came back here to teach because I thought if I stayed close, I could… I don’t know what I thought. Then I got old here. Then they all got… like they are. And kids keep disappearing, and I keep writing letters home that say “ran away.”','cry');
  await say('adam','(wiping his face) Do you want my name on it?','sad');
  const c=await choose(['“Yes. Your name. You have to stand behind it.”','“No. We’ll keep you anonymous.”']);
@@ -9072,7 +9074,7 @@ spot({room:'corridor',period:4,x:206,y:150,label:'Knock on Mr. Adam’s office d
 mission('flimbus',{name:'Mickther',icon:'🤬',who:['arjun','hasan','shermian','adam'],
  blurb:'In sixth grade, Arjun and Hasan made up a word. It doesn’t mean anything. They say it like it’s the worst thing a person can say. Today a teacher hears it.',
  parts:['Break: the word','Lunch: what does it MEAN','Home time: the announcement'],
- tips:['Break, Main Corridor. Arjun wants to teach you something.','Lunch, Cafeteria. Arjun and Hasan have been summoned. Ms. Shermian is “concerned”.','Home time, the bus loop. Mr. Adam is about to make an announcement.'],
+ tips:['Break, Main Corridor. Arjun wants to teach you something.','Lunch, Cafeteria. Arjun and Hasan have been summoned. Ms. Sherman is “concerned”.','Home time, the bus loop. Mr. Adam is about to make an announcement.'],
  variants:{legend:'Became legends',detention:'Five hundred lines'}});
 
 hook({mis:'flimbus',period:2,room:'corridor',who:'arjun',label:'Ask Arjun why he’s grinning like that',look:{ex:'smirk',pose:'cross'},cond:()=>!D.f.flim1&&!D.dead.arjun,run:async()=>{
@@ -9093,7 +9095,7 @@ hook({mis:'flimbus',period:2,room:'corridor',who:'arjun',label:'Ask Arjun why he
   await say('arjun','(at full volume, both of them, at each other) YOU STUPID MIIIIIIICKTHER.','yell');
   await say('hasan','(at full volume) NO, YOU’RE THE STUPID MICKTHEEEEEEER.','yell');pose('arjun',null);pose('hasan',null)}
  if(A.shermian){
-  await N('Every head in the corridor turns. At the far end, Ms. Shermian stops. She turns, very slowly, like a sprinkler.');
+  await N('Every head in the corridor turns. At the far end, Ms. Sherman stops. She turns, very slowly, like a sprinkler.');
   await walk('shermian',150,60);
   await say('shermian','What did you just say, sweeties?','evil');
   await say('arjun','Nothing, Miss. A pasta. It’s a pasta.','scared');
@@ -9125,7 +9127,7 @@ hook({mis:'flimbus',period:4,room:'canteen',who:'arjun',label:'Ask Arjun why Mr.
  const cast={arjun:[204,-1,{y:146}],you:[228,-1,{y:152}]};if(!D.dead.hasan)cast.hasan=[176,1,{y:146}];if(!D.dead.pat)cast.pat=[90,1,{y:140}];if(!D.dead.shermian)cast.shermian=[140,1,{y:140,pose:'cross'}];
  scene('canteen',cast);
  put('adam',-14,1,{y:146,hold:'paper'});await walk('adam',150,80);
- await say('adam','Arjun. Hasan. Ms. Shermian has reported a WORD.','angry');
+ await say('adam','Arjun. Hasan. Ms. Sherman has reported a WORD.','angry');
  if(A.shermian)await say('shermian','(reading from her tiny notebook) “You stupid mickther.” “No, YOU’RE the stupid mickther.” At ten twenty-two. In MY corridor.','evil');
  await say('adam','I looked it up. I looked it up on Urban Dictionary. Do you know what it says?','shock');
  await say('arjun','(very quietly, to Hasan) It shouldn’t say anything. Nobody’s ever written it down. Has anyone written it down?','scared');
@@ -9135,7 +9137,7 @@ hook({mis:'flimbus',period:4,room:'canteen',who:'arjun',label:'Ask Arjun why Mr.
  await say('adam','I am going to ask you ONE time. What. Does. Mickther. MEAN.','yell');
  const c=await choose(['“Sir, a mickther is when you sneeze and it goes back in.”','“Sir, it’s a type of pasta. Long. With a hole in it.”','“Sir, you can only understand it when you’re dead.”']);
  if(c===0){await say('arjun','(nodding, way too fast) Yes. That. When you sneeze and it goes back in. That’s a mickther. It’s medical.','scared');await say('adam','(after a long pause) …That HAS happened to me.','shock')}
- else if(c===1){await say('hasan','IT’S A PASTA. We told Ms. Shermian. It’s a pasta. My dad makes it. With a hole in it.','scared');await say('pat','(from behind the counter) We had mickther on the menu in 1998. Kids loved it.','happy')}
+ else if(c===1){await say('hasan','IT’S A PASTA. We told Ms. Sherman. It’s a pasta. My dad makes it. With a hole in it.','scared');await say('pat','(from behind the counter) We had mickther on the menu in 1998. Kids loved it.','happy')}
  else{await say('arjun','(dead serious) Sir. You can only understand mickther when you’re dead. That’s why we can’t tell you.','closed');if(A.shermian)await say('shermian','(very sweetly) Miss can arrange that, sweetie.','evil')}
  await N('Somewhere at the back of the cafeteria, a small boy whispers it. Then a table says it. Then the table next to that table.');
  for(let i=0;i<3;i++){SFX.cheer();shake(.3);await wait(260)}
@@ -9520,7 +9522,7 @@ const CLASS_ACTS=[
  }},
  {t:'Put your head down. Just for a second.',tag:'💤',run:async c=>{
   const t=teacherOf(c);pose('you','sit');fxState.dark=0;await tw(fxState,{dark:.85},700);
-  await N(pick(['You dream you’re in a hallway made entirely of lockers. Every one is 217. Aidan is inside all of them, knocking politely.','You dream that Mr. Biscuits the cat is teaching the class. He’s better at it. Everyone loves him. Ms. Shermian is in the back row, crying.','You dream the bell rings and everyone leaves and you can’t stand up because your legs are made of trays. Pat is there. She says, “It’s fine, love. It’s fine.”','You dream about absolutely nothing for the first time in weeks. It’s amazing.']));
+  await N(pick(['You dream you’re in a hallway made entirely of lockers. Every one is 217. Aidan is inside all of them, knocking politely.','You dream that Mr. Biscuits the cat is teaching the class. He’s better at it. Everyone loves him. Ms. Sherman is in the back row, crying.','You dream the bell rings and everyone leaves and you can’t stand up because your legs are made of trays. Pat is there. She says, “It’s fine, love. It’s fine.”','You dream about absolutely nothing for the first time in weeks. It’s amazing.']));
   await tw(fxState,{dark:0},400);
   if(t){await walk(t,A.you.x+14,90);face(t,-1);await say(t,'(standing right over you) Are we BORED, {PET}? Is {ME} BORING?','evil');
    const r=await choose(['“No, '+SIRMISS(t)+'. I was thinking about the lesson.”','Wipe the drool off your desk with your sleeve and say nothing.']);
@@ -9778,7 +9780,7 @@ mission('staffroom',{name:'The Staff Room',icon:'☕',who:['loach','shermian','p
  blurb:'The teachers have beef with each other too. Somebody ate Ms. Loach’s yogurt. Somebody sat on Mr. Voss’s lap at the Christmas party. Today Ms. Loach is going to do something about it.',
  parts:['Before school: the shouting in the parking lot','Break: Pat explains','Lunch: the staff room'],
  tips:['Before school, the bus loop. Listen to the teachers in the parking lot.','Break, the Cafeteria. Ask Pat what that was.','Lunch, the Main Corridor. The staff room door is by the trophy cabinet.'],
- variants:{swap:'Swapped the mugs',toes:'Warned Ms. Shermian',immune:'Did nothing'}});
+ variants:{swap:'Swapped the mugs',toes:'Warned Ms. Sherman',immune:'Did nothing'}});
 spot({room:'bus',period:0,x:296,y:148,label:'Listen to the teachers shouting in the parking lot',short:'SHOUTING',cond:()=>!D.f.st1&&!D.dead.loach&&!D.dead.shermian,run:async()=>{
  await N('Behind the bus shelter, in the staff parking lot, two teachers are screaming at each other over the roof of a Kia.');
  await say('loach','It had an L on it, Debra. An L. For LOACH.','angry');
@@ -9801,7 +9803,7 @@ hook({mis:'staffroom',period:2,room:'canteen',who:'pat',label:'Ask Pat what the 
   ['pat','🍿']
  ]);
  await say('pat','And between you and me, love, Ms. Loach bought something from the hardware store this morning. Brown bottle. Skull on it. She asked the man if it “tastes of anything.”','smirk');
- await say('pat','Staff room. Lunch. Ms. Shermian always has her coffee at 12:30. In the “World’s Best Teacher” mug. She bought it for herself.','happy');
+ await say('pat','Staff room. Lunch. Ms. Sherman always has her coffee at 12:30. In the “World’s Best Teacher” mug. She bought it for herself.','happy');
  D.f.st2=1;part('staffroom',2);return 'stay';
 }});
 spot({room:'corridor',period:4,x:132,y:148,label:'Sneak into the staff room',short:'STAFF ROOM',cond:()=>D.f.st2&&!D.done.staffroom&&!D.dead.loach&&!D.dead.shermian,run:async()=>{
@@ -9810,14 +9812,14 @@ spot({room:'corridor',period:4,x:132,y:148,label:'Sneak into the staff room',sho
  await N('She takes a little brown bottle out of her cardigan. There’s a skull drawn on it in Sharpie. She tips most of it into the WORLD’S BEST TEACHER mug.');
  await say('loach','(stirring, to the mug) Love, Debra. All love.','evil');
  hold('loach',null);
- const c=await choose(['Swap the mugs when she turns round.','Warn Ms. Shermian.','Stay behind the couch. Do nothing.']);
+ const c=await choose(['Swap the mugs when she turns round.','Warn Ms. Sherman.','Stay behind the couch. Do nothing.']);
  put('shermian',-14,1,{y:146});
  if(c===0){
   await N('Ms. Loach turns to get the milk. You reach over the couch and switch the WORLD’S BEST TEACHER mug with hers. Your hands have never been steadier. Your heart has never been louder.');
   await walk('shermian',110,60);await say('shermian','(picking up the World’s Best mug) Ooh, Linda, you made Miss a coffee? That’s so sweet. Cheers, sweetie.','happy');
   await say('loach','(smiling, sipping her own) Cheers, Debra.','evil');
   await wait(600);A.loach.ex='shock';A.loach.shake=1;SFX.gasp();
-  await N('Ms. Loach puts her mug down. She looks at it. She looks at Ms. Shermian. She looks at the mug.');
+  await N('Ms. Loach puts her mug down. She looks at it. She looks at Ms. Sherman. She looks at the mug.');
   for(let i=0;i<4;i++){SFX.squelch();blood(A.loach.x,A.loach.y-26,20,null,80,A.loach.y+2);shake(.7);await wait(280)}
   await N('It comes out of her nose first. Then her eyes. Then everywhere. It’s green and red and it foams. She grips the counter. The counter wins.');
   kill('loach','lie',{pool:44,bleed:5,spray:60});
@@ -9923,7 +9925,7 @@ dayText=function(who,t){
  await _di(died);
  if(cal()===1&&!died&&!P.day1Told){
   P.day1Told=1;save();
-  await N('Over the weekend, Tyler from your Period 3 class didn’t come home. His mom has been posting MISSING on Facebook since Saturday.');
+  await N('On Friday, Tyler, a kid from the math class in the Trailer, didn’t come home. His mom has been posting MISSING on Facebook since Saturday.');
   await say('adam','(on the PA, too loud) Good morning, Highgate! The STATE INSPECTION is in two weeks. Friday after next. Everybody will be normal. Everybody will be PRESENT. Everybody will be ALIVE.','scared');
   await N('Your friends are going to want to talk about Tyler. They’ll find you at break, in the library.');
  }
@@ -10091,7 +10093,7 @@ async function passingTo(room){
  D.passing.ev.forEach((id,i)=>{const p=PASS.find(q=>q.id===id);if(!A[p.who])put(p.who,spots[i],i?-1:1,{y:144+(i%2)*4,pose:id==='aidan'?'lean':id==='rating'?'write':id==='crying'?'sit':null})});
  for(let i=0;i<4;i++){const id=['kid1','kid2','kid3','kid4'][i];if(A[id])continue;const a=put(id,i%2?-16:336,i%2?1:-1,{y:140+i*4});walk(id,i%2?336:-16,50+i*10)}
  updateLoc();
- toast('Between classes. You’ve got '+(D.apples||2)+' 🍎 before you’re late. Walk right to get to '+ROOMS[room].name.split(' —')[0]+'.');
+ toast('Between classes. You’ve got '+(D.apples||2)+' 🍎 before you’re late. The '+ROOMS[room].name.split(' —')[0]+' door is on the right.');
  roam();
 }
 /* the bell: “Go to class” walks the hallway first */
@@ -10308,7 +10310,7 @@ cq('english',{id:'en_bin',name:'The Burn Bin',who:'stella',hint:'(whispering) Ba
  else{A.you.hurt=2;await N('You pull your hand back too late. Your sleeve catches. You slap it out on the desk. Your essay is ash.')}
 }});
 
-/* ================= THE TRAILER — Ms. Shermian ================= */
+/* ================= THE TRAILER — Ms. Sherman ================= */
 cq('trailer',{id:'tr_bucket',name:'The Bucket',who:'marcus',hint:'(whispering) The bucket under the AC unit. It’s never been emptied. Not once. It’s been there since the trailer.',opt:'Kick the bucket under the AC.',run:async c=>{
  const b=prop({t:'bucket',x:250,y:118,layer:3});
  await walk('you',238,70);pose('you','kick');SFX.splat();await tw(b,{x:262},160);pose('you',null);
@@ -10327,7 +10329,7 @@ cq('trailer',{id:'tr_jump',name:'Four Inches',who:'alex',hint:'(whispering) If e
 }});
 cq('trailer',{id:'tr_calc',name:'The Calculator',who:'dheva',need:['arjun'],hint:'(whispering) Arjun typed something on his calculator and he won’t show anyone. He keeps giggling.',opt:'Grab Arjun’s calculator.',run:async c=>{
  await walk('you',A.arjun.x-10,60);pose('you','grab');await wait(250);pose('you',null);
- await N('He’s calculated the number of days until Ms. Shermian retires. 4,180. Underneath, he’s worked out how many days until she dies. The calculator says ERROR.');
+ await N('He’s calculated the number of days until Ms. Sherman retires. 4,180. Underneath, he’s worked out how many days until she dies. The calculator says ERROR.');
  await say('arjun','(snatching it back) It says ERROR every time. Every. Time. I’ve tried it four ways.','scared');
 }});
 cq('trailer',{id:'tr_dead',name:'Playing Dead',who:'alex',need:['tyler'],hint:'(whispering) Tyler hasn’t moved in twenty minutes. Is he okay? Should someone poke him?',opt:'Poke Tyler.',run:async c=>{
@@ -10361,7 +10363,7 @@ cq('trailer',{id:'tr_cat',name:'Mr. Biscuits Is Watching',who:'marcus',hint:'(wh
  await say(c.t,'(pressing a gold star onto your forehead) Mr. Biscuits likes you back. That’s very rare. That might keep you alive.','happy');
  D.f.shermFav=1;
 }});
-cq('trailer',{id:'tr_division',name:'Long Division',who:'arjun',hint:'(whispering) Bet you a dollar she can’t do long division without the answer key. She keeps the answer key in her cardigan. Always.',opt:'Ask Ms. Shermian to do a problem without the answer key.',run:async c=>{
+cq('trailer',{id:'tr_division',name:'Long Division',who:'arjun',hint:'(whispering) Bet you a dollar she can’t do long division without the answer key. She keeps the answer key in her cardigan. Always.',opt:'Ask Ms. Sherman to do a problem without the answer key.',run:async c=>{
  await say('you','Miss, can you do question nine? Without the answer key?');
  await walk(c.t,90,60);pose(c.t,'reach');
  await N('She writes 7,482 ÷ 29 on the board. She stares at it. She stares at it for a really long time.');
@@ -10383,7 +10385,7 @@ cq('trailer',{id:'tr_ac',name:'Rubber Band',who:'dheva',need:['corey'],hint:'(wh
 cq('trailer',{id:'tr_notes',name:'She Knows',who:'alex',hint:'(whispering) Someone keeps leaving notes in the textbooks. Old ones. They all say the same thing.',opt:'Flip through your textbook for the notes.',run:async c=>{
  pose('you','write');await wait(400);pose('you',null);
  await N('Page 12, in old blue pen: “she knows.” Page 30, in pencil: “don’t sit in seat 14.” Page 51: “the trailer is on top of something.”');
- await N('The last page, in fresh pen, in handwriting you recognize from the board this morning: Tyler’s. “help me.”');
+ await N('The last page, in fresh pen, in handwriting you know from a hundred passed notes: Tyler’s. “help me.”');
  if(typeof crew==='function'){intel('shermianList')}
 }});
 
@@ -10862,6 +10864,490 @@ function cqMark(room,id){P.cq=P.cq||{};P.cq[id]=1;save();const n=CQ[room].filter
 
 </script>
 <script>
+/* js/ambience.js */
+'use strict';
+/* =====================================================================
+   HIGHSCHOOL — ONE MS. SHERMAN · WANDERING · AMBIENCE · BACKGROUND KIDS
+   ===================================================================== */
+
+/* ---------- there is one Ms. Sherman ----------
+   The math teacher in the Trailer and the vice principal are the same
+   woman. She ran the 1987 detention at twenty-three. She has not aged a
+   day since. Both ids ('shermian', 'sherman') are the same person on
+   screen: never two of her at once. */
+K.sherman=Object.assign({},K.shermian,{n:'Ms. Sherman'});K.sherman.id='sherman';
+VOICE.sherman=VOICE.shermian;
+const SHER=['shermian','sherman'];
+{const _put=put;put=function(id,x,dir,o){
+ if(SHER.includes(id)){const other=id==='sherman'?'shermian':'sherman';if(A[other]&&!A[other].dead){A[id]=A[other];return A[other]}}
+ return _put(id,x,dir,o);
+}}
+{const _rm=remove;remove=function(id){if(SHER.includes(id)){const other=id==='sherman'?'shermian':'sherman';if(A[other]===A[id]){const r=_rm(id);delete A[other];return r}}return _rm(id)}}
+{const _ah=availableHooks;availableHooks=function(room,who){if(SHER.includes(who))return _ah(room,'shermian').concat(_ah(room,'sherman'));return _ah(room,who)}}
+{const _it=interactables;interactables=function(){const seen=new Set();return _it().filter(it=>{if(it.id&&A[it.id]){if(A[it.id].extra)return false;if(seen.has(A[it.id]))return false;seen.add(A[it.id])}return true})}}
+{const _hu=HOOK.update;HOOK.update=(dt,rdt)=>{_hu&&_hu(dt,rdt);if(D&&D.dead&&(D.dead.sherman||D.dead.shermian)){D.dead.sherman=1;D.dead.shermian=1}}}
+/* draw her once even when she’s under both names */
+{const _da=drawActor;drawActor=function(a){if(a.id==='sherman'&&A.shermian===a)return;return _da(a)}}
+Object.assign(LORE.gazette||{},{text:'16 March 1987. “BOILER FIRE AT HIGHGATE: NO ONE HURT, SAYS HEAD.” In the photo, a young teacher is crying into her hands at the gate. It’s Ms. Sherman. She looks exactly the same as she does today.'});
+
+/* ---------- skipping = wandering the whole school ---------- */
+const WANDER=['corridor','canteen','field','gym','library','toilets'];
+{const _bell=bell;bell=async function(){D.wander=null;return _bell()}}
+{const _om=openMap;openMap=function(f){
+ if(D&&openMap.skip&&PERIODS[D.period]&&PERIODS[D.period].lesson){D.wander=D.period;D.apples=Math.max(D.apples||0,4);updateLoc()}
+ if(D&&D.wander===D.period&&PERIODS[D.period]){const p=PERIODS[D.period],old=p.locs;p.locs=[...new Set(old.concat(WANDER))].filter(r=>ROOMS[r]);try{return _om(f)}finally{p.locs=old}}
+ return _om(f);
+}}
+/* sometimes you get caught */
+{const _er=enterRoom;enterRoom=async function(room){
+ const r=await _er(room);
+ if(!TEST&&D&&D.wander===D.period&&!busy&&!D.dead.sherman&&Math.random()<.18&&room!=='forest'){
+  await runHook({mis:'passing',run:async()=>{
+   put('sherman',334,-1,{y:146});await walk('sherman',A.you.x+16,90);face('sherman','you');
+   await say('sherman','Shouldn’t you be in class, sweetie?','evil');
+   const c=await choose(['“Bathroom, Miss.”','“Ms. Sherman sent me.”','Run.']);
+   if(c===0)await say('sherman','For forty minutes? Miss will be checking on your bladder, sweetie. Personally.','evil');
+   else if(c===1)await say('sherman','(very slowly) …Miss IS Ms. Sherman. Go on, then. Miss will remember your face.','smirk');
+   else{const ok=await mash('RUN',{need:16,time:3});if(!ok){D.apples=Math.max(0,(D.apples||1)-1);await say('sherman','(holding your hood) Detention. And a hug. Miss hasn’t decided which first.','evil')}else await walk('you',-16,140)}
+   await walk('sherman',334,70);remove('sherman');return 'stay';
+  }});
+ }
+ return r;
+}}
+
+/* ---------- ambient sound ---------- */
+const AMB={
+ corridor:{bed:.05,chat:.9,lockers:.35,steps:.5,scream:.04},
+ canteen:{bed:.08,chat:1.4,trays:.5,steps:.3,scream:.03},
+ field:{bed:.03,wind:.6,birds:.5,chat:.35,distant:1,scream:.04},
+ bus:{bed:.04,traffic:.6,chat:.7,steps:.3},
+ library:{bed:.02,chat:.15,pages:.4,clock:.3},
+ gym:{bed:.05,chat:.5,squeak:.5,ball:.4},
+ toilets:{bed:.03,drip:.6,dryer:.15,scream:.05},
+ trailer:{bed:.04,ac:.6,clock:.3,chat:.1},
+ forest:{bed:.03,wind:.7,birds:.8,creek:.6,distant:.4,scream:.02},
+ foodcourt:{bed:.07,chat:1.2,trays:.3},arcade:{bed:.05,chat:.6,beeps:.7},carpark:{bed:.03,traffic:.7,wind:.4},
+ pool:{bed:.04,splash:.6,chat:.4,drip:.3},boiler:{bed:.05,drip:.8,distant:.3,scream:.08},closet:{bed:.02,distant:.5,scream:.06},
+ lockers:{bed:.04,lockers:.5,drip:.4,chat:.4},door:{bed:.04,chat:.6,steps:.4},bedroom:{bed:.02,traffic:.2,birds:.2},party:{bed:.06,chat:1.3,beeps:.3},lake:{bed:.03,wind:.5,birds:.7,creek:.8}
+};
+const AMB_CLASS={bed:.03,chat:.12,clock:.35,chair:.25,distant:.5,scream:.025};
+let ambBus=null,ambBed=null,ambBedF=null;
+function ambEnsure(){
+ if(!AC||ambBus)return;
+ ambBus=AC.createGain();ambBus.gain.value=.9;ambBus.connect(SFXG);
+ const n=AC.sampleRate*2,b=AC.createBuffer(1,n,AC.sampleRate),d=b.getChannelData(0);let last=0;for(let i=0;i<n;i++){last=last*.97+(Math.random()*2-1)*.03;d[i]=last*6}
+ ambBed=AC.createBufferSource();ambBed.buffer=b;ambBed.loop=true;ambBedF=AC.createBiquadFilter();ambBedF.type='lowpass';ambBedF.frequency.value=420;
+ const g_=AC.createGain();g_.gain.value=0;ambBed.connect(ambBedF).connect(g_).connect(ambBus);ambBed.start();ambBed._g=g_;
+}
+function ambOut(v){return v*(P&&P.set?P.set.sfx:1)}
+function ambNoise(dur,v,fq,q,type,when){if(!AC)return;const t=AC.currentTime+(when||0),n=AC.sampleRate*dur|0,b=AC.createBuffer(1,n,AC.sampleRate),a=b.getChannelData(0);for(let i=0;i<n;i++)a[i]=Math.random()*2-1;const s=AC.createBufferSource();s.buffer=b;const f=AC.createBiquadFilter();f.type=type||'bandpass';f.frequency.value=fq;f.Q.value=q||1;const g_=AC.createGain();g_.gain.setValueAtTime(0,t);g_.gain.linearRampToValueAtTime(v,t+dur*.2);g_.gain.linearRampToValueAtTime(0,t+dur);s.connect(f).connect(g_).connect(ambBus);s.start(t);s.stop(t+dur+.05)}
+function ambTone(f0,f1,dur,v,type,when,lp){if(!AC)return;const t=AC.currentTime+(when||0),o=AC.createOscillator(),g_=AC.createGain(),fl=AC.createBiquadFilter();o.type=type||'sine';o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(Math.max(20,f1),t+dur);fl.type='lowpass';fl.frequency.value=lp||1800;g_.gain.setValueAtTime(0,t);g_.gain.linearRampToValueAtTime(v,t+Math.min(.05,dur*.3));g_.gain.linearRampToValueAtTime(0,t+dur);o.connect(fl).connect(g_).connect(ambBus);o.start(t);o.stop(t+dur+.05)}
+/* distant voices: little formant-ish mumbles, never words */
+function ambMumble(v){const syl=3+Math.random()*6|0,base=110+Math.random()*160;let w=0;for(let i=0;i<syl;i++){const d=.08+Math.random()*.14;ambTone(base*(.9+Math.random()*.4),base*(.8+Math.random()*.4),d,v*(.5+Math.random()*.5),'sawtooth',w,500+Math.random()*500);w+=d+Math.random()*.06}}
+function ambScream(v){const f=600+Math.random()*500;ambTone(f,f*(.5+Math.random()*.3),1.2+Math.random(),v,'sawtooth',0,1400);ambNoise(1.4,v*.4,1200,2,'bandpass')}
+let ambT=0;
+function ambTick(rdt){
+ if(!AC||TEST||!D)return;ambEnsure();
+ const prof=(PERIODS[D.period]&&PERIODS[D.period].lesson&&TEACH[D.period]&&TEACH[D.period][D.room])?AMB_CLASS:(AMB[D.room]||AMB.corridor);
+ const busyMul=DL?.55:1;
+ ambBed._g.gain.setTargetAtTime(ambOut((prof.bed||0)*busyMul),AC.currentTime,.4);
+ ambBedF.frequency.setTargetAtTime(prof.wind?900:prof.traffic?300:420,AC.currentTime,.5);
+ ambT-=rdt;if(ambT>0)return;ambT=.18;
+ const r=Math.random,o=v=>ambOut(v)*busyMul;
+ if(prof.chat&&r()<.12*prof.chat){ambMumble(o(.012+r()*.012));if(r()<.25)ambTone(300+r()*200,500+r()*300,.25,o(.012),'sine',.1,1600)}
+ if(prof.lockers&&r()<.04*prof.lockers)ambNoise(.12,o(.05),320,1.5,'bandpass');
+ if(prof.steps&&r()<.08*prof.steps){for(let i=0;i<4;i++)ambNoise(.04,o(.025),180,1.2,'lowpass',i*.28)}
+ if(prof.trays&&r()<.05*prof.trays){ambNoise(.08,o(.04),2400,3,'bandpass');ambTone(1800,1600,.15,o(.008),'triangle',0,4000)}
+ if(prof.birds&&r()<.05*prof.birds){const f=2200+r()*1400;for(let i=0;i<3;i++)ambTone(f,f*1.3,.07,o(.012),'sine',i*.1,6000)}
+ if(prof.wind&&r()<.03*prof.wind)ambNoise(2.4,o(.03),500,.5,'lowpass');
+ if(prof.traffic&&r()<.03*prof.traffic)ambNoise(3,o(.04),160,.7,'lowpass');
+ if(prof.drip&&r()<.06*prof.drip)ambTone(1400+r()*500,900,.08,o(.03),'sine',0,5000);
+ if(prof.dryer&&r()<.01*prof.dryer)ambNoise(2.2,o(.05),900,.6,'bandpass');
+ if(prof.clock&&r()<.25*prof.clock)ambNoise(.02,o(.02),3000,4,'bandpass');
+ if(prof.chair&&r()<.03*prof.chair)ambTone(380,240,.22,o(.015),'sawtooth',0,900);
+ if(prof.pages&&r()<.04*prof.pages)ambNoise(.2,o(.015),2600,1,'highpass');
+ if(prof.squeak&&r()<.05*prof.squeak)ambTone(2400,3200,.06,o(.012),'sine',0,6000);
+ if(prof.ball&&r()<.05*prof.ball)ambNoise(.06,o(.05),140,1,'lowpass');
+ if(prof.ac&&r()<.06*prof.ac)ambTone(60,58,1.2,o(.012),'square',0,200);
+ if(prof.creek&&r()<.2*prof.creek)ambNoise(.4,o(.015),1800,.7,'bandpass');
+ if(prof.splash&&r()<.04*prof.splash)ambNoise(.4,o(.04),900,.6,'lowpass');
+ if(prof.beeps&&r()<.08*prof.beeps)ambTone(600+r()*900,600+r()*900,.08,o(.012),'square',0,3000);
+ if(prof.distant&&r()<.02*prof.distant){ambMumble(o(.006));ambNoise(.8,o(.01),400,1,'bandpass')}
+ if(prof.scream&&r()<.02*prof.scream)ambScream(o(.02+r()*.015));
+}
+{const _hu=HOOK.update;HOOK.update=(dt,rdt)=>{_hu&&_hu(dt,rdt);try{ambTick(rdt)}catch(e){}}}
+
+/* ---------- background kids ---------- */
+const EXTRA_SPOTS={corridor:4,canteen:5,field:4,bus:4,library:2,gym:3,toilets:1,foodcourt:5,arcade:3,carpark:2,door:2};
+const EX_SK=['#f0d0b8','#e8c0a0','#c89068','#a87048','#7a5034','#5a3a24','#f2cfae'],EX_HR=['#1a1210','#3a2418','#7a4a2a','#c8a060','#e8d0a0','#2a1a12','#8a2a1a'],EX_TOP=['#3a5a8a','#8a3a3a','#3a7a4a','#c8a040','#5a4a7a','#2a2a2a','#e0e0e0','#c86a9a','#4a8aa8'],EX_HS=['short','messy','curly','long','ponytail','buzz','fade','side','bob','wavy'];
+function makeExtra(i){const s=(cal()*31+i*17+(D.period||0)*7)>>>0,h=n=>Math.floor(hsh(s+n)*997);
+ const girl=h(1)%2===0,hs=girl?pick(['long','ponytail','bob','curlyl']):pick(EX_HS.filter(x=>!['long','ponytail','bob'].includes(x)));
+ const id='x'+i;K[id]={n:'Some kid',col:'#7a7a8a',skin:EX_SK[h(2)%EX_SK.length],hair:EX_HR[h(3)%EX_HR.length],hs,top:EX_TOP[h(4)%EX_TOP.length],pants:['#2a2a33','#34405a','#3a3a3a','#4a3a2a'][h(5)%4],girl:girl?1:0,seed:200+i,v:300+h(6)%200,h:(h(7)%5)-2};K[id].id=id;return id}
+const GOSSIP=()=>{const g=['did you see the raccoon in the ceiling','my mom says this school is “a lot”','who keeps writing AIDAN WAS HERE on every desk','apparently the trailer moved four inches','bro the pizza today was green','i heard tyler’s mom came in. she was crying','don’t go in the library after lunch, the old kid is in there','mrs. tarn held her breath for nine minutes. i timed it','ms. sherman looked at me. i felt it in my teeth','mr. adam was screaming on the roof again','someone said the boiler room’s haunted','is it true about the jars in chem?','omer wears shorts in the SNOW','nivaan’s stream got 900 views. for a sandwich','i failed the beep test before it even started'];
+ if(P.done.beef)g.push('did you SEE omer’s kick at the bus loop','i can’t stop thinking about the head. the HEAD');
+ if(P.done.flimbus)g.push('mickther','you’re such a mickther','mr. adam said mickther on the PA lmao');
+ if(P.done.pits)g.push('FEMA came. FEMA. for a SMELL','aidan’s pits are a war crime');
+ if(P.done.darren)g.push('darren and hasan?? the drone thing?? I’M SICK');
+ if(P.done.staffroom)g.push('ms. loach is out sick. like, OUT out','coach and pat. the supply closet. i’m just saying');
+ if(P.done.vapes)g.push('somebody’s been killing the vape kids','i quit vaping. for my safety');
+ if(P.done.lockdown)g.push('it was a RACCOON. the whole lockdown');
+ if(D&&D.dead&&Object.keys(D.dead).some(k=>FRIENDS.includes(k)))g.push('is it true '+K[Object.keys(D.dead).find(k=>FRIENDS.includes(k))].n.toLowerCase()+' is… you know','where’s '+K[Object.keys(D.dead).find(k=>FRIENDS.includes(k))].n.toLowerCase()+'? he wasn’t on the bus');
+ if(typeof crewEvidence==='function'&&crewEvidence()>2)g.push('somebody’s making a FILE on the teachers','i heard david’s got proof. like, real proof');
+ if(D&&D.f&&D.f.aidanStache)g.push('why does aidan have a mustache','aidan’s mustache is kind of working??');
+ return g};
+function spawnExtras(room,walkIn){
+ if(TEST||!D||D.weekend&&!['foodcourt','arcade','carpark'].includes(room))return;
+ const n=EXTRA_SPOTS[room]||0;if(!n)return;
+ const lesson=PERIODS[D.period]&&PERIODS[D.period].lesson&&TEACH[D.period]&&TEACH[D.period][room];if(lesson)return;
+ const have=Object.keys(A).filter(k=>A[k].extra).length;
+ for(let i=have;i<n;i++){const id=makeExtra(i);const f=(typeof FLOOR!=='undefined'&&FLOOR[room])||[136,168];const y=f[0]+Math.random()*10;
+  const x=walkIn?(Math.random()<.5?-14:334):30+Math.random()*260;const a=put(id,x,Math.random()<.5?1:-1,{y});a.extra=1;a.idle=1+Math.random()*3;
+  if(walkIn)walk(id,40+Math.random()*240,40+Math.random()*20)}
+}
+{const _br=buildRoom;buildRoom=function(room){const r=_br(room);spawnExtras(room,false);return r}}
+{const _r=roam;roam=function(){_r();if(D&&D.room)spawnExtras(D.room,true)}}
+/* wander, meet, talk */
+const bubbles=[];
+{const _hu=HOOK.update;HOOK.update=(dt,rdt)=>{_hu&&_hu(dt,rdt);
+ if(TEST||!D)return;
+ const ex=Object.keys(A).filter(k=>A[k]&&A[k].extra&&!A[k].dead);
+ for(const id of ex){const a=A[id];if(a.tx!=null||a.talking)continue;a.idle=(a.idle||0)-rdt;if(a.idle>0)continue;
+  const mate=ex.find(o=>o!==id&&A[o].tx==null&&!A[o].talking&&Math.abs(A[o].x-a.x)<70);
+  if(mate&&Math.random()<.5){const b=A[mate];const mid=(a.x+b.x)/2;const ax=mid-7,bx=mid+7;walk(id,ax,40);walk(mate,bx,40);a.talking=b.talking=1;
+   timers.push({t:1.8,r:()=>{if(!A[id]||!A[mate])return;face(id,mate);face(mate,id);const g=GOSSIP();bubbles.push({id,txt:pick(g),t:3.2});timers.push({t:2.2,r:()=>{if(A[mate])bubbles.push({id:mate,txt:pick(['no WAY','bro','i KNOW','stop','that’s so messed up','LMAO','for real?','i’m telling everyone']),t:2.2})}});timers.push({t:5,r:()=>{if(A[id]){A[id].talking=0;A[id].idle=2+Math.random()*4}if(A[mate]){A[mate].talking=0;A[mate].idle=1+Math.random()*4}}})}});
+  }else{walk(id,Math.max(16,Math.min(304,a.x+(Math.random()-.5)*160)),30+Math.random()*25);a.idle=2+Math.random()*5}
+ }
+ for(let i=bubbles.length-1;i>=0;i--){bubbles[i].t-=rdt;if(bubbles[i].t<=0||!A[bubbles[i].id])bubbles.splice(i,1)}
+}}
+{const _do=HOOK.drawOver;HOOK.drawOver=(...a_)=>{_do&&_do(...a_);if(TEST)return;
+ for(const b of bubbles){const a=A[b.id];if(!a||a.vis===false)continue;const G=kidGeom(a.k,a),y=a.y-G.legH-G.bodyH-G.hd-12;const t=b.txt.length>26?b.txt.slice(0,25)+'…':b.txt;const w=pxw(t)+4;const x=Math.max(2,Math.min(W-w-2,a.x-w/2));
+  g.globalAlpha=Math.min(1,b.t*2)*.85;R(x,y,w,8,'#f4f0e6');R(x+w/2-1,y+8,2,2,'#f4f0e6');px(t,x+2,y+1,'#3a3040');g.globalAlpha=1}
+}}
+/* they never block a scene: when a cutscene starts, they keep to the back */
+{const _cs=cutscene;cutscene=function(fn){for(const k in A)if(A[k]&&A[k].extra){A[k].y=Math.min(A[k].y,140)}return _cs(fn)}}
+
+/* Tyler is missing. For the whole two weeks he is not in any class, any
+   corridor, any scene. His seat stays empty. */
+{const _fd=freshD;freshD=function(){const d=_fd();d.dead=d.dead||{};d.dead.tyler=1;return d}}
+
+</script>
+<script>
+/* js/cqfollow.js */
+'use strict';
+/* =====================================================================
+   HIGHSCHOOL — CLASS QUESTS, PART TWO
+   Every class secret has a second part. The next time you’re in that
+   class, it comes back: what you did has consequences, and the story
+   goes somewhere. Everything here happens on screen.
+   ===================================================================== */
+const CQF={};
+const fu=(id,need,run)=>{CQF[id]={need:need||[],run}};
+const T_=c=>c.t;
+
+/* ---------------- ENGLISH ---------------- */
+fu('en_pens',[],async c=>{const j=prop({t:'jar',x:A[c.t].x+14,y:A[c.t].y-16,layer:5});
+ await say(c.t,'(holding up a single small tooth between two fingers) Somebody has been in Ms. Balduf’s jar, darlings.','evil');
+ await walk(c.t,A.you.x+12,60);await say(c.t,'(placing it on your desk, gently) A gift. For your curiosity. Write me a sonnet about it by Friday.','smirk');
+ await N('You write the sonnet. It’s the best thing you’ve ever written. You hate that it’s the best thing you’ve ever written.');j.hide=1});
+fu('en_haiku',['nivaan'],async c=>{await say('nivaan','(whispering) Rematch. I trained. I wrote forty haikus last night. My mom found them. She cried.','smirk');
+ await say('nivaan','(standing up) “Mom found my notebook / she cried for forty minutes / we got pizza though”','happy');
+ classLaugh(800);await say(c.t,'…Darling, that’s actually lovely. Sit down before I start respecting you.','sad')});
+fu('en_aidanpoem',['aidan'],async c=>{await say('aidan','(sliding a second folded square onto your desk) Part two. It’s just about you.','smirk');
+ await N('One line, in his tiny perfect writing: “The one who looked back. I’m keeping you.”');
+ await N('You don’t know if it’s the nicest or the scariest thing anyone has ever written about you. You put it in your pocket anyway.')});
+fu('en_lyrics',['sean','stella'],async c=>{await walk('sean',160,60);await tw(A.sean,{y:124},300);pose('sean','sing');
+ await N('Sean stands up, uninvited, at the front of the class, and sings it. “And then you throw my soul.” All of it. His voice cracks twice. He doesn’t stop.');
+ pose('sean',null);await say('stella','(head in her hands, red to the ears) I’m going to kill him. I’m going to marry him and then I’m going to kill him.','blush');
+ await say(c.t,'(dabbing her eyes) A plus. A PLUS. Get out of my sight.','cry');await tw(A.sean,{y:146},300)});
+fu('en_spit',['hasan'],async c=>{await say(c.t,'(sipping, then stopping) Someone has been seasoning my tea, darlings. Today I brought two mugs.','evil');
+ hold(c.t,'mug');await walk(c.t,A.hasan.x+12,60);await say(c.t,'(handing Hasan a mug) Drink, Hasan. Drink the one you bet on.','evil');
+ pose('hasan','drink');SFX.slurp();await wait(500);pose('hasan',null);A.hasan.ex='hurt';await say('hasan','(very quietly) It’s just tea. Why is it just tea. Why does that feel worse.','scared');hold(c.t,null)});
+fu('en_nosebleed',['corey'],async c=>{await say('corey','(whispering, a tissue stuffed up each nostril) I can’t do a FAKE nosebleed now. Everyone’s seen the REAL one. I’ve peaked.','sad');
+ await say(c.t,'Corey! Read the next chapter. With the same passion as last time.','happy');
+ await N('Corey reads it. Halfway through, out of pure stress, his nose goes again. It’s like he trained it. The class gives him a standing ovation.');
+ blood(A.corey.x,A.corey.y-26,16,null,50,A.corey.y+2);for(const k of(c.kids||[]))if(A[k]&&!A[k].dead)A[k].pose='cheer';await wait(700);for(const k of(c.kids||[]))if(A[k])A[k].pose='sit'});
+fu('en_dict',[],async c=>{await walk(c.t,A.you.x+14,60);await say(c.t,'(very quietly, not looking at you) That book is older than me, darling. And I am very, very old.','sad');
+ await say(c.t,'The boy who circled that word sat where you’re sitting. He wrote beautifully. He would have been a poet.','sad');
+ await N('She goes back to the front. For the rest of the lesson, she doesn’t mark anything in red.');lore('again')});
+fu('en_phone',['nivaan'],async c=>{await say('nivaan','(whispering) I called her. We got the pizza. My dad’s staying at his brother’s. It’s… okay. It’s not okay. It’s okay.','sad');
+ await say('nivaan','I turned the stream off for three days. Chat thought I died. Chat had a funeral. Two hundred people came.','happy')});
+fu('en_stache',['aidan'],async c=>{await N('Aidan still has the mustache. He’s gone over it in Sharpie again, thicker. He has given it a curl on each end.');
+ await say('aidan','(twirling one end) People look at me now. They look at the mustache. But the mustache is ON me. So they look at me.','happy');
+ await say(c.t,'Aidan, darling, is that… permanent?','shock');await say('aidan','Everything’s permanent if you want it enough.','smirk')});
+fu('en_bin',[],async c=>{const b=prop({t:'bin',x:A[c.t].x+26,y:A[c.t].y+2,layer:2,lit:1});SFX.fire();
+ await say(c.t,'(feeding pages into the burning bin, one at a time) Today we burn the bad essays together, darlings. As a class.','happy');
+ for(const k of(c.kids||[]).slice(0,2))if(A[k]&&!A[k].dead){const x0=A[k].x;await walk(k,b.x-8,70);pose(k,'reach');await wait(200);pose(k,null);await walk(k,x0,70)}
+ await N('One by one, people walk up and put their own essays in the fire. When it’s your turn, she hands you back the half you saved.');
+ await say(c.t,'(quietly) Keep that one. The “No” is the only true thing I’ve ever written.','sad');b.lit=0});
+
+/* ---------------- THE TRAILER ---------------- */
+fu('tr_bucket',[],async c=>{const b=prop({t:'bucket',x:250,y:118,layer:3});
+ await say(c.t,'(standing over the bucket, smiling) Somebody kicked Miss’s husband’s bucket, sweeties. He’s VERY upset.','evil');
+ for(let i=0;i<2;i++)prop({t:'tooth',x:246+i*6,y:118});pose(c.t,'point');
+ await N('Two more teeth beside the bucket now. She looks right at you and taps her wrist, like she’s timing how long you’ll live.');pose(c.t,null)});
+fu('tr_jump',[],async c=>{await say(c.t,'Miss had the trailer bolted to the ground, sweeties. Four brackets. New rule four: don’t even THINK about it.','evil');
+ await say(c.t,'(very quietly) Miss can hear you thinking about it.','evil')});
+fu('tr_calc',['arjun'],async c=>{await say('arjun','(whispering, terrified) I ran it again. Days until she dies. It doesn’t say ERROR anymore.','scared');
+ await say('arjun','It says “−4,180”. Negative. NEGATIVE. What does a negative mean? What DOES it MEAN?','scared')});
+fu('tr_dead',[],async c=>{await say(c.t,'(at the board) We’re one short again, sweeties. Somebody in this room was very good at playing dead. Who taught them that?','evil');
+ await N('Nobody answers. You realize she’s looking at the empty chair. And then at you.')});
+fu('tr_drawer',[],async c=>{await say(c.t,'(very sweetly) Somebody read Miss’s staff chat. Who has the bone saw, sweetie? Do YOU have the bone saw?','evil');
+ await walk(c.t,A.you.x+14,60);pose(c.t,'reach');await wait(400);pose(c.t,null);await N('She checks inside your backpack. Slowly. Item by item. She finds nothing. She looks disappointed.')});
+fu('tr_arm',['marcus'],async c=>{await say('marcus','(rolling up his other sleeve) I started a new list. Teachers’ first names. And what they’re scared of.','smirk');
+ await say('marcus','(very quietly) Ms. Sherman’s just says “Debra — 1987”. I didn’t write that. It was already on my arm when I woke up.','scared')});
+fu('tr_cat',[],async c=>{await say(c.t,'(handing you a photo) Miss printed you a copy of Mr. Biscuits. For your wall. Look at him every night, sweetie.','happy');
+ const ph=prop({t:'photo',x:A.you.x+6,y:A.you.y-30,layer:30});await N('In this copy, he’s looking right at the camera. In the original, he was looking left.');ph.hide=1});
+fu('tr_division',['arjun'],async c=>{await say(c.t,'(at the board, smiling) Arjun. Question nine. Without the answer key.','evil');
+ await N('Arjun walks up. He stares at the board for a really long time. He writes “DETENTION” as the answer. She gives him full marks.');
+ await say('arjun','(walking back, shaking) I’ve never been more scared of being right.','scared')});
+fu('tr_ac',[],async c=>{const ac=prop({t:'acfall',x:250,y:118,layer:3});await N('The AC unit is still on the floor where it fell. Nobody’s picked it up.');
+ await say(c.t,'It’s colder this way, sweeties. Miss likes cold. Cold keeps things fresh.','happy')});
+fu('tr_notes',[],async c=>{await N('You open the textbook again. There’s a new note, under Tyler’s, in fresh red pen. Ms. Sherman’s handwriting.');
+ await N('“Stop reading, sweetie.”')});
+
+/* ---------------- PE ---------------- */
+fu('pe_rope',[],async c=>{prop({t:'rope',x:110,len:30,layer:-50});await N('The rope has been cut down. There’s just a short frayed end left up there, swinging a little, with no wind.');
+ await say(c.t,'(not looking up) Bell’s retired. Like me. Like everybody.','sad')});
+fu('pe_bricks',[],async c=>{hold(c.t,'dodge');await say(c.t,'(squeezing a dodgeball) No bricks today. Somebody complained.','angry');
+ SFX.thud();await say(c.t,'(squeezing harder, frowning) …There’s still a brick in this one. I didn’t put that there.','shock');hold(c.t,null)});
+fu('pe_bag',['hasan'],async c=>{await say('hasan','(holding up a brand new gym bag) My mom burned the old one. In the yard. The fire was GREEN. The neighbors called somebody.','sad');
+ await say(c.t,'Good. Things like that need fire.','angry')});
+fu('pe_whistle',[],async c=>{await walk(c.t,A.you.x+14,70);await say(c.t,'(handing you a kazoo) Yours now. Every time you blow it, think about what you almost did to my dad.','angry');
+ await N('You keep the kazoo. You never blow it. You think about it a lot.')});
+fu('pe_suplex',['paul'],async c=>{A.paul.k=Object.assign({},A.paul.k,{top:'#7a1a2a',coat:1});await N('Paul is wearing a red varsity jacket two sizes too big. According to Kenneth, he sleeps in it.');
+ await say('paul','(very proud) Varsity what? Nobody told me. I don’t care. I’m varsity.','happy')});
+fu('pe_pushups',['arjun'],async c=>{pose('arjun','lie');await say('arjun','(face down, counting) …Twelve. Thirteen. I’ve been training. In my room. In secret.','angry');
+ await N('He gets to fourteen. Then he lies there for the rest of the lesson. But fourteen is three times more than four.');pose('arjun',null)});
+fu('pe_hole',[],async c=>{prop({t:'wallhole',x:70,y:104,layer:-80});prop({t:'ballhole',x:100,y:96,layer:-79});
+ await N('Someone has written names inside both holes. In the kid-shaped one: “DANNY M. 1987.” In the medicine-ball one: your name.')});
+fu('pe_dunk',['kenneth'],async c=>{await say('kenneth','(pointing at his eyebrow) I drew a little net on my bandage. Because I’m a dunker. Look at it.','happy');
+ await say('kenneth','(very serious) I’m a dunker now. That’s my identity. I don’t know who I was before.','happy')});
+fu('pe_bars',[],async c=>{await say(c.t,'(holding a new box) Fresh protein bars. Expire in 2031. Everybody gets one. Mandatory.','angry');
+ for(const k of(c.kids||[]).concat(['you']))if(A[k]&&!A[k].dead)pose(k,'hold');
+ await N('Nobody eats them. Everybody holds them. Coach watches you all hold them for the whole lesson.')});
+fu('pe_photo',[],async c=>{await walk(c.t,A.you.x+16,60);pose(c.t,'cheer');await wait(700);pose(c.t,null);
+ await say(c.t,'(very quietly) You still haven’t told anyone. I checked. Good.','smirk');
+ await say(c.t,'(louder) Laps. For keeping a secret. That’s how much I respect it.','yell')});
+
+/* ---------------- CHEM ---------------- */
+fu('ch_burner',['nivaan'],async c=>{A.nivaan.ex='shock';await say('nivaan','(eyebrows drawn back on in Sharpie, very high) I drew them back on. I look shocked at everything now. It’s a brand.','shock');
+ await say('nivaan','(looking permanently surprised) Chat calls me “eyebrow king.” I have four thousand followers. I would burn them off again. I would burn off EVERYTHING.','happy')});
+fu('ch_jars',[],async c=>{await walk('you',272,60);A.you.back=1;await wait(400);A.you.back=0;
+ await N('The fifteenth jar is gone. In its place: a sticky note. “Not yet.” Underlined twice.');
+ await say(c.t,'(right behind you again) I moved it to the good shelf. You should be honored.','happy')});
+fu('ch_coffee',[],async c=>{hold(c.t,'flask');await say(c.t,'(holding out two identical beakers) Today, YOU pick which one I drink. Science is trust.','happy');
+ const ch=await choose(['The left one.','The right one.']);pose(c.t,'drink');SFX.slurp();await wait(500);pose(c.t,null);hold(c.t,null);
+ await N(ch?'He drinks. Nothing happens. Then his left eye turns very briefly green.':'He drinks. Nothing happens at all. He looks almost disappointed.');
+ await say(c.t,'Trust! Lovely. A plus.','happy')});
+fu('ch_vs',[],async c=>{await say(c.t,'(tapping the periodic table) I’ve added Vossium’s atomic mass. Forty-one. A lovely number. Do you know what else there are forty-one of, young scientist?','evil');await N('You do. Forty-one names in the DELETED folder. You don’t say it.')});
+fu('ch_foam',['nivaan'],async c=>{prop({t:'foam',x:160,y:20,r:10,layer:-200});
+ await N('Some of the foam never came off the ceiling. It’s gone hard, like plaster, in the shape of a wave.');
+ await say('nivaan','(proudly, to chat) My art is permanent now. I’m in the building.','happy')});
+fu('ch_mix',['david'],async c=>{A.david.k=Object.assign({},A.david.k,{goggles:1});await say('david','(wearing goggles from home) My mom bought me these. For science. She said “If it can blow up, protect your face. Your face is your future.”','sad');
+ await say(c.t,'Wise woman. I’m adding her to the list of people I respect. It’s a short list. It’s mostly jars.','happy')});
+fu('ch_rat',[],async c=>{const r=prop({t:'rat',x:286,y:118,layer:6});await walk('you',274,60);
+ const id_=prop({t:'paper',x:284,y:118,layer:7});await tw(id_,{x:A.you.x+6},300);
+ await N('The rat is waiting at the bars. When you come close, it taps four times. Then it pushes something through to you: a tiny, rolled-up school ID, chewed at one corner. D. MASON. 7F. 1987.');
+ lore('kit')});
+fu('ch_david',['david'],async c=>{await N('David’s lab report has one mistake on it. On purpose. He’s circled it himself, in red, and written next to it: “I’m allowed.”');
+ await say('david','(whispering) My dad made me redo it. I redid it with the same mistake. Twice. We’re at a standoff.','smirk')});
+fu('ch_mag',[],async c=>{await N('For the first ten minutes you still see a little white spot in the middle of everything. It’s shaped like a person. It goes away. Mostly.')});
+fu('ch_acid',['nivaan'],async c=>{await say('nivaan','(holding up a bandaged finger) Double or nothing. Ten seconds. I’ll do it this time.','smirk');
+ const ok=await mash('Cheer him on',{need:14,time:4});
+ await N(ok?'He does eleven seconds. His finger is now the color of a cooked shrimp. He has never been happier.':'He does one. He screams a word you didn’t know he knew.');
+ await say(c.t,'(not looking up) Mild. I keep saying.','happy')});
+
+/* ---------------- HISTORY ---------------- */
+fu('hi_cannon',[],async c=>{prop({t:'wallcrack',x:300,y:80,layer:-60});await N('The hole in the back wall is still there. You can feel the draft through it, and hear a car alarm that has never stopped.');
+ await say(c.t,'(not turning round) Bertha is on probation. The hole stays. For ventilation.','smirk')});
+fu('hi_sleep',['omer'],async c=>{await say('omer','(whispering) The Somme’s not done. We’re still at war. Hasan won’t look at me. I’m the Germans. I have to live with it.','sad');
+ await say(c.t,'Treaty today, soldiers. Shake hands across the trench.','happy');
+ if(A.hasan){face('omer','hasan');face('hasan','omer');pose('omer','grab');pose('hasan','grab')}await N('Omer and Hasan shake hands across the desks. It’s weirdly emotional. Mr. Grieve salutes.');pose('omer',null);if(A.hasan)pose('hasan',null)});
+fu('hi_medals',[],async c=>{await say(c.t,'(pinning something to your hoodie) A medal. For asking. Nobody asks.','happy');
+ await N('It’s old and heavy. On the back, scratched in tiny letters: “HIGHGATE 1987. FOR THE ONES WHO WAITED.”')});
+fu('hi_aidanbook',['aidan'],async c=>{await say('aidan','(sliding his textbook across to you) I drew you in. Every photo. Next to me.','happy');
+ await N('He has. The Moon. The Titanic. The 1987 school photo. In every one, you’re standing next to him. In the 1987 one, you’re smiling.')});
+fu('hi_1987',[],async c=>{await say(c.t,'(at the timeline, going very still) Somebody has written 1987 back in. Not you. In pencil. In a child’s hand.','sad');
+ await say(c.t,'…Leave it. Leave it there. Some years insist.','sad')});
+fu('hi_helmet',['arjun','omer'],async c=>{prop({t:'helmetv',x:A.arjun.x,y:A.arjun.y-24,layer:30});await N('Arjun is wearing the Viking helmet. Omer has a bandage in the shape of a horn. They sit next to each other on purpose now. Nobody understands it.');
+ await say('arjun','We’re blood brothers. Literally. His blood is on my helmet.','happy')});
+fu('hi_france',[],async c=>{await say(c.t,'(pointing at the map) France has been annexed, troops. By a paper ball. It stays up there. Conquered by a child.','smirk')});
+fu('hi_grandpa',['hasan'],async c=>{await say('hasan','(whispering) I showed my grandad a picture of Mr. Grieve. He went white. He said “He looks the same. He looks EXACTLY the same.”','scared');
+ await say(c.t,'(at the board, not turning round) Tell Yusuf I said hello, Hasan. Tell him he still owes me an essay.','smirk')});
+fu('hi_musket',[],async c=>{await say(c.t,'The musket is in a locked case now. The toe is in a jar next to it. I’ve labeled it “The Battle of Room 6.”','smirk');
+ await say(c.t,'History is everything that happened. Even the stupid things. Especially the stupid things.','smirk')});
+fu('hi_stairs',[],async c=>{await say(c.t,'(holding up a muddy, crumpled essay) This was found in the parking lot. Three streets away. It’s yours. A plus plus. I’ve framed a copy.','happy')});
+
+/* ---------------- ICT ---------------- */
+fu('it_webcam',[],async c=>{const s=prop({t:'screenmsg',x:160,y:46,s:'I CAN STILL',s2:'HEAR YOU',c:'#1a1a1a',layer:-40});
+ await say(c.t,'(sweetly) HIGHGATE OS doesn’t need eyes, learner. It has ears. It has your keystrokes. It has your mother’s maiden name.','evil')});
+fu('it_beat',['kayden'],async c=>{await say('kayden','(whispering) The beat got four hundred plays. The AI’s mad. It keeps deleting it. I keep putting it back. It’s a war now.','smirk');
+ SFX.static();const wv=prop({t:'screenmsg',x:160,y:46,s:'~^~^~^~^~',s2:'KAYDEN BEAT',c:'#2a1a3a',layer:-40});await N('The big screen flickers to a waveform. Kayden’s beat, playing very quietly, from every speaker. Then gone.');wv.hide=1;
+ await say(c.t,'(through gritted teeth) Two. Out of one hundred.','evil')});
+fu('it_history',[],async c=>{const s=prop({t:'screenmsg',x:160,y:46,s:'HOW TO DELETE A',s2:'LEARNER WHO KNOWS',c:'#1a2a4a',layer:-40});
+ await N('Her search history is open on the big screen again. On purpose this time. The newest search: “how to delete a learner who knows too much.”');
+ await say(c.t,'(without turning round) Curiosity, learner. Lovely, isn’t it.','evil');s.hide=1});
+fu('it_usb',[],async c=>{await N('The USB stick is back in your pocket. You never took it. It says something new in red marker: “THANK YOU.”');lore('chute')});
+fu('it_type',['mia'],async c=>{await say('mia','(cracking her knuckles) Rematch. One hundred and forty. I’ve been practicing on my dad’s work laptop. He doesn’t know.','smirk');
+ const ok=await mash('Type!',{need:30,time:5});await say('mia',ok?'…I quit typing. I’m going into the military properly. I need a WIN.':'One hundred and forty-three. Salute me.','shock')});
+fu('it_rank',['arjun'],async c=>{const s=prop({t:'screenmsg',x:160,y:46,s:'#23 ARJUN',s2:'(UP ONE)',c:'#1a3a1a',layer:-40});
+ await say('arjun','(very quietly, tears in his eyes) Twenty-third. I’m twenty-third. I beat Kayden. I BEAT KAYDEN.','happy');s.hide=1});
+fu('it_printer',[],async c=>{await walk('you',290,60);const pp=prop({t:'paper',x:296,y:120});await tw(pp,{x:A.you.x+6,y:A.you.y-20},300);await N('The printer has stopped printing the photo. Now it prints one sheet, every few minutes. A seating plan for 1987. Four seats are circled. One of them has your name.')});
+fu('it_cable',[],async c=>{await say(c.t,'The blue cable has a padlock on it now, learner. And a sign. “TOUCH IT AGAIN.” Somebody drew a skull on the sign. Was that you?','evil')});
+fu('it_stream',['nivaan'],async c=>{await dms('NIVAAN LIVE 🔴','1,204 watching',[['them','EYEBROW KING'],['them','is he ok now'],['them','he looks better'],['them','nivaan we love u. eat ur lunch']]);
+ await say('nivaan','(quietly) I eat lunch on stream now. Just eating. Twelve hundred people watch me eat. I’ve never felt less alone.','happy')});
+fu('it_deleted',[],async c=>{const s=prop({t:'screenmsg',x:160,y:46,s:'DELETED/',s2:'(EMPTY)',c:'#1a1a1a',layer:-40});
+ await N('The DELETED folder is empty now. Every name, gone. Even the folder’s modified date is gone. It just says “1987”.');
+ await say(c.t,'(not looking at you) There was never a folder, learner.','evil');s.hide=1});
+
+/* ---------------- SWIMMING ---------------- */
+fu('po_drain',[],async c=>{await say(c.t,'(dripping, holding a wrench) Miss has bolted the drain down, swimmers. New bolts. Nobody looks at the drain anymore.','evil')});
+fu('po_cannon',['jacob'],async c=>{A.jacob.hurt=1;await say('jacob','(pointing at the stitches on his forehead) They’re shaped like a smile. Feel them. Don’t feel them.','happy');
+ await say('jacob','I won. They told me I won. I don’t remember it. I remember the board. The board remembers me.','happy')});
+fu('po_bleach',[],async c=>{A.you.hairC='#f0f0e8';await N('Your hair is still white. People call you “Gandalf” in the hallway now. One teacher called you “sir.”')});
+fu('po_lifeguard',['kenneth'],async c=>{await say('kenneth','(at the edge of the pool) Mrs. Tarn says I have to be lifeguard today. I can’t swim. I CAN’T SWIM.','scared');
+ await walk(c.t,A.you.x+12,80);pose(c.t,'grab');SFX.splat();prop({t:'splash',x:A.you.x,y:A.you.y-4});pose('you','swim');pose(c.t,null);
+ await walk('kenneth',A.you.x+10,90);pose('kenneth','swim');
+ await N('Mrs. Tarn pushes YOU in. Kenneth jumps in after you without thinking. He doggy-paddles over. He saves you. Badly. But he does.');pose('you',null);pose('kenneth',null);await say('kenneth','(spitting out water) I SAVED SOMEBODY. I SAVED A WHOLE PERSON.','happy')});
+fu('po_chicken',['paul','omer'],async c=>{await say('paul','(showing everyone his ear) The bite’s healing into a perfect circle. I call it “the Omer.”','happy');await say('omer','(not looking) Stop showing people my teeth marks.','angry')});
+fu('po_lane',[],async c=>{await say(c.t,'(handing you a stopwatch) Your turn. My lane. Beat nine minutes and eleven seconds.','evil');
+ pose('you','swim');const ok=await mash('Hold your breath',{need:24,time:6});pose('you',null);
+ await N(ok?'You make two minutes. You come up seeing every color at once. Mrs. Tarn writes something down. She looks impressed. She looks hungry.':'Forty seconds. You come up choking. She pats your head like a dog.')});
+fu('po_float',['kenneth'],async c=>{pose('kenneth','swim');await N('Kenneth swims a full length. Badly. Slowly. With his face out of the water the whole way, like a dog in a lake. When he touches the wall, the whole class cheers.');
+ pose('kenneth',null);await say('kenneth','(gripping the wall, crying a bit) I’m going to show my dad. I’m going to make him come and watch.','happy')});
+fu('po_board',[],async c=>{await say(c.t,'(not looking at you) The high board’s gone, swimmer. Taken down. Just the ladder left. Going up to nothing.','evil')});
+fu('po_red',[],async c=>{await say(c.t,'(pouring something in the pool from a brown bottle) New chemical, swimmers. It turns the water red around anyone who LIES.','evil');
+ prop({t:'redwater',x:A.you.x,y:A.you.y+1,r:10,layer:-1});await N('The water around you goes very slightly pink. You haven’t said anything. Mrs. Tarn smiles.')});
+fu('po_goggles',[],async c=>{if(!D.dead.darren){put('darren',334,-1,{y:146});await walk('darren',A.you.x+16,70);
+ await say('darren','(holding the goggles to his chest, crying) They told me YOU found them. In the deep end. With the note still on.','cry');
+ await say('darren','Hasan read the note. He said “…question mark?” and then he LAUGHED. A NICE laugh. Step thirteen.','love');await walk('darren',334,70);remove('darren')}});
+
+/* ---------------- ASSEMBLY ---------------- */
+fu('as_mic',[],async c=>{await say('adam','(at the podium, looking straight at you) Somebody used my microphone, Highgate. I want them to know: it was the most honest thing anyone has said in this hall in thirty years.','sad')});
+fu('as_curtain',[],async c=>{prop({t:'paper',x:250,y:122,layer:5});await N('The curtain is open this time. There’s nobody behind it. Just a library book on the stage floor, open to the last page. Somebody has drawn a little bird in the margin.')});
+fu('as_award',['aidan'],async c=>{prop({t:'photo',x:A.aidan.x+6,y:A.aidan.y-14,layer:30});await N('Aidan has the certificate framed. He brought the frame to assembly. He holds it on his lap the whole time, facing out, so everybody can see.');
+ await say('aidan','(to you, very quietly) Nominate me again. For anything. I don’t care what.','happy')});
+fu('as_pledge',['arjun'],async c=>{await say('adam','(at the podium, very calmly) Today, Arjun will lead the pledge. Alone. Into the microphone. Correctly.','evil');
+ await walk('arjun',160,60);await tw(A.arjun,{y:124},300);
+ await say('arjun','(into the mic, sweating) I pledge allegiance to the… to the flag… of the… mick— of the United States of—','scared');
+ classLaugh(1000);await N('He gets through it. Barely. He sits down to the loudest round of applause of his life, and doesn’t understand it at all.');await tw(A.arjun,{y:150},300)});
+fu('as_helium',[],async c=>{await say('adam','(in a tiny squeaky voice, over the PA, on purpose) GOOD MORNING, HIGHGATE.','happy');
+ classLaugh(1400);await N('Mr. Adam has done the entire assembly on helium. It’s the first time anyone has seen him smile since September.')});
+fu('as_cry',[],async c=>{await N('Mr. Adam doesn’t cry this time. He reads the names, all of them, all the way through, and then he stops, and looks up, and says “We’re going to find out.” He’s looking at you.')});
+fu('as_spot',[],async c=>{await say('marcus','(whispering) The spotlight’s been unplugged. Someone cut the cable. With something sharp. Like a cleaver.','scared')});
+fu('as_chairs',[],async c=>{await say('adam','(at the podium) Every chair in this hall is now zip-tied to its neighbor. Physics is CANCELLED, Highgate.','angry')});
+fu('as_tuba',[],async c=>{const t=D.dead.voss?'coach':'voss';put(t,230,-1,{y:146});
+ await N(K[t].n+' is playing the tuba in the band again. Openly now. No hat. He winks at you between notes.');remove(t)});
+fu('as_roof',[],async c=>{await walk('adam',A.you.x+14,60);await say('adam','(stopping by your row, very quietly) The roof door’s open after assembly. If you ever want to scream. You don’t have to say why.','sad')});
+
+/* ---------------- running them ---------------- */
+{const _cm=cqMark;cqMark=function(room,id){_cm(room,id);if(CQF[id]){P.cqF=P.cqF||{};P.cqF[id]='pending';save()}}}
+{const _w=whisper;whisper=async function(c){
+ const room=c&&c.room;
+ if(c&&CQ[room]&&P.cqF&&!D.chat['cqf'+D.period]){
+  const here=id=>A[id]&&!A[id].dead;
+  const ready=CQ[room].filter(q=>P.cqF[q.id]==='pending'&&CQF[q.id].need.every(here));
+  if(ready.length){D.chat['cqf'+D.period]=1;D.chat['cq'+D.period]=1;const q=ready[0];
+   toast('🏫 '+q.name+' — part two');
+   try{await CQF[q.id].run(c)}catch(e){if(TEST&&TEST.err)TEST.err(e)}
+   P.cqF[q.id]='done';save();
+  }
+ }
+ return _w(c);
+}}
+{const _twe=twoWeeksEnd;twoWeeksEnd=async function(){P.cqF={};return _twe()}}
+/* the test harness runs every part two too */
+for(const room in CQ)for(const q of CQ[room])if(CQF[q.id])hook({mis:'cq_'+room,period:8,room,who:'cqf',cond:()=>false,run:async()=>{const c={room,t:Object.keys(A).find(k=>K[k]&&K[k].adult),kids:Object.keys(A).filter(k=>k!=='you'&&!(K[k]&&K[k].adult)),nb:[]};if(!c.t){c.t=room==='hall'?'adam':'shermian';put(c.t,40,1,{y:146})}for(const id of CQF[q.id].need)if(!A[id]&&K[id]){put(id,120+Math.random()*120,-1,{y:146});c.kids.push(id)}return CQF[q.id].run(c)}});
+
+</script>
+<script>
+/* js/wings.js */
+'use strict';
+/* =====================================================================
+   HIGHSCHOOL — THE WINGS
+   The walk to class goes through the right part of the school:
+   the science wing, the arts wing, the sports wing, the main corridor,
+   or the covered walkway out to the Trailer. Your classroom door is
+   at the end of it. Walk up, open it, go in.
+   ===================================================================== */
+const WING_OF={trailer:'walkway',science:'wing_sci',chem:'wing_sci',music:'wing_arts',ict:'wing_arts',art:'wing_arts',woodwork:'wing_arts',gym:'wing_sports',pool:'wing_sports',english:'corridor',history:'corridor',maths:'corridor',psych:'corridor',hall:'corridor',library:'corridor',foodtech:'wing_arts',drama:'wing_arts'};
+const DOOR_X=272;
+function classDoor(x,label,open,tint){
+ R(x-20,30,40,76,'#5a4030');R(x-17,33,34,73,'#2a2018');
+ const w=Math.round(34*(1-(open||0)));
+ if(w>2){R(x-17,33,w,73,tint||'#8a5a3a');R(x-15,35,w-4,69,tint?tint:'#9a6a46');if(w>18){R(x-12,40,12,18,'#c8dce8');R(x-12,40,12,1,'#fff')}R(x-17+w-6,70,3,6,'#d8c070')}
+ else{g.globalAlpha=.3;R(x-17,33,34,73,'#fff2c8');g.globalAlpha=1}
+ R(x-24,18,48,10,'#f4f0e6');R(x-24,18,48,1,'#c8c4b8');pxc(String(label||'').toUpperCase().slice(0,11),x,20,'#2a2a3a');
+}
+const doorLabel=()=>D&&D.passing&&ROOMS[D.passing.to]?ROOMS[D.passing.to].name.split(' —')[0]:'';
+function tilesFloor(a,b){R(0,112,W,68,a);for(let i=0;i<W;i+=16)for(let j=112;j<180;j+=16)R(i+((j/16)%2)*8,j,8,8,b)}
+ROOMS.wing_sci={name:'Science Wing',music:'class',bg(){
+ R(0,0,W,112,'#d8e4d8');for(let i=0;i<W;i+=20)R(i,0,1,112,'rgba(0,0,0,.04)');R(0,0,W,6,'#b8c8b8');R(0,104,W,8,'#5a7a6a');
+ R(10,30,58,44,'#f4f0e6');for(let r=0;r<5;r++)for(let c=0;c<9;c++)R(13+c*6,33+r*7,5,6,['#e8a0a0','#a0c8e8','#e8e0a0','#a0e8b0'][(r+c)%4]);pxc('PERIODIC TABLE',39,76,'#3a5a4a');
+ R(80,26,36,50,'#e8d040');R(82,28,32,46,'#2a2a2a');pxc('GOGGLES',98,34,'#e8d040');pxc('ON.',98,42,'#e8d040');pxc('ALWAYS.',98,50,'#e8d040');R(90,60,16,8,'#7ab8c8');
+ R(130,40,30,64,'#7a8a7a');R(132,42,26,60,'#9aaa9a');R(140,60,10,8,'#5ab0d0');pxc('EYEWASH',145,46,'#e8f0e8');
+ R(176,30,44,76,'#5a4030');R(179,33,38,73,'#7a6a5a');R(186,42,24,20,'#7ad09a');g.globalAlpha=.25+Math.sin(T*3)*.1;R(186,42,24,20,'#a0ffb0');g.globalAlpha=1;pxc('CHEM',198,20,'#3a5a4a');
+ R(232,56,10,20,'#c03030');R(234,52,6,4,'#c03030');
+ classDoor(DOOR_X,doorLabel(),D&&D.doorOpen,'#5a7a6a');
+ tilesFloor('#c8d0c8','rgba(0,0,0,.05)');
+}};
+ROOMS.wing_arts={name:'Arts Wing',music:'class',bg(){
+ R(0,0,W,112,'#e8d8c0');R(0,0,W,6,'#c8b8a0');R(0,104,W,8,'#8a5a3a');
+ for(let i=0;i<9;i++){const x=8+i*26,y=24+(i%3)*8;R(x,y,20,16,['#f0a0a0','#a0c8f0','#f0e0a0','#c0a0f0','#a0f0c0'][i%5]);R(x+3,y+3,14,10,['#c03030','#3060c0','#e0a020','#7030c0','#30a060'][(i+2)%5]);R(x+9,y-2,2,3,'#c0c0c0')}
+ R(10,64,220,30,'#3a2a4a');for(let i=0;i<22;i++)R(14+i*10,68+Math.sin(i)*6,6,6,['#e04060','#40a0e0','#e0c040','#60c060'][i%4]);pxc('THE ARTS ARE ALIVE',120,84,'#f4f0e6');
+ for(let i=0;i<4;i++){const q=(T*.6+i/4)%1;R(200+i*14,60-q*30,2,4,'#5a3a6a');R(201+i*14,58-q*30,3,2,'#5a3a6a')}
+ classDoor(DOOR_X,doorLabel(),D&&D.doorOpen,'#9a5a8a');
+ R(0,112,W,68,'#a07a5a');for(let i=0;i<W;i+=18)R(i,112,1,68,'#8a6a4a');
+}};
+ROOMS.wing_sports={name:'Sports Wing',music:'gym',bg(){
+ R(0,0,W,112,'#5a7aa8');for(let y=0;y<112;y+=8)for(let x=(y/8%2)*12;x<W;x+=24)R(x,y,23,7,'#6a8ab8');R(0,104,W,8,'#2a3a5a');
+ R(10,22,70,56,'#4a3a2a');R(13,25,64,50,'#7a9aaa');for(let i=0;i<4;i++){R(18+i*15,48,8,24,'#d8b040');R(17+i*15,44,10,5,'#e8c850')}pxc('TROPHIES',45,28,'#f4f0e6');
+ R(96,24,80,18,'#c02030');pxc('GO HIGHGATE',136,29,'#f4f0e6');R(96,42,80,2,'#8a1020');
+ R(190,70,18,34,'#c8c8d0');R(193,74,12,6,'#e8e8f0');R(198,66,2,6,'#888');g.globalAlpha=.4;R(197,62,4,4,'#a0d0f0');g.globalAlpha=1;pxc('WATER',199,60,'#f4f0e6');
+ g.globalAlpha=.15;for(let i=0;i<5;i++){const q=(T*.3+i/5)%1;R(230+Math.sin(T+i)*6,96-q*60,3,6,'#9aff9a')}g.globalAlpha=1;
+ classDoor(DOOR_X,doorLabel(),D&&D.doorOpen,'#3a5a8a');
+ R(0,112,W,68,'#c89a5a');for(let i=0;i<W;i+=12)R(i,112,1,68,'#b88a4a');R(0,150,W,2,'#c03030');
+}};
+ROOMS.walkway={name:'Walkway to the Portables',music:'field',bg(){
+ skyBands(['#8ab4d8','#a8c8e0','#c8dce8'],0,70);for(let i=0;i<3;i++)cloud((i*120+T*3)%400-60,10+i*9,1);
+ R(0,56,W,20,'#5a8a4a');for(let i=0;i<W;i+=6)R(i,54+(i%4),3,4,'#4a7a3a');
+ for(let i=0;i<W;i+=4)R(i,60,1,16,'rgba(200,200,210,.55)');R(0,60,W,1,'#c8c8d0');R(0,66,W,1,'rgba(200,200,210,.4)');
+ R(214,28,100,50,'#c8b890');R(214,28,100,4,'#a89870');for(let i=0;i<3;i++)R(222+i*28,40,18,14,'#7ab0d0');R(214,74,100,4,'#8a8a8a');for(let i=0;i<5;i++)R(218+i*20,78,4,12,'#6a6a6a');pxc('PORTABLE 4',264,32,'#5a4a3a');
+ R(0,16,W,6,'#7a7a82');R(0,22,W,2,'#5a5a62');for(let i=10;i<W;i+=50){R(i,24,3,88,'#8a8a92');R(i+1,24,1,88,'#aaaab2')}
+ R(0,76,W,36,'#6a9a5a');for(let i=0;i<60;i++)R(hsh(i)*W,78+hsh(i+3)*32,2,1,'#5a8a4a');
+ classDoor(DOOR_X,doorLabel(),D&&D.doorOpen,'#a08060');
+ R(0,112,W,68,'#a8a8a0');for(let i=0;i<W;i+=30)R(i,112,1,68,'#8a8a84');for(let i=0;i<40;i++)R(hsh(i+9)*W,114+hsh(i+11)*64,2,1,'#9a9a92');
+}};
+if(typeof LIGHT!=='undefined')Object.assign(LIGHT,{wing_sci:{amb:.7,tint:[40,60,50],src:[[198,52,60,.3,[150,255,190]],[100,6,120,.25]],wallAO:1},wing_arts:{amb:.72,tint:[60,40,30],src:[[160,6,140,.3,[255,230,200]]],wallAO:1},wing_sports:{amb:.66,tint:[30,40,70],src:[[160,6,140,.3,[230,240,255]]],wallAO:1},walkway:{amb:.95,tint:[60,70,90],src:[]}});
+if(typeof FLOOR!=='undefined')Object.assign(FLOOR,{wing_sci:[136,168],wing_arts:[136,168],wing_sports:[136,168],walkway:[132,168]});
+if(typeof AMB!=='undefined')Object.assign(AMB,{wing_sci:{bed:.04,chat:.6,lockers:.2,steps:.5,drip:.2},wing_arts:{bed:.04,chat:.7,steps:.4,beeps:.15},wing_sports:{bed:.05,chat:.6,squeak:.3,ball:.3,lockers:.3},walkway:{bed:.03,wind:.5,birds:.4,chat:.3,distant:.6}});
+if(typeof EXTRA_SPOTS!=='undefined')Object.assign(EXTRA_SPOTS,{wing_sci:3,wing_arts:3,wing_sports:3,walkway:2});
+/* the hallway events can happen in any wing */
+for(const p of PASS)for(const w of['wing_sci','wing_arts','wing_sports','walkway'])hook({mis:'passing',period:[1,3,5,6],room:w,who:p.who,label:p.label,cond:()=>!!(D&&D.passing&&D.passing.ev.includes(p.id))&&(!p.cond||p.cond()),run:async()=>{if(!A[p.who])put(p.who,160,-1,{y:146});await p.run();D.passing&&(D.passing.ev=D.passing.ev.filter(x=>x!==p.id));P.passN=(P.passN||0)+1;save();return 'stay'}});
+/* the door at the end: walk up and open it */
+for(const w of['corridor','wing_sci','wing_arts','wing_sports','walkway'])spot({room:w,period:[1,3,5,6],x:DOOR_X,y:140,label:'Open the door',short:'DOOR',free:1,cond:()=>!!(D&&D.passing),run:async()=>{
+ if(!D.passing)return 'stay';const to=D.passing.to;D.passing=null;A.you.back=1;await walk('you',DOOR_X,60);await tw(A.you,{y:136},250);pose('you','reach');SFX.door();await tw(D,{doorOpen:1},420);pose('you',null);await tw(A.you,{y:122,alpha:0},380);A.you.back=0;
+ const changing=to==='gym'||to==='pool';D.noDoor=!changing;D.doorOpen=0;
+ setTimeout(()=>enterRoom(to),0);return 'ended'}});
+/* send the walk through the right wing */
+{const _pt=passingTo;passingTo=async function(room){
+ const w=WING_OF[room]||'corridor';
+ await _pt(room);
+ if(w==='corridor'||TEST)return;
+ const keep=Object.keys(A).filter(k=>k!=='you'&&!A[k].extra).map(k=>[k,A[k].x,A[k].dir,A[k].y,A[k].pose]);
+ D.room=w;scene(w,{you:[20,1,{y:156}]},true);
+ for(const [k,x,dir,y,ps] of keep)if(!A[k]){const a=put(k,x,dir,{y,pose:ps});if(x<0||x>320){walk(k,x<0?336:-16,50)}}
+ spawnExtras(w,false);updateLoc();roam();
+}}
+/* the hallway door in the main corridor too */
+{const _cb=ROOMS.corridor.bg;ROOMS.corridor.bg=function(){_cb();if(D&&D.passing&&!TEST)classDoor(DOOR_X,doorLabel(),D.doorOpen)}}
+/* walking off the edge also still works, but the door’s right there now */
+{const _rh=roamHint;roamHint=function(){_rh();if(D&&D.passing){const h=$('hint');if(h)h.innerHTML=h.innerHTML.replace(/walk right → [^<]*/,'door on the right → '+doorLabel())}}}
+/* bubbles: the pixel font has no apostrophes */
+{const _do=HOOK.drawOver;HOOK.drawOver=(...a)=>{for(const b of(typeof bubbles!=='undefined'?bubbles:[]))b.txt=b.txt.replace(/[’']/g,'');_do&&_do(...a)}}
+
+</script>
+<script>
 /* js/weekend.js */
 'use strict';
 /* =====================================================================
@@ -10936,7 +11422,7 @@ weekend({id:'jade',name:'The Girl at the Food Court',icon:'🎭',room:'foodcourt
  scene('carpark',{you:[120,1,{y:154}],jade:[170,-1,{y:150}]},true);cue('evil');
  await N('She takes you up to the roof of the carpark. The whole of Fair City is lit up orange below you. She’s quiet for a while.');
  await say('jade','I should tell you something. I’m not exactly a Jade.','sad');
- for(const [k,line] of[['hasan','I can be anyone.'],['shermian','I was Ms. Shermian’s husband for a while. He’s not at his mom’s, by the way.'],['coach','I was Coach for a whole week once. Nobody noticed. I ran the beep test.'],['you','And I can be you. I like being you. You’re easy.']]){A.jade.k=K[k];SFX.whoosh();flash('#fff',.25);await say('jade',line,k==='you'?'smirk':'happy')}
+ for(const [k,line] of[['hasan','I can be anyone.'],['shermian','I was Ms. Sherman’s husband for a while. He’s not at his mom’s, by the way.'],['coach','I was Coach for a whole week once. Nobody noticed. I ran the beep test.'],['you','And I can be you. I like being you. You’re easy.']]){A.jade.k=K[k];SFX.whoosh();flash('#fff',.25);await say('jade',line,k==='you'?'smirk':'happy')}
  A.jade.k=K.jade;
  await say('jade','But I like being Jade best. With you. So. What do you want to do?','love');
  const c=await choose(['Kiss her anyway.','Run.','Fight her.']);

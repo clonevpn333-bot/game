@@ -6,7 +6,7 @@
    or to hide with their friends. Something different happens in each.
    ===================================================================== */
 const RETURNS=[];
-Object.assign(INTEL,{shermianList:'Ms. Shermian keeps a list called NOT PASSING. Tyler is crossed out.',byteWatching:'Mrs. Byte watches every webcam in the school.',adamKey:'Mr. Adam carries the key to the PA system. He wants to tell everyone.'});
+Object.assign(INTEL,{shermianList:'Ms. Sherman keeps a list called NOT PASSING. Tyler is crossed out.',byteWatching:'Mrs. Byte watches every webcam in the school.',adamKey:'Mr. Adam carries the key to the PA system. He wants to tell everyone.'});
 function ret(o){
  const mis='ret_'+o.id;
  mission(mis,{name:'Return: '+o.name,icon:'🎟️',who:o.who||[],blurb:o.blurb,parts:['Period 3: take a return to '+ROOMS[o.room].name.split(' —')[0]],tips:['At the Period 3 bell, take a return pass. Go to '+ROOMS[o.room].name.split(' —')[0]+'.'],variants:o.variants||{}});
@@ -61,10 +61,10 @@ Object.assign(DEATHS,{
 });
 
 ret({id:'key',room:'maths',name:'The Answer Key',who:['marcus','paul'],hint:'The lights are off. Somebody’s whispering.',
- blurb:'Ms. Shermian is teaching out in the Trailer, so her real classroom is empty. Marcus and Paul are in it, looking for the answer key.',
+ blurb:'Ms. Sherman is teaching out in the Trailer, so her real classroom is empty. Marcus and Paul are in it, looking for the answer key.',
  variants:{key:'Got the key',cat:'Met Mr. Biscuits'},run:async()=>{
  put('marcus',150,1,{y:146,pose:'reach'});put('paul',196,-1,{y:150});
- await N('Ms. Shermian’s real classroom, with the lights off. She’s out in the Trailer. Marcus is going through her desk. Paul is holding the door shut with his whole body, even though nobody is trying to open it.');
+ await N('Ms. Sherman’s real classroom, with the lights off. She’s out in the Trailer. Marcus is going through her desk. Paul is holding the door shut with his whole body, even though nobody is trying to open it.');
  await say('marcus','Answer key for Friday’s test. It’s in here. A woman like that keeps things close.','smirk');
  await say('paul','If she comes back I’m jumping out the window. I’ve decided. I’ve made peace with it.','scared');
  const c=await choose(['Check the top drawer.','Check the bottom drawer. The locked one.','Check the little fridge behind her desk.']);
@@ -166,7 +166,7 @@ ret({id:'stream',room:'ict',name:'Live From the ICT Room',who:['nivaan'],hint:'N
  const c=await choose(['Lick the keyboard.','Tell chat about the teachers.','Do the worm.']);
  if(c===0){SFX.slurp();await N('You lick the keyboard. The whole row from Q to P. It tastes like eleven years of hands.');await say('nivaan','CHAT IS GOING CRAZY. 40 viewers. FORTY. Do the spacebar.','happy');await complete('ret_stream','viral');return}
  if(c===1){
-  await say('you','The teachers here are killing kids. Ms. Shermian. Mr. Voss. Coach. All of them.');
+  await say('you','The teachers here are killing kids. Ms. Sherman. Mr. Voss. Coach. All of them.');
   SFX.static();await N('The stream cuts out. Every monitor in the room goes blue. Then, one at a time, they all show the same thing: a webcam image of you, from behind. Taken right now.');
   await say('byte','(over the speakers, sweetly) Learners! Livestreaming is against the acceptable use policy. Your account has been deleted. Nivaan, you’re next, sweetie.','evil');
   await say('nivaan','(unplugging everything) Chat, I love you, if I die tell my mom I had 14 viewers.','scared');
@@ -231,7 +231,7 @@ ret({id:'speech',room:'hall',name:'Rehearsal',who:['adam'],hint:'Mr. Adam is alo
  await say('adam','(to the empty hall) Inspectors! Welcome to Highgate High, where every child is safe, and every child is… is… where every child is.','happy');
  await say('adam','(seeing you) OH. An audience. Sit. Sit down. Tell me if this is good.','shock');
  await say('adam','“Highgate has a ZERO percent disappearance rate.” That’s good, right? It’s a good number. Zero is the best number.','scared');
- await say('adam','“Our teachers are passionate.” Too passionate. They’re SO passionate. Ms. Shermian is passionate about necks. Is that— should I cut that line?','scared');
+ await say('adam','“Our teachers are passionate.” Too passionate. They’re SO passionate. Ms. Sherman is passionate about necks. Is that— should I cut that line?','scared');
  const c=await choose(['“Mr. Adam, are you okay?”','“The speech is great, sir.”']);
  if(c===0){await say('adam','(after a very long time) No. No, I’m not. Two weeks. Two weeks until they come and look at everything. I’ve got a key to the PA system in my pocket and I keep thinking, what if I just… told everyone.','sad');await N('He holds out a little brass key. Then he puts it back in his pocket, and laughs too loud.');intel('adamKey')}
  else await say('adam','GREAT. It’s GREAT. I’m going to be GREAT. (He isn’t.)','happy');

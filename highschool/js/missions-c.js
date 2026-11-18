@@ -28,7 +28,7 @@ hook({mis:'alex',period:5,room:'field',who:'alex',label:'Help Alex get his hat-t
   else{await tw(b,{x:A.jacob.x,y:A.jacob.y-14},250,'in');b.hide=1;pose('jacob','hold');await say('jacob',pick(['MINE.','Not today.','Wall. Angry wall.']),'angry');pose('jacob',null)}
   pose('alex',null);
  }
- if(goals<3){await say('alex','I’m retiring.','sad');await say('omer','You said that yesterday.');await say('alex','There was no yesterday. It’s always today.','sad');return}
+ if(goals<3){await say('alex','I’m retiring.','sad');await say('omer','You said that last week.');await say('alex','And I meant it last week too.','sad');return}
  ex('jacob','yell');A.jacob.shake=1;
  await say('jacob','EVERYONE. KEEPS. SCORING. ON. ME.','yell');
  const b=prop({t:'ball',x:A.jacob.x,y:A.jacob.y-6});pose('jacob','kick');SFX.thud();shake(.8);
@@ -101,7 +101,7 @@ hook({mis:'marcus',period:0,room:'bus',who:'marcus',label:'Ask Marcus where he�
  SFX.static();
  await say('marcus','(on the PA) Good morning, Highgate. This is Marcus with your morning announcements.','smirk');
  await say('marcus','Today’s lunch is sausages. Big ones. Served firm. Please handle with care.','smirk');
- await say('marcus','Ms. Shermian would like whoever’s been touching her stapler to stop. Or to keep going, but gentler.','smirk');
+ await say('marcus','Ms. Sherman would like whoever’s been touching her stapler to stop. Or to keep going, but gentler.','smirk');
  await say('marcus','Netball is cancelled because all the balls are flat. Kenneth, we’re so sorry for your loss.','smirk');
  SFX.door();shake(.5);
  await say('sherman','(outside, getting closer at a speed that shouldn’t be possible) MARCUS!','yell');
@@ -386,7 +386,7 @@ coll('flower',{room:'bus',period:7,x:22,y:156,name:'Corey’s purple flower',des
 Object.assign(DEATHS,{
  redpen:{name:'Red Pen',desc:'Ms. Balduf corrected your grammar. Through your eye.',hint:'Say something ungrammatical in English.'},
  fminus:{name:'F-Minus',desc:'Ms. Balduf wrote your grade on your forehead. Then through it.',hint:'Mess up the group project completely.'},
- seat:{name:'Assigned Seating',desc:'Ms. Shermian found you somewhere you weren’t meant to be.',hint:'Get on the wrong side of Ms. Shermian’s seating plan.'},
+ seat:{name:'Assigned Seating',desc:'Ms. Sherman found you somewhere you weren’t meant to be.',hint:'Get on the wrong side of Ms. Sherman’s seating plan.'},
  ring:{name:'Ringside',desc:'You got in the ring. Aidan doesn’t fight fair. Aidan doesn’t fight human.',hint:'Join the fight at the lockers yourself.'},
  pit:{name:'The Rug',desc:'Ms. Sherman’s pit is an old coal chute. You aren’t the first kid down it.',hint:'Stand on the wrong side of a red button.'},
  mug:{name:'Earl Grey',desc:'You drank from Ms. Loach’s mug. She keeps the big scissors in the top drawer.',hint:'Drink something that isn’t yours.'},

@@ -52,7 +52,7 @@ const CLASS_ACTS=[
  }},
  {t:'Put your head down. Just for a second.',tag:'💤',run:async c=>{
   const t=teacherOf(c);pose('you','sit');fxState.dark=0;await tw(fxState,{dark:.85},700);
-  await N(pick(['You dream you’re in a hallway made entirely of lockers. Every one is 217. Aidan is inside all of them, knocking politely.','You dream that Mr. Biscuits the cat is teaching the class. He’s better at it. Everyone loves him. Ms. Shermian is in the back row, crying.','You dream the bell rings and everyone leaves and you can’t stand up because your legs are made of trays. Pat is there. She says, “It’s fine, love. It’s fine.”','You dream about absolutely nothing for the first time in weeks. It’s amazing.']));
+  await N(pick(['You dream you’re in a hallway made entirely of lockers. Every one is 217. Aidan is inside all of them, knocking politely.','You dream that Mr. Biscuits the cat is teaching the class. He’s better at it. Everyone loves him. Ms. Sherman is in the back row, crying.','You dream the bell rings and everyone leaves and you can’t stand up because your legs are made of trays. Pat is there. She says, “It’s fine, love. It’s fine.”','You dream about absolutely nothing for the first time in weeks. It’s amazing.']));
   await tw(fxState,{dark:0},400);
   if(t){await walk(t,A.you.x+14,90);face(t,-1);await say(t,'(standing right over you) Are we BORED, {PET}? Is {ME} BORING?','evil');
    const r=await choose(['“No, '+SIRMISS(t)+'. I was thinking about the lesson.”','Wipe the drool off your desk with your sleeve and say nothing.']);

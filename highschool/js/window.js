@@ -5,11 +5,11 @@
    two weeks. Progress is kept between days (P.win), one step per odd day.
    ===================================================================== */
 /* ---------------- THE TRAILER ----------------
-   Odd days, Period 3: Ms. Shermian’s math class is in the portable
+   Odd days, Period 3: Ms. Sherman’s math class is in the portable
    classroom out by the field. You and Corey (and Abby) are in it.  */
 /* Laid out from the real trailer: four tables along the back wall under the
    windows (Abby: left side of the third one, window behind her), the door in
-   the back-right corner, two little tables on the left wall (Ms. Shermian’s),
+   the back-right corner, two little tables on the left wall (Ms. Sherman’s),
    and four round tables in the middle. You and Corey: the round one, front left. */
 const TR_WALL=[[33,78],[114,159],[166,224],[233,278]];        /* back-wall tables, x from-to */
 const TR_ROUND=[[154,137],[250,139],[189,161],[86,163]];      /* round tables, centre x,y */
@@ -30,7 +30,7 @@ function roundTable(cx,cy){
  const k=(cx*3)%4;if(k===0){R(cx-10,ty-2,9,3,'#f4f0e6');R(cx-9,ty-1,6,1,'#9aa0b8')}else if(k===1){R(cx+6,ty-4,3,5,'#3a8ac8');R(cx+6,ty-4,3,1,'#c8c8d0')}else if(k===2){R(cx-8,ty-1,7,2,'#a03030')}else{R(cx-4,ty-2,8,3,'#3a5a3a');R(cx+6,ty,4,1,'#e8c040')}
 }
 function wallTable(x0,x1){const w=x1-x0;R(x0,114,w,2,'#e0d0b0');R(x0,116,w,3,'#b8a07a');R(x0,119,w,1,'#7a6a52');R(x0+1,120,2,7,'#5a5e68');R(x1-3,120,2,7,'#5a5e68');g.globalAlpha=.25;R(x0,127,w,2,'#000');g.globalAlpha=1}
-ROOMS.trailer={name:'The Trailer — Ms. Shermian',music:'class',bg(){
+ROOMS.trailer={name:'The Trailer — Ms. Sherman',music:'class',bg(){
  R(0,0,W,112,'#b08a5a');for(let i=0;i<W;i+=20){R(i,6,1,100,'#8a6a42');R(i+10,6,1,100,'rgba(255,255,255,.06)')}for(let i=0;i<40;i++)R(hsh(i+70)*W,10+hsh(i+71)*90,1,3+hsh(i+72)*5,'#9a7448');
  R(0,0,W,8,'#d8d4c8');for(let i=0;i<W;i+=24){R(i,0,1,8,'#b8b4a8')}R(0,8,W,1,'#8a8478');
  R(130,1,60,3,'#eef2f0');R(130,4,60,1,'#b8c0c4');if(Math.sin(T*9)>.85&&Math.sin(T*2.3)>0){g.globalAlpha=.1;R(100,6,120,60,'#000');g.globalAlpha=1}else{g.globalAlpha=.05;R(110,6,100,40,'#fff');g.globalAlpha=1}
@@ -89,9 +89,9 @@ function winSet(n){P.win=P.win||{};P.win.stage=Math.max(winStage(),n);P.win.look
 mission('window',{name:'The Window Seat',icon:'🐦',who:['corey','abby','shermian'],
  blurb:'Period 3 is in the Trailer. Abby sits by the window. Corey sits across the room, looking at her. He has looked at her every day since seventh grade. Every odd day you’re there, he gets one more look.',
  parts:['Odd day one: one second','Odd day two: the other bird','Odd day three: the notes','Odd day four: the window','The 43, home time: until…'],
- tips:['Odd day, Period 3, the Trailer. Watch the window.','The next odd day, Period 3, the Trailer. You know about the bird now. Corey needs to answer it.','The next odd day, Period 3, the Trailer. The notes. Keep Arjun’s hands off them.','The next odd day, Period 3, the Trailer. Ms. Shermian has noticed. She has a new seating plan.','Same day, home time, the 43. Back seat.'],
+ tips:['Odd day, Period 3, the Trailer. Watch the window.','The next odd day, Period 3, the Trailer. You know about the bird now. Corey needs to answer it.','The next odd day, Period 3, the Trailer. The notes. Keep Arjun’s hands off them.','The next odd day, Period 3, the Trailer. Ms. Sherman has noticed. She has a new seating plan.','Same day, home time, the 43. Back seat.'],
  variants:{kiss:'Two birds',hands:'Holding hands'}});
-DEATHS.windowsill={name:'Sill',desc:'Ms. Shermian closed the window. You were in it.',hint:'The Window Seat. Don’t fight Ms. Shermian with your bare hands.'};
+DEATHS.windowsill={name:'Sill',desc:'Ms. Sherman closed the window. You were in it.',hint:'The Window Seat. Don’t fight Ms. Sherman with your bare hands.'};
 
 const only=(kids,f)=>Object.fromEntries(Object.entries(f).filter(([k])=>kids.includes(k)));
 const winAvail=()=>D&&(D.dayType||'odd')==='odd'&&!D.f.winToday&&!D.dead.corey&&!D.dead.abby&&!D.dead.shermian&&winStage()<4&&!D.f.seatPick;
@@ -116,13 +116,13 @@ async function drawBird(n,o){
 /* ---------------- FRIDAY ONE ---------------- */
 hook({mis:'window',period:3,room:'trailer',who:'auto',cond:()=>winAvail()&&winStage()===0,run:async()=>{
  const c=await winClass();
- await N('Period 3. The Trailer. The AC unit is dripping into a bucket. The whole room wobbles when anyone walks. Ms. Shermian is writing on the board in her loopy, frightening handwriting.');
+ await N('Period 3. The Trailer. The AC unit is dripping into a bucket. The whole room wobbles when anyone walks. Ms. Sherman is writing on the board in her loopy, frightening handwriting.');
  await N('Abby sits at the back, by the window. Corey sits at the front, on the other side of the room. To look at her, he has to turn all the way round in his chair. He does. Constantly.');
  const b=await drawBird(1);
  await N('Abby breathes on the window. With one finger, she draws a little bird in the fog. She looks at it for a second. Then she rubs it out with her sleeve, before anyone can see.');
  await say('corey','(whispering, to you, not looking away from her) She does that every day. The bird. Since seventh grade. Every single day. She never draws anything else.','blush');
  intel('abbyBird');b.hide=1;
- await glance(1,'Abby turns round. Just for a second. Their eyes meet across the room, over twenty-six desks and Tyler.');
+ await glance(1,'Abby turns round. Just for a second. Their eyes meet across the room, over the desks and Tyler’s empty chair.');
  SFX.thud();shake(.4);A.corey.pose='lie';
  await N('Corey turns back so fast that he falls off his chair.');
  await evil('shermian');
@@ -147,11 +147,10 @@ hook({mis:'window',period:3,room:'trailer',who:'auto',cond:()=>winAvail()&&winSt
  const b=await drawBird(1);
  await N('There it is. She breathes on the glass. The little bird.');
  await say('you','(whispering) Corey. Draw one back.');
- await say('corey','(whispering) Draw WHAT back? On WHAT? I’m nowhere near a window. I’m near Tyler.','scared');
- const ch=await choose(['“Fold her a bird. Out of paper. Pass it back.”','“Breathe on Tyler’s glasses and draw it on those.”']);
- if(ch===1&&A.tyler){
-  await N('Corey leans over, breathes on Tyler’s glasses, and draws a tiny bird on the left lens with his pinky.');
-  await say('tyler','(not moving, terrified) I can’t see anything. I can’t see the board. If she asks me a question I’m dead.','scared');
+ await say('corey','(whispering) Draw WHAT back? On WHAT? I’m nowhere near a window. I’m next to an empty chair.','scared');
+ const ch=await choose(['“Fold her a bird. Out of paper. Pass it back.”','“Draw one on your hand. Hold it up.”']);
+ if(ch===1){
+  pose('corey','up');await N('Corey draws a tiny bird on the back of his hand in pen and holds it up. She can’t see it from there. He keeps holding it up anyway, until his arm shakes.');pose('corey','sit');
  }
  pose('corey','write');await wait(400);pose('corey','sit');
  await N('Corey tears a page out of the back of his textbook and folds it into a paper bird, under the desk, with shaking hands. It takes him four tries. The fourth one is beautiful.');
@@ -220,7 +219,7 @@ hook({mis:'window',period:3,room:'trailer',who:'auto',cond:()=>winAvail()&&winSt
  const kids=['corey','arjun','alex','dheva','marcus','tyler','abby'].filter(n=>!D.dead[n]);
  const c=await classIn('trailer',{kids,fixed:only(kids,{corey:4,abby:5,arjun:7,tyler:1,alex:0,dheva:9,marcus:3}),you:6});
  cue('tension');
- await N('Period 3. The Trailer. Everything is wrong. The desks have moved. Corey is by the window now. Abby is at the front, right next to Ms. Shermian’s desk, where she can touch her.');
+ await N('Period 3. The Trailer. Everything is wrong. The desks have moved. Corey is by the window now. Abby is at the front, right next to Ms. Sherman’s desk, where she can touch her.');
  put('shermian',A.abby.x-14,1,{y:A.abby.y-2,pose:'hips'});A.shermian.x=A.abby.x-14;
  await say('shermian','(one hand on Abby’s shoulder) Abby’s Miss’s now. Isn’t that lovely? Abby doesn’t need a window. Abby’s got Miss.','happy');
  face('corey',-1);
@@ -240,7 +239,7 @@ hook({mis:'window',period:3,room:'trailer',who:'auto',cond:()=>winAvail()&&winSt
  SFX.scream();
  await say('abby','(standing up, knocking her chair over) LEAVE HIM ALONE!','yell');
  for(const k of['dheva','marcus','alex','tyler','arjun'])if(A[k]){A[k].pose=null;A[k].ex='shock'}
- await N('Nobody has ever shouted at Ms. Shermian. The room goes completely silent. Then everything happens at once. Marcus flips his desk for no reason. Tyler starts crying. Dheva sprays something. Arjun films it.');
+ await N('Nobody has ever shouted at Ms. Sherman. The room goes completely silent. Then everything happens at once. Marcus flips his desk for no reason. Alex starts crying. Dheva sprays something. Arjun films it.');
  const ch=await choose([{t:'Throw the window open. Get them out.',tag:'run'},{t:'Grab her arm. Fight her.',tag:'🩸'},{t:'Stay in your seat.'}],'She’s still holding his hand on the sill.');
  if(ch===1){
   await walk('you',A.shermian.x-10,110);pose('you','grab');
@@ -249,7 +248,7 @@ hook({mis:'window',period:3,room:'trailer',who:'auto',cond:()=>winAvail()&&winSt
   await die('windowsill');return;
  }
  if(ch===2){
-  await N('You stay in your seat. Everyone does. After a while, Ms. Shermian lets go of his hand, wipes the window with her cardigan sleeve, and carries on with the lesson.');
+  await N('You stay in your seat. Everyone does. After a while, Ms. Sherman lets go of his hand, wipes the window with her cardigan sleeve, and carries on with the lesson.');
   await N('Corey sits by the window for the rest of Period 3 holding his hand in his lap. Abby doesn’t turn round once. She doesn’t draw anything. It’s the first time in three years she hasn’t drawn the bird.');
   await sweet('shermian');
   await classOut(c);D.f.winToday=1;return;
@@ -307,7 +306,7 @@ hook({mis:'window',period:7,room:'bus',who:'abby',label:'Get on the 43 behind Ab
  }else{
   await N('He holds her hand. Their knuckles are white because the bus is swerving and they’re both standing. Neither of them lets go. At the roundabout, she leans her head on his shoulder.');
  }
- await say('abby','(quietly) Monday. Period 3. Ms. Shermian’s going to kill us.','blush');
+ await say('abby','(quietly) Monday. Period 3. Ms. Sherman’s going to kill us.','blush');
  await say('corey','Then I’ll look at you first. Before the bell. Before anything. Before she kills us.','blush');
  await N('Outside the window the sun is going down orange over Fair City. On the glass, in the fog, somebody has drawn two little birds.');
  pose('corey',null);pose('abby',null);fxState.romance=0;

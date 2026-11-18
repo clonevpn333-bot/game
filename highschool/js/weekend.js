@@ -71,7 +71,7 @@ weekend({id:'jade',name:'The Girl at the Food Court',icon:'🎭',room:'foodcourt
  scene('carpark',{you:[120,1,{y:154}],jade:[170,-1,{y:150}]},true);cue('evil');
  await N('She takes you up to the roof of the carpark. The whole of Fair City is lit up orange below you. She’s quiet for a while.');
  await say('jade','I should tell you something. I’m not exactly a Jade.','sad');
- for(const [k,line] of[['hasan','I can be anyone.'],['shermian','I was Ms. Shermian’s husband for a while. He’s not at his mom’s, by the way.'],['coach','I was Coach for a whole week once. Nobody noticed. I ran the beep test.'],['you','And I can be you. I like being you. You’re easy.']]){A.jade.k=K[k];SFX.whoosh();flash('#fff',.25);await say('jade',line,k==='you'?'smirk':'happy')}
+ for(const [k,line] of[['hasan','I can be anyone.'],['shermian','I was Ms. Sherman’s husband for a while. He’s not at his mom’s, by the way.'],['coach','I was Coach for a whole week once. Nobody noticed. I ran the beep test.'],['you','And I can be you. I like being you. You’re easy.']]){A.jade.k=K[k];SFX.whoosh();flash('#fff',.25);await say('jade',line,k==='you'?'smirk':'happy')}
  A.jade.k=K.jade;
  await say('jade','But I like being Jade best. With you. So. What do you want to do?','love');
  const c=await choose(['Kiss her anyway.','Run.','Fight her.']);
