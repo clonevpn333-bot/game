@@ -17,9 +17,9 @@ const K={
  aidan:{n:'Aidan',col:'#2456c8',skin:'#e6c2a2',hair:'#4a2f1a',hs:'bowl',top:'#2456c8',pants:'#0c0c10',tight:1,h:4,zip:1,seed:9,v:175,vw:'sawtooth'},
  angelo:{n:'Angelo',col:'#9a6a3a',skin:'#c8946a',hair:'#141010',hs:'straight',top:'#7a5234',pants:'#141416',baggy:1,tee:1,seed:13,v:330},
  alex:{n:'Alex',col:'#2b6bd6',skin:'#f3cdb0',hair:'#e3c15a',hs:'wavyb',top:'#2b6bd6',pants:'#1f2a44',shorts:1,tee:1,num:'9',seed:14,v:305},
- dheva:{n:'Dheva',col:'#565663',skin:'#9a6440',hair:'#121010',hs:'texture',top:'#0f0f12',pants:'#2a2a33',baggy:1,stripe:1,tee:1,seed:15,v:268},
+ dheva:{n:'Dheva',col:'#565663',skin:'#9a6440',hair:'#121010',hs:'mod',top:'#0f0f12',pants:'#2a2a33',baggy:1,stripe:1,tee:1,seed:15,v:268},
  marcus:{n:'Marcus',col:'#5b7a8c',skin:'#f0d0a8',hair:'#0e0c0c',hs:'fringe',top:'#e8e8ea',pants:'#2a2f3a',tie:1,squint:1,seed:16,v:455},
- paul:{n:'Paul',col:'#b8462a',skin:'#efc6a4',hair:'#7a4a26',hs:'buzz',top:'#b8462a',pants:'#3a3f4a',h:9,thin:1,seed:17,v:228},
+ paul:{n:'Paul',col:'#b8462a',skin:'#efc6a4',hair:'#7a4a26',hs:'buzz',top:'#b8462a',pants:'#3a3f4a',h:14,thin:1,seed:17,v:228},
  kenneth:{n:'Kenneth',col:'#c9a12a',skin:'#f1c9a3',hair:'#a8874a',hs:'crop',top:'#d8b23a',pants:'#6a3fa0',shorts:1,tee:1,num:'23',seed:18,v:362},
  jacob:{n:'Jacob',col:'#c8202c',skin:'#6b4428',hair:'#120e0c',hs:'fade',top:'#c8202c',pants:'#22252c',h:2,hood:1,seed:19,v:198},
  tyler:{n:'Tyler',col:'#5a7a5a',skin:'#e8c4a0',hair:'#8a5a2a',hs:'short',top:'#5a7a5a',pants:'#33384a',seed:20,v:350},
@@ -110,6 +110,7 @@ function drawHead(k,x,hy,d,o){
  else if(hs==='receding'){R(hx-1,hy+1,2,5,c);R(hx+hw-1,hy+1,2,5,c);R(hx+1,hy-1,3,2,c);R(hx+hw-4,hy-1,3,2,c);if(o.messy){R(hx-3,hy-3,2,4,c);R(hx+hw+1,hy-4,2,5,c);R(hx+5,hy-3,1,2,c);R(hx+1,hy-4,1,3,c)}}
  else if(hs==='ponytail'){R(hx-1,hy-2,hw+2,4,c);R(hx-1,hy+2,2,3,c);R(hx+hw-1,hy+2,2,3,c);R(d>0?hx-4:hx+hw+1,hy+1,3,9,c);R(d>0?hx-3:hx+hw+1,hy,2,1,'#c03030');R(hx+3,hy-1,3,1,'rgba(255,255,255,.2)')}
  else if(hs==='side'){R(hx-1,hy-2,hw+2,3,c);R(hx-1,hy+1,2,3,c);R(hx+hw-1,hy+1,2,3,c);R(hx+3,hy-2,1,2,'rgba(0,0,0,.3)');R(hx+4,hy+1,5,1,c)}
+ else if(hs==='mod'){R(hx+1,hy-3,hw-2,1,c);R(hx-1,hy-2,hw+2,4,c);R(hx-1,hy+2,hw+2,2,c);R(hx-2,hy+1,2,6,c);R(hx+hw,hy+1,2,6,c);for(let i=0;i<hw;i+=3)R(hx+i,hy+4,2,1,c);R(hx+2,hy-2,5,1,'rgba(255,255,255,.14)')}
  else if(hs==='afro'){for(let i=-1;i<=hw;i+=2)for(let j=0;j<3;j++)R(hx-3+i+(j%2),hy-7+j*3,4,4,c);R(hx-4,hy-3,4,9,c);R(hx+hw,hy-3,4,9,c);R(hx-2,hy-8,hw+4,2,c);R(hx+2,hy-6,2,1,'rgba(255,255,255,.12)');R(hx+6,hy-4,2,1,'rgba(255,255,255,.12)')}
  else if(hs==='buzz'){R(hx,hy-1,hw,2,c);R(hx+1,hy-2,hw-2,1,c);R(hx,hy+1,1,2,c);R(hx+hw-1,hy+1,1,2,c)}
  else if(hs==='manbun'){R(hx-1,hy-2,hw+2,3,c);R(hx+3,hy-6,5,4,c);R(hx-1,hy+1,2,2,c);R(hx+hw-1,hy+1,2,2,c)}
