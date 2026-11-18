@@ -22,8 +22,8 @@
    out of its door. M shows the floor plan (it doesn’t move you).
    ===================================================================== */
 const WORLD={
- bus:{L:null,R:null,doors:[{x:240,to:'corridor',at:22,label:'SCHOOL',front:1}]},
- corridor:{L:'bus',Lx:240,R:'hallb',doors:[{x:50,to:'english'},{x:105,to:'maths'},{x:160,to:'history'},{x:215,to:'toilets',label:'BOYS'},{x:285,to:'upper',at:30,stairs:'up',label:'UPSTAIRS'}]},
+ bus:{L:null,R:null,doors:[{x:160,to:'corridor',at:22,label:'SCHOOL',front:1}]},
+ corridor:{L:'bus',Lx:160,R:'hallb',doors:[{x:50,to:'english'},{x:105,to:'maths'},{x:160,to:'history'},{x:215,to:'toilets',label:'BOYS'},{x:285,to:'upper',at:30,stairs:'up',label:'UPSTAIRS'}]},
  hallb:{L:'corridor',R:'wing_sci',doors:[{x:40,to:'canteen'},{x:100,to:'library'},{x:160,to:'hall',label:'MAIN HALL'},{x:220,to:'office',label:'VP OFFICE'},{x:280,to:'psych',label:'PSYCH'}]},
  wing_sci:{L:'hallb',R:'wing_sports',doors:[{x:198,to:'chem',label:'CHEM LAB'},{x:272,to:'science'}]},
  wing_sports:{L:'wing_sci',R:'field',doors:[{x:120,to:'pool'},{x:272,to:'gym'}]},
@@ -146,7 +146,7 @@ function edge(s){
   if(room==='bus'&&s<0&&D.period===7){busy=true;return endPeriod()}
   if(!to){if(!edge.t||T-edge.t>1.2){edge.t=T;toast(room==='bus'?'The road. Not that way.':'That’s the end of the hall.')}return}
   if(to==='bus'&&D.period>=1&&D.period<=6&&!edge.warned){edge.warned=1;toast('Out the front doors. The bus loop.')}
-  return worldGo(to,to==='bus'?(w.Lx||240):(s<0?300:20),null,s);
+  return worldGo(to,to==='bus'?(w.Lx||160):(s<0?300:20),null,s);
  }
  const ex=exitOf(room);if(!ex)return;
  return worldGo(ex[0],ex[1],null,s);

@@ -29,6 +29,9 @@ so check every line.
 - Quest steps must not appear before the scene that sets them up.
 - Never refer to “always Friday” or a repeating Friday for the living characters (only the 1987 ghost lore keeps it).
 - The school is walkable (`js/world.js`): hallways left to right, doors you walk up into, stairs to the second floor. No map teleporting; M is a floor plan only.
+- Every day ends with a ride home on the 43 (`js/busride.js`): a couple of events per ride, story moments for whatever quests are in progress, then a night text on your phone. Paul Jones’s arc ends on the last school day (day 12).
+- Week two (days 8–12): metal detector at the front doors, back way in through the woods (`js/detectors.js`). Fair City Mall has robberies after school (`js/robbery.js`).
+- Guns and school violence are story events the player reacts to (talk down, disarm, hide). The player is never the shooter.
 - Classes go in timetable order. Returns: walk into any empty classroom in odd Period 3.
 - Every timetabled lesson is different each time across the two weeks (`js/lessons2.js`), and the teacher gets more hostile each time. No repeating mini-action menus in class.
 
