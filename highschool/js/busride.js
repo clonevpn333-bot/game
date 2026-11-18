@@ -7,7 +7,7 @@
    Paul Jones (the other Paul) rides the 43 too. Nobody talks to him.
    On the last school day, he brings something in his backpack.
    ===================================================================== */
-K.pauljones={n:'Paul Jones',col:'#5a5a62',skin:'#e8c8a8',hair:'#4a3a2a',hs:'short',top:'#4a4a52',pants:'#2a2a33',hood:1,seed:171,v:330};K.pauljones.id='pauljones';
+K.pauljones={n:'Paul Jones',col:'#5a5a62',skin:'#c8946a',hair:'#1e1612',hs:'afro',top:'#4a4a52',pants:'#2a2a33',hood:1,seed:171,v:330};K.pauljones.id='pauljones';
 K.driver={n:'The Driver',col:'#3a5a3a',skin:'#c8946a',hair:'#3a3a3a',hs:'receding',top:'#3a5a3a',pants:'#2a2a33',adult:1,tache:1,tacheC:'#2a2a2a',seed:173,v:170};K.driver.id='driver';
 CHAT.pauljones=['…','(not looking up from his hood) What.','Everybody calls me Other Paul. Or Off-Brand Paul. Or Paul Two. My name is Paul.'];
 
@@ -64,7 +64,7 @@ DEATHS.backseat={name:'Back Seat',desc:'You grabbed for it. You weren’t fast e
 const pjKind=()=>D.f.pjKind||0;
 const RIDE=[
  {id:'pj1',w:9,cond:()=>!D.f.pj1&&onBus('pauljones'),run:async()=>{
-  await N('At the back of the bus, a kid with his hood up sits on his own. Paul Jones. He moved here in October. He has a seat to himself every day, and he isn’t lucky about it.');
+  await N('At the back of the bus, a kid with a big afro squashed under his hood sits on his own. Paul Jones. He moved here in October. He has a seat to himself every day, and he isn’t lucky about it.');
   if(onBus('arjun'))await say('arjun','(loud enough) Ayo, Off-Brand Paul. Real Paul’s at the front. You’re the knockoff. You’re the Paul from Wish.','smirk');
   classLaugh(500);
   const c=await choose(['Go and sit next to Paul Jones.','Laugh. It was kind of funny.','Stay where you are.']);
