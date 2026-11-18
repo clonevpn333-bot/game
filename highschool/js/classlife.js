@@ -92,14 +92,8 @@ const CLASS_EVENTS=[
 ];
 
 {const _w=whisper;whisper=async function(c){
- if(c&&!TEST||c&&Math.random()<.7){
-  if(Math.random()<.45){const e=pick(CLASS_EVENTS);try{await e(c)}catch(err){if(TEST&&TEST.err)TEST.err(err)}}
-  const acts=CLASS_ACTS.slice().sort(()=>Math.random()-.5).slice(0,3);
-  const o=acts.map(a=>({t:a.t,tag:a.tag}));o.push({t:'Actually pay attention. Just this once.'});
-  const i=await choose(o,'While nobody’s watching…');
-  if(i<acts.length)await acts[i].run(c);
-  else await N(pick(['You pay attention. You learn one thing. You will never need it.','You pay attention for the whole lesson. Nobody notices. That’s the point.','You take notes. Real ones. Your handwriting gets worse as the lesson goes on, like it’s getting tired too.']));
- }
+ /* now and then, something just happens in class (no menu) */
+ if(c&&Math.random()<(TEST?.5:.25)){const e=pick(CLASS_EVENTS);try{await e(c)}catch(err){if(TEST&&TEST.err)TEST.err(err)}}
  return _w(c);
 }}
 

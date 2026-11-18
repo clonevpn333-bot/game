@@ -165,7 +165,8 @@ function drawKid(k,x,y,o){
  const arm=(ax,ay,h,hand)=>{R(ax,ay,2,Math.min(2,h),top);if(h>2)R(ax,ay+2,2,h-2,sl);if(hand!==false)R(ax,ay+h,2,2,sk)};
  let hx=fs,hy=by+8;   // front-hand position, for held items
  const back=()=>arm(bs,by+1,6);
- switch(p){
+ let gl_=null;if(o.tr&&o.tr.k<1&&typeof glideArms==='function')gl_=glideArms(o.tr,p,{bx,bw,by,d,top,sl,sk,x,lean,fs,bs});
+ if(gl_){hx=gl_.hx;hy=gl_.hy}else switch(p){
   case'cross':case'lean':R(bx-2,by+1,2,5,top);R(bx+bw,by+1,2,5,top);R(bx-1,by+4,bw+2,3,top);R(bx+1,by+5,2,2,sk);R(bx+bw-3,by+4,2,2,sk);hx=x;hy=by+5;break;
   case'hips':R(bx-3,by+1,2,4,top);R(bx-3,by+5,3,2,sl);R(bx-1,by+6,2,2,sk);R(bx+bw+1,by+1,2,4,top);R(bx+bw,by+5,3,2,sl);R(bx+bw-1,by+6,2,2,sk);hx=fs;hy=by+6;break;
   case'point':back();R(d>0?bx+bw:bx-7,by+2,7,2,sl);R(d>0?bx+bw+7:bx-10,by+1,3,2,sk);hx=d>0?bx+bw+8:bx-10;hy=by+1;break;
@@ -273,7 +274,7 @@ function drawActor(a){
   g.globalAlpha=1;return;
  }
  if(!a.sitHigh&&a.pose!=='sit'&&a.pose!=='write'){const zz=a.z||0,sw_=Math.max(4,12-zz*.4);g.globalAlpha=Math.min(g.globalAlpha,.22);R(a.x-sw_/2,a.y,sw_,2,'#000');g.globalAlpha=k.ghost?Math.min(1,.62+Math.sin(T*3+a.x)*.12):(a.alpha<1?Math.max(0,a.alpha):1)}
- drawKid(k,a.x,y,{fast:a.fast,messy,dir:a.dir,moving:a.moving,walk:a.walk,pose:a.air&&!a.pose?'up':a.pose,ex:a.ex||a._ex||(a.air?'shock':null),talk:a.talk,hold:a.hold,hurt:a.hurt,bloody:a.bloody,shake:a.shake,punchT:a.punchT,still:a.still,hairC:a.hairC,topC:a.topC,hs:a.hs||(a.id==='dheva'&&(typeof D!=="undefined"&&D)&&D.f&&!D.f.dhevaFixed?'limp':null)});
+ drawKid(k,a.x,y,{tr:a._trK,fast:a.fast,messy,dir:a.dir,moving:a.moving,walk:a.walk,pose:a.air&&!a.pose?'up':a.pose,ex:a.ex||a._ex||(a.air?'shock':null),talk:a.talk,hold:a.hold,hurt:a.hurt,bloody:a.bloody,shake:a.shake,punchT:a.punchT,still:a.still,hairC:a.hairC,topC:a.topC,hs:a.hs||(a.id==='dheva'&&(typeof D!=="undefined"&&D)&&D.f&&!D.f.dhevaFixed?'limp':null)});
 
  g.globalAlpha=1;
 }

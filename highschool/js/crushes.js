@@ -70,7 +70,7 @@ hook({mis:'toby',period:2,room:'library',who:'sean',label:'Ask Sean why he’s h
  const c=await choose(['“Be honest. Tell Toby you’re with Stella. Nicely.”','“…The onion. Do the onion.”','“Fake your death.”','“Just tell Stella. Let her deal with it.”']);
  D.f.tobyPlan=['honest','onion','dead','stella'][c];
  if(c===0){await say('sean','Honest. Okay. Honest. I’m going to need a presentation.','scared');await say('you','You don’t need a—');await say('sean','I need a PRESENTATION.','yell')}
- else if(c===1){await say('sean','Okay. Okay. Pat’s got a whole bag of onions in the back. I’ll get one tomorrow. For science. For love. For the opposite of love.','scared')}
+ else if(c===1){await say('sean','Okay. Okay. Pat’s got a whole bag of onions in the back. I’ll get one at lunch. For science. For love. For the opposite of love.','scared')}
  else if(c===2){await say('sean','Kenneth’s uncle did it TWICE. How hard can it be. I just need ketchup. Lots of ketchup. And a reason to be lying on the field.','smirk')}
  else{await say('sean','Yeah. Yeah, she’s my girlfriend, she should know. She’s also terrifying. Okay. Okay.','scared')}
  if(A.stella){await walk('stella',226,60);face('stella',-1);await say('stella','Why are you two hiding behind the biographies?','smirk');pose('sean',null);

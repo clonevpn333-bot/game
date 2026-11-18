@@ -5,18 +5,18 @@
    ===================================================================== */
 K.tylermom={n:'Tyler’s Mom',col:'#7a8a6a',skin:'#e8c4a0',hair:'#8a5a2a',hs:'bob',top:'#6a7a5a',pants:'#3a3a48',adult:1,girl:1,seed:83,v:330};K.tylermom.id='tylermom';
 Object.assign(DEATHS,{afterdark:{name:'After Dark',desc:'Coach does night patrol. Nobody told you. Coach doesn’t tell anyone anything.',hint:'After Dark. When the javelin comes, run.'}});
-const mainOpen=(d,beat)=>cal()>=d&&cal()<12&&!(D&&D.weekend)&&!!crew()['beat'+(beat||d)];   /* only once the crew has talked about it */
+const mainOpen=(d,beat)=>!(D&&D.weekend)&&!crew().finale&&!!crew()['beat'+(beat||d)];   /* only once the crew has talked about it */
 
 /* the crew points you at them */
-{const b2=BEATS[2];BEATS[2]=async()=>{await b2();await say('david','Oh, and Tyler’s mom is coming in before school tomorrow to clear out his locker. Somebody should be there. To help. And to look.','sad')}}
-{const b4=BEATS[4];BEATS[4]=async()=>{await b4();await say('kenneth','The cameras. The school has cameras in every corridor and nobody has ever looked at what they record at night. Tonight after school. Meet Nivaan at the food court. Wear black.','smirk')}}
+{const b2=BEATS[2];BEATS[2]=async()=>{await b2();await say('david','Oh, and Tyler’s mom is coming in to clear out his locker. Locker 214, Main Corridor. Somebody should be there. To help. And to look.','sad')}}
+{const b4=BEATS[4];BEATS[4]=async()=>{await b4();await say('kenneth','The cameras. The school has cameras in every corridor and nobody has ever looked at what they record at night. After school. Meet Nivaan at the mall food court. Wear black.','smirk')}}
 {const b8=BEATS[8];BEATS[8]=async()=>{await b8();await say('stella','Mr. Adam knows more than he’s saying. He nearly cried at the bus loop this morning. If we get him on the record, that’s worth more than a fridge full of jars.','smirk')}}
 
 /* ---------------- TYLER’S LOCKER ---------------- */
 mission('crew_locker',{name:'Tyler’s Locker',icon:'🔒',who:['tylermom','hasan','sherman'],
  blurb:'Tyler’s mom has come in before school to clear out his locker. She doesn’t know anything. Tyler might have known a lot.',
- parts:['Before school: locker 214'],tips:['From Wednesday of week 1, before school, Main Corridor. Locker 214.'],variants:{kept:'Kept the notebook',gave:'Gave it back to her'}});
-spot({room:'corridor',period:0,x:96,y:150,label:'Help the woman at locker 214',short:'LOCKER',cond:()=>mainOpen(3,2)&&!crew().ev.notebook&&!D.dead.sherman,run:async()=>{
+ parts:['Before school: locker 214'],tips:['Before school, break or lunch: Main Corridor, locker 214.'],variants:{kept:'Kept the notebook',gave:'Gave it back to her'}});
+spot({room:'corridor',period:[0,2,4],x:96,y:150,label:'Help the woman at locker 214',short:'LOCKER',cond:()=>mainOpen(3,2)&&!crew().ev.notebook&&!D.dead.sherman,run:async()=>{
  const cast={tylermom:[92,1,{y:146,pose:'reach'}],you:[124,-1,{y:154}]};if(!D.dead.hasan)cast.hasan=[150,-1,{y:150}];
  scene('corridor',cast,true);cue('sad');
  await N('A woman in a green coat is taking things out of locker 214 one at a time and putting them in a supermarket bag. A gym shirt. A calculator. A photo of a dog.');
@@ -81,7 +81,7 @@ hook({mis:'crew_dark',period:8,room:'foodcourt',who:'nivaan',label:'Ask Nivaan w
 mission('crew_record',{name:'On the Record',icon:'🎙️',who:['adam'],
  blurb:'Mr. Adam has been coming apart for two weeks. He knows something about 1987 that nobody else alive will say. The crew needs it on the record.',
  parts:['Lunch: Mr. Adam’s office'],tips:['Week 2, lunch, Main Corridor. Knock on Mr. Adam’s door. Record it.'],variants:{named:'He gave his name',anon:'Anonymous'}});
-spot({room:'corridor',period:4,x:206,y:150,label:'Knock on Mr. Adam’s office door',short:'ADAM',cond:()=>mainOpen(8,8)&&!crew().ev.confession&&!D.dead.adam,run:async()=>{
+spot({room:'corridor',period:[0,1,2,3,4,5,6],x:206,y:150,label:'Knock on Mr. Adam’s office door',short:'ADAM',cond:()=>mainOpen(8,8)&&!crew().ev.confession&&!D.dead.adam,run:async()=>{
  scene('office',{adam:[158,1,{y:140,pose:'sit'}],you:[120,1,{y:156}]},true);cue('sad');
  await N('Mr. Adam’s office is full of things he hasn’t thrown away. A cold coffee for every day of the last two weeks. Fourteen mugs, in a line.');
  await say('adam','Come in. Shut the door. Is your phone recording? Good. Put it where I can see it.','sad');

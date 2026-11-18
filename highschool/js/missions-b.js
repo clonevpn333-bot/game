@@ -27,7 +27,7 @@ hook({mis:'instella',period:0,room:'bus',who:'sean',label:'Ask Sean why he’s h
  await N('He says it at a volume usually reserved for fire drills. The whole bus loop turns round.');
  await say('stella','(laughing) Hi. Strike one?','happy');
  await say('sean','Strike— yeah. Yes. One. Strike. Hi. I already said hi.','blush');
- await say('stella','I just transferred. Today is forms. Tomorrow is more forms. After that, meet me on the field one lunch? Bring my ball. You said you’d keep it safe for me.','happy');
+ await say('stella','I just transferred. Meet me on the field at lunch? Bring my ball. You said you’d keep it safe for me.','happy');
  await walk('stella',340,45);remove('stella');
  await say('sean','I don’t HAVE the ball. It was in my bag. My bag’s been open since Arjun sat behind me on the bus.','scared');
  await say('arjun','Lose something, lover boy?','smirk');

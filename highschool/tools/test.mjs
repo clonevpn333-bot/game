@@ -59,7 +59,7 @@ const res = await page.evaluate(async (RUNS) => {
       out.outcomes[key] = out.outcomes[key] || {}; out.outcomes[key][outcome] = (out.outcomes[key][outcome] || 0) + 1;
     }
   }
-  for (const s of HS.SPOTS) { const D = HS.freshD(); D.period = Array.isArray(s.period) ? s.period[0] : (s.period ?? 1); D.room = s.room; HS.D = D; try { await s.run(); } catch (e) { if (!e.death && !e.endday) out.errs.push('spot ' + s.label + ' ' + (e.stack || e)); } }
+  for (const s of HS.SPOTS) { const D = HS.freshD(); D.period = Array.isArray(s.period) ? s.period[0] : (s.period ?? 1); D.room = s.room; HS.D = D; try { await Promise.race([s.run(), new Promise((_, rej) => setTimeout(() => rej(new Error('TIMEOUT')), 15000))]); } catch (e) { if (!e.death && !e.endday) out.errs.push('spot ' + s.label + ' ' + (e.stack || e)); } }
   out.deaths = HS.P.deaths;
   return out;
 }, RUNS);
@@ -71,7 +71,7 @@ console.log('deaths seen:', Object.keys(res.deaths).join(', '));
 const auto = await page.evaluate(async (DAYS) => {
   const log = [];
   const sleep = ms => new Promise(r => setTimeout(r, ms));
-  HS.reset(); document.getElementById('menu').hidden = true;
+  HS.reset(); document.getElementById('menu').hidden = true; if (window.HS_TEST) window.HS_TEST.auto = 1;
   const startLoops = HS.P.loops;
   HS.newDay();
   let guard = 0;
@@ -95,6 +95,7 @@ const auto = await page.evaluate(async (DAYS) => {
     if (sp.length && Math.random() < .5) { log.push('  spot ' + sp[0].label); HS.useSpot(sp[0]); continue; }
     if (D.period === 7) { if (Math.random() < .5) { const bus = HS.SPOTS.find(s => s.label.startsWith('Get on')); HS.useSpot(bus); } else HS.endPeriod(); continue; }
     if (D.period === 8) { HS.boardBus(true); continue; }
+    if (typeof worldGo === 'function' && Math.random() < .45) { const rs = ['corridor','hallb','wing_sci','wing_sports','field','walkway','upper','wing_arts','canteen','library','toilets','english','trailer','gym','chem','history','ict','pool','hall']; const r = rs[Math.floor(Math.random()*rs.length)]; log.push('  walk → ' + r); worldGo(r, 40); continue; }
     HS.endPeriod();
   }
   const stuck = { busy: HS.busy, mode: HS.panelMode, period: HS.D.period, room: HS.D.room, map: !document.getElementById('map').hidden, menu: !document.getElementById('menu').hidden, phone: !document.getElementById('phoneov').hidden, mini: !document.getElementById('mini').hidden, last: BACKLOG.slice(-3).map(l => l.n + ': ' + l.t).join(' | ') };

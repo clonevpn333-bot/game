@@ -40,11 +40,14 @@ storyNow=function(){
 
 /* ---------------- the beats: start of break, every school day ---------------- */
 const BEATS={};
+const BEAT_ORDER=[1,2,3,4,5,8,9,10,11];
+const BEAT_PRE={1:()=>true,2:()=>crew().ev.retainer,3:()=>crew().ev.jars,4:()=>crew().pick,5:()=>crew().ev.register,8:()=>crew().fri1,9:()=>crew().wiped,10:()=>crew().ev.rota,11:()=>crew().ev.boiler};
+function nextBeat(){for(const d of BEAT_ORDER){if(crew()['beat'+d])continue;return BEAT_PRE[d]()?d:null}return null}
 ON_PERIOD.push(async(i,resume)=>{
- if(i!==2||resume||!D||D.weekend)return;
- const b=BEATS[cal()];if(!b||crew()['beat'+cal()])return;
- crew()['beat'+cal()]=1;save();
- await cutscene(b);busy=false;
+ if(![0,2,4].includes(i)||resume||!D||D.weekend||cal()>=12)return;
+ const d=nextBeat();if(d==null||(d>1&&crew().lastBeatDay===cal()&&crew().lastBeatP===i))return;
+ crew()['beat'+d]=1;crew().lastBeatDay=cal();crew().lastBeatP=i;save();
+ await cutscene(BEATS[d]);busy=false;
 });
 function crewScene(ids,room){
  const list=alive(ids),cast={you:[40,1,{y:156}]};
@@ -74,7 +77,7 @@ BEATS[1]=async()=>{
  await say('kenneth','We need a folder. Somewhere safe. I know what happens when stuff gets out on the internet. This time, it gets out on purpose.','angry');
  await say('sean','So we’re a crew. We’re a crew now? I’ve always wanted to be in a crew.','happy');
  await aidanTries('Hi. I heard “crew”. Can I be in the crew?',['Everyone','No.']);
- await say('david','Okay. First thing. Lunch. Ms. Sherman’s on cafeteria duty, so her classroom is empty. Somebody go and look for anything of Tyler’s.','happy');
+ await say('david','Okay. First thing. Ms. Sherman’s classroom. Main Corridor, the MATH door. Next time she’s not in it, somebody go and look for anything of Tyler’s.','happy');
  await say('david','(looking at you) Somebody.','smirk');
  toast('★ Main story: The Crew. Two weeks until Inspection Day.');
 };
@@ -85,7 +88,7 @@ BEATS[2]=async()=>{
  if(crew().ev.retainer)await say('hasan','Tyler’s retainer is in the File. It’s in a sandwich bag. I can’t stop looking at it.','sad');
  await say('omer','(walking in, sitting down without asking) I heard. I’m in. If anyone touches anyone, I’ll touch them back.','angry');
  await say('stella','Mr. Voss has a fridge at the back of the Chem Lab he never lets anyone near. Corey says it hums. Fridges don’t hum like that.','scared');
- await say('david','Lunch. The Chem Lab. Get a photo of what’s in it.','happy');
+ await say('david','The Chem Lab. Science Wing. Get a photo of what’s in that fridge. Today.','happy');
  await aidanTries('(from the next table, writing in a notebook) I’ve been taking minutes. For the crew. Unofficially.',['omer','Give me the notebook, Aidan.']);
 };
 BEATS[3]=async()=>{
@@ -95,7 +98,7 @@ BEATS[3]=async()=>{
  await say('marcus','I’m in because this is the most interesting thing that has ever happened at this school. And because Sherman moved my seat. Twice.','smirk');
  await say('dheva','Alex and me are in. We’re a package. Don’t split us up. Everybody keeps splitting us up.','sad');
  await say('paul','I’m in. I don’t know what we’re doing. I’ll lift something. I’ll lift whatever.','happy');
- await say('david','Ms. Sherman’s office. Tomorrow. We need to get in there. We need a lockpick.','happy');
+ await say('david','Ms. Sherman’s office is next. We need to get in there. We need a lockpick. Angelo hangs out in the Main Corridor.','happy');
  await N('Something bangs in the ceiling vents. Everybody looks up. Then everybody decides it was nothing.');
  await aidanTries('I can pick locks. I’ve picked locker 217 about a thousand times.',['dheva','Aidan, that’s YOUR locker.']);
 };
@@ -104,7 +107,7 @@ BEATS[4]=async()=>{
  await say('stella','Ms. Sherman does lunch duty in the cafeteria from 12:20 to 12:45. I’ve timed it. For two years. For no reason. Until now.','smirk');
  await say('sean','If she comes back early, I’ll faint in the corridor. I’ve practiced fainting. I faint really well.','happy');
  await say('kenneth','In her office there’s a filing cabinet that’s older than our parents. If she’s hiding anything old, it’s in there.','scared');
- await say('david','Lunch. The office. In and out. Nobody gets caught. Nobody dies.','yell');
+ await say('david','The office. The far end of the Main Corridor. In and out. Nobody gets caught. Nobody dies.','yell');
  await aidanTries('Ms. Sherman keeps the old registers in the bottom drawer. The 1987 one’s on top. It always is.',['david','How do you KNOW that? …Don’t answer. Go away.']);
 };
 BEATS[5]=async()=>{
@@ -132,7 +135,7 @@ BEATS[8]=async()=>{
  if(c===0){await say('you','Anyone’s phone could’ve fallen out. She takes everyone’s. This is on her, not him.');await say('arjun','(quietly, surprised) …Thanks.','sad');crew().arjunOk=1}
  else if(c===1){await say('arjun','Fine. FINE. It was my phone. I’m sorry. Okay? I’m sorry. I’ll fix it.','sad');crew().arjunOk=1}
  else{await say('you','…Has anyone considered that this is somehow Aidan’s fault?');await say('hasan','You know what? Yeah. Probably.','smirk');await say('arjun','It’s ALWAYS Aidan. I feel so much better.','happy')}
- await say('david','Lunch. Her drawer. Wipe every phone in it. Factory reset. All of them.','yell');
+ await say('david','Her drawer. Math room, Main Corridor. Wipe every phone in it. Factory reset. All of them.','yell');
 };
 BEATS[9]=async()=>{
  const ids=['david','corey','jacob','paul','stella','sean'];if(!cut('abby'))ids.splice(2,0,'abby');
@@ -152,12 +155,12 @@ BEATS[10]=async()=>{
  else await say('kenneth','Something happened here in 1987. Something with a boiler. Everyone’s grandma knows a version of it.','scared');
  await say('david','There’s an old hatch by the pool doors. It goes down to where the boiler room was. If there’s anything left of 1987, it’s down there.','scared');
  await say('omer','I’m not going down there. I’ll go down there. I’m not. I will.','scared');
- await say('david','Lunch. The hatch. Bring a flashlight. Bring a friend. Bring Omer.','happy');
+ await say('david','The hatch. Main Corridor, by the far left lockers. Bring a flashlight. Bring a friend. Bring Omer.','happy');
 };
 BEATS[11]=async()=>{
  const ids=['david','stella','arjun','paul','omer','jacob','marcus','kenneth','nivaan','hasan'];
  crewScene(ids);cue('class');
- await N('Tomorrow is Inspection Day. David has drawn a map of the hall on a pizza box. Everyone is crammed around it.');
+ await N('Inspection Day is the Friday of week two. David has drawn a map of the hall on a pizza box. Everyone is crammed around it.');
  await say('david','Three jobs that matter. Who takes the PA? Who distracts the teachers? Who holds the hall doors shut?','happy');
  const roles={};
  const a=await choose(alive(['david','arjun','nivaan']).map(n=>'PA: '+K[n].n),'Who takes the PA mic?');roles.pa=alive(['david','arjun','nivaan'])[a];
@@ -168,13 +171,13 @@ BEATS[11]=async()=>{
  if(roles.dis)await say(roles.dis,roles.dis==='stella'?'I’ll throw my ball at Coach. He has to chase it. It’s like a dog thing.':roles.dis==='arjun'?'I’m going to say the worst thing anyone has ever said to Ms. Sherman. I’ve been saving it.':'I’ll pick up Mr. Voss. Just pick him up. And walk.','smirk');
  if(roles.door)await say(roles.door,roles.door==='omer'?'Nobody gets through that door. Not teachers. Not wind.':roles.door==='jacob'?'I’ll hold it. I’m very heavy. I’ve been told.':'I’ll guard the door with my uncle’s katana. I’m legally not allowed to say that out loud.','angry');
  await aidanTries('What’s my job?',['Everyone','You don’t have one, Aidan.']);
- await say('david','(rolling up the pizza box) Tomorrow, everybody. Don’t die tonight.','happy');
+ await say('david','(rolling up the pizza box) Friday, everybody. Don’t die before then.','happy');
 };
 BEATS[12]=async()=>{await inspectionDay()};
 
 /* ---------------- the objectives ---------------- */
-const onOrAfter=d=>cal()>=d&&cal()<12&&!!crew()['beat'+d];   /* only after the crew meeting that sets it up */
-spot({room:'maths',period:4,x:60,y:150,label:'Search Ms. Sherman’s desk and bin',short:'DESK',cond:()=>onOrAfter(1)&&!crew().ev.retainer,run:async()=>{
+const onOrAfter=d=>!!crew()['beat'+d]&&!crew().finale&&!(D&&D.weekend);   /* once the crew meeting has happened, any free time */
+spot({room:'maths',period:[0,1,2,3,4,5,6],x:60,y:150,label:'Search Ms. Sherman’s desk and bin',short:'DESK',cond:()=>onOrAfter(1)&&!crew().ev.retainer,run:async()=>{
  pose('you','reach');SFX.pick();await wait(400);pose('you',null);
  await N('Her desk is spotless. Her bin is not. Under a layer of red pen lids and pencil shavings there’s a little plastic retainer case. TYLER M., written on it in Sharpie.');
  await N('The retainer is still inside. There’s dried blood on the wire.');
@@ -182,7 +185,7 @@ spot({room:'maths',period:4,x:60,y:150,label:'Search Ms. Sherman’s desk and bi
  if(A.dheva)await say('dheva','(from across the room, very quietly) Put it in a sandwich bag. Don’t let her see you leave.','scared');
  return 'stay';
 }});
-spot({room:'chem',period:4,x:272,y:150,label:'Photograph the back fridge',short:'FRIDGE',cond:()=>onOrAfter(2)&&!crew().ev.jars,run:async()=>{
+spot({room:'chem',period:[0,1,2,3,4,5,6],x:272,y:150,label:'Photograph the back fridge',short:'FRIDGE',cond:()=>onOrAfter(2)&&!crew().ev.jars,run:async()=>{
  if(A.voss&&!A.voss.dead){
   if(A.corey&&!A.corey.dead){await say('corey','(loudly, to Mr. Voss) Sir, is it true that curl cream is technically a chemical?','scared');await say('voss','(turning, delighted) EVERYTHING is technically a chemical, Corey! Come here. Look at this.','happy')}
   else{await N('Mr. Voss is right there. You wait until he bends down to look at something in a jar, then you move.')}
@@ -199,7 +202,7 @@ hook({mis:'crew',period:[2,4],room:'corridor',who:'angelo',label:'Ask Angelo for
  return 'stay';
 }});
 Object.assign(ITEMS,{lockpick:'A lockpick from Angelo (for the crew)'});
-spot({room:'corridor',period:4,x:278,y:150,label:'Pick the lock on Ms. Sherman’s office',short:'OFFICE',cond:()=>onOrAfter(4)&&crew().pick&&!crew().ev.register,run:async()=>{
+spot({room:'corridor',period:[0,1,2,3,4,5,6],x:278,y:150,label:'Pick the lock on Ms. Sherman’s office',short:'OFFICE',cond:()=>onOrAfter(4)&&crew().pick&&!crew().ev.register,run:async()=>{
  if(A.sherman&&!A.sherman.dead){if(!D.dead.sean){put('sean',334,-1,{y:146});await walk('sean',200,90)}await N('Ms. Sherman is patrolling right outside her own office. Then, on cue, Sean walks past her, says “Oh no,” and faints. Beautifully. Like a swan. She has to deal with it.');if(A.sean){A.sean.pose='lie';await walk('sherman',A.sean.x+12,60);pose('sherman','kneel')}}
  pose('you','reach');
  const ok=await mash('Pick the lock',{need:16,time:5,info:'Turn left until it clicks. Mash!'});
@@ -214,8 +217,8 @@ spot({room:'corridor',period:4,x:278,y:150,label:'Pick the lock on Ms. Sherman�
  SFX.thud();await N('Footsteps in the corridor. Heels. Ms. Sherman. You get out through the side door with the register under your hoodie, and your heart trying to leave through your mouth.');
  D.room='corridor';buildRoom('corridor');return 'stay';
 }});
-ON_PERIOD.push(async(i)=>{if(i===7&&cal()===5&&!D.weekend){crew().fri1=1;save()}});
-spot({room:'maths',period:4,x:84,y:150,label:'Wipe the phones in Ms. Sherman’s drawer',short:'DRAWER',cond:()=>onOrAfter(8)&&!crew().wiped,run:async()=>{
+ON_PERIOD.push(async(i)=>{if(i===7&&crew().beat5&&!D.weekend){crew().fri1=1;save()}});
+spot({room:'maths',period:[0,1,2,3,4,5,6],x:84,y:150,label:'Wipe the phones in Ms. Sherman’s drawer',short:'DRAWER',cond:()=>onOrAfter(8)&&!crew().wiped,run:async()=>{
  pose('you','reach');SFX.locker();await wait(300);
  await N('Her drawer. Phones. Dozens of them. Flip phones, a pager, Arjun’s phone with the cracked case. They’re all still charged. She charges them.');
  const ok=await mash('Factory reset every phone',{need:18,time:6,info:'Hold power + volume on every single one. MASH!'});
@@ -224,7 +227,7 @@ spot({room:'maths',period:4,x:84,y:150,label:'Wipe the phones in Ms. Sherman’s
  else await N('You get through half of them before a sound in the corridor makes you shut the drawer. Half is better than nothing. It isn’t, really.');
  if(ok)return 'stay';crew().wiped=.5;save();return 'stay';
 }});
-hook({mis:'crew',period:4,room:'canteen',who:'pat',label:'Ask Pat about the staff rota',look:{ex:'smirk'},cond:()=>onOrAfter(9)&&!crew().ev.rota,run:async()=>{
+hook({mis:'crew',period:[2,4],room:'canteen',who:'pat',label:'Ask Pat about the staff rota',look:{ex:'smirk'},cond:()=>onOrAfter(9)&&!crew().ev.rota,run:async()=>{
  await say('pat','(not looking up from the gravy) The rota. For Friday. Yeah, I’ve got it.','smirk');
  await say('pat','I’ve been serving these people for twenty-two years, love. I’ve seen what goes in the stew. I’ve seen who doesn’t come back for seconds.','angry');
  hold('pat','plan');await wait(300);hold('pat',null);
@@ -233,7 +236,7 @@ hook({mis:'crew',period:4,room:'canteen',who:'pat',label:'Ask Pat about the staf
  await say('pat','Now take a cookie and go away. Smile. Look normal. Nobody looks at the dinner lady.','happy');
  return 'stay';
 }});
-spot({room:'corridor',period:4,x:40,y:150,label:'Go down the old hatch by the pool doors',short:'HATCH',cond:()=>onOrAfter(10)&&!crew().ev.boiler,run:async()=>{
+spot({room:'corridor',period:[0,1,2,3,4,5,6],x:40,y:150,label:'Go down the old hatch by the pool doors',short:'HATCH',cond:()=>onOrAfter(10)&&!crew().ev.boiler,run:async()=>{
  const cast={you:[60,1,{y:156}]};if(!D.dead.omer)cast.omer=[36,1,{y:150,hold:'light'}];
  scene('boiler',cast,true);cue('evil');
  await N('Down the ladder. Under the pool. The air is wet and warm and it smells like chlorine and something much older. Your phone flashlight finds the old boiler, black and split open like a burst can.');

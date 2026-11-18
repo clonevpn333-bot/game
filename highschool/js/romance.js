@@ -14,11 +14,11 @@
 const LONG=['window','brett','instella','striketwo','toby','farewell','darren','stepeleven','smallhours'];
 const pdOf=m=>(D&&D.f)?D.f['pd_'+m]:null;
 const stepToday=m=>pdOf(m)===cal();
-const doneBefore=m=>!!(D&&D.done&&D.done[m]&&pdOf(m)!=null&&pdOf(m)<cal());
+const doneBefore=m=>!!(D&&D.done&&D.done[m]);   /* done, any time before: no more waiting a day */
 /* remember the day of every step */
 {const _pt=part;part=function(mis,n,quiet){const before=(D&&D.mp&&D.mp[mis])||0;const r=_pt(mis,n,quiet);if(D&&D.f&&n>before)D.f['pd_'+mis]=cal();return r}}
 /* the HUD says when it’s not today */
-{const _an=activeNext;activeNext=function(){return _an().map(a=>LONG.includes(a.m)&&a.m!=='window'&&stepToday(a.m)?Object.assign({},a,{tip:'Not today. Next school day: '+a.tip}):a)}}
+
 
 /* ---------- art ---------- */
 {const _dh=drawHeld;drawHeld=function(it,x,y,d){
@@ -110,7 +110,7 @@ hook({mis:'brett',period:[2,4],room:'canteen',who:'abby',label:'Ask Abby who she
 }});
 
 /* 2. the thought */
-hooks({mis:'brett',label:'Ask Corey if he’s okay',look:{ex:'sad'},cond:()=>D.f.br===1&&!D.dead.corey,run:async()=>{
+hooks({mis:'brett',label:'Ask Corey if he’s okay',look:{ex:'sad'},cond:()=>D.f.br===1&&D.f.il1&&!D.dead.corey,run:async()=>{
  scene('toilets',{corey:[170,1,{y:148}],you:[130,1,{y:154}]});cue('tension');
  await N('You follow Corey into the bathroom. He stands at the sink and washes his hands. He’s been washing them for a long time.');
  await say('corey','Parking lot this morning. Brett was dropping her off. She was getting out and he wanted one more kiss and she didn’t. So he took her arm and pulled her back into the car. Like closing a door.','angry');
@@ -141,7 +141,7 @@ hooks({mis:'brett',label:'Ask Corey if he’s okay',look:{ex:'sad'},cond:()=>D.f
 }},[[2,'canteen','corey'],[4,'chem','corey']]);
 
 /* 3. where Brett runs */
-hook({mis:'brett',period:[2,4],room:'corridor',who:'nivaan',label:'Ask Nivaan to look someone up',look:{pose:'phone'},cond:()=>D.f.br===2&&!D.dead.corey&&!D.dead.nivaan,run:async()=>{
+hook({mis:'brett',period:[2,4],room:'corridor',who:'nivaan',label:'Ask Nivaan to look someone up',look:{pose:'phone'},cond:()=>D.f.br===2&&D.f.il2&&!D.dead.corey&&!D.dead.nivaan,run:async()=>{
  scene('corridor',{nivaan:[130,-1,{y:146,pose:'phone'}],corey:[160,-1,{y:148}],you:[96,1,{y:154}]});
  await say('corey','I didn’t sleep. I’m not doing anything. I just want to know where he goes. Knowing is allowed.','sad');
  await say('nivaan','(typing) Brett Kowalski. Junior. Lacrosse. Public running app, because he wants everyone to see his times.','smirk');
@@ -169,7 +169,7 @@ spot({room:'field',period:[2,4],x:296,y:138,label:'Take the shovel from the grou
 }});
 
 /* 4. the woods */
-hook({mis:'brett',period:7,room:'bus',who:'corey',label:'Walk into the woods with Corey',look:{ex:'sad'},cond:()=>D.f.br===3&&D.f.shovel&&!D.dead.corey,run:async()=>{
+hook({mis:'brett',period:7,room:'bus',who:'corey',label:'Walk into the woods with Corey',look:{ex:'sad'},cond:()=>D.f.br===3&&D.f.shovel&&D.f.il3&&!D.dead.corey,run:async()=>{
  scene('forest',{corey:[70,1,{y:150}],you:[44,1,{y:154,hold:'shovel'}]},true);cue('tension');fxState.dark=.25;
  await N('Home time. You and Corey walk past the 43, round the back of the field and into the woods. You pull the shovel out of the hedge on the way.');
  await say('corey','(whispering) He’s never late. He brags about never being late.','scared');
@@ -243,7 +243,7 @@ hook({mis:'brett',period:7,room:'bus',who:'corey',label:'Walk into the woods wit
 }});
 
 /* 5. after */
-hooks({mis:'brett',label:'Sit with Abby',look:{ex:'sad'},cond:()=>D.f.br===4&&D.f.brettDead<cal()&&!D.dead.abby&&!D.dead.corey,run:async()=>{
+hooks({mis:'brett',label:'Sit with Abby',look:{ex:'sad'},cond:()=>D.f.br===4&&D.f.il4&&!D.dead.abby&&!D.dead.corey,run:async()=>{
  scene('canteen',{abby:[196,-1,{y:150,pose:'sit'}],you:[166,1,{y:154}]},true);cue('sad');
  const pst=pprop({t:'poster',x:240,y:58,stache:1,layer:-200});
  await N('There’s a poster taped to the cafeteria wall now. MISSING. Brett’s yearbook photo, smiling with too many teeth. Somebody has already drawn a mustache on it.');
@@ -284,7 +284,7 @@ hooks({mis:'brett',label:'Sit with Abby',look:{ex:'sad'},cond:()=>D.f.br===4&&D.
 function winReady(){const s=winStage();
  if(s===0)return true;
  if(s===1)return D.f.br>=1;
- if(s===2)return !!D.f.brettDead&&D.f.brettDead<cal();
+ if(s===2)return !!D.f.brettDead;
  if(s===3)return doneBefore('brett');
  return false}
 for(const h of HOOKS){if(h.mis!=='window'||h.who!=='auto')continue;const s=String(h.cond);if(/winStage\(\)===[123]/.test(s)){const c=h.cond;h.cond=()=>c()&&winReady()}}
@@ -334,7 +334,7 @@ mission('farewell',{name:'Long Distance',icon:'📞',who:['sean','stella'],
  parts:['Week two: Portland','Another day: Sean’s plan','Another day, home time: forty-one'],
  tips:['Week two, after Strike Two: break (library) or lunch (field). Stella has been crying.','Break (library) or lunch (field). Sean has a plan. Then steal Coach’s bucket of field chalk from the gym.','Home time, the bus loop. You need the chalk (gym, break or lunch).'],
  variants:{all:'All forty-one',smudged:'Forty-one, smudged'}});
-hooks({mis:'farewell',label:'Ask Stella why she’s been crying',look:{ex:'cry'},cond:()=>cal()>=8&&doneBefore('striketwo')&&!D.f.fw&&!D.dead.sean&&!D.dead.stella,run:async()=>{
+hooks({mis:'farewell',label:'Ask Stella why she’s been crying',look:{ex:'cry'},cond:()=>doneBefore('striketwo')&&!D.f.fw&&!D.dead.sean&&!D.dead.stella,run:async()=>{
  const r=here();scene(r,{stella:[150,1,{y:150,pose:'sit',ex:'cry'}],you:[120,1,{y:154}]},true);cue('sad');
  await say('stella','My mom got the job. The one in Portland. She’s been applying since I was eleven. She finally got it.','cry');
  await say('stella','We go the Saturday after next. There are boxes in our hall with my name on them. My mom wrote STELLA — FRAGILE on one as a joke and I couldn’t stop crying.','cry');
@@ -359,7 +359,7 @@ hooks({mis:'farewell',label:'Ask Stella why she’s been crying',look:{ex:'cry'}
  D.f.fw=1;part('farewell',1);
  return 'stay';
 }},[[2,'library','stella'],[4,'field','stella']]);
-hooks({mis:'farewell',label:'Ask Sean what the plan is',look:{hold:'paper'},cond:()=>D.f.fw===1&&!D.dead.sean&&!D.dead.stella,run:async()=>{
+hooks({mis:'farewell',label:'Ask Sean what the plan is',look:{hold:'paper'},cond:()=>D.f.fw===1&&D.f.fwil1&&!D.dead.sean&&!D.dead.stella,run:async()=>{
  const r=here();scene(r,{sean:[160,-1,{y:148,hold:'paper'}],you:[130,1,{y:154}]},true);
  await say('sean','I wrote out all forty voicemails last night. From memory. It’s eleven pages. My hand doesn’t work anymore.','happy');
  await say('sean','Home time. Her mom picks her up from the bus loop to go and sign the lease thing. When she walks out of the doors, every voicemail is going to be on the ground. In chalk. From the doors to the car.','happy');
@@ -378,7 +378,7 @@ spot({room:'gym',period:[2,4],x:286,y:150,label:'Steal Coach’s bucket of field
  D.f.chalk=1;toast('Got: Coach’s bucket of field chalk');hold('you',null);
  return 'stay';
 }});
-hook({mis:'farewell',period:7,room:'bus',who:'sean',label:'Help Sean write on the bus loop',look:{hold:'chalk'},cond:()=>D.f.fw===2&&D.f.chalk&&!D.dead.sean&&!D.dead.stella,run:async()=>{
+hook({mis:'farewell',period:7,room:'bus',who:'sean',label:'Help Sean write on the bus loop',look:{hold:'chalk'},cond:()=>D.f.fw===2&&D.f.chalk&&D.f.fwil2&&!D.dead.sean&&!D.dead.stella,run:async()=>{
  const cast={sean:[250,-1,{y:150,pose:'kneel',hold:'chalk'}],you:[120,1,{y:156,pose:'kneel',hold:'chalk'}]};
  const helpers=['hasan','nivaan','omer'].filter(n=>!D.dead[n]);helpers.forEach((n,i)=>cast[n]=[60+i*50,1,{y:146+(i%2)*6,pose:'kneel',hold:'chalk'}]);
  scene('bus',cast,true);cue('romance');
@@ -445,7 +445,7 @@ mission('stepeleven',{name:'Step Eleven',icon:'🏊',who:['hasan','darren'],
  tips:['A day after the milkshake (Darren): break or lunch, the cafeteria. Hasan is holding something laminated.','Home time, bus loop. Hasan’s dad is coming. So is Darren.','Week two, lunch, the cafeteria. Darren has a swim meet. Hasan says he isn’t going.'],
  variants:{kiss:'Step eleven'}});
 const darDate=()=>['shake','choirlove'].includes(D.done.darren);
-hook({mis:'stepeleven',period:[2,4],room:'canteen',who:'hasan',label:'Ask Hasan what he’s holding',look:{hold:'paper',ex:'blush'},cond:()=>darDate()&&doneBefore('darren')&&!D.f.s11&&!D.dead.hasan&&!D.dead.darren,run:async()=>{
+hook({mis:'stepeleven',period:[2,4],room:'canteen',who:'hasan',label:'Ask Hasan what he’s holding',look:{hold:'paper',ex:'blush'},cond:()=>darDate()&&!D.f.s11&&!D.dead.hasan&&!D.dead.darren,run:async()=>{
  const cast={hasan:[150,1,{y:148,hold:'paper'}],you:[124,1,{y:154}]};if(!D.dead.arjun)cast.arjun=[230,-1,{y:146,pose:'cross'}];
  scene('canteen',cast,true);cue('canteen');
  await say('hasan','He laminated it. Darren LAMINATED it. Every step. One to twelve.','blush');
@@ -466,13 +466,13 @@ hook({mis:'stepeleven',period:[2,4],room:'canteen',who:'hasan',label:'Ask Hasan 
   await walk('arjun',334,80);remove('arjun');
  }
  put('darren',334,-1,{y:150});await walk('darren',178,110);face('darren',-1);
- await say('darren','Hi! You’re holding it. You’re holding it the right way up. Step ten is tomorrow. Home time. Can I meet your dad?','love');
+ await say('darren','Hi! You’re holding it. You’re holding it the right way up. Step ten is home time. Today. Can I meet your dad?','love');
  await say('hasan','My dad sleeps. My dad’s a cab. My dad’s never met anyone I— nobody’s ever MET him—','scared');
  await say('darren','Step ten.','love');
  await say('hasan','(very small) …Step ten.','blush');
  D.f.s11=1;part('stepeleven',1);
 }});
-hook({mis:'stepeleven',period:7,room:'bus',who:'hasan',label:'Wait for the cab with Hasan and Darren',look:{ex:'scared'},cond:()=>D.f.s11===1&&!D.dead.hasan&&!D.dead.darren,run:async()=>{
+hook({mis:'stepeleven',period:7,room:'bus',who:'hasan',label:'Wait for the cab with Hasan and Darren',look:{ex:'scared'},cond:()=>D.f.s11===1&&D.f.s11a&&!D.dead.hasan&&!D.dead.darren,run:async()=>{
  const cast={hasan:[130,1,{y:150}],darren:[150,1,{y:150,hold:'flower'}],you:[104,1,{y:154}]};if(!D.dead.brayden)cast.brayden=[250,-1,{y:146,hold:'vape'}];
  scene('bus',cast,true);
  await say('darren','I brought him a flower. Is a flower weird for a dad? I panicked. The other option was a fish.','scared');
@@ -500,7 +500,7 @@ hook({mis:'stepeleven',period:7,room:'bus',who:'hasan',label:'Wait for the cab w
  await N('Hasan hugs his dad, in front of everyone, for the second time in his life. Darren claps once, very quietly, like at a golf tournament.');
  D.f.s11=2;part('stepeleven',2);
 }});
-hook({mis:'stepeleven',period:4,room:'canteen',who:'hasan',label:'Ask Hasan why he’s not at Darren’s swim meet',look:{ex:'sad'},cond:()=>D.f.s11===2&&cal()>=8&&!D.dead.hasan&&!D.dead.darren,run:async()=>{
+hook({mis:'stepeleven',period:4,room:'canteen',who:'hasan',label:'Ask Hasan why he’s not at Darren’s swim meet',look:{ex:'sad'},cond:()=>D.f.s11===2&&D.f.s11b&&!D.dead.hasan&&!D.dead.darren,run:async()=>{
  scene('canteen',{hasan:[150,1,{y:148,ex:'sad'}],you:[124,1,{y:154}]},true);
  await say('hasan','He’s got the lunchtime swim meet. I said I’d go. I can’t go. It’s a pool. I can’t swim. What if he looks up and I’m just standing there, not swimming, being a guy who can’t swim?','scared');
  const c=await choose(['“He’s going to look up for you. Be there when he does.”','Drag him there.']);
@@ -630,17 +630,6 @@ const DAYCHAT=[
 /* the old Friday lines */
 CHAT.corey=CHAT.corey.map(l=>l.replace('Abby’s in my PE group.','Abby sits by the window in Period 3.').replace('too much for a Friday?','too much for a school day?'));
 CHAT.stella=CHAT.stella.map(l=>l.replace('or is it a Friday thing?','or is it a Highgate thing?'));
-
-/* =====================================================================
-   ONE STEP A DAY — big quests take days
-   ===================================================================== */
-for(const h of HOOKS){
- if(!LONG.includes(h.mis)||h.mis==='window'||h.mis==='smallhours'||h.mis==='striketwo')continue;
- const src=String(h.run);
- if(!/\b(part|complete)\(/.test(src))continue;
- if(new RegExp("part\\('"+h.mis+"',1\\)").test(src))continue;
- const c=h.cond;h.cond=()=>!stepToday(h.mis)&&(!c||c());
-}
 
 /* the safe version has no Abby */
 if(window.EDITION==='safe'){dropHooks('brett');delete MIS.brett;PAIRS.splice(2,2)}

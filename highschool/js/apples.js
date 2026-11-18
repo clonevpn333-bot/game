@@ -1,8 +1,8 @@
 'use strict';
 /* =====================================================================
    HIGHSCHOOL — APPLES. Like Kindergarten: you only get so many actions
-   each period. Talking to someone, doing a quest, using something:
-   one apple each. When the apples are gone, the bell goes.
+   each period. Doing a quest step, investigating something, picking something up:
+   one apple each. Just chatting is free. When the apples are gone, the bell goes.
    ===================================================================== */
 const APPLES={0:2,1:2,2:3,3:2,4:4,5:2,6:2,7:1,8:3};
 function applesFor(i){return APPLES[i]!=null?APPLES[i]:2}
@@ -23,7 +23,9 @@ async function spendApple(per,day){
  if(D.period===7){const bus=SPOTS.find(s=>s.label&&s.label.startsWith('Get on the 43'));if(bus)return useSpot(bus)}
  return endPeriod();
 }
-{const _tt=talkTo;talkTo=async function(id){if(busy)return;const per=D.period,day=cal();await _tt(id);return spendApple(per,day)}}
+{const _tt=talkTo;talkTo=async function(id){if(busy)return;const per=D.period,day=cal();D._acted=0;await _tt(id);if(D&&D._acted)return spendApple(per,day)}}
+/* only DOING something costs an apple: starting or doing a quest step, not chatting */
+{const _rh=runHook;runHook=async function(h){if(D&&h&&h.mis&&h.mis!=='passing')D._acted=1;return _rh(h)}}
 {const _us=useSpot;useSpot=async function(s){if(busy)return;const per=D.period,day=cal();await _us(s);if(s&&s.free)return;return spendApple(per,day)}}
 /* a few things shouldn’t cost an apple */
 for(const s of SPOTS)if(s.label&&/^Get on the 43|^Read the sign|^Lie in the leaves/.test(s.label))s.free=1;
