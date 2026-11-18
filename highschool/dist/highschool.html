@@ -811,7 +811,7 @@ function drawHead(k,x,hy,d,o){
  else if(hs==='receding'){R(hx-1,hy+1,2,5,c);R(hx+hw-1,hy+1,2,5,c);R(hx+1,hy-1,3,2,c);R(hx+hw-4,hy-1,3,2,c);if(o.messy){R(hx-3,hy-3,2,4,c);R(hx+hw+1,hy-4,2,5,c);R(hx+5,hy-3,1,2,c);R(hx+1,hy-4,1,3,c)}}
  else if(hs==='ponytail'){R(hx-1,hy-2,hw+2,4,c);R(hx-1,hy+2,2,3,c);R(hx+hw-1,hy+2,2,3,c);R(d>0?hx-4:hx+hw+1,hy+1,3,9,c);R(d>0?hx-3:hx+hw+1,hy,2,1,'#c03030');R(hx+3,hy-1,3,1,'rgba(255,255,255,.2)')}
  else if(hs==='side'){R(hx-1,hy-2,hw+2,3,c);R(hx-1,hy+1,2,3,c);R(hx+hw-1,hy+1,2,3,c);R(hx+3,hy-2,1,2,'rgba(0,0,0,.3)');R(hx+4,hy+1,5,1,c)}
- else if(hs==='mod'){R(hx+1,hy-3,hw-2,1,c);R(hx-1,hy-2,hw+2,4,c);R(hx-1,hy+2,hw+2,2,c);R(hx-2,hy+1,2,6,c);R(hx+hw,hy+1,2,6,c);for(let i=0;i<hw;i+=3)R(hx+i,hy+4,2,1,c);R(hx+2,hy-2,5,1,'rgba(255,255,255,.14)')}
+ else if(hs==='mod'){R(hx+1,hy-2,hw-2,1,c);R(hx,hy-1,hw,3,c);R(hx,hy+2,hw,1,c);for(let k=1;k<hw-1;k+=2)R(hx+k,hy+3,1,1,c);R(hx-1,hy,1,3,c);R(hx+hw,hy,1,3,c);R(hx+2,hy-1,4,1,'rgba(255,255,255,.14)')}
  else if(hs==='afro'){for(let i=-1;i<=hw;i+=2)for(let j=0;j<3;j++)R(hx-3+i+(j%2),hy-7+j*3,4,4,c);R(hx-4,hy-3,4,9,c);R(hx+hw,hy-3,4,9,c);R(hx-2,hy-8,hw+4,2,c);R(hx+2,hy-6,2,1,'rgba(255,255,255,.12)');R(hx+6,hy-4,2,1,'rgba(255,255,255,.12)')}
  else if(hs==='buzz'){R(hx,hy-1,hw,2,c);R(hx+1,hy-2,hw-2,1,c);R(hx,hy+1,1,2,c);R(hx+hw-1,hy+1,1,2,c)}
  else if(hs==='manbun'){R(hx-1,hy-2,hw+2,3,c);R(hx+3,hy-6,5,4,c);R(hx-1,hy+1,2,2,c);R(hx+hw-1,hy+1,2,2,c)}
@@ -977,7 +977,7 @@ function drawActor(a){
   g.globalAlpha=1;return;
  }
  if(!a.sitHigh&&a.pose!=='sit'&&a.pose!=='write'){const zz=a.z||0,sw_=Math.max(4,12-zz*.4);g.globalAlpha=Math.min(g.globalAlpha,.22);R(a.x-sw_/2,a.y,sw_,2,'#000');g.globalAlpha=k.ghost?Math.min(1,.62+Math.sin(T*3+a.x)*.12):(a.alpha<1?Math.max(0,a.alpha):1)}
- drawKid(k,a.x,y,{tr:a._trK,fast:a.fast,messy,dir:a.dir,moving:a.moving,walk:a.walk,pose:a.air&&!a.pose?'up':a.pose,ex:a.ex||a._ex||(a.air?'shock':null),talk:a.talk,hold:a.hold,hurt:a.hurt,bloody:a.bloody,shake:a.shake,punchT:a.punchT,still:a.still,hairC:a.hairC,topC:a.topC,hs:a.hs||(a.id==='dheva'&&(typeof D!=="undefined"&&D)&&D.f&&!D.f.dhevaFixed?'limp':null)});
+ drawKid(k,a.x,y,{tr:a._trK,fast:a.fast,messy,dir:a.dir,moving:a.moving,walk:a.walk,pose:a.air&&!a.pose?'up':a.pose,ex:a.ex||a._ex||(a.air?'shock':null),talk:a.talk,hold:a.hold,hurt:a.hurt,bloody:a.bloody,shake:a.shake,punchT:a.punchT,still:a.still,hairC:a.hairC,topC:a.topC,hs:a.hs||(a.id==='dheva'&&(typeof D!=="undefined"&&D)&&D.f&&D.f.dheva1&&!D.f.dhevaFixed?'limp':null)});
 
  g.globalAlpha=1;
 }
@@ -1020,7 +1020,7 @@ let portraitWho=null;
 function drawPortrait(who){portraitWho=who;$('portraitBox').classList.toggle('on',!!(who&&K[who]));portraitTick()}
 function portraitTick(){
  const who=portraitWho;if(!who||!K[who])return;
- const k=K[who],a=A[who]||{},o={dir:1,hs:a.hs||(who==='dheva'&&(typeof D!=="undefined"&&D)&&D.f&&!D.f.dhevaFixed?'limp':null),ex:a.dead?'dead':a.ex,talk:DL&&DL.who===who&&!DL.done,hurt:a.hurt,still:1};
+ const k=K[who],a=A[who]||{},o={dir:1,hs:a.hs||(who==='dheva'&&(typeof D!=="undefined"&&D)&&D.f&&D.f.dheva1&&!D.f.dhevaFixed?'limp':null),ex:a.dead?'dead':a.ex,talk:DL&&DL.who===who&&!DL.done,hurt:a.hurt,still:1};
  const saved=g;g=pg;
  R(0,0,26,26,'#1a1528');R(0,18,26,8,'#231c33');
  const G=kidGeom(k,o);drawKid(k,13,8+G.hd+G.bodyH+G.legH-1+(k.knob?1:0)+(k.hs==='fluffy'||k.hs==='bun'?2:0),o);
@@ -6429,7 +6429,7 @@ drawActor=function(a){
  }
  const seated=a.pose==='sit'||a.pose==='write'||a.pose==='type'||a.pose==='swim';
  if(!seated)groundShadow(x,a.y,a.z||0,k.wide||k.adult);
- bufferKid(k,{back:a.back,fast:a.fast,messy,dir:a.dir,moving:a.moving,walk:a.walk,pose:a.air&&!a.pose?'up':a.pose,ex:a.ex||a._ex||(a.air?'shock':null),talk:a.talk,hold:a.hold,hurt:a.hurt,bloody:a.bloody,shake:a.shake,punchT:a.punchT,still:a.still,hairC:a.hairC,topC:a.topC,hs:a.hs||(a.id==='dheva'&&(typeof D!=='undefined'&&D)&&D.f&&!D.f.dhevaFixed?'limp':null)});
+ bufferKid(k,{back:a.back,fast:a.fast,messy,dir:a.dir,moving:a.moving,walk:a.walk,pose:a.air&&!a.pose?'up':a.pose,ex:a.ex||a._ex||(a.air?'shock':null),talk:a.talk,hold:a.hold,hurt:a.hurt,bloody:a.bloody,shake:a.shake,punchT:a.punchT,still:a.still,hairC:a.hairC,topC:a.topC,hs:a.hs||(a.id==='dheva'&&(typeof D!=='undefined'&&D)&&D.f&&D.f.dheva1&&!D.f.dhevaFixed?'limp':null)});
  blitKid(x-OX,y-OY,alpha);
 };
 
