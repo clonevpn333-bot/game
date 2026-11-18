@@ -191,7 +191,7 @@ async function boardBus(fromMall){
  setPanel('talk');busy=true;closeOverlays();
  cue('sad');
  await N(fromMall?'The mall lights go off one shop at a time. You get the last 43 home. You sit where you always sit.':'The 43 pulls in. You get on. You sit where you always sit.');
- if(Object.keys(D.done).length)await N('Today you: '+Object.keys(D.done).map(m=>MIS[m].name).join(', ')+'.');
+ {const dn=Object.keys(D.done).filter(m=>MIS[m]);if(dn.length)await N('Today you: '+dn.map(m=>MIS[m].name).join(', ')+'.')}
  if(!D.done.headcase&&D.period>=7)await N('Somewhere behind you, back at school, something goes BANG. Nobody on the bus looks up. Nobody ever does.');
  await N('Somewhere around the roundabout you close your eyes for one second.');
  fxState.dark=0;await tw(fxState,{dark:1},900);
@@ -392,7 +392,7 @@ function openQuest(){
   l.appendChild(el('div','li','Day '+D.day+' · '+PERIODS[D.period].name+' · $'+D.money));
   l.appendChild(el('div','li',D.items.length?'Carrying: '+D.items.map(i=>ITEMS[i]||i).join(', '):'Pockets: empty.'));
   const act=Object.keys(D.mp).filter(m=>!D.done[m]);l.appendChild(el('div','li',act.length?'In progress: '+act.map(m=>MIS[m].name+' ('+D.mp[m]+'/'+MIS[m].parts.length+')').join(', '):'Nothing started today.'));
-  if(Object.keys(D.done).length)l.appendChild(el('div','li','Finished today: '+Object.keys(D.done).map(m=>MIS[m].name).join(', ')));
+  if(Object.keys(D.done).length)l.appendChild(el('div','li','Finished today: '+Object.keys(D.done).filter(m=>MIS[m]).map(m=>MIS[m].name).join(', ')));
   const kn=Object.keys(P.intel);l.appendChild(el('h3','',''));
   const ik=el('div','li');ik.innerHTML='<b>Things you remember across days</b>';kn.forEach(k=>{const d=el('div','','• '+(INTEL[k]||k));ik.appendChild(d)});if(!kn.length)ik.appendChild(el('div','','Nothing yet.'));l.appendChild(ik)}
  }else if(questTab==='bonds'){
