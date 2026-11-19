@@ -45,6 +45,8 @@ so check every line.
 - Weapons are gripped, not pasted on (`js/grip.js`): the hand closes round the handle, the weapon points where the pose needs it, and picking one up is a grab (reach low, close, swing up). New weapons go in `GRIP_W` with a handle and a business end.
 - Look and act like *The Calling of Aidan* (branch `claude/elegant-pasteur-0012uv`, `aidan/index.html`).
 - Abby: pale, long black hair with subtle faded blue and purple strands, dark clothes, no headphones, no purple brows.
+- Aidan: really short (shortest of the kids, below Nivaan) but normal human proportions.
+- Smirk = steady eyes, one brow cocked up, flat mouth tucked up at one corner. Never a wink.
 - Angelo: Hispanic, straight hair, baggy black pants, brown tee.
 - Each teacher speaks in their own voice (`VOICE` in `js/clarity.js`): never give one teacher another’s catchphrases.
 - Teachers kill sneakily when a class is watching, and openly only with one or two kids around.
