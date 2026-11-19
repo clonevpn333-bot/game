@@ -37,7 +37,7 @@ function thingsAt(per,opts){
   out.push({mis:s.mis,room:s.room,label:s.label,started:!!D.mp[s.mis],spot:1,main:false});
  }
  /* the main story’s own objectives are spots without a mission tag */
- for(const s of SPOTS){if(s.mis||!inP(s.period)||!ok(s))continue;if(/Ms\. Sherman’s desk|back fridge|lock on Ms\. Sherman|phones in Ms\. Sherman|old hatch|Mr\. Adam’s office|locker 214/.test(s.label||'')){const k='crew|'+s.room+s.label;if(seen.has(k))continue;seen.add(k);out.push({mis:'crew',room:s.room,label:s.label,started:true,main:true,spot:1})}}
+ for(const s of SPOTS){if(s.mis||!inP(s.period)||/^Go through|^Try locker|coin|vending/i.test(s.label||'')||!ok(s))continue;if(/Ms\. Sherman’s desk|back fridge|lock on Ms\. Sherman|phones in Ms\. Sherman|old hatch|Mr\. Adam’s office|locker 214/.test(s.label||'')){const k='crew|'+s.room+s.label;if(seen.has(k))continue;seen.add(k);out.push({mis:'crew',room:s.room,label:s.label,started:true,main:true,spot:1})}}
  const MALL=['foodcourt','arcade','carpark'];
  const fine=out.filter(t=>per===8?MALL.includes(t.room):per===7?t.room==='bus':!MALL.includes(t.room));
  fine.sort((a,b)=>(b.main-a.main)||(b.started-a.started));

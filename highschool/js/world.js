@@ -23,14 +23,14 @@
    ===================================================================== */
 const WORLD={
  bus:{L:null,R:null,doors:[{x:160,to:'corridor',at:22,label:'SCHOOL',front:1}]},
- corridor:{L:'bus',Lx:160,R:'hallb',doors:[{x:50,to:'english'},{x:105,to:'maths'},{x:160,to:'history'},{x:215,to:'toilets',label:'BOYS'},{x:285,to:'upper',at:30,stairs:'up',label:'UPSTAIRS'}]},
+ corridor:{L:'bus',Lx:160,R:'hallb',doors:[{x:50,to:'english'},{x:105,to:'maths'},{x:160,to:'history'},{x:215,to:'toilets',label:'BOYS'},{x:285,to:'stairwell',at:24,stairs:'up',label:'STAIRS'}]},
  hallb:{L:'corridor',R:'wing_sci',doors:[{x:40,to:'canteen'},{x:100,to:'library'},{x:160,to:'hall',label:'MAIN HALL'},{x:220,to:'office',label:'VP OFFICE'},{x:280,to:'psych',label:'PSYCH'}]},
  wing_sci:{L:'hallb',R:'wing_sports',doors:[{x:198,to:'chem',label:'CHEM LAB'},{x:272,to:'science'}]},
  wing_sports:{L:'wing_sci',R:'field',doors:[{x:120,to:'pool'},{x:272,to:'gym'}]},
  field:{L:'wing_sports',R:'walkway',doors:[]},
  walkway:{L:'field',R:'forest',doors:[{x:272,to:'trailer',label:'PORTABLE 4'}]},
  forest:{L:'walkway',R:null,doors:[]},
- upper:{L:null,R:'wing_arts',doors:[{x:30,to:'corridor',at:285,stairs:'down',label:'DOWNSTAIRS'},{x:90,to:'art'},{x:145,to:'music'},{x:200,to:'ict'},{x:255,to:'drama'}]},
+ upper:{L:null,R:'wing_arts',doors:[{x:30,to:'stairwell',at:296,stairs:'down',label:'STAIRS'},{x:90,to:'art'},{x:145,to:'music'},{x:200,to:'ict'},{x:255,to:'drama'}]},
  wing_arts:{L:'upper',R:null,doors:[{x:120,to:'woodwork'},{x:272,to:'foodtech',label:'FOOD TECH'}]},
  foodcourt:{L:null,R:'arcade',doors:[]},
  arcade:{L:'foodcourt',R:'carpark',doors:[]},
@@ -146,7 +146,7 @@ function edge(s){
   if(room==='bus'&&s<0&&D.period===7){busy=true;return endPeriod()}
   if(!to){if(!edge.t||T-edge.t>1.2){edge.t=T;toast(room==='bus'?'The road. Not that way.':'That’s the end of the hall.')}return}
   if(to==='bus'&&D.period>=1&&D.period<=6&&!edge.warned){edge.warned=1;toast('Out the front doors. The bus loop.')}
-  return worldGo(to,to==='bus'?(w.Lx||160):(s<0?300:20),null,s);
+  return worldGo(to,s<0?(w.Lx!=null?w.Lx:300):(w.Rx!=null?w.Rx:20),null,s);
  }
  const ex=exitOf(room);if(!ex)return;
  return worldGo(ex[0],ex[1],null,s);
@@ -162,7 +162,7 @@ function openPlan(){
   return '<div class="hall'+(h===exHall?' you':'')+(typeof roomHasNext==='function'&&roomHasNext(h)?' q':'')+'"><b>'+shortName(h)+(h===exHall?' · YOU':'')+'</b><div>'+doors+st+'</div></div>'}).join('<i>→</i>')+'</div></div>';
  const p=PERIODS[D.period];
  o.innerHTML='<h2>Floor plan · '+p.name+' · '+p.time+'</h2><div class="box">'+
-  (D.period===8?row('Fair City Mall',['foodcourt','arcade','carpark']):row('Second floor',['upper','wing_arts'])+row('Ground floor',['bus','corridor','hallb','wing_sci','wing_sports','field','walkway','forest']))+
+  (D.period===8?row('Fair City Mall',['foodcourt','arcade','carpark']):row('Second floor',['stairwell','upper','wing_arts'])+row('Ground floor',['bus','corridor','hallb','wing_sci','wing_sports','field','walkway','forest']))+
   '<p class="plan-key"><em style="color:#ffd27a;font-style:normal">yellow = your class</em> · <em style="color:#f6cf8e;font-style:normal">outlined = something’s happening</em> · Walk off the edge of a hall to go to the next one. Walk up into a door to go in.</p></div>';
  const x=document.createElement('button');x.className='tb x';x.textContent='CLOSE ✕';x.onclick=()=>{o.hidden=true;roam()};o.appendChild(x);
  if(D.period<7){const wb=document.createElement('button');wb.className='tb loc';wb.style.cssText='position:absolute;right:14px;bottom:14px';wb.textContent='WAIT FOR THE BELL ⏭';wb.onclick=()=>{o.hidden=true;endPeriod()};o.appendChild(wb)}
@@ -224,7 +224,10 @@ function routeText(from,to){
  for(let i=1;i<path.length;i++){const a=path[i-1],b=path[i];
   if(a==='bus'&&b==='corridor')steps.push({s:'go in the front doors'});
   else if(a==='corridor'&&b==='bus')steps.push({s:'go out the front doors (left end of the Main Corridor)'});
-  else if((a==='corridor'&&b==='upper')||(a==='upper'&&b==='corridor'))steps.push({s:b==='upper'?'take the stairs up (right end of the Main Corridor)':'take the stairs down'});
+  else if(a==='corridor'&&b==='stairwell')steps.push({s:'take the stairs (right end of the Main Corridor)'});
+  else if(a==='stairwell'&&b==='upper')steps.push({s:'climb to the top'});
+  else if(a==='upper'&&b==='stairwell')steps.push({s:'take the stairs down (left end of the Upstairs Corridor)'});
+  else if(a==='stairwell'&&b==='corridor')steps.push({s:'walk down to the bottom'});
   else{const dir=WORLD[a].L===b||(a==='corridor'&&b==='bus')?'left':'right';const nm_=shortName(b).replace(/^The /,'');const last=steps[steps.length-1];if(last&&last.dir===dir)last.to.push(nm_);else steps.push({dir,to:[nm_]})}}
  const nm=shortName(to).replace(/^The /,'');
  const end=door?'the '+nm+' door':'the '+nm;

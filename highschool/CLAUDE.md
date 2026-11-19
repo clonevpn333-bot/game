@@ -31,7 +31,8 @@ so check every line.
 - Later quest steps should be available at every sensible time (break and lunch, etc.), not one slot.
 - Quest steps must not appear before the scene that sets them up.
 - Never refer to “always Friday” or a repeating Friday for the living characters (only the 1987 ghost lore keeps it).
-- The school is walkable (`js/world.js`): hallways left to right, doors you walk up into, stairs to the second floor. No map teleporting; M is a floor plan only.
+- The school is walkable (`js/world.js`): hallways left to right, doors you walk up into, a real stairwell room between the floors (`js/stairs.js`). No map teleporting; M is a floor plan only.
+- Wandering pays (`js/roam.js`): lockers, teachers’ desks in empty classrooms, coins, vending snacks (+1 apple), overheard gossip that points at quests.
 - Every day ends with a ride home on the 43 (`js/busride.js`): a couple of events per ride, story moments for whatever quests are in progress, then a night text on your phone. Paul Jones’s arc ends on the last school day (day 12).
 - Week two (days 8–12): metal detector at the front doors, back way in through the woods (`js/detectors.js`). Fair City Mall has robberies after school (`js/robbery.js`).
 - Guns and school violence are story events the player reacts to (talk down, disarm, hide). The player is never the shooter.
