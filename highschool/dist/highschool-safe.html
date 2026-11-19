@@ -3277,9 +3277,9 @@ async function ending(id){
   await N('Locker 217 is always cold. You never walk past it. You always walk past it.');
  }else if(id==='forever'){
   fxState.dark=0;
-  await card('FRIDAY','FOREVER',2200);
+  await card('THE SAME DAY','FOREVER',2200);
   await N('You get on the 43 with everyone. Hasan laughs at the thing he always laughs at. You laugh first, this time.');
-  await N('Tomorrow is Friday. Tomorrow is always Friday. Aidan sits next to you on the bus, every single morning, and says “again?” and you say “again.”');
+  await N('Tomorrow is today again. It always will be now. Aidan sits next to you on the bus, every single morning, and says “again?” and you say “again.”');
  }
  await card(e.name.toUpperCase(),'ENDING '+(Object.keys(ENDINGS).indexOf(id)+1)+' OF '+Object.keys(ENDINGS).length,2600,id==='locker'||id==='calling'?'death':'love');
  await curtainCall(id);
@@ -6517,7 +6517,8 @@ function storyNow(){for(let i=0;i<STORY.length;i++){if(!STORY[i].done())return{i
 {const _oq=openQuest;openQuest=function(){_oq();if(questTab!=='missions')return;const s=storyNow(),body=$('quest').querySelector('.qbody');if(!body)return;const box=document.createElement('div');box.className='li storybox';box.innerHTML='<b>Main story — chapter '+(s?s.i+1:STORY.length)+' of '+STORY.length+'</b><br>';box.appendChild(document.createTextNode(s?s.t+': '+s.goal:'Every chapter done. You found Saturday.'));const done=STORY.filter(x=>x.done()).map(x=>x.t);if(done.length){const p=document.createElement('div');p.style.cssText='color:#a9d88a;font-size:12px;margin-top:4px';p.textContent='Done: '+done.join(' · ');box.appendChild(p)}body.prepend(box)}}
 /* when a chapter finishes, say so */
 let storyLast=null;
-ON_PERIOD.push(async()=>{const s=storyNow(),k=s?s.i:STORY.length;if(storyLast!=null&&k>storyLast){SFX.good();toast('★ Main story: '+STORY[storyLast].t+' — done. Next: '+(s?s.t:'the end'))}storyLast=k});
+let storyLastT=null;
+ON_PERIOD.push(async()=>{const s=storyNow(),k=s?s.i:STORY.length;if(storyLast!=null&&k>storyLast&&storyLastT&&(!s||s.t!==storyLastT)){SFX.good();toast('★ Main story: '+storyLastT+' — done. Next: '+(s?s.t:'the end'))}storyLast=k;storyLastT=s?s.t:null});
 /* safety net: if nothing is happening and you can't move, give control back */
 {let stuckT=0;const _hu=HOOK.update;HOOK.update=(dt,rdt)=>{_hu&&_hu(dt,rdt);const idle=!busy&&panelMode!=='roam'&&!DL&&!CH&&!MINI&&!anyOverlay()&&D&&D.room&&$('menu').hidden;stuckT=idle?stuckT+rdt:0;if(stuckT>2.5){stuckT=0;roam()}}}
 
@@ -8678,6 +8679,7 @@ const BEAT_ORDER=[1,2,3,4,5,8,9,10,11];
 const BEAT_PRE={1:()=>true,2:()=>crew().ev.retainer,3:()=>crew().ev.jars,4:()=>crew().pick,5:()=>crew().ev.register,8:()=>crew().fri1,9:()=>crew().wiped,10:()=>crew().ev.rota,11:()=>crew().ev.boiler};
 function nextBeat(){for(const d of BEAT_ORDER){if(crew()['beat'+d])continue;return BEAT_PRE[d]()?d:null}return null}
 ON_PERIOD.push(async(i,resume)=>{
+ if(i===2&&!resume&&D&&!D.weekend&&cal()===12&&!crew().beat12&&!crew().finale){crew().beat12=1;save();await cutscene(BEATS[12]);busy=false;return}
  if(![0,2,4].includes(i)||resume||!D||D.weekend||cal()>=12)return;
  const d=nextBeat();if(d==null||(d>1&&crew().lastBeatDay===cal()&&crew().lastBeatP===i))return;
  crew()['beat'+d]=1;crew().lastBeatDay=cal();crew().lastBeatP=i;save();
@@ -11935,7 +11937,7 @@ hooks({mis:'farewell',label:'Ask Stella why she’s been crying',look:{ex:'cry'}
  if(c===0)await say('sean','The next thing. What’s the next thing after you can touch someone’s face and then you can’t?','cry');
  else await say('sean','A voice on the phone. We were a voice on the phone for a whole year.','sad');
  await say('sean','(wiping his face with his whole sleeve) I can’t go back to being a voice without doing something first. Something that isn’t on a phone. Something she can take with her.','sad');
- await say('sean','Find me tomorrow. I’ll have a plan. I’ll have eleven plans. One of them will be good.','sad');
+ await say('sean','Find me later. Library or the field. I’ll have a plan. I’ll have eleven plans. One of them will be good.','sad');
  D.f.fw=1;part('farewell',1);
  return 'stay';
 }},[[2,'library','stella'],[4,'field','stella']]);
@@ -12018,7 +12020,7 @@ hook({mis:'farewell',period:7,room:'bus',who:'sean',label:'Help Sean write on th
    ===================================================================== */
 Object.assign(MIS.darren,{blurb:'Someone has left Hasan a note. It promises “eleven steps” and says “wear something blue”. It’s signed “D”. Hasan has read it forty times and gone a color you can see from space.',
  parts:['Before school: the note','Another day, break: step five','Another day, lunch: step nine'],
- tips:['Before school, bus loop. Hasan’s holding something.','Break or lunch, cafeteria. Stay near Hasan. Duck.','Lunch, cafeteria. Hasan’s been summoned to the field. If the Infected Choir exists today, bring it.']});
+ tips:['Before school, bus loop. Hasan’s holding something.','Break or lunch, cafeteria. Stay near Hasan. Duck.','Break or lunch, cafeteria. Hasan’s been summoned to the field. If the Infected Choir exists today, bring it.']});
 mission('stepeleven',{name:'Step Eleven',icon:'🏊',who:['hasan','darren'],
  blurb:'After the milkshake, Darren gave Hasan a laminated list of every step. Step ten is “meet the family”. Step eleven is blank. Darren says Hasan will know it when it happens.',
  parts:['Another day: the laminated list','Another day, home time: meet the family','Week two, lunch: the swim meet'],
@@ -13448,7 +13450,7 @@ mission('kim',{name:'Mr. Kim',icon:'🤡',who:['alex','dheva','kim'],
  goal:'Find out what Mr. Kim did with Alex.',
  blurb:'There’s a new math teacher in town. Mr. Kim. He does magic tricks. He asked for a volunteer, and Alex got in the box.',
  parts:['Mr. Kim’s magic trick','Ask Dheva where Alex is','Look inside the magic box','Find Mr. Kim’s van','Alex comes back','Mr. Kim'],
- tips:['Break or lunch, the Front Hall. Mr. Kim is doing magic for a crowd.','Break or lunch, the cafeteria. Dheva hasn’t heard from Alex.','The Main Hall (Front Hall, walk up into the MAIN HALL door). The box is behind the stage.','After school, Fair City Mall rooftop parking. Look for a van with balloons on it.','Before school, the bus loop. Alex is back. Something’s wrong.','After school, rooftop parking. Alex wants to go back to the van. With you.'],
+ tips:['Break or lunch, the Front Hall. Mr. Kim is doing magic for a crowd.','Break or lunch, the cafeteria. Dheva hasn’t heard from Alex.','The Main Hall (Front Hall, walk up into the MAIN HALL door). The box is behind the stage.','After school, Fair City Mall rooftop parking. Look for a van with balloons on it.','Before school, break or lunch: the bus loop. Alex is back. Something’s wrong.','After school, rooftop parking. Alex wants to go back to the van. With you.'],
  variants:{pin:'Alex did it',nose:'Honk',police:'The police'}});
 DEATHS.honk={name:'Honk',desc:'Mr. Kim had a balloon animal in one hand and a hammer in the other. You watched the wrong hand.',hint:'Mr. Kim. Don’t open the van on your own.'};
 
@@ -14580,8 +14582,8 @@ async function lockedRoom(room,t){
  if(tidy[0]){hold(tidy[0],'mop');A[tidy[0]].pose=null}
  await N('Then, without anybody saying anything, everybody gets up and starts cleaning.');
  if(tidy[0]){await walk(tidy[0],240,50);await N(K[tidy[0]].n+' gets the mop out of the corner and does the floor. Properly. In the little figure eights, like his mom taught him.')}
- if(tidy[1]&&A.jaxon){pose(tidy[1],'drag');await Promise.all([walk(tidy[1],310,30),tw(A.jaxon,{x:300},2400)]);pose(tidy[1],null);A.jaxon.vis=false}
- if(tidy[2]&&A.kid4){pose(tidy[2],'drag');await Promise.all([walk(tidy[2],310,30),tw(A.kid4,{x:302},2400)]);pose(tidy[2],null);A.kid4.vis=false}
+ if(tidy[1]&&A.jaxon){pose(tidy[1],'drag');await Promise.all([walk(tidy[1],340,30),tw(A.jaxon,{x:330},2600)]);pose(tidy[1],null);A.jaxon.vis=false}
+ if(tidy[2]&&A.kid4){pose(tidy[2],'drag');await Promise.all([walk(tidy[2],340,30),tw(A.kid4,{x:332},2600)]);pose(tidy[2],null);A.kid4.vis=false}
  await N('Two of them carry the bodies into the stationery cupboard and close the door gently, like they’re trying not to wake somebody. Somebody wipes the desks. Somebody straightens all the chairs. Somebody opens the window.');
  const c2=await choose(['Help them clean.','Sit there and shake.']);
  if(c2===0){hold('you','mop');await N('You do the bit by the door. It takes a long time. When you’re finished it looks better than it did before.');hold('you',null)}
@@ -16420,6 +16422,65 @@ if(RE('raccoon'))RE('raccoon').run=async()=>{
 
 /* the hint: you’re on the bus */
 if(ROOMS.busride)ROOMS.busride.name='The 43 (home)';
+
+</script>
+<script>
+/* js/polish.js */
+'use strict';
+/* =====================================================================
+   HIGHSCHOOL — POLISH
+   The last things that clicked into place:
+   • When a scene moves somebody (steps them next to someone, shuffles
+     them along a bench, sits them down), they don’t teleport any more.
+     They step there, quickly, with their legs moving.
+   • Sitting down and kneeling settle with a little give, instead of
+     snapping from standing to seated.
+   (Real entrances from off-screen and room changes still cut, the way
+   a camera cut should.)
+   ===================================================================== */
+{let lastT=0;
+ const _da=drawActor;drawActor=function(a){
+  if(!a||a.vis===false)return _da(a);
+  if(a._sx==null||a._room!==ROOM){a._sx=a.x;a._sy=a.y;a._room=ROOM;a._st=T}
+  const dt=Math.max(0,Math.min(.1,T-(a._st||T)));a._st=T;
+  let dx=a.x-a._sx,dy=a.y-a._sy;
+  if(Math.abs(dx)>110||Math.abs(dy)>70||a.dead&&!a._wasDead){a._sx=a.x;a._sy=a.y;dx=dy=0}
+  a._wasDead=!!a.dead;
+  const gx=Math.abs(dx)>2.5,gy=Math.abs(dy)>1.5;
+  let glide=false;
+  if(gx||gy){const k=Math.min(1,dt*(gx?9:12));a._sx+=dx*k;a._sy+=dy*k;glide=true}
+  else{a._sx=a.x;a._sy=a.y}
+  /* sitting / kneeling: settle */
+  const tr=a._trK,settle=tr&&tr.k<1&&(['sit','kneel'].includes(tr.from)||['sit','kneel'].includes(a.pose));
+  if(!glide&&!settle)return _da(a);
+  const ox=a.x,oy=a.y,om=a.moving,ow=a.walk,od=a.dir;
+  if(glide){a.x=a._sx;a.y=a._sy;if(gx&&!a.pose&&!a.dead&&!a.sitHigh){a._wp=(a._wp||0)+dt*11;a.moving=true;a.walk=a._wp;a.dir=dx>0?1:-1}}
+  try{
+   if(settle){const q=Math.sin(Math.PI*tr.k)*.12;g.save();g.translate(a.x,a.y);g.scale(1+q*.3,1-q);g.translate(-a.x,-a.y);_da(a);g.restore()}
+   else _da(a);
+  }finally{a.x=ox;a.y=oy;a.moving=om;a.walk=ow;a.dir=od}
+ }}
+
+/* ---------- the info box: compact, tap to expand ---------- */
+{const st=document.createElement('style');st.textContent=`
+#clock{pointer-events:auto;cursor:pointer}
+#clock .story{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#clock .story.nowbox{display:block;-webkit-line-clamp:unset}
+#clock .nowbox div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#clock .nowbox div:nth-child(n+5){display:none}
+#clock.full .story{-webkit-line-clamp:unset;display:block}
+#clock.full .nowbox div{display:block!important}
+#clock .tapnote{display:none;color:#8a7a9a;font-size:9px;margin-top:2px}
+@media (max-width:950px),(max-height:520px){
+ #clock{max-width:38vw;font-size:10px;padding:3px 6px}
+ #clock small{font-size:9px}
+ #clock .story{-webkit-line-clamp:1;font-size:9px;max-width:37vw}
+ #clock .nowbox{font-size:9px}#clock .nowbox div:nth-child(n+4){display:none}
+ #clock .tapnote{display:block}
+ #clock.full{max-width:70vw}#clock.full .story{max-width:68vw}
+}`;document.head.appendChild(st)}
+{const c=$('clock');if(c)c.addEventListener('click',e=>{e.stopPropagation();c.classList.toggle('full')})}
+{const _ul=updateLoc;updateLoc=function(){_ul();const c=$('clock');if(!c||c.querySelector('.tapnote'))return;const t=document.createElement('div');t.className='tapnote';t.textContent=c.classList.contains('full')?'tap to shrink':'tap for more';c.appendChild(t)}}
 
 </script>
 <script>

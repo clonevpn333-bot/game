@@ -355,7 +355,7 @@ hooks({mis:'farewell',label:'Ask Stella why she’s been crying',look:{ex:'cry'}
  if(c===0)await say('sean','The next thing. What’s the next thing after you can touch someone’s face and then you can’t?','cry');
  else await say('sean','A voice on the phone. We were a voice on the phone for a whole year.','sad');
  await say('sean','(wiping his face with his whole sleeve) I can’t go back to being a voice without doing something first. Something that isn’t on a phone. Something she can take with her.','sad');
- await say('sean','Find me tomorrow. I’ll have a plan. I’ll have eleven plans. One of them will be good.','sad');
+ await say('sean','Find me later. Library or the field. I’ll have a plan. I’ll have eleven plans. One of them will be good.','sad');
  D.f.fw=1;part('farewell',1);
  return 'stay';
 }},[[2,'library','stella'],[4,'field','stella']]);
@@ -438,7 +438,7 @@ hook({mis:'farewell',period:7,room:'bus',who:'sean',label:'Help Sean write on th
    ===================================================================== */
 Object.assign(MIS.darren,{blurb:'Someone has left Hasan a note. It promises “eleven steps” and says “wear something blue”. It’s signed “D”. Hasan has read it forty times and gone a color you can see from space.',
  parts:['Before school: the note','Another day, break: step five','Another day, lunch: step nine'],
- tips:['Before school, bus loop. Hasan’s holding something.','Break or lunch, cafeteria. Stay near Hasan. Duck.','Lunch, cafeteria. Hasan’s been summoned to the field. If the Infected Choir exists today, bring it.']});
+ tips:['Before school, bus loop. Hasan’s holding something.','Break or lunch, cafeteria. Stay near Hasan. Duck.','Break or lunch, cafeteria. Hasan’s been summoned to the field. If the Infected Choir exists today, bring it.']});
 mission('stepeleven',{name:'Step Eleven',icon:'🏊',who:['hasan','darren'],
  blurb:'After the milkshake, Darren gave Hasan a laminated list of every step. Step ten is “meet the family”. Step eleven is blank. Darren says Hasan will know it when it happens.',
  parts:['Another day: the laminated list','Another day, home time: meet the family','Week two, lunch: the swim meet'],

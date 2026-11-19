@@ -349,9 +349,9 @@ async function ending(id){
   await N('Locker 217 is always cold. You never walk past it. You always walk past it.');
  }else if(id==='forever'){
   fxState.dark=0;
-  await card('FRIDAY','FOREVER',2200);
+  await card('THE SAME DAY','FOREVER',2200);
   await N('You get on the 43 with everyone. Hasan laughs at the thing he always laughs at. You laugh first, this time.');
-  await N('Tomorrow is Friday. Tomorrow is always Friday. Aidan sits next to you on the bus, every single morning, and says “again?” and you say “again.”');
+  await N('Tomorrow is today again. It always will be now. Aidan sits next to you on the bus, every single morning, and says “again?” and you say “again.”');
  }
  await card(e.name.toUpperCase(),'ENDING '+(Object.keys(ENDINGS).indexOf(id)+1)+' OF '+Object.keys(ENDINGS).length,2600,id==='locker'||id==='calling'?'death':'love');
  await curtainCall(id);

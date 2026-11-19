@@ -41,7 +41,7 @@ so check every line.
 
 ## Characters
 - Kids talk like real kids (short, casual, slangy), not like characters in a book.
-- Animation: poses glide (`js/motion.js`), speed set by emotion; people fall over, they don’t snap to the floor.
+- Animation: poses glide (`js/motion.js`), speed set by emotion; people fall over, they don’t snap to the floor. Position jumps inside a room glide as quick steps and sitting settles (`js/polish.js`).
 - Look and act like *The Calling of Aidan* (branch `claude/elegant-pasteur-0012uv`, `aidan/index.html`).
 - Abby: pale, long black hair with subtle faded blue and purple strands, dark clothes, no headphones, no purple brows.
 - Angelo: Hispanic, straight hair, baggy black pants, brown tee.
@@ -57,6 +57,7 @@ so check every line.
 
 ## Craft
 - After an update, send the user screenshots of the new stuff with short captions.
+- The HUD box stays compact on phones (tap to expand). Don’t let on-screen text cover the action.
 - Pixel art at 320×180, full-screen game with a floating text box. Keyboard and touch both work.
 - New rooms must be drawn to the forest glow-up standard: cached static layer with light, shade, texture and clutter, plus small animated touches (see `js/glowup.js`).
 - Music is calm, mellow and slow.

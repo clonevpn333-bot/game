@@ -46,7 +46,7 @@ mission('kim',{name:'Mr. Kim',icon:'🤡',who:['alex','dheva','kim'],
  goal:'Find out what Mr. Kim did with Alex.',
  blurb:'There’s a new math teacher in town. Mr. Kim. He does magic tricks. He asked for a volunteer, and Alex got in the box.',
  parts:['Mr. Kim’s magic trick','Ask Dheva where Alex is','Look inside the magic box','Find Mr. Kim’s van','Alex comes back','Mr. Kim'],
- tips:['Break or lunch, the Front Hall. Mr. Kim is doing magic for a crowd.','Break or lunch, the cafeteria. Dheva hasn’t heard from Alex.','The Main Hall (Front Hall, walk up into the MAIN HALL door). The box is behind the stage.','After school, Fair City Mall rooftop parking. Look for a van with balloons on it.','Before school, the bus loop. Alex is back. Something’s wrong.','After school, rooftop parking. Alex wants to go back to the van. With you.'],
+ tips:['Break or lunch, the Front Hall. Mr. Kim is doing magic for a crowd.','Break or lunch, the cafeteria. Dheva hasn’t heard from Alex.','The Main Hall (Front Hall, walk up into the MAIN HALL door). The box is behind the stage.','After school, Fair City Mall rooftop parking. Look for a van with balloons on it.','Before school, break or lunch: the bus loop. Alex is back. Something’s wrong.','After school, rooftop parking. Alex wants to go back to the van. With you.'],
  variants:{pin:'Alex did it',nose:'Honk',police:'The police'}});
 DEATHS.honk={name:'Honk',desc:'Mr. Kim had a balloon animal in one hand and a hammer in the other. You watched the wrong hand.',hint:'Mr. Kim. Don’t open the van on your own.'};
 

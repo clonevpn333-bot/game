@@ -121,8 +121,8 @@ async function lockedRoom(room,t){
  if(tidy[0]){hold(tidy[0],'mop');A[tidy[0]].pose=null}
  await N('Then, without anybody saying anything, everybody gets up and starts cleaning.');
  if(tidy[0]){await walk(tidy[0],240,50);await N(K[tidy[0]].n+' gets the mop out of the corner and does the floor. Properly. In the little figure eights, like his mom taught him.')}
- if(tidy[1]&&A.jaxon){pose(tidy[1],'drag');await Promise.all([walk(tidy[1],310,30),tw(A.jaxon,{x:300},2400)]);pose(tidy[1],null);A.jaxon.vis=false}
- if(tidy[2]&&A.kid4){pose(tidy[2],'drag');await Promise.all([walk(tidy[2],310,30),tw(A.kid4,{x:302},2400)]);pose(tidy[2],null);A.kid4.vis=false}
+ if(tidy[1]&&A.jaxon){pose(tidy[1],'drag');await Promise.all([walk(tidy[1],340,30),tw(A.jaxon,{x:330},2600)]);pose(tidy[1],null);A.jaxon.vis=false}
+ if(tidy[2]&&A.kid4){pose(tidy[2],'drag');await Promise.all([walk(tidy[2],340,30),tw(A.kid4,{x:332},2600)]);pose(tidy[2],null);A.kid4.vis=false}
  await N('Two of them carry the bodies into the stationery cupboard and close the door gently, like they’re trying not to wake somebody. Somebody wipes the desks. Somebody straightens all the chairs. Somebody opens the window.');
  const c2=await choose(['Help them clean.','Sit there and shake.']);
  if(c2===0){hold('you','mop');await N('You do the bit by the door. It takes a long time. When you’re finished it looks better than it did before.');hold('you',null)}

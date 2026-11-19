@@ -44,6 +44,7 @@ const BEAT_ORDER=[1,2,3,4,5,8,9,10,11];
 const BEAT_PRE={1:()=>true,2:()=>crew().ev.retainer,3:()=>crew().ev.jars,4:()=>crew().pick,5:()=>crew().ev.register,8:()=>crew().fri1,9:()=>crew().wiped,10:()=>crew().ev.rota,11:()=>crew().ev.boiler};
 function nextBeat(){for(const d of BEAT_ORDER){if(crew()['beat'+d])continue;return BEAT_PRE[d]()?d:null}return null}
 ON_PERIOD.push(async(i,resume)=>{
+ if(i===2&&!resume&&D&&!D.weekend&&cal()===12&&!crew().beat12&&!crew().finale){crew().beat12=1;save();await cutscene(BEATS[12]);busy=false;return}
  if(![0,2,4].includes(i)||resume||!D||D.weekend||cal()>=12)return;
  const d=nextBeat();if(d==null||(d>1&&crew().lastBeatDay===cal()&&crew().lastBeatP===i))return;
  crew()['beat'+d]=1;crew().lastBeatDay=cal();crew().lastBeatP=i;save();

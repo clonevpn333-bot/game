@@ -19,6 +19,7 @@ function storyNow(){for(let i=0;i<STORY.length;i++){if(!STORY[i].done())return{i
 {const _oq=openQuest;openQuest=function(){_oq();if(questTab!=='missions')return;const s=storyNow(),body=$('quest').querySelector('.qbody');if(!body)return;const box=document.createElement('div');box.className='li storybox';box.innerHTML='<b>Main story — chapter '+(s?s.i+1:STORY.length)+' of '+STORY.length+'</b><br>';box.appendChild(document.createTextNode(s?s.t+': '+s.goal:'Every chapter done. You found Saturday.'));const done=STORY.filter(x=>x.done()).map(x=>x.t);if(done.length){const p=document.createElement('div');p.style.cssText='color:#a9d88a;font-size:12px;margin-top:4px';p.textContent='Done: '+done.join(' · ');box.appendChild(p)}body.prepend(box)}}
 /* when a chapter finishes, say so */
 let storyLast=null;
-ON_PERIOD.push(async()=>{const s=storyNow(),k=s?s.i:STORY.length;if(storyLast!=null&&k>storyLast){SFX.good();toast('★ Main story: '+STORY[storyLast].t+' — done. Next: '+(s?s.t:'the end'))}storyLast=k});
+let storyLastT=null;
+ON_PERIOD.push(async()=>{const s=storyNow(),k=s?s.i:STORY.length;if(storyLast!=null&&k>storyLast&&storyLastT&&(!s||s.t!==storyLastT)){SFX.good();toast('★ Main story: '+storyLastT+' — done. Next: '+(s?s.t:'the end'))}storyLast=k;storyLastT=s?s.t:null});
 /* safety net: if nothing is happening and you can't move, give control back */
 {let stuckT=0;const _hu=HOOK.update;HOOK.update=(dt,rdt)=>{_hu&&_hu(dt,rdt);const idle=!busy&&panelMode!=='roam'&&!DL&&!CH&&!MINI&&!anyOverlay()&&D&&D.room&&$('menu').hidden;stuckT=idle?stuckT+rdt:0;if(stuckT>2.5){stuckT=0;roam()}}}
