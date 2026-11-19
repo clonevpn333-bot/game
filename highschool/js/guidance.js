@@ -27,7 +27,7 @@ function thingsAt(per,opts){
   if(!keep(h.mis)||!inP(h.period))continue;
   if(h.day&&h.day!==(D.dayType||'odd'))continue;
   if(!ok(h)||!hookPresent(h,per))continue;
-  if(h.who==='auto'&&TEACH[per]&&TEACH[per][h.room]&&h.room!==myClassFor(per))continue;
+  if(h.who==='auto'&&TEACH[per]&&TEACH[per][h.room]&&h.room!==myClassFor(per)&&!((D.mp[h.mis]||0)>0))continue;
   const k=h.mis+'|'+h.room;if(seen.has(k))continue;seen.add(k);
   out.push({mis:h.mis,room:h.room,who:h.who,label:h.label,started:!!D.mp[h.mis],main:h.mis.startsWith('crew')});
  }

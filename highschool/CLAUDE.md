@@ -23,6 +23,8 @@ so check every line.
 - Every quest has a blunt `goal`, and its next step says where to walk (`routeText` in `js/world.js`). The HUD's RIGHT NOW list, the floor plan and the quest log's Right Now tab show what's doable this period (`js/guidance.js`).
 - Quest lines that promise a time (“at break”, “home time”) must match when the next step can actually happen.
 - Keep feelings real-sized: heartfelt scenes get a joke or a deflection; nobody becomes your best friend after one quest.
+- The quest log opens on TRACKER (`js/tracker.js`, also T): today’s classes, the main story, every started quest with when/where its next step is, and where everyone is now and next period. Under the clock there’s always a 📚 next-class line. A quest pickup spot needs a `mis` tag or the guidance can’t see it. If a quest’s next step lives in another quest, add it to `VIA`. Check stalls with `node tools/audit-quests.mjs`.
+- When the bell goes, everyone in the room runs off-screen before the next period starts (`js/tracker.js`).
 - Random chaos happens around the school (`js/chaos.js`): free, quick, edgy.
 - Characters you’re mid-quest with come back the next day if they die.
 - Apples are only spent on doing things (quest steps, investigating, picking things up), never on chatting.
