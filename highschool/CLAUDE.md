@@ -58,6 +58,7 @@ so check every line.
 ## Craft
 - After an update, send the user screenshots of the new stuff with short captions.
 - Pixel art at 320×180, full-screen game with a floating text box. Keyboard and touch both work.
+- New rooms must be drawn to the forest glow-up standard: cached static layer with light, shade, texture and clutter, plus small animated touches (see `js/glowup.js`).
 - Music is calm, mellow and slow.
 - Test with `node tools/test.mjs` (normal) and `HS_URL=.../dist/highschool-safe.html` (safe). Build with `python3 tools/build.py`.
 - Always rebuild `dist/` and send all four HTML files after changes.
