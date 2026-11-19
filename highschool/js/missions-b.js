@@ -456,7 +456,7 @@ hook({mis:'angelo',period:0,room:'corridor',who:'angelo',label:'Ask Angelo how b
  await say('angelo','Angelo. Like the angel, but I charge.','smirk');
  await say('angelo','Locker 13 is the only functioning economy in this building. Cash, cookies or favours. And right now? I’m out of stock.','sad');
  await say('angelo','Pat’s cookies go for a buck each after lunch. Fresh ones. The ones she won’t let anyone have. I need a tray.','smirk');
- await say('angelo','Bring me a tray at break. I’ll cut you in. Fifty-fifty. Sixty-forty. To me. Seventy-thirty.','smirk');
+ await say('angelo','Bring me a tray at break or lunch. I’ll cut you in. Fifty-fifty. Sixty-forty. To me. Seventy-thirty.','smirk');
  D.f.angelo1=1;part('angelo',1);
 }});
 

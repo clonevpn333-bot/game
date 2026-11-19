@@ -78,7 +78,7 @@ hook({mis:'mended',period:8,room:'foodcourt',who:'abby',label:'Watch Corey give 
  await say('abby','That was his. The only song he finished. I’ve never been able to play it without his guitar.','cry');
  const c=await choose(['Leave them alone.','Stay.']);
  if(c===0){await walk('you',40,70);await N('From across the food court you watch her play it again, slower, for Corey. He’s got his face in his hands. He’s not embarrassed about it.')}
- await say('corey','I can’t fix stuff. I can’t fix anything. I know that.','cry');
+ await say('corey','I can’t fix stuff. I glued my own finger to the bench twice. Mr. Oakes had to use a chisel.','sad');
  await say('abby','You fixed the one thing that could be fixed, Corey. That’s all anybody can do.','love');
  await complete('mended');
  return 'stay';
@@ -177,7 +177,7 @@ hook({mis:'tellmom',period:7,room:'bus',who:'hasan',label:'Wait with Hasan. His 
  await say('hasanmom','I was quiet because I was scared I’d say it wrong. Your grandmother said it wrong to your uncle and he didn’t come home for nine years. I wasn’t going to say it wrong.','cry');
  pose('hasan','hug');pose('hasanmom','hug');SFX.heart();
  await N('She holds him in the middle of the bus loop with the laminated list still in her hand, pressed flat against his back, and she doesn’t let go even when the 43 honks.');
- await say('hasanmom','(over his shoulder, to you) You’re the friend. He talks about you. Come Sunday too. Bring nothing. Bring yourself.','happy');
+ await say('hasanmom','(over his shoulder, squinting at you) And you. Whoever you are. Tell the swimmer: Sunday, six o’clock, shoes off. And if he breaks my son’s heart I will find out where he swims.','smirk');
  pose('hasan',null);pose('hasanmom',null);
  await complete('tellmom');
 }});
@@ -196,7 +196,7 @@ hook({mis:'ohio',period:0,room:'bus',who:'toby',label:'Ask Toby why he’s so qu
  await say('toby','I told him I liked boys in eighth grade. He said “cool”. Then he stopped sitting with me. Then he stopped answering. Then we moved.','sad');
  await say('toby','I keep typing happy birthday and deleting it. I’ve deleted it like thirty times. I’m on thirty-one.','cry');
  const c=await choose(['“Send it. Just happy birthday. Nothing else.”','“You don’t owe him anything.”']);
- await say('toby',c===0?'Just happy birthday. Nothing else. Okay. Okay. Help me write it. At break. I can’t do it on the bus. The bus is too loud.':'I know. I know I don’t. I still want to. Is that stupid? Help me write it. At break. In the library.','sad');
+ await say('toby',c===0?'Just happy birthday. Nothing else. Okay. Okay. Help me write it later. Library, break or lunch. I can’t do it on the bus. The bus is too loud.':'I know. I know I don’t. I still want to. Is that stupid? Help me write it later. Library. Break or lunch.','sad');
  A.toby.pose=null;D.f.oh1=1;part('ohio',1);
 }});
 hook({mis:'ohio',period:[2,4],room:'library',who:'toby',label:'Help Toby write the message',look:{pose:'phone'},cond:()=>D.f.oh1&&!D.f.oh2,run:async()=>{
@@ -269,6 +269,7 @@ hook({mis:'grandad',period:8,room:'carpark',who:'arjun',label:'Give Arjun the ma
  if(A.hasan)await say('hasan','(very quietly) …Thanks, man.','cry');
  await say('arjun','Don’t make it weird. Nobody make it weird.','cry');
  await N('The three of you sit on the wall of the rooftop parking while the sun goes down over Fair City. Arjun drinks the whole lassi. He keeps the umbrella.');
+ await say('arjun','Okay. That’s all the feelings I’m doing this year. Hasan, your head still looks like a thumb. A good thumb. Shut up.','smirk');
  hold('arjun',null);await complete('grandad');
  return 'stay';
 }});
@@ -318,7 +319,8 @@ hook({mis:'omerscarf',period:8,room:'foodcourt',who:'omer',label:'Help Omer pick
  await say('omermum','Your dad used to pick my scarves. Every winter. I haven’t had a new one since. I didn’t— I never said. How did you know?','cry');
  await say('omer','I didn’t. I just looked at what you look at.','sad');
  pose('omermum','hug');pose('omer','hug');SFX.heart();
- await N('She puts it on right there, over her work uniform, and holds onto Omer in the middle of the food court. He lets her. He doesn’t even check if anyone is watching.');
+ await N('She puts it on right there, over her work uniform, and holds onto Omer in the middle of the food court. He lets her. For about four seconds.');
+ await say('omer','(over her shoulder, to a kid staring from the pretzel stand) Something funny? Something FUNNY? Look at your own mom.','angry');
  pose('omermum',null);pose('omer',null);
  await complete('omerscarf');
 }});

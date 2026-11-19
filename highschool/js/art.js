@@ -60,7 +60,8 @@ function drawHead(k,x,hy,d,o){
  else if(ex_==='cold'){R(ex-4,ey,2,2,ink);R(ex+2,ey,2,2,ink);R(ex-4,ey+2,2,1,'rgba(90,60,70,.35)');R(ex+2,ey+2,2,1,'rgba(90,60,70,.35)')}
  else if(ex_==='shock'||ex_==='scared'){R(ex-4,ey-1,2,3,'#fff');R(ex+2,ey-1,2,3,'#fff');R(ex-3,ey,1,1,'#111');R(ex+2,ey,1,1,'#111')}
  else if(ex_==='closed'||blink||ex_==='happy'&&k.squint||ex_==='laugh'){R(ex-4,ey+1,2,1,ink);R(ex+2,ey+1,2,1,ink);if(ex_==='laugh'){R(ex-5,ey,1,1,ink);R(ex+4,ey,1,1,ink)}}
- else if(ex_==='smirk'||ex_==='sly'||k.squint||k.tired){R(ex-4,ey+1,2,1,ink);R(ex+2,ey+1,2,1,ink);R(ex-4,ey,2,1,'rgba(0,0,0,.35)');R(ex+2,ey,2,1,'rgba(0,0,0,.35)');if(k.tired){R(ex-4,ey+2,2,1,'#9a7a8a');R(ex+2,ey+2,2,1,'#9a7a8a')}}
+ else if(ex_==='smirk'||ex_==='sly'){R(ex-4,ey,2,2,ink);R(ex+2,ey+1,2,1,ink);R(ex+2,ey,2,1,S)}
+ else if(k.squint||k.tired){R(ex-4,ey+1,2,1,ink);R(ex+2,ey+1,2,1,ink);if(k.tired){R(ex-4,ey+2,2,1,'#9a7a8a');R(ex+2,ey+2,2,1,'#9a7a8a')}}
  else{R(ex-4,ey,2,2,ink);R(ex+2,ey,2,2,ink)}
  if(ex_==='cry'){const q=(T*3|0)%3;R(ex-4,ey+2,1,2+q,'#7ac0ff');R(ex+3,ey+2,1,1+((q+1)%3),'#7ac0ff')}
  if(ex_==='blush'||ex_==='love'){R(ex-6,ey+2,2,1,'#e8798e');R(ex+3,ey+2,2,1,'#e8798e')}
@@ -73,12 +74,13 @@ function drawHead(k,x,hy,d,o){
  else if(o.talk&&Math.sin(T*15)>0&&ex_!=='evil')R(ex-1,my,3,2,dark);
  else if(ex_==='evil'){R(ex-3,my-1,7,3,'#2a0408');R(ex-2,my-1,1,1,'#fff');R(ex,my-1,1,1,'#fff');R(ex+2,my-1,1,1,'#fff');R(ex-1,my+1,1,1,'#fff');R(ex+1,my+1,1,1,'#fff')}
  else if(ex_==='cold'){R(ex-2,my,4,1,mouthC);R(ex-3,my-1,1,1,mouthC);R(ex+2,my-1,1,1,mouthC)}
- else if(ex_==='happy'||ex_==='love'||ex_==='laugh'){R(ex-2,my,4,1,dark);R(ex-3,my-1,1,1,dark);R(ex+2,my-1,1,1,dark);if(ex_==='laugh')R(ex-1,my+1,3,1,dark)}
+ else if(ex_==='laugh'){R(ex-2,my,5,1,dark);R(ex-1,my+1,3,1,dark);R(ex-1,my,1,1,'#f2ece4')}
+ else if(ex_==='happy'||ex_==='love'){R(ex-2,my,1,1,mouthC);R(ex-1,my+1,3,1,mouthC);R(ex+2,my,1,1,mouthC)}
  else if(ex_==='angry'||ex_==='sad'||ex_==='cry'){R(ex-2,my,4,1,dark);R(ex-3,my+1,1,1,dark);R(ex+2,my+1,1,1,dark)}
  else if(ex_==='shock'){R(ex-1,my,2,3,dark)}
  else if(ex_==='yell'){R(ex-2,my-1,5,3,dark);R(ex-1,my-1,3,1,'#f2ece4')}
  else if(ex_==='scared'){R(ex-2,my,1,1,dark);R(ex-1,my+1,1,1,dark);R(ex,my,1,1,dark);R(ex+1,my+1,1,1,dark)}
- else if(ex_==='smirk'||ex_==='sly'){R(ex-1,my,3,1,mouthC);R(ex+2,my-1,1,1,mouthC)}
+ else if(ex_==='smirk'||ex_==='sly'){R(ex-1,my+1,2,1,mouthC);R(ex+1,my,2,1,mouthC)}
  else if(ex_==='closed'){R(ex-1,my,2,1,mouthC)}
  else R(ex-2,my,4,1,mouthC);
  if(k.pimples){R(ex-5,ey+3,1,1,'#c8503a');R(ex+4,ey+2,1,1,'#c8503a');R(ex+1,ey-2,1,1,'#c8503a')}

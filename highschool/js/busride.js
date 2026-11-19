@@ -123,7 +123,7 @@ const RIDE=[
    await say('pauljones','(crying now) I wasn’t gonna— I didn’t know who it was for. I didn’t know if it was for them or for me. I just didn’t want to go home.','cry');
    hold('pauljones',null);hold('you','pistol');
    await N('He holds it out flat on his hand, the way you’d give somebody a bird. You take it. Your hands are shaking worse than his.');
-   pose('pauljones','hug');pose('you','hug');await N('Then he grabs onto you and cries into your shoulder, and the whole bus is completely silent, and the driver opens the door and puts on the hazard lights and doesn’t say a single word.');
+   await N('Then he sits down in the aisle with his head in his hands. The whole bus is completely silent. The driver opens the door, puts on the hazard lights and doesn’t say a single word.');
    pose('pauljones',null);pose('you',null);hold('you',null);
    await N('When the police come, Paul Jones tells them everything before they ask. On his way off the bus, he looks back at you and nods. Just once.');
    await complete('pauljones','given');

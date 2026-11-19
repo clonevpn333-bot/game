@@ -23,7 +23,7 @@ hook({mis:'armoury',period:0,room:'toilets',who:'tez',label:'Knock on the end cu
  intel('tezPass');
  await say('tez','tenth grade. Six years running. I’ve seen things. I’ve seen Coach cut a lad in half over a beep. I’ve seen Kettle bake a prefect.','smirk');
  await say('tez','So I sell protection. Not drugs. I’m not an animal. Stationery. Weaponised.','happy');
- await say('tez','Come back at break and pick something. Two bucks, or a favour. I’m flexible. I’m twenty-one.');
+ await say('tez','Come back at break or lunch and pick something. Two bucks, or a favour. I’m flexible. I’m twenty-one.');
  D.f.tez1=1;part('armoury',1);
 }});
 

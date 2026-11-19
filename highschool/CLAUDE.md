@@ -20,7 +20,10 @@ so check every line.
 - Quests reset every two weeks (a new run). Deaths reset every weekend.
 - Don’t make quests wait for tomorrow. Make big quests longer with chaotic in-between scenes between their steps instead (`js/flow.js`).
 - The main story moves as soon as the last chapter’s thing is done, in any free time (not only break/lunch). Inspection Day stays on day 12.
-- Every quest has a blunt `goal`, and its next step says where to walk (`routeText` in `js/world.js`).
+- Every quest has a blunt `goal`, and its next step says where to walk (`routeText` in `js/world.js`). The HUD's RIGHT NOW list, the floor plan and the quest log's Right Now tab show what's doable this period (`js/guidance.js`).
+- Quest lines that promise a time (“at break”, “home time”) must match when the next step can actually happen.
+- Keep feelings real-sized: heartfelt scenes get a joke or a deflection; nobody becomes your best friend after one quest.
+- Random chaos happens around the school (`js/chaos.js`): free, quick, edgy.
 - Characters you’re mid-quest with come back the next day if they die.
 - Apples are only spent on doing things (quest steps, investigating, picking things up), never on chatting.
 - Show how quests turned out during the two weeks: couples together around school, posters, gossip, changed chat lines.
@@ -52,6 +55,7 @@ so check every line.
 - The “safe version” has no Abby and no Corey romance. Call it “safe version”, never “no Abby”.
 
 ## Craft
+- After an update, send the user screenshots of the new stuff with short captions.
 - Pixel art at 320×180, full-screen game with a floating text box. Keyboard and touch both work.
 - Music is calm, mellow and slow.
 - Test with `node tools/test.mjs` (normal) and `HS_URL=.../dist/highschool-safe.html` (safe). Build with `python3 tools/build.py`.

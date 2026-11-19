@@ -204,12 +204,14 @@ openMap=function(forced){if(forced)return worldPlace();return openPlan()};
 }}
 
 /* ---------- directions ---------- */
-function hallPath(a,b){
+function hallPath(a,b,outside){
  if(a===b)return[a];
- const adj=h=>{const w=WORLD[h];const o=[];if(w.L)o.push(w.L);if(w.R)o.push(w.R);for(const d of w.doors)if(d.stairs)o.push(d.to);if(h==='bus')o.push('corridor');if(h==='corridor')o.push('bus');return o};
+ const adj=h=>{const w=WORLD[h];const o=[];if(w.L)o.push(w.L);if(w.R)o.push(w.R);for(const d of w.doors)if(d.stairs)o.push(d.to);if(h==='bus')o.push('corridor');if(h==='corridor')o.push('bus');
+  return o.filter(n=>outside||!((h==='bus'&&n==='forest')||(h==='forest'&&n==='bus')))};
  const prev={[a]:null},q=[a];
  while(q.length){const h=q.shift();for(const n of adj(h))if(!(n in prev)){prev[n]=h;q.push(n)}}
- if(!(b in prev))return null;const p=[];for(let h=b;h;h=prev[h])p.unshift(h);return p;
+ if(!(b in prev))return outside?null:hallPath(a,b,true);
+ const p=[];for(let h=b;h;h=prev[h])p.unshift(h);return p;
 }
 function routeText(from,to){
  if(!to||from===to)return'You’re here.';
@@ -220,8 +222,10 @@ function routeText(from,to){
  const door=HALLS.has(to)?null:(DOORS[to]||null);
  const steps=[];
  for(let i=1;i<path.length;i++){const a=path[i-1],b=path[i];
-  if((a==='corridor'&&b==='upper')||(a==='upper'&&b==='corridor'))steps.push({s:b==='upper'?'take the stairs up (right end of the Main Corridor)':'take the stairs down'});
-  else{const dir=WORLD[a].L===b?'left':'right';const last=steps[steps.length-1];if(last&&last.dir===dir)last.to.push(shortName(b));else steps.push({dir,to:[shortName(b)]})}}
+  if(a==='bus'&&b==='corridor')steps.push({s:'go in the front doors'});
+  else if(a==='corridor'&&b==='bus')steps.push({s:'go out the front doors (left end of the Main Corridor)'});
+  else if((a==='corridor'&&b==='upper')||(a==='upper'&&b==='corridor'))steps.push({s:b==='upper'?'take the stairs up (right end of the Main Corridor)':'take the stairs down'});
+  else{const dir=WORLD[a].L===b||(a==='corridor'&&b==='bus')?'left':'right';const nm_=shortName(b).replace(/^The /,'');const last=steps[steps.length-1];if(last&&last.dir===dir)last.to.push(nm_);else steps.push({dir,to:[nm_]})}}
  const nm=shortName(to).replace(/^The /,'');
  const end=door?'the '+nm+' door':'the '+nm;
  if(!steps.length)return door?'The '+nm+' door is '+(A.you&&door.x<A.you.x?'to your left':'to your right')+'. Walk up into it.':'You’re here.';
