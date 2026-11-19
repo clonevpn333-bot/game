@@ -42,6 +42,7 @@ so check every line.
 ## Characters
 - Kids talk like real kids (short, casual, slangy), not like characters in a book.
 - Animation: poses glide (`js/motion.js`), speed set by emotion; people fall over, they don’t snap to the floor. Position jumps inside a room glide as quick steps and sitting settles (`js/polish.js`).
+- Weapons are gripped, not pasted on (`js/grip.js`): the hand closes round the handle, the weapon points where the pose needs it, and picking one up is a grab (reach low, close, swing up). New weapons go in `GRIP_W` with a handle and a business end.
 - Look and act like *The Calling of Aidan* (branch `claude/elegant-pasteur-0012uv`, `aidan/index.html`).
 - Abby: pale, long black hair with subtle faded blue and purple strands, dark clothes, no headphones, no purple brows.
 - Angelo: Hispanic, straight hair, baggy black pants, brown tee.
