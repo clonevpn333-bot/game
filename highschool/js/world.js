@@ -69,10 +69,20 @@ if(typeof FLOOR!=='undefined'){FLOOR.bus=FLOOR.bus||[140,168];}
 
 /* ---------- drawing the doors and stairs ---------- */
 function drawStairs(x,dir){
- const up=dir==='up';
- for(let i=0;i<8;i++){const sx=up?x-20+i*5:x+20-i*5,sy=104-i*9;R(sx-4,sy,12,9,'#b8ac98');R(sx-4,sy,12,1,'#d8ccb8');R(sx-4,sy+8,12,1,'#8a7e6a')}
- R(x-24,30,48,2,'#5a5a62');for(let i=0;i<6;i++)R(x-22+i*9,30,1,74,'#7a7a82');
- R(x-24,18,48,10,'#f4f0e6');pxc(up?'UP ▲':'DOWN ▼',x,20,'#2a2a3a');
+ /* the stairwell: a pair of heavy fire doors with wired glass, steps visible through it */
+ const up=dir==='up',open=D&&D.doorAnim&&D.doorAnim.x===x?D.doorAnim.k:0;
+ R(x-24,28,48,78,'#4a5048');R(x-22,30,44,76,'#1e221e');
+ /* through the glass: the stairs going up (or down) */
+ const win=(wx)=>{R(wx,40,14,24,'#6a7468');for(let i=0;i<6;i++){const sy=up?60-i*4:44+i*4,sx=wx+i*2;R(sx,sy,14-i*2,1,'#c8c0a8');R(sx,sy+1,14-i*2,3,'#8a8470')}
+  R(wx,40,14,1,'rgba(255,255,255,.35)');for(let k=0;k<14;k+=4)R(wx+k,40,1,24,'rgba(30,30,30,.35)');for(let k=0;k<24;k+=4)R(wx,40+k,14,1,'rgba(30,30,30,.35)')};
+ const dw=Math.round(21*(1-open));
+ if(dw>2){for(const side of[-1,1]){const dx=side<0?x-22:x+1+(21-dw);R(dx,30,dw,76,'#6a7a6a');R(dx+1,31,dw-2,74,'#7a8a78');R(dx,30,1,76,'rgba(255,255,255,.12)');if(dw>16){win(dx+3);R(dx+2,74,dw-4,3,'#c8ccc8');R(dx+2,77,dw-4,1,'#5a5a5a')}R(dx,98,dw,1,'rgba(0,0,0,.25)')}}
+ else{g.globalAlpha=.3;R(x-22,30,44,76,'#fff2c8');g.globalAlpha=1}
+ R(x-1,30,2,76,'#3a4038');
+ /* sign */
+ R(x-24,17,48,11,'#1a6a3a');R(x-24,17,48,1,'#3a9a5a');R(x-24,27,48,1,'rgba(0,0,0,.4)');pxc(up?'STAIRS ▲':'STAIRS ▼',x,19,'#e8f8e8');
+ /* floor mat */
+ R(x-20,106,40,3,'#3a3a3a');R(x-20,106,40,1,'#5a5a5a');
 }
 function myClassToday(){if(!D||D.weekend)return null;const p=PERIODS[D.period];if(!p||!p.lesson)return null;try{return myClass()}catch(e){return null}}
 function drawWorldDoors(room){

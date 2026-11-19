@@ -47,6 +47,8 @@ so check every line.
 - Abby: pale, long black hair with subtle faded blue and purple strands, dark clothes, no headphones, no purple brows.
 - Aidan: really short (shortest of the kids, below Nivaan) but normal human proportions.
 - Smirk = steady eyes, one brow cocked up, flat mouth tucked up at one corner. Never a wink.
+- Background kids’ hair must contrast with their skin (`exHair` in `js/ambience.js`): no same-brown hair and skin.
+- Stairs in the hallways are stairwell fire doors (`drawStairs` in `js/world.js`); the stairs themselves are only in the stairwell room.
 - Angelo: Hispanic, straight hair, baggy black pants, brown tee.
 - Each teacher speaks in their own voice (`VOICE` in `js/clarity.js`): never give one teacher another’s catchphrases.
 - Teachers kill sneakily when a class is watching, and openly only with one or two kids around.

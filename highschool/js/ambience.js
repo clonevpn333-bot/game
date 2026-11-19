@@ -112,10 +112,13 @@ function ambTick(rdt){
 
 /* ---------- background kids ---------- */
 const EXTRA_SPOTS={corridor:4,canteen:5,field:4,bus:4,library:2,gym:3,toilets:1,foodcourt:5,arcade:3,carpark:2,door:2};
-const EX_SK=['#f0d0b8','#e8c0a0','#c89068','#a87048','#7a5034','#5a3a24','#f2cfae'],EX_HR=['#1a1210','#3a2418','#7a4a2a','#c8a060','#e8d0a0','#2a1a12','#8a2a1a'],EX_TOP=['#3a5a8a','#8a3a3a','#3a7a4a','#c8a040','#5a4a7a','#2a2a2a','#e0e0e0','#c86a9a','#4a8aa8'],EX_HS=['short','messy','curly','long','ponytail','buzz','fade','side','bob','wavy'];
+const EX_SK=['#f0d0b8','#e8c0a0','#c89068','#a87048','#7a5034','#5a3a24','#f2cfae'],EX_HR=['#1a1210','#3a2418','#7a4a2a','#c8a060','#e8d0a0','#2a1a12','#b0441c'],EX_TOP=['#3a5a8a','#8a3a3a','#3a7a4a','#c8a040','#5a4a7a','#2a2a2a','#e0e0e0','#c86a9a','#4a8aa8'],EX_HS=['short','messy','curly','long','ponytail','buzz','fade','side','bob','wavy'];
+/* hair that reads against the skin: darker skin gets black or near-black hair, never a brown that melts into the face */
+const exLum=c=>{const n=parseInt(c.slice(1),16);return .3*(n>>16)+.59*(n>>8&255)+.11*(n&255)};
+function exHair(sk,n){const L=exLum(sk);const ok=L<150?['#141010','#1a1210','#221814']:L<185?['#141010','#1a1210','#2a1a12','#3a2418']:EX_HR.filter(c=>Math.abs(exLum(c)-L)>55);return ok[n%ok.length]}
 function makeExtra(i){const s=(cal()*31+i*17+(D.period||0)*7)>>>0,h=n=>Math.floor(hsh(s+n)*997);
  const girl=h(1)%2===0,hs=girl?pick(['long','ponytail','bob','curlyl']):pick(EX_HS.filter(x=>!['long','ponytail','bob'].includes(x)));
- const id='x'+i;K[id]={n:'Some kid',col:'#7a7a8a',skin:EX_SK[h(2)%EX_SK.length],hair:EX_HR[h(3)%EX_HR.length],hs,top:EX_TOP[h(4)%EX_TOP.length],pants:['#2a2a33','#34405a','#3a3a3a','#4a3a2a'][h(5)%4],girl:girl?1:0,seed:200+i,v:300+h(6)%200,h:(h(7)%5)-2};K[id].id=id;return id}
+ const id='x'+i;K[id]={n:'Some kid',col:'#7a7a8a',skin:EX_SK[h(2)%EX_SK.length],hair:exHair(EX_SK[h(2)%EX_SK.length],h(3)),hs,top:EX_TOP[h(4)%EX_TOP.length],pants:['#2a2a33','#34405a','#3a3a3a','#4a3a2a'][h(5)%4],girl:girl?1:0,seed:200+i,v:300+h(6)%200,h:(h(7)%5)-2};K[id].id=id;return id}
 const GOSSIP=()=>{const g=['did you see the raccoon in the ceiling','my mom says this school is “a lot”','who keeps writing AIDAN WAS HERE on every desk','apparently the trailer moved four inches','bro the pizza today was green','i heard tyler’s mom came in. she was crying','don’t go in the library after lunch, the old kid is in there','mrs. tarn held her breath for nine minutes. i timed it','ms. sherman looked at me. i felt it in my teeth','mr. adam was screaming on the roof again','someone said the boiler room’s haunted','is it true about the jars in chem?','omer wears shorts in the SNOW','nivaan’s stream got 900 views. for a sandwich','i failed the beep test before it even started'];
  if(D&&D.done&&D.done.beef)g.push('did you SEE omer’s kick at the bus loop','i can’t stop thinking about the head. the HEAD');
  if(D&&D.done&&D.done.flimbus)g.push('mickther','you’re such a mickther','mr. adam said mickther on the PA lmao');
