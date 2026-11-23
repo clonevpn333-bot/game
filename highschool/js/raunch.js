@@ -134,7 +134,7 @@ spot({room:'carpark',x:236,y:150,label:'Deliver the key bowl to the rocking whit
  await N('The van starts rocking twice as fast. The left tire squeaks on every beat. A sock is pressed against the inside of the window and slowly slides down it.');
  v.rock=0;SFX.door&&SFX.door();
  put('shermian',250,-1,{y:150});await walk('shermian',222,50);face('shermian','you');
- await N('The side door slides open a foot and Ms. Sherman steps out, perfectly calm, buttoning her blouse up to the very top, with her hair completely flat on one side.');
+ await N('The side door slides open a foot and Ms. Sherman steps out, perfectly calm, fixing her lanyard, with her hair completely flat on one side and somebody else’s glasses on.');
  await say('shermian','(holding out her hand for the bowl, eyes dead) You saw nothing. You’re going to tell everyone you saw nothing. And if I hear “key party” in my hallway, I’ll find out whose key you are.','cold');
  const c=await choose([{t:'Hand her the bowl. Swap two keys first.',tag:'🔑'},{t:'Hand her the bowl. Then take off the handbrake.',tag:'🚐'},{t:'Hand her the bowl. Take your money. Leave.',tag:'💵'}]);
  take('keybowl');
@@ -147,7 +147,7 @@ spot({room:'carpark',x:236,y:150,label:'Deliver the key bowl to the rocking whit
  if(c===1){await walk('shermian',250,50);remove('shermian');await walk('you',270,60);pose('you','reach');SFX.door&&SFX.door();pose('you',null);await walk('you',150,90);
   v.rock=2;await N('Click. The van rolls. It rolls slowly at first, still rocking, still squeaking on the beat, and then it hits the ramp.');
   await tw(v,{x:420},1400,'in');SFX.crash&&SFX.crash();shake(1.2);
-  await N('It goes down three floors of parking ramp at forty miles an hour with nine teachers inside screaming in harmony and comes to a stop in the mall fountain. The doors fly open. Steam comes out. So does Coach. He is wearing only the whistle.');
+  await N('It goes down three floors of parking ramp at forty miles an hour with nine teachers inside screaming in harmony and comes to a stop in the mall fountain. The doors fly open. Steam comes out. So does Coach, still blowing the whistle, still yelling “PICK A KEY”.');
   if(typeof repAdd==='function')repAdd('legend',2,'The Key Bowl');await complete('keybowl','brake');return 'stay'}
  await say('shermian','(taking the bowl) Good. Smart. You’ll go far. Not tonight. Tonight you go home.','cold');await walk('shermian',250,50);remove('shermian');
  D.money=(D.money||0)+(D.f.kb40?40:20);updateLoc();toast('+$'+(D.f.kb40?40:20));
@@ -234,3 +234,84 @@ ON_PERIOD.push(async()=>{if(!D||TEST||D.period===0||Math.random()>.3)return;cons
   else{R(x-15,y-31,30,22,'#3a1a1a');R(x-15,y-31,30,1,'#7a3a3a');for(let i=0;i<5;i++){R(x-11+i*5,y-28,1,14+(i%2)*4,'#1a0a0a');R(x-12+i*5,y-30,3,2,'#c84040');R(x-11+i*5,y-14+(i%2)*4,2,1,'#c84040')}pxc('PROPERTY OF SCI DEPT',x,y-7,'#ff9090')}}
  const a=A.gimp;if(a&&a.vis){try{drawActor(a)}catch(e){}g.save();g.globalAlpha=.8;R(a.x-4,a.y-34,1,22,'#ff7070');R(a.x+3,a.y-30,1,12,'#ff7070');R(a.x-2,a.y-36,4,1,'#ff9090');R(a.x-1,a.y-29,3,1,'#c0c0c0');g.restore()}
 }}
+
+/* ================= REPLY ALL ================= */
+Object.assign(ITEMS,{hdmi:'An HDMI cable from the ICT room'});
+mission('replyall',{name:'Reply All',icon:'💬',who:['nivaan','adam','balduf','coach','nurse','grieve','shermian'],
+ goal:'Put the teachers’ private group chat on the cafeteria TV.',
+ blurb:'Nivaan got into the staff group chat. It’s called “Highgate Staff 🍎 (NO STUDENTS!!)”. It is four hundred messages long. Nivaan has read all of them and hasn’t slept.',
+ parts:['Nivaan got in','The cable','Lunch: the big screen'],
+ tips:['Break or lunch, the Main Corridor. Nivaan looks haunted.','Grab an HDMI cable from the ICT room.','Lunch, the cafeteria. Plug Nivaan’s phone into the TV.'],
+ variants:{screen:'The whole school read it',teachers:'Sent it to the teachers',kept:'Kept it for later'}});
+if(typeof OUTCOME_FIX!=='undefined')Object.assign(OUTCOME_FIX,{'replyall:screen':'good','replyall:teachers':'good','replyall:kept':'messy'});
+{const _dp=drawProp;drawProp=function(p){if(p.t==='tv'){const x=Math.round(p.x),y=Math.round(p.y);R(x-22,y-14,44,28,'#1a1a1a');R(x-20,y-12,40,24,p.on?'#e8f0f8':'#20242a');
+  if(p.on){for(let i=0;i<5;i++){const w=10+((i*7)%18);R(i%2?x-18:x+18-w,y-10+i*4,w,2,i%2?'#c8d8e8':'#4a8ad8')}}R(x-3,y+14,6,4,'#2a2a2a');return}return _dp(p)}}
+const STAFFCHAT=[
+ ['them','MS. BALDUF: Reminder that the copier room is NOT a “private study space”. Gerald.','9:02'],
+ ['them','MR. ADAM: it was a budget meeting','9:02'],
+ ['them','MS. BALDUF: There is a dent in the copier the exact shape of you, Gerald. Facilities sent a FORM. The form has a diagram.','9:03'],
+ ['them','COACH: whoever left a whistle in the staff fridge, not mine. mine never comes off','9:10'],
+ ['them','NURSE PAM: LOST: one pair handcuffs, pink, fuzzy, sentimental value. Return to the nurse’s office, no questions asked 😘','9:14'],
+ ['them','MR. VOSS: Pam, those were evidence.','9:14'],
+ ['them','NURSE PAM: Evidence of a GOOD TIME, Frederick','9:15'],
+ ['them','MR. GRIEVE: Doris, is Wednesday still on? I have polished the bayonet.','9:31'],
+ ['them','MS. BALDUF: Barnaby, I have asked you to stop calling it that.','9:31'],
+ ['them','MR. GRIEVE: it IS a bayonet','9:32'],
+ ['them','MS. BALDUF: It is not, Barnaby. It is a butter knife at best.','9:32'],
+ ['them','MR. VALENTINO: is this the chat for the key thing','10:05'],
+ ['them','MR. ADAM: VALENTINO THIS IS THE MAIN STAFF CHAT','10:05'],
+ ['them','MR. VALENTINO: ok but is the key thing still on','10:05'],
+ ['them','NURSE PAM: it’s ON 😈 bring your own lube, the school supply is “depleted”','10:06'],
+ ['them','COACH: asking for a friend. how many hot dogs is too many before a “meeting”','10:20'],
+ ['them','NURSE PAM: For you Dale, one. You know what happened.','10:20'],
+ ['them','COACH: THE WHOLE VAN CHEERED PAM','10:21'],
+ ['them','MS. SHERMAN: I have reviewed the parking lot security footage from Friday. All of you. Every single one of you. I am not angry. I am taking notes.','11:02'],
+ ['them','MS. SHERMAN: Dale, your technique is a safety hazard.','11:02'],
+ ['them','MR. ADAM: can we PLEASE keep this chat professional','11:30'],
+ ['them','MS. BALDUF: Says the man who calls out “BUDGET” when he finishes.','11:31'],
+ ['them','MR. ADAM: that was ONE time','11:31'],
+ ['them','MS. BALDUF: It was every time, Gerald. Every time for six years.','11:31']
+];
+hook({mis:'replyall',period:[2,4],room:'corridor',who:'nivaan',label:'Ask Nivaan why he looks haunted',look:{ex:'shock',pose:'phone'},_here:1,cond:()=>!D.f.ra1&&cal()>=2&&!D.dead.nivaan,run:async()=>{
+ scene('corridor',{nivaan:[180,-1,{y:146,ex:'shock',pose:'phone'}],you:[152,1,{y:152}]});
+ if(typeof beat==='function')await beat('REPLY ALL','PART ONE · THE CHAT');
+ await say('nivaan','I got into the staff group chat. Mr. Adam’s password is “password1”. Bro. Bro. I’ve read all of it. I haven’t slept. I can’t look Coach in the eye. I can’t look ANYONE in the eye.','shock');
+ await dms('Highgate Staff 🍎 (NO STUDENTS!!)','14 members',STAFFCHAT.slice(0,7));
+ await say('nivaan','It goes on like that for FOUR HUNDRED MESSAGES. There’s a whole thread about Mr. Grieve’s “bayonet”. It’s not about a bayonet.','shock');
+ await say('nivaan','The whole school needs to see this. The cafeteria’s got a TV. I need a cable. ICT’s got cables. Go. I’ll be in there at lunch.','evil');
+ D.f.ra1=1;part('replyall',1);return 'stay';
+}});
+spot({room:'ict',x:150,y:150,label:'Grab an HDMI cable from the ICT room',short:'GRAB',sparkle:1,mis:'replyall',jdraw:{sh:'tool'},cond:()=>D.f.ra1&&!D.f.ra2&&!has('hdmi'),run:async()=>{
+ clearTalk();await walk('you',144,70);pose('you','reach');await wait(250);pose('you','grab');give('hdmi');hold('you','J:tool');await wait(380);hold('you',null);pose('you',null);
+ D.f.ra2=1;part('replyall',2);toast('Now: lunch, the cafeteria TV');return 'stay'}});
+hook({mis:'replyall',period:4,room:'canteen',who:'auto',_bomb:1,cond:()=>D.f.ra2&&has('hdmi')&&!D.done.replyall&&!D.dead.nivaan,run:async()=>{
+ const kids=['arjun','hasan','omer','kenneth','paul','jacob'].filter(k=>K[k]&&!D.dead[k]);
+ const cast={nivaan:[150,1,{y:142,pose:'phone'}],you:[176,-1,{y:150}]};kids.forEach((k,i)=>cast[k]=[40+i*48+(i>2?80:0),i<3?1:-1,{y:156,pose:'sit'}]);
+ scene('canteen',cast,true);const tv=prop({t:'tv',x:160,y:64,layer:-60});
+ if(typeof beat==='function')await beat('REPLY ALL','PART TWO · THE BIG SCREEN');
+ await walk('you',164,60);pose('you','reach');take('hdmi');SFX.click&&SFX.click();await wait(300);pose('you',null);tv.on=1;
+ await N('The cafeteria TV, which has shown nothing but a slideshow about handwashing since 2016, flickers. Then it shows the staff group chat. In font size 72.');
+ await dms('Highgate Staff 🍎 (NO STUDENTS!!)','on the cafeteria TV',STAFFCHAT.slice(0,14));
+ for(const k of kids)if(A[k])A[k].ex='shock';
+ if(A.arjun)await say('arjun','THE COPIER. I USED THAT COPIER FOR MY HISTORY PROJECT. I LEANED ON IT. I LEANED ON THE DENT.','shock');
+ if(A.hasan)await say('hasan','(quietly) A butter knife at best. She said a butter knife at best. To a man with a bayonet.','closed');
+ await dms('Highgate Staff 🍎 (NO STUDENTS!!)','on the cafeteria TV',STAFFCHAT.slice(14));
+ if(A.paul){pose('paul','cheer');await say('paul','HE YELLS “BUDGET”. HE YELLS “BUDGET” WHEN HE—','laugh');pose('paul',null)}
+ await N('Nine hundred kids say “EVERY TIME FOR SIX YEARS” at the same time. It’s not planned. It just happens. It’s the most united this school has ever been.');
+ if(A.kenneth)await say('kenneth','I’m never going to the nurse again. I’m just gonna bleed. I’ll bleed in class. It’s fine.','scared');
+ put('adam',336,-1,{y:146});await walk('adam',240,140);A.adam.ex='shock';
+ await say('adam','TURN IT OFF. TURN IT— whose phone is that. WHOSE PHONE IS THAT.','yell');
+ await say('adam','(seeing the screen) That was ONE TIME. It was ONE TIME, Doris was being DRAMATIC—','yell');
+ await N('The entire cafeteria, all at once, quietly: “budget.”');
+ const c=await choose([{t:'Leave it on. Let it scroll.',tag:'📺'},{t:'“Sorry sir.” Then reply-all to the staff chat: “Hi it’s the students.”',tag:'💬'},{t:'Pull the plug. Screenshot everything first.',tag:'📸'}]);
+ if(c===0){await N('Mr. Adam stands in front of the TV with his arms out like a goalkeeper. It’s a big TV. He’s not a big man. Everyone can see “for six years” over his left shoulder.');
+  if(typeof repAdd==='function')repAdd('legend',2,'Reply All');await complete('replyall','screen');return 'stay'}
+ if(c===1){pose('you','phone');await dms('Highgate Staff 🍎 (NO STUDENTS!!)','14 members',[['me','hi it’s the students 👋','12:31'],['them','MS. SHERMAN: …','12:31'],['them','NURSE PAM: oh no','12:31'],['them','COACH: how long have you been in here','12:32'],['me','since the copier','12:32'],['them','MR. GRIEVE: Delete this chat. Delete this chat. Delete my LIFE.','12:32']]);
+  pose('you',null);if(typeof repAdd==='function')repAdd('feared',2,'you’re in the staff chat');await complete('replyall','teachers');return 'stay'}
+ pose('you','phone');await wait(300);pose('you','reach');tv.on=0;SFX.click&&SFX.click();pose('you',null);
+ await N('Click. Black screen. Mr. Adam breathes out. He thinks it’s over. Your phone has four hundred screenshots in it. It is not over. It will never be over.');
+ D.f.staffChat=1;if(typeof repAdd==='function')repAdd('feared',1);await complete('replyall','kept');return 'stay';
+}});
+{const h=HOOKS.find(h=>h.mis==='replyall'&&h._here);const _hp=hookPresent;hookPresent=function(x,per){if(x===h)return !D.dead.nivaan;return _hp(x,per)};
+ const _br=buildRoom;buildRoom=function(room){const r=_br(room);try{if(room==='corridor'&&D&&!D.weekend&&[2,4].includes(D.period)&&!A.nivaan&&h.cond())put('nivaan',180,-1,{y:146})}catch(e){}return r}}
+ON_PERIOD.push(async()=>{if(!D||TEST||!D.done||!D.done.replyall||Math.random()>.3||D.period===0)return;setTimeout(()=>toast('🗣 '+pick(['Somebody yelled “BUDGET” in assembly and Mr. Adam walked out.','Nobody uses the copier. The copier is a crime scene.','Grieve brought a butter knife to lunch and everybody lost it.','The nurse’s office has a sign now: “NO HANDCUFF INQUIRIES.”'])),6000)});
