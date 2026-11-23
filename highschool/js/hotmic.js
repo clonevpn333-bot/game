@@ -5,7 +5,7 @@
    meeting”. You fix it. Sort of. The ON AIR light never goes off.
    Period 5, in class, the speaker crackles, and the whole school hears
    what the staff do in the Vice Principal's office at 1:20 on a weekday.
-   (Adults only, on air, all innuendo. The kids just have to live with it.)
+   (Filthy adults on air. The kids just have to live with it.)
    ===================================================================== */
 Object.assign(ITEMS,{etape:'A roll of electrical tape'});
 mission('hotmic',{name:'Hot Mic',icon:'🎙️',who:['adam','balduf','coach','nurse','grieve'],
@@ -36,8 +36,8 @@ hook({mis:'hotmic',period:[2,4],room:'office',who:'adam',label:'Ask Mr. Adam why
  if(c===0)await say('adam','He’s unavailable. Permanently. Moving on. Moving ON.','cold');
  if(c===1)await say('adam','A hall pass. Laminated. You can go anywhere. Except here. Especially after lunch.','smirk');
  if(c===2)await say('adam','It’s warm. It’s a warm office. Ms. Balduf says it’s warm in here too. When she— when she visits. For the budget.','scared');
- await say('adam','I need it working by Period 5. I have a meeting. In here. Door locked. Very boring. Numbers. Spreadsheets. Long, hard… spreadsheets.','blush');
- await say('adam','Electrical tape’s in Woodwork. The box is behind my desk. Don’t touch anything else in my desk. Don’t open the bottom drawer. There’s nothing in it. Don’t open it.','scared');
+ await say('adam','I need it working by Period 5. I have a meeting. In here. Door locked. Ms. Balduf and I are going over the budget. With our— with the budget. It’s a hands-on budget.','blush');
+ await say('adam','Electrical tape’s in Woodwork. The box is behind my desk. Don’t touch anything else in my desk. Don’t open the bottom drawer. It’s not a massager. It’s for my back. Don’t open it.','scared');
  D.f.hm1=1;part('hotmic',1);return 'stay';
 }});
 /* the tape */
@@ -68,39 +68,40 @@ hook({mis:'hotmic',period:[5,6],get room(){return D&&myClassFor(D.period)},set r
  if(sub)await say(sub,'Your teacher is “in a meeting”. I am your substitute. I don’t know what this class is. Read something.','cold');
  SFX.static&&SFX.static();pa.on=1;
  await N('Halfway through the lesson, the speaker on the wall crackles. The little red light on it comes on. Everybody looks up.');
- await say('adam','(on the speaker) …is it on? It’s not on. The kid fixed it. The light’s just like that, Doris.');
- await say('balduf','(on the speaker) Then lock the door, Gerald. This book is THIRTY YEARS overdue.');
+ await say('adam','(on the speaker) …is it on? It’s not on. The kid fixed it. The light’s just broken, Doris. Get over here.');
+ await say('balduf','(on the speaker) Pants. Off. Now, Gerald. I’ve been thinking about your sad little body through all of second period.');
  for(const k of kids)if(A[k])A[k].ex='shock';
- await say('adam','(on the speaker, breathing) I know. I’ve been a very… bad… borrower.');
- if(A.hasan){pose('hasan','drink');await N('Hasan, frozen, takes a slow sip of his chocolate milk to have something to do with his face.')}
- await say('balduf','(on the speaker) Do you know what we do to borrowers who don’t return?');
- await say('adam','(on the speaker) Not the late fees. Doris. Please. Not the late fees.');
- await say('balduf','(on the speaker) Bend. Over. The returns cart.');
- SFX.thud&&SFX.thud();shake(.6);
- await N('KA-CHUNK. The unmistakable sound of a library date stamp, at full force, on something that is not a library book.');
- await say('balduf','(on the speaker) STAMPED. DUE BACK IN TWO WEEKS.');
- await say('adam','(on the speaker) Oh God. Oh God, Doris. Do the Dewey Decimal.');
- await say('balduf','(on the speaker, slowly) Five hundred…');
- await say('adam','(on the speaker) yes');
- await say('balduf','(on the speaker) …and seventy…');
- await say('adam','(on the speaker) YES');
- await say('balduf','(on the speaker) …TWO.');
- await say('adam','(on the speaker) THE NATURAL SCIENCES!!!');
+ await say('adam','(on the speaker) Yes ma’am. Should I— should I fold them?');
+ await say('balduf','(on the speaker) Did I SAY fold them? Throw them in the shredder. You’re going home in a trash bag like last time.');
+ if(A.hasan){pose('hasan','drink');await N('Hasan, frozen, takes a slow sip of his chocolate milk so his face has something to do.')}
+ SFX.thud&&SFX.thud();shake(.4);
+ await N('A desk creaks. Then it creaks again. Then it starts creaking on a rhythm, and the rhythm is not a good rhythm, and the whole school is now hearing it in surround sound.');
+ await say('adam','(on the speaker) Oh God, Doris. Oh GOD. Talk dirty to me. Talk about the budget.');
+ await say('balduf','(on the speaker) Forty percent cut to the arts department, Gerald.');
+ await say('adam','(on the speaker) NNNGH—');
+ await say('balduf','(on the speaker) We’re selling the band’s instruments. ALL of them. The TUBA, Gerald.');
+ await say('adam','(on the speaker) Oh the tuba— oh the TUBA— DORIS I’M GONNA—');
+ SFX.thud&&SFX.thud();
+ await say('adam','(on the speaker) …');
+ await say('balduf','(on the speaker, flat) Four seconds. That’s a new record, Gerald. Wrong direction.');
  if(A.hasan){pose('hasan',null);A.hasan.ex='shock';SFX.squelch&&SFX.squelch();milkSpray(A.hasan.x+A.hasan.dir*6,A.hasan.y-26,A.hasan.dir);shake(.8);
   if(typeof camZoom==='function')await camZoom(A.hasan.x,A.hasan.y-26,1.8,200);
-  await N('Hasan sprays chocolate milk halfway across the room. It hits Arjun. It hits the wall. A little bit of it hits the ceiling and stays there.');
+  await N('Hasan sprays chocolate milk halfway across the room. It hits Arjun in the mouth. Arjun had his mouth open because he was screaming.');
   if(typeof camZoom==='function')await camZoom()}
- if(A.arjun)await say('arjun','I’M GONNA THROW UP. I’M GONNA THROW UP IN MY OWN HANDS.','shock');
- if(A.nivaan)await say('nivaan','(filming the speaker) Chat. CHAT. Twelve thousand viewers. We’re trending in Belgium.','laugh');
+ if(A.arjun){pose('arjun','hurt');await say('arjun','IT’S IN MY MOUTH. HIS MILK IS IN MY MOUTH AND THE VICE PRINCIPAL JUST FINISHED IN FOUR SECONDS. THIS IS THE WORST DAY OF MY LIFE.','shock');pose('arjun',null)}
+ if(A.omer){pose('omer','hurt');SFX.squelch&&SFX.squelch();await N('Omer throws up into his backpack. Quietly. Respectfully. Zips it back up.');pose('omer',null)}
+ if(A.nivaan)await say('nivaan','(filming the speaker) Chat. CHAT. Fourteen thousand viewers. Somebody just donated twenty bucks with the message “TUBA”.','laugh');
  SFX.knock&&SFX.knock();
- await say('coach','(on the speaker, knocking) Gerald? Doris? Is this the book club? I brought my whistle.');
- await say('adam','(on the speaker, a long pause) …Lock it behind you, Dale.');
+ await say('coach','(on the speaker, banging on the door) GERALD. IT’S DALE. I heard the tuba thing from the GYM. Is it my turn? I’ve been warming up. I did lunges.');
+ await say('balduf','(on the speaker) Get in here, Dale. Lock it. Leave the whistle on.');
+ await say('coach','(on the speaker) The whistle never comes off, Doris. You know that. The whistle has seen things.');
  for(const k of kids)if(A[k]){pose(k,'cover')}
- await N('Every kid in the room screams at once, like a flock of birds leaving a tree.');
- await say('nurse','(on the speaker) Knock knock! Is there room for one more? I brought gloves. The long ones.');
- await say('grieve','(on the speaker, a door slamming) DORIS. We had an ARRANGEMENT.');
- await say('balduf','(on the speaker) The arrangement is WEDNESDAYS, Barnaby. Get in line.');
- await say('grieve','(on the speaker, a long, long pause) …Is there a line?');
+ await N('Every kid in the room screams at once, like a flock of birds leaving a tree that’s on fire.');
+ await say('nurse','(on the speaker) Knock knock! Heard there was a staff meeting. I brought the lube from the nurse’s office. It says “for medical use only” and baby, this IS medical.');
+ await say('adam','(on the speaker) Pam, you can’t bring the speculum in h— oh, she brought the speculum.');
+ await say('grieve','(on the speaker, the door slamming) DORIS. You told me you were RE-SHELVING.');
+ await say('balduf','(on the speaker) I am re-shelving, Barnaby. Gerald is the shelf. Get on your knees and be a footstool or get out.');
+ await say('grieve','(on the speaker, a long, long pause, then a zipper) …For the Union.');
  if(sub){await walk(sub,150,60);pose(sub,'reach');await N('Mr. Valentino reaches up and turns the volume knob on the speaker, very slowly, all the way down. It comes off in his hand. The volume goes UP.');pose(sub,null);await say(sub,'(holding the knob) I need you all to know I was a pastry chef.','cold')}
  for(const k of kids)if(A[k])pose(k,'sit');
  const c=await choose([{t:'Sprint to the office and cut the power.',tag:'⚡'},{t:'Let it play. Hit record.',tag:'📱'},{t:'Grab the classroom phone and get on the PA yourself.',tag:'🎙️'}],'The whole school is listening. You did this.');
@@ -118,7 +119,7 @@ hook({mis:'hotmic',period:[5,6],get room(){return D&&myClassFor(D.period)},set r
  }
  if(c===1){
   pose('you','phone');await N('You hold your phone up next to Nivaan’s. It goes on for four more minutes. Somebody on the floor below starts a slow clap that spreads through the whole building.');
-  await N('By home time it has a remix. By tomorrow it has a dance. For the rest of your life, someone in a hallway will whisper “THE NATURAL SCIENCES” and you will think of this.');
+  await N('By home time it has a remix. By tomorrow it has a dance where you go limp after four seconds. For the rest of your life, someone in a hallway will yell “THE TUBA” and you will think of this.');
   pose('you',null);if(typeof repAdd==='function'){repAdd('legend',2,'Hot Mic went viral')}
   await complete('hotmic','viral');return 'stay';
  }
@@ -131,5 +132,5 @@ hook({mis:'hotmic',period:[5,6],get room(){return D&&myClassFor(D.period)},set r
  await complete('hotmic','radio');return 'stay';
 }});
 /* afterwards: the school won't let it go */
-if(typeof CHAT!=='undefined'){const add=['THE NATURAL SCIENCES. I can’t. I literally can’t.','Ms. Balduf stamped my library book today and the whole line went silent.','Coach brought his whistle to the BOOK CLUB.','Five hundred and seventy-TWO, bro.'];
+if(typeof CHAT!=='undefined'){const add=['FOUR SECONDS. The man lasted FOUR SECONDS.','The band kids are hiding the tuba from Mr. Adam now.','“The whistle has seen things.” I’m never doing PE again.','Grieve said FOR THE UNION, bro.','Don’t go to the nurse. She’s out of lube and everyone knows why.'];
  ON_PERIOD.push(async()=>{if(D&&D.done&&D.done.hotmic&&!TEST&&Math.random()<.35&&D.period>0)setTimeout(()=>toast('🗣 Someone in the hall: “'+pick(add)+'”'),4200)})}
