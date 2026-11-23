@@ -74,6 +74,13 @@ hook({mis:'codebrown',_bomb:1,period:[3,5,6],get room(){return D&&myClassFor(D.p
   SFX.squelch&&SFX.squelch();shake(1);brownSpray(A.coach.x,A.coach.y-10);poop(A.coach.x,A.coach.y+2,90);poop(A.coach.x-30,A.coach.y+5,70);poop(A.coach.x-70,A.coach.y+8,50);A.coach.ex='closed';A.coach.shake=0;
   await N('Coach does not hold it in. It comes out of his tracksuit leg like a fire hose. It pools. It SPREADS. It reaches Mr. Voss’s good shoes, and Mr. Voss makes a noise no human should make.');
   await say('coach','(very calm, eyes closed) …Nobody says a goddamn word.','closed')}
+ if(A.coach&&typeof spew==='function'){
+  await N('Then the pressure builds back up. Coach turns, slowly, to face the wrong way, which is towards you.');
+  A.coach.dir=-1;await spew({x:A.coach.x,y:A.coach.y-14},['you'].concat(kids),'brown',{n:110,dur:1600,arc:18,shake:1.4});
+  await N('The second wave crosses the entire Main Corridor in a single brown arc and hits all four of you like a firework display at a sewage plant.');
+  if(A.voss&&A.balduf){A.voss.ex='hurt';await spew('voss',['balduf','grieve'].filter(k=>A[k]),'puke',{n:60,dur:900,arc:10,shake:1});await say('balduf','(dripping) VOSS. This is a CARDIGAN. This was my MOTHER’S cardigan.','angry');await say('voss','Your mother would have understood, Doris. Your mother ATE here.','hurt')}
+  if(kids.length>1)await pukeChain(kids.filter(k=>A[k]),{lines:['It’s in my SOCKS. How is it in my socks.','']});
+ }
  for(const k of kids)if(A[k])pose(k,'cover');
  if(A.arjun)await say('arjun','IT’S RUNNING DOWNHILL. WHY IS THE HALLWAY DOWNHILL. IT’S COMING TOWARDS US.','shock');
  if(A.omer){SFX.squelch&&SFX.squelch();await N('Omer throws up. Then he looks down at the hallway and throws up again, just to be safe.')}

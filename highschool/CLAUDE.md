@@ -60,7 +60,7 @@ so check every line.
 ## Tone and content
 - M-rated: swearing, gore, dark comedy and edgy teen humor are wanted.
 - No slurs and no disguised slurs (not even made-up words that sound like them).
-- No sexual content involving the kids. Raunchy = actually filthy, not innuendo: the ADULTS (teachers, parents, randos) can be explicitly crude, with sex stuff happening just off-screen (heard, van rocking, gear found), plus gross-out. Kids react, puke, film, roast, get revenge, never take part. See `js/raunch.js` and `js/hotmic.js`.
+- No sexual content involving the kids. Raunchy = actually filthy, not innuendo: the ADULTS (teachers, parents, randos) can be explicitly crude, with sex stuff happening just off-screen (heard, van rocking, gear found), plus gross-out. Kids react, puke, film, roast, get revenge, never take part. See `js/raunch.js` and `js/hotmic.js`. Gross-out hits the audience on screen with `spew()`/`pukeChain()`/`stain()` in `js/splash.js` (puke, brown, milk, chili only).
 - American English everywhere.
 - The “safe version” has no Abby and no Corey romance. Call it “safe version”, never “no Abby”.
 
