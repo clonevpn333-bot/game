@@ -133,7 +133,7 @@ HOOK.drawOver=()=>{
  for(const s of SPOTS)if(s.sparkle&&s.room===D.room&&(s.period==null||s.period===D.period||(Array.isArray(s.period)&&s.period.includes(D.period)))&&(!s.cond||s.cond()))drawProp({t:'sparkle',x:s.x,y:s.y||140});
  if(roamTarget){const t=roamTarget,a=t.id?A[t.id]:null;let y=a?a.y-kidGeom(a.k,a).legH-kidGeom(a.k,a).bodyH-kidGeom(a.k,a).hd-14:(t.spot.y||140)-16;const txt=t.id?nameOf(t.id):t.spot.short||'LOOK';const w=pxw(txt)+6;const x=clamp(t.x-w/2,2,W-w-2);R(x,y,w,9,'#141120');R(x,y,w,1,'#cab38c');pxc(txt,x+w/2,y+2,'#f6cf8e');}
  // mission markers above heads
- for(const id in A){if(id==='you'||A[id].dead)continue;if(availableHooks(D.room,id).length){const a=A[id],G=kidGeom(a.k,a);const y=a.y-G.legH-G.bodyH-G.hd-(roamTarget&&roamTarget.id===id?24:9)+(Math.sin(T*5)>0?1:0);R(a.x-1,y,3,5,'#f6cf8e');R(a.x-1,y+6,3,2,'#f6cf8e')}}
+ for(const id in A){if(id==='you'||A[id].dead)continue;if(availableHooks(D.room,id).length&&(typeof showMark!=="function"||showMark(id))){const a=A[id],G=kidGeom(a.k,a);const y=a.y-G.legH-G.bodyH-G.hd-(roamTarget&&roamTarget.id===id?24:9)+(Math.sin(T*5)>0?1:0);R(a.x-1,y,3,5,'#f6cf8e');R(a.x-1,y+6,3,2,'#f6cf8e')}}
 };
 
 /* ---------------- flow ---------------- */

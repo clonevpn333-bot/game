@@ -23,7 +23,7 @@ so check every line.
 - Every quest has a blunt `goal`, and its next step says where to walk (`routeText` in `js/world.js`). The HUD's RIGHT NOW list, the floor plan and the quest log's Right Now tab show what's doable this period (`js/guidance.js`).
 - Quest lines that promise a time (“at break”, “home time”) must match when the next step can actually happen.
 - Keep feelings real-sized: heartfelt scenes get a joke or a deflection; nobody becomes your best friend after one quest.
-- The quest log opens on TRACKER (`js/tracker.js`, also T): today’s classes, the main story, every started quest with when/where its next step is, and where everyone is now and next period. Under the clock there’s always a 📚 next-class line. A quest pickup spot needs a `mis` tag or the guidance can’t see it. If a quest’s next step lives in another quest, add it to `VIA`. Check stalls with `node tools/audit-quests.mjs`.
+- The quest log (`js/questlog.js`, Q) opens on DO NOW: what you can do this period (started quests first, only 3 new ones unless expanded), your class, a later-today timeline. 📌 Track puts one line under the clock and an in-world arrow to the next door/edge. At most 2 new-quest “!” marks per room. The TODAY tab is the tracker (`js/tracker.js`, also T): today’s classes, the main story, every started quest with when/where its next step is, and where everyone is now and next period. Under the clock there’s always a 📚 next-class line. A quest pickup spot needs a `mis` tag or the guidance can’t see it. If a quest’s next step lives in another quest, add it to `VIA`. Check stalls with `node tools/audit-quests.mjs`.
 - When the bell goes, everyone in the room runs off-screen before the next period starts (`js/tracker.js`).
 - Random chaos happens around the school (`js/chaos.js`): free, quick, edgy.
 - Characters you’re mid-quest with come back the next day if they die.
@@ -68,5 +68,6 @@ so check every line.
 - Pixel art at 320×180, full-screen game with a floating text box. Keyboard and touch both work.
 - New rooms must be drawn to the forest glow-up standard: cached static layer with light, shade, texture and clutter, plus small animated touches (see `js/glowup.js`).
 - Music is calm, mellow and slow.
+- Skip/fast-forward only runs in cutscenes (Ctrl or ⏩); S and A are movement keys. Every room change uses the one dip-to-black in `js/fixes.js`.
 - Quick check after each change: `tools/quick.sh` (~2 min, normal + safe). Full run only at milestones: `node tools/test.mjs` and `HS_URL=.../dist/highschool-safe.html` (~25 min). Build with `python3 tools/build.py`.
 - Always rebuild `dist/` and send all four HTML files after changes.
