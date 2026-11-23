@@ -120,7 +120,7 @@ function nowCard(t){
  r.appendChild(qel('div','ic',M?M.icon:'★'));
  const m=qel('div','m');r.appendChild(m);
  const h=qel('h4','',d.name);h.appendChild(chip(t.main?'MAIN STORY':t.started?'IN PROGRESS':'NEW',t.main?'main':t.started?'go':'new'));m.appendChild(h);
- if(d.label)m.appendChild(qel('div','act','“'+d.label+'”'));
+ if(d.label)m.appendChild(qel('div','act',/^[“"]/.test(d.label)?d.label:'“'+d.label+'”'));
  m.appendChild(qel('div','wh','📍 '+(D.room===t.room?'Right here':d.where)+(d.who?' · with '+d.who:'')));
  if(D.room!==t.room)m.appendChild(qel('div','rt','➜ '+d.route));
  if(M&&!t.main)r.appendChild(trackBtn(t.mis));
