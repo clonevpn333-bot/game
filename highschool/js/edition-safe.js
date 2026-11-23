@@ -48,7 +48,7 @@ say=function(who,text,e){
 if(typeof DAYSET!=='undefined')for(const t in DAYSET)for(const i in DAYSET[t]){const s=DAYSET[t][i];if(s&&s.cls)for(const r in s.cls)s.cls[r]=s.cls[r].filter(x=>x!=='abby')}
 if(typeof WHISPER!=='undefined')delete WHISPER.abby;
 
-/* no Hasan & Darren, and no Sean & Stella: they’re friends, that’s all */
+/* no Hasan & Darren, and no Sean & Imani: they’re friends, that’s all */
 {const CUT=['darren','steptwelve','steal_stella','stepeleven','tellmom','toby','instella','striketwo','firstfight','farewell'];
  for(const m of CUT)delete MIS[m];
  for(const m in MIS){const w=MIS[m].who||[];if(w.includes('darren')||w.includes('toby'))delete MIS[m]}

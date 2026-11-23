@@ -145,7 +145,7 @@ hook({mis:'stilllife',day:'even',period:1,room:'art',who:'auto',run:async()=>{
 mission('pitch',{name:'Perfect Pitch',icon:'🎼',who:['kenneth','sean','stella'],
  blurb:'Mr. Fenwick has perfect pitch, a tuning fork, and no tolerance. Kenneth has a solo. Kenneth has never once sung in tune.',
  parts:['Break: Kenneth is panicking','Period 4, Music: the solo'],tips:['Even day, break, gym. Kenneth needs a coach. Sean has the voice.','Even day, Period 4, Music. Stay on the beat.'],
- variants:{sang:'He sang',duet:'Sean and Stella take it',fork:'Tuned'}});
+ variants:{sang:'He sang',duet:'Sean and Imani take it',fork:'Tuned'}});
 hook({mis:'pitch',day:'even',period:2,room:'gym',who:'kenneth',label:'Ask Kenneth why he’s humming',look:{pose:null,ex:'scared'},cond:()=>!D.f.pitch1,run:async()=>{
  scene('gym',{kenneth:[220,-1,{y:146,ex:'scared'}],you:[196,1,{y:152}]});
  await say('kenneth','(humming, badly) Fenwick gave me the solo in the school song. ME. On purpose. As a punishment.','scared');
@@ -182,7 +182,7 @@ hook({mis:'pitch',day:'even',period:3,room:'music',who:'auto',run:async()=>{
  if(A.sean&&A.stella){
   const s=await choose(['Nudge Sean: “Take the solo. Now.”','Let Fenwick tune him.']);
   if(s===0){
-   await N('Sean stands up mid-bar and takes the line over like he was always meant to have it. Stella comes in underneath him on the harmony without being asked.');
+   await N('Sean stands up mid-bar and takes the line over like he was always meant to have it. Imani comes in underneath him on the harmony without being asked.');
    await say('sean','(singing) “…our hearts and our hands, our Fridays, our friends…”','closed');await say('stella','(harmonising) “…our Fridays, our friends…”','love');
    cue('romance');fxState.romance=.3;await N('It’s so good that Mr. Fenwick forgets about Kenneth entirely. He conducts with his eyes shut. Kenneth sits down very quietly and lives.');fxState.romance=0;
    await classOut(c);await complete('pitch','duet');return;
@@ -401,7 +401,7 @@ hook({mis:'talent',day:'even',period:4,room:'gym',who:'paul',label:'Look at Paul
  scene('gym',{paul:[200,-1,{y:144,hold:'clipboard'}],you:[176,1,{y:152}]});
  await say('paul','Talent show. Period 8. Mr. Adam said “bring me something the inspectors will remember”. I wrote “wrestling”. I wrote it four times.','happy');
  await say('paul','You pick the order. Opener, middle, closer. Crowd’s got to be warm by the end or Adam cries on stage again.','smirk');
- const acts=[['paul','Paul: wrestling (on a crash mat, probably)'],['marcus','Marcus: stand-up (eleven minutes, “all clean”)'],['kayden','Kayden: drill (“Highgate Hittaz Anthem”)'],['sean','Sean & Stella: a duet']].filter(a=>!D.dead[a[0]]);
+ const acts=[['paul','Paul: wrestling (on a crash mat, probably)'],['marcus','Marcus: stand-up (eleven minutes, “all clean”)'],['kayden','Kayden: drill (“Highgate Hittaz Anthem”)'],['sean','Sean & Imani: a duet']].filter(a=>!D.dead[a[0]]);
  const order=[];const left=acts.slice();
  for(const slot of['opener','middle act','closer']){if(!left.length)break;const i=await choose(left.map(a=>a[1]),'The '+slot+'?');order.push(left[i][0]);left.splice(i,1)}
  D.f.talOrder=order;

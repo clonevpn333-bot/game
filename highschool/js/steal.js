@@ -11,18 +11,10 @@
    Endings: she stays with you · she goes back to him · you give her
    back (and maybe keep your friend).
    Built once, used for:
-     Stella, from Sean (your friend — this one costs you)
+     Imani, from Sean (your friend — this one costs you)
      Mia, from Tez
    ===================================================================== */
 const STEAL={
- stella:{bf:'sean',name:'Stella',icon:'🥎',title:'Strike Three',friend:1,
-  places:{a:[[2,'field'],[4,'field']],b:[[4,'library'],[2,'library']],d:[[2,'corridor'],[4,'corridor']],e:[8,'arcade']},
-  blurb:'Sean calls Stella forty times a day. She moved schools for him. She’s starting to look at the exits. And at you.',
-  l1:['He called me eleven times during third period. ELEVEN. I was in a test. He left a voicemail that was just him breathing and saying “babe”.','I moved schools for him. I moved my whole life two hours east for a boy who can’t let me pee without a status update.'],
-  l2:'Okay, stand behind me. Hands on the bat. No— higher. You’re so bad at this. You’re SO bad at this. (she’s laughing) Don’t move.',
-  bf3:['I SAW IT. Kaylee sent it to the whole grade. You and her. At the field. You were my BOY.','We had a handshake. We had a HANDSHAKE, man. Eleven parts. I taught you the eleven parts.'],
-  gesture:'Sean is at the claw machine. He’s been at the claw machine for three hours. Eighty-one dollars in quarters. There’s a stuffed bear in there holding a softball. He’s crying a bit.',
-  bfAsk:'Stella. Stel. I got it. Eighty-one dollars. I’ll stop calling. I’ll call ONCE a day. Twice. Once. I’m saying it in front of everybody.'},
  mia:{bf:'tez',name:'Mia',icon:'🎭',title:'Exit, Pursued',friend:0,
   places:{a:[[2,'canteen'],[4,'canteen']],b:[[4,'library'],[2,'library']],d:[[2,'corridor'],[4,'corridor']],e:[8,'foodcourt']},
   blurb:'Tez grew a mustache to impress Mia. It did not impress Mia. Mia is in Drama. Mia wants someone who can at least act like they care.',
@@ -121,9 +113,9 @@ function stealArc(gid,S){
   return 'stay'}});
 }
 for(const id in STEAL)if(K[id]&&K[STEAL[id].bf])stealArc(id,STEAL[id]);
-OUTCOME_FIX['steal_stella:you']='messy';OUTCOME_FIX['steal_stella:bros']='good';OUTCOME_FIX['steal_stella:back']='bad';
+
 OUTCOME_FIX['steal_mia:you']='good';OUTCOME_FIX['steal_mia:bros']='good';OUTCOME_FIX['steal_mia:back']='bad';
-ARC_MIS.push('steal_stella','steal_mia');
+ARC_MIS.push('steal_mia');
 /* if she’s with you now, their couple stuff stops, and she’s with you around school */
 {const SS=['instella','striketwo','firstfight','farewell','toby'];for(const h of HOOKS)if(SS.includes(h.mis)){const c=h.cond;h.cond=()=>!(P.done.steal_stella==='you')&&(!c||c())}}
 {const _br=buildRoom;buildRoom=function(room){const r=_br(room);if(!D||D.weekend)return r;

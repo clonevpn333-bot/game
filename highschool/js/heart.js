@@ -4,7 +4,7 @@
    Longer, realer chapters for the romances and the people in the smaller
    quests. Nobody gets saved by one conversation. Things take a few goes.
      Mended — Corey fixes Abby’s dad’s guitar.
-     The First Fight — Sean and Stella, after the honeymoon.
+     The First Fight — Sean and Imani, after the honeymoon.
      Hasan’s Mom — the laminated list goes through the wash.
      Ohio — Toby and the friend who stopped answering.
      Voicemail — Arjun and his grandad.
@@ -86,11 +86,11 @@ hook({mis:'mended',period:8,room:'foodcourt',who:'abby',label:'Watch Corey give 
 tipsFrom('mended',()=>!D.f.md1?'Break or lunch, the Cafeteria: Abby has a shoebox.':!D.f.md2?'Upstairs, Arts Wing: walk up into the Woodwork door (when there’s no lesson in it). Corey’s there.':!D.f.md3?'Upstairs Corridor, outside the Music room: Mr. Fenwick has strings.':'After school, Fair City Mall food court. Corey has the guitar.');
 
 /* =====================================================================
-   THE FIRST FIGHT — Sean & Stella
+   THE FIRST FIGHT — Sean & Imani
    ===================================================================== */
-mission('firstfight',{name:'The First Fight',icon:'⚾',who:['sean','stella'],goal:'Get Sean and Stella through their first real fight.',
- blurb:'Sean and Stella were perfect on the phone. In person, for the first time, they’re not talking.',
- parts:['Sean, hiding','Stella, crying','The bus loop'],tips:['Break, the Library. Sean is hiding.']});
+mission('firstfight',{name:'The First Fight',icon:'⚾',who:['sean','stella'],goal:'Get Sean and Imani through their first real fight.',
+ blurb:'Sean and Imani were perfect on the phone. In person, for the first time, they’re not talking.',
+ parts:['Sean, hiding','Imani, crying','The bus loop'],tips:['Break, the Library. Sean is hiding.']});
 hooks({mis:'firstfight',label:'Ask Sean why he’s hiding',look:{ex:'sad'},cond:()=>D.done.striketwo&&!D.f.ff1&&!D.dead.stella,run:async()=>{
  scene('library',{sean:[200,-1,{y:146,pose:'sit',ex:'sad'}],you:[170,1,{y:154}]},true);
  await say('sean','I’m not hiding. I’m reading. About… (looks at the book) …Abraham Lincoln.','sad');
@@ -102,7 +102,7 @@ hooks({mis:'firstfight',label:'Ask Sean why he’s hiding',look:{ex:'sad'},cond:
  D.f.ff1=1;part('firstfight',1);
  return 'stay';
 }},[[2,'library','sean'],[4,'field','sean']]);
-hooks({mis:'firstfight',label:'Ask Stella if she’s okay',look:{ex:'cry'},cond:()=>D.f.ff1&&!D.f.ff2,run:async()=>{
+hooks({mis:'firstfight',label:'Ask Imani if she’s okay',look:{ex:'cry'},cond:()=>D.f.ff1&&!D.f.ff2,run:async()=>{
  const r=here();scene(r,{stella:[160,-1,{y:150,pose:'sit',ex:'cry',hold:'ball'}],you:[130,1,{y:154}]},true);
  await say('stella','He’s not answering. Eleven texts. He read them all. I can SEE he read them.','cry');
  await say('stella','I knew this would happen. On the phone I was perfect. I could hang up before I said something stupid. In person he’s seen me eat. I chew so loud. My mom says I chew like a horse.','cry');
@@ -113,7 +113,7 @@ hooks({mis:'firstfight',label:'Ask Stella if she’s okay',look:{ex:'cry'},cond:
  D.f.ff2=1;part('firstfight',2);
  return 'stay';
 }},[[2,'library','stella'],[4,'field','stella']]);
-hook({mis:'firstfight',period:7,room:'bus',who:'sean',label:'Stand with Sean while Stella walks over',look:{ex:'scared'},cond:()=>D.f.ff2&&!D.done.firstfight&&!D.dead.stella&&!D.dead.sean,run:async()=>{
+hook({mis:'firstfight',period:7,room:'bus',who:'sean',label:'Stand with Sean while Imani walks over',look:{ex:'scared'},cond:()=>D.f.ff2&&!D.done.firstfight&&!D.dead.stella&&!D.dead.sean,run:async()=>{
  scene('bus',{sean:[150,1,{y:150,ex:'scared'}],you:[124,1,{y:154}]},true);cue('sad');
  put('stella',334,-1,{y:150,hold:'ball'});await walk('stella',178,60);
  await N('They stand there. Neither of them says anything. The 43 pulls in. Neither of them gets on.');
@@ -133,7 +133,7 @@ hook({mis:'firstfight',period:7,room:'bus',who:'sean',label:'Stand with Sean whi
  fxState.romance=0;pose('sean',null);pose('stella',null);
  await complete('firstfight');
 }});
-tipsFrom('firstfight',()=>!D.f.ff1?'Find Sean (Library at break, Playing Field at lunch). He’s hiding from Stella.':!D.f.ff2?'Find Stella (Library at break, Playing Field at lunch).':'Home time, the bus loop. Stand with Sean.');
+tipsFrom('firstfight',()=>!D.f.ff1?'Find Sean (Library at break, Playing Field at lunch). He’s hiding from Imani.':!D.f.ff2?'Find Imani (Library at break, Playing Field at lunch).':'Home time, the bus loop. Stand with Sean.');
 
 /* =====================================================================
    HASAN’S MOM

@@ -302,7 +302,7 @@ async function inspectionDay(){
  await N('Along the side wall, the smiles come off. All of them. All at once.');
  if(A.shermian)await say('shermian','(very softly) Sweeties. Miss is going to need everyone to sit DOWN.','evil');
  if(roles.dis&&A[roles.dis]){
-  if(roles.dis==='stella'){SFX.whoosh();await N('Stella’s baseball hits Coach right between the eyes from forty feet away. He takes off after her like a golden retriever. The doors open and shut behind them.')}
+  if(roles.dis==='stella'){SFX.whoosh();await N('Imani’s baseball hits Coach right between the eyes from forty feet away. He takes off after her like a golden retriever. The doors open and shut behind them.')}
   else if(roles.dis==='arjun'){await say('arjun','(standing on a chair) MS. SHERMIAN. YOUR HUSBAND ISN’T STAYING AT HIS MOM’S. HE’S STAYING AT MR. VOSS’S.','yell');await N('For one full second, the two of them look at each other. That second is all anyone needs.')}
   else{await N('Paul walks up to Mr. Voss, picks him up like a sack of potatoes, and carries him out of a side door without saying a single word.')}
  }

@@ -196,9 +196,9 @@ hook({mis:'hasanmia',period:8,room:'foodcourt',who:'hasan',label:'Help Hasan wit
 }});
 
 mission('striketwo',{name:'Strike Two',icon:'📸',who:['sean','stella'],
- blurb:'After the field, after the kiss, Sean and Stella go to the arcade. It’s their first date. It’s the first time either of them has said anything real out loud.',
+ blurb:'After the field, after the kiss, Sean and Imani go to the arcade. It’s their first date. It’s the first time either of them has said anything real out loud.',
  parts:['After school: the arcade'],tips:['Finish “In Person” today, then go to the Fair City Mall arcade.']});
-hook({mis:'striketwo',period:8,room:'arcade',who:'sean',label:'Hang out with Sean and Stella',cond:()=>D.done.instella&&!D.dead.sean&&!D.dead.stella,run:async()=>{
+hook({mis:'striketwo',period:8,room:'arcade',who:'sean',label:'Hang out with Sean and Imani',cond:()=>D.done.instella&&!D.dead.sean&&!D.dead.stella,run:async()=>{
  scene('arcade',{sean:[220,1,{y:150}],stella:[244,-1,{y:150}],you:[180,1,{y:156}]});
  cue('romance');
  await say('sean','We’re doing the claw machine. I’ve spent eleven dollars. I will spend my entire inheritance.','happy');
@@ -214,7 +214,7 @@ hook({mis:'striketwo',period:8,room:'arcade',who:'sean',label:'Hang out with Sea
  await say('sean','Number thirty-four.','blush');
  await walk('sean',290,40);await walk('stella',300,40);
  for(let i=0;i<4;i++){SFX.shutter();flash('#fff',.7);await wait(500)}
- await N('Four photos. In the first one they’re pulling faces. In the second, Stella is laughing. In the third, Sean is looking at her and not the camera. In the fourth, nobody’s looking at the camera at all.');
+ await N('Four photos. In the first one they’re pulling faces. In the second, Imani is laughing. In the third, Sean is looking at her and not the camera. In the fourth, nobody’s looking at the camera at all.');
  await complete('striketwo');
 }});
 

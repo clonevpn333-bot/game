@@ -1,15 +1,15 @@
 'use strict';
 /* =====================================================================
-   HIGHSCHOOL — missions B: In Person (Sean & Stella), Corey Gets It,
+   HIGHSCHOOL — missions B: In Person (Sean & Imani), Corey Gets It,
    The Beep Test, The Back Fridge, Locker 13
    ===================================================================== */
 
 /* =================================================================
-   IN PERSON — Sean & Stella
+   IN PERSON — Sean & Imani
    ================================================================= */
 mission('instella',{name:'In Person',icon:'⚾',who:['sean','stella'],
- blurb:'Sean and Stella have only ever been a voice on the phone. Today she’s here. In 3D. Sean is not okay.',
- parts:['Before school: Stella gets off the bus','Break: get her lucky ball back','Lunch: the field'],
+ blurb:'Sean and Imani have only ever been a voice on the phone. Today she’s here. In 3D. Sean is not okay.',
+ parts:['Before school: Imani gets off the bus','Break: get her lucky ball back','Lunch: the field'],
  tips:['Before school, bus loop. Sean is hiding behind people.','Break, main corridor. Arjun has something that isn’t his.','Lunch, the field. Coach throws javelins at 12:40. Trees are safe.'],
  variants:{kiss:'Strike one',javelin:'The javelin'}});
 
@@ -62,7 +62,7 @@ async function arjunGives(item,line){
  if(line)await say('arjun',line,'smirk');
 }
 
-hook({mis:'instella',period:2,room:'corridor',who:'arjun',label:'Get Stella’s ball off Arjun',cond:()=>D.f.stella1&&!has('ball'),run:async()=>{
+hook({mis:'instella',period:2,room:'corridor',who:'arjun',label:'Get Imani’s ball off Arjun',cond:()=>D.f.stella1&&!has('ball'),run:async()=>{
  scene('corridor',{arjun:[60,1,{pose:'cross',y:146,hold:'ball'}],nivaan:[120,-1,{pose:'phone',y:146}],aidan:[215,1,{y:140}],you:[90,-1,{y:154}]});
  await say('arjun','This? Found it. In a bag. That I opened.','smirk');
  await say('arjun','Tell Sean she’s only talking to him because her dad left and she’s got low standards. Like, underground.','smirk');
@@ -89,7 +89,7 @@ hook({mis:'instella',period:4,room:'field',who:'sean',label:'Give Sean the ball'
   SFX.scream();
   await say('stella','SEAN—','cry');
   await say('coach','Bullseye. Thirty points.','happy');
-  await N('Stella holds the ball. Strike one. It never gets thrown.');
+  await N('Imani holds the ball. Strike one. It never gets thrown.');
   cue('dead');
   P.best['instella:javelin']=1;save();toast('Version found: The javelin');
   return;
@@ -135,7 +135,7 @@ hook({mis:'instella',period:4,room:'field',who:'sean',label:'Give Sean the ball'
   await say('arjun','MY FOOT— HE’S PINNED MY FOOT TO THE GROUND—','yell');
   await say('coach','Fifty points!','happy');
  }
- await N('Under the cherry tree, Sean and Stella don’t notice any of it.');
+ await N('Under the cherry tree, Sean and Imani don’t notice any of it.');
  fxState.romance=0;
  await complete('instella','kiss');
 }});

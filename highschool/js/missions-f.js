@@ -25,12 +25,12 @@ ON_PERIOD.push(async(i,resume)=>{if(resume||!TEA[i]||D.done.tea)return;D.f['tea'
    HIGHGATE TEA — who runs the gossip account?
    ================================================================= */
 mission('tea',{name:'@highgate.tea',icon:'☕',who:['stella','sean','david'],
- blurb:'Somebody runs an anonymous account that posts everybody’s worst secrets, every period, all day. Today it got Stella. Today somebody finds out who it is.',
- parts:['Break: Stella’s just seen the post','Lunch: find the proof','Home time: confront them'],
+ blurb:'Somebody runs an anonymous account that posts everybody’s worst secrets, every period, all day. Today it got Imani. Today somebody finds out who it is.',
+ parts:['Break: Imani’s just seen the post','Lunch: find the proof','Home time: confront them'],
  tips:['Break, the library.','Lunch, the library. Someone always leaves their laptop open when they go to the printer.','Home time, bus loop. In front of everyone, or not.'],
  variants:{exposed:'Exposed in front of everyone',apology:'Said sorry to her face'}});
 
-hook({mis:'tea',period:2,room:'library',who:'stella',label:'Ask Stella what’s wrong',cond:()=>!D.f.tea1&&!D.dead.stella,run:async()=>{
+hook({mis:'tea',period:2,room:'library',who:'stella',label:'Ask Imani what’s wrong',cond:()=>!D.f.tea1&&!D.dead.stella,run:async()=>{
  const cast={stella:[246,-1,{y:144,ex:'cry'}],you:[220,1,{y:154}],david:[140,1,{pose:'sit',y:150}]};if(!D.dead.sean)cast.sean=[200,1,{y:144}];
  scene('library',cast);cue('sad');
  await say('stella','Somebody posted about my dad. On that account. With a crying emoji. A CRYING emoji.','cry');
@@ -82,13 +82,13 @@ hook({mis:'tea',period:7,room:'bus',who:'david',label:'Confront David about @hig
  await N('He doesn’t ask what you mean. He takes his glasses off and cleans them for a long time.');
  await say('david','I’ve run for class president every year since sixth grade. I’ve never got more than nine votes. Nine. Four are my cousins.','sad');
  await say('david','Nobody votes for the nice guy. So I thought, if everyone else looked worse…','sad');
- await say('you','You posted about Stella’s dad. She cried in the library. You watched her do it.');
+ await say('you','You posted about Imani’s dad. She cried in the library. You watched her do it.');
  await say('david','I know. I was RIGHT THERE. I said “that’s awful”. I meant it. I still posted the next one.','cry');
  const k=await choose(['“Delete it. Then go and tell her yourself.”','“Delete it. I’ll never tell anyone.”']);
  await N('He deletes @highgate.tea. 4,211 followers, gone with one tap. He looks smaller afterwards. Or maybe just his actual size.');
  if(k===0&&A.stella){
   await walk('david',200,50);face('david',1);
-  await say('david','Stella. It was me. The account. The post about your dad. I’m sorry. I’m not going to explain it because the explanation is pathetic.','cry');
+  await say('david','Imani. It was me. The account. The post about your dad. I’m sorry. I’m not going to explain it because the explanation is pathetic.','cry');
   await say('stella','…','angry');
   await say('stella','Thank you for saying it to my face. Most people wouldn’t. I still hate you a little bit.','sad');
   await say('david','That’s fair. That’s very fair. That’s more than nine votes’ worth of fair.','sad');

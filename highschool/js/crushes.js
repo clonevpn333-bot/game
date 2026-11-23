@@ -22,12 +22,12 @@ K.toby.id='toby';
 mission('toby',{name:'Toby Likes Sean',icon:'🧶',who:['sean','toby','stella'],
  blurb:'There’s a new kid called Toby. He transferred from Ohio last week. He likes Sean. He’s not shy about it. Sean has a girlfriend and absolutely no idea what to do.',
  parts:['Before school: the bracelet','Break, library: forty tabs','Lunch, the field: the plan'],
- tips:['Before school, bus loop. Sit near Sean.','Break, the library. Sean is hiding from Stella behind the biography section.','Lunch, the field. Whatever plan Sean picked, he’s doing it now.'],
+ tips:['Before school, bus loop. Sit near Sean.','Break, the library. Sean is hiding from Imani behind the biography section.','Lunch, the field. Whatever plan Sean picked, he’s doing it now.'],
  variants:{honest:'Honest',third:'Third wheel',mower:'The mower'}});
 
 hook({mis:'toby',period:0,room:'bus',who:'sean',label:'Sit with Sean',look:{ex:'happy'},cond:()=>!D.f.toby1&&!D.dead.sean,run:async()=>{
  scene('bus',{sean:[172,1,{y:146}],you:[150,1,{y:152}]});
- await say('sean','(doing the hair flip) Me and Stella. Official since the arcade. OFFICIALLY official. I said “my girlfriend” to Pat and she gave me extra nuggets.','happy');
+ await say('sean','(doing the hair flip) Me and Imani. Official since the arcade. OFFICIALLY official. I said “my girlfriend” to Pat and she gave me extra nuggets.','happy');
  put('toby',-14,1,{y:150});await walk('toby',196,70);face('toby',-1);
  await N('A kid you’ve seen exactly once before gets off a different bus and walks straight over. Cardigan. Curly hair. Walks like he’s already decided something.');
  await say('toby','Hey. Sean, right? I’m Toby. New. Ohio. I made you this.','happy');
@@ -40,7 +40,7 @@ hook({mis:'toby',period:0,room:'bus',who:'sean',label:'Sit with Sean',look:{ex:'
  A.sean.ex='shock';SFX.static();
  await N('Sean doesn’t move. He doesn’t blink. You can practically hear a fan spinning up inside his head, like a laptop running too many tabs.');
  await say('sean','(very quietly) …My hair IS incredible.','shock');
- await say('sean','Wait. No. That’s not the— I have a GIRLFRIEND. Do I tell Stella? Do I give it back? Do I wear it? If I don’t wear it is that rude? If I DO wear it does that mean something?','scared');
+ await say('sean','Wait. No. That’s not the— I have a GIRLFRIEND. Do I tell Imani? Do I give it back? Do I wear it? If I don’t wear it is that rude? If I DO wear it does that mean something?','scared');
  await say('you','It’s a bracelet, Sean.');
  await say('sean','It’s not a BRACELET. It’s a DECISION.','yell');
  hold('sean',null);D.f.toby1=1;part('toby',1);
@@ -49,7 +49,7 @@ hook({mis:'toby',period:0,room:'bus',who:'sean',label:'Sit with Sean',look:{ex:'
 hook({mis:'toby',period:2,room:'library',who:'sean',label:'Ask Sean why he’s hiding behind a shelf',look:{pose:'phone',ex:'scared'},cond:()=>D.f.toby1&&!D.f.toby2&&!D.dead.sean,run:async()=>{
  const cast={sean:[200,-1,{y:144,pose:'phone'}],you:[176,1,{y:152}]};if(!D.dead.stella)cast.stella=[290,-1,{y:144}];
  scene('library',cast);
- await say('sean','(whispering) Don’t look at me. Stella’s over there. If she looks at me she’ll KNOW.','scared');
+ await say('sean','(whispering) Don’t look at me. Imani’s over there. If she looks at me she’ll KNOW.','scared');
  await say('you','Know what?');
  await say('sean','I don’t KNOW what she’ll know. That’s the problem.','scared');
  await N('He shows you his phone. Forty-one tabs. “what does it mean if a guy says you have nice hair”. “is a bracelet legally binding”. “ohio boys what are they like”. “how to tell your girlfriend a guy likes you without dying”. “fake your own death free no download”.');
@@ -67,14 +67,14 @@ hook({mis:'toby',period:2,room:'library',who:'sean',label:'Ask Sean why he’s h
   ['paul','or onion']
  ]);
  await say('sean','Okay. So my options are: be honest, fake my death, or eat an onion. Those are the options. What do I do?','scared');
- const c=await choose(['“Be honest. Tell Toby you’re with Stella. Nicely.”','“…The onion. Do the onion.”','“Fake your death.”','“Just tell Stella. Let her deal with it.”']);
+ const c=await choose(['“Be honest. Tell Toby you’re with Imani. Nicely.”','“…The onion. Do the onion.”','“Fake your death.”','“Just tell Imani. Let her deal with it.”']);
  D.f.tobyPlan=['honest','onion','dead','stella'][c];
  if(c===0){await say('sean','Honest. Okay. Honest. I’m going to need a presentation.','scared');await say('you','You don’t need a—');await say('sean','I need a PRESENTATION.','yell')}
  else if(c===1){await say('sean','Okay. Okay. Pat’s got a whole bag of onions in the back. I’ll get one at lunch. For science. For love. For the opposite of love.','scared')}
  else if(c===2){await say('sean','Kenneth’s uncle did it TWICE. How hard can it be. I just need ketchup. Lots of ketchup. And a reason to be lying on the field.','smirk')}
  else{await say('sean','Yeah. Yeah, she’s my girlfriend, she should know. She’s also terrifying. Okay. Okay.','scared')}
  if(A.stella){await walk('stella',226,60);face('stella',-1);await say('stella','Why are you two hiding behind the biographies?','smirk');pose('sean',null);
-  hold('sean','bracelet');SFX.click();await N('Sean drops his phone, then picks it up, and in the process the bracelet falls out of his hoodie pocket and lands right at Stella’s feet. SEAN 10/10.');hold('sean',null);
+  hold('sean','bracelet');SFX.click();await N('Sean drops his phone, then picks it up, and in the process the bracelet falls out of his hoodie pocket and lands right at Imani’s feet. SEAN 10/10.');hold('sean',null);
   await say('stella','(picking it up) …Ten out of ten. Who made you this?','shock');
   await say('sean','NOBODY. Me. I made it. For me. I’m… I rate myself. I’m doing a self-esteem thing.','scared');
   await say('stella','(narrowing her eyes, putting it in her own pocket) Interesting.','angry')}
@@ -123,7 +123,7 @@ hook({mis:'toby',period:4,room:'field',who:'sean',label:'Ask Sean what the plan 
   if(A.stella){await walk('stella',200,60);await say('stella','You faked your DEATH? In FRONT of me? Coach was getting a SHOVEL.','angry')}
  }else{
   if(A.stella){await walk('stella',200,60);face('stella',-1)}
-  await say('sean','(very fast) Stella. This is Toby. He likes me. I like you. I didn’t know what to do so I’m telling you so you can do it.','scared');
+  await say('sean','(very fast) Imani. This is Toby. He likes me. I like you. I didn’t know what to do so I’m telling you so you can do it.','scared');
  }
  if(A.stella){
   await say('stella','(taking the bracelet out of her pocket, holding it up) So YOU made this.','angry');
@@ -138,7 +138,7 @@ hook({mis:'toby',period:4,room:'field',who:'sean',label:'Ask Sean what the plan 
  }
  const c=await choose(['Sean, just tell Toby the truth. Kindly.','Sean, RUN.','Sean, sit down. Let them be friends.']);
  if(c===0){
-  await say('sean','Toby. You’re actually really cool. And I’m flattered. Like, genuinely. But I’m with Stella, and I’m staying with Stella. Can we just be friends?','sad');
+  await say('sean','Toby. You’re actually really cool. And I’m flattered. Like, genuinely. But I’m with Imani, and I’m staying with Imani. Can we just be friends?','sad');
   await say('toby','Yeah, of course. Respect. That was way better than the presentation. Can I still say your hair is a ten?','happy');
   if(A.stella)await say('stella','It’s an eight.','smirk');
   await say('sean','(hand in his hair, quietly) …It’s a nine.','smirk');
@@ -167,7 +167,7 @@ hook({mis:'toby',period:4,room:'field',who:'sean',label:'Ask Sean what the plan 
 hook({mis:'toby',period:8,room:'arcade',who:'sean',label:'Ask Sean why he’s holding three bags',look:{ex:'sad'},cond:()=>D.f.thirdWheel&&!D.dead.sean,run:async()=>{
  scene('arcade',{sean:[60,1,{y:148}],you:[36,1,{y:154}]});
  put('toby',150,-1,{y:146,pose:'cheer'});if(!D.dead.stella)put('stella',172,-1,{y:146,pose:'cheer'});
- await N('Toby and Stella are on the dance machine together, absolutely destroying a song on Expert. Sean is holding both their backpacks and his own.');
+ await N('Toby and Imani are on the dance machine together, absolutely destroying a song on Expert. Sean is holding both their backpacks and his own.');
  await say('sean','They’ve got a handshake now. It’s eleven moves. I’m not in the handshake.','sad');
  await say('sean','I wanted to not be in a love triangle. Now I’m not in a love triangle. I’m just next to one. Holding bags.','sad');
  D.f.thirdWheel=0;return 'stay';

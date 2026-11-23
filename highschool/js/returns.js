@@ -144,13 +144,13 @@ ret({id:'model',room:'art',name:'Life Drawing',who:['alex','dheva','dahl'],hint:
 }});
 
 ret({id:'duet',room:'music',name:'The Duet',who:['sean','toby'],hint:'Someone is playing a love song, badly.',
- blurb:'Sean is in the music room practicing a song for Stella. It is not going well.',
+ blurb:'Sean is in the music room practicing a song for Imani. It is not going well.',
  variants:{song:'The song'},run:async()=>{
  put('sean',150,1,{y:146,pose:'guitar',hold:null});
- await N('Sean is sitting on the edge of the stage with a guitar, playing the same four chords over and over. He has written a song for Stella. It is called “Stella (Stella)”.');
- await say('sean','♪ Stella… Stella… your ball is so round… ♪','closed');
+ await N('Sean is sitting on the edge of the stage with a guitar, playing the same four chords over and over. He has written a song for Imani. It is called “Imani (Imani)”.');
+ await say('sean','♪ Imani… Imani… your ball is so round… ♪','closed');
  await say('sean','Is that bad? Be honest. Actually, don’t be honest.','scared');
- if(D.done.toby||P.done.toby){put('toby',-14,1,{y:146});await walk('toby',120,60);await say('toby','Oh, I can help with this. Try going up on the second Stella. Like this. ♪ Stel-LAAA ♪','happy')}
+ if(D.done.toby||P.done.toby){put('toby',-14,1,{y:146});await walk('toby',120,60);await say('toby','Oh, I can help with this. Try going up on the second Imani. Like this. ♪ Imani-LAAA ♪','happy')}
  const r=await meter('Hit the harmony',{speed:1});
  if(r){SFX.ding();await N('You hit the harmony. It actually sounds good. Sean looks at you like you just pulled him out of a river.');await say('sean','That’s IT. That’s the song. I’m playing it for her at lunch. In front of everyone. I’m going to throw up.','happy')}
  else{SFX.bad();await N('You miss the note by about a mile. A window cracks. Sean doesn’t even notice. He’s crying a little at his own lyrics.')}

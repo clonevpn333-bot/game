@@ -238,7 +238,7 @@ cq('hall',{id:'as_helium',name:'Helium',who:'kenneth',hint:'(whispering) There�
  SFX.cheer();classLaugh(1400);pose('you',null);
  await say('adam','(wiping tears of laughter, then tears of something else) That’s… that’s actually what I wanted to say.','cry');
 }});
-cq('hall',{id:'as_cry',name:'Five Minutes',who:'stella',hint:'(whispering) Mr. Adam cries at every assembly. Bet you a dollar he cries in the first five minutes.',opt:'Take Stella’s bet.',run:async c=>{
+cq('hall',{id:'as_cry',name:'Five Minutes',who:'stella',hint:'(whispering) Mr. Adam cries at every assembly. Bet you a dollar he cries in the first five minutes.',opt:'Take Imani’s bet.',run:async c=>{
  await say('adam','(at the podium, reading) And now a moment for the students who… left us. This year. Bethany. The trumpet boy. Tyler. And… and…','sad');
  await N('He doesn’t finish the list. He folds it up very small and puts it in his pocket, and holds the podium with both hands.');
  await say('adam','(crying, quietly, into the mic) They didn’t leave. I’m sorry. They didn’t leave.','cry');
