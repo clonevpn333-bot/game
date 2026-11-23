@@ -90,7 +90,7 @@ J('closet',1,{k:'fetch',nm:'a baby monitor',sh:'box',from:'foodtech',x:90,get:'G
 J('hotsub',1,{k:'plant',nm:'ghost pepper sauce',sh:'bottle',from:'canteen',x:100,get:'Grab the ghost pepper sauce from behind Pat’s counter',to:'canteen',tx:250,put:'Douse Mr. Valentino’s sub on the staff table',done:'You empty half the bottle into the sub and close it up. It’s now forty percent sauce. The bread is sweating.'});
 J('swipe',1,{k:'fetch',nm:'a yearbook photo',sh:'paper',from:'library',x:260,get:'Find a hot guy in the library’s 1994 yearbook (for the fake profile)',give:'Hand Nivaan the yearbook photo',thx:'…That’s Mr. Grieve. With HAIR. Oh, this is going to work so well it’s gonna be a crime.'});
 J('swipe',2,{k:'fetch',nm:'a rose',sh:'flower',from:'courtyard',x:200,get:'Pick a rose from the courtyard (for the “date”)',thx:null});
-J('gains',1,{k:'plant',nm:'baby formula',sh:'tub',from:'foodtech',x:120,get:'Grab the tub of baby formula from Food Tech',to:'weightroom',tx:120,put:'Swap it into Coach’s protein tub',done:'You pour baby formula into PURE MASS GAINZ until it’s full and shake it. Same color. Same smell, kind of. Coach is about to get very, very calm.'});
+J('gains',1,{k:'plant',nm:'Coach’s shaker cup',sh:'cup',from:'weightroom',x:210,get:'Grab Coach’s shaker cup off the weight room shelf',to:'canteen',tx:180,put:'Leave the shaker on the cafeteria counter where Coach stands',done:'You set the shaker down exactly where he always stands. The powder’s already in it. It’s waiting. It’s patient. It’s for horses.'});
 J('rave',0,{k:'shove',ask:'Invite costs ten bucks or a favor. The favor: Brayden. The fountain. Go.',tgt:'brayden',room:'courtyard',lab:'Shove Brayden into the courtyard fountain',react:'MY JORDANS. MY JORDANS ARE IN THE FOUNTAIN.'});
 J('rave',1,{k:'fetch',nm:'the PA speaker',sh:'box',from:'music',x:160,get:'Grab the big PA speaker from the music room (for the rave)',thx:null});
 J('paul',0,{k:'fetch',ask:'(cracking his neck) Before the Rumble I need baby oil. It’s a wrestling thing. Food Tech’s got cooking oil. Same thing.',nm:'cooking oil',sh:'bottle',from:'foodtech',x:180,get:'Grab a bottle of cooking oil from Food Tech (for Paul)',give:'Hand Paul the oil',thx:'(oiling up his arms) Now nobody can grab me. Including me. That’s a problem for later.'});
@@ -221,7 +221,7 @@ async function freeShove(){
  if(!D||D.weekend||busy||panelMode!=='roam'||!A.you)return;
  const id=nearestPerson(24);if(!id){toast('Nobody close enough to shove.');return}
  /* a job wants this shove? */
- const jh=availableHooks(D.room,id).find(h=>/^Shove|^Take|^Jump|^Get the powder/.test(h.label||''));
+ const jh=availableHooks(D.room,id).find(h=>/^Shove|^Take|^Jump|^Get the powder|^Make .* pay/.test(h.label||''));
  if(jh)return runHook(jh);
  const adult=K[id]&&K[id].adult;
  runHook({run:async()=>{

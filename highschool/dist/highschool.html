@@ -3823,7 +3823,7 @@ hook({mis:'armoury',period:[2,4,5],room:'toilets',who:'tez',label:'Buy a weapon 
   await say('tez','…That’s the best one yet.','happy');
  }
  give(it);
- await say('tez',['Stabby end goes in the teacher. Not in you. People get that wrong.','Wrist action. Like a helicopter, but angry.','Point it, squeeze it, don’t lick it. Kayden licked it.'][c],'smirk');
+ await say('tez',['Pointy end goes in the teacher. Not in you. People get that wrong.','Wrist action. Like a helicopter, but angry.','Point it, squeeze it, don’t lick it. Kayden licked it.'][c],'smirk');
  await complete('armoury');
 }});
 
@@ -20251,7 +20251,7 @@ J('closet',1,{k:'fetch',nm:'a baby monitor',sh:'box',from:'foodtech',x:90,get:'G
 J('hotsub',1,{k:'plant',nm:'ghost pepper sauce',sh:'bottle',from:'canteen',x:100,get:'Grab the ghost pepper sauce from behind Pat’s counter',to:'canteen',tx:250,put:'Douse Mr. Valentino’s sub on the staff table',done:'You empty half the bottle into the sub and close it up. It’s now forty percent sauce. The bread is sweating.'});
 J('swipe',1,{k:'fetch',nm:'a yearbook photo',sh:'paper',from:'library',x:260,get:'Find a hot guy in the library’s 1994 yearbook (for the fake profile)',give:'Hand Nivaan the yearbook photo',thx:'…That’s Mr. Grieve. With HAIR. Oh, this is going to work so well it’s gonna be a crime.'});
 J('swipe',2,{k:'fetch',nm:'a rose',sh:'flower',from:'courtyard',x:200,get:'Pick a rose from the courtyard (for the “date”)',thx:null});
-J('gains',1,{k:'plant',nm:'baby formula',sh:'tub',from:'foodtech',x:120,get:'Grab the tub of baby formula from Food Tech',to:'weightroom',tx:120,put:'Swap it into Coach’s protein tub',done:'You pour baby formula into PURE MASS GAINZ until it’s full and shake it. Same color. Same smell, kind of. Coach is about to get very, very calm.'});
+J('gains',1,{k:'plant',nm:'Coach’s shaker cup',sh:'cup',from:'weightroom',x:210,get:'Grab Coach’s shaker cup off the weight room shelf',to:'canteen',tx:180,put:'Leave the shaker on the cafeteria counter where Coach stands',done:'You set the shaker down exactly where he always stands. The powder’s already in it. It’s waiting. It’s patient. It’s for horses.'});
 J('rave',0,{k:'shove',ask:'Invite costs ten bucks or a favor. The favor: Brayden. The fountain. Go.',tgt:'brayden',room:'courtyard',lab:'Shove Brayden into the courtyard fountain',react:'MY JORDANS. MY JORDANS ARE IN THE FOUNTAIN.'});
 J('rave',1,{k:'fetch',nm:'the PA speaker',sh:'box',from:'music',x:160,get:'Grab the big PA speaker from the music room (for the rave)',thx:null});
 J('paul',0,{k:'fetch',ask:'(cracking his neck) Before the Rumble I need baby oil. It’s a wrestling thing. Food Tech’s got cooking oil. Same thing.',nm:'cooking oil',sh:'bottle',from:'foodtech',x:180,get:'Grab a bottle of cooking oil from Food Tech (for Paul)',give:'Hand Paul the oil',thx:'(oiling up his arms) Now nobody can grab me. Including me. That’s a problem for later.'});
@@ -20382,7 +20382,7 @@ async function freeShove(){
  if(!D||D.weekend||busy||panelMode!=='roam'||!A.you)return;
  const id=nearestPerson(24);if(!id){toast('Nobody close enough to shove.');return}
  /* a job wants this shove? */
- const jh=availableHooks(D.room,id).find(h=>/^Shove|^Take|^Jump|^Get the powder/.test(h.label||''));
+ const jh=availableHooks(D.room,id).find(h=>/^Shove|^Take|^Jump|^Get the powder|^Make .* pay/.test(h.label||''));
  if(jh)return runHook(jh);
  const adult=K[id]&&K[id].adult;
  runHook({run:async()=>{
@@ -20398,6 +20398,259 @@ addEventListener('keydown',e=>{if((e.key==='x'||e.key==='X')&&!e.repeat&&panelMo
 {const r=$('roam');if(r){const b=document.createElement('button');b.id='bShove';b.textContent='✋ SHOVE';b.className='tb';b.style.cssText='margin-left:6px';b.onclick=e=>{e.stopPropagation();freeShove()};r.appendChild(b)}}
 /* roam hint mentions X */
 {const _rh=roamHint;roamHint=function(){const r=_rh.apply(this,arguments);try{const h=$('roamhint')||document.querySelector('#roam .hint');if(h&&!/SHOVE/.test(h.textContent))h.appendChild(document.createTextNode(' · X SHOVE'))}catch(e){}return r}}
+
+</script>
+<script>
+/* js/gigs.js */
+'use strict';
+/* =====================================================================
+   HIGHSCHOOL — SIDE HUSTLES
+   Three new gigs every school day, texted to you before school. Made
+   from parts, so they're different every day:
+     DELIVERY  grab something cursed in one room, hand it to someone
+     REVENGE   shove somebody for somebody else's grudge
+     DEBT      fight somebody until they pay up
+     PRANK     plant something in a teacher's room
+   They pay cash, they move your reputation, and they're in ⚡ Do Now.
+   Same day replayed (after dying) = same gigs.
+   ===================================================================== */
+mission('gigs',{name:'Side Hustles',icon:'💸',who:[],goal:'Do favors nobody else will do. Get paid.',
+ blurb:'Every morning your phone buzzes with three gigs from kids who can’t do it themselves. Deliveries nobody should open, grudges, debts, and pranks on teachers. Cash on completion. No refunds.',
+ parts:['Do a gig'],tips:['Check ⚡ Do Now (Q). Three new gigs every school day.']});
+const GIG_KIDS=['arjun','hasan','omer','nivaan','kenneth','paul','alex','dheva','jacob','marcus','angelo','david','mia','kayden','tez','brayden','jaxon','kaylee','brandon','sean','corey','jade','ollie'];
+const GIG_MEET=[['canteen',[2,4]],['field',[2,4]],['library',[2,4]],['gym',[2,4]],['courtyard',[2,4]],['toilets',[0,2,4]],['corridor',[0,2,4]],['hallb',[0,2,4]]];
+const GIG_FROM=[['foodtech',150],['art',120],['science',200],['chem',230],['music',110],['drama',200],['woodwork',90],['ict',160],['nurse',120],['weightroom',170],['pool',40],['office',200],['library',60]];
+const GIG_ITEMS=[['a sealed envelope that is definitely not a love letter','paper'],['a frog in a Pringles can','can'],['a whole rotisserie chicken','bag'],['a single AirPod in a ziplock','phone'],['a mixtape called SONGS TO CRY TO VOL. 9','box'],['forty loose Skittles in a sock','cloth'],['a burner phone','phone'],['a jar of something that’s still moving','jar'],['a fake doctor’s note signed “Dr. Doctor”','paper'],['Mr. Voss’s spare dentures','box'],['a bag of “oregano” (it’s literally oregano, it’s for pizza)','bag'],['a lock of hair in an envelope','paper'],['a hamster named Lawsuit','box'],['a jar of mayo with a name written on it','jar'],['a single, warm sock','cloth'],['a signed photo of Coach (he signed it himself, to himself)','paper']];
+const GIG_THX=['(snatching it) You didn’t open it, right? RIGHT?','Finally. Tell them we’re even. Actually don’t tell them anything.','(sniffing it) Yeah. That’s the stuff.','Why are you giving this to ME? …Oh. OH. Okay. Thank you. Walk away.','(hiding it in their hoodie) You never saw me. I never saw you. We never saw this.','Is it still warm? Why is it still warm? Don’t answer that.'];
+const GIG_REASONS=['told everyone I cried at Toy Story 4','ate my lunch and LEFT THE WRAPPER in my bag','keeps saying “bruh” at me in a specific way','hit reply-all to the whole grade with my essay','called my mom “pretty fine” on a livestream','sneezed in my Takis and said “that’s seasoning”','posted my baby photo with the caption “before the surgery”','sat in my seat AND my vibe','told Ms. Sherman where I was hiding','said my haircut looks like a lamp'];
+const GIG_REACT=['WHAT DID I DO. …Okay, I know what I did.','Tell them I’m not even mad. I’m a LITTLE mad.','(from the floor) This is about the Takis, isn’t it.','Who sent you? WHO SENT YOU?','My dad’s a lawyer. He’s not. But he could be.'];
+const GIG_DEBTS=['five bucks for a bag of Takis from September','a PS5 controller he “borrowed”','twenty bucks from a bet on whether Coach has a neck','eight dollars and an apology','the money from the fake raffle'];
+const GIG_PRANKS=[['history',60,'a dead fish','Mr. Grieve’s desk drawer','bag'],['gym',50,'a whoopee cushion','Coach’s office chair','bag'],['library',70,'a glitter bomb','Ms. Balduf’s returns cart','box'],['chem',60,'a live cricket in a matchbox','Mr. Voss’s beaker rack','box'],['english',60,'a phone set to ring every ten minutes','the bottom of the English teacher’s desk','phone'],['maths',60,'a jar of mayo','the math teacher’s mug','jar'],['science',70,'a fake severed hand','the science teacher’s coat pocket','cloth']];
+function gRnd(n){return hsh(cal()*97+n*13.7)}
+function gPick(a,n){return a[Math.floor(gRnd(n)*a.length)%a.length]}
+function gigsToday(){
+ if(!D||D.weekend)return[];
+ if(D.f.gigs&&D.f.gigsDay===cal())return D.f.gigs;
+ const kids=GIG_KIDS.filter(k=>K[k]&&!D.dead[k]&&!(window.EDITION_CUT||[]).includes(k));
+ const out=[],kinds=['deliver','shove','fight','plant'].map((k,j)=>[k,gRnd(j*7+1)]).sort((a,b)=>a[1]-b[1]).map(x=>x[0]);
+ const pool=kids.map((k,j)=>[k,gRnd(j*3+40)]).sort((a,b)=>a[1]-b[1]).map(x=>x[0]);
+ for(let i=0;i<3;i++){
+  const kind=kinds[i];
+  const client=pool[i],tgt=pool[(i+3)%pool.length];
+  const [room,per]=gPick(GIG_MEET,i*5+3);
+  const g={i,kind,client,tgt,room,per,st:'get',pay:4+Math.floor(gRnd(i*3+9)*7)};
+  if(kind==='deliver'){const [it,sh]=gPick(GIG_ITEMS,i*17+4),[from,fx]=gPick(GIG_FROM,i*19+6);Object.assign(g,{it,sh,from,fx});
+   g.text=K[client].n+': “Get '+it+' from '+shortName(from)+' and give it to '+K[tgt].n+'. Don’t open it. Don’t ask.”';g.st='get'}
+  if(kind==='shove'){g.why=gPick(GIG_REASONS,i*23+7);g.text=K[client].n+': “Shove '+K[tgt].n+' for me. They '+g.why+'.”';g.st='do'}
+  if(kind==='fight'){g.debt=gPick(GIG_DEBTS,i*29+8);g.pay+=4;g.text=K[client].n+': “'+K[tgt].n+' owes me '+g.debt+'. Get it back. However.”';g.st='do'}
+  if(kind==='plant'){const [to,tx,it,where,sh]=gPick(GIG_PRANKS,i*31+9),[from,fx]=gPick(GIG_FROM,i*37+10);Object.assign(g,{to,tx,it,where,sh,from,fx});
+   g.text=K[client].n+': “Put '+it+' in '+where+'. Why? Because it’s funny. Get it from '+shortName(from)+'.”';g.st='get'}
+  out.push(g);
+ }
+ D.f.gigs=out;D.f.gigsDay=cal();return out;
+}
+const G=i=>{const l=gigsToday();return l[i]&&l[i].st!=='paid'?l[i]:null};
+function gigLabel(g){
+ if(g.kind==='deliver')return g.st==='get'?'Grab '+g.it+' (gig for '+K[g.client].n+')':'Give '+K[g.tgt].n+' '+g.it;
+ if(g.kind==='plant')return g.st==='get'?'Grab '+g.it+' (prank for '+K[g.client].n+')':'Put '+g.it+' in '+g.where;
+ if(g.kind==='shove')return'Shove '+K[g.tgt].n+' (gig for '+K[g.client].n+')';
+ return'Make '+K[g.tgt].n+' pay up (gig for '+K[g.client].n+')';
+}
+function gigPay(g){
+ g.st='paid';D.money=(D.money||0)+g.pay;D.mp.gigs=Math.max(D.mp.gigs||0,1);P.gigs=(P.gigs||0)+1;save&&save();updateLoc();
+ toast('💸 +$'+g.pay+' from '+K[g.client].n+'. ('+gigsToday().filter(x=>x.st==='paid').length+'/3 gigs today)');
+ if(typeof repAdd==='function'){if(g.kind==='deliver')repAdd('liked',1);if(g.kind==='fight'||g.kind==='shove')repAdd('feared',1);if(g.kind==='plant')repAdd('legend',1);
+  if(gigsToday().every(x=>x.st==='paid'))repAdd('legend',1,'three gigs in one day')}
+}
+for(let i=0;i<3;i++){
+ const S=SPOTS.length;
+ /* pick-up */
+ SPOTS.push({_gig:1,mis:'gigs',short:'GRAB',sparkle:1,y:150,
+  get room(){const g=G(i);return g&&g.st==='get'?g.from:null},get x(){const g=G(i);return g?g.fx:0},get label(){const g=G(i);return g?gigLabel(g):''},set label(v){},
+  get jdraw(){const g=G(i);return g&&g.st==='get'?{sh:g.sh}:null},
+  cond:()=>{const g=G(i);return !!(g&&g.st==='get'&&(g.kind==='deliver'||g.kind==='plant'))},
+  run:async()=>{const g=G(i);if(!g||g.st!=='get'||g.fx==null||!A.you)return 'stay';clearTalk();await walk('you',g.fx+(A.you.x<g.fx?-6:6),70);pose('you','reach');await wait(220);pose('you','grab');SFX.pick&&SFX.pick();
+   hold('you','J:'+g.sh);await wait(380);hold('you',null);pose('you',null);g.st=g.kind==='plant'?'plant':'give';
+   toast('Now: '+gigLabel(g)+' · '+shortName(g.kind==='plant'?g.to:g.room));return 'stay'}});
+ /* the prank */
+ SPOTS.push({_gig:1,mis:'gigs',short:'PLANT',y:150,
+  get room(){const g=G(i);return g&&g.kind==='plant'&&g.st==='plant'?g.to:null},get x(){const g=G(i);return g?g.tx:0},get label(){const g=G(i);return g?gigLabel(g):''},set label(v){},
+  cond:()=>{const g=G(i);return !!(g&&g.kind==='plant'&&g.st==='plant')},
+  run:async()=>{const g=G(i);if(!g||g.kind!=='plant'||g.tx==null||!A.you)return 'stay';clearTalk();await walk('you',g.tx+(A.you.x<g.tx?-6:6),70);hold('you','J:'+g.sh);pose('you','kneel');await wait(320);pose('you','reach');await wait(250);hold('you',null);pose('you',null);
+   await N(pick(['Done. You step back and admire it. Art.','Planted. Somewhere a teacher’s day just got worse and they don’t know it yet.','It’s in. You wipe your prints off with your sleeve, like in the movies, which does nothing.']));
+   gigPay(g);return 'stay'}});
+ /* the person: hand-over, shove, or fight */
+ HOOKS.push({_gig:1,mis:'gigs',
+  get period(){const g=G(i);return g?g.per:-1},get room(){const g=G(i);return g?g.room:null},get who(){const g=G(i);return g?g.tgt:null},get label(){const g=G(i);return g?gigLabel(g):''},set label(v){},
+  cond:()=>{const g=G(i);return !!(g&&!D.dead[g.tgt]&&((g.kind==='deliver'&&g.st==='give')||((g.kind==='shove'||g.kind==='fight')&&g.st==='do')))},
+  run:async()=>{const g=G(i);if(!g||!A.you)return 'stay';
+   if(g.kind==='deliver'){await handOver(g.tgt,{sh:g.sh,thx:pick(GIG_THX)});gigPay(g);return 'stay'}
+   if(g.kind==='shove'){await doShove(g.tgt,{react:pick(GIG_REACT)});gigPay(g);return 'stay'}
+   const won=await doFight(g.tgt,{why:K[g.tgt].n+' owes '+K[g.client].n+' '+g.debt+'.',win:K[g.tgt].n+' hands over the cash from the floor, one bill at a time, without making eye contact.',lose:K[g.tgt].n+' is stronger than they look. A LOT stronger.'});
+   if(won)gigPay(g);return 'stay'}});
+}
+/* gig people are where the gig says */
+{const _hp=hookPresent;hookPresent=function(h,per){if(h&&h._gig)return true;return _hp(h,per)}}
+{const _br=buildRoom;buildRoom=function(room){const r=_br(room);try{if(D&&!D.weekend)for(let i=0;i<3;i++){const g=G(i);if(!g||g.room!==room||!g.per.includes(D.period)||A[g.tgt]||D.dead[g.tgt]||!K[g.tgt])continue;
+ if(!((g.kind==='deliver'&&g.st==='give')||((g.kind==='shove'||g.kind==='fight')&&g.st==='do')))continue;const f=floorOf(room);put(g.tgt,70+i*70,1,{y:clamp(f[0]+10,f[0],f[1])})}}catch(e){}return r}}
+/* the morning text */
+ON_PERIOD.push(async(i,resume)=>{if(resume||!D||D.weekend||TEST||i!==0)return;const l=gigsToday();if(!l.length)return;setTimeout(()=>toast('📱 3 new gigs: '+l.map(g=>K[g.client].n).join(', ')+'. Q → ⚡ Do Now.'),3200)});
+/* ⚡ Do Now: its own section */
+{const _qn=qlNow;qlNow=function(body){
+ const _ta=thingsAt;thingsAt=function(p,o){return _ta(p,o).filter(t=>t.mis!=='gigs')};
+ try{_qn(body)}finally{thingsAt=_ta}
+ if(!D||D.weekend)return;const l=gigsToday();if(!l.length)return;
+ const anchor=body.querySelector('.qsec.later')||body.querySelector('.qsec.day');const add=e=>anchor?body.insertBefore(e,anchor):body.appendChild(e);
+ add(qel('h3','qsec gig','💸 SIDE HUSTLES · $'+(D.money||0)));
+ for(const g of l){const r=qel('div','qcard gig'+(g.st==='paid'?' paid':''));r.appendChild(qel('div','ic',{deliver:'📦',shove:'✋',fight:'👊',plant:'🐟'}[g.kind]));
+  const m=qel('div','m');r.appendChild(m);const h=qel('h4','',g.st==='paid'?'Done':gigLabel(g));h.appendChild(chip('$'+g.pay,'go'));m.appendChild(h);
+  m.appendChild(qel('div','act',g.text));
+  if(g.st!=='paid'){const where=g.st==='get'?g.from:g.kind==='plant'?g.to:g.room;
+   m.appendChild(qel('div','wh','📍 '+(D.room===where?'Right here':shortName(where))+(g.st==='get'?'':(g.kind==='plant'?'':' · '+g.per.map(p=>PERIODS[p].name).join(' or ')))));
+   if(D.room!==where)m.appendChild(qel('div','rt','➜ '+routeText(D.room,where)))}
+  add(r)}
+}}
+{const st=document.createElement('style');st.textContent='#quest.ql2 .qsec.gig{color:#9ad09a}#quest.ql2 .qcard.gig{border-left-color:#4ab86a}#quest.ql2 .qcard.paid{opacity:.45}';document.head.appendChild(st)}
+if(typeof DAILY_F!=='undefined')DAILY_F.push('gigs','gigsDay');
+
+</script>
+<script>
+/* js/hotmic.js */
+'use strict';
+/* =====================================================================
+   HIGHSCHOOL — HOT MIC
+   Mr. Adam needs his PA fixed before his very important “budget
+   meeting”. You fix it. Sort of. The ON AIR light never goes off.
+   Period 5, in class, the speaker crackles, and the whole school hears
+   what the staff do in the Vice Principal's office at 1:20 on a weekday.
+   (Adults only, on air, all innuendo. The kids just have to live with it.)
+   ===================================================================== */
+Object.assign(ITEMS,{etape:'A roll of electrical tape'});
+mission('hotmic',{name:'Hot Mic',icon:'🎙️',who:['adam','balduf','coach','nurse','grieve'],
+ goal:'Fix Mr. Adam’s PA before his “meeting”.',
+ blurb:'Mr. Adam has a very important budget meeting in his office before Period 5. Door locked. Blinds down. He needs the PA fixed first, and the AV kid is “unavailable”.',
+ parts:['Break or lunch: Mr. Adam’s favor','Fix the PA (tape from Woodwork)','Period 5: the broadcast'],
+ tips:['Break or lunch, the Vice Principal’s Office (Front Hall).','Grab electrical tape in Woodwork, then fix the PA box in the Vice Principal’s Office.','Period 5 or 6, in your class. Sit down. Listen.'],
+ variants:{zap:'You cut the power',viral:'It went viral',radio:'Highgate Public Radio'}});
+if(typeof OUTCOME_FIX!=='undefined')Object.assign(OUTCOME_FIX,{'hotmic:viral':'good','hotmic:radio':'good','hotmic:zap':'messy'});
+/* the PA speaker, on the classroom wall */
+{const _dp=drawProp;drawProp=function(p){if(p.t==='pa'){const x=Math.round(p.x),y=Math.round(p.y);
+  R(x-9,y-6,18,13,'#2a2a30');R(x-8,y-5,16,11,'#3a3a44');for(let i=0;i<4;i++)R(x-6,y-3+i*2.5,12,1,'#1a1a20');
+  R(x+6,y-5,2,2,p.on?(Math.sin(T*10)>0?'#ff3030':'#a01010'):'#401010');
+  if(p.on){g.globalAlpha=.6;const k=(T*2)%1;for(let j=0;j<2;j++){const r=10+((k+j*.5)%1)*12;R(x-r,y+8+j,1,3,'#f4ead8');R(x+r,y+8+j,1,3,'#f4ead8')}g.globalAlpha=1}
+  return}
+ if(p.t==='pabox'){const x=Math.round(p.x),y=Math.round(p.y);R(x-6,y-10,12,14,'#4a4a52');R(x-5,y-9,10,12,'#5a5a64');R(x-3,y-7,2,2,p.on?'#ff3030':'#401010');R(x,y-6,4,1,'#c8a040');R(x,y-4,3,1,'#40a0c8');return}
+ return _dp(p)}}
+function milkSpray(x,y,dir){for(let i=0;i<46;i++){const a=dir>0?rand(-.5,.15):rand(Math.PI-.15,Math.PI+.5),v=rand(40,140);parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-rand(0,20),c:i%3?'#c89a6a':'#f4ead8',s:Math.random()<.3?2:1,fy:y+22+rand(-3,4),life:3})}}
+
+/* 1 · the favor */
+hook({mis:'hotmic',period:[2,4],room:'office',who:'adam',label:'Ask Mr. Adam why he’s sweating',look:{ex:'scared'},cond:()=>!D.f.hm1&&!D.dead.adam&&cal()>=2,run:async()=>{
+ scene('office',{adam:[200,-1,{y:146,ex:'scared'}],you:[160,1,{y:154}]});
+ if(typeof beat==='function')await beat('HOT MIC','PART ONE · THE FAVOR');
+ const pa=prop({t:'pabox',x:262,y:120,layer:5});
+ await say('adam','You. Kid. You look like a kid who’s good with wires. You have a wire face.','scared');
+ await say('adam','The PA’s dead. The AV kid is… unavailable.','scared');
+ const c=await choose(['“What happened to the AV kid?”','“What’s in it for me?”','“Why are you sweating, sir?”']);
+ if(c===0)await say('adam','He’s unavailable. Permanently. Moving on. Moving ON.','cold');
+ if(c===1)await say('adam','A hall pass. Laminated. You can go anywhere. Except here. Especially after lunch.','smirk');
+ if(c===2)await say('adam','It’s warm. It’s a warm office. Ms. Balduf says it’s warm in here too. When she— when she visits. For the budget.','scared');
+ await say('adam','I need it working by Period 5. I have a meeting. In here. Door locked. Very boring. Numbers. Spreadsheets. Long, hard… spreadsheets.','blush');
+ await say('adam','Electrical tape’s in Woodwork. The box is behind my desk. Don’t touch anything else in my desk. Don’t open the bottom drawer. There’s nothing in it. Don’t open it.','scared');
+ D.f.hm1=1;part('hotmic',1);return 'stay';
+}});
+/* the tape */
+spot({room:'woodwork',x:210,y:150,label:'Grab electrical tape off the Woodwork bench (for the PA)',short:'GRAB',sparkle:1,mis:'hotmic',jdraw:{sh:'tool'},cond:()=>D.f.hm1&&!D.f.hm2&&!has('etape'),run:async()=>{
+ clearTalk();await walk('you',204,70);pose('you','reach');await wait(220);pose('you','grab');give('etape');hold('you','J:tool');await wait(380);hold('you',null);pose('you',null);
+ toast('Now: fix the PA box in the Vice Principal’s Office');return 'stay'}});
+/* 2 · the fix */
+spot({room:'office',x:262,y:150,label:'Fix the PA box behind Mr. Adam’s desk',short:'FIX',mis:'hotmic',cond:()=>D.f.hm1&&!D.f.hm2&&has('etape'),run:async()=>{
+ clearTalk();scene('office',{you:[244,1,{y:152}]},true);const pa=prop({t:'pabox',x:262,y:120,layer:5});
+ if(typeof beat==='function')await beat('HOT MIC','PART TWO · THE FIX');
+ pose('you','reach');await N('You pull the cover off the PA box. It’s two wires, a lot of dust, and a sticky note that says “GERALD — DON’T” in Ms. Balduf’s handwriting.');
+ const r=await meter('Splice the wires',{speed:1.1});pose('you','saw');SFX.zap&&SFX.zap();flash('#fff',.25);
+ pa.on=1;pose('you',null);take('etape');
+ await N(r>0?'Perfect splice. The little red ON AIR light comes on. You flick the switch off. The light stays on. You flick it again. It stays on.':'Sparks. Your eyebrows get warmer. The little red ON AIR light comes on. You flick the switch off. The light stays on.');
+ await N('Huh. You put the cover back on. That’s future-you’s problem. Future-you is in Period 5.');
+ D.f.hm2=1;D.f.hm2day=cal();part('hotmic',2);return 'stay';
+}});
+/* 3 · the broadcast: whatever class you're in, Period 5 or 6 */
+const HM_VOICES=['adam','balduf','coach','nurse','grieve'];
+hook({mis:'hotmic',period:[5,6],get room(){return D&&myClassFor(D.period)},set room(v){},who:'auto',cond:()=>D.f.hm2&&!D.done.hotmic&&!D.dead.adam&&!D.dead.balduf,run:async()=>{
+ const room=D.room,kids=['hasan','nivaan','arjun','omer','paul'].filter(k=>K[k]&&!D.dead[k]);
+ const cast={you:[150,1,{y:154,pose:'sit'}]};
+ const xs=[60,100,200,240,280];kids.forEach((k,i)=>cast[k]=[xs[i],i<2?1:-1,{y:i%2?146:154,pose:'sit'}]);
+ const sub=K.valentino?'valentino':null;if(sub)cast[sub]=[30,1,{y:140}];
+ scene(room,cast,true);
+ if(typeof beat==='function')await beat('HOT MIC','PART THREE · THE BROADCAST');
+ const pa=prop({t:'pa',x:160,y:28,layer:-50});if(A.hasan)hold('hasan','mug');if(A.nivaan){pose('nivaan','phone')}
+ if(sub)await say(sub,'Your teacher is “in a meeting”. I am your substitute. I don’t know what this class is. Read something.','cold');
+ SFX.static&&SFX.static();pa.on=1;
+ await N('Halfway through the lesson, the speaker on the wall crackles. The little red light on it comes on. Everybody looks up.');
+ await say('adam','(on the speaker) …is it on? It’s not on. The kid fixed it. The light’s just like that, Doris.');
+ await say('balduf','(on the speaker) Then lock the door, Gerald. This book is THIRTY YEARS overdue.');
+ for(const k of kids)if(A[k])A[k].ex='shock';
+ await say('adam','(on the speaker, breathing) I know. I’ve been a very… bad… borrower.');
+ if(A.hasan){pose('hasan','drink');await N('Hasan, frozen, takes a slow sip of his chocolate milk to have something to do with his face.')}
+ await say('balduf','(on the speaker) Do you know what we do to borrowers who don’t return?');
+ await say('adam','(on the speaker) Not the late fees. Doris. Please. Not the late fees.');
+ await say('balduf','(on the speaker) Bend. Over. The returns cart.');
+ SFX.thud&&SFX.thud();shake(.6);
+ await N('KA-CHUNK. The unmistakable sound of a library date stamp, at full force, on something that is not a library book.');
+ await say('balduf','(on the speaker) STAMPED. DUE BACK IN TWO WEEKS.');
+ await say('adam','(on the speaker) Oh God. Oh God, Doris. Do the Dewey Decimal.');
+ await say('balduf','(on the speaker, slowly) Five hundred…');
+ await say('adam','(on the speaker) yes');
+ await say('balduf','(on the speaker) …and seventy…');
+ await say('adam','(on the speaker) YES');
+ await say('balduf','(on the speaker) …TWO.');
+ await say('adam','(on the speaker) THE NATURAL SCIENCES!!!');
+ if(A.hasan){pose('hasan',null);A.hasan.ex='shock';SFX.squelch&&SFX.squelch();milkSpray(A.hasan.x+A.hasan.dir*6,A.hasan.y-26,A.hasan.dir);shake(.8);
+  if(typeof camZoom==='function')await camZoom(A.hasan.x,A.hasan.y-26,1.8,200);
+  await N('Hasan sprays chocolate milk halfway across the room. It hits Arjun. It hits the wall. A little bit of it hits the ceiling and stays there.');
+  if(typeof camZoom==='function')await camZoom()}
+ if(A.arjun)await say('arjun','I’M GONNA THROW UP. I’M GONNA THROW UP IN MY OWN HANDS.','shock');
+ if(A.nivaan)await say('nivaan','(filming the speaker) Chat. CHAT. Twelve thousand viewers. We’re trending in Belgium.','laugh');
+ SFX.knock&&SFX.knock();
+ await say('coach','(on the speaker, knocking) Gerald? Doris? Is this the book club? I brought my whistle.');
+ await say('adam','(on the speaker, a long pause) …Lock it behind you, Dale.');
+ for(const k of kids)if(A[k]){pose(k,'cover')}
+ await N('Every kid in the room screams at once, like a flock of birds leaving a tree.');
+ await say('nurse','(on the speaker) Knock knock! Is there room for one more? I brought gloves. The long ones.');
+ await say('grieve','(on the speaker, a door slamming) DORIS. We had an ARRANGEMENT.');
+ await say('balduf','(on the speaker) The arrangement is WEDNESDAYS, Barnaby. Get in line.');
+ await say('grieve','(on the speaker, a long, long pause) …Is there a line?');
+ if(sub){await walk(sub,150,60);pose(sub,'reach');await N('Mr. Valentino reaches up and turns the volume knob on the speaker, very slowly, all the way down. It comes off in his hand. The volume goes UP.');pose(sub,null);await say(sub,'(holding the knob) I need you all to know I was a pastry chef.','cold')}
+ for(const k of kids)if(A[k])pose(k,'sit');
+ const c=await choose([{t:'Sprint to the office and cut the power.',tag:'⚡'},{t:'Let it play. Hit record.',tag:'📱'},{t:'Grab the classroom phone and get on the PA yourself.',tag:'🎙️'}],'The whole school is listening. You did this.');
+ if(c===0){
+  pose('you',null);await walk('you',-20,170);
+  scene('office',{you:[200,1,{y:156,pose:'lie'}],adam:[150,1,{y:150,ex:'shock'}],balduf:[230,-1,{y:150,ex:'shock'}],coach:[260,-1,{y:146}],nurse:[120,1,{y:146}],grieve:[290,-1,{y:144,ex:'angry'}]},true);
+  const pb=prop({t:'pabox',x:262,y:120,layer:5});
+  SFX.zap&&SFX.zap();flash('#fff',.8);shake(1.4);
+  await N('You yank the PA cable out with both hands. Two hundred and forty volts go up your arms and you black out.');
+  await N('You wake up on the office carpet. Five teachers are standing over you. Nobody says anything for a very long time.');
+  await say('nurse','(crouching, still wearing the gloves) Pupils are fine. He’ll live. He’ll wish he didn’t.','smirk');
+  hold('adam','paper');await say('adam','(handing you a laminated hall pass that says NOTHING HAPPENED) …You fixed it too well.','cold');hold('adam',null);
+  if(typeof repAdd==='function')repAdd('legend',1);
+  await complete('hotmic','zap');return 'stay';
+ }
+ if(c===1){
+  pose('you','phone');await N('You hold your phone up next to Nivaan’s. It goes on for four more minutes. Somebody on the floor below starts a slow clap that spreads through the whole building.');
+  await N('By home time it has a remix. By tomorrow it has a dance. For the rest of your life, someone in a hallway will whisper “THE NATURAL SCIENCES” and you will think of this.');
+  pose('you',null);if(typeof repAdd==='function'){repAdd('legend',2,'Hot Mic went viral')}
+  await complete('hotmic','viral');return 'stay';
+ }
+ await walk('you',40,90);pose('you','phone');
+ await say('you','(into the classroom phone, on every speaker in the building) Thank you for listening to Highgate Public Radio. Up next: the weather. It’s hot. It’s very hot in the Vice Principal’s Office.');
+ await N('Dead silence. On the speaker, five adults stop breathing at the same time.');
+ await say('adam','(on the speaker, very quietly) …Who said that.');
+ await N('The red light goes off. Across the school, nine hundred kids lose their minds.');
+ pose('you',null);if(typeof repAdd==='function')repAdd('legend',1,'Highgate Public Radio');(P.grudge=P.grudge||{}).adam=1;
+ await complete('hotmic','radio');return 'stay';
+}});
+/* afterwards: the school won't let it go */
+if(typeof CHAT!=='undefined'){const add=['THE NATURAL SCIENCES. I can’t. I literally can’t.','Ms. Balduf stamped my library book today and the whole line went silent.','Coach brought his whistle to the BOOK CLUB.','Five hundred and seventy-TWO, bro.'];
+ ON_PERIOD.push(async()=>{if(D&&D.done&&D.done.hotmic&&!TEST&&Math.random()<.35&&D.period>0)setTimeout(()=>toast('🗣 Someone in the hall: “'+pick(add)+'”'),4200)})}
 
 </script>
 <script>

@@ -24,6 +24,8 @@ so check every line.
 - Quest lines that promise a time (“at break”, “home time”) must match when the next step can actually happen.
 - Keep feelings real-sized: heartfelt scenes get a joke or a deflection; nobody becomes your best friend after one quest.
 - The quest log (`js/questlog.js`, Q) opens on DO NOW: what you can do this period (started quests first, only 3 new ones unless expanded), your class, a later-today timeline. 📌 Track puts one line under the clock and an in-world arrow to the next door/edge. At most 2 new-quest “!” marks per room. The TODAY tab is the tracker (`js/tracker.js`, also T): today’s classes, the main story, every started quest with when/where its next step is, and where everyone is now and next period. Under the clock there’s always a 📚 next-class line. A quest pickup spot needs a `mis` tag or the guidance can’t see it. If a quest’s next step lives in another quest, add it to `VIA`. Check stalls with `node tools/audit-quests.mjs`.
+- The player DOES things in quests (`js/jobs.js`): many quest steps are jobs: fetch an item from another room and hand it over, plant something, shove (X or E) or fight (mash) someone. Add new ones with `J(mission, step, {...})`; items are drawn where they wait. X shoves anyone; teachers who see it punish you.
+- Side Hustles (`js/gigs.js`): three generated gigs every school day (deliver, shove, fight, plant), in ⚡ Do Now, paying cash and rep.
 - When the bell goes, everyone in the room runs off-screen before the next period starts (`js/tracker.js`).
 - Random chaos happens around the school (`js/chaos.js`): free, quick, edgy.
 - Characters you’re mid-quest with come back the next day if they die.
