@@ -103,8 +103,13 @@ let _DRAW0=draw;
  PAN={snap,dir:s,t0:performance.now(),dur:480,fromX};
  return p;
 }}
+/* camera punch-ins for big moments: camZoom(x,y,zoom,ms); camZoom() to pull back */
+const CAM={x:160,y:90,z:1};
+function camZoom(x,y,z,ms){if(TEST)return Promise.resolve();if(x==null){x=CAM.x;y=CAM.y;z=1}return tw(CAM,{x,y,z},ms||450,'out')}
+function zDraw(){if(Math.abs(CAM.z-1)<.01)return _DRAW0();g.save();const cx=clamp(CAM.x,W/2/CAM.z,W-W/2/CAM.z),cy=clamp(CAM.y,H/2/CAM.z,H-H/2/CAM.z);g.translate(W/2,H/2);g.scale(CAM.z,CAM.z);g.translate(-cx,-cy);try{_DRAW0()}finally{g.restore()}}
+{const _cl=clearStage;clearStage=function(){CAM.z=1;return _cl()}}
 draw=function(){
- if(!PAN)return _DRAW0();
+ if(!PAN)return zDraw();
  const k=Math.min(1,(performance.now()-PAN.t0)/PAN.dur),e=1-Math.pow(1-k,3);
  const off=Math.round(PAN.dir*W*(1-e));
  const a=A.you,v=a&&a.vis;if(a)a.vis=false;

@@ -49,7 +49,7 @@ if(typeof DAYSET!=='undefined')for(const t in DAYSET)for(const i in DAYSET[t]){c
 if(typeof WHISPER!=='undefined')delete WHISPER.abby;
 
 /* no Hasan & Darren, and no Sean & Stella: they’re friends, that’s all */
-{const CUT=['darren','stepeleven','tellmom','toby','instella','striketwo','firstfight','farewell'];
+{const CUT=['darren','steptwelve','stepeleven','tellmom','toby','instella','striketwo','firstfight','farewell'];
  for(const m of CUT)delete MIS[m];
  for(let i=HOOKS.length-1;i>=0;i--)if(HOOKS[i].mis&&!MIS[HOOKS[i].mis])HOOKS.splice(i,1);
  for(let i=SPOTS.length-1;i>=0;i--)if(SPOTS[i].mis&&!MIS[SPOTS[i].mis])SPOTS.splice(i,1);
