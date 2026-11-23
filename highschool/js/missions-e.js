@@ -41,7 +41,7 @@ hook({mis:'armoury',period:[2,4,5],room:'toilets',who:'tez',label:'Buy a weapon 
   await say('tez','…That’s the best one yet.','happy');
  }
  give(it);
- await say('tez',['Stabby end goes in the teacher. Not in you. People get that wrong.','Wrist action. Like a helicopter, but angry.','Point it, squeeze it, don’t lick it. Kayden licked it.'][c],'smirk');
+ await say('tez',['Pointy end goes in the teacher. Not in you. People get that wrong.','Wrist action. Like a helicopter, but angry.','Point it, squeeze it, don’t lick it. Kayden licked it.'][c],'smirk');
  await complete('armoury');
 }});
 
