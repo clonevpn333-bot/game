@@ -26,7 +26,7 @@ const WORLD={
  corridor:{L:'bus',Lx:160,R:'hallb',doors:[{x:50,to:'english'},{x:105,to:'maths'},{x:160,to:'history'},{x:215,to:'toilets',label:'BOYS'},{x:285,to:'stairwell',at:24,stairs:'up',label:'STAIRS'}]},
  hallb:{L:'corridor',R:'wing_sci',doors:[{x:40,to:'canteen'},{x:100,to:'library'},{x:160,to:'hall',label:'MAIN HALL'},{x:220,to:'office',label:'VP OFFICE'},{x:280,to:'psych',label:'PSYCH'}]},
  wing_sci:{L:'hallb',R:'wing_sports',doors:[{x:198,to:'chem',label:'CHEM LAB'},{x:272,to:'science'}]},
- wing_sports:{L:'wing_sci',R:'field',doors:[{x:120,to:'pool'},{x:272,to:'gym'}]},
+ wing_sports:{L:'wing_sci',R:'field',doors:[{x:120,to:'pool',label:'POOL'},{x:272,to:'gym'}]},
  field:{L:'wing_sports',R:'walkway',doors:[]},
  walkway:{L:'field',R:'forest',doors:[{x:272,to:'trailer',label:'PORTABLE 4'}]},
  forest:{L:'walkway',R:null,doors:[]},
