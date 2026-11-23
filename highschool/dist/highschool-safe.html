@@ -9893,7 +9893,7 @@ async function spendApple(per,day){
  await wait(TEST?10:900);
  if(D.period!==per||cal()!==day||busy)return;
  if(D.period===8){busy=true;return boardBus(true)}
- if(D.period===7){const bus=SPOTS.find(s=>s.label&&s.label.startsWith('Get on the 43'));if(bus)return useSpot(bus)}
+ if(D.period===7){return afterSchool(true)}
  return endPeriod();
 }
 {const _tt=talkTo;talkTo=async function(id){if(busy)return;const per=D.period,day=cal();D._acted=0;await _tt(id);if(D&&D._acted)return spendApple(per,day)}}
@@ -10917,7 +10917,7 @@ const WANDER=['corridor','canteen','field','gym','library','toilets'];
 /* sometimes you get caught */
 {const _er=enterRoom;enterRoom=async function(room){
  const r=await _er(room);
- if(!TEST&&D&&D.wander===D.period&&!busy&&!D.dead.sherman&&Math.random()<.18&&room!=='forest'){
+ if(false){ /* replaced by sherCatch in js/mayhem.js */
   await runHook({mis:'passing',run:async()=>{
    put('sherman',334,-1,{y:146});await walk('sherman',A.you.x+16,90);face('sherman','you');
    await say('sherman','Shouldn’t you be in class, sweetie?','evil');
@@ -12436,7 +12436,7 @@ for(const r of Object.keys(WORLD)){const R0=ROOMS[r];if(!R0||R0._doors)continue;
 let worldFade=0;
 {const _do=HOOK.drawOver;HOOK.drawOver=(...a)=>{_do&&_do(...a);if(worldFade>0){g.globalAlpha=Math.min(1,worldFade);R(0,0,W,180,'#000');g.globalAlpha=1}
  /* door labels when you’re standing at one */
- if(panelMode==='roam'&&!busy&&A.you&&D&&!D.weekend){const d=nearDoor();if(d){const t='▲ '+(d.stairs?(d.stairs==='up'?'Upstairs':'Downstairs'):shortName(d.to));const w=pxw(t)+6,x=clamp(d.x-w/2,2,W-w-2);R(x,8,w,9,'#141120');R(x,8,w,1,'#ffd27a');pxc(t,x+w/2,10,'#ffd27a')}}
+ if(panelMode==='roam'&&!busy&&A.you&&D&&!D.weekend){const d=nearDoor();if(d){const t='▲ '+(d.stairs?(d.stairs==='up'?'Upstairs':'Downstairs'):shortName(d.to));const w=pxw(t)+6,x=clamp(d.x-w/2,2,W-w-2);R(x,110,w,9,'#141120');R(x,110,w,1,'#ffd27a');pxc(t,x+w/2,112,'#ffd27a')}}
 }}
 function nearDoor(){if(!A.you||!D)return null;const w=WORLD[D.room];if(!w)return null;let b=null,bd=12;for(const d of w.doors){const dd=Math.abs(d.x-A.you.x);if(dd<bd){bd=dd;b=d}}return b}
 function worldMove(room,x,y,dir){
@@ -12485,7 +12485,7 @@ function edge(s){
  const room=D.room,w=WORLD[room];
  if(w){
   const to=s<0?w.L:w.R;
-  if(room==='bus'&&s<0&&D.period===7){busy=true;return endPeriod()}
+  if(room==='bus'&&s<0&&D.period===7){return afterSchool()}
   if(!to){if(!edge.t||T-edge.t>1.2){edge.t=T;toast(room==='bus'?'The road. Not that way.':'That’s the end of the hall.')}return}
   if(to==='bus'&&D.period>=1&&D.period<=6&&!edge.warned){edge.warned=1;toast('Out the front doors. The bus loop.')}
   return worldGo(to,s<0?(w.Lx!=null?w.Lx:300):(w.Rx!=null?w.Rx:20),null,s);
@@ -16762,6 +16762,1324 @@ function _bell(){for(let i=0;i<10;i++){tone(1568,.09,'square',.035,0,i*.1);tone(
 
 </script>
 <script>
+/* js/mayhem.js */
+'use strict';
+/* =====================================================================
+   HIGHSCHOOL — MAYHEM
+   • Ms. Sherman in the hallway gets worse every time she catches you:
+     a warning, then she takes your stuff, then she drags you by the ear,
+     then the ruler, then the supply closet, then she stops talking.
+   • Home time is a choice: the 43 home, or Fair City Mall. After the
+     mall it’s dark: the late 43 (sketchy) or call home for a ride.
+   • Nobody stands inside anybody: people step aside.
+   • People don’t all stand the same: arms crossed, hands on hips, on
+     their phones, chatting, looking round, fidgeting.
+   • The students are worse than the teachers.
+   ===================================================================== */
+
+/* ---------- props and held things ---------- */
+{const _dp=drawProp;drawProp=function(p){
+ const x=Math.round(p.x),y=Math.round(p.y);
+ if(p.t==='fire'){const n=p.n||5,bg=p.big?2:1;for(let i=0;i<n;i++){const f=Math.sin(T*13+i*2.1),h=(8+((i*7)%6)+f*3)*bg;R(x-n*2+i*4,y-h,3,h,'#e8501a');R(x-n*2+i*4,y-h*.6,3,h*.6,'#f0a020');R(x-n*2+i*4+1,y-h*.3,1,h*.3,'#fff0a0')}
+  g.globalAlpha=.25;for(let i=0;i<4;i++){const q=(T*.5+i/4)%1;R(x-6+Math.sin(i+T)*4,y-18-q*30,8+q*8,6,'#3a3a3a')}g.globalAlpha=1;return}
+ if(p.t==='tripwire'){R(Math.min(x,p.x2),y,Math.abs(p.x2-x),1,'rgba(220,220,230,.7)');R(x-1,y-2,2,3,'#5a5a5a');R(p.x2-1,y-2,2,3,'#5a5a5a');return}
+ if(p.t==='trashcan'){g.save();g.translate(x,y-6);g.rotate(p.rot||0);R(-6,-7,12,14,'#5a6a5a');R(-6,-7,12,2,'#7a8a7a');R(-6,-2,12,1,'#4a5a4a');R(-6,3,12,1,'#4a5a4a');
+  if(p.head){R(-3,-12,6,6,p.skin||'#f0c8a8');R(-3,-13,6,2,p.hair||'#3a2418');R(-2,-10,1,1,'#1a1a1a');R(1,-10,1,1,'#1a1a1a')}g.restore();return}
+ if(p.t==='duffel'){const w=Math.sin(T*9)*(p.wig||1);R(x-9,y-6+w*.5,18,7,'#3a4a3a');R(x-7,y-7+w,14,2,'#4a5a4a');R(x-2,y-9,4,2,'#2a2a2a');return}
+ if(p.t==='ferret'){const s=Math.sin(T*20)>0;R(x-5,y-3,10,3,'#e8dcc8');R(x+4,y-4,3,3,'#e8dcc8');R(x+5,y-3,1,1,'#1a1a1a');R(x-7,y-2+(s?1:0),3,1,'#c8bca8');return}
+ if(p.t==='auctiontable'){R(x-26,y-12,52,3,'#8a6a4a');R(x-24,y-9,2,9,'#5a4a3a');R(x+22,y-9,2,9,'#5a4a3a');R(x-20,y-16,6,4,'#e8e2d6');R(x-10,y-15,4,3,'#c03030');R(x,y-17,7,5,'#3a3a5a');R(x+12,y-15,5,3,'#f0d070');return}
+ return _dp(p)}}
+{const _dh=drawHeld;drawHeld=function(it,x,y,d){
+ if(it==='chicken'){R(x-5,y-4,10,7,'#b8743a');R(x-4,y-5,8,2,'#d08a48');R(x+(d>0?4:-7),y-6,3,3,'#c88040');R(x-2,y-3,2,1,'#f0b070');return}
+ if(it==='glasses'){R(x-4,y-2,3,3,'#9ac8e8');R(x+1,y-2,3,3,'#9ac8e8');R(x-4,y-2,8,1,'#2a2a2a');R(x-1,y-1,2,1,'#2a2a2a');return}
+ if(it==='gavel'){R(x-1,y-1,1,6,'#8a5a3a');R(x-3,y-3,6,3,'#6a3a1a');return}
+ if(it==='marsh'){R(x,y-9,1,10,'#c8a070');R(x-1,y-11,3,3,'#f4f0e6');return}
+ return _dh(it,x,y,d)}}
+if(typeof GRIP_W!=='undefined')GRIP_W.ruler={rest:1.2,draw:(x,y,c,s)=>{gLine(x,y,c,s,-2,13,2,2,'#c8a060');for(let t=0;t<13;t+=3)gPerp(x,y,c,s,t,0,0,'#5a4a2a')}};
+Object.assign(K,{
+ lb_chicken:{n:'Man with a Chicken',col:'#8a7a5a',skin:'#e0b090',hair:'#5a4a3a',hs:'messy',top:'#6a6a4a',pants:'#3a3a3a',adult:1,beard:1,seed:91,v:150},
+ lb_knife:{n:'Guy with a Knife',col:'#5a5a6a',skin:'#c89068',hair:'#141010',hs:'buzz',top:'#2a2a2a',pants:'#2a2a33',adult:1,seed:92,v:120},
+ lb_sleeper:{n:'Sleeping Man',col:'#7a6a8a',skin:'#f0c8a8',hair:'#9a9a9a',hs:'short',top:'#5a4a6a',pants:'#3a3a48',adult:1,old:1,seed:93,v:110},
+ lb_bag:{n:'Woman with a Bag',col:'#8a5a7a',skin:'#a87048',hair:'#141010',hs:'bun',top:'#7a3a5a',pants:'#2a2a33',adult:1,girl:1,skirt:1,seed:94,v:380},
+ sub:{n:'Substitute',col:'#6a7a8a',skin:'#f0d0b8',hair:'#c8a060',hs:'side',top:'#8a9aaa',pants:'#4a4a5a',adult:1,glasses:1,seed:95,v:260}
+});
+for(const id of['lb_chicken','lb_knife','lb_sleeper','lb_bag','sub'])K[id].id=id;
+DEATHS.hallmonitor={name:'Hall Monitor',desc:'Ms. Sherman caught you one time too many. She didn’t say anything this time.',hint:'Get caught skipping by Ms. Sherman. A lot.'};
+
+/* =====================================================================
+   1. MS. SHERMAN, EVERY TIME WORSE
+   ===================================================================== */
+const sherN=()=>(D&&D.f.sherC)||0;
+function sherChance(){return Math.min(.5,.18+.07*sherN())}
+async function sherCatch(fromPass){
+ const n=sherN();D.f.sherC=n+1;save();
+ const sid=A.sherman?'sherman':A.shermian?'shermian':'sherman';
+ if(!A[sid])put(sid,334,-1,{y:146});
+ const S=A[sid];if(n>=3)hold(sid,'ruler');
+ if(Math.abs(S.x-A.you.x)>20)await walk(sid,A.you.x+(A.you.x>280?-16:16),n>=4?150:n>=2?110:90);
+ face(sid,'you');face('you',sid);
+ const leave=async()=>{hold(sid,null);S.pose=null;await walk(sid,S.x<160?-30:350,70);remove(sid)};
+ const flee=async()=>{const to=A.you.x<160?300:20;await walk('you',to,150)};
+ const runFrom=async(need)=>{const ok=await mash('RUN',{need,time:3,info:'Ms. Sherman is '+(n>=4?'sprinting':'coming')+'. MASH!'});if(ok){SFX.whoosh();await flee()}return ok};
+ if(n===0){
+  await say(sid,fromPass?'Hall pass, sweetie.':'Shouldn’t you be in class, sweetie?','evil');
+  const c=await choose(['“Bathroom, Miss.”','Show her the back of a gum wrapper.','Run.']);
+  if(c===0)await say(sid,'For forty minutes? Miss will be checking on your bladder, sweetie. Personally.','evil');
+  else if(c===1)await say(sid,'(holding it up to the light for a long time) …Miss will allow it. Once. Miss writes everything down.','smirk');
+  else if(!(await runFrom(14)))await say(sid,'(holding your hood) Miss has your face now, sweetie. Miss keeps faces.','evil');
+  await leave();return 'stay';
+ }
+ if(n===1){
+  await say(sid,'Again. Miss has a list, sweetie. You’re on it twice. Pockets.','evil');
+  const c=await choose(['Empty your pockets.','“I literally just—”','Run.']);
+  let take=c!==2||!(await runFrom(17));
+  if(take){
+   const it=D.items.find(i=>!['key','padlock','video','plan','newplan'].includes(i));
+   pose(sid,'grab');await wait(300);
+   if(it){D.items=D.items.filter(i=>i!==it);hold(sid,'paper');await N('She takes '+(ITEMS[it]||it).replace(/^./,m=>m.toLowerCase())+' out of your hand and drops it into her cardigan pocket. It doesn’t make a sound when it lands. Her pocket goes a long way down.')}
+   else{const m=Math.min(D.money||0,3);D.money=(D.money||0)-m;updateLoc();await N(m?'She takes $'+m+' out of your hand, folds it twice and tucks it into her bra. “Lunch money tax, sweetie.”':'Your pockets are empty. She pats your face anyway. Her hand is cold like a fridge door.')}
+   pose(sid,null);
+  }
+  await say(sid,'Three strikes, sweetie. Miss loves baseball.','smirk');
+  await leave();return 'stay';
+ }
+ if(n===2){
+  await say(sid,'Three times. Miss is starting to think you WANT to spend time with Miss.','evil');
+  const c=await choose(['Let her take you to class.','Run.']);
+  if(c===1&&await runFrom(20)){await say(sid,'(not chasing, just watching) Miss doesn’t run, sweetie. Miss doesn’t have to.','evil');await leave();return 'stay'}
+  pose(sid,'grab');A.you.ex='hurt';SFX.smack();
+  await N('She gets you by the ear. Not the earlobe. The whole ear. She walks you down the hallway like that, and every kid you pass goes very quiet and very interested in their locker.');
+  const per=D.period,cls=PERIODS[per].lesson?myClassFor(per):null;
+  await Promise.all([walk(sid,-30,60),walk('you',-14,60)]);remove(sid);
+  D.apples=Math.max(0,(D.apples||0)-1);updateLoc();
+  if(cls){D.lateTo=cls;D.wander=null;toast('Dragged to class by the ear. Late.');setTimeout(()=>{busy=false;enterRoom(cls)},0);return 'ended'}
+  A.you.x=20;A.you.ex=null;await N('She leaves you outside the staff room with your ear on fire. It’s still ringing at lunch.');return 'stay';
+ }
+ if(n===3){
+  await say(sid,'Hands out, sweetie.','evil');
+  const c=await choose(['Hold your hands out.','“My dad’s a lawyer.”','Run.']);
+  if(c===2&&await runFrom(22)){await say(sid,'(slapping the ruler into her palm) Next time, sweetie. Next time it’s not the ruler.','evil');await leave();return 'stay'}
+  if(c===1)await say(sid,'Miss ate a lawyer once. 1994. Very chewy. Hands.','smirk');
+  pose('you','hold');
+  for(let i=0;i<3;i++){pose(sid,'overhead');await wait(TEST?0:220);pose(sid,'stab');SFX.smack();shake(.4);await wait(TEST?0:160)}
+  A.you.hurt=Math.max(A.you.hurt||0,1);blood(A.you.x+6,A.you.y-18,6,1,40,A.you.y+2);pose('you',null);A.you.ex='hurt';
+  D.apples=Math.max(0,(D.apples||0)-2);updateLoc();
+  await N('Three on each hand. Edge of the ruler, not the flat. Your knuckles split. She wipes the ruler on her skirt and checks it for damage. Not you. The ruler.');
+  await say(sid,'Miss was a nun once. For a week. Nobody ever checked why it was only a week.','smirk');
+  await leave();return 'stay';
+ }
+ if(n===4){
+  SFX.sting();await N('Ms. Sherman doesn’t say anything. She just starts running at you. She runs like a person who learned running from a video of a spider.');
+  if(await runFrom(23)){await N('You make it round the corner. Behind you, her shoes stop. You hear her say, very calm, from very close: “Next time.”');await leave();return 'stay'}
+  pose(sid,'grab');SFX.door();fxState.dark=0;await tw(fxState,{dark:1},500);
+  await N('The supply closet. The door locks from the outside. It smells like bleach and pencil shavings, and something in the back is breathing slower than you are.');
+  await N('She lets you out when the bell goes. She doesn’t say a word. There are long scratches on the inside of the door, low down, kid height. Some of them are yours now.');
+  remove(sid);hold(sid,null);await tw(fxState,{dark:0},400);busy=false;setTimeout(()=>endPeriod(),0);return 'ended';
+ }
+ await N('Ms. Sherman is at the end of the hallway. She isn’t smiling. She isn’t anything. Her jaw starts to open, and it keeps opening.');
+ if(await runFrom(25)){await N('You don’t stop running until you’re somewhere with people in it. Your heart doesn’t stop for an hour.');await leave();return 'stay'}
+ SFX.crunch();blood(A.you.x,A.you.y-24,40,1,90,A.you.y+2);A.you.ex='dead';await wait(400);
+ await die('hallmonitor');
+}
+/* her catch now goes through sherCatch, more often the more she knows you */
+{const old=PASS&&PASS.find(p=>p.id==='monitor');if(old)old.run=async()=>{await sherCatch(true)}}
+{const _er=enterRoom;enterRoom=async function(room){
+ const r=await _er(room);
+ if(TEST||!D||D.weekend||busy||D.dead.sherman||D.dead.shermian||room==='forest'||panelMode!=='roam')return r;
+ const skipping=D.wander===D.period;
+ const hunted=HALLS.has(room)&&sherN()>=3&&PERIODS[D.period].free&&D.period>0&&D.period<7;
+ if(!(skipping||hunted))return r;
+ if(Math.random()>=(skipping?sherChance():.06*(sherN()-2)))return r;
+ return runHook({mis:'passing',run:async()=>{const x=await sherCatch(false);return x||'stay'}});
+}}
+
+/* =====================================================================
+   2. HOME TIME: THE 43, OR FAIR CITY
+   ===================================================================== */
+async function afterSchool(noStay){
+ if(TEST&&!TEST.auto){busy=true;return endPeriod()}
+ busy=true;setPanel('talk');
+ const opts=['Get on the 43 home.','Walk to Fair City Mall. (Get home later: the late bus, or a ride.)'];if(!noStay)opts.push('Not yet. Stay at the bus loop.');
+ const c=await choose(opts,'Home time. The 43, or Fair City?');
+ if(c===0){busy=false;const bus=SPOTS.find(s=>s.label&&s.label.startsWith('Get on the 43'));if(bus)return useSpot(bus);busy=true;return boardBus()}
+ if(c===1){D.f.mallToday=1;toast('Fair City Mall. Everyone’s going.');return endPeriod()}
+ busy=false;roam();
+}
+ON_PERIOD.push(async(i,resume)=>{if(i===7&&!resume&&!TEST&&D&&!D.weekend)setTimeout(()=>toast('Home time. Get on the 43 (middle), or walk left to Fair City Mall.'),1800)});
+
+const PARENT_TALKS=[
+ async()=>{await N('Mom: “How was school?”');const c=await choose(['“Fine.”','“A teacher ate a kid.”','“Can we get food?”']);
+  if(c===0)await N('Mom: “Good. Good good good.” She turns the radio up. That’s the whole conversation.');
+  else if(c===1)await N('Mom, not looking away from the road: “Mm. Did you eat your lunch though? I put a yogurt in.”');
+  else await N('Mom: “We have food at home.” The food at home is a frozen lasagna from 2019 and a jar of olives.')},
+ async()=>{await N('Dad is driving. Dad is singing along to a song he doesn’t know the words to, with total confidence.');
+  await N('Dad: “You know I met your mom in detention? Right there. Highgate. Ms. Sherman’s detention, 1994.”');
+  const c=await choose(['“Dad. Ms. Sherman is still there.”','“Please stop talking.”']);
+  if(c===0)await N('Dad, after a long time: “…No she isn’t. She was old in 1994.” He drives the rest of the way home with both hands on the wheel and the doors locked.');
+  else await N('Dad: “And she said, ‘Is that a hall pass or a gum wrapper?’ and I said—” You put your headphones in. You can still hear him. He’s doing the voices.')},
+ async()=>{await N('Mom is on speakerphone with Grandma the whole ride. She mouths “sorry” at you and hands you one cold fry from the cupholder. You don’t know how old the fry is. You eat it.');
+  await N('Grandma, on speaker: “Is that the baby? Is the baby still going to that school? The school with the boiler?” Mom hangs up on her.')},
+ async()=>{await N('Mom checks the rearview mirror at every light.');await N('Mom: “Don’t look. There’s a man following us. Oh— no, it’s just your principal. He waves at me at every light. Every day. I don’t know how he knows my car.”');
+  const c=await choose(['Wave back at Mr. Adam.','Slide down in your seat.']);
+  if(c===0)await N('He waves back with both hands. He isn’t holding the wheel. His car keeps going perfectly straight anyway.');
+  else await N('You slide down until you can only see the roof. Mom: “Sit up, he’s nice.” He is not nice. He is something.')}
+];
+async function parentRide(){
+ setPanel('talk');busy=true;closeOverlays();
+ if(D.room!=='carpark'||ROOM!=='carpark'){D.room='carpark';buildRoom('carpark');for(const id in A)if(id!=='you'&&A[id]&&!A[id].dead)remove(id)}
+ else{const ids=Object.keys(A).filter(id=>id!=='you'&&!A[id].dead);ids.forEach((id,i)=>timers.push({t:i*.15,r:()=>{if(A[id])walk(id,A[id].x<160?-24:344,80).then(()=>remove(id))}}));if(ids.length)await wait(1200)}
+ if(!A.you)put('you',140,1,{y:156});
+ Object.assign(A.you,{pose:null,hold:null,alpha:1,y:156});
+ cue('sad');await tw(fxState,{dark:.3},500);
+ pose('you','phone');await N('You call home. It rings six times. Then: “…Yeah. Yeah, I’m coming. Stand under a light.”');pose('you',null);
+ await walk('you',150,60);
+ await N('You stand under the one working light in the parking lot for twenty minutes. A shopping cart rolls past on its own.');
+ const car=pprop({t:'car',x:340,y:157,col:'#4a5a7a',driver:1,layer:-2});SFX.rumble();
+ await tw(car,{x:126},1600,'out');
+ await walk('you',150,50);pose('you','reach');await wait(200);SFX.door();await tw(A.you,{alpha:0,y:150},300);pose('you',null);car.pass=1;
+ await pick(PARENT_TALKS)();
+ SFX.rumble();await tw(car,{x:-90},1500,'in');car.hide=1;
+ {const dn=Object.keys(D.done).filter(m=>MIS[m]);if(dn.length)await N('Today you: '+dn.map(m=>MIS[m].name).join(', ')+'.')}
+ try{await nightPhone()}catch(e){console.error(e)}
+ fxState.dark=0;await tw(fxState,{dark:1},900);
+ {const nc=window.nextDayCard?nextDayCard():['TOMORROW',''];await card(nc[0],nc[1],1600)}
+ fxState.dark=0;busy=false;
+ return newDay();
+}
+{const _bb=boardBus;boardBus=async function(fromMall){
+ if(!fromMall||TEST||!D||D.period!==8||!['foodcourt','arcade','carpark'].includes(D.room))return _bb(fromMall);
+ setPanel('talk');busy=true;closeOverlays();
+ const c=await choose(['Take the late 43. (It gets sketchy after dark.)','Call home. Get picked up.'],'It’s dark out. How are you getting home?');
+ if(c===1)return parentRide();
+ D.f.lateBus=1;return _bb(true);
+}}
+
+/* ---------- the late 43 ---------- */
+function lateScene(extra){
+ const cast={};const take=(sl,id)=>{if(!sl)return;cast[id]=[sl.x,sl.side<0?1:-1,{y:sl.y,pose:'sit'}];cast[id].slot=sl};
+ take(slotAt(3,-1,'a'),'you');
+ take(slotAt(2,-1,'w'),'lb_chicken');take(slotAt(3,1,'w'),'lb_knife');take(slotAt(4,1,'a'),'lb_sleeper');take(slotAt(1,1,'a'),'lb_bag');
+ for(const [id,sl] of (extra||[]))take(sl,id);
+ cast.driver=[140,1,{y:84,pose:'sit'}];
+ scene('busride',cast,true);ROOM='busride';
+ for(const id in cast){const a=A[id];if(!a)continue;a.back=1;a.bslot=cast[id].slot||null;a.sitHigh=1}
+ if(A.driver){A.driver.bs=.4;A.driver.back=1}
+ if(A.lb_knife){A.lb_knife.back=0;A.lb_knife.dir=-1}
+}
+const LATE=[
+ {id:'chicken',run:async()=>{
+  hold('lb_chicken','chicken');A.lb_chicken.back=0;A.lb_chicken.dir=1;
+  await N('One row back, a man is eating a whole rotisserie chicken with his hands. No bag. No napkin. He’s been looking at you since the mall.');
+  hold('lb_chicken',null);await sitBeside('lb_chicken','you');hold('lb_chicken','drumstick');A.lb_chicken.back=0;A.lb_chicken.ex='happy';
+  await say('lb_chicken','(holding out a leg) Drumstick? Growing kid. You look like a drumstick kid.','happy');
+  const c=await choose(['Take the drumstick.','“I’m good, thanks.”','“Do I know you?”']);
+  if(c===0){hold('lb_chicken',null);hold('you','drumstick');await N('It’s warm. It’s honestly really good. That’s the worst part.')}
+  else if(c===1)await say('lb_chicken','Suit yourself. More for me. (he eats the whole leg, bone and all, crunching)','smirk');
+  else await say('lb_chicken','Your hoodie says Highgate. I went there. 1987. I got out early. (he taps the window) Not everybody did.','sad');
+  await N('At the stop by the cemetery he stands up, wipes his hands on the seat, and gets off. He waves at you through the window with a bone.');
+  hold('lb_chicken',null);await busMove('lb_chicken',{x:140,y:88},70);await tw(A.lb_chicken,{alpha:0},300);remove('lb_chicken');hold('you',null);
+ }},
+ {id:'knife',run:async()=>{
+  hold('lb_knife','knife');A.lb_knife.ex='smirk';
+  await N('Across the aisle, a guy is picking his teeth with a knife that’s way too big for teeth. He hasn’t blinked since you sat down.');
+  await say('lb_knife','What stop you getting off at?','smirk');
+  const c=await choose(['Lie. Say a stop way before yours.','Tell him.','Go up front and stand by the driver.']);
+  if(c===0){await say('lb_knife','(nodding slowly) Cool. Cool cool.','smirk');await N('Your fake stop comes. You don’t move. He doesn’t move either. He smiles like he knew the whole time. He goes back to his teeth.')}
+  else if(c===1){await say('lb_knife','Same.','happy');await N('At your stop he stands up when you stand up.');
+   const ok=await mash('RUN',{need:18,time:3.5,info:'Off the bus. Down the street. MASH!'});
+   if(ok)await N('You’re off the bus and gone before the doors finish opening. When you look back, he’s still on the bus, waving the knife at you like a little flag.');
+   else{const m=D.money||0;D.money=0;updateLoc();await N('He catches your hood on the steps. He takes your wallet'+(m?' ($'+m+')':'')+' and your left shoe. He leaves the right one. “Professional courtesy,” he says.')}}
+  else{await busMove('you',{x:150,y:96},80);await say('driver','Sit down.','angry');await say('driver','He rides every night. He’s harmless. Mostly. Last kid who stood up here, I had to clean the windshield. Sit down.','smirk');await busMove('you',slotAt(3,-1,'a'),70);A.you.pose='sit'}
+  hold('lb_knife',null);
+ }},
+ {id:'sleeper',run:async()=>{
+  await N('At the next stop, the old man in front of you moves to the seat next to you. There are thirty empty seats. He picks yours.');
+  await sitBeside('lb_sleeper','you');A.lb_sleeper.ex='closed';A.lb_sleeper.blean=A.lb_sleeper.x<A.you.x?.35:-.35;
+  await N('He falls asleep in about two seconds. Then he falls asleep sideways. Onto your shoulder. He smells like a church basement.');
+  const c=await choose(['Wriggle out.','Let him sleep.','Wake him up.']);
+  if(c===0){const ok=await mash('Wriggle',{need:14,time:3});if(ok){await busMove('you',slotAt(1,-1,'a'),70);A.you.pose='sit';await N('You slide out from under him. He doesn’t wake up. He slowly tips over onto the seat you were in and starts snoring into it.')}else await N('You’re stuck. He’s heavy like wet sand. You ride the whole way home as his pillow.')}
+  else if(c===1)await say('lb_sleeper','(asleep, mumbling) …don’t go in the boiler room, Ollie… Ollie, the door’s stuck…','sad');
+  else{A.lb_sleeper.ex='shock';A.lb_sleeper.blean=0;await say('lb_sleeper','(grabbing your arm, wide awake) What year is it? Is it still 1987? Is she still there? Is SHERMAN still THERE?','scared');await N('You don’t answer. That’s an answer. He gets off at the next stop and runs.');await busMove('lb_sleeper',{x:140,y:88},100);await tw(A.lb_sleeper,{alpha:0},250);remove('lb_sleeper')}
+  if(A.lb_sleeper){A.lb_sleeper.blean=0}
+ }},
+ {id:'bag',run:async()=>{
+  const bag=pprop({t:'duffel',x:A.lb_bag.x+10,y:A.lb_bag.y-2,layer:30,wig:1});A.lb_bag.back=0;A.lb_bag.dir=-1;
+  await N('Two rows up, a woman is whispering to a duffel bag on the seat next to her. The bag is moving.');
+  await say('lb_bag','Shh. Shh. Almost home, babies. Almost home.','happy');
+  const c=await choose(['Ask what’s in the bag.','Pretend you didn’t see.','Tell the driver.']);
+  if(c===0){await say('lb_bag','Ferrets. Forty-one. (she counts with her finger) …Forty.','shock');
+   const f=pprop({t:'ferret',x:bag.x,y:bag.y,layer:31});await tw(f,{x:A.you.x,y:A.you.y-20},700);f.hide=1;
+   await N('Something long and warm runs down the aisle, up your leg and into your hood. It turns round three times and goes to sleep in there.');
+   await say('lb_bag','(looking at your hood, then at you) …It likes you. Keep him. His name is Kevin.','happy');P.ferret=1;save()}
+  else if(c===1)await N('You look out the window. Behind you, the bag says, in a very small voice: “help.” The woman pats it. Nobody else on the bus heard it. You heard it.');
+  else await say('driver','She’s a regular. Don’t open the bag. Last kid who opened the bag, we’re still finding bits of him in the heater.','smirk');
+  bag.wig=c===0?.4:1;
+ }},
+ {id:'rob',cond:()=>!D.dead.kayden&&!D.dead.jaxon,run:async()=>{
+  put('kayden',140,1,{y:88});put('jaxon',140,1,{y:86});A.kayden.sitHigh=1;A.jaxon.sitHigh=1;hold('jaxon','knife');hold('kayden','soaker');
+  await N('At the mall stop, Kayden and Jaxon get on in ski masks. They’re not even trying. You can see Kayden’s whole face through the mouth hole. He’s holding a Super Soaker painted black.');
+  await Promise.all([busMove('kayden',{x:165,y:A.you.y-4},70),busMove('jaxon',{x:150,y:A.you.y-10},60)]);face('kayden','you');A.kayden.back=0;A.jaxon.back=0;
+  await say('kayden','PHONES AND WALLETS. Phones and wallets. Not you, you’re cool. …Actually yeah, you too. Times are hard.','yell');
+  const c=await choose(['Hand over a dollar.','“Kayden. I can see your whole face.”','Point at the guy with the knife.']);
+  if(c===0){D.money=Math.max(0,(D.money||0)-1);updateLoc();await say('kayden','(taking it) Respect. You want a phone case? I got forty phone cases.','happy')}
+  else if(c===1)await say('kayden','(pulling the mask down further, which makes it worse) No you can’t.','angry');
+  else{await N('Kayden turns round. The guy with the knife smiles at him with all of his teeth.');await say('jaxon','Bro. Bro. Bro. BRO.','scared');}
+  SFX.door();await N('They get off at the next stop and sprint into the dark. The driver doesn’t even turn round. He’s seen it. He sees it every night.');
+  hold('kayden',null);hold('jaxon',null);
+  await Promise.all([busMove('kayden',{x:140,y:88},110),busMove('jaxon',{x:140,y:86},110)]);await Promise.all([tw(A.kayden,{alpha:0},250),tw(A.jaxon,{alpha:0},250)]);remove('kayden');remove('jaxon');
+ }}
+];
+{const _br=busRide;busRide=async function(fromMall){
+ if(!fromMall||TEST||!D||!D.f.lateBus)return _br(fromMall);
+ D.f.lateBus=0;
+ lateScene();cue('tension');fxState.dark=0;
+ await N('The late 43. Nobody from school takes the late 43. The lights flicker. The heater smells like hair. Every seat has a person in it you don’t want to sit next to.');
+ const pool=LATE.filter(e=>!e.cond||e.cond()).sort(()=>Math.random()-.5).slice(0,2);
+ for(const e of pool){try{await e.run()}catch(err){if(err===DEATH||err===ENDDAY)throw err;console.error(err)}await wait(300)}
+ for(const k in A)if(A[k]&&!A[k].dead&&k!=='you')A[k].ex=null;
+}}
+
+/* =====================================================================
+   3. NOBODY STANDS INSIDE ANYBODY
+   ===================================================================== */
+const CLOSE_POSES=new Set(['hug','kiss','carry','drag','choke','grab','punch','stab','headbutt','kick','lie','zombie','overhead','slam']);
+const SEATED=new Set(['sit','write','type','swim']);
+function unoverlap(){
+ if(!D||ROOM==='busride'||ROOM==='door'||fxState.dark>.6)return;
+ const L=Object.values(A).filter(a=>a&&a.k&&a.vis!==false&&!a.dead&&!(a.z>2)&&!(a.alpha<.5)&&!CLOSE_POSES.has(a.pose)&&a.x>-4&&a.x<324&&!a.noPush);
+ for(let i=0;i<L.length;i++)for(let j=i+1;j<L.length;j++){
+  const a=L[i],b=L[j];if(a.tx!=null||b.tx!=null)continue;
+  const dy=Math.abs(a.y-b.y);if(dy>18)continue;
+  const dx=b.x-a.x,ad=Math.abs(dx),need=12;if(ad>=need)continue;
+  const aFix=a.id==='you'||SEATED.has(a.pose)||a.sit||a.sitHigh,bFix=b.id==='you'||SEATED.has(b.pose)||b.sit||b.sitHigh;
+  if(aFix&&bFix)continue;
+  const m=aFix?b:bFix?a:(hsh((a.id||'').length*31+(b.id||'').length)<.5?a:b);
+  if(m._unov&&T-m._unov<.7)continue;m._unov=T;
+  const o=m===a?b:a;let s=Math.sign(m.x-o.x)||((m.id||'').length%2?1:-1);
+  let to=o.x+s*(need+1);if(to<10||to>310){s=-s;to=o.x+s*(need+1)}
+  to=clamp(to,10,310);
+  const d0=m.dir,p0=m.pose;
+  walk(m.id,to,38).then(()=>{if(A[m.id]===m&&m.tx==null){m.dir=d0;if(p0&&!m.pose)m.pose=p0}});
+ }
+}
+{const _hu=HOOK.update;HOOK.update=(dt,rdt)=>{_hu&&_hu(dt,rdt);if(!TEST)try{unoverlap()}catch(e){}}}
+
+/* =====================================================================
+   4. PEOPLE STAND LIKE PEOPLE
+   ===================================================================== */
+const IDLE_BASE={arjun:'cross',nivaan:'phone',hasan:'phone',dheva:'hips',marcus:'cross',omer:'cross',stella:'hips',abby:'cross',sean:'hips',david:'phone',paul:'cross',angelo:'cross',kenneth:null,corey:null,alex:'hips',jacob:null,aidan:null,
+ shermian:'hips',sherman:'hips',coach:'cross',voss:'cross',loach:'cross',pat:'hips',adam:null,kayden:'phone',jaxon:'cross',jade:'phone',kaylee:'phone',brayden:'cross',tez:'phone',mia:'hips'};
+const IDLE_ANY=['cross','hips','phone',null,'cross',null,'phone'];
+const FIDGET=['shrug','facepalm','wave','shrug'];
+function idleOf(a){
+ const id=a.id||'',sd=hsh(id.length*17+(id.charCodeAt(0)||0)*3+(id.charCodeAt(1)||0));
+ const base=id in IDLE_BASE?IDLE_BASE[id]:IDLE_ANY[Math.floor(sd*IDLE_ANY.length)];
+ const per=8+sd*6,q=((T+sd*40)/per)%1;
+ if(q<.58)return{p:base};
+ if(q<.62)return{p:FIDGET[Math.floor(sd*13)%FIDGET.length],look:0};
+ if(q<.8)return{p:null,look:q>.7};
+ if(q<.92)return{p:base==='phone'?'cross':(sd<.5?'phone':'hips')};
+ return{p:null};
+}
+{const _da=drawActor;drawActor=function(a){
+ if(!a||TEST||a.id==='you'||a.dead||a.pose||a.moving||a.tx!=null||a.hold||a.sit||a.sitHigh||a.z>0||a.back||!D||busy||panelMode!=='roam'||ROOM==='busride'||ROOM==='door'||(K[a.id]&&K[a.id].ghost))return _da(a);
+ const st=idleOf(a);const od=a.dir,ot=a.talk;
+ /* someone close by? face them and talk sometimes */
+ let mate=null;for(const k in A){const b=A[k];if(b&&b!==a&&b.vis!==false&&!b.dead&&b.id!=='you'&&Math.abs(b.x-a.x)<34&&Math.abs(b.y-a.y)<10){mate=b;break}}
+ if(mate){a.dir=mate.x>a.x?1:-1;const sd=hsh((a.id||'').length*7+mate.x);a.talk=Math.sin(T*.9+sd*9)>.35&&Math.sin(T*.37+sd*5)>0}
+ else if(st.look)a.dir=-od;
+ a.pose=st.p;
+ try{return _da(a)}finally{a.pose=null;a.dir=od;a.talk=ot}
+}}
+
+/* =====================================================================
+   5. THE STUDENTS ARE WORSE THAN THE TEACHERS
+   ===================================================================== */
+const kidsHere=()=>Object.keys(A).filter(k=>k!=='you'&&A[k]&&!A[k].dead&&!(K[k]&&K[k].adult));
+chaos('tripwire',['upper','wing_arts','hallb'],[0,2,4],.22,async()=>{
+ const t=D.dead.fenwick?'dahl':'fenwick';if(D.dead[t])return;
+ const a=extra('brayden',60,1,{y:150}),b=extra('jade',250,-1,{y:150});
+ const w=pprop({t:'tripwire',x:150,x2:190,y:148,layer:2});
+ if(a){A.brayden.pose='kneel'}if(b){A.jade.pose='kneel'}
+ await N('Two kids are crouched at either end of the hallway holding a length of fishing line at ankle height. They’re giggling. They’ve done this before. They have a tally on the wall.');
+ put(t,334,-1,{y:150});await walk(t,190,70);
+ SFX.whoosh();A[t].pose='lie';shake(1);SFX.thud();blood(A[t].x-12,A[t].y-6,10,-1,50,A[t].y+2);A[t].ex='hurt';
+ await N(K[t].n+' goes down face-first like a tree. His keys go one way. A tooth goes the other. The kids are already on him, going through his pockets like raccoons.');
+ if(a){A.brayden.pose='kneel';await walk('brayden',A[t].x-14,120)}if(b){A.jade.pose='kneel';await walk('jade',A[t].x+14,120)}
+ const c=await choose(['Help him up.','Grab his lanyard while they’re busy.','Walk away. Not your business.']);
+ if(c===0){await say(t,'(spitting a tooth) Thank you. I’ll remember who helped. (looking at the kids) I’ll remember who didn’t.','evil');}
+ else if(c===1){SFX.pick();D.money=(D.money||0)+2;updateLoc();await N('His lanyard has a staff keycard, two dollars and a photo of a woman with the face scratched out. You keep the two dollars. You put the photo back. You don’t want it.')}
+ else await N('Behind you, the tally on the wall goes up by one.');
+ if(a)pose('brayden',null);if(b)pose('jade',null);
+ await Promise.all([a?walk('brayden',-20,120):0,b?walk('jade',340,120):0]);if(a)remove('brayden');if(b)remove('jade');
+ A[t].pose=null;A[t].ex='angry';await walk(t,-30,50);remove(t);w.hide=1;
+});
+chaos('lockersub',['corridor','hallb','upper'],[1,2,3,4],.22,async()=>{
+ const a=extra('jaxon',140,1,{y:148}),b=extra('kaylee',176,-1,{y:148});
+ if(a)hold('jaxon','padlock');
+ await N('The locker between Jaxon and Kaylee is knocking. From the inside. They’re leaning on it, eating chips.');
+ SFX.thud();shake(.3);await wait(200);SFX.thud();
+ await N('From inside the locker, a muffled voice: “I have a master’s degree. I have a MASTER’S DEGREE.”');
+ if(b)await say('kaylee','It’s the sub. He said “alright, settle down” to us. Nobody tells us to settle down.','smirk');
+ const c=await choose(['Open the locker.','Add your own padlock.','Slide a granola bar through the vents.']);
+ if(c===0){put('sub',158,1,{y:150,pose:'lie'});SFX.locker();await N('You yank it open. The substitute pours out of the locker like laundry. He crawls three feet, gets up, and runs without looking back. He leaves his lanyard and his dignity.');
+  A.sub.pose=null;A.sub.ex='scared';await walk('sub',-30,130);remove('sub');
+  if(a)await say('jaxon','(very quietly) You’re next, you know that? You’re on the list now.','angry')}
+ else if(c===1){SFX.click();await N('Click. Two padlocks now. Jaxon gives you a slow nod of deep respect. The knocking gets faster.');D.f.subLocked=1}
+ else await N('A hand takes the granola bar through the vents. Then a small voice says “…thank you.” Then: “Is it raisin? I’m allergic to raisin.” It’s raisin.');
+ if(a)hold('jaxon',null);
+ await Promise.all([a?walk('jaxon',-20,80):0,b?walk('kaylee',340,80):0]);if(a)remove('jaxon');if(b)remove('kaylee');
+});
+chaos('auction',['canteen'],[2,4],.25,async()=>{
+ if(D.dead.angelo)return;
+ const t=pprop({t:'auctiontable',x:170,y:150,layer:2});
+ if(!A.angelo)put('angelo',150,1,{y:146});await walk('angelo',170,80);await tw(A.angelo,{z:12},250);hold('angelo','gavel');pose('angelo','up');
+ await N('Angelo is standing on a cafeteria table with a gavel he stole from the debate club. On the table: a backpack, a retainer, a pair of headphones, and a phone with a cracked lock screen.');
+ await say('angelo','LOT FOUR. Dead kid’s stuff. Everything must go. These headphones belonged to a seventh grader who looked at Mr. Voss wrong. Mint condition. One ear works. Do I hear a dollar.','yell');
+ for(const k of kidsHere().slice(0,4))if(k!=='angelo'){A[k].pose='up';A[k].ex='laugh'}
+ SFX.cheer();
+ const c=await choose(['Bid a dollar on the mystery backpack.','Ask whose stuff this is.','Tell Pat.']);
+ if(c===0&&(D.money||0)>=1){D.money--;updateLoc();SFX.pick();await say('angelo','SOLD. To the kid with the face.','happy');await N('You open the backpack. Half a sandwich, a permission slip for a trip that already happened, and a note that says “if you’re reading this i didn’t make it to friday.” You close the backpack.')}
+ else if(c===0)await say('angelo','No money, no bid. This is capitalism, not a hug.','angry');
+ else if(c===1)await say('angelo','(checking a list) Tyler M., Ryan, the kid who sat by the window in Chem… Look. They’re not using it. That’s the whole pitch.','smirk');
+ else{if(A.pat)await say('pat','(from the counter) Is there a ladle? I lost a ladle. If there’s a ladle I want it.','angry');else await N('Pat leans out of the kitchen, looks at the table, and puts in a bid on the retainer.')}
+ for(const k of kidsHere())if(A[k]){A[k].pose=null;A[k].ex=null}
+ pose('angelo',null);hold('angelo',null);await tw(A.angelo,{z:0},250);t.hide=1;
+});
+chaos('carfire',['bus'],[0],.25,async()=>{
+ if(D.dead.voss)return;
+ const car=pprop({t:'car',x:200,y:141,col:'#3a3a3a',layer:-8});const f=pprop({t:'fire',x:232,y:127,n:9,big:1,layer:-7});SFX.fire();
+ const ks=kidsHere().slice(0,4);await Promise.all(ks.map((k,i)=>A[k]?walk(k,[180,286,196,272][i],110):0));ks.forEach((k,i)=>{if(A[k]){A[k].hold='marsh';A[k].pose='hold';face(k,A[k].x<232?1:-1)}});
+ await N('Mr. Voss’s car is on fire in the bus loop. Not a little. All the way. A circle of kids is standing round it roasting marshmallows on pencils.');
+ if(ks[0])await say(ks[0],'He gave everybody a zero. EVERYBODY. Even the kid in the coma.','angry');
+ put('voss',-20,1,{y:150});await walk('voss',130,60);A.voss.ex='cold';
+ await N('Mr. Voss walks out of the front doors with his coffee. He looks at his car for a long time. He doesn’t say anything. He takes out a little notebook and starts writing down names.');
+ const c=await choose(['Roast a marshmallow.','Leave before he writes your name.','Film it.']);
+ if(c===0){hold('you','marsh');pose('you','hold');D.apples=(D.apples||0)+1;updateLoc();await N('Golden brown. Perfect. Best marshmallow of your life. +1 🍎. Mr. Voss writes something down while looking straight at you.');pose('you',null);hold('you',null)}
+ else if(c===1)await walk('you',20,110);
+ else{pose('you','film');await N('You get it all. The fire, the notebook, the moment he licks his pencil. It gets four thousand views by lunch.');pose('you',null)}
+ for(const k of ks)if(A[k]){A[k].hold=null;A[k].pose=null}
+ await walk('voss',-30,60);remove('voss');f.n=3;
+});
+chaos('trashbowl',['wing_sports','corridor'],[0,2,4],.2,async()=>{
+ const ks=['paul','kenneth'].filter(k=>!D.dead[k]);
+ for(const [i,k] of ks.entries())extra(k,40+i*20,1,{y:150});
+ const pins=[];for(let i=0;i<6;i++){const id=['kid1','kid2','kid3','tez','mia','ollie'][i];if(!D.dead[id]&&extra(id,250+(i%3)*12,-1,{y:144+Math.floor(i/3)*8}))pins.push(id)}
+ const can=pprop({t:'trashcan',x:70,y:156,head:1,rot:0,layer:3,skin:'#f0d0b0',hair:'#c8a050'});
+ await N('Somebody has put a sixth grader in a trash can, head sticking out the top. Down the other end, six kids are standing in a triangle like bowling pins. They volunteered. They’re very excited.');
+ if(ks[0])await say(ks[0],'TRASH. CAN. BOWLING. Three points for a strike. Minus one if he cries.','yell');
+ const c=await choose(['Roll him.','Get the kid out of the can.','Put money on a strike.']);
+ if(c===1){can.head=0;put('kid4',72,1,{y:150});SFX.thud();await N('You tip the can and the kid slides out, pale, dizzy, holding his lunch box. He says “I was gonna win” and walks into a wall.');await walk('kid4',-20,60);remove('kid4')}
+ else{if(c===2){D.money=Math.max(0,(D.money||0)-1);updateLoc()}
+  if(c===0){pose('you','throw');await wait(200);pose('you',null)}
+  SFX.rumble();await Promise.all([tw(can,{x:250,rot:Math.PI*6},900)]);SFX.smack();shake(.8);
+  for(const p of pins)if(A[p]){A[p].pose='lie';A[p].ex='laugh'}
+  await N('STRIKE. Every pin goes down.');can.head=0;put('kid4',can.x,1,{y:150});A.kid4.ex='laugh';await N('The sixth grader climbs out of the can, dizzy, and does a victory lap.');await walk('kid4',60,110);await walk('kid4',340,110);remove('kid4');
+  if(c===2){D.money=(D.money||0)+3;updateLoc();await N('You win $3. The kid in the can wins nothing. He seems fine with it.')}
+  for(const p of pins)if(A[p])A[p].pose=null}
+ can.hide=1;
+ await Promise.all(pins.map((p,i)=>A[p]?walk(p,i%2?340:-20,90):0));pins.forEach(p=>remove(p));
+});
+chaos('glasses',['wing_sci','hallb'],[0,2,4],.2,async()=>{
+ if(D.dead.loach)return;
+ put('jaxon',-20,1,{y:150});hold('jaxon','glasses');
+ put('loach',-50,1,{y:148,pose:'zombie'});
+ await N('Jaxon sprints down the hallway holding a pair of glasses over his head like a trophy. Behind him, arms straight out, comes Ms. Loach, who cannot see.');
+ await Promise.all([walk('jaxon',160,130),walk('loach',110,55)]);
+ await say('jaxon','Forty dollar bounty! Somebody put forty bucks on her glasses! It’s on the group chat!','laugh');
+ await say('loach','(walking into a fire extinguisher) Jaxon. I can smell you, Jaxon. I can smell your body spray.','cold');
+ const c=await choose(['Trip Jaxon.','Give Ms. Loach her glasses back.','Catch the glasses and run.']);
+ if(c===0){SFX.thud();A.jaxon.pose='lie';hold('jaxon',null);hold('you','glasses');await N('Down he goes. The glasses skid across the floor to your feet.');await walk('loach',A.you.x-12,50);hold('you',null);hold('loach',null);A.loach.pose=null;await say('loach','(putting them on, looking at Jaxon on the floor) Thank you. Jaxon, stay. Stay there. I’m going to get something from my room.','evil');A.jaxon.ex='scared';A.jaxon.pose=null;await walk('jaxon',340,150)}
+ else if(c===1){await walk('you',A.jaxon.x-10,80);hold('jaxon',null);A.loach.pose=null;await say('loach','(squinting at you) I will mark you present. Forever. Even when you’re not. Even if you’re dead.','smirk');await walk('jaxon',340,120)}
+ else{hold('jaxon',null);hold('you','glasses');await walk('you',300,140);D.money=(D.money||0)+3;updateLoc();await N('You sell them to Kayden for three bucks. Kayden sells them back to Ms. Loach for forty. Everybody learns something.');hold('you',null)}
+ remove('jaxon');A.loach.pose=null;await walk('loach',-30,50);remove('loach');
+});
+chaos('gradewar',['field'],[2,4],.2,async()=>{
+ const seven=['kid3','mia','tez'].filter(k=>!D.dead[k]),eight=['kid1','kid2','brayden'].filter(k=>!D.dead[k]);
+ seven.forEach((k,i)=>extra(k,40+i*14,1,{y:150}));eight.forEach((k,i)=>extra(k,280-i*14,-1,{y:150}));
+ seven.forEach(k=>A[k]&&hold(k,'mop'));eight.forEach(k=>A[k]&&hold(k,'shovel'));
+ await N('The seventh grade and the eighth grade are facing each other across the field like two armies. The seventh grade has mops. The eighth grade has the groundskeeper’s shovels. Nobody remembers what it’s about.');
+ SFX.chant();await Promise.all([...seven.map((k,i)=>A[k]?walk(k,140-i*6,120):0),...eight.map((k,i)=>A[k]?walk(k,175+i*6,120):0)]);
+ for(const k of [...seven,...eight])if(A[k])A[k].pose='overhead';
+ SFX.smack();shake(1.2);cue('fight');
+ const c=await choose(['Join the seventh grade.','Join the eighth grade.','Sell snacks from the sidelines.']);
+ if(c===2){D.money=(D.money||0)+2;updateLoc();await N('You sell four bags of chips at a dollar markup to kids with blood on their mops. War is business.')}
+ else{pose('you','punch');SFX.punch();await N('You charge in. Someone hits you with a mop. You hit someone with your backpack. A shovel whistles past your face close enough to shave you.');pose('you',null);A.you.hurt=Math.max(A.you.hurt||0,1)}
+ const v=pick([...seven,...eight].filter(k=>A[k]));if(v){A[v].pose='lie';A[v].ex='hurt';blood(A[v].x,A[v].y-6,12,null,40,A[v].y+2);await N((/Grader/.test(K[v].n)?'A '+K[v].n.toLowerCase():K[v].n)+' goes down and stays down for a worrying amount of time. Then gets up, says “I’m good,” and charges back in.');A[v].pose=null}
+ for(const k of [...seven,...eight])if(A[k]){A[k].pose=null;hold(k,null)}
+ await Promise.all([...seven.map(k=>A[k]?walk(k,-20,100):0),...eight.map(k=>A[k]?walk(k,340,100):0)]);[...seven,...eight].forEach(k=>remove(k));
+});
+
+</script>
+<script>
+/* js/cinema.js */
+'use strict';
+/* =====================================================================
+   HIGHSCHOOL — CINEMA
+   No more jump cuts.
+   • A scene in a different room fades through black, with a small
+     location caption so you always know where you are.
+   • A scene that restarts the room you’re already in doesn’t wipe it:
+     people who aren’t in the scene run off-screen, the cast already on
+     screen walk to their marks, and newcomers walk in from the edge.
+   • When the scene’s over, the people who left walk back in.
+   • When a new period starts in the hallway you’re standing in, the new
+     crowd runs in from both ends instead of popping in.
+   ===================================================================== */
+let TRANS={a:0,cap:'',capT:-9};
+{const _do=HOOK.drawOver;HOOK.drawOver=(...x)=>{_do&&_do(...x);
+ if(TRANS.a>0){g.globalAlpha=Math.min(1,TRANS.a);R(0,0,W,H,'#050408');g.globalAlpha=1}
+ const ct=T-TRANS.capT;if(TRANS.cap&&ct<2.2){const al=ct<.3?ct/.3:ct>1.6?Math.max(0,(2.2-ct)/.6):1;g.globalAlpha=al;
+  const w=pxw(TRANS.cap)+14;R(W/2-w/2,8,w,11,'rgba(10,8,16,.75)');R(W/2-w/2,18,w,1,'#c8a86a');pxc(TRANS.cap,W/2,10,'#f4ead8');g.globalAlpha=1}}}
+{const _hu=HOOK.update;HOOK.update=(dt,rdt)=>{_hu&&_hu(dt,rdt);
+ if(TRANS.a>0)TRANS.a=Math.max(0,TRANS.a-(rdt||dt)*2.6);
+ for(let i=LEAVERS.length-1;i>=0;i--){const p=LEAVERS[i],a=p.a;a.x+=a.dir*a.lsp*dt;a.walk=(a.walk||0)+dt*14;a.moving=true;a.fast=true;p.x=a.x;p.y=a.y;if(a.x<-40||a.x>360||!props.includes(p)){p.hide=1;LEAVERS.splice(i,1)}}
+}}
+function roomCaption(room){const r=ROOMS[room];if(!r||!r.name)return'';return r.name.split(' —')[0].replace('Fair City Mall — ','').toUpperCase().slice(0,22)}
+
+/* ---------- people leaving the shot ---------- */
+const LEAVERS=[];let lvN=0;
+{const _dp=drawProp;drawProp=function(p){if(p.t==='leaver'){if(!p.hide)drawActor(p.a);return}return _dp(p)}}
+function leaveShot(a){
+ const o=Object.assign({},a);o.id='_lv'+(++lvN);o.pose=null;o.talk=false;o.tx=null;o.res=null;o.hold=a.hold;o.ex=null;o.sit=false;o.sitHigh=false;o.back=0;
+ o.dir=a.x<160?-1:1;o.lsp=95+Math.random()*45;o._trK=null;o._tr=null;
+ const p=prop({t:'leaver',a:o,x:o.x,y:o.y,layer:0});LEAVERS.push(p);
+}
+/* who left for the last scene, so they can come back */
+let STEPPED_OUT=[];
+
+{const _sc=scene;scene=function(room,cast,fresh){
+ if(TEST||!D||!ROOM)return _sc(room,cast,fresh);
+ if(room!==ROOM){
+  if(!(typeof worldFade!=='undefined'&&worldFade>0)&&!scene.noFade&&room!=='door'){TRANS.a=1;const c=roomCaption(room);if(c){TRANS.cap=c;TRANS.capT=T}}
+  STEPPED_OUT=[];
+  return _sc(room,cast,fresh);
+ }
+ if(!fresh||!Object.keys(A).length)return _sc(room,cast,fresh);
+ /* same room, restaged: remember who was where */
+ const prev={},gone=[];
+ for(const id in A){const a=A[id];if(!a||a.dead||a.vis===false)continue;prev[id]={x:a.x,y:a.y,dir:a.dir};
+  if(id!=='you'&&!(cast&&id in cast)&&a.x>-6&&a.x<326&&a.pose!=='lie')gone.push(a)}
+ const r=_sc(room,cast,fresh);
+ for(const a of gone)leaveShot(a);
+ STEPPED_OUT=gone.map(a=>({id:a.id,x:a.x,y:a.y,dir:a.dir,pose:a.pose,k:a.k,extra:a.extra}));
+ for(const id in A){const a=A[id],p=prev[id];
+  if(a.dead||a.pose==='lie'||a.vis===false||a.x<-6||a.x>326)continue;
+  const tx=a.x,ty=a.y,ps=a.pose,still=ps==='sit'||ps==='kneel'||a.sitHigh;
+  if(p){if(Math.abs(p.x-tx)<3||still)continue;a.x=p.x;a.y=p.y;a.pose=null;tw(a,{y:ty},Math.max(160,Math.abs(p.x-tx)/85*1000));walk(id,tx,85).then(()=>{if(A[id]===a&&a.tx==null){if(ps)a.pose=ps}})}
+  else if(id!=='you'&&!still&&ty>=132){a.x=tx<160?-14:334;a.pose=null;walk(id,tx,85).then(()=>{if(A[id]===a&&a.tx==null){if(ps)a.pose=ps}})}
+ }
+ return r;
+}}
+
+/* when the scene’s done, the people who stepped out come back */
+{const _btr=backToRoom;backToRoom=function(){
+ const r=_btr();
+ if(TEST||!D||!STEPPED_OUT.length||ROOM!==D.room){STEPPED_OUT=[];return r}
+ const back=STEPPED_OUT.splice(0);let i=0;
+ for(const s of back){if(A[s.id]||D.dead[s.id]||!K[s.id])continue;
+  const from=s.x<160?-16-i*4:336+i*4;put(s.id,from,s.dir,{y:s.y,extra:s.extra});if(s.k)A[s.id].k=s.k;
+  const tgt=s.x,ps=s.pose,dl=.2+i*.18;i++;
+  timers.push({t:dl,r:()=>{const a=A[s.id];if(!a)return;walk(s.id,tgt,70+Math.random()*25).then(()=>{if(A[s.id]===a&&a.tx==null&&ps&&ps!=='sit')a.pose=ps})}});
+ }
+ return r;
+}}
+
+/* new period, same hallway: the crowd runs in */
+{const _br=buildRoom;buildRoom=function(room){
+ const wasHere=ROOM===room&&D&&D._lastBuild&&D._lastBuild.room===room&&D._lastBuild.per!==D.period;
+ const r=_br(room);
+ if(D)D._lastBuild={room,per:D.period};
+ if(TEST||!wasHere)return r;
+ let i=0;
+ for(const id in A){const a=A[id];if(id==='you'||a.dead||a.pose==='sit'||a.pose==='lie'||a.sitHigh||a.y<132)continue;
+  const tgt=a.x,ps=a.pose,from=tgt<160?-16-i*5:336+i*5;a.x=from;a.pose=null;const dl=.1+i*.12;i++;
+  timers.push({t:dl,r:()=>{if(A[id]!==a)return;walk(id,tgt,90+Math.random()*30).then(()=>{if(A[id]===a&&a.tx==null&&ps)a.pose=ps})}});
+ }
+ return r;
+}}
+
+/* ---------- walking between hallways: the camera slides, it doesn’t cut ---------- */
+let PAN=null,PANDIR=0;
+{const _eg=edge;edge=function(s){PANDIR=s;try{return _eg(s)}finally{PANDIR=0}}}
+function snapNoYou(){
+ const c=document.createElement('canvas');c.width=W;c.height=H;const og=g,a=A.you,v=a&&a.vis;if(a)a.vis=false;
+ g=c.getContext('2d');g.imageSmoothingEnabled=false;try{_DRAW0()}catch(e){}finally{g=og;if(a)a.vis=v}return c}
+let _DRAW0=draw;
+{const _wg=worldGo;worldGo=async function(room,x,y,dir){
+ if(!PANDIR||TEST||busy||!A.you)return _wg(room,x,y,dir);
+ const s=PANDIR;PANDIR=0;
+ busy=true;keys.l=keys.r=0;if(keys.u!=null)keys.u=keys.d=0;
+ const snap=snapNoYou(),fromX=A.you.x;
+ scene.noFade=1;
+ busy=false;
+ const p=worldMove(room,x,y,dir);
+ setTimeout(()=>{scene.noFade=0},700);
+ PAN={snap,dir:s,t0:performance.now(),dur:480,fromX};
+ return p;
+}}
+draw=function(){
+ if(!PAN)return _DRAW0();
+ const k=Math.min(1,(performance.now()-PAN.t0)/PAN.dur),e=1-Math.pow(1-k,3);
+ const off=Math.round(PAN.dir*W*(1-e));
+ const a=A.you,v=a&&a.vis;if(a)a.vis=false;
+ g.save();g.translate(off,0);try{_DRAW0()}finally{g.restore();if(a)a.vis=v}
+ g.drawImage(PAN.snap,off-PAN.dir*W,0);
+ if(a&&a.vis!==false){const sx=PAN.fromX+(a.x-PAN.fromX)*e;g.save();g.translate(Math.round(sx-a.x),0);const m=a.moving,w=a.walk;a.moving=true;a.walk=(a.walk||0)+.0;a.dir=PAN.dir;try{drawActor(a)}finally{a.moving=m;g.restore()}}
+ if(k>=1)PAN=null;
+};
+
+</script>
+<script>
+/* js/title.js */
+'use strict';
+/* =====================================================================
+   HIGHSCHOOL — TITLE
+   A proper front door. Highgate High at dusk: the sky going purple,
+   one window still lit on the second floor with somebody standing in
+   it, crows, fog rolling across the bus loop, the 43 idling with its
+   lights on, and the crew hanging around like they don’t want to go
+   home. The logo drops in, the menu slides in, keys and mouse both work.
+   ===================================================================== */
+ROOMS.titlescreen={name:'Highgate High',music:'title',bg(){
+ guCache('titlescreen','',()=>{
+  /* sky */
+  const sky=['#1a1030','#24143a','#3a1c44','#5a2848','#8a3a48','#c8584a','#e8884e'];
+  for(let i=0;i<sky.length;i++)R(0,i*14,W,15,sky[i]);
+  for(let i=0;i<60;i++){const x=hsh(i*3.1)*W,y=hsh(i*7.7)*60;R(x,y,1,1,i%5?'rgba(255,240,220,.5)':'#fff')}
+  /* moon */
+  R(250,14,14,14,'#f4ead8');R(248,16,18,10,'#f4ead8');R(253,17,3,3,'#d8ccb8');R(258,22,2,2,'#d8ccb8');
+  for(let r=1;r<=4;r++){g.globalAlpha=.05;R(250-r*3,14-r*2,14+r*6,14+r*4,'#f4ead8');R(248-r*2,16-r*3,18+r*4,10+r*6,'#f4ead8')}g.globalAlpha=1;
+  /* far city */
+  for(let i=0;i<26;i++){const w=8+((i*7)%10),h=14+((i*13)%26),x=i*13-6;R(x,96-h,w,h,'#2a1a36');for(let k=0;k<4;k++)if(hsh(i*9+k)>.6)R(x+2+(k%2)*3,96-h+3+Math.floor(k/2)*5,1,2,'#f0c070')}
+  /* the school */
+  R(30,40,260,72,'#5a2a2a');for(let y=42;y<112;y+=4)for(let x=30+(y%8?0:4);x<290;x+=8)R(x,y,7,3,y%8?'#6a3232':'#622e2e');
+  R(30,40,260,3,'#3a1a1a');R(28,38,264,3,'#7a4a3a');
+  /* clock tower */
+  R(140,14,40,28,'#5a2a2a');R(136,12,48,3,'#7a4a3a');R(150,4,20,10,'#4a2222');R(158,0,4,5,'#3a1a1a');
+  R(151,20,18,18,'#e8dcc0');R(152,21,16,16,'#f4ead8');R(160,22,1,8,'#2a1a1a');R(160,29,5,1,'#2a1a1a');
+  pxc('HIGHGATE HIGH',160,46,'#e8c870');
+  /* windows (lit ones are drawn live) */
+  for(let r=0;r<2;r++)for(let c=0;c<12;c++){const x=40+c*20,y=56+r*24;if(c===5||c===6)continue;R(x,y,12,14,'#1a1424');R(x,y,12,1,'#3a2a3a');R(x+5,y,1,14,'#3a2a3a');R(x,y+6,12,1,'#3a2a3a')}
+  /* front doors */
+  R(146,80,28,32,'#2a2030');R(147,81,12,30,'#3a5a6a');R(161,81,12,30,'#3a5a6a');R(146,78,28,2,'#8a6a4a');
+  /* ground: bus loop */
+  R(0,112,W,68,'#3a3440');for(let i=0;i<W;i+=24)R(i,138,14,2,'#8a8270');R(0,112,W,2,'#5a5460');
+  for(let i=0;i<W;i+=6)R(i,113+((i*7)%3),2,1,'#4a4450');
+  /* fence and trees */
+  for(const x of[4,292]){R(x+10,70,4,44,'#1a1418');for(let i=0;i<7;i++){const r=9-Math.abs(i-3)*2;R(x+12-r,62+i*5,r*2,5,i%2?'#1e2430':'#222a38')}}
+  R(0,104,W,1,'#5a5a62');for(let x=0;x<W;x+=6)R(x,104,1,9,'#5a5a62');
+ });
+ /* live: lit windows, the one figure, flicker */
+ const lit=[[0,0],[3,1],[8,0],[10,1],[2,0],[11,0]];
+ for(const [c,r] of lit){const x=40+c*20,y=56+r*24,f=hsh(Math.floor(T*2)+c*7+r)>.92?.5:1;g.globalAlpha=f;R(x+1,y+1,10,12,c===8&&r===0?'#c84a3a':'#f0c070');g.globalAlpha=1;R(x+5,y,1,14,'#3a2a3a');R(x,y+6,12,1,'#3a2a3a')}
+ /* someone at the red window, watching */
+ {const x=40+8*20,y=56;R(x+3,y+4,5,9,'#1a0c10');R(x+4,y+2,3,3,'#1a0c10');if(Math.sin(T*1.3)>.94)R(x+4,y+3,1,1,'#ff3a2a'),R(x+6,y+3,1,1,'#ff3a2a')}
+ /* clock hands move a little */
+ {const a=T*.05;R(160+Math.round(Math.cos(a)*5),29+Math.round(Math.sin(a)*5),1,1,'#c83a2a')}
+ /* crows */
+ for(let i=0;i<5;i++){const q=((T*.04+i*.21)%1.2),x=W+20-q*(W+60),y=24+i*7+Math.sin(T*2+i)*3,f=Math.sin(T*10+i)>0;R(x,y,3,1,'#120a14');R(x-2,y-(f?1:-1),2,1,'#120a14');R(x+3,y-(f?1:-1),2,1,'#120a14')}
+ /* the 43, idling */
+ {const bx=272,by=142,sh=Math.sin(T*30)>.5?1:0;R(bx,by-34+sh,96,34,'#e8b830');R(bx,by-34+sh,96,3,'#f8d860');for(let i=0;i<6;i++)R(bx+6+i*15,by-28+sh,11,10,'#2a3a4a');R(bx,by-14+sh,96,2,'#2a2a2a');
+  R(bx+8,by-4,12,8,'#141414');R(bx+70,by-4,12,8,'#141414');pxc('43',bx+40,by-31+sh,'#2a1a10');
+  g.globalAlpha=.22+Math.sin(T*3)*.05;R(bx-34,by-10,36,8,'#fff0b0');g.globalAlpha=1;R(bx-1,by-12+sh,3,4,'#fff8d0');
+  g.globalAlpha=.25;for(let i=0;i<3;i++){const q=(T*.6+i/3)%1;R(bx+94+q*10,by-6-q*14,4+q*6,3,'#c8c8d0')}g.globalAlpha=1}
+ /* fog */
+ g.globalAlpha=.14;for(let i=0;i<5;i++){const x=((T*6+i*90)%(W+120))-100;R(x,118+i*9,140,6,'#c8b8d8')}g.globalAlpha=1;
+}};
+if(typeof LIGHT!=='undefined')LIGHT.titlescreen=()=>({amb:.78,tint:[60,30,60],src:[[200,66,40,.35,[255,120,90]],[210,140,70,.3,[255,240,180]]]});
+
+const TITLE_CREW={nivaan:[168,1,'phone'],corey:[184,-1,null],arjun:[200,1,'cross'],aidan:[216,-1,null],stella:[232,1,'hips'],hasan:[248,-1,'phone'],paul:[262,-1,'cross']};
+title=async function(){
+ closeOverlays();setHud(false);setPanel('none');busy=true;
+ D=D||freshD();
+ const saveD=D;D=Object.assign(freshD(),{period:8});
+ const cast={};for(const id in TITLE_CREW){if((window.EDITION_CUT||[]).includes(id))continue;const [x,d,p]=TITLE_CREW[id];cast[id]=[x,d,{y:150+(x%3)*2,pose:p}]}
+ scene.noFade=1;scene('titlescreen',cast,true);scene.noFade=0;
+ D=saveD;
+ cue('title');
+ if(typeof TRANS!=='undefined'){TRANS.a=1.4;TRANS.cap=''}
+ const m=$('menu');m.hidden=false;m.className='ov ttl';
+ const done=Object.keys(P.done).length,total=Object.keys(MIS).length;
+ m.innerHTML='<div class="ttl-l"><div class="ttl-eye">A Calling of Aidan story</div><h1 class="ttl-logo"><span>HIGH</span><span>SCHOOL</span></h1>'+
+  '<div class="ttl-tag">Two weeks at Highgate High. The teachers kill kids. Everybody knows. Nobody says it out loud.</div>'+
+  '<nav class="ttl-menu"></nav>'+
+  '<div class="ttl-stats">'+(P.loops?'DAY '+(typeof cal==='function'?cal():P.loops)+' · '+done+'/'+total+' QUESTS · '+Object.keys(P.endings).length+' ENDINGS · '+Object.keys(P.deaths).length+' WAYS TO DIE':'')+'</div></div>'+
+  '<div class="ttl-foot"><span>'+(window.EDITION==='safe'?'SAFE VERSION · ':'')+'M · Blood · Gore · Strong language</span><span>↑↓ / tap · Enter</span></div>';
+ const nav=m.querySelector('.ttl-menu');const items=[];
+ const add=(t,f,fs)=>{const b=document.createElement('button');b.className='ttl-b';b.innerHTML='<i>▸</i><span></span>';b.querySelector('span').textContent=t;
+  b.onclick=()=>{audio();SFX.click();if(fs&&!TEST)goFullscreen(true);f()};b.onmouseenter=()=>sel(items.indexOf(b));nav.appendChild(b);items.push(b)};
+ if(P.cur)add('Continue',()=>{m.hidden=true;m.className='ov';D=P.cur;busy=false;startPeriod(D.period,true)},true);
+ add(P.loops?'New Day':'Start',()=>{m.hidden=true;m.className='ov';busy=false;newDay()},true);
+ add('Quest Log',()=>{D=D||freshD();openQuest()});
+ add('Settings',openSettings);
+ add('Endings & Deaths',()=>{D=D||freshD();questTab='endings';openQuest()});
+ let cur=0;function sel(i){cur=(i+items.length)%items.length;items.forEach((b,j)=>b.classList.toggle('on',j===cur))}sel(0);
+ items.forEach((b,i)=>{b.style.animationDelay=(1.1+i*.09)+'s'});
+ title._key=e=>{if(m.hidden||!$('quest').hidden||!$('settings').hidden)return;
+  if(e.key==='ArrowDown'||e.key==='s'||e.key==='S'){e.preventDefault();sel(cur+1);SFX.blip&&SFX.blip(520)}
+  else if(e.key==='ArrowUp'||e.key==='w'||e.key==='W'){e.preventDefault();sel(cur-1);SFX.blip&&SFX.blip(520)}
+  else if(e.key==='Enter'||e.key===' '){e.preventDefault();items[cur].click()}};
+};
+document.addEventListener('keydown',e=>{if(title._key)title._key(e)},true);
+{const st=document.createElement('style');st.textContent=`
+#menu.ttl{background:linear-gradient(90deg,rgba(8,5,14,.82) 0%,rgba(8,5,14,.55) 34%,rgba(8,5,14,0) 62%);justify-content:center;align-items:flex-start;padding:0 0 0 6vw;pointer-events:none}
+#menu.ttl>*{pointer-events:auto}
+.ttl-l{display:flex;flex-direction:column;gap:10px;max-width:min(560px,86vw)}
+.ttl-eye{font-size:clamp(10px,1.2vw,13px);letter-spacing:.34em;color:#e9a98e;text-transform:uppercase;opacity:0;animation:ttlIn .8s .3s forwards}
+.ttl-logo{margin:0;font-weight:normal;line-height:.86;font-size:clamp(46px,10vw,124px);letter-spacing:-.02em;display:flex;flex-direction:column}
+.ttl-logo span{color:#f7ebc9;text-shadow:3px 3px 0 #c8483a,6px 6px 0 #4a1a2a,9px 9px 0 #12080f;opacity:0;transform:translateY(-40px);animation:ttlDrop .55s cubic-bezier(.2,1.6,.4,1) forwards}
+.ttl-logo span:nth-child(2){animation-delay:.18s;color:#ffd27a}
+.ttl-tag{font-size:clamp(12px,1.4vw,15px);line-height:1.55;color:#e3cdbf;text-shadow:0 2px 0 #000;max-width:30em;opacity:0;animation:ttlIn .8s .8s forwards}
+.ttl-menu{display:flex;flex-direction:column;gap:4px;margin-top:8px}
+.ttl-b{all:unset;cursor:pointer;display:flex;align-items:center;gap:10px;font-size:clamp(14px,1.8vw,19px);letter-spacing:.12em;text-transform:uppercase;color:#cbbfd8;padding:5px 12px 5px 4px;border-left:3px solid transparent;opacity:0;transform:translateX(-16px);animation:ttlSlide .45s forwards;transition:color .12s,background .12s,border-color .12s,padding .12s}
+.ttl-b i{font-style:normal;color:#f08a72;opacity:0;transition:opacity .12s}
+.ttl-b.on{color:#fff;background:linear-gradient(90deg,rgba(240,138,114,.28),rgba(240,138,114,0));border-left-color:#f08a72;padding-left:10px}
+.ttl-b.on i{opacity:1}
+.ttl-stats{font-size:11px;letter-spacing:.16em;color:#8a7a9a;margin-top:6px;opacity:0;animation:ttlIn .8s 1.5s forwards}
+.ttl-foot{position:absolute;left:6vw;right:3vw;bottom:max(12px,env(safe-area-inset-bottom));display:flex;justify-content:space-between;font-size:10px;letter-spacing:.14em;color:#6a5a7a;text-transform:uppercase;opacity:0;animation:ttlIn .8s 1.8s forwards}
+@keyframes ttlDrop{to{opacity:1;transform:none}}
+@keyframes ttlIn{to{opacity:1}}
+@keyframes ttlSlide{to{opacity:1;transform:none}}
+@media (max-height:480px){.ttl-logo{font-size:clamp(34px,8vh,60px)}.ttl-tag{display:none}.ttl-l{gap:6px}}`;document.head.appendChild(st)}
+
+</script>
+<script>
+/* js/pool.js */
+'use strict';
+/* =====================================================================
+   HIGHSCHOOL — THE POOL
+   People in the water are IN the water: head and shoulders above the
+   surface, bobbing, with ripples round them, and the rest of them a
+   wobbly blue shape under it. Somebody drowning flails, sinks, comes
+   up, sinks, and bubbles. A body floats face-down.
+   ===================================================================== */
+const POOL_WL=126;   /* where the water starts in the pool room */
+function inWater(a){return ROOM==='pool'&&a&&a.y>=POOL_WL+2&&!a.sitHigh&&!(a.z>2)}
+function drowning(a){return a._drown||(a.pose==='swim'&&['scared','shock','hurt','cry'].includes(a.ex))}
+{const _da=drawActor;drawActor=function(a){
+ if(!inWater(a)||a.vis===false)return _da(a);
+ const sd=((a.id||'').length*1.7)%6.28;
+ if(a.dead){ /* floating face-down, mostly under */
+  const oy=a.y;a.y=oy-2+Math.sin(T*1.2+sd);
+  g.save();g.globalAlpha=.55;_da(a);g.restore();a.y=oy;
+  g.globalAlpha=.35;R(a.x-16,a.y-4,32,2,'#bfe8ff');g.globalAlpha=1;return;
+ }
+ const G=kidGeom(a.k,{pose:'swim'}),dr=drowning(a);
+ const bob=Math.sin(T*3+sd)*1.2+(dr?Math.max(0,Math.sin(T*2.2+sd))*9:0);
+ const oy=a.y,op=a.pose;a.y=oy+bob+(G.legH+G.bodyH-5);  /* sink the body so the shoulders sit at the surface */
+ if(!a.pose||a.pose==='swim')a.pose=dr&&Math.sin(T*9+sd)>0?'up':'swim';
+ const wl=oy-2;   /* the surface line for this person, on screen */
+ /* the part under water: faded and blue */
+ g.save();g.beginPath();g.rect(0,wl,W,H);g.clip();g.globalAlpha=.32;_da(a);g.restore();
+ /* the part above */
+ g.save();g.beginPath();g.rect(0,0,W,wl);g.clip();_da(a);g.restore();
+ a.y=oy;a.pose=op;
+ /* ripples */
+ const rw=12+Math.sin(T*4+sd)*2+(dr?5:0);
+ g.globalAlpha=.55;R(a.x-rw/2,wl,rw,1,'#e8f8ff');g.globalAlpha=.3;R(a.x-rw/2-4,wl+2,rw+8,1,'#e8f8ff');
+ const q=(T*1.5+sd)%1;g.globalAlpha=.35*(1-q);R(a.x-rw/2-q*10,wl+1,rw+q*20,1,'#ffffff');g.globalAlpha=1;
+ if(dr){for(let i=0;i<4;i++){const b=(T*1.6+i*.27+sd)%1;R(a.x-4+((i*5)%9),wl-b*10,2,2,'rgba(230,248,255,'+(.8-b*.7)+')')}
+  if(Math.sin(T*6+sd)>.7)R(a.x-8,wl-2,16,2,'rgba(255,255,255,.6)')}
+}}
+/* the pool’s own surface gets a real ripple and shine, drawn over the people below it */
+if(ROOMS.pool){const ob=ROOMS.pool.over;ROOMS.pool.over=function(){
+ g.globalAlpha=.22;R(0,POOL_WL,W,H-POOL_WL,'#1a7ab0');g.globalAlpha=1;
+ for(let i=0;i<W;i+=10){g.globalAlpha=.18;R(i+Math.round(Math.sin(T*1.4+i*.2)*3),POOL_WL+6+((i*7)%40),7,1,'#ffffff')}
+ g.globalAlpha=.3;R(0,POOL_WL,W,1,'#e8f8ff');g.globalAlpha=1;
+ /* caustics on the floor tiles */
+ g.globalAlpha=.08;for(let i=0;i<14;i++){const x=(i*37+Math.sin(T*.8+i)*8)%W,y=POOL_WL+14+((i*23)%40);R(x,y,10,3,'#ffffff')}g.globalAlpha=1;
+}}
+/* anyone told to swim in the pool goes into the water instead of standing on it */
+{const _pose=pose;pose=function(id,p,ms){const a=A[id];if(a&&p==='swim'&&ROOM==='pool'&&a.y<POOL_WL+2){a.y=150}return _pose(id,p,ms)}}
+
+</script>
+<script>
+/* js/classlayout.js */
+'use strict';
+/* =====================================================================
+   HIGHSCHOOL — EVERY CLASS LOOKS DIFFERENT
+   The same two rows of desks every lesson got old. Now every session
+   of a subject sets the room up differently, and the teacher stands
+   somewhere different:
+     rows · horseshoe · group tables · exam spacing · a presentation
+     at the front · everyone on the carpet · a line-up against the back
+     wall · desks in pairs facing each other.
+   Which one you get depends on the subject and how many times you’ve
+   had it, so no two sessions of the same class look the same, and the
+   classes on one day look different from each other.
+   ===================================================================== */
+const LAYOUT_ROOMS={english:'all',maths:'all',history:'all',ict:['rows','present','lineup','pairs','floor'],science:['rows','present','lineup','floor']};
+const LAYOUT_ALL=['rows','horseshoe','groups','exam','present','floor','lineup','pairs'];
+function layoutFor(room){
+ const set=LAYOUT_ROOMS[room]==='all'?LAYOUT_ALL:LAYOUT_ROOMS[room];if(!set)return'rows';
+ const n=(typeof LN==='function'?LN()[room]:0)||0;
+ const h=(room.charCodeAt(0)+room.length*3)%set.length;
+ return set[(n*3+h)%set.length];
+}
+const tName=t=>t&&K[t]?K[t].n:'The teacher';
+/* furniture */
+function lyTable(x,y,w){return{y:y+.5,d:()=>{R(x-w/2,y-12,w,3,'#8a6a48');R(x-w/2,y-9,w,7,'#6a4e34');R(x-w/2,y-12,w,1,'#a88a64');R(x-w/2+2,y-2,2,6,'#4a3a2a');R(x+w/2-4,y-2,2,6,'#4a3a2a');
+ for(let i=0;i<3;i++)R(x-w/2+4+i*10,y-15,7,3,['#f4f0e6','#e8e2d6','#f0ead8'][i])}}}
+function lyChair(x,y){return{y:y-8,d:()=>{chairBack(x,y);R(x-7,y-5,14,3,'#34407a');R(x-7,y-5,14,1,'#5a6aaa');R(x-6,y-2,1,6,'#8a8e98');R(x+5,y-2,1,6,'#8a8e98')}}}
+function lyDesk(x,y){return{y:y+.5,d:()=>desk(x,y+8)}}
+function lyRug(){return{y:120,d:()=>{R(60,136,200,26,'#7a3a4a');R(62,138,196,22,'#8a4a5a');for(let i=0;i<9;i++)R(70+i*22,140,10,18,'rgba(255,220,160,.12)');R(60,136,200,1,'#c8a070');R(60,161,200,1,'#c8a070')}}}
+function lyBox(){return{y:121,d:()=>{R(20,118,20,10,'#8a6a48');R(22,116,16,3,'#a88a64');for(let i=0;i<4;i++)R(23+i*4,114,2,4,['#2a2a30','#5a8ad0','#c83a3a','#2a2a30'][i])}}}
+
+const LAYOUT={
+ horseshoe(room,t){const S=[],items=[];const xs=[56,80,106,130,190,214,240,264],ys=[156,146,138,134,134,138,146,156];
+  xs.forEach((x,i)=>{S.push({x,y:ys[i],i,row:'h',pose:'sit',dir:x<160?1:-1});items.push(lyChair(x,ys[i]))});
+  return{S,items,teacher:[160,-1,'hips',146],intro:tName(t)+' has dragged the chairs into a horseshoe and shoved the desks against the wall. No desks. Nowhere to put your face.'}},
+ groups(room,t){const S=[],items=[];const tx=[80,170,260];tx.forEach((x,g)=>{items.push(lyTable(x,150,34));
+   [[x-20,146,1],[x+20,146,-1],[x-20,158,1],[x+20,158,-1]].forEach(([sx,sy,d],j)=>{S.push({x:sx,y:sy,i:j%2,row:'g'+g+'_'+(j<2?0:1),pose:'sit',dir:d});items.push(lyChair(sx,sy))})});
+  return{S,items,teacher:[28,1,'cross',146],intro:'The desks are pushed into islands of four. Group work. The three worst words in the English language.'}},
+ exam(room,t){const S=[],items=[];[70,130,190,250].forEach((x,i)=>[132,152].forEach((y,r)=>{S.push({x,y,i,row:'e'+r,pose:'write',dir:1});items.push(lyChair(x,y));items.push(lyDesk(x,y))}));items.push(lyBox());
+  return{S,items,teacher:[296,-1,'cross',146],intro:'Desks a meter apart. Phones in a shoebox at the front. A test. Nobody was told about the test. '+tName(t)+' is smiling about it.'}},
+ present(room,t){const S=[],items=[];[100,140,180,220,260].forEach((x,i)=>{S.push({x,y:SEATS.frontY,i,row:'f',pose:'sit',dir:-1});items.push(lyChair(x,SEATS.frontY));items.push(lyDesk(x,SEATS.frontY))});
+  S.unshift({x:150,y:130,i:9,row:'p',pose:'point',dir:1,present:1});
+  return{S,items,teacher:[40,1,'sit',140],intro:null}},
+ floor(room,t){const S=[],items=[lyRug()];[[86,146],[110,152],[136,144],[162,152],[188,146],[214,152],[240,144],[262,152]].forEach(([x,y],i)=>S.push({x,y,i,row:'r',pose:i%3===1?'kneel':'sit',dir:-1}));
+  items.push(lyChair(40,146));
+  return{S,items,teacher:[40,1,'sit',146],intro:'No desks today. Everybody on the carpet like it’s kindergarten. '+tName(t)+' is in a chair above you, and that feels on purpose.'}},
+ lineup(room,t){const S=[];[60,84,108,132,156,180,204,228,252,276].forEach((x,i)=>S.push({x,y:128,i,row:'l',pose:null,dir:1}));
+  return{S,items:[],teacher:[160,-1,'cross',150],intro:'Everybody against the back wall. Shoulders touching the bricks. '+tName(t)+' walks the line slowly, looking at each of you like produce.'}},
+ pairs(room,t){const S=[],items=[];[[90,110],[160,180],[230,250]].forEach(([a,b],p)=>[136,158].forEach((y,r)=>{S.push({x:a,y,i:0,row:'p'+p+r,pose:'sit',dir:1});S.push({x:b,y,i:1,row:'p'+p+r,pose:'sit',dir:-1});items.push(lyChair(a,y));items.push(lyChair(b,y));items.push({y:y+.5,d:()=>{R(a+4,y-6,b-a-8,3,'#8a6a48');R(a+4,y-3,b-a-8,6,'#6a4e34')}})}));
+  return{S,items,teacher:[34,1,'hips',146],intro:'The desks are turned to face each other in pairs. You have to look at your partner the whole lesson. Your partner has to look at you.'}}
+};
+let LAYOUT_ON=null;
+{const _ci=classIn;classIn=async function(room,opts){
+ opts=opts||{};
+ const L=LAYOUT_ROOMS[room]&&!opts.fixed&&opts.you==null&&!(typeof EDITION!=='undefined'&&false)?layoutFor(room):'rows';
+ if(L==='rows'||!LAYOUT[L]||TEST&&!TEST.auto&&Math.random()<.5)return _ci(room,opts);
+ const t=opts.teacher||(TEACH[D.period]&&TEACH[D.period][room]);
+ const lay=LAYOUT[L](room,t);
+ const oS=seatsFor,oT=TEACHER_SPOT[room],oI=ROOMS[room]&&ROOMS[room].items;
+ seatsFor=r=>r===room?lay.S.map(s=>Object.assign({},s)):oS(r);
+ TEACHER_SPOT[room]=lay.teacher;
+ if(ROOMS[room]){ROOMS[room].items=lay.items;LAYOUT_ON={room,items:oI}}
+ if(A[t]&&A[t].vis&&!A[t].dead){const [x,d,p,y]=lay.teacher;A[t].dir=d;walk(t,x,70).then(()=>{if(A[t]){A[t].pose=p;A[t].dir=d}});A[t].y=y}
+ let c;try{c=await _ci(room,opts)}finally{seatsFor=oS;if(oT)TEACHER_SPOT[room]=oT;else delete TEACHER_SPOT[room]}
+ c.layout=L;
+ const pres=c.seats.find(s=>s.present&&s.who&&s.who!=='you');
+ if(pres&&A[pres.who]){A[pres.who].pose='point';A[pres.who].ex='scared';hold(pres.who,'paper')}
+ if(!TEST){
+  if(L==='present'&&pres)await N(K[pres.who].n+' is up at the front doing a presentation. It is going so badly. '+tName(t)+' is sitting at the side, writing notes about it.');
+  else if(lay.intro)await N(lay.intro);
+ }
+ if(L==='lineup')for(const k of c.kids)if(A[k])A[k].dir=1;
+ return c;
+}}
+function layoutOff(){if(LAYOUT_ON&&ROOMS[LAYOUT_ON.room]){ROOMS[LAYOUT_ON.room].items=LAYOUT_ON.items}LAYOUT_ON=null}
+{const _co=classOut;classOut=async function(c,line){try{for(const s of c.seats||[])if(s.present&&A[s.who])hold(s.who,null);return await _co(c,line)}finally{layoutOff()}}}
+{const _br=buildRoom;buildRoom=function(room){layoutOff();return _br(room)}}
+
+</script>
+<script>
+/* js/home.js */
+'use strict';
+/* =====================================================================
+   HIGHSCHOOL — HOME
+   Every school day starts at home now. You wake up in your bedroom.
+   Walk right into the kitchen. Mom’s there (Dad on even days, with the
+   paper). The TV’s on. Your cat is on your bed.
+   • Pack your bag from the shelf: take up to two things to school
+     (energy drink, compass, duct tape, padlock, first-aid kit). Metal
+     things set off the detector in week two.
+   • Take the lunch Mom made: +2 🍎 at lunch.
+   • Swipe $3 from her purse. She might notice.
+   • The news, the window, the cat.
+   Walk out of the front door (right side of the kitchen) to catch the 43.
+   ===================================================================== */
+Object.assign(K,{
+ mom:{n:'Mom',col:'#a86a7a',skin:'#e8c4a4',hair:'#5a3a2a',hs:'bun',top:'#c87a8a',pants:'#3a3a54',adult:1,girl:1,seed:71,v:400,vw:'triangle'},
+ dad:{n:'Dad',col:'#6a7a5a',skin:'#e0b898',hair:'#4a3a2a',hs:'short',top:'#5a6a7a',pants:'#2a2a33',adult:1,beard:1,glasses:1,seed:72,v:150}
+});K.mom.id='mom';K.dad.id='dad';
+Object.assign(ITEMS,{lunch:'Packed lunch (from Mom)',compass:ITEMS.compass||'A math compass (pointy)',firstaid:ITEMS.firstaid||'A first-aid kit'});
+FLOOR.bedroom=[128,166];FLOOR.kitchen=[130,166];
+
+/* ---------------- the bedroom ---------------- */
+ROOMS.bedroom={name:'Your Bedroom',music:'title',bg(){
+ guCache('bedroom','',()=>{
+  /* wall: navy, faded stripes, a water stain in the corner */
+  R(0,0,W,112,'#3a4666');for(let x=0;x<W;x+=10)R(x,0,4,112,'#3e4a6c');R(0,0,W,4,'rgba(0,0,0,.25)');
+  g.globalAlpha=.18;R(4,6,30,18,'#8a7a5a');R(10,22,16,8,'#8a7a5a');g.globalAlpha=1;
+  R(0,104,W,8,'#2a3048');R(0,104,W,1,'#5a6688');
+  /* window + curtains (sky drawn live) */
+  R(206,20,62,52,'#e8e4dc');R(268,20,2,52,'#b8b4ac');
+  /* posters */
+  R(110,18,34,44,'#1a1a1a');R(112,20,30,40,'#c83a3a');pxc('DEAD',127,26,'#f4ead8');pxc('MALL',127,33,'#f4ead8');R(118,42,18,14,'#1a1a1a');R(122,45,10,8,'#f4ead8');R(124,47,2,2,'#1a1a1a');R(128,47,2,2,'#1a1a1a');
+  R(150,22,40,14,'#2a5a3a');R(150,22,40,1,'#4a8a5a');pxc('HAWKS',168,26,'#f0d070');R(190,22,6,7,'#2a5a3a');
+  R(152,42,30,30,'#f4f0e6');for(let r=0;r<4;r++)for(let c=0;c<5;c++)R(155+c*5,49+r*5,4,4,'#e8e2d6');R(152,42,30,5,'#c83a3a');pxc('NOV',167,42,'#fff');
+  /* desk, laptop, lamp, chair */
+  R(14,84,82,4,'#7a5a3a');R(14,88,82,20,'#6a4a2e');R(16,88,1,20,'#8a6a48');R(54,92,20,2,'#5a3e26');R(62,96,4,1,'#c8a870');
+  R(30,70,30,14,'#2a2a30');R(32,72,26,10,'#1a1a24');R(28,84,34,2,'#4a4a52');
+  R(80,58,2,26,'#3a3a3a');R(74,54,14,5,'#d8b048');R(76,59,10,1,'#f0d070');
+  R(66,80,8,4,'#e8e2d6');R(67,78,6,2,'#c86a3a');R(18,80,10,4,'#f4f0e6');R(20,78,8,2,'#f4f0e6');
+  R(24,100,20,6,'#2a3a6a');R(26,92,16,9,'#3a4a8a');R(26,92,16,1,'#5a6aaa');
+  /* the shelf: what you can take */
+  R(14,38,82,3,'#7a5a3a');R(14,41,82,1,'#4a3a2a');
+  R(18,30,6,8,'#2a7a3a');R(19,29,4,1,'#c8c8c8');R(20,32,2,3,'#f0f070');      /* energy */
+  R(30,34,10,4,'#a8a8a8');R(34,26,2,8,'#c8c8c8');R(33,25,4,2,'#888');           /* compass */
+  R(46,32,9,6,'#8a8a92');R(48,34,5,2,'#5a5a62');                                 /* tape */
+  R(60,31,6,5,'#c8b040');R(61,28,4,3,'#888');                                   /* padlock */
+  R(72,30,14,8,'#f4f0e6');R(78,31,2,6,'#c83a3a');R(75,33,8,2,'#c83a3a');         /* first aid */
+  /* closet, half open, clothes falling out */
+  R(98,40,6,72,'#5a4a3a');R(104,46,40,66,'#7a6a52');R(106,48,36,62,'#6a5a44');R(104,46,40,2,'#8a7a62');R(140,76,2,4,'#c8b878');
+  R(92,104,30,6,'#c83a3a');R(110,106,18,5,'#3a5a8a');R(96,101,10,4,'#e8e2d6');
+  /* bed */
+  R(214,96,100,16,'#6a4a2e');R(214,92,100,4,'#8a6a48');R(304,70,10,42,'#6a4a2e');R(302,68,14,4,'#8a6a48');
+  R(218,84,84,10,'#e8e2d6');R(220,80,86,8,'#5a6aaa');for(let i=0;i<86;i+=6)R(220+i,82,3,2,'#7a8acc');R(282,74,20,8,'#f4f0e6');
+  /* nightstand + clock */
+  R(186,96,22,16,'#7a5a3a');R(186,96,22,2,'#9a7a5a');R(190,102,14,1,'#5a3e26');R(190,86,16,10,'#1a1a1a');
+  /* floor: boards, a rug, socks */
+  for(let y=112;y<180;y+=6){R(0,y,W,6,y%12?'#6a4e36':'#644832');for(let x=(y*7)%40;x<W;x+=40)R(x,y,1,6,'#4a3624')}
+  R(120,140,120,24,'#5a3a5a');R(122,142,116,20,'#6a4a6a');for(let i=0;i<5;i++)R(130+i*22,146,12,12,'rgba(255,220,240,.08)');
+  R(60,150,6,3,'#f4f0e6');R(250,162,6,3,'#2a2a2a');
+ });
+ /* live: sky, clouds, a bird, the light */
+ const p=Math.min(1,Math.max(0,(T%600)/600));
+ R(208,22,58,48,'#f0c89a');R(208,22,58,20,'#e8a888');R(208,42,58,14,'#f4d8b0');
+ for(let i=0;i<3;i++){const x=208+((T*3+i*26)%70)-10;R(Math.max(208,x),28+i*9,Math.min(16,266-Math.max(208,x)),3,'rgba(255,255,255,.75)')}
+ R(208,60,58,10,'#4a5a4a');for(let i=0;i<6;i++)R(210+i*10,56-(i%3)*2,8,6,'#3a4a3a');
+ {const bx=208+((T*9)%80);if(bx<264){const f=Math.sin(T*12)>0;R(bx,34,2,1,'#2a2a2a');R(bx-1,33+(f?0:2),1,1,'#2a2a2a');R(bx+2,33+(f?0:2),1,1,'#2a2a2a')}}
+ R(236,20,2,52,'#e8e4dc');R(206,45,62,2,'#e8e4dc');
+ const sway=Math.sin(T*.8)*1.5;R(198+sway,16,12,62,'#8a3a4a');R(266-sway,16,12,62,'#8a3a4a');R(198+sway,16,12,2,'#aa5a6a');R(266-sway,16,12,2,'#aa5a6a');
+ g.globalAlpha=.08;for(let i=0;i<30;i++){const y=72+i*2;R(200-i*1.6,y,70+i,2,'#ffe8c0')}g.globalAlpha=1;
+ for(let i=0;i<10;i++){const q=(T*.07+i*.1)%1;R(200+hsh(i)*60-q*30,74+q*40+Math.sin(T+i)*2,1,1,'rgba(255,240,210,.6)')}
+ /* laptop glow, clock blink */
+ const fl=.7+Math.sin(T*7)*.08;g.globalAlpha=fl;R(32,72,26,10,'#3a6ab0');R(34,74,14,1,'#c8e0ff');R(34,77,20,1,'#8ab0e0');R(34,79,10,1,'#8ab0e0');g.globalAlpha=1;
+ g.globalAlpha=.07;R(20,60,50,40,'#6a9ae0');g.globalAlpha=1;
+ if(Math.sin(T*3)>-.2)pxc('7:15',198,88,'#ff4a3a');
+ /* the cat: a lump that breathes, a tail that flicks */
+ {const br=Math.sin(T*1.6)>0?1:0;R(248,76-br,18,7+br,'#e8a050');R(262,73-br,6,6,'#e8a050');R(262,72-br,1,1,'#e8a050');R(266,72-br,1,1,'#e8a050');R(263,75-br,1,1,'#2a2a2a');R(266,75-br,1,1,'#2a2a2a');
+  const tf=Math.sin(T*2.2)*2;R(244,79+tf,5,2,'#e8a050');R(252,79-br,8,2,'#c8803a')}
+}};
+LIGHT.bedroom=()=>({amb:.82,tint:[60,40,70],src:[[236,60,90,.35,[255,220,170]],[45,78,40,.2,[120,160,255]]]});
+
+/* ---------------- the kitchen ---------------- */
+const NEWS=()=>{const L=['TYLER MORRISON STILL MISSING · DAY '+(cal()+3),'STATE INSPECTORS VISIT HIGHGATE HIGH NEXT WEEK','RACCOONS: “AN INFESTATION OF CONFIDENCE”','LOCAL BUS 43 VOTED “MOST HAUNTED ROUTE”','WEATHER: GREY. THEN GREYER.'];
+ if(D&&D.f&&D.f.brettDead)L.unshift('HIGHGATE JUNIOR BRETT KOWALSKI MISSING');if(D&&D.done&&D.done.kim)L.unshift('MATH TEACHER WANTED FOR QUESTIONING');if(cal()>=8)L.unshift('METAL DETECTORS INSTALLED AT HIGHGATE');return L.join('   ·   ')};
+ROOMS.kitchen={name:'Kitchen',music:'title',bg(){
+ guCache('kitchen','',()=>{
+  R(0,0,W,112,'#e8d8a8');for(let y=60;y<106;y+=6)for(let x=(y%12?0:6);x<160;x+=12)R(x,y,11,5,y%12?'#f4ecd8':'#efe4c8');
+  R(0,0,W,4,'rgba(0,0,0,.18)');R(0,104,W,8,'#a88a5a');R(0,104,W,1,'#c8aa7a');
+  /* upper cabinets */
+  for(let i=0;i<4;i++){R(8+i*36,12,34,34,'#8a5a3a');R(10+i*36,14,30,30,'#9a6a48');R(36+i*36,28,2,4,'#e8c870')}
+  /* counter, sink, toaster, coffee maker */
+  R(4,84,156,6,'#d8d4c8');R(4,90,156,18,'#7a4a32');for(let i=0;i<4;i++){R(10+i*38,92,32,14,'#8a5a3e');R(25+i*38,96,2,4,'#e8c870')}
+  R(50,80,30,5,'#b8bcc4');R(54,81,22,3,'#8a8e98');R(64,70,2,10,'#c8ccd4');R(64,70,8,2,'#c8ccd4');
+  R(100,72,18,12,'#c8ccd4');R(102,72,14,2,'#e8ecf0');R(103,70,4,2,'#2a2a2a');R(110,70,4,2,'#2a2a2a');
+  R(130,66,16,18,'#2a2a2a');R(132,76,12,8,'#5a3a2a');R(133,77,10,1,'#8a5a3a');
+  R(20,74,10,10,'#f4f0e6');R(22,72,6,2,'#c86a3a');R(36,78,10,6,'#f0d070');
+  /* window over the sink */
+  R(44,50,44,26,'#e8e4dc');R(46,52,40,22,'#9ac8e8');R(46,64,40,10,'#7aa87a');R(65,52,2,22,'#e8e4dc');
+  /* fridge */
+  R(166,24,38,88,'#e8e8e4');R(168,26,34,30,'#f4f4f0');R(168,58,34,52,'#f4f4f0');R(198,36,2,14,'#a8a8a8');R(198,64,2,18,'#a8a8a8');
+  R(172,30,12,14,'#f4f0e6');R(173,31,10,3,'#c83a3a');pxc('MISSING',178,31,'#fff');R(175,35,6,6,'#d8b898');R(176,36,4,2,'#5a3a2a');
+  R(186,32,8,6,'#5ac8a0');R(172,62,10,8,'#f0d070');R(186,66,10,10,'#7aa0e0');R(188,68,6,5,'#f4f0e6');R(184,90,8,6,'#e05a7a');
+  /* TV on a bracket */
+  R(228,24,64,40,'#1a1a1a');R(258,64,4,10,'#3a3a3a');
+  /* front door at the right */
+  R(300,30,20,82,'#5a3a2a');R(302,32,18,80,'#7a4a2e');R(304,40,14,24,'#8a5a3e');R(304,70,14,30,'#8a5a3e');R(303,74,2,4,'#e8c870');
+  R(296,100,4,12,'#5a3a2a');pxc('→',294,114,'#c8aa7a');
+  /* table + chairs */
+  for(let y=112;y<180;y+=8)for(let x=((y/8)%2)*8-8;x<W;x+=16){R(x,y,8,8,'#d8d0c0');R(x+8,y,8,8,'#c8c0b0')}
+  R(214,128,76,4,'#8a6a48');R(216,132,72,3,'#6a4a2e');R(220,135,3,20,'#5a3e26');R(282,135,3,20,'#5a3e26');
+  R(232,122,10,6,'#f4f0e6');R(234,120,6,2,'#e8c870');R(262,124,8,4,'#e8e2d6');R(264,122,4,2,'#c86a3a');
+  R(204,112,6,30,'#7a5a3a');R(294,112,6,30,'#7a5a3a');
+ });
+ /* live: the news, coffee steam, toast */
+ R(230,26,60,36,'#2a3a5a');R(230,26,60,10,'#c83a3a');pxc('NEWS 9',260,27,'#fff');
+ {const s=Math.round(Math.sin(T*.7)*2);R(244+s,38,10,12,'#d8b898');R(244+s,36,10,4,'#5a3a2a');R(248+s,46,2,1,'#8a3a3a');R(238,50,32,8,'#4a4a6a')}
+ R(230,56,60,6,'#141418');{const txt=NEWS(),w=pxw(txt),x=290-((T*22)%(w+60));g.save();g.beginPath();g.rect(230,56,60,6);g.clip();px(txt,x,57,'#f0d070');g.restore()}
+ g.globalAlpha=.08+Math.sin(T*9)*.02;R(222,20,76,50,'#8ab0e0');g.globalAlpha=1;
+ g.globalAlpha=.4;for(let i=0;i<4;i++){const q=(T*.5+i/4)%1;R(136+Math.sin(T*2+i)*2,64-q*16,3,3,'#ffffff')}g.globalAlpha=1;
+ {const q=(T%9)/9;if(q<.08){const h=Math.sin(q/.08*Math.PI)*8;R(104,70-h,4,4,'#d8a868');R(110,70-h,4,4,'#d8a868')}}
+ g.globalAlpha=.07;for(let i=0;i<26;i++)R(40-i*1.4,78+i*2,60+i,2,'#fff0c8');g.globalAlpha=1;
+}};
+LIGHT.kitchen=()=>({amb:.9,tint:[80,60,30],src:[[66,64,70,.3,[255,240,200]],[260,44,50,.2,[150,180,255]]]});
+
+/* both rooms join up: bedroom ← → kitchen → front door */
+WORLD.bedroom={L:null,R:'kitchen',Rx:16,doors:[]};WORLD.kitchen={L:'bedroom',Lx:300,R:null,doors:[]};
+HALLS.add('bedroom');HALLS.add('kitchen');
+ROSTER[0]=ROSTER[0]||{};ROSTER[0].kitchen=[['mom',96,1,null,144]];
+ROSTER[0].bedroom=[];
+
+const HOME_OK=()=>!TEST&&D&&!D.weekend&&!D.f.leftHome;
+{const _sp=startPeriod;startPeriod=async function(i,resume){
+ if(i===0&&HOME_OK()&&(!resume||D.home)){
+  D.period=0;D.home=1;P.cur=JSON.parse(JSON.stringify(D));save();closeOverlays();setHud(true);
+  D.spawn={room:D.room==='kitchen'?'kitchen':'bedroom',x:D.room==='kitchen'?40:170,y:146,dir:1};
+  return enterRoom(D.room==='kitchen'?'kitchen':'bedroom');
+ }
+ return _sp(i,resume);
+}}
+/* Dad’s at the table on even days */
+{const _br=buildRoom;buildRoom=function(room){const r=_br(room);if(room==='kitchen'&&D&&(D.dayType||'odd')==='even'&&!A.dad){put('dad',250,-1,{y:148,pose:'sit',hold:'paper'})}return r}}
+{const _ed=edge;edge=function(s){
+ if(D&&D.room==='kitchen'&&s>0)return leaveHome();
+ if(D&&D.room==='bedroom'&&s<0){if(!edge.t2||T-edge.t2>1.2){edge.t2=T;toast('That’s your wall. It has a poster of a band nobody’s heard of.')}return}
+ return _ed(s);
+}}
+async function leaveHome(){
+ if(busy)return;busy=true;setPanel('talk');keys.l=keys.r=0;
+ if(!D.f.packed&&!TEST){busy=false;setPanel('roam');
+  const c=await choose(['Go back and pack your bag first.','Leave anyway. Empty bag. Living free.'],'You haven’t packed anything.');
+  if(c===0){busy=false;roam();return}busy=true}
+ if(A.mom&&!D.f.momBye){D.f.momBye=1;face('mom','you');await say('mom',pick(['Bye! Love you! Don’t die!','Have a good day! Don’t talk to the math teacher!','Bye, baby. Text me if anybody gets murdered.','Love you! Hat! Where’s your— okay, no hat. Fine. Freeze.']),'happy')}
+ A.you.back=0;await walk('you',304,70);pose('you','reach');SFX.door();await wait(250);pose('you',null);await tw(A.you,{alpha:0},250);
+ D.home=0;D.f.leftHome=1;
+ TRANS.a=1.2;
+ await card(PERIODS[0].name.toUpperCase(),(window.dayLabel?dayLabel():'')+' · 8:25'+(window.weekOf?'  ·  WEEK '+weekOf():''),1300);
+ SFX.bell();
+ busy=false;
+ if(typeof applesFor==='function'){D.apples=applesFor(0);updateLoc()}
+ for(const f of ON_PERIOD){try{await f(0,false)}catch(e){console.error(e)}}
+ D.room='bus';P.cur=JSON.parse(JSON.stringify(D));save();
+ return enterRoom('bus');
+}
+if(typeof DAILY_F!=='undefined')DAILY_F.push('leftHome','packed','momBye','purse','lunchTaken','petCat','newsSeen','windowSeen');
+
+
+/* the intro happens in bed now, not on the bus */
+let HOME_INTRO=false;
+{const _di=dayIntro;dayIntro=async function(died){HOME_INTRO=!TEST&&!(D&&D.weekend);try{return await _di(died)}finally{HOME_INTRO=false}}}
+{const _sc=scene;scene=function(room,cast,fresh){if(HOME_INTRO&&room==='bus'){room='bedroom';cast={you:[262,-1,{y:92,pose:'lie',ex:'closed'}]}}return _sc(room,cast,fresh)}}
+const HOME_LINES=[[/The 43 drops you at Highgate High at 8:25\./,'Your alarm goes off at 7:15. The 43 leaves the end of your street at 7:58.'],
+ [/You gasp awake on the 43, both hands on your neck\. Still attached\./,'You wake up in bed, both hands on your neck. Still attached.'],
+ [/You wake up on the bus\. The radio’s playing the same song\./,'You wake up in your bed. The alarm is playing the same song.'],
+ [/The bus\. The bell\. Your mouth tastes like pennies\./,'Your ceiling. Your alarm. Your mouth tastes like pennies.'],
+ [/The 43 smells like Axe and wet coats\./,'Your alarm goes off. 7:15. You hit snooze with your whole face.'],
+ [/Hasan is already laughing at something\./,'The cat is sitting on your chest, staring at you like you owe it money.']];
+{const _s=say;say=function(who,text,e){if(HOME_INTRO&&typeof text==='string')for(const [re,to] of HOME_LINES)text=text.replace(re,to);return _s(who,text,e)}}
+{const _p=put;put=function(id,x,dir,o){if(HOME_INTRO&&id==='aidan')return{id,k:K.aidan,x:0,y:150,vis:false};return _p(id,x,dir,o)}}
+/* getting out of bed */
+{const _er=enterRoom;enterRoom=async function(room){const r=await _er(room);
+ if(room==='bedroom'&&A.you&&A.you.pose==='lie'){A.you.pose=null}
+ if((room==='bedroom'||room==='kitchen')&&!TEST&&!D.f.homeTip){D.f.homeTip=1;toast('Home. Pack your bag (shelf over the desk), then walk right through the kitchen and out the front door.')}
+ return r}}
+
+/* ---------------- things to do at home ---------------- */
+const PACKABLE=['energy','compass','tape','padlock','firstaid'];
+spot({room:'bedroom',period:0,x:52,y:150,label:'Pack your bag (take 2 things)',short:'PACK',free:1,cond:()=>!D.f.packed,run:async()=>{
+ await walk('you',52,70);pose('you','reach');
+ let n=0;
+ while(n<2){const opts=PACKABLE.filter(i=>!has(i));if(!opts.length)break;
+  const c=await choose(opts.map(i=>(ITEMS[i]||i)+(['compass','padlock'].includes(i)&&cal()>=8?'  (metal: the detector)':'')).concat(n?['That’s it.']:['Nothing. Travel light.']),'What goes in the bag? ('+(2-n)+' left)');
+  if(c>=opts.length)break;give(opts[c]);n++}
+ pose('you',null);D.f.packed=1;
+ await N(n?'Bag packed. It’s heavier than it looks. Everything at that school is.':'Empty bag. You are a free spirit and a fool.');
+ return 'stay';
+}});
+spot({room:'bedroom',period:0,x:236,y:140,label:'Look out the window',short:'WINDOW',free:1,cond:()=>!D.f.windowSeen,run:async()=>{
+ await walk('you',236,70);A.you.back=1;D.f.windowSeen=1;
+ const L=['Down the street, the 43 is already at the stop, idling. The driver is eating a whole onion like an apple.',
+  'Mr. Henderson across the road is mowing his lawn in a bathrobe. It’s November. He waves at you with the hand that isn’t holding a beer.',
+  'A black van is parked outside the Morrisons’ house. Nobody gets out. It’s been there since Tyler.',
+  'Paul Jones walks past on the other side of the street with his hood up, alone. He looks up at your window like he knows it’s yours.',
+  'Two raccoons are fighting in your recycling bin. One of them wins. The other one looks at you like you’re next.',
+  'The sky is the color of a school hallway. There are birds on the wire. They’re all facing the school.'];
+ await N(L[(cal()-1)%L.length]);A.you.back=0;return 'stay';
+}});
+spot({room:'bedroom',period:0,x:256,y:150,label:'Pet the cat',short:'CAT',free:1,cond:()=>!D.f.petCat,run:async()=>{
+ await walk('you',256,70);pose('you','reach');D.f.petCat=1;
+ await N(pick(['Biscuit purrs like a broken fridge and bites you, gently, as a warning.','Biscuit lets you pet him exactly three times, then leaves the room in disgust.','Biscuit rolls over. It’s a trap. You know it’s a trap. You do it anyway. Blood.','Biscuit stares at the corner of the room for a long time. There’s nothing there. Probably.']));
+ pose('you',null);return 'stay';
+}});
+spot({room:'kitchen',period:0,x:26,y:150,label:'Take the lunch Mom made',short:'LUNCH',free:1,cond:()=>!D.f.lunchTaken,run:async()=>{
+ await walk('you',26,70);pose('you','reach');await wait(200);pose('you',null);D.f.lunchTaken=1;give('lunch');
+ await N('A brown paper bag with your name on it in Sharpie, and a heart, and underneath the heart: “EAT THE APPLE THIS TIME.”');return 'stay';
+}});
+spot({room:'kitchen',period:0,x:150,y:150,label:'Swipe $3 from Mom’s purse',short:'PURSE',free:1,cond:()=>!D.f.purse,run:async()=>{
+ await walk('you',150,60);pose('you','kneel');D.f.purse=1;
+ const caught=A.mom&&Math.random()<.35;
+ if(!caught){D.money=(D.money||0)+3;updateLoc();SFX.pick();await N('Three crumpled dollars and a receipt for wine. You take the dollars. You leave the receipt. You’re not a monster.')}
+ else{face('mom','you');await say('mom','(not turning around) Put it back.','cold');await say('you','I wasn’t—');await say('mom','You were. You always were. Take one. One. And bring me back a coffee from the gas station like a decent criminal.','smirk');D.money=(D.money||0)+1;updateLoc()}
+ pose('you',null);return 'stay';
+}});
+spot({room:'kitchen',period:0,x:260,y:150,label:'Watch the news',short:'TV',free:1,cond:()=>!D.f.newsSeen,run:async()=>{
+ await walk('you',250,60);A.you.back=1;D.f.newsSeen=1;
+ const L=[];if(D.f.brettDead)L.push('The news: “Brett Kowalski, a junior at Highgate High, has not been seen since Tuesday. His father, a police officer, is asking anyone with information to—” Mom changes the channel.');
+ if(cal()>=8)L.push('The news: “Highgate High has installed metal detectors after what the principal called ‘a normal amount of incidents’.”');
+ L.push('The news: “Day '+(cal()+3)+' in the search for Tyler Morrison, thirteen.” His school photo comes up. You sat behind him in math. You never once saw his face from the front.');
+ L.push('The news: a reporter outside Highgate High says the words “perfectly safe” four times in one sentence. Behind him, a window on the second floor goes dark.');
+ await N(pick(L));A.you.back=0;return 'stay';
+}});
+const MOM_TALK=[
+ [['mom','Did you hear about that Tyler boy? Still missing.','sad'],['mom','(sipping coffee) Anyway. Do you want eggs? You look like a kid who needs eggs.','happy']],
+ [['mom','Your school called last night. A robot voice. It said “Your child is still alive.”','shock'],['mom','Is that new? Do they always say that? That feels new.','scared']],
+ [['mom','(on the phone) No, Karen. I will NOT chaperone the dance. I met those teachers. One of them looked at me like I was a ham.','angry'],['mom','(covering the phone) Morning, baby. Karen’s a bitch. Eat something.','happy']],
+ [['mom','If anybody at that school offers you a ride, you say no.','cold'],['mom','If a TEACHER offers you a ride, you run. You run and you don’t stop until you see a gas station.','evil']],
+ [['mom','I put a note in your lunch.','happy'],['mom','Don’t read it in front of people. It’s embarrassing. It’s supposed to be. That’s love.','smirk']],
+ [['mom','Sit up. Eat something. Don’t die. Love you.','happy'],['mom','In that order.','smirk']],
+ [['mom','The Morrisons put up another flyer. I took one. I don’t know why. It’s on the fridge.','sad'],['mom','…Text me when you get there. Every period, actually. Just send a thumbs up.','scared']],
+ [['mom','Your math teacher emailed me. Ms. Sherman? She says you’re “delicious company”.','shock'],['mom','I’m sure that’s a typo. That’s a typo, right? “Delightful.” She meant delightful.','scared']],
+ [['mom','Your father snores like a man being strangled by a smaller man. I haven’t slept since the Clinton administration.','angry'],['mom','Anyway, go learn something.','happy']],
+ [['mom','There was a raccoon in the kitchen at three AM. It opened the fridge. It looked at me. I looked at it. It took the cheese.','shock'],['mom','I respect it. I hate it, but I respect it.','smirk']]
+];
+const DAD_TALK=[
+ [['dad','(behind the paper) Inspection at your school next week. Says here they’ll be “thorough”.'],['dad','Your school’s never been thorough about anything in its life. Except lunch. That cafeteria lady scares the shit out of me.','smirk']],
+ [['dad','You know I went to Highgate? Same building. Same lunch lady, I swear to God. She hasn’t aged. That’s not a joke. Pass the salt.','scared']],
+ [['dad','Your mom says I need to have “the talk” with you.'],['dad','So: the teachers at that school are dangerous, don’t go in the boiler room, and never eat the stew. That’s the talk. That’s the whole talk.','cold']]
+];
+hook({period:0,room:'kitchen',who:'mom',label:'Talk to Mom',look:{},cond:()=>!D.f.momTalk,run:async()=>{
+ D.f.momTalk=1;face('mom','you');for(const [w,t,e] of MOM_TALK[(cal()-1)%MOM_TALK.length])await say(w,t,e);return 'stay'}});
+hook({period:0,room:'kitchen',who:'dad',label:'Talk to Dad',look:{pose:'sit',hold:'paper'},cond:()=>!D.f.dadTalk,run:async()=>{
+ D.f.dadTalk=1;for(const [w,t,e] of DAD_TALK[(cal()-1)%DAD_TALK.length])await say(w,t,e);return 'stay'}});
+if(typeof DAILY_F!=='undefined')DAILY_F.push('momTalk','dadTalk','homeTip');
+/* Mom’s lunch pays off at lunch */
+ON_PERIOD.push(async(i,resume)=>{if(i===4&&!resume&&D&&has('lunch')){D.items=D.items.filter(x=>x!=='lunch');D.apples=(D.apples||0)+2;updateLoc();setTimeout(()=>toast('🍎 Mom’s lunch: +2 apples. The note says “I’m proud of you. Eat the apple.”'),1900)}});
+
+</script>
+<script>
+/* js/doors.js */
+'use strict';
+/* =====================================================================
+   HIGHSCHOOL — DOORS THAT BELONG TO THE WALL
+   Classroom doors used to be stamped on top of the hallway art, cutting
+   through murals and banners. Now every door sits in its own doorway:
+   a clean bay of wall, a painted frame and lintel with the room’s sign,
+   a shadowed recess, a window with a glimpse of the room behind it, a
+   kick plate, a threshold. Walk up to one and it opens a crack; go
+   through and it swings all the way open, with the room’s light
+   spilling out into the hall.
+   ===================================================================== */
+const WALLC={};
+function wallColorFor(room){
+ if(WALLC[room])return WALLC[room];
+ try{const d=g.getImageData(0,0,W,1+0,{willReadFrequently:true});}catch(e){}
+ let col='#d8d0bc';
+ try{const row=g.getImageData(0,9,W,1).data,cnt={};for(let i=0;i<W;i++){const k=(row[i*4]>>3)+','+(row[i*4+1]>>3)+','+(row[i*4+2]>>3);cnt[k]=(cnt[k]||0)+1}
+  const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0][0].split(',').map(v=>v*8+4);col='rgb('+top.join(',')+')';
+  WALLC[room]={wall:col,rgb:top}}catch(e){WALLC[room]={wall:col,rgb:[216,208,188]}}
+ return WALLC[room];
+}
+const shade=(rgb,f)=>'rgb('+rgb.map(v=>Math.max(0,Math.min(255,Math.round(v*f)))).join(',')+')';
+const INSIDE={english:'#7a8a5a',maths:'#e8c4cc',history:'#a8885a',toilets:'#9ab8c8',canteen:'#e8e0c8',library:'#8a6a4a',hall:'#4a2a3a',office:'#6a5a4a',psych:'#8a9aa8',art:'#e8d8b0',music:'#5a4a6a',ict:'#3a4a6a',drama:'#2a1a2a',chem:'#c8d8c0',science:'#9aa894',woodwork:'#8a6a48',foodtech:'#e8d8c0',gym:'#c8a070',pool:'#7ac8e8',trailer:'#c8b8a0'};
+function doorBay(d,room,open,near){
+ const x=d.x,C=wallColorFor(room),rgb=C.rgb;
+ const label=(d.label||shortName(d.to).toUpperCase()).slice(0,12),mine=d.to===myClassToday();
+ const trim=shade(rgb,.55),trimL=shade(rgb,.75),trimD=shade(rgb,.4);
+ /* clean wall bay */
+ R(x-26,12,52,96,C.wall);R(x-26,12,1,96,shade(rgb,.85));R(x+25,12,1,96,shade(rgb,.85));
+ /* frame + lintel */
+ R(x-22,26,44,82,trim);R(x-22,26,44,2,trimL);R(x-22,26,2,82,trimL);R(x+20,26,2,82,trimD);
+ /* sign plate on the lintel */
+ const lw=Math.max(30,pxw(label)+8);R(x-lw/2,14,lw,10,mine?'#c89a30':'#2a2a36');R(x-lw/2,14,lw,1,mine?'#ffe08a':'#4a4a5a');R(x-lw/2,23,lw,1,'rgba(0,0,0,.4)');pxc(label,x,16,mine?'#2a1a08':'#f0e6c8');
+ R(x-1,10,2,4,'#6a6a72');
+ /* the recess */
+ R(x-18,30,36,78,'#1a1418');
+ const inside=INSIDE[d.to]||'#6a6a6a';
+ const k=Math.max(open,near?.12:0);
+ /* what you see through the open door */
+ if(k>0){R(x-17,31,34,76,inside);g.globalAlpha=.35;R(x-17,31,34,76,'#000');g.globalAlpha=1;R(x-17,31,34,2,'rgba(255,255,255,.2)');
+  g.globalAlpha=.18*k*2;for(let i=0;i<24;i++)R(x-16-i*1.2,108+i,34+i*2.4,1,'#fff4d0');g.globalAlpha=1}
+ /* the door, swinging in on its hinge */
+ const w=Math.max(3,Math.round(34*(1-k)));
+ R(x-17,31,w,76,'#7a4e30');R(x-17,31,w,1,'#a06c44');R(x-17+w-1,31,1,76,'#5a3820');
+ if(w>16){R(x-14,36,Math.min(w-6,14),20,'#2a2a30');R(x-13,37,Math.min(w-8,12),18,inside);g.globalAlpha=.4;R(x-13,37,Math.min(w-8,12),3,'#fff');g.globalAlpha=1;
+  R(x-15,92,Math.min(w-4,30),10,'#a8a8b0');R(x-15,92,Math.min(w-4,30),1,'#d8d8e0');
+  const hx=x-17+w-6;R(hx,66,3,3,near?'#ffe8a0':'#d8c070');if(near&&Math.sin(T*6)>.3)R(hx+1,65,1,1,'#fff')}
+ /* threshold and shadow */
+ R(x-20,106,40,2,trimD);g.globalAlpha=.25;R(x-22,108,44,3,'#000');g.globalAlpha=1;
+ if(mine&&Math.sin(T*4)>0)R(x-1,113,3,3,'#ffd27a');
+}
+drawWorldDoors=function(room){
+ const w=WORLD[room];if(!w)return;
+ const nd=typeof nearDoor==='function'&&D&&D.room===room&&panelMode==='roam'&&!busy?nearDoor():null;
+ for(const d of w.doors){
+  if(d.front)continue;
+  if(d.stairs){drawStairs(d.x,d.stairs);continue}
+  const open=D&&D.doorAnim&&D.doorAnim.room===room&&D.doorAnim.x===d.x?D.doorAnim.k:0;
+  doorBay(d,room,open,nd===d&&A.you&&Math.abs(A.you.x-d.x)<10);
+ }
+};
+
+</script>
+<script>
+/* js/homeart.js */
+'use strict';
+/* =====================================================================
+   HIGHSCHOOL — HOME, DRAWN PROPERLY
+   The bedroom and kitchen, redrawn to the glow-up standard: furniture
+   with tops, fronts and shadows, textured walls and floors, the morning
+   coming in through the window and lying on the floor, and clutter that
+   says somebody actually lives here.
+   ===================================================================== */
+/* a few drawing helpers */
+function hBox(x,y,w,h,d,top,front,edge){ /* a block seen slightly from above: top face d tall */
+ R(x,y,w,d,top);R(x,y+d,w,h-d,front);R(x,y+d,w,1,edge||'rgba(0,0,0,.25)');R(x,y,w,1,'rgba(255,255,255,.18)');R(x+w-1,y+d,1,h-d,'rgba(0,0,0,.18)')}
+function hShadow(x,y,w,h,a){g.globalAlpha=a||.25;R(x,y,w,h,'#000');R(x+2,y+h,w-4,1,'#000');g.globalAlpha=1}
+function hGrad(x,y,w,h,c1,c2,n){n=n||8;for(let i=0;i<n;i++){g.globalAlpha=.3*(1-i/n);R(x,y+Math.floor(h*i/n),w,Math.ceil(h/n),c2);}g.globalAlpha=1}
+function hPlanks(y0,c1,c2,c3){for(let y=y0,r=0;y<H;y+=7,r++){R(0,y,W,7,r%2?c1:c2);R(0,y,W,1,'rgba(0,0,0,.18)');for(let x=((r*37)%60)-60;x<W;x+=60){R(x,y,1,7,c3)}for(let i=0;i<6;i++)R(((r*53+i*61)%W),y+3,8,1,'rgba(0,0,0,.08)')}
+ hGrad(0,y0,W,24,'rgba(0,0,0,0)','#000',6)}
+function hTape(x,y){R(x,y,4,2,'rgba(240,235,200,.7)')}
+
+ROOMS.bedroom.bg=function(){
+ guCache('bedroom2','',()=>{
+  /* wall: navy with a diamond wallpaper, darker at the edges */
+  R(0,0,W,112,'#34405e');
+  for(let y=4;y<104;y+=8)for(let x=(y/8%2)*6;x<W;x+=12){R(x+5,y,2,1,'#3e4a6a');R(x+4,y+1,4,1,'#3e4a6a');R(x+5,y+2,2,1,'#3e4a6a')}
+  g.globalAlpha=.25;R(0,0,30,112,'#0a0e1a');R(290,0,30,112,'#0a0e1a');g.globalAlpha=.12;R(0,0,W,10,'#000');g.globalAlpha=1;
+  g.globalAlpha=.14;R(6,4,26,14,'#8a7a5a');R(12,16,14,8,'#8a7a5a');R(16,22,6,4,'#8a7a5a');g.globalAlpha=1; /* water stain */
+  /* baseboard */
+  R(0,104,W,8,'#262c44');R(0,104,W,1,'#566086');R(0,111,W,1,'#14182a');
+  /* floor */
+  hPlanks(112,'#6a4c34','#634630','#4a3424');
+  /* window: frame, sill, blinds half down, plant */
+  R(200,14,74,62,'#d8d0c0');R(202,16,70,58,'#a89c88');R(204,18,66,54,'#1a1a24');
+  R(198,74,78,4,'#e8e0d0');R(198,78,78,2,'#a89c88');
+  R(206,72,10,2,'#8a5a3a');R(207,64,8,8,'#c86a3a');for(let i=0;i<5;i++)R(206+i*2,58+(i%2)*2,2,7,'#3a8a4a');
+  R(254,66,12,6,'#e8e2d6');R(256,64,8,2,'#f4f0e6');
+  /* desk */
+  hShadow(10,108,90,6,.3);
+  hBox(8,82,92,26,4,'#8a6a4c','#6a4a32');for(let i=0;i<2;i++){R(58,92+i*8,36,7,'#5e4230');R(58,92+i*8,36,1,'#7a5a42');R(74,95+i*8,6,1,'#c8a870')}
+  R(12,92,4,16,'#4a3424');R(50,92,4,16,'#4a3424');
+  /* laptop with stickers, books, mug, lamp */
+  R(22,66,32,16,'#2a2a32');R(24,68,28,12,'#141420');R(20,82,36,2,'#4a4a56');R(26,68,4,3,'#e05a7a');R(46,77,4,3,'#5ad0a0');
+  R(62,74,6,8,'#c83a3a');R(68,72,6,10,'#3a5a8a');R(74,75,5,7,'#e8c870');R(62,74,17,1,'rgba(255,255,255,.2)');
+  R(84,76,8,6,'#e8e2d6');R(91,77,2,3,'#e8e2d6');R(85,75,6,1,'#7a4a2a');
+  R(14,80,4,2,'#f4f0e6');R(14,76,10,4,'#f4f0e6');R(16,74,8,2,'#e8e2d6');
+  R(92,52,2,24,'#3a3a3a');R(90,74,6,2,'#2a2a2a');R(86,48,12,6,'#d8b048');R(88,54,8,1,'#f0d070');
+  /* desk chair */
+  R(30,96,22,4,'#2a3a6a');R(32,86,18,10,'#3a4a8a');R(32,86,18,1,'#5a6aaa');R(40,100,2,8,'#3a3a3a');R(32,107,18,2,'#2a2a2a');
+  /* the shelf over the desk with what you can take */
+  R(10,40,90,3,'#8a6a4c');R(10,43,90,1,'#3a2a1a');R(16,43,2,5,'#5a4230');R(90,43,2,5,'#5a4230');
+  R(16,28,7,12,'#2a7a3a');R(17,27,5,1,'#c8c8c8');R(18,31,3,5,'#f0f070');R(16,28,1,12,'rgba(255,255,255,.2)');
+  R(30,36,12,4,'#a8a8a8');R(35,22,2,14,'#c8c8c8');R(34,21,4,2,'#8a8a8a');R(30,34,12,1,'#d8d8d8');
+  R(48,31,10,9,'#8a8a92');R(51,34,4,3,'#4a4a52');R(48,31,10,1,'#b8b8c0');
+  R(64,31,8,7,'#c8b040');R(65,27,6,4,'#8a8a8a');R(66,28,4,3,'#34405e');R(64,31,8,1,'#f0d870');
+  R(76,28,16,12,'#f4f0e6');R(83,30,2,8,'#c83a3a');R(80,33,10,2,'#c83a3a');R(76,28,16,1,'#ffffff');
+  /* corkboard with photos and a ticket */
+  R(104,20,40,30,'#7a5a3a');R(106,22,36,26,'#b8905a');for(let i=0;i<20;i++)R(106+((i*13)%36),22+((i*7)%26),1,1,'#9a7444');
+  R(108,24,10,8,'#f4f0e6');R(109,25,8,5,'#8ab0d0');R(122,26,9,9,'#f4f0e6');R(123,27,7,6,'#e8a888');R(133,24,7,10,'#f0d070');R(110,36,14,8,'#f4f0e6');R(111,37,12,2,'#c83a3a');R(128,38,12,8,'#e05a7a');
+  for(const [x,y] of[[112,23],[126,25],[136,23],[116,35],[133,37]])R(x,y,1,1,'#c83a3a');
+  /* closet: half open, clothes on the rail, a pile on the floor */
+  R(104,54,44,58,'#5a4632');R(106,56,40,54,'#1a1410');R(108,60,36,1,'#8a8a8a');
+  for(let i=0;i<6;i++){const cx=110+i*6;R(cx,60,1,3,'#8a8a8a');R(cx-2,63,5,16+(i%3)*4,['#3a5a8a','#c83a3a','#2a2a2a','#5a8a4a','#e8e2d6','#7a4a8a'][i])}
+  R(126,56,20,54,'#6e5640');R(126,56,1,54,'#8a7258');R(128,80,2,4,'#c8b878');
+  R(100,104,34,8,'#c83a3a');R(112,106,20,6,'#3a5a8a');R(104,102,12,4,'#e8e2d6');R(126,108,10,4,'#2a2a2a');
+  /* posters */
+  R(152,18,30,40,'#141414');R(154,20,26,36,'#c83a3a');pxc('DEAD',167,24,'#f4ead8');pxc('MALL',167,31,'#f4ead8');R(158,39,18,13,'#141414');R(161,41,12,9,'#f4ead8');R(163,43,2,2,'#141414');R(169,43,2,2,'#141414');R(164,47,6,1,'#141414');hTape(152,17);hTape(178,17);
+  R(152,62,44,12,'#2a5a3a');R(152,62,44,1,'#4a8a5a');pxc('HAWKS',171,65,'#f0d070');R(196,62,6,6,'#2a5a3a');R(196,68,3,3,'#2a5a3a');
+  R(184,22,14,18,'#f4f0e6');R(184,22,14,4,'#c83a3a');for(let r=0;r<3;r++)for(let c=0;c<3;c++)R(186+c*4,28+r*4,3,3,'#e8e2d6');
+  /* string lights along the top (bulbs drawn live) */
+  for(let x=0;x<W;x+=2)R(x,8+Math.round(Math.sin(x/22)*3),2,1,'#1a1a1a');
+  /* nightstand + alarm clock */
+  hShadow(180,108,26,5,.3);hBox(180,90,26,20,3,'#8a6a4c','#6a4a32');R(184,98,18,1,'#4a3424');R(192,100,2,2,'#c8a870');
+  R(184,80,16,10,'#1a1a1a');R(184,80,16,1,'#3a3a3a');R(196,76,6,4,'#c8c0a8');
+  /* bed: headboard, frame, mattress, duvet with folds, pillows, a plushie */
+  hShadow(212,112,104,8,.35);
+  R(304,60,12,52,'#6a4a32');R(302,58,16,4,'#8a6a4c');R(306,64,8,40,'#5a3e28');
+  R(212,96,96,16,'#6a4a32');R(212,96,96,2,'#8a6a4c');R(212,110,96,2,'#4a3424');R(214,112,3,6,'#4a3424');R(302,112,3,6,'#4a3424');
+  R(214,86,92,10,'#e8e2d6');
+  R(212,80,82,18,'#4a5a9a');R(212,80,82,2,'#6a7abc');for(let i=0;i<6;i++){R(216+i*13,84+(i%2)*3,8,1,'#3a4a86');R(220+i*13,90-(i%2)*2,6,1,'#5a6aac')}R(212,96,82,2,'#34406e');
+  for(let i=0;i<82;i+=8)R(212+i,80,4,1,'#8a9ad8');
+  R(278,74,24,10,'#f4f0e6');R(278,74,24,1,'#ffffff');R(280,82,20,2,'#d8d0c0');R(284,70,14,6,'#e8e2d6');
+  R(222,72,8,8,'#a8784a');R(221,70,3,3,'#a8784a');R(228,70,3,3,'#a8784a');R(224,75,1,1,'#1a1a1a');R(227,75,1,1,'#1a1a1a');
+  /* rug */
+  R(118,134,124,26,'#4a2a4a');R(120,136,120,22,'#6a3a5a');for(let i=0;i<6;i++){R(126+i*19,140,10,14,'#7a4a6a');R(129+i*19,143,4,8,'#8a5a7a')}
+  for(let i=0;i<124;i+=3){R(118+i,132,1,2,'#c8a8b8');R(118+i,160,1,2,'#c8a8b8')}
+  /* stuff on the floor */
+  R(60,146,7,3,'#f4f0e6');R(58,148,4,2,'#f4f0e6');R(150,168,10,4,'#2a2a2a');R(262,150,14,6,'#2a3a6a');R(264,148,10,2,'#3a4a8a');R(28,160,8,6,'#e8c870');
+ });
+ /* live: sky through the window, clouds, a bird */
+ R(204,18,66,54,'#f2c4a0');R(204,18,66,22,'#e8a088');R(204,40,66,10,'#f6d4b0');
+ for(let i=0;i<3;i++){const x=204+((T*3+i*28)%86)-12;const x0=Math.max(204,x),w=Math.min(18,270-x0);if(w>0)R(x0,26+i*8,w,3,'rgba(255,255,255,.75)')}
+ R(204,52,66,20,'#5a6a5a');for(let i=0;i<7;i++)R(204+i*10,48-(i%3)*2,9,6,'#4a5a4a');R(204,62,66,10,'#3a4a3a');
+ {const bx=204+((T*8)%90);if(bx<268){const f=Math.sin(T*12)>0;R(bx,32,2,1,'#2a2a2a');R(bx-1,31+(f?0:2),1,1,'#2a2a2a');R(bx+2,31+(f?0:2),1,1,'#2a2a2a')}}
+ /* blinds pulled half down, mullions */
+ for(let y=18;y<40;y+=3){R(204,y,66,2,'#e8e4d8');R(204,y+1,66,1,'#c8c0b0')}R(236,18,2,54,'#d8d0c0');
+ /* curtains */
+ const sw=Math.sin(T*.8)*1.5;R(192+sw,12,12,66,'#8a3a4a');R(270-sw,12,12,66,'#8a3a4a');for(let i=0;i<3;i++){R(194+sw+i*3,14,1,62,'#6a2a3a');R(272-sw+i*3,14,1,62,'#6a2a3a')}R(190,10,94,3,'#5a4a3a');
+ /* sunlight through the blinds, onto the floor */
+ g.globalAlpha=.09;for(let i=0;i<40;i++){const y=74+i*2;R(206-i*1.7,y,64+i*.8,2,'#ffe2b8')}g.globalAlpha=1;
+ g.globalAlpha=.1;for(let s=0;s<5;s++)R(150+s*14,118+s*2,9,30,'#ffe2b8');g.globalAlpha=1;
+ for(let i=0;i<12;i++){const q=(T*.06+i*.083)%1;R(206+hsh(i)*60-q*36,76+q*44+Math.sin(T+i)*2,1,1,'rgba(255,240,210,.65)')}
+ /* string lights twinkle */
+ for(let i=0;i<14;i++){const x=10+i*22,y=10+Math.round(Math.sin(x/22)*3),on=Math.sin(T*2+i*1.7)>-.3;R(x,y,2,3,on?['#ffd27a','#ff8a9a','#8ad0ff'][i%3]:'#5a5a5a');if(on){g.globalAlpha=.18;R(x-3,y-2,8,8,['#ffd27a','#ff8a9a','#8ad0ff'][i%3]);g.globalAlpha=1}}
+ /* laptop glow, lamp light, clock */
+ const fl=.75+Math.sin(T*7)*.06;g.globalAlpha=fl;R(24,68,28,12,'#2a5aa0');R(26,70,16,1,'#c8e0ff');R(26,73,22,1,'#8ab0e0');R(26,76,12,1,'#8ab0e0');g.globalAlpha=1;
+ g.globalAlpha=.08;R(16,58,46,30,'#6a9ae0');g.globalAlpha=.1;for(let i=0;i<16;i++)R(92-i*1.2,55+i*1.6,8+i*2.4,2,'#ffe8a0');g.globalAlpha=1;
+ if(Math.sin(T*3)>-.2)pxc('7:15',192,82,'#ff4a3a');
+ /* the cat */
+ {const br=Math.sin(T*1.6)>0?1:0;R(244,72-br,20,8+br,'#e8a050');R(246,72-br,16,1,'#f0b868');R(260,68-br,7,6,'#e8a050');R(260,67-br,1,1,'#e8a050');R(265,67-br,1,1,'#e8a050');R(261,70-br,1,1,'#2a2a2a');R(264,70-br,1,1,'#2a2a2a');
+  for(let i=0;i<3;i++)R(248+i*4,74-br,2,1,'#c8803a');const tf=Math.round(Math.sin(T*2.2)*2);R(239,77+tf,6,2,'#e8a050')}
+};
+LIGHT.bedroom=()=>({amb:.84,tint:[50,40,70],src:[[236,52,96,.38,[255,214,170]],[38,74,44,.22,[120,160,255]],[92,56,30,.2,[255,220,140]]]});
+
+ROOMS.kitchen.bg=function(){
+ guCache('kitchen2','',()=>{
+  /* wall: warm cream with a faint stripe */
+  R(0,0,W,112,'#e6d4a4');for(let x=0;x<W;x+=8)R(x,0,1,112,'#e0cc9a');g.globalAlpha=.12;R(0,0,W,8,'#000');g.globalAlpha=1;
+  /* backsplash tiles with grout and shine */
+  for(let y=56;y<84;y+=6)for(let x=(y%12?0:6)-6;x<162;x+=12){R(x,y,11,5,'#f4ecd8');R(x,y,11,1,'#ffffff');R(x+10,y,1,5,'#d8ccb0')}
+  R(0,84,162,1,'#c8b890');
+  /* upper cabinets: paneled doors */
+  R(4,10,156,40,'#6a4630');for(let i=0;i<4;i++){const x=6+i*38;R(x,12,36,36,'#8a5e40');R(x+3,15,30,30,'#7a5236');R(x+4,16,28,1,'#9a6e4e');R(x+3,44,30,1,'#5e3e28');R(i%2?x+4:x+30,28,2,6,'#e8c870')}
+  R(4,50,156,2,'#4a3020');
+  /* window over the sink, blinds up, plants */
+  R(46,52,48,30,'#e8e0d0');R(48,54,44,26,'#1a1a24');R(68,54,2,26,'#e8e0d0');R(48,66,44,2,'#e8e0d0');R(44,80,52,3,'#f4ecd8');
+  R(50,74,8,6,'#c86a3a');for(let i=0;i<4;i++)R(51+i*2,68+(i%2)*2,2,7,'#3a8a4a');R(84,75,6,5,'#e8e2d6');R(85,72,4,3,'#5aa04a');
+  /* counter: top surface with depth, cabinets below */
+  R(2,84,160,3,'#e8e4dc');R(2,87,160,3,'#c8c4bc');R(2,90,160,1,'#8a8680');
+  R(2,91,160,21,'#6e4630');for(let i=0;i<4;i++){const x=6+i*39;R(x,93,35,17,'#8a5a3c');R(x+2,95,31,13,'#7a4e34');R(x+3,96,29,1,'#9a6a4a');R(x+15,99,6,2,'#e8c870')}
+  R(2,110,160,2,'#3a2618');
+  /* sink */
+  R(52,85,36,3,'#b8bcc4');R(56,86,28,2,'#7a7e88');R(68,72,2,13,'#c8ccd4');R(68,72,9,2,'#c8ccd4');R(76,74,1,2,'#c8ccd4');
+  R(92,78,14,6,'#c8ccd4');for(let i=0;i<4;i++)R(94+i*3,72,1,6,'#e8e2d6');
+  /* toaster, coffee maker, fruit bowl, knife block, paper towels */
+  R(110,74,20,11,'#c8ccd4');R(112,74,16,2,'#e8ecf0');R(113,72,5,2,'#2a2a2a');R(121,72,5,2,'#2a2a2a');R(128,78,3,2,'#2a2a2a');
+  R(136,64,18,21,'#2a2a2a');R(136,64,18,2,'#4a4a4a');R(139,74,12,10,'#3a2418');R(140,75,10,1,'#7a4a2a');R(150,68,2,2,'#e04040');
+  R(12,80,22,5,'#e8e2d6');R(14,76,6,5,'#e04030');R(20,75,6,6,'#f0d040');R(25,77,6,4,'#7ac040');
+  R(38,72,8,13,'#5a3a2a');for(let i=0;i<3;i++)R(39+i*2,68,1,4,'#2a2a2a');
+  R(4,60,6,22,'#f4f0e6');R(4,60,6,1,'#ffffff');R(6,58,2,2,'#8a8a8a');
+  /* fridge with depth, magnets, photos, the flyer */
+  hShadow(166,110,42,5,.3);
+  R(166,22,40,90,'#e4e4e0');R(166,22,40,2,'#f8f8f4');R(204,22,2,90,'#b8b8b4');R(166,56,40,2,'#a8a8a4');
+  R(200,30,2,20,'#a8a8a8');R(200,62,2,26,'#a8a8a8');
+  R(170,28,14,16,'#f4f0e6');R(170,28,14,3,'#c83a3a');pxc('MISSING',177,28,'#fff');R(173,32,8,8,'#d8b898');R(174,33,6,2,'#5a3a2a');R(175,35,1,1,'#1a1a1a');R(178,35,1,1,'#1a1a1a');R(171,41,12,1,'#8a8a8a');
+  R(188,30,9,7,'#8ab0d0');R(189,31,7,4,'#5a8a5a');R(186,40,10,12,'#f4f0e6');for(let i=0;i<4;i++)R(187,42+i*2,8,1,'#8a8a9a');
+  R(172,62,10,10,'#f0d070');R(174,64,6,6,'#e8a050');R(186,64,12,9,'#7aa0e0');R(188,66,8,5,'#f4f0e6');R(172,80,8,8,'#e05a7a');R(186,84,10,10,'#f4f0e6');R(187,85,8,6,'#c8a8e8');
+  for(const [x,y,c] of[[182,46,'#e04040'],[176,76,'#40a0e0'],[194,78,'#f0c040']])R(x,y,3,3,c);
+  /* wall clock + calendar + TV bracket */
+  R(214,14,14,14,'#2a2a2a');R(215,15,12,12,'#f4f4f0');R(221,17,1,5,'#2a2a2a');R(221,21,3,1,'#2a2a2a');
+  R(216,34,16,20,'#f4f0e6');R(216,34,16,5,'#3a7ac8');for(let r=0;r<3;r++)for(let c=0;c<3;c++)R(218+c*5,41+r*4,4,3,(r*3+c)%4?'#e8e2d6':'#e05a5a');
+  R(236,20,58,38,'#141414');R(238,22,54,34,'#1a1a1a');R(262,58,6,8,'#3a3a3a');R(258,64,14,2,'#2a2a2a');
+  /* pendant lamp over the table */
+  R(258,0,2,64,'#2a2a2a');R(250,64,18,6,'#c8a040');R(252,70,14,2,'#f0d070');
+  /* the front door, coat hooks, shoes, mat */
+  R(298,26,22,86,'#5a3a26');R(300,28,20,84,'#7a4a2e');R(302,34,16,26,'#8a5a3e');R(302,64,16,40,'#8a5a3e');R(303,35,14,1,'#a06c48');R(303,65,14,1,'#a06c48');R(301,74,3,4,'#e8c870');R(306,40,8,10,'#b8d0e0');
+  R(282,40,14,3,'#5a3a26');R(284,43,2,4,'#c8c8c8');R(291,43,2,4,'#c8c8c8');R(281,46,8,24,'#3a5a8a');R(288,46,8,18,'#8a3a3a');
+  /* floor: checker tile with grout, darker toward the front */
+  for(let y=112,r=0;y<H;y+=9,r++)for(let x=-((r%2)*10);x<W;x+=20){R(x,y,10,9,'#dcd2be');R(x+10,y,10,9,'#c4b8a2');R(x,y,20,1,'#b0a490')}
+  hGrad(0,112,W,30,'rgba(0,0,0,0)','#000',6);
+  R(290,150,26,8,'#7a3a3a');R(292,152,22,4,'#8a4a4a');R(276,150,8,4,'#2a2a2a');R(268,152,7,3,'#c83a3a');
+  /* table with depth, chairs, breakfast */
+  hShadow(214,148,80,6,.3);
+  R(212,124,82,4,'#b08a60');R(212,128,82,4,'#8a6a48');R(212,132,82,1,'#5a4230');R(216,133,4,22,'#6a4a32');R(286,133,4,22,'#6a4a32');
+  R(222,118,12,6,'#f4f0e6');R(224,117,8,2,'#e8c870');R(240,120,10,4,'#e8e2d6');R(252,116,6,8,'#f4f0e6');R(253,118,4,5,'#f0a040');R(266,118,14,6,'#e8e2d6');R(268,116,10,2,'#c86a3a');
+  R(202,112,6,34,'#7a5a3a');R(202,112,6,2,'#9a7a5a');R(200,130,12,3,'#7a5a3a');R(296,112,6,34,'#7a5a3a');R(296,112,6,2,'#9a7a5a');R(294,130,12,3,'#7a5a3a');
+ });
+ /* live: the news */
+ R(238,22,54,34,'#24345a');R(238,22,54,8,'#c83a3a');pxc('NEWS 9',265,23,'#fff');
+ {const s=Math.round(Math.sin(T*.7)*2);R(256+s,34,10,12,'#d8b898');R(256+s,32,10,4,'#3a2a1a');R(259+s,38,1,1,'#1a1a1a');R(262+s,38,1,1,'#1a1a1a');R(259+s,42,4,1,'#8a3a3a');R(250,46,30,6,'#3a3a5a')}
+ R(238,50,54,6,'#101014');{const txt=NEWS(),w=pxw(txt),x=292-((T*22)%(w+60));g.save();g.beginPath();g.rect(238,50,54,6);g.clip();px(txt,x,51,'#f0d070');g.restore()}
+ g.globalAlpha=.07+Math.sin(T*9)*.02;R(228,16,74,48,'#8ab0e0');g.globalAlpha=1;
+ /* window light, lamp glow, coffee steam, toast */
+ R(48,54,20,12,'#bfe0f4');R(70,54,22,12,'#bfe0f4');R(48,68,20,12,'#8ab870');R(70,68,22,12,'#8ab870');
+ for(let i=0;i<2;i++){const x=48+((T*4+i*30)%50);if(x<88)R(x,57+i*4,8,2,'rgba(255,255,255,.8)')}
+ R(68,54,2,26,'#e8e0d0');R(48,66,44,2,'#e8e0d0');
+ g.globalAlpha=.07;for(let i=0;i<28;i++)R(46-i*1.5,82+i*2,52+i,2,'#fff4d0');g.globalAlpha=1;
+ g.globalAlpha=.12;for(let i=0;i<22;i++)R(259-i*2.2,72+i*2.4,1+i*4.4,2,'#ffe8a0');g.globalAlpha=1;
+ g.globalAlpha=.45;for(let i=0;i<4;i++){const q=(T*.5+i/4)%1;R(143+Math.sin(T*2+i)*2,62-q*18,3,3,'#ffffff')}g.globalAlpha=1;
+ {const q=(T%9)/9;if(q<.08){const h=Math.sin(q/.08*Math.PI)*8;R(114,72-h,4,4,'#d8a868');R(122,72-h,4,4,'#d8a868')}}
+ {const a=T*.3;R(221,21,Math.round(Math.cos(a)*4)>=0?1:1,1,'#c83a3a')}
+};
+LIGHT.kitchen=()=>({amb:.9,tint:[70,55,30],src:[[70,66,70,.32,[255,240,205]],[259,90,60,.3,[255,220,140]],[265,40,46,.2,[150,180,255]]]});
+
+</script>
+<script>
 /* js/edition-safe.js */
 'use strict';
 /* =====================================================================
@@ -16812,6 +18130,23 @@ say=function(who,text,e){
 /* even-day classes and class whispers too */
 if(typeof DAYSET!=='undefined')for(const t in DAYSET)for(const i in DAYSET[t]){const s=DAYSET[t][i];if(s&&s.cls)for(const r in s.cls)s.cls[r]=s.cls[r].filter(x=>x!=='abby')}
 if(typeof WHISPER!=='undefined')delete WHISPER.abby;
+
+/* no Hasan & Darren, and no Sean & Stella: they’re friends, that’s all */
+{const CUT=['darren','stepeleven','tellmom','toby','instella','striketwo','firstfight','farewell'];
+ for(const m of CUT)delete MIS[m];
+ for(let i=HOOKS.length-1;i>=0;i--)if(HOOKS[i].mis&&!MIS[HOOKS[i].mis])HOOKS.splice(i,1);
+ for(let i=SPOTS.length-1;i>=0;i--)if(SPOTS[i].mis&&!MIS[SPOTS[i].mis])SPOTS.splice(i,1);
+ if(typeof PASS!=='undefined')for(let i=PASS.length-1;i>=0;i--)if(PASS[i].id==='couple')PASS.splice(i,1);
+ if(typeof NIGHT!=='undefined')for(let i=NIGHT.length-1;i>=0;i--)if(/darren|stella/i.test(JSON.stringify(NIGHT[i].msgs))&&/hasan|sean|stella/i.test(NIGHT[i].from))NIGHT.splice(i,1);
+ if(typeof RIDE!=='undefined')for(let i=RIDE.length-1;i>=0;i--){const s=String(RIDE[i].run)+String(RIDE[i].cond);if(/darren|toby|firstfight|instella|striketwo|farewell/i.test(s))RIDE.splice(i,1)}
+ for(const per of ROSTER)if(per)for(const r in per)per[r]=per[r].filter(e=>!['darren','toby'].includes(e[0]));
+ window.EDITION_CUT.push('darren','toby');
+ const LOVE=/darren|\btoby\b|(sean|stella)[^.!?]{0,40}(kiss|girlfriend|boyfriend|dating|date|couple|in love|love you|making out)|(kiss|girlfriend|boyfriend|dating|first date|couple|in love|making out)[^.!?]{0,40}(sean|stella)/i;
+ const _s=say;say=function(who,text,e){if(who==='darren'||who==='toby'||LOVE.test(String(text)))return Promise.resolve();return _s(who,text,e)};
+ const _p=put;put=function(id,x,dir,o){if(id==='darren'||id==='toby')return{id,k:K[id],x:x||0,y:150,vis:false};return _p(id,x,dir,o)};
+ if(typeof CHAT!=='undefined')for(const id of['hasan','sean','stella'])if(CHAT[id])CHAT[id]=CHAT[id].filter(l=>!LOVE.test(l));
+ if(typeof GOSSIP_EXTRA!=='undefined')GOSSIP_EXTRA.length=0;
+}
 
 </script>
 <script>

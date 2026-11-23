@@ -34,7 +34,7 @@ const WANDER=['corridor','canteen','field','gym','library','toilets'];
 /* sometimes you get caught */
 {const _er=enterRoom;enterRoom=async function(room){
  const r=await _er(room);
- if(!TEST&&D&&D.wander===D.period&&!busy&&!D.dead.sherman&&Math.random()<.18&&room!=='forest'){
+ if(false){ /* replaced by sherCatch in js/mayhem.js */
   await runHook({mis:'passing',run:async()=>{
    put('sherman',334,-1,{y:146});await walk('sherman',A.you.x+16,90);face('sherman','you');
    await say('sherman','Shouldn’t you be in class, sweetie?','evil');

@@ -20,7 +20,7 @@ async function spendApple(per,day){
  await wait(TEST?10:900);
  if(D.period!==per||cal()!==day||busy)return;
  if(D.period===8){busy=true;return boardBus(true)}
- if(D.period===7){const bus=SPOTS.find(s=>s.label&&s.label.startsWith('Get on the 43'));if(bus)return useSpot(bus)}
+ if(D.period===7){return afterSchool(true)}
  return endPeriod();
 }
 {const _tt=talkTo;talkTo=async function(id){if(busy)return;const per=D.period,day=cal();D._acted=0;await _tt(id);if(D&&D._acted)return spendApple(per,day)}}

@@ -104,7 +104,7 @@ for(const r of Object.keys(WORLD)){const R0=ROOMS[r];if(!R0||R0._doors)continue;
 let worldFade=0;
 {const _do=HOOK.drawOver;HOOK.drawOver=(...a)=>{_do&&_do(...a);if(worldFade>0){g.globalAlpha=Math.min(1,worldFade);R(0,0,W,180,'#000');g.globalAlpha=1}
  /* door labels when you’re standing at one */
- if(panelMode==='roam'&&!busy&&A.you&&D&&!D.weekend){const d=nearDoor();if(d){const t='▲ '+(d.stairs?(d.stairs==='up'?'Upstairs':'Downstairs'):shortName(d.to));const w=pxw(t)+6,x=clamp(d.x-w/2,2,W-w-2);R(x,8,w,9,'#141120');R(x,8,w,1,'#ffd27a');pxc(t,x+w/2,10,'#ffd27a')}}
+ if(panelMode==='roam'&&!busy&&A.you&&D&&!D.weekend){const d=nearDoor();if(d){const t='▲ '+(d.stairs?(d.stairs==='up'?'Upstairs':'Downstairs'):shortName(d.to));const w=pxw(t)+6,x=clamp(d.x-w/2,2,W-w-2);R(x,110,w,9,'#141120');R(x,110,w,1,'#ffd27a');pxc(t,x+w/2,112,'#ffd27a')}}
 }}
 function nearDoor(){if(!A.you||!D)return null;const w=WORLD[D.room];if(!w)return null;let b=null,bd=12;for(const d of w.doors){const dd=Math.abs(d.x-A.you.x);if(dd<bd){bd=dd;b=d}}return b}
 function worldMove(room,x,y,dir){
@@ -153,7 +153,7 @@ function edge(s){
  const room=D.room,w=WORLD[room];
  if(w){
   const to=s<0?w.L:w.R;
-  if(room==='bus'&&s<0&&D.period===7){busy=true;return endPeriod()}
+  if(room==='bus'&&s<0&&D.period===7){return afterSchool()}
   if(!to){if(!edge.t||T-edge.t>1.2){edge.t=T;toast(room==='bus'?'The road. Not that way.':'That’s the end of the hall.')}return}
   if(to==='bus'&&D.period>=1&&D.period<=6&&!edge.warned){edge.warned=1;toast('Out the front doors. The bus loop.')}
   return worldGo(to,s<0?(w.Lx!=null?w.Lx:300):(w.Rx!=null?w.Rx:20),null,s);
