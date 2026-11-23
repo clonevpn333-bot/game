@@ -282,6 +282,7 @@ async function inspectionDay(){
  await say('adam','(at the podium, sweating through his shirt) Welcome, inspectors, to Highgate High, where every child is… where every child…','scared');
  await say('insp1','Take your time, Mr. Adam.','happy');
  let score=crewEvidence();
+ if(typeof bossFights==='function')score+=await bossFights(teachers);
  const pa=roles.pa||'david';
  if(P.intel.adamKey){score++;await N('Mr. Adam stops. He looks out over the hall and finds you. Then he takes a little brass key out of his pocket and, very slowly, slides it across the podium. Towards the PA desk.')}
  if(c.wiped===1)score++;
