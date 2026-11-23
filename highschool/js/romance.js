@@ -5,7 +5,7 @@
    • Corey & Abby: she has a boyfriend. Brett. Corey has a thought about
      him. It won’t leave. (“Intrusive Thoughts”, woven through The
      Window Seat, across both weeks.)
-   • Sean & Imani: “Long Distance”, week two.
+   • Sean & Stella: “Long Distance”, week two.
    • Hasan & Darren: “Step Eleven”, after the milkshake.
    • You see how quests turned out: couples together around school,
      posters, gossip, and people talk about what happened.
@@ -41,7 +41,7 @@ const doneBefore=m=>!!(D&&D.done&&D.done[m]);   /* done, any time before: no mor
 
 K.brett={n:'Brett',col:'#a83030',skin:'#f0c8a8',hair:'#c8a060',hs:'fade',top:'#9a1a20',pants:'#2a3050',zip:1,seed:131,v:190};K.brett.id='brett';
 CHAT.brett=['What are you looking at? Keep walking.','Tell your little friend Curls to stop liking her posts. I see everything.','Babe, phone. Now. ...Oh. You’re not her.'];
-K.stellamom={n:'Imani’s Mom',col:'#8a6a8a',skin:'#f0c8a8',hair:'#e0c060',hs:'bob',top:'#6a5a7a',pants:'#3a3a4a',adult:1,girl:1,seed:133,v:420};K.stellamom.id='stellamom';
+K.stellamom={n:'Stella’s Mom',col:'#8a6a8a',skin:'#f0c8a8',hair:'#e0c060',hs:'bob',top:'#6a5a7a',pants:'#3a3a4a',adult:1,girl:1,seed:133,v:420};K.stellamom.id='stellamom';
 
 /* one hook, several places */
 function hooks(o,places){for(const [period,room,who] of places)hook(Object.assign({},o,{period,room,who:who||o.who}))}
@@ -317,30 +317,30 @@ hook({mis:'smallhours',period:8,room:'foodcourt',who:'abby',label:'Listen to Abb
 }});
 
 /* =====================================================================
-   SEAN & IMANI — spread out, then LONG DISTANCE
+   SEAN & STELLA — spread out, then LONG DISTANCE
    ===================================================================== */
-Object.assign(MIS.instella,{blurb:'Sean and Imani have only ever been a voice on the phone. Now she has transferred to Highgate. In 3D. Sean is not okay.',
- parts:['Before school: Imani gets off the bus','Another day: get her lucky ball back','Another day, lunch: the field'],
+Object.assign(MIS.instella,{blurb:'Sean and Stella have only ever been a voice on the phone. Now she has transferred to Highgate. In 3D. Sean is not okay.',
+ parts:['Before school: Stella gets off the bus','Another day: get her lucky ball back','Another day, lunch: the field'],
  tips:['Before school, bus loop. Sean is hiding behind people.','Break or lunch, main corridor. Arjun has something that isn’t his.','Lunch, the field. Coach throws javelins at 12:40. Trees are safe.']});
-Object.assign(MIS.striketwo,{blurb:'The day after the field, Sean and Imani go to the arcade. It’s their first date. It’s the first time either of them has said anything real out loud.',
+Object.assign(MIS.striketwo,{blurb:'The day after the field, Sean and Stella go to the arcade. It’s their first date. It’s the first time either of them has said anything real out loud.',
  tips:['A day after “In Person”, after school: the Fair City Mall arcade.']});
 for(const h of HOOKS){if(h.mis==='striketwo'&&h.period===8){const c=h.cond;h.cond=()=>doneBefore('instella')&&!D.done.striketwo&&c()}
  if(h.mis==='toby'&&h.period===0){const c=h.cond;h.cond=()=>doneBefore('striketwo')&&c()}}
-MIS.toby.tips=MIS.toby.tips.map((t,i)=>i===0?'A day after Sean and Imani’s first date (Strike Two): before school, bus loop. Sit near Sean.':t);
+MIS.toby.tips=MIS.toby.tips.map((t,i)=>i===0?'A day after Sean and Stella’s first date (Strike Two): before school, bus loop. Sit near Sean.':t);
 
 ITEMS.strip='The photo strip (four pictures, nobody looking at the camera in the last one)';
 mission('farewell',{name:'Long Distance',icon:'📞',who:['sean','stella'],
- blurb:'Imani’s mom got the job in Portland. They leave the Saturday after next. Imani moved schools for Sean two weeks ago. Sean has never practiced saying goodbye.',
+ blurb:'Stella’s mom got the job in Portland. They leave the Saturday after next. Stella moved schools for Sean two weeks ago. Sean has never practiced saying goodbye.',
  parts:['Week two: Portland','Another day: Sean’s plan','Another day, home time: forty-one'],
- tips:['Week two, after Strike Two: break (library) or lunch (field). Imani has been crying.','Break (library) or lunch (field). Sean has a plan. Then steal Coach’s bucket of field chalk from the gym.','Home time, the bus loop. You need the chalk (gym, break or lunch).'],
+ tips:['Week two, after Strike Two: break (library) or lunch (field). Stella has been crying.','Break (library) or lunch (field). Sean has a plan. Then steal Coach’s bucket of field chalk from the gym.','Home time, the bus loop. You need the chalk (gym, break or lunch).'],
  variants:{all:'All forty-one',smudged:'Forty-one, smudged'}});
-hooks({mis:'farewell',label:'Ask Imani why she’s been crying',look:{ex:'cry'},cond:()=>doneBefore('striketwo')&&!D.f.fw&&!D.dead.sean&&!D.dead.stella,run:async()=>{
+hooks({mis:'farewell',label:'Ask Stella why she’s been crying',look:{ex:'cry'},cond:()=>doneBefore('striketwo')&&!D.f.fw&&!D.dead.sean&&!D.dead.stella,run:async()=>{
  const r=here();scene(r,{stella:[150,1,{y:150,pose:'sit',ex:'cry'}],you:[120,1,{y:154}]},true);cue('sad');
  await say('stella','My mom got the job. The one in Portland. She’s been applying since I was eleven. She finally got it.','cry');
- await say('stella','We go the Saturday after next. There are boxes in our hall with my name on them. My mom wrote IMANI — FRAGILE on one as a joke and I couldn’t stop crying.','cry');
+ await say('stella','We go the Saturday after next. There are boxes in our hall with my name on them. My mom wrote STELLA — FRAGILE on one as a joke and I couldn’t stop crying.','cry');
  await say('stella','I haven’t told Sean. I made my mom drive past this school every day for a year until she let me transfer. For him. Two weeks ago.','cry');
  put('sean',334,-1,{y:150,hold:'flower'});await walk('sean',190,70);
- await say('sean','Imani! I won Strike Two a brother. He has no eyes at all, he’s— (he sees her face) …What happened? Who do I fight? I can’t fight. Who do I get Omer to fight?','shock');
+ await say('sean','Stella! I won Strike Two a brother. He has no eyes at all, he’s— (he sees her face) …What happened? Who do I fight? I can’t fight. Who do I get Omer to fight?','shock');
  await say('stella','Portland.','cry');
  await say('sean','…Portland. Like Oregon Portland? With the rain and the—','shock');
  await say('sean','Okay. Okay. Okay.','sad');
@@ -391,14 +391,14 @@ hook({mis:'farewell',period:7,room:'bus',who:'sean',label:'Help Sean write on th
  if(!ok)await N('You don’t finish. Voicemails twenty-two to twenty-nine are one long smudge. Sean says it’s fine. Twenty-two to twenty-nine were mostly about a dog anyway.');
  put('stella',-14,1,{y:150});
  await walk('stella',70,30);
- await N('Imani walks out of the doors and stops. The whole loop is written on. In big, wobbly, chalk handwriting, from her feet all the way to the curb.');
+ await N('Stella walks out of the doors and stops. The whole loop is written on. In big, wobbly, chalk handwriting, from her feet all the way to the curb.');
  await say('stella','(reading) “Voicemail six. I saw a dog today that looked like it would really like you.”','happy');
  await walk('stella',140,30);
  await say('stella','(reading, slower) “Voicemail thirty-one. I’m not crying. It’s November.”','cry');
  await walk('stella',230,30);
  await say('stella','The last one’s pink. “Forty-one.” There’s only forty. I counted them every night.','cry');
  const car=pprop({t:'car',x:-80,y:170,col:'#5a6a8a',driver:1,layer:40});SFX.rumble();await tw(car,{x:20},1400,'out');
- await N('A blue car pulls into the loop. Imani’s mom. She doesn’t honk. She sees the ground and just waits.');
+ await N('A blue car pulls into the loop. Stella’s mom. She doesn’t honk. She sees the ground and just waits.');
  await say('sean','I never said it. On any of the forty. Number forty is me breathing for a minute and then hanging up.','blush');
  await say('sean','I love you. That’s forty-one. I wanted to do one in person.','blush');
  await say('stella','(crying, laughing) That is SO unfair. You can’t do that in a bus loop.','cry');
@@ -639,7 +639,7 @@ if(window.EDITION==='safe'){dropHooks('brett');delete MIS.brett;PAIRS.splice(2,2
  try{
   if(D&&D.done){
    if(D.done.window&&D.done.brett)await N('Corey and Abby still sit by the window in the Trailer. Nobody ever found Brett. The woods behind the field keep what you give them.');
-   if(D.done.farewell)await N('Imani moved to Portland. Sean calls her every night at nine. The chalk on the bus loop lasted until the first rain. Somebody took a photo of voicemail six first.');
+   if(D.done.farewell)await N('Stella moved to Portland. Sean calls her every night at nine. The chalk on the bus loop lasted until the first rain. Somebody took a photo of voicemail six first.');
    if(D.done.stepeleven)await N('Darren walks with a limp now. Hasan walks slower so they match. Hasan’s dad keeps a dried flower on his dashboard.');
   }
  }catch(e){}

@@ -713,7 +713,7 @@ const K={
  nivaan:{n:'Nivaan',col:'#5a6a9a',skin:'#b98058',hair:'#1c1412',hs:'curly',top:'#8d9099',pants:'#3565b8',cuff:1,h:-3,hood:1,seed:3,v:430},
  corey:{n:'Corey',col:'#4a4a5f',skin:'#c08860',hair:'#1a1210',hs:'curly',top:'#1d1d24',pants:'#101014',glow:1,h:1,zip:1,seed:5,v:240,vw:'triangle'},
  sean:{n:'Sean',col:'#9a8420',skin:'#f2cfae',hair:'#e8c860',hs:'wavy',top:'#1b1b20',pants:'#8f9198',baggy:1,hood:1,seed:8,v:285},
- stella:{n:'Imani',col:'#2a7a4a',skin:'#8a5a3a',hair:'#1a1210',hs:'braids',top:'#2a7a4a',pants:'#2a2a33',girl:1,h:3,seed:11,v:470,vw:'triangle'},
+ stella:{n:'Stella',col:'#c0408a',skin:'#f0c8a8',hair:'#f0d070',hs:'long',top:'#c0408a',pants:'#3a4a7a',girl:1,seed:11,v:520,vw:'triangle'},
  abby:{n:'Abby',col:'#6a35b9',skin:'#ecd2c4',hair:'#0c0a12',hs:'long',top:'#1a1626',pants:'#2a2238',girl:1,streaks:1,seed:12,v:470,vw:'triangle'},
  aidan:{n:'Aidan',col:'#2456c8',skin:'#e6c2a2',hair:'#4a2f1a',hs:'bowl',top:'#2456c8',pants:'#0c0c10',tight:1,h:-5,zip:1,seed:9,v:175,vw:'sawtooth'},
  angelo:{n:'Angelo',col:'#9a6a3a',skin:'#c8946a',hair:'#141010',hs:'straight',top:'#7a5234',pants:'#141416',baggy:1,tee:1,seed:13,v:330},
@@ -1316,9 +1316,9 @@ function freshD(){return{day:P.loops,period:0,room:null,f:{},items:[],money:3,mp
 const has=it=>D.items.includes(it);
 function give(it,label){if(!has(it))D.items.push(it);SFX.pick();toast('Got: '+(ITEMS[it]||it))}
 function take(it){D.items=D.items.filter(i=>i!==it)}
-const ITEMS={video:'Hasan’s video of Aidan’s poem',ball:'STRIKE ONE (Imani’s lucky ball)',powder:'Dheva’s texture powder',spare:'Dheva’s emergency powder',plan:'The seating plan (v14)',newplan:'The NEW seating plan',tape:'Duct tape',energy:'Monster energy (warm)',key:'Mr. Voss’s fridge key',cookies:'A tray of Pat’s cookies',note:'Sean’s note',swap:'Kenneth’s PE bib',detention:'Detention slip (P3, Office)',padlock:'A padlock'};
+const ITEMS={video:'Hasan’s video of Aidan’s poem',ball:'STRIKE ONE (Stella’s lucky ball)',powder:'Dheva’s texture powder',spare:'Dheva’s emergency powder',plan:'The seating plan (v14)',newplan:'The NEW seating plan',tape:'Duct tape',energy:'Monster energy (warm)',key:'Mr. Voss’s fridge key',cookies:'A tray of Pat’s cookies',note:'Sean’s note',swap:'Kenneth’s PE bib',detention:'Detention slip (P3, Office)',padlock:'A padlock'};
 function intel(id){if(!P.intel[id]){P.intel[id]=1;save();toast('You’ll remember this: '+(INTEL[id]||id))}}
-const INTEL={aidanPoem:'Aidan’s poem says every Friday is the same Friday.',aidanJars:'Voss has fourteen jars labelled AIDAN.',aidanLocker:'Aidan remembers locker 217.',loachMug:'Ms. Loach only cares about her mug.',shermianCat:'Ms. Sherman’s cat is called Mr. Biscuits.',shermianDrawer:'Sherman keeps the seating plan in her desk drawer.',shermanPit:'Ms. Sherman’s desk has a red button. The floor in front of it opens.',vossKey:'Voss keeps the fridge key on his lanyard.',beepDial:'The beep-test speed dial is in the PE closet.',patBlind:'Lunch Lady Pat is blind in her left eye.',arjunBall:'Arjun nicked Imani’s ball out of Sean’s bag.',arjunPowder:'Arjun stole Dheva’s powder for a laugh.',kennethSwap:'Kenneth will swap PE partners for a buzzer-beater.',javelin:'Coach throws javelins at the field at 12:40.'};
+const INTEL={aidanPoem:'Aidan’s poem says every Friday is the same Friday.',aidanJars:'Voss has fourteen jars labelled AIDAN.',aidanLocker:'Aidan remembers locker 217.',loachMug:'Ms. Loach only cares about her mug.',shermianCat:'Ms. Sherman’s cat is called Mr. Biscuits.',shermianDrawer:'Sherman keeps the seating plan in her desk drawer.',shermanPit:'Ms. Sherman’s desk has a red button. The floor in front of it opens.',vossKey:'Voss keeps the fridge key on his lanyard.',beepDial:'The beep-test speed dial is in the PE closet.',patBlind:'Lunch Lady Pat is blind in her left eye.',arjunBall:'Arjun nicked Stella’s ball out of Sean’s bag.',arjunPowder:'Arjun stole Dheva’s powder for a laugh.',kennethSwap:'Kenneth will swap PE partners for a buzzer-beater.',javelin:'Coach throws javelins at the field at 12:40.'};
 function part(mis,n,quiet){D.mp[mis]=Math.max(D.mp[mis]||0,n);const was=P.parts[mis]||0;P.parts[mis]=Math.max(was,n);save();if(!quiet)toast(MIS[mis].name+' — part '+n+' of '+MIS[mis].parts.length+' done')}
 async function complete(mis,variant,big){
  const first=!P.done[mis];D.done[mis]=variant||1;P.done[mis]=P.done[mis]||variant||1;part(mis,MIS[mis].parts.length,true);
@@ -1530,7 +1530,7 @@ const ARJUN_AT={
  nivaan:['Nivaan, forty viewers and three of them are your mom on different accounts.','Nivaan, your stream has a bigger following than you’ll ever have at your funeral.'],
  corey:['Corey, all that hair and still nothing upstairs.','Corey, she doesn’t look at you, bro. She looks through you. Like a window you forgot to clean.'],
  sean:['Sean, she only likes you because she hasn’t seen you in daylight yet.','Sean, your voice cracks like your parents’ marriage.'],
- stella:['Imani, you know he practiced saying hi to a mirror? And lost?'],
+ stella:['Stella, you know he practiced saying hi to a mirror? And lost?'],
  abby:['Abby, your songs are about being lonely and I can see why.'],
  aidan:['Aidan, your mom cut that bangs with her eyes closed so she didn’t have to look.','Aidan, even your shadow walks two steps behind you.'],
  angelo:['Angelo, you sell fake watches because a real one would remind you how long you’ve wasted.'],
@@ -1719,7 +1719,7 @@ async function curtainCall(endingId){
  await card('CURTAIN CALL',ENDINGS[endingId]?ENDINGS[endingId].name.toUpperCase():'',2000);
  const cast=['hasan','arjun','david','omer','nivaan','corey','sean','stella','abby','aidan','angelo','alex','dheva','marcus','paul','kenneth','jacob','you'].filter(id=>!(window.EDITION_CUT||[]).includes(id));
  const teachers=['balduf','shermian','sherman','loach','voss','coach','pat'];
- const LINE={hasan:'Hasan — still has the video. Still won’t delete it.',arjun:'Arjun — said something unforgivable on every single day. Consistent, at least.',david:'David — ran for class president on a policy of “no”. Won.',omer:'Omer — shorts. Every day. Every week. Even in the snow.',nivaan:'Nivaan — 91 viewers. Peak. Never again.',corey:'Corey — got it in PE. Both versions.',sean:'Sean — said hi in person. Eventually.',stella:'Imani — kept the ball. Kept the boy.',abby:'Abby — drew a bird on every window in the school.',aidan:'Aidan — kept the day. Gave it back. Maybe.',angelo:'Angelo — locker 13 is still open. Cash only.',alex:'Alex — hat-trick. Left foot. Weapon.',dheva:'Dheva — matte finish. Not gel. Never gel.',marcus:'Marcus — read the lunch menu like it owed him money.',paul:'Paul — wrestled everyone. Lost to no one. Lost to Kenneth once (fake).',kenneth:'Kenneth — five foot seven of buzzer beater.',jacob:'Jacob — got pushed around. Nobody laughed. Ever.',you:'You — lived '+P.loops+' days at Highgate. Died '+P.stats.deaths+' times.'};
+ const LINE={hasan:'Hasan — still has the video. Still won’t delete it.',arjun:'Arjun — said something unforgivable on every single day. Consistent, at least.',david:'David — ran for class president on a policy of “no”. Won.',omer:'Omer — shorts. Every day. Every week. Even in the snow.',nivaan:'Nivaan — 91 viewers. Peak. Never again.',corey:'Corey — got it in PE. Both versions.',sean:'Sean — said hi in person. Eventually.',stella:'Stella — kept the ball. Kept the boy.',abby:'Abby — drew a bird on every window in the school.',aidan:'Aidan — kept the day. Gave it back. Maybe.',angelo:'Angelo — locker 13 is still open. Cash only.',alex:'Alex — hat-trick. Left foot. Weapon.',dheva:'Dheva — matte finish. Not gel. Never gel.',marcus:'Marcus — read the lunch menu like it owed him money.',paul:'Paul — wrestled everyone. Lost to no one. Lost to Kenneth once (fake).',kenneth:'Kenneth — five foot seven of buzzer beater.',jacob:'Jacob — got pushed around. Nobody laughed. Ever.',you:'You — lived '+P.loops+' days at Highgate. Died '+P.stats.deaths+' times.'};
  for(let i=0;i<cast.length;i++){
   const id=cast[i];put(id,-14,1,{y:150});
   await walk(id,160,90);hop(id,4,240);pose(id,'wave');sub((window.EDITION_LINE||{})[id]||LINE[id]);SFX.blip(K[id].v||300);
@@ -2431,16 +2431,16 @@ hook({mis:'group',period:3,room:'english',who:'auto',run:async()=>{
 /* js/missions-b.js */
 'use strict';
 /* =====================================================================
-   HIGHSCHOOL — missions B: In Person (Sean & Imani), Corey Gets It,
+   HIGHSCHOOL — missions B: In Person (Sean & Stella), Corey Gets It,
    The Beep Test, The Back Fridge, Locker 13
    ===================================================================== */
 
 /* =================================================================
-   IN PERSON — Sean & Imani
+   IN PERSON — Sean & Stella
    ================================================================= */
 mission('instella',{name:'In Person',icon:'⚾',who:['sean','stella'],
- blurb:'Sean and Imani have only ever been a voice on the phone. Today she’s here. In 3D. Sean is not okay.',
- parts:['Before school: Imani gets off the bus','Break: get her lucky ball back','Lunch: the field'],
+ blurb:'Sean and Stella have only ever been a voice on the phone. Today she’s here. In 3D. Sean is not okay.',
+ parts:['Before school: Stella gets off the bus','Break: get her lucky ball back','Lunch: the field'],
  tips:['Before school, bus loop. Sean is hiding behind people.','Break, main corridor. Arjun has something that isn’t his.','Lunch, the field. Coach throws javelins at 12:40. Trees are safe.'],
  variants:{kiss:'Strike one',javelin:'The javelin'}});
 
@@ -2493,7 +2493,7 @@ async function arjunGives(item,line){
  if(line)await say('arjun',line,'smirk');
 }
 
-hook({mis:'instella',period:2,room:'corridor',who:'arjun',label:'Get Imani’s ball off Arjun',cond:()=>D.f.stella1&&!has('ball'),run:async()=>{
+hook({mis:'instella',period:2,room:'corridor',who:'arjun',label:'Get Stella’s ball off Arjun',cond:()=>D.f.stella1&&!has('ball'),run:async()=>{
  scene('corridor',{arjun:[60,1,{pose:'cross',y:146,hold:'ball'}],nivaan:[120,-1,{pose:'phone',y:146}],aidan:[215,1,{y:140}],you:[90,-1,{y:154}]});
  await say('arjun','This? Found it. In a bag. That I opened.','smirk');
  await say('arjun','Tell Sean she’s only talking to him because her dad left and she’s got low standards. Like, underground.','smirk');
@@ -2520,7 +2520,7 @@ hook({mis:'instella',period:4,room:'field',who:'sean',label:'Give Sean the ball'
   SFX.scream();
   await say('stella','SEAN—','cry');
   await say('coach','Bullseye. Thirty points.','happy');
-  await N('Imani holds the ball. Strike one. It never gets thrown.');
+  await N('Stella holds the ball. Strike one. It never gets thrown.');
   cue('dead');
   P.best['instella:javelin']=1;save();toast('Version found: The javelin');
   return;
@@ -2566,7 +2566,7 @@ hook({mis:'instella',period:4,room:'field',who:'sean',label:'Give Sean the ball'
   await say('arjun','MY FOOT— HE’S PINNED MY FOOT TO THE GROUND—','yell');
   await say('coach','Fifty points!','happy');
  }
- await N('Under the cherry tree, Sean and Imani don’t notice any of it.');
+ await N('Under the cherry tree, Sean and Stella don’t notice any of it.');
  fxState.romance=0;
  await complete('instella','kiss');
 }});
@@ -3978,9 +3978,9 @@ hook({mis:'hasanmia',period:8,room:'foodcourt',who:'hasan',label:'Help Hasan wit
 }});
 
 mission('striketwo',{name:'Strike Two',icon:'📸',who:['sean','stella'],
- blurb:'After the field, after the kiss, Sean and Imani go to the arcade. It’s their first date. It’s the first time either of them has said anything real out loud.',
+ blurb:'After the field, after the kiss, Sean and Stella go to the arcade. It’s their first date. It’s the first time either of them has said anything real out loud.',
  parts:['After school: the arcade'],tips:['Finish “In Person” today, then go to the Fair City Mall arcade.']});
-hook({mis:'striketwo',period:8,room:'arcade',who:'sean',label:'Hang out with Sean and Imani',cond:()=>D.done.instella&&!D.dead.sean&&!D.dead.stella,run:async()=>{
+hook({mis:'striketwo',period:8,room:'arcade',who:'sean',label:'Hang out with Sean and Stella',cond:()=>D.done.instella&&!D.dead.sean&&!D.dead.stella,run:async()=>{
  scene('arcade',{sean:[220,1,{y:150}],stella:[244,-1,{y:150}],you:[180,1,{y:156}]});
  cue('romance');
  await say('sean','We’re doing the claw machine. I’ve spent eleven dollars. I will spend my entire inheritance.','happy');
@@ -3996,7 +3996,7 @@ hook({mis:'striketwo',period:8,room:'arcade',who:'sean',label:'Hang out with Sea
  await say('sean','Number thirty-four.','blush');
  await walk('sean',290,40);await walk('stella',300,40);
  for(let i=0;i<4;i++){SFX.shutter();flash('#fff',.7);await wait(500)}
- await N('Four photos. In the first one they’re pulling faces. In the second, Imani is laughing. In the third, Sean is looking at her and not the camera. In the fourth, nobody’s looking at the camera at all.');
+ await N('Four photos. In the first one they’re pulling faces. In the second, Stella is laughing. In the third, Sean is looking at her and not the camera. In the fourth, nobody’s looking at the camera at all.');
  await complete('striketwo');
 }});
 
@@ -4114,12 +4114,12 @@ ON_PERIOD.push(async(i,resume)=>{if(resume||!TEA[i]||D.done.tea)return;D.f['tea'
    HIGHGATE TEA — who runs the gossip account?
    ================================================================= */
 mission('tea',{name:'@highgate.tea',icon:'☕',who:['stella','sean','david'],
- blurb:'Somebody runs an anonymous account that posts everybody’s worst secrets, every period, all day. Today it got Imani. Today somebody finds out who it is.',
- parts:['Break: Imani’s just seen the post','Lunch: find the proof','Home time: confront them'],
+ blurb:'Somebody runs an anonymous account that posts everybody’s worst secrets, every period, all day. Today it got Stella. Today somebody finds out who it is.',
+ parts:['Break: Stella’s just seen the post','Lunch: find the proof','Home time: confront them'],
  tips:['Break, the library.','Lunch, the library. Someone always leaves their laptop open when they go to the printer.','Home time, bus loop. In front of everyone, or not.'],
  variants:{exposed:'Exposed in front of everyone',apology:'Said sorry to her face'}});
 
-hook({mis:'tea',period:2,room:'library',who:'stella',label:'Ask Imani what’s wrong',cond:()=>!D.f.tea1&&!D.dead.stella,run:async()=>{
+hook({mis:'tea',period:2,room:'library',who:'stella',label:'Ask Stella what’s wrong',cond:()=>!D.f.tea1&&!D.dead.stella,run:async()=>{
  const cast={stella:[246,-1,{y:144,ex:'cry'}],you:[220,1,{y:154}],david:[140,1,{pose:'sit',y:150}]};if(!D.dead.sean)cast.sean=[200,1,{y:144}];
  scene('library',cast);cue('sad');
  await say('stella','Somebody posted about my dad. On that account. With a crying emoji. A CRYING emoji.','cry');
@@ -4171,13 +4171,13 @@ hook({mis:'tea',period:7,room:'bus',who:'david',label:'Confront David about @hig
  await N('He doesn’t ask what you mean. He takes his glasses off and cleans them for a long time.');
  await say('david','I’ve run for class president every year since sixth grade. I’ve never got more than nine votes. Nine. Four are my cousins.','sad');
  await say('david','Nobody votes for the nice guy. So I thought, if everyone else looked worse…','sad');
- await say('you','You posted about Imani’s dad. She cried in the library. You watched her do it.');
+ await say('you','You posted about Stella’s dad. She cried in the library. You watched her do it.');
  await say('david','I know. I was RIGHT THERE. I said “that’s awful”. I meant it. I still posted the next one.','cry');
  const k=await choose(['“Delete it. Then go and tell her yourself.”','“Delete it. I’ll never tell anyone.”']);
  await N('He deletes @highgate.tea. 4,211 followers, gone with one tap. He looks smaller afterwards. Or maybe just his actual size.');
  if(k===0&&A.stella){
   await walk('david',200,50);face('david',1);
-  await say('david','Imani. It was me. The account. The post about your dad. I’m sorry. I’m not going to explain it because the explanation is pathetic.','cry');
+  await say('david','Stella. It was me. The account. The post about your dad. I’m sorry. I’m not going to explain it because the explanation is pathetic.','cry');
   await say('stella','…','angry');
   await say('stella','Thank you for saying it to my face. Most people wouldn’t. I still hate you a little bit.','sad');
   await say('david','That’s fair. That’s very fair. That’s more than nine votes’ worth of fair.','sad');
@@ -4525,7 +4525,7 @@ hook({mis:'emergency',period:7,room:'bus',who:'corey',label:'Watch Corey do his 
    ===================================================================== */
 const LOOKS=[
  ['instella','Ask Sean why he’s hiding',{pose:'cover',ex:'scared'}],
- ['instella','Get Imani’s ball off Arjun',{pose:null,hold:'ball',ex:'smirk'}],
+ ['instella','Get Stella’s ball off Arjun',{pose:null,hold:'ball',ex:'smirk'}],
  ['corey','Get Corey to talk to Abby',{ex:'blush',dir:1}],
  ['beep','Ask Alex what’s wrong',{pose:null,hold:null,ex:'scared'}],
  ['voss','Ask Corey what he’s doing in here',{hold:'powder',ex:'blush'}],
@@ -4543,7 +4543,7 @@ const LOOKS=[
  ['opps','Ride out with Kayden',{hold:'soaker',ex:'smirk'}],
  ['hasanmia','Help Hasan with Mia',{hold:'mug',ex:'scared',dir:1}],
  ['smallhours','Listen to Abby play',{x:196,y:138,pose:'sit',hold:'guitar',ex:'closed'}],
- ['tea','Ask Imani what’s wrong',{pose:'cover',ex:'cry'}],
+ ['tea','Ask Stella what’s wrong',{pose:'cover',ex:'cry'}],
  ['catfish','Ask Kenneth who he keeps texting',{pose:'phone',ex:'love'}],
  ['catfish','Wait for Jess with Kenneth',{topC:'#c8202c',ex:'scared',pose:null}],
  ['kaivibes','Ask Nivaan why he’s screaming',{pose:'phone',ex:'yell',shake:1}],
@@ -4681,7 +4681,7 @@ const WHISPER={
  angelo:[[['angelo','(sliding a price list across the desk) Friends and family rate. You’re not family. You’re friends rate.']],[['angelo','(whispering) My mom works two jobs. I work one. Locker thirteen. It’s not a joke to me, the business. It’s just funny to everyone else.']]],
  omer:[[['omer','(whispering) My mom picks my clothes because my dad used to, and then he didn’t. So she just kept doing it. That’s it. That’s the whole story.']],[['omer','(doing silent push-ups against the desk) For speed.']]],
  corey:[[['corey','(whispering) I give my seat up on the 43 because old Mrs. Reilly gets on at the hospital stop. Every day. Nobody else moves.'],['corey','Don’t make it a thing.']],[['corey','(checking his curls in the reflection of the window) Emergency. Not an emergency. Fine. It’s fine.']]],
- sean:[[['sean','(whispering) I practiced saying “hi” forty times on the bus. I’m going to say it zero times.']],[['sean','(whispering) Imani’s dad coaches softball. He’s terrifying. He shook my hand once and I heard a bone.']]],
+ sean:[[['sean','(whispering) I practiced saying “hi” forty times on the bus. I’m going to say it zero times.']],[['sean','(whispering) Stella’s dad coaches softball. He’s terrifying. He shook my hand once and I heard a bone.']]],
  stella:[[['stella','(whispering) Sean thinks I don’t notice him practicing. I notice. It’s my favorite part of the day.']],[['stella','(whispering) My dad left the ball. The lucky one. Everything else, he took.']]],
  david:[[['david','(whispering) Class president. Nine votes last year. Four were cousins. One was a teacher who didn’t understand the form.']],[['david','(whispering) I have a theory about today. It keeps being today. Don’t laugh.'],['you','I’m not laughing.'],['david','…Oh no. You know too.']]],
  nivaan:[[['nivaan','(phone under the desk) Ninety-one viewers. Ninety-one people watching a math lesson. That’s community.']],[['nivaan','(whispering) I stream because when I stop, it’s quiet at home. That’s all. Don’t clip that.']]],
@@ -6089,7 +6089,7 @@ hook({mis:'stilllife',day:'even',period:1,room:'art',who:'auto',run:async()=>{
 mission('pitch',{name:'Perfect Pitch',icon:'🎼',who:['kenneth','sean','stella'],
  blurb:'Mr. Fenwick has perfect pitch, a tuning fork, and no tolerance. Kenneth has a solo. Kenneth has never once sung in tune.',
  parts:['Break: Kenneth is panicking','Period 4, Music: the solo'],tips:['Even day, break, gym. Kenneth needs a coach. Sean has the voice.','Even day, Period 4, Music. Stay on the beat.'],
- variants:{sang:'He sang',duet:'Sean and Imani take it',fork:'Tuned'}});
+ variants:{sang:'He sang',duet:'Sean and Stella take it',fork:'Tuned'}});
 hook({mis:'pitch',day:'even',period:2,room:'gym',who:'kenneth',label:'Ask Kenneth why he’s humming',look:{pose:null,ex:'scared'},cond:()=>!D.f.pitch1,run:async()=>{
  scene('gym',{kenneth:[220,-1,{y:146,ex:'scared'}],you:[196,1,{y:152}]});
  await say('kenneth','(humming, badly) Fenwick gave me the solo in the school song. ME. On purpose. As a punishment.','scared');
@@ -6126,7 +6126,7 @@ hook({mis:'pitch',day:'even',period:3,room:'music',who:'auto',run:async()=>{
  if(A.sean&&A.stella){
   const s=await choose(['Nudge Sean: “Take the solo. Now.”','Let Fenwick tune him.']);
   if(s===0){
-   await N('Sean stands up mid-bar and takes the line over like he was always meant to have it. Imani comes in underneath him on the harmony without being asked.');
+   await N('Sean stands up mid-bar and takes the line over like he was always meant to have it. Stella comes in underneath him on the harmony without being asked.');
    await say('sean','(singing) “…our hearts and our hands, our Fridays, our friends…”','closed');await say('stella','(harmonising) “…our Fridays, our friends…”','love');
    cue('romance');fxState.romance=.3;await N('It’s so good that Mr. Fenwick forgets about Kenneth entirely. He conducts with his eyes shut. Kenneth sits down very quietly and lives.');fxState.romance=0;
    await classOut(c);await complete('pitch','duet');return;
@@ -6345,7 +6345,7 @@ hook({mis:'talent',day:'even',period:4,room:'gym',who:'paul',label:'Look at Paul
  scene('gym',{paul:[200,-1,{y:144,hold:'clipboard'}],you:[176,1,{y:152}]});
  await say('paul','Talent show. Period 8. Mr. Adam said “bring me something the inspectors will remember”. I wrote “wrestling”. I wrote it four times.','happy');
  await say('paul','You pick the order. Opener, middle, closer. Crowd’s got to be warm by the end or Adam cries on stage again.','smirk');
- const acts=[['paul','Paul: wrestling (on a crash mat, probably)'],['marcus','Marcus: stand-up (eleven minutes, “all clean”)'],['kayden','Kayden: drill (“Highgate Hittaz Anthem”)'],['sean','Sean & Imani: a duet']].filter(a=>!D.dead[a[0]]);
+ const acts=[['paul','Paul: wrestling (on a crash mat, probably)'],['marcus','Marcus: stand-up (eleven minutes, “all clean”)'],['kayden','Kayden: drill (“Highgate Hittaz Anthem”)'],['sean','Sean & Stella: a duet']].filter(a=>!D.dead[a[0]]);
  const order=[];const left=acts.slice();
  for(const slot of['opener','middle act','closer']){if(!left.length)break;const i=await choose(left.map(a=>a[1]),'The '+slot+'?');order.push(left[i][0]);left.splice(i,1)}
  D.f.talOrder=order;
@@ -7221,12 +7221,12 @@ K.toby.id='toby';
 mission('toby',{name:'Toby Likes Sean',icon:'🧶',who:['sean','toby','stella'],
  blurb:'There’s a new kid called Toby. He transferred from Ohio last week. He likes Sean. He’s not shy about it. Sean has a girlfriend and absolutely no idea what to do.',
  parts:['Before school: the bracelet','Break, library: forty tabs','Lunch, the field: the plan'],
- tips:['Before school, bus loop. Sit near Sean.','Break, the library. Sean is hiding from Imani behind the biography section.','Lunch, the field. Whatever plan Sean picked, he’s doing it now.'],
+ tips:['Before school, bus loop. Sit near Sean.','Break, the library. Sean is hiding from Stella behind the biography section.','Lunch, the field. Whatever plan Sean picked, he’s doing it now.'],
  variants:{honest:'Honest',third:'Third wheel',mower:'The mower'}});
 
 hook({mis:'toby',period:0,room:'bus',who:'sean',label:'Sit with Sean',look:{ex:'happy'},cond:()=>!D.f.toby1&&!D.dead.sean,run:async()=>{
  scene('bus',{sean:[172,1,{y:146}],you:[150,1,{y:152}]});
- await say('sean','(doing the hair flip) Me and Imani. Official since the arcade. OFFICIALLY official. I said “my girlfriend” to Pat and she gave me extra nuggets.','happy');
+ await say('sean','(doing the hair flip) Me and Stella. Official since the arcade. OFFICIALLY official. I said “my girlfriend” to Pat and she gave me extra nuggets.','happy');
  put('toby',-14,1,{y:150});await walk('toby',196,70);face('toby',-1);
  await N('A kid you’ve seen exactly once before gets off a different bus and walks straight over. Cardigan. Curly hair. Walks like he’s already decided something.');
  await say('toby','Hey. Sean, right? I’m Toby. New. Ohio. I made you this.','happy');
@@ -7239,7 +7239,7 @@ hook({mis:'toby',period:0,room:'bus',who:'sean',label:'Sit with Sean',look:{ex:'
  A.sean.ex='shock';SFX.static();
  await N('Sean doesn’t move. He doesn’t blink. You can practically hear a fan spinning up inside his head, like a laptop running too many tabs.');
  await say('sean','(very quietly) …My hair IS incredible.','shock');
- await say('sean','Wait. No. That’s not the— I have a GIRLFRIEND. Do I tell Imani? Do I give it back? Do I wear it? If I don’t wear it is that rude? If I DO wear it does that mean something?','scared');
+ await say('sean','Wait. No. That’s not the— I have a GIRLFRIEND. Do I tell Stella? Do I give it back? Do I wear it? If I don’t wear it is that rude? If I DO wear it does that mean something?','scared');
  await say('you','It’s a bracelet, Sean.');
  await say('sean','It’s not a BRACELET. It’s a DECISION.','yell');
  hold('sean',null);D.f.toby1=1;part('toby',1);
@@ -7248,7 +7248,7 @@ hook({mis:'toby',period:0,room:'bus',who:'sean',label:'Sit with Sean',look:{ex:'
 hook({mis:'toby',period:2,room:'library',who:'sean',label:'Ask Sean why he’s hiding behind a shelf',look:{pose:'phone',ex:'scared'},cond:()=>D.f.toby1&&!D.f.toby2&&!D.dead.sean,run:async()=>{
  const cast={sean:[200,-1,{y:144,pose:'phone'}],you:[176,1,{y:152}]};if(!D.dead.stella)cast.stella=[290,-1,{y:144}];
  scene('library',cast);
- await say('sean','(whispering) Don’t look at me. Imani’s over there. If she looks at me she’ll KNOW.','scared');
+ await say('sean','(whispering) Don’t look at me. Stella’s over there. If she looks at me she’ll KNOW.','scared');
  await say('you','Know what?');
  await say('sean','I don’t KNOW what she’ll know. That’s the problem.','scared');
  await N('He shows you his phone. Forty-one tabs. “what does it mean if a guy says you have nice hair”. “is a bracelet legally binding”. “ohio boys what are they like”. “how to tell your girlfriend a guy likes you without dying”. “fake your own death free no download”.');
@@ -7266,14 +7266,14 @@ hook({mis:'toby',period:2,room:'library',who:'sean',label:'Ask Sean why he’s h
   ['paul','or onion']
  ]);
  await say('sean','Okay. So my options are: be honest, fake my death, or eat an onion. Those are the options. What do I do?','scared');
- const c=await choose(['“Be honest. Tell Toby you’re with Imani. Nicely.”','“…The onion. Do the onion.”','“Fake your death.”','“Just tell Imani. Let her deal with it.”']);
+ const c=await choose(['“Be honest. Tell Toby you’re with Stella. Nicely.”','“…The onion. Do the onion.”','“Fake your death.”','“Just tell Stella. Let her deal with it.”']);
  D.f.tobyPlan=['honest','onion','dead','stella'][c];
  if(c===0){await say('sean','Honest. Okay. Honest. I’m going to need a presentation.','scared');await say('you','You don’t need a—');await say('sean','I need a PRESENTATION.','yell')}
  else if(c===1){await say('sean','Okay. Okay. Pat’s got a whole bag of onions in the back. I’ll get one at lunch. For science. For love. For the opposite of love.','scared')}
  else if(c===2){await say('sean','Kenneth’s uncle did it TWICE. How hard can it be. I just need ketchup. Lots of ketchup. And a reason to be lying on the field.','smirk')}
  else{await say('sean','Yeah. Yeah, she’s my girlfriend, she should know. She’s also terrifying. Okay. Okay.','scared')}
  if(A.stella){await walk('stella',226,60);face('stella',-1);await say('stella','Why are you two hiding behind the biographies?','smirk');pose('sean',null);
-  hold('sean','bracelet');SFX.click();await N('Sean drops his phone, then picks it up, and in the process the bracelet falls out of his hoodie pocket and lands right at Imani’s feet. SEAN 10/10.');hold('sean',null);
+  hold('sean','bracelet');SFX.click();await N('Sean drops his phone, then picks it up, and in the process the bracelet falls out of his hoodie pocket and lands right at Stella’s feet. SEAN 10/10.');hold('sean',null);
   await say('stella','(picking it up) …Ten out of ten. Who made you this?','shock');
   await say('sean','NOBODY. Me. I made it. For me. I’m… I rate myself. I’m doing a self-esteem thing.','scared');
   await say('stella','(narrowing her eyes, putting it in her own pocket) Interesting.','angry')}
@@ -7322,7 +7322,7 @@ hook({mis:'toby',period:4,room:'field',who:'sean',label:'Ask Sean what the plan 
   if(A.stella){await walk('stella',200,60);await say('stella','You faked your DEATH? In FRONT of me? Coach was getting a SHOVEL.','angry')}
  }else{
   if(A.stella){await walk('stella',200,60);face('stella',-1)}
-  await say('sean','(very fast) Imani. This is Toby. He likes me. I like you. I didn’t know what to do so I’m telling you so you can do it.','scared');
+  await say('sean','(very fast) Stella. This is Toby. He likes me. I like you. I didn’t know what to do so I’m telling you so you can do it.','scared');
  }
  if(A.stella){
   await say('stella','(taking the bracelet out of her pocket, holding it up) So YOU made this.','angry');
@@ -7337,7 +7337,7 @@ hook({mis:'toby',period:4,room:'field',who:'sean',label:'Ask Sean what the plan 
  }
  const c=await choose(['Sean, just tell Toby the truth. Kindly.','Sean, RUN.','Sean, sit down. Let them be friends.']);
  if(c===0){
-  await say('sean','Toby. You’re actually really cool. And I’m flattered. Like, genuinely. But I’m with Imani, and I’m staying with Imani. Can we just be friends?','sad');
+  await say('sean','Toby. You’re actually really cool. And I’m flattered. Like, genuinely. But I’m with Stella, and I’m staying with Stella. Can we just be friends?','sad');
   await say('toby','Yeah, of course. Respect. That was way better than the presentation. Can I still say your hair is a ten?','happy');
   if(A.stella)await say('stella','It’s an eight.','smirk');
   await say('sean','(hand in his hair, quietly) …It’s a nine.','smirk');
@@ -7366,7 +7366,7 @@ hook({mis:'toby',period:4,room:'field',who:'sean',label:'Ask Sean what the plan 
 hook({mis:'toby',period:8,room:'arcade',who:'sean',label:'Ask Sean why he’s holding three bags',look:{ex:'sad'},cond:()=>D.f.thirdWheel&&!D.dead.sean,run:async()=>{
  scene('arcade',{sean:[60,1,{y:148}],you:[36,1,{y:154}]});
  put('toby',150,-1,{y:146,pose:'cheer'});if(!D.dead.stella)put('stella',172,-1,{y:146,pose:'cheer'});
- await N('Toby and Imani are on the dance machine together, absolutely destroying a song on Expert. Sean is holding both their backpacks and his own.');
+ await N('Toby and Stella are on the dance machine together, absolutely destroying a song on Expert. Sean is holding both their backpacks and his own.');
  await say('sean','They’ve got a handshake now. It’s eleven moves. I’m not in the handshake.','sad');
  await say('sean','I wanted to not be in a love triangle. Now I’m not in a love triangle. I’m just next to one. Holding bags.','sad');
  D.f.thirdWheel=0;return 'stay';
@@ -8492,13 +8492,13 @@ ret({id:'model',room:'art',name:'Life Drawing',who:['alex','dheva','dahl'],hint:
 }});
 
 ret({id:'duet',room:'music',name:'The Duet',who:['sean','toby'],hint:'Someone is playing a love song, badly.',
- blurb:'Sean is in the music room practicing a song for Imani. It is not going well.',
+ blurb:'Sean is in the music room practicing a song for Stella. It is not going well.',
  variants:{song:'The song'},run:async()=>{
  put('sean',150,1,{y:146,pose:'guitar',hold:null});
- await N('Sean is sitting on the edge of the stage with a guitar, playing the same four chords over and over. He has written a song for Imani. It is called “Imani (Imani)”.');
- await say('sean','♪ Imani… Imani… your ball is so round… ♪','closed');
+ await N('Sean is sitting on the edge of the stage with a guitar, playing the same four chords over and over. He has written a song for Stella. It is called “Stella (Stella)”.');
+ await say('sean','♪ Stella… Stella… your ball is so round… ♪','closed');
  await say('sean','Is that bad? Be honest. Actually, don’t be honest.','scared');
- if(D.done.toby||P.done.toby){put('toby',-14,1,{y:146});await walk('toby',120,60);await say('toby','Oh, I can help with this. Try going up on the second Imani. Like this. ♪ Imani-LAAA ♪','happy')}
+ if(D.done.toby||P.done.toby){put('toby',-14,1,{y:146});await walk('toby',120,60);await say('toby','Oh, I can help with this. Try going up on the second Stella. Like this. ♪ Stel-LAAA ♪','happy')}
  const r=await meter('Hit the harmony',{speed:1});
  if(r){SFX.ding();await N('You hit the harmony. It actually sounds good. Sean looks at you like you just pulled him out of a river.');await say('sean','That’s IT. That’s the song. I’m playing it for her at lunch. In front of everyone. I’m going to throw up.','happy')}
  else{SFX.bad();await N('You miss the note by about a mile. A window cracks. Sean doesn’t even notice. He’s crying a little at his own lyrics.')}
@@ -8938,7 +8938,7 @@ async function inspectionDay(){
  await N('Along the side wall, the smiles come off. All of them. All at once.');
  if(A.shermian)await say('shermian','(very softly) Sweeties. Miss is going to need everyone to sit DOWN.','evil');
  if(roles.dis&&A[roles.dis]){
-  if(roles.dis==='stella'){SFX.whoosh();await N('Imani’s baseball hits Coach right between the eyes from forty feet away. He takes off after her like a golden retriever. The doors open and shut behind them.')}
+  if(roles.dis==='stella'){SFX.whoosh();await N('Stella’s baseball hits Coach right between the eyes from forty feet away. He takes off after her like a golden retriever. The doors open and shut behind them.')}
   else if(roles.dis==='arjun'){await say('arjun','(standing on a chair) MS. SHERMIAN. YOUR HUSBAND ISN’T STAYING AT HIS MOM’S. HE’S STAYING AT MR. VOSS’S.','yell');await N('For one full second, the two of them look at each other. That second is all anyone needs.')}
   else{await N('Paul walks up to Mr. Voss, picks him up like a sack of potatoes, and carries him out of a side door without saying a single word.')}
  }
@@ -9689,7 +9689,7 @@ const MOUTH={
  david:['As class president, I’d like to say: what the hell is wrong with this school.','I don’t swear. I legislate. (pause) This school is a shitshow.'],
  nivaan:['Chat said I look like a guy who apologizes to Roombas. I DO apologize to Roombas. They have feelings.','Got banned on stream for saying “hell”. Then I said it again, louder. Twelve new followers.'],
  corey:['My hair isn’t a personality. It’s a lifestyle. There’s a difference and it’s six products.','Arjun called my curls “a cry for help.” They ARE a cry for help. That’s not the point.'],
- sean:['My voice is cool. The rest of me is in beta.','Imani says I flirt like a golden retriever. I don’t know how to argue with that.'],
+ sean:['My voice is cool. The rest of me is in beta.','Stella says I flirt like a golden retriever. I don’t know how to argue with that.'],
  kenneth:['Since the leak I’ve changed my password to something nobody will guess. It’s my dad’s name. Everyone knows my dad’s name. Damn it.','I’m small but I’m fast. Mostly away from things.'],
  paul:['I’m not violent. I’m affectionate at high speed.','Somebody told me to calm down once. I picked them up. They calmed down.'],
  marcus:['I don’t make it weird. It arrives weird. I just open the door.','Coach said “nice ball control” to Alex and I had to leave the gym. I had to LEAVE.','Everything is a double meaning if you’re brave enough.'],
@@ -9697,7 +9697,7 @@ const MOUTH={
  alex:['I talk to the ball more than I talk to people. The ball listens. The ball doesn’t say “what?”','Coach told me I’ve got “the soul of a substitute.” What does that MEAN, Coach.'],
  angelo:['I don’t sell to snitches, narcs, or Aidan. Aidan just stares at the merchandise.','Business is good. Business is always good. Business is a little bit illegal.'],
  jacob:['I did a backflip off a shed on Saturday. I can’t feel the left side of my face. Worth it.','I’m not dumb. I’m confident in the wrong direction.'],
- stella:['If one more person says “Imani-vision” I’m throwing the ball at their actual skull.','I’m not mean. I just have a really accurate arm.'],
+ stella:['If one more person says “Stella-vision” I’m throwing the ball at their actual skull.','I’m not mean. I just have a really accurate arm.'],
  aidan:['People call me a creep. I prefer “early observer.”','I know what everyone’s locker combination is. I don’t do anything with it. I just like knowing.']
 };
 for(const id in MOUTH)if(CHAT[id])CHAT[id].push(...MOUTH[id]);
@@ -10083,9 +10083,9 @@ const PASS=[
   if(c===0){pose('you','sit');await N('You sit with them on the cold stairs until the second bell. Neither of you says anything. When you stand up, they say “thanks,” so quietly you nearly miss it.');pose('you',null)}
   else await say('kid3','(laughing, a little) Yeah. Yeah, it really does. Last school didn’t have teachers who kill people, though. So.','sad');
  }},
- {id:'couple',who:'sean',label:'Ask Sean and Imani why they’re blocking the hallway',cond:()=>!D.dead.sean&&!D.dead.stella,run:async()=>{
+ {id:'couple',who:'sean',label:'Ask Sean and Stella why they’re blocking the hallway',cond:()=>!D.dead.sean&&!D.dead.stella,run:async()=>{
   if(!A.stella)put('stella',A.sean.x+10,-1,{y:A.sean.y});
-  await N('Sean and Imani are saying goodbye outside a classroom like one of them is going to war. They have different classes. The classrooms are next to each other.');
+  await N('Sean and Stella are saying goodbye outside a classroom like one of them is going to war. They have different classes. The classrooms are next to each other.');
   await say('stella','See you in fifty minutes.','blush');await say('sean','(holding both her hands) Fifty minutes. I’ll survive. I don’t know how. I’ll survive.','blush');
   await say('you','You’re literally going to be on the other side of a wall.');
   await say('sean','A WALL. Do you hear yourself.','sad');
@@ -10798,7 +10798,7 @@ cq('hall',{id:'as_helium',name:'Helium',who:'kenneth',hint:'(whispering) There�
  SFX.cheer();classLaugh(1400);pose('you',null);
  await say('adam','(wiping tears of laughter, then tears of something else) That’s… that’s actually what I wanted to say.','cry');
 }});
-cq('hall',{id:'as_cry',name:'Five Minutes',who:'stella',hint:'(whispering) Mr. Adam cries at every assembly. Bet you a dollar he cries in the first five minutes.',opt:'Take Imani’s bet.',run:async c=>{
+cq('hall',{id:'as_cry',name:'Five Minutes',who:'stella',hint:'(whispering) Mr. Adam cries at every assembly. Bet you a dollar he cries in the first five minutes.',opt:'Take Stella’s bet.',run:async c=>{
  await say('adam','(at the podium, reading) And now a moment for the students who… left us. This year. Bethany. The trumpet boy. Tyler. And… and…','sad');
  await N('He doesn’t finish the list. He folds it up very small and puts it in his pocket, and holds the podium with both hands.');
  await say('adam','(crying, quietly, into the mic) They didn’t leave. I’m sorry. They didn’t leave.','cry');
@@ -11482,7 +11482,7 @@ weekend({id:'party',name:'Marcus’s House Party',icon:'🎉',room:'party',who:[
  await say('marcus','Welcome to my home. Touch nothing. Touch everything. I genuinely don’t care, my parents are in Cabo and I think they’ve left me.','smirk');
  for(let r=0;r<3;r++){
   const c=await choose(['Karaoke.','The kitchen.','The hot tub.'],'What now? ('+(r+1)+' of 3)');
-  if(c===0){if(A.sean&&A.stella){pose('sean','sing');pose('stella','sing');await N('Sean and Imani do a duet of a song about a breakup, staring into each other’s eyes, completely missing the point of the song.');pose('sean',null);pose('stella',null)}else await N('You do karaoke alone. Nobody claps. Somebody throws a shoe. It’s a good throw.')}
+  if(c===0){if(A.sean&&A.stella){pose('sean','sing');pose('stella','sing');await N('Sean and Stella do a duet of a song about a breakup, staring into each other’s eyes, completely missing the point of the song.');pose('sean',null);pose('stella',null)}else await N('You do karaoke alone. Nobody claps. Somebody throws a shoe. It’s a good throw.')}
   if(c===1){if(A.paul){pose('paul','grab');SFX.crunch();shake(1.2);await N('In the kitchen, Paul has decided he can lift the fridge. He can. He does. He carries it outside and puts it in the hot tub. Nobody knows why. Paul doesn’t know why.');pose('paul',null)}else await N('The kitchen. There are four hundred cups and no drinks.')}
   if(c===2){if(A.jacob){await N('Jacob climbs onto the garage roof, shouts “WATCH THIS”, and backflips into the hot tub. The hot tub is two feet deep.');SFX.splat();blood(270,100,30,null,80,150);await say('jacob','(surfacing, face covered in blood) I’m FINE. I’m so fine. Is my nose on the front or the side?','happy')}else await N('The hot tub is full of strangers. One of them is a man in his forties. Nobody knows him. He seems happy.')}
  }
@@ -11591,7 +11591,7 @@ weekend({id:'karts',name:'The Shopping Cart Grand Prix',icon:'🛒',room:'carpar
    • Corey & Abby: she has a boyfriend. Brett. Corey has a thought about
      him. It won’t leave. (“Intrusive Thoughts”, woven through The
      Window Seat, across both weeks.)
-   • Sean & Imani: “Long Distance”, week two.
+   • Sean & Stella: “Long Distance”, week two.
    • Hasan & Darren: “Step Eleven”, after the milkshake.
    • You see how quests turned out: couples together around school,
      posters, gossip, and people talk about what happened.
@@ -11627,7 +11627,7 @@ const doneBefore=m=>!!(D&&D.done&&D.done[m]);   /* done, any time before: no mor
 
 K.brett={n:'Brett',col:'#a83030',skin:'#f0c8a8',hair:'#c8a060',hs:'fade',top:'#9a1a20',pants:'#2a3050',zip:1,seed:131,v:190};K.brett.id='brett';
 CHAT.brett=['What are you looking at? Keep walking.','Tell your little friend Curls to stop liking her posts. I see everything.','Babe, phone. Now. ...Oh. You’re not her.'];
-K.stellamom={n:'Imani’s Mom',col:'#8a6a8a',skin:'#f0c8a8',hair:'#e0c060',hs:'bob',top:'#6a5a7a',pants:'#3a3a4a',adult:1,girl:1,seed:133,v:420};K.stellamom.id='stellamom';
+K.stellamom={n:'Stella’s Mom',col:'#8a6a8a',skin:'#f0c8a8',hair:'#e0c060',hs:'bob',top:'#6a5a7a',pants:'#3a3a4a',adult:1,girl:1,seed:133,v:420};K.stellamom.id='stellamom';
 
 /* one hook, several places */
 function hooks(o,places){for(const [period,room,who] of places)hook(Object.assign({},o,{period,room,who:who||o.who}))}
@@ -11903,30 +11903,30 @@ hook({mis:'smallhours',period:8,room:'foodcourt',who:'abby',label:'Listen to Abb
 }});
 
 /* =====================================================================
-   SEAN & IMANI — spread out, then LONG DISTANCE
+   SEAN & STELLA — spread out, then LONG DISTANCE
    ===================================================================== */
-Object.assign(MIS.instella,{blurb:'Sean and Imani have only ever been a voice on the phone. Now she has transferred to Highgate. In 3D. Sean is not okay.',
- parts:['Before school: Imani gets off the bus','Another day: get her lucky ball back','Another day, lunch: the field'],
+Object.assign(MIS.instella,{blurb:'Sean and Stella have only ever been a voice on the phone. Now she has transferred to Highgate. In 3D. Sean is not okay.',
+ parts:['Before school: Stella gets off the bus','Another day: get her lucky ball back','Another day, lunch: the field'],
  tips:['Before school, bus loop. Sean is hiding behind people.','Break or lunch, main corridor. Arjun has something that isn’t his.','Lunch, the field. Coach throws javelins at 12:40. Trees are safe.']});
-Object.assign(MIS.striketwo,{blurb:'The day after the field, Sean and Imani go to the arcade. It’s their first date. It’s the first time either of them has said anything real out loud.',
+Object.assign(MIS.striketwo,{blurb:'The day after the field, Sean and Stella go to the arcade. It’s their first date. It’s the first time either of them has said anything real out loud.',
  tips:['A day after “In Person”, after school: the Fair City Mall arcade.']});
 for(const h of HOOKS){if(h.mis==='striketwo'&&h.period===8){const c=h.cond;h.cond=()=>doneBefore('instella')&&!D.done.striketwo&&c()}
  if(h.mis==='toby'&&h.period===0){const c=h.cond;h.cond=()=>doneBefore('striketwo')&&c()}}
-MIS.toby.tips=MIS.toby.tips.map((t,i)=>i===0?'A day after Sean and Imani’s first date (Strike Two): before school, bus loop. Sit near Sean.':t);
+MIS.toby.tips=MIS.toby.tips.map((t,i)=>i===0?'A day after Sean and Stella’s first date (Strike Two): before school, bus loop. Sit near Sean.':t);
 
 ITEMS.strip='The photo strip (four pictures, nobody looking at the camera in the last one)';
 mission('farewell',{name:'Long Distance',icon:'📞',who:['sean','stella'],
- blurb:'Imani’s mom got the job in Portland. They leave the Saturday after next. Imani moved schools for Sean two weeks ago. Sean has never practiced saying goodbye.',
+ blurb:'Stella’s mom got the job in Portland. They leave the Saturday after next. Stella moved schools for Sean two weeks ago. Sean has never practiced saying goodbye.',
  parts:['Week two: Portland','Another day: Sean’s plan','Another day, home time: forty-one'],
- tips:['Week two, after Strike Two: break (library) or lunch (field). Imani has been crying.','Break (library) or lunch (field). Sean has a plan. Then steal Coach’s bucket of field chalk from the gym.','Home time, the bus loop. You need the chalk (gym, break or lunch).'],
+ tips:['Week two, after Strike Two: break (library) or lunch (field). Stella has been crying.','Break (library) or lunch (field). Sean has a plan. Then steal Coach’s bucket of field chalk from the gym.','Home time, the bus loop. You need the chalk (gym, break or lunch).'],
  variants:{all:'All forty-one',smudged:'Forty-one, smudged'}});
-hooks({mis:'farewell',label:'Ask Imani why she’s been crying',look:{ex:'cry'},cond:()=>doneBefore('striketwo')&&!D.f.fw&&!D.dead.sean&&!D.dead.stella,run:async()=>{
+hooks({mis:'farewell',label:'Ask Stella why she’s been crying',look:{ex:'cry'},cond:()=>doneBefore('striketwo')&&!D.f.fw&&!D.dead.sean&&!D.dead.stella,run:async()=>{
  const r=here();scene(r,{stella:[150,1,{y:150,pose:'sit',ex:'cry'}],you:[120,1,{y:154}]},true);cue('sad');
  await say('stella','My mom got the job. The one in Portland. She’s been applying since I was eleven. She finally got it.','cry');
- await say('stella','We go the Saturday after next. There are boxes in our hall with my name on them. My mom wrote IMANI — FRAGILE on one as a joke and I couldn’t stop crying.','cry');
+ await say('stella','We go the Saturday after next. There are boxes in our hall with my name on them. My mom wrote STELLA — FRAGILE on one as a joke and I couldn’t stop crying.','cry');
  await say('stella','I haven’t told Sean. I made my mom drive past this school every day for a year until she let me transfer. For him. Two weeks ago.','cry');
  put('sean',334,-1,{y:150,hold:'flower'});await walk('sean',190,70);
- await say('sean','Imani! I won Strike Two a brother. He has no eyes at all, he’s— (he sees her face) …What happened? Who do I fight? I can’t fight. Who do I get Omer to fight?','shock');
+ await say('sean','Stella! I won Strike Two a brother. He has no eyes at all, he’s— (he sees her face) …What happened? Who do I fight? I can’t fight. Who do I get Omer to fight?','shock');
  await say('stella','Portland.','cry');
  await say('sean','…Portland. Like Oregon Portland? With the rain and the—','shock');
  await say('sean','Okay. Okay. Okay.','sad');
@@ -11977,14 +11977,14 @@ hook({mis:'farewell',period:7,room:'bus',who:'sean',label:'Help Sean write on th
  if(!ok)await N('You don’t finish. Voicemails twenty-two to twenty-nine are one long smudge. Sean says it’s fine. Twenty-two to twenty-nine were mostly about a dog anyway.');
  put('stella',-14,1,{y:150});
  await walk('stella',70,30);
- await N('Imani walks out of the doors and stops. The whole loop is written on. In big, wobbly, chalk handwriting, from her feet all the way to the curb.');
+ await N('Stella walks out of the doors and stops. The whole loop is written on. In big, wobbly, chalk handwriting, from her feet all the way to the curb.');
  await say('stella','(reading) “Voicemail six. I saw a dog today that looked like it would really like you.”','happy');
  await walk('stella',140,30);
  await say('stella','(reading, slower) “Voicemail thirty-one. I’m not crying. It’s November.”','cry');
  await walk('stella',230,30);
  await say('stella','The last one’s pink. “Forty-one.” There’s only forty. I counted them every night.','cry');
  const car=pprop({t:'car',x:-80,y:170,col:'#5a6a8a',driver:1,layer:40});SFX.rumble();await tw(car,{x:20},1400,'out');
- await N('A blue car pulls into the loop. Imani’s mom. She doesn’t honk. She sees the ground and just waits.');
+ await N('A blue car pulls into the loop. Stella’s mom. She doesn’t honk. She sees the ground and just waits.');
  await say('sean','I never said it. On any of the forty. Number forty is me breathing for a minute and then hanging up.','blush');
  await say('sean','I love you. That’s forty-one. I wanted to do one in person.','blush');
  await say('stella','(crying, laughing) That is SO unfair. You can’t do that in a bus loop.','cry');
@@ -12225,7 +12225,7 @@ if(window.EDITION==='safe'){dropHooks('brett');delete MIS.brett;PAIRS.splice(2,2
  try{
   if(D&&D.done){
    if(D.done.window&&D.done.brett)await N('Corey and Abby still sit by the window in the Trailer. Nobody ever found Brett. The woods behind the field keep what you give them.');
-   if(D.done.farewell)await N('Imani moved to Portland. Sean calls her every night at nine. The chalk on the bus loop lasted until the first rain. Somebody took a photo of voicemail six first.');
+   if(D.done.farewell)await N('Stella moved to Portland. Sean calls her every night at nine. The chalk on the bus loop lasted until the first rain. Somebody took a photo of voicemail six first.');
    if(D.done.stepeleven)await N('Darren walks with a limp now. Hasan walks slower so they match. Hasan’s dad keeps a dried flower on his dashboard.');
   }
  }catch(e){}
@@ -13695,11 +13695,11 @@ Object.assign(MIS.brett,{goal:'Help Corey with Abby’s boyfriend, Brett. Perman
    IN BETWEEN — Long Distance
    ===================================================================== */
 {const _br=buildRoom;buildRoom=function(room){const r=_br(room);if(D&&!D.weekend&&D.f.fw===1&&!D.f.fwil1&&((room==='library'&&D.period===2)||(room==='field'&&D.period===4))&&!A.stellamom){put('stellamom',250,-1,{y:146,hold:'tray'})}return r}}
-hooks({mis:'farewell',label:'Ask Imani why her mom is here',look:{ex:'scared'},cond:()=>D.f.fw===1&&!D.f.fwil1&&!D.dead.sean,run:async()=>{
+hooks({mis:'farewell',label:'Ask Stella why her mom is here',look:{ex:'scared'},cond:()=>D.f.fw===1&&!D.f.fwil1&&!D.dead.sean,run:async()=>{
  const r=here();scene(r,{stella:[150,1,{y:148}],stellamom:[200,-1,{y:146,hold:'tray'}],you:[120,1,{y:154}]},true);
  await say('stella','My mom’s picking up my transfer papers. Already. She’s so fast. She’s never been fast at anything.','sad');
  put('sean',334,-1,{y:146});await walk('sean',230,120);
- await say('sean','MRS. IMANI’S MOM. Hi. I’m Sean. Let me carry— let me carry that for you, I’m very strong—','yell');
+ await say('sean','MRS. STELLA’S MOM. Hi. I’m Sean. Let me carry— let me carry that for you, I’m very strong—','yell');
  pose('sean','grab');hold('stellamom',null);hold('sean','tray');await walk('sean',260,60);SFX.thud();SFX.glass();A.sean.pose='lie';hold('sean',null);
  blood(A.sean.x,A.sean.y-6,10,null,30,A.sean.y+2);
  await N('Sean trips over absolutely nothing and goes face first into the box of framed photos he was carrying. There’s glass in his eyebrow.');
@@ -13721,11 +13721,11 @@ hook({mis:'farewell',period:ANYP,room:'wing_sports',who:'auto',cond:()=>D.f.fw==
  else{const ok=await mash('Run!',{need:14,time:3});if(!ok){await N('Coach catches you by the hood with one hand. He shakes the bag. A cloud of white chalk goes up and settles on both of you like snow.');await say('coach','…Keep it. I don’t want to know. Whatever it’s for, do it right.','sad')}}
  D.f.fwil2=1;return 'stay';
 }});
-Object.assign(MIS.farewell,{goal:'Help Sean say goodbye to Imani properly before she moves to Portland.',
- parts:['Portland','Imani’s mom, and Sean’s plan','Coach’s chalk, and forty-one'],
+Object.assign(MIS.farewell,{goal:'Help Sean say goodbye to Stella properly before she moves to Portland.',
+ parts:['Portland','Stella’s mom, and Sean’s plan','Coach’s chalk, and forty-one'],
  tipNow:()=>{const f=D.f.fw||0;
-  if(!f)return'Find Imani (break: Library · lunch: Playing Field). She’s been crying.';
-  if(f===1&&!D.f.fwil1)return'Find Imani again (Library at break, Playing Field at lunch). Her mom is at school.';
+  if(!f)return'Find Stella (break: Library · lunch: Playing Field). She’s been crying.';
+  if(f===1&&!D.f.fwil1)return'Find Stella again (Library at break, Playing Field at lunch). Her mom is at school.';
   if(f===1)return'Find Sean (Library at break, Playing Field at lunch). He has a plan.';
   if(f===2&&!D.f.chalk)return'Steal Coach’s bucket of field chalk from the Gym.';
   if(f===2&&!D.f.fwil2)return'Walk through the Sports Wing. Coach knows his chalk is gone.';
@@ -13882,13 +13882,13 @@ if(typeof CHAPTERS!=='undefined'){for(const c of CHAPTERS){const g=CH_GOAL.find(
    ===================================================================== */
 const GOALS={
  bully:'Stop Hasan’s prank on Aidan in English. Or don’t.',seat:'Beat Ms. Sherman’s new seating plan.',oldbat:'Survive Ms. Sherman. Then get back at her.',
- loach:'Get Ms. Loach to react to anything.',group:'Get your group through Ms. Balduf’s presentation.',instella:'Get Sean and Imani together on the field.',
+ loach:'Get Ms. Loach to react to anything.',group:'Get your group through Ms. Balduf’s presentation.',instella:'Get Sean and Stella together on the field.',
  beep:'Get Kenneth through the beep test alive.',voss:'Find out what’s in Mr. Voss’s back fridge.',angelo:'Get Angelo some of Pat’s cookies to sell.',
  alex:'Help Alex score a hat-trick past Jacob.',dheva:'Get Dheva his texture powder back.',marcus:'Get Marcus on the morning announcements.',
  paul:'Survive wrestling Paul.',kenneth:'Beat Kenneth one-on-one. Or let him win.',jacob:'Find out why everybody pushes Jacob.',
  calling:'Find out what Aidan knows.',headcase:'Help Mr. Adam before he loses it.',bakeoff:'Don’t end up in Mrs. Kettle’s oven.',method:'Survive Mr. Pratt’s Macbeth.',
  armoury:'Buy something from Tez’s bathroom shop.',register:'Find out who Ollie Finch is.',opps:'Get into Kayden’s gang. Or end it.',alone:'Talk to Arjun when he’s on his own.',
- hasanmia:'Help Hasan ask Mia out.',striketwo:'Go on Sean and Imani’s first date with them.',smallhours:'Listen to Abby play. Get Corey to sing.',
+ hasanmia:'Help Hasan ask Mia out.',striketwo:'Go on Sean and Stella’s first date with them.',smallhours:'Listen to Abby play. Get Corey to sing.',
  omermum:'Meet Omer’s mom.',jacobken:'Watch Jacob and Kenneth play arcade hoops.',tea:'Find out who runs @highgate.tea.',catfish:'Find out who “Jess” really is before Kenneth meets her.',
  kaivibes:'Get Nivaan through his collab with Kai Vibes.',groupchat:'Stop Omer killing Arjun over the screenshots.',leaked:'Get Kenneth’s leaked stuff taken down.',
  emergency:'Prank Corey with his own curl cream.',heads:'Survive Mr. Grieve’s French Revolution.',stilllife:'Get Marcus out of Miss Dahl’s still life alive.',
@@ -13900,7 +13900,7 @@ const GOALS={
  crew_record:'Get Mr. Adam on the record about 1987.',flimbus:'Find out what “mickther” means.',inhaler:'Find Kenneth’s inhaler.',thermos:'Get Hasan’s dad’s thermos back.',
  ladle:'Get Pat’s lucky ladle back from Coach.',shorts:'Find Omer’s shorts.',vapes:'Deal with the vape kids.',beef:'Stop Omer and Arjun killing each other. Or watch.',
  staffroom:'Find out who ate Ms. Loach’s yogurt.',passing:'Stop for things that happen in the halls between classes.',
- farewell:'Help Sean say goodbye to Imani properly.',stepeleven:'Find out what step eleven is.',kim:'Find out what Mr. Kim did with Alex.',window:'Get Corey and Abby together.',brett:'Help Corey with Abby’s boyfriend, Brett. Permanently.'
+ farewell:'Help Sean say goodbye to Stella properly.',stepeleven:'Find out what step eleven is.',kim:'Find out what Mr. Kim did with Alex.',window:'Get Corey and Abby together.',brett:'Help Corey with Abby’s boyfriend, Brett. Permanently.'
 };
 for(const m in GOALS)if(MIS[m])MIS[m].goal=MIS[m].goal||GOALS[m];
 for(const m of Object.values(MIS)){if(!m.goal){if(m.id.startsWith('cq_'))m.goal='Do the secret stuff that only happens in '+m.name.replace('Class Secrets: ','')+'.';else if(m.id.startsWith('ret_'))m.goal=m.name.replace('Return: ','')+': do it during a Period 3 return.';else if(m.id.startsWith('wk_'))m.goal=m.name.replace('Weekend: ','')+'. (A weekend thing.)';else m.goal=m.name+'.'}}
@@ -13995,7 +13995,7 @@ Object.assign(WHISPER,{
  jacob:[[['jacob','somebody pushed me into the trash cans this morning. nobody even laughed. that’s worse.']],[['jacob','doing breathing. in for four. you do it too. I don’t wanna do it alone.']]],
  omer:[[['omer','my mom picks my clothes. my dad used to. then he didn’t. so she just kept doing it. that’s it. that’s the story.']],[['omer','(doing push-ups against the desk) for speed. don’t ask.']]],
  corey:[[['corey','I give my seat up on the 43 every day. old lady at the hospital stop. nobody else moves. it’s whatever.'],['corey','don’t make it a thing.']],[['corey','(checking his curls in the window) emergency. no. false alarm. we’re good.']]],
- sean:[[['sean','I practiced saying hi like forty times on the bus. I’m gonna say it zero times.']],[['sean','Imani’s dad shook my hand once. I heard a bone. one of mine.']]],
+ sean:[[['sean','I practiced saying hi like forty times on the bus. I’m gonna say it zero times.']],[['sean','Stella’s dad shook my hand once. I heard a bone. one of mine.']]],
  stella:[[['stella','Sean thinks I don’t notice him practicing. I notice. it’s my favorite part of the day.']],[['stella','my dad left the ball. the lucky one. he took literally everything else.']]],
  david:[[['david','I got nine votes for class president last year. four were cousins.']],[['david','I have a theory about this school and I hate it. don’t laugh.'],['you','I’m not laughing.'],['david','…you will be.']]],
  nivaan:[[['nivaan','(phone under the desk) ninety-one people are watching a math lesson right now. that’s community.']],[['nivaan','I stream so it’s not quiet at home. that’s all. don’t clip that.']]],
@@ -14344,7 +14344,7 @@ const RIDE=[
  }},
  {id:'portland',w:10,cond:()=>D.f.fw&&!D.f.ridePT&&onBus('sean')&&onBus('stella'),run:async()=>{
   D.f.ridePT=1;
-  await N('Sean and Imani are sharing one seat with a map of the United States open on their knees. Sean is measuring it with his hand.');
+  await N('Sean and Stella are sharing one seat with a map of the United States open on their knees. Sean is measuring it with his hand.');
   await say('sean','It’s three hours behind. So when it’s nine here, it’s six there. So I call at nine and she’s still eating dinner. So she calls me at nine HER time, and it’s midnight.','scared');
   await say('stella','So we both stay up.','happy');
   await say('sean','So we both stay up.','blush');
@@ -14390,7 +14390,7 @@ const NIGHT=[
  {cond:()=>P.crew&&(P.crew.ev||{}).jars&&!P.crew.n2,set:()=>crew().n2=1,from:'Kenneth',msgs:[['them','i backed the fridge photos up 4 times','23:10'],['them','i keep zooming in on the one that says tyler','23:10'],['them','his handwriting is on the label. not voss’s. TYLERS','23:11'],['them','he labeled his own jar bro','23:11'],['me','go to sleep ken','23:20'],['them','cant','23:20']]},
  {cond:()=>D.f.brettDead&&!D.f.n3,set:()=>D.f.n3=1,from:'Corey',msgs:[['them','i washed my shoes in the bath','00:12'],['them','my mom asked why the bath was brown','00:12'],['them','i said football','00:13'],['them','i dont play football','00:13'],['me','delete these','00:20'],['them','ok','00:20']]},
  {cond:()=>D.done.window&&!D.f.n4,set:()=>D.f.n4=1,from:'Abby',msgs:[['them','is it weird that i drew the bird on my bedroom window too','23:02'],['them','and then a second one','23:02'],['them','dont tell him','23:03'],['them','actually tell him','23:03']]},
- {cond:()=>D.f.fw&&!D.done.farewell,from:'Imani',msgs:[['them','we packed my room today','22:30'],['them','it fits in 6 boxes','22:30'],['them','my whole life is 6 boxes','22:31'],['them','sean called and didnt say anything for like 4 min. just breathed. it was nice actually','22:40']]},
+ {cond:()=>D.f.fw&&!D.done.farewell,from:'Stella',msgs:[['them','we packed my room today','22:30'],['them','it fits in 6 boxes','22:30'],['them','my whole life is 6 boxes','22:31'],['them','sean called and didnt say anything for like 4 min. just breathed. it was nice actually','22:40']]},
  {cond:()=>D.done.kim&&!D.f.n6,set:()=>D.f.n6=1,from:'Dheva',msgs:[['them','alex is sleeping over','23:50'],['them','he still cant sleep with the light off','23:50'],['them','he keeps counting in his sleep. in 7s','23:51'],['them','im gonna stay up','23:51']]},
  {cond:()=>D.f.pj1&&!D.done.pauljones&&pjKind()>=1,from:'Paul Jones',msgs:[['them','hey its paul. jones. got ur number off the class list','23:30'],['them','sorry thats weird','23:30'],['them','thanks for sitting there','23:31']]},
  {cond:()=>D.done.stepeleven&&!D.f.n8,set:()=>D.f.n8=1,from:'Hasan',msgs:[['them','darren texted me step 12','22:15'],['them','it just says “keep going”','22:15'],['them','im not crying ur crying','22:16']]},
@@ -14447,8 +14447,8 @@ RIDE.push(
  }},
  {id:'tobyBus',w:7,cond:()=>D.done.toby&&!D.f.rideTo&&onBus('sean'),run:async()=>{
   if(!onBus('sean'))return;D.f.rideTo=1;put('toby',A.sean.x+14,-1,{y:A.sean.y,pose:'sit'});
-  await N('Toby from Ohio has started riding the 43. He sits behind Sean and Imani and gives them both friendship bracelets every Thursday. Nobody asked him to. Everybody wears them.');
-  await say('toby','(leaning over the seat) Sean. Your hair. Today. Ten out of ten. Imani. Your hair. Eleven.','happy');
+  await N('Toby from Ohio has started riding the 43. He sits behind Sean and Stella and gives them both friendship bracelets every Thursday. Nobody asked him to. Everybody wears them.');
+  await say('toby','(leaning over the seat) Sean. Your hair. Today. Ten out of ten. Stella. Your hair. Eleven.','happy');
  }},
  {id:'davidList',w:8,cond:()=>P.crew&&P.crew.beat2&&!P.crew.rideDL&&onBus('david'),run:async()=>{
   crew().rideDL=1;save();hold('david','clipboard');
@@ -14458,7 +14458,7 @@ RIDE.push(
  }},
  {id:'stellaDad',w:8,cond:()=>D.done.striketwo&&!D.f.rideSD&&onBus('stella'),run:async()=>{
   if(!onBus('stella'))return;D.f.rideSD=1;hold('stella','ball');
-  await N('Imani is turning her lucky ball over and over in her hands. Strike one.');
+  await N('Stella is turning her lucky ball over and over in her hands. Strike one.');
   await say('stella','My dad texted. First time in two years. He saw a photo of me and Sean. He said “who’s the boy”.','sad');
   await say('stella','I didn’t answer. I’m gonna let him wonder. He can wonder for two years.','angry');hold('stella',null);
  }}
@@ -14669,7 +14669,7 @@ hook({mis:'robbery',period:8,room:'arcade',who:'auto',cond:()=>robRoll('arcade')
  pose('kid2','overhead');await wait(200);SFX.glass();shake(.8);cm.smashed=1;pose('kid2',null);
  await N('The glass comes in. Stuffed animals everywhere. Somewhere a man in an Arcadia polo shirt starts running toward you from very far away.');
  const c=await choose(['Grab a stuffed animal and run.','Help the polo-shirt man catch them.','Walk away. Not your claw machine.']);
- if(c===0){hold('you','flower');D.f.robbedToday=1;await walk('you',-20,140);await N('You got a one-eyed duck. It looks exactly like the one Sean won Imani. It might be its brother.');hold('you',null)}
+ if(c===0){hold('you','flower');D.f.robbedToday=1;await walk('you',-20,140);await N('You got a one-eyed duck. It looks exactly like the one Sean won Stella. It might be its brother.');hold('you',null)}
  else if(c===1){await walk('you',A.kid4.x+10,110);await hit('you','kid4',{blood:3});await N('You tackle one. The other one gets away with a dinosaur under each arm. The polo-shirt man arrives two minutes later, out of breath, and gives you a single ticket.')}
  else await N('You walk away. Behind you there’s the sound of a second hammer.');
  return 'stay';
@@ -14751,7 +14751,7 @@ DEATHS.glen=DEATHS.glen||{name:'Big Glen',desc:'You hit Big Glen. Big Glen hit b
    Longer, realer chapters for the romances and the people in the smaller
    quests. Nobody gets saved by one conversation. Things take a few goes.
      Mended — Corey fixes Abby’s dad’s guitar.
-     The First Fight — Sean and Imani, after the honeymoon.
+     The First Fight — Sean and Stella, after the honeymoon.
      Hasan’s Mom — the laminated list goes through the wash.
      Ohio — Toby and the friend who stopped answering.
      Voicemail — Arjun and his grandad.
@@ -14833,11 +14833,11 @@ hook({mis:'mended',period:8,room:'foodcourt',who:'abby',label:'Watch Corey give 
 tipsFrom('mended',()=>!D.f.md1?'Break or lunch, the Cafeteria: Abby has a shoebox.':!D.f.md2?'Upstairs, Arts Wing: walk up into the Woodwork door (when there’s no lesson in it). Corey’s there.':!D.f.md3?'Upstairs Corridor, outside the Music room: Mr. Fenwick has strings.':'After school, Fair City Mall food court. Corey has the guitar.');
 
 /* =====================================================================
-   THE FIRST FIGHT — Sean & Imani
+   THE FIRST FIGHT — Sean & Stella
    ===================================================================== */
-mission('firstfight',{name:'The First Fight',icon:'⚾',who:['sean','stella'],goal:'Get Sean and Imani through their first real fight.',
- blurb:'Sean and Imani were perfect on the phone. In person, for the first time, they’re not talking.',
- parts:['Sean, hiding','Imani, crying','The bus loop'],tips:['Break, the Library. Sean is hiding.']});
+mission('firstfight',{name:'The First Fight',icon:'⚾',who:['sean','stella'],goal:'Get Sean and Stella through their first real fight.',
+ blurb:'Sean and Stella were perfect on the phone. In person, for the first time, they’re not talking.',
+ parts:['Sean, hiding','Stella, crying','The bus loop'],tips:['Break, the Library. Sean is hiding.']});
 hooks({mis:'firstfight',label:'Ask Sean why he’s hiding',look:{ex:'sad'},cond:()=>D.done.striketwo&&!D.f.ff1&&!D.dead.stella,run:async()=>{
  scene('library',{sean:[200,-1,{y:146,pose:'sit',ex:'sad'}],you:[170,1,{y:154}]},true);
  await say('sean','I’m not hiding. I’m reading. About… (looks at the book) …Abraham Lincoln.','sad');
@@ -14849,7 +14849,7 @@ hooks({mis:'firstfight',label:'Ask Sean why he’s hiding',look:{ex:'sad'},cond:
  D.f.ff1=1;part('firstfight',1);
  return 'stay';
 }},[[2,'library','sean'],[4,'field','sean']]);
-hooks({mis:'firstfight',label:'Ask Imani if she’s okay',look:{ex:'cry'},cond:()=>D.f.ff1&&!D.f.ff2,run:async()=>{
+hooks({mis:'firstfight',label:'Ask Stella if she’s okay',look:{ex:'cry'},cond:()=>D.f.ff1&&!D.f.ff2,run:async()=>{
  const r=here();scene(r,{stella:[160,-1,{y:150,pose:'sit',ex:'cry',hold:'ball'}],you:[130,1,{y:154}]},true);
  await say('stella','He’s not answering. Eleven texts. He read them all. I can SEE he read them.','cry');
  await say('stella','I knew this would happen. On the phone I was perfect. I could hang up before I said something stupid. In person he’s seen me eat. I chew so loud. My mom says I chew like a horse.','cry');
@@ -14860,7 +14860,7 @@ hooks({mis:'firstfight',label:'Ask Imani if she’s okay',look:{ex:'cry'},cond:(
  D.f.ff2=1;part('firstfight',2);
  return 'stay';
 }},[[2,'library','stella'],[4,'field','stella']]);
-hook({mis:'firstfight',period:7,room:'bus',who:'sean',label:'Stand with Sean while Imani walks over',look:{ex:'scared'},cond:()=>D.f.ff2&&!D.done.firstfight&&!D.dead.stella&&!D.dead.sean,run:async()=>{
+hook({mis:'firstfight',period:7,room:'bus',who:'sean',label:'Stand with Sean while Stella walks over',look:{ex:'scared'},cond:()=>D.f.ff2&&!D.done.firstfight&&!D.dead.stella&&!D.dead.sean,run:async()=>{
  scene('bus',{sean:[150,1,{y:150,ex:'scared'}],you:[124,1,{y:154}]},true);cue('sad');
  put('stella',334,-1,{y:150,hold:'ball'});await walk('stella',178,60);
  await N('They stand there. Neither of them says anything. The 43 pulls in. Neither of them gets on.');
@@ -14880,7 +14880,7 @@ hook({mis:'firstfight',period:7,room:'bus',who:'sean',label:'Stand with Sean whi
  fxState.romance=0;pose('sean',null);pose('stella',null);
  await complete('firstfight');
 }});
-tipsFrom('firstfight',()=>!D.f.ff1?'Find Sean (Library at break, Playing Field at lunch). He’s hiding from Imani.':!D.f.ff2?'Find Imani (Library at break, Playing Field at lunch).':'Home time, the bus loop. Stand with Sean.');
+tipsFrom('firstfight',()=>!D.f.ff1?'Find Sean (Library at break, Playing Field at lunch). He’s hiding from Stella.':!D.f.ff2?'Find Stella (Library at break, Playing Field at lunch).':'Home time, the bus loop. Stand with Sean.');
 
 /* =====================================================================
    HASAN’S MOM
@@ -16426,8 +16426,8 @@ if(RE('alexClown')){RE('alexClown').run=async()=>{if(!onBus('dheva'))return;D.f.
  await say('dheva','Don’t. Don’t do the honk, bro. Please.','sad');}}
 if(RE('tobyBus')){RE('tobyBus').run=async()=>{if(!onBus('sean'))return;D.f.rideTo=1;
  const s=A.sean.bslot,sl=s?slotAt(Math.min(4,s.r+1),s.side,'a'):null;if(sl){put('toby',sl.x,-1,{y:sl.y,pose:'sit'});A.toby.back=0;A.toby.bslot=sl}
- await N('Toby from Ohio rides the 43 now. He sits right behind Sean and Imani and leans over the seat to talk. He gives them both friendship bracelets every Thursday. Nobody asked him to. Everybody wears them.');
- await say('toby','(chin on the seat back) Sean. Your hair. Today. Ten out of ten. Imani. Eleven.','happy');}}
+ await N('Toby from Ohio rides the 43 now. He sits right behind Sean and Stella and leans over the seat to talk. He gives them both friendship bracelets every Thursday. Nobody asked him to. Everybody wears them.');
+ await say('toby','(chin on the seat back) Sean. Your hair. Today. Ten out of ten. Stella. Eleven.','happy');}}
 if(RE('raccoon'))RE('raccoon').run=async()=>{
  const r=pprop({t:'raccoon',x:300,y:30,dir:-1,layer:200});
  await N('Something moves in the luggage rack over the windows. A raccoon. It looks at you. It reaches down, takes the sandwich out of a seventh grader’s hand, very politely, and gets off at the next stop.');
@@ -18702,10 +18702,18 @@ for(const r in LIVE){if(r[0]==='_'||!ROOMS[r])continue;const ob=ROOMS[r].bg;ROOM
    Endings: she stays with you · she goes back to him · you give her
    back (and maybe keep your friend).
    Built once, used for:
-     Imani, from Sean (your friend — this one costs you)
+     Stella, from Sean (your friend — this one costs you)
      Mia, from Tez
    ===================================================================== */
 const STEAL={
+ stella:{bf:'sean',name:'Stella',icon:'🥎',title:'Strike Three',friend:1,
+  places:{a:[[2,'field'],[4,'field']],b:[[4,'library'],[2,'library']],d:[[2,'corridor'],[4,'corridor']],e:[8,'arcade']},
+  blurb:'Sean calls Stella forty times a day. She moved schools for him. She’s starting to look at the exits. And at you.',
+  l1:['He called me eleven times during third period. ELEVEN. I was in a test. He left a voicemail that was just him breathing and saying “babe”.','I moved schools for him. I moved my whole life two hours east for a boy who can’t let me pee without a status update.'],
+  l2:'Okay, stand behind me. Hands on the bat. No— higher. You’re so bad at this. You’re SO bad at this. (she’s laughing) Don’t move.',
+  bf3:['I SAW IT. Kaylee sent it to the whole grade. You and her. At the field. You were my BOY.','We had a handshake. We had a HANDSHAKE, man. Eleven parts. I taught you the eleven parts.'],
+  gesture:'Sean is at the claw machine. He’s been at the claw machine for three hours. Eighty-one dollars in quarters. There’s a stuffed bear in there holding a softball. He’s crying a bit.',
+  bfAsk:'Stella. Stel. I got it. Eighty-one dollars. I’ll stop calling. I’ll call ONCE a day. Twice. Once. I’m saying it in front of everybody.'},
  mia:{bf:'tez',name:'Mia',icon:'🎭',title:'Exit, Pursued',friend:0,
   places:{a:[[2,'canteen'],[4,'canteen']],b:[[4,'library'],[2,'library']],d:[[2,'corridor'],[4,'corridor']],e:[8,'foodcourt']},
   blurb:'Tez grew a mustache to impress Mia. It did not impress Mia. Mia is in Drama. Mia wants someone who can at least act like they care.',
@@ -18804,9 +18812,9 @@ function stealArc(gid,S){
   return 'stay'}});
 }
 for(const id in STEAL)if(K[id]&&K[STEAL[id].bf])stealArc(id,STEAL[id]);
-
+OUTCOME_FIX['steal_stella:you']='messy';OUTCOME_FIX['steal_stella:bros']='good';OUTCOME_FIX['steal_stella:back']='bad';
 OUTCOME_FIX['steal_mia:you']='good';OUTCOME_FIX['steal_mia:bros']='good';OUTCOME_FIX['steal_mia:back']='bad';
-ARC_MIS.push('steal_mia');
+ARC_MIS.push('steal_stella','steal_mia');
 /* if she’s with you now, their couple stuff stops, and she’s with you around school */
 {const SS=['instella','striketwo','firstfight','farewell','toby'];for(const h of HOOKS)if(SS.includes(h.mis)){const c=h.cond;h.cond=()=>!(P.done.steal_stella==='you')&&(!c||c())}}
 {const _br=buildRoom;buildRoom=function(room){const r=_br(room);if(!D||D.weekend)return r;
@@ -18938,32 +18946,6 @@ ROOMS.carpark.bg=function(){
  for(const [x,y,w] of[[60,150,30],[200,162,24]]){g.globalAlpha=.25;R(x+((T*4)%w),y+1,4,1,'#fff');g.globalAlpha=1}
 };
 LIGHT.carpark=()=>({amb:.85,tint:[90,40,60],src:[[20,60,60,.3,[255,240,180]],[250,60,60,.3,[255,240,180]],[160,0,160,.2,[255,150,90]]]});
-
-</script>
-<script>
-/* js/noromance.js */
-'use strict';
-/* =====================================================================
-   HIGHSCHOOL — IMANI, NOT A GIRLFRIEND
-   Imani took Stella's place in the story: the crew, the tea, the
-   softball, the field. She is not Sean's girlfriend. Every Sean
-   romance quest is gone, and any leftover line that treats them as a
-   couple is dropped.
-   ===================================================================== */
-{const CUT=['instella','striketwo','firstfight','farewell','toby','steal_stella','ohio'];
- for(const m of CUT)delete MIS[m];
- for(let i=HOOKS.length-1;i>=0;i--)if(HOOKS[i].mis&&!MIS[HOOKS[i].mis])HOOKS.splice(i,1);
- for(let i=SPOTS.length-1;i>=0;i--)if(SPOTS[i].mis&&!MIS[SPOTS[i].mis])SPOTS.splice(i,1);
- if(typeof PASS!=='undefined')for(let i=PASS.length-1;i>=0;i--)if(PASS[i].id==='couple')PASS.splice(i,1);
- if(typeof NIGHT!=='undefined')for(let i=NIGHT.length-1;i>=0;i--)if(/imani|sean/i.test(NIGHT[i].from)&&/sean|imani|babe|portland|boxes|love/i.test(JSON.stringify(NIGHT[i].msgs)))NIGHT.splice(i,1);
- if(typeof RIDE!=='undefined')for(let i=RIDE.length-1;i>=0;i--){const s=String(RIDE[i].run)+String(RIDE[i].cond);if(/toby|firstfight|instella|striketwo|farewell|Sean and Imani|Imani and Sean/i.test(s))RIDE.splice(i,1)}
- for(const per of ROSTER)if(per)for(const r in per)per[r]=per[r].filter(e=>e[0]!=='toby');
- const COUPLE=/\btoby\b|Sean and Imani are|Sean and Imani’s|(sean|imani) (is|are) (holding|sharing)|(sean|imani)[^.!?]{0,40}(kiss|girlfriend|boyfriend|dating|first date|couple|in love|love you|making out|moved schools for|long.distance|portland|babe)|(kiss|girlfriend|boyfriend|dating|first date|couple|in love|making out|moved schools for|long.distance)[^.!?]{0,40}(sean|imani)/i;
- const _s=say;say=function(who,text,e){if(who==='toby')return Promise.resolve();if(typeof text==='string'&&COUPLE.test(text))return Promise.resolve();if((who==='sean'||who==='stella')&&typeof text==='string'&&/\b(babe|my girlfriend|my boyfriend|love you)\b/i.test(text))return Promise.resolve();return _s(who,text,e)};
- const _p=put;put=function(id,x,dir,o){if(id==='toby')return{id,k:K[id],x:x||0,y:150,vis:false};return _p(id,x,dir,o)};
- if(typeof CHAT!=='undefined')for(const id of['sean','stella'])if(CHAT[id])CHAT[id]=CHAT[id].filter(l=>!COUPLE.test(l)&&!/babe|girlfriend|boyfriend/i.test(l));
- for(const m of Object.values(MIS))if(m.blurb&&COUPLE.test(m.blurb))m.blurb=m.blurb.replace(COUPLE,'').replace(/\s+/g,' ');
-}
 
 </script>
 <script>

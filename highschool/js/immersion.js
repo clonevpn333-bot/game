@@ -7,7 +7,7 @@
    ===================================================================== */
 const LOOKS=[
  ['instella','Ask Sean why he’s hiding',{pose:'cover',ex:'scared'}],
- ['instella','Get Imani’s ball off Arjun',{pose:null,hold:'ball',ex:'smirk'}],
+ ['instella','Get Stella’s ball off Arjun',{pose:null,hold:'ball',ex:'smirk'}],
  ['corey','Get Corey to talk to Abby',{ex:'blush',dir:1}],
  ['beep','Ask Alex what’s wrong',{pose:null,hold:null,ex:'scared'}],
  ['voss','Ask Corey what he’s doing in here',{hold:'powder',ex:'blush'}],
@@ -25,7 +25,7 @@ const LOOKS=[
  ['opps','Ride out with Kayden',{hold:'soaker',ex:'smirk'}],
  ['hasanmia','Help Hasan with Mia',{hold:'mug',ex:'scared',dir:1}],
  ['smallhours','Listen to Abby play',{x:196,y:138,pose:'sit',hold:'guitar',ex:'closed'}],
- ['tea','Ask Imani what’s wrong',{pose:'cover',ex:'cry'}],
+ ['tea','Ask Stella what’s wrong',{pose:'cover',ex:'cry'}],
  ['catfish','Ask Kenneth who he keeps texting',{pose:'phone',ex:'love'}],
  ['catfish','Wait for Jess with Kenneth',{topC:'#c8202c',ex:'scared',pose:null}],
  ['kaivibes','Ask Nivaan why he’s screaming',{pose:'phone',ex:'yell',shake:1}],

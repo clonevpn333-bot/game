@@ -12,7 +12,7 @@ const K={
  nivaan:{n:'Nivaan',col:'#5a6a9a',skin:'#b98058',hair:'#1c1412',hs:'curly',top:'#8d9099',pants:'#3565b8',cuff:1,h:-3,hood:1,seed:3,v:430},
  corey:{n:'Corey',col:'#4a4a5f',skin:'#c08860',hair:'#1a1210',hs:'curly',top:'#1d1d24',pants:'#101014',glow:1,h:1,zip:1,seed:5,v:240,vw:'triangle'},
  sean:{n:'Sean',col:'#9a8420',skin:'#f2cfae',hair:'#e8c860',hs:'wavy',top:'#1b1b20',pants:'#8f9198',baggy:1,hood:1,seed:8,v:285},
- stella:{n:'Imani',col:'#2a7a4a',skin:'#8a5a3a',hair:'#1a1210',hs:'braids',top:'#2a7a4a',pants:'#2a2a33',girl:1,h:3,seed:11,v:470,vw:'triangle'},
+ stella:{n:'Stella',col:'#c0408a',skin:'#f0c8a8',hair:'#f0d070',hs:'long',top:'#c0408a',pants:'#3a4a7a',girl:1,seed:11,v:520,vw:'triangle'},
  abby:{n:'Abby',col:'#6a35b9',skin:'#ecd2c4',hair:'#0c0a12',hs:'long',top:'#1a1626',pants:'#2a2238',girl:1,streaks:1,seed:12,v:470,vw:'triangle'},
  aidan:{n:'Aidan',col:'#2456c8',skin:'#e6c2a2',hair:'#4a2f1a',hs:'bowl',top:'#2456c8',pants:'#0c0c10',tight:1,h:-5,zip:1,seed:9,v:175,vw:'sawtooth'},
  angelo:{n:'Angelo',col:'#9a6a3a',skin:'#c8946a',hair:'#141010',hs:'straight',top:'#7a5234',pants:'#141416',baggy:1,tee:1,seed:13,v:330},

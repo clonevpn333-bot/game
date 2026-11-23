@@ -95,11 +95,11 @@ Object.assign(MIS.brett,{goal:'Help Corey with Abby’s boyfriend, Brett. Perman
    IN BETWEEN — Long Distance
    ===================================================================== */
 {const _br=buildRoom;buildRoom=function(room){const r=_br(room);if(D&&!D.weekend&&D.f.fw===1&&!D.f.fwil1&&((room==='library'&&D.period===2)||(room==='field'&&D.period===4))&&!A.stellamom){put('stellamom',250,-1,{y:146,hold:'tray'})}return r}}
-hooks({mis:'farewell',label:'Ask Imani why her mom is here',look:{ex:'scared'},cond:()=>D.f.fw===1&&!D.f.fwil1&&!D.dead.sean,run:async()=>{
+hooks({mis:'farewell',label:'Ask Stella why her mom is here',look:{ex:'scared'},cond:()=>D.f.fw===1&&!D.f.fwil1&&!D.dead.sean,run:async()=>{
  const r=here();scene(r,{stella:[150,1,{y:148}],stellamom:[200,-1,{y:146,hold:'tray'}],you:[120,1,{y:154}]},true);
  await say('stella','My mom’s picking up my transfer papers. Already. She’s so fast. She’s never been fast at anything.','sad');
  put('sean',334,-1,{y:146});await walk('sean',230,120);
- await say('sean','MRS. IMANI’S MOM. Hi. I’m Sean. Let me carry— let me carry that for you, I’m very strong—','yell');
+ await say('sean','MRS. STELLA’S MOM. Hi. I’m Sean. Let me carry— let me carry that for you, I’m very strong—','yell');
  pose('sean','grab');hold('stellamom',null);hold('sean','tray');await walk('sean',260,60);SFX.thud();SFX.glass();A.sean.pose='lie';hold('sean',null);
  blood(A.sean.x,A.sean.y-6,10,null,30,A.sean.y+2);
  await N('Sean trips over absolutely nothing and goes face first into the box of framed photos he was carrying. There’s glass in his eyebrow.');
@@ -121,11 +121,11 @@ hook({mis:'farewell',period:ANYP,room:'wing_sports',who:'auto',cond:()=>D.f.fw==
  else{const ok=await mash('Run!',{need:14,time:3});if(!ok){await N('Coach catches you by the hood with one hand. He shakes the bag. A cloud of white chalk goes up and settles on both of you like snow.');await say('coach','…Keep it. I don’t want to know. Whatever it’s for, do it right.','sad')}}
  D.f.fwil2=1;return 'stay';
 }});
-Object.assign(MIS.farewell,{goal:'Help Sean say goodbye to Imani properly before she moves to Portland.',
- parts:['Portland','Imani’s mom, and Sean’s plan','Coach’s chalk, and forty-one'],
+Object.assign(MIS.farewell,{goal:'Help Sean say goodbye to Stella properly before she moves to Portland.',
+ parts:['Portland','Stella’s mom, and Sean’s plan','Coach’s chalk, and forty-one'],
  tipNow:()=>{const f=D.f.fw||0;
-  if(!f)return'Find Imani (break: Library · lunch: Playing Field). She’s been crying.';
-  if(f===1&&!D.f.fwil1)return'Find Imani again (Library at break, Playing Field at lunch). Her mom is at school.';
+  if(!f)return'Find Stella (break: Library · lunch: Playing Field). She’s been crying.';
+  if(f===1&&!D.f.fwil1)return'Find Stella again (Library at break, Playing Field at lunch). Her mom is at school.';
   if(f===1)return'Find Sean (Library at break, Playing Field at lunch). He has a plan.';
   if(f===2&&!D.f.chalk)return'Steal Coach’s bucket of field chalk from the Gym.';
   if(f===2&&!D.f.fwil2)return'Walk through the Sports Wing. Coach knows his chalk is gone.';
@@ -282,13 +282,13 @@ if(typeof CHAPTERS!=='undefined'){for(const c of CHAPTERS){const g=CH_GOAL.find(
    ===================================================================== */
 const GOALS={
  bully:'Stop Hasan’s prank on Aidan in English. Or don’t.',seat:'Beat Ms. Sherman’s new seating plan.',oldbat:'Survive Ms. Sherman. Then get back at her.',
- loach:'Get Ms. Loach to react to anything.',group:'Get your group through Ms. Balduf’s presentation.',instella:'Get Sean and Imani together on the field.',
+ loach:'Get Ms. Loach to react to anything.',group:'Get your group through Ms. Balduf’s presentation.',instella:'Get Sean and Stella together on the field.',
  beep:'Get Kenneth through the beep test alive.',voss:'Find out what’s in Mr. Voss’s back fridge.',angelo:'Get Angelo some of Pat’s cookies to sell.',
  alex:'Help Alex score a hat-trick past Jacob.',dheva:'Get Dheva his texture powder back.',marcus:'Get Marcus on the morning announcements.',
  paul:'Survive wrestling Paul.',kenneth:'Beat Kenneth one-on-one. Or let him win.',jacob:'Find out why everybody pushes Jacob.',
  calling:'Find out what Aidan knows.',headcase:'Help Mr. Adam before he loses it.',bakeoff:'Don’t end up in Mrs. Kettle’s oven.',method:'Survive Mr. Pratt’s Macbeth.',
  armoury:'Buy something from Tez’s bathroom shop.',register:'Find out who Ollie Finch is.',opps:'Get into Kayden’s gang. Or end it.',alone:'Talk to Arjun when he’s on his own.',
- hasanmia:'Help Hasan ask Mia out.',striketwo:'Go on Sean and Imani’s first date with them.',smallhours:'Listen to Abby play. Get Corey to sing.',
+ hasanmia:'Help Hasan ask Mia out.',striketwo:'Go on Sean and Stella’s first date with them.',smallhours:'Listen to Abby play. Get Corey to sing.',
  omermum:'Meet Omer’s mom.',jacobken:'Watch Jacob and Kenneth play arcade hoops.',tea:'Find out who runs @highgate.tea.',catfish:'Find out who “Jess” really is before Kenneth meets her.',
  kaivibes:'Get Nivaan through his collab with Kai Vibes.',groupchat:'Stop Omer killing Arjun over the screenshots.',leaked:'Get Kenneth’s leaked stuff taken down.',
  emergency:'Prank Corey with his own curl cream.',heads:'Survive Mr. Grieve’s French Revolution.',stilllife:'Get Marcus out of Miss Dahl’s still life alive.',
@@ -300,7 +300,7 @@ const GOALS={
  crew_record:'Get Mr. Adam on the record about 1987.',flimbus:'Find out what “mickther” means.',inhaler:'Find Kenneth’s inhaler.',thermos:'Get Hasan’s dad’s thermos back.',
  ladle:'Get Pat’s lucky ladle back from Coach.',shorts:'Find Omer’s shorts.',vapes:'Deal with the vape kids.',beef:'Stop Omer and Arjun killing each other. Or watch.',
  staffroom:'Find out who ate Ms. Loach’s yogurt.',passing:'Stop for things that happen in the halls between classes.',
- farewell:'Help Sean say goodbye to Imani properly.',stepeleven:'Find out what step eleven is.',kim:'Find out what Mr. Kim did with Alex.',window:'Get Corey and Abby together.',brett:'Help Corey with Abby’s boyfriend, Brett. Permanently.'
+ farewell:'Help Sean say goodbye to Stella properly.',stepeleven:'Find out what step eleven is.',kim:'Find out what Mr. Kim did with Alex.',window:'Get Corey and Abby together.',brett:'Help Corey with Abby’s boyfriend, Brett. Permanently.'
 };
 for(const m in GOALS)if(MIS[m])MIS[m].goal=MIS[m].goal||GOALS[m];
 for(const m of Object.values(MIS)){if(!m.goal){if(m.id.startsWith('cq_'))m.goal='Do the secret stuff that only happens in '+m.name.replace('Class Secrets: ','')+'.';else if(m.id.startsWith('ret_'))m.goal=m.name.replace('Return: ','')+': do it during a Period 3 return.';else if(m.id.startsWith('wk_'))m.goal=m.name.replace('Weekend: ','')+'. (A weekend thing.)';else m.goal=m.name+'.'}}
@@ -395,7 +395,7 @@ Object.assign(WHISPER,{
  jacob:[[['jacob','somebody pushed me into the trash cans this morning. nobody even laughed. that’s worse.']],[['jacob','doing breathing. in for four. you do it too. I don’t wanna do it alone.']]],
  omer:[[['omer','my mom picks my clothes. my dad used to. then he didn’t. so she just kept doing it. that’s it. that’s the story.']],[['omer','(doing push-ups against the desk) for speed. don’t ask.']]],
  corey:[[['corey','I give my seat up on the 43 every day. old lady at the hospital stop. nobody else moves. it’s whatever.'],['corey','don’t make it a thing.']],[['corey','(checking his curls in the window) emergency. no. false alarm. we’re good.']]],
- sean:[[['sean','I practiced saying hi like forty times on the bus. I’m gonna say it zero times.']],[['sean','Imani’s dad shook my hand once. I heard a bone. one of mine.']]],
+ sean:[[['sean','I practiced saying hi like forty times on the bus. I’m gonna say it zero times.']],[['sean','Stella’s dad shook my hand once. I heard a bone. one of mine.']]],
  stella:[[['stella','Sean thinks I don’t notice him practicing. I notice. it’s my favorite part of the day.']],[['stella','my dad left the ball. the lucky one. he took literally everything else.']]],
  david:[[['david','I got nine votes for class president last year. four were cousins.']],[['david','I have a theory about this school and I hate it. don’t laugh.'],['you','I’m not laughing.'],['david','…you will be.']]],
  nivaan:[[['nivaan','(phone under the desk) ninety-one people are watching a math lesson right now. that’s community.']],[['nivaan','I stream so it’s not quiet at home. that’s all. don’t clip that.']]],

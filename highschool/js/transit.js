@@ -106,9 +106,9 @@ const PASS=[
   if(c===0){pose('you','sit');await N('You sit with them on the cold stairs until the second bell. Neither of you says anything. When you stand up, they say “thanks,” so quietly you nearly miss it.');pose('you',null)}
   else await say('kid3','(laughing, a little) Yeah. Yeah, it really does. Last school didn’t have teachers who kill people, though. So.','sad');
  }},
- {id:'couple',who:'sean',label:'Ask Sean and Imani why they’re blocking the hallway',cond:()=>!D.dead.sean&&!D.dead.stella,run:async()=>{
+ {id:'couple',who:'sean',label:'Ask Sean and Stella why they’re blocking the hallway',cond:()=>!D.dead.sean&&!D.dead.stella,run:async()=>{
   if(!A.stella)put('stella',A.sean.x+10,-1,{y:A.sean.y});
-  await N('Sean and Imani are saying goodbye outside a classroom like one of them is going to war. They have different classes. The classrooms are next to each other.');
+  await N('Sean and Stella are saying goodbye outside a classroom like one of them is going to war. They have different classes. The classrooms are next to each other.');
   await say('stella','See you in fifty minutes.','blush');await say('sean','(holding both her hands) Fifty minutes. I’ll survive. I don’t know how. I’ll survive.','blush');
   await say('you','You’re literally going to be on the other side of a wall.');
   await say('sean','A WALL. Do you hear yourself.','sad');

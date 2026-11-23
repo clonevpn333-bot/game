@@ -237,8 +237,8 @@ if(RE('alexClown')){RE('alexClown').run=async()=>{if(!onBus('dheva'))return;D.f.
  await say('dheva','Don’t. Don’t do the honk, bro. Please.','sad');}}
 if(RE('tobyBus')){RE('tobyBus').run=async()=>{if(!onBus('sean'))return;D.f.rideTo=1;
  const s=A.sean.bslot,sl=s?slotAt(Math.min(4,s.r+1),s.side,'a'):null;if(sl){put('toby',sl.x,-1,{y:sl.y,pose:'sit'});A.toby.back=0;A.toby.bslot=sl}
- await N('Toby from Ohio rides the 43 now. He sits right behind Sean and Imani and leans over the seat to talk. He gives them both friendship bracelets every Thursday. Nobody asked him to. Everybody wears them.');
- await say('toby','(chin on the seat back) Sean. Your hair. Today. Ten out of ten. Imani. Eleven.','happy');}}
+ await N('Toby from Ohio rides the 43 now. He sits right behind Sean and Stella and leans over the seat to talk. He gives them both friendship bracelets every Thursday. Nobody asked him to. Everybody wears them.');
+ await say('toby','(chin on the seat back) Sean. Your hair. Today. Ten out of ten. Stella. Eleven.','happy');}}
 if(RE('raccoon'))RE('raccoon').run=async()=>{
  const r=pprop({t:'raccoon',x:300,y:30,dir:-1,layer:200});
  await N('Something moves in the luggage rack over the windows. A raccoon. It looks at you. It reaches down, takes the sandwich out of a seventh grader’s hand, very politely, and gets off at the next stop.');

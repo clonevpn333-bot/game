@@ -48,7 +48,7 @@ say=function(who,text,e){
 if(typeof DAYSET!=='undefined')for(const t in DAYSET)for(const i in DAYSET[t]){const s=DAYSET[t][i];if(s&&s.cls)for(const r in s.cls)s.cls[r]=s.cls[r].filter(x=>x!=='abby')}
 if(typeof WHISPER!=='undefined')delete WHISPER.abby;
 
-/* no Hasan & Darren, and no Sean & Imani: they’re friends, that’s all */
+/* no Hasan & Darren, and no Sean & Stella: they’re friends, that’s all */
 {const CUT=['darren','steptwelve','steal_stella','stepeleven','tellmom','toby','instella','striketwo','firstfight','farewell'];
  for(const m of CUT)delete MIS[m];
  for(const m in MIS){const w=MIS[m].who||[];if(w.includes('darren')||w.includes('toby'))delete MIS[m]}
@@ -60,9 +60,24 @@ if(typeof WHISPER!=='undefined')delete WHISPER.abby;
  if(typeof RIDE!=='undefined')for(let i=RIDE.length-1;i>=0;i--){const s=String(RIDE[i].run)+String(RIDE[i].cond);if(/darren|toby|firstfight|instella|striketwo|farewell/i.test(s))RIDE.splice(i,1)}
  for(const per of ROSTER)if(per)for(const r in per)per[r]=per[r].filter(e=>!['darren','toby'].includes(e[0]));
  window.EDITION_CUT.push('darren','toby');
- const LOVE=/darren|\btoby\b|(sean|stella)[^.!?]{0,40}(kiss|girlfriend|boyfriend|dating|date|couple|in love|love you|making out)|(kiss|girlfriend|boyfriend|dating|first date|couple|in love|making out)[^.!?]{0,40}(sean|stella)/i;
+ const LOVE=/darren|\btoby\b|(sean|stella|imani)[^.!?]{0,40}(kiss|girlfriend|boyfriend|dating|date|couple|in love|love you|making out)|(kiss|girlfriend|boyfriend|dating|first date|couple|in love|making out)[^.!?]{0,40}(sean|stella|imani)/i;
  const _s=say;say=function(who,text,e){if(who==='darren'||who==='toby'||LOVE.test(String(text)))return Promise.resolve();return _s(who,text,e)};
  const _p=put;put=function(id,x,dir,o){if(id==='darren'||id==='toby')return{id,k:K[id],x:x||0,y:150,vis:false};return _p(id,x,dir,o)};
  if(typeof CHAT!=='undefined')for(const id of['hasan','sean','stella'])if(CHAT[id])CHAT[id]=CHAT[id].filter(l=>!LOVE.test(l));
  if(typeof GOSSIP_EXTRA!=='undefined')GOSSIP_EXTRA.length=0;
+}
+
+/* In the safe version Stella is replaced by Imani: a softball pitcher,
+   box braids, green team jacket. Same place in the story (the crew, the
+   field, the tea), never anybody's girlfriend. */
+{Object.assign(K.stella,{n:'Imani',col:'#2a7a4a',skin:'#8a5a3a',hair:'#1a1210',hs:'braids',top:'#2a7a4a',pants:'#2a2a33',h:3,v:470});
+ const sw=t=>typeof t==='string'?t.replace(/\bStella\b/g,'Imani').replace(/\bSTELLA\b/g,'IMANI').replace(/\bStel\b/g,'Imani'):t;
+ const deep=(o,d)=>{if(!o||d>5)return;for(const k in o){const v=o[k];if(typeof v==='string')o[k]=sw(v);else if(v&&typeof v==='object')deep(v,d+1)}};
+ for(const m of Object.values(MIS)){for(const f of['name','blurb','goal','doneTip','lockText'])m[f]=sw(m[f]);deep(m.parts,0);deep(m.tips,0);deep(m.variants,0)}
+ for(const h of HOOKS)h.label=sw(h.label);for(const s of SPOTS)s.label=sw(s.label);
+ for(const o of[ITEMS,typeof CHAT!=='undefined'?CHAT:null,typeof INTEL!=='undefined'?INTEL:null,typeof NIGHT!=='undefined'?NIGHT:null,typeof BONDLINE!=='undefined'?BONDLINE:null,typeof WHISPER!=='undefined'?WHISPER:null,window.EDITION_LINE,typeof DEATHS!=='undefined'?DEATHS:null,typeof COLL!=='undefined'?COLL:null])deep(o,0);
+ const _s=say;say=function(who,text,e){return _s(who,sw(text),e)};
+ const _c=choose;choose=function(opts,prompt){return _c((opts||[]).map(o=>typeof o==='string'?sw(o):Object.assign({},o,{t:sw(o.t)})),sw(prompt))};
+ const _t=toast;toast=function(t,...r){return _t(sw(t),...r)};
+ const _cd=card;card=function(a,b,...r){return _cd(sw(a),sw(b),...r)};
 }

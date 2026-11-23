@@ -216,7 +216,7 @@ const RIDE=[
  }},
  {id:'portland',w:10,cond:()=>D.f.fw&&!D.f.ridePT&&onBus('sean')&&onBus('stella'),run:async()=>{
   D.f.ridePT=1;
-  await N('Sean and Imani are sharing one seat with a map of the United States open on their knees. Sean is measuring it with his hand.');
+  await N('Sean and Stella are sharing one seat with a map of the United States open on their knees. Sean is measuring it with his hand.');
   await say('sean','It’s three hours behind. So when it’s nine here, it’s six there. So I call at nine and she’s still eating dinner. So she calls me at nine HER time, and it’s midnight.','scared');
   await say('stella','So we both stay up.','happy');
   await say('sean','So we both stay up.','blush');
@@ -262,7 +262,7 @@ const NIGHT=[
  {cond:()=>P.crew&&(P.crew.ev||{}).jars&&!P.crew.n2,set:()=>crew().n2=1,from:'Kenneth',msgs:[['them','i backed the fridge photos up 4 times','23:10'],['them','i keep zooming in on the one that says tyler','23:10'],['them','his handwriting is on the label. not voss’s. TYLERS','23:11'],['them','he labeled his own jar bro','23:11'],['me','go to sleep ken','23:20'],['them','cant','23:20']]},
  {cond:()=>D.f.brettDead&&!D.f.n3,set:()=>D.f.n3=1,from:'Corey',msgs:[['them','i washed my shoes in the bath','00:12'],['them','my mom asked why the bath was brown','00:12'],['them','i said football','00:13'],['them','i dont play football','00:13'],['me','delete these','00:20'],['them','ok','00:20']]},
  {cond:()=>D.done.window&&!D.f.n4,set:()=>D.f.n4=1,from:'Abby',msgs:[['them','is it weird that i drew the bird on my bedroom window too','23:02'],['them','and then a second one','23:02'],['them','dont tell him','23:03'],['them','actually tell him','23:03']]},
- {cond:()=>D.f.fw&&!D.done.farewell,from:'Imani',msgs:[['them','we packed my room today','22:30'],['them','it fits in 6 boxes','22:30'],['them','my whole life is 6 boxes','22:31'],['them','sean called and didnt say anything for like 4 min. just breathed. it was nice actually','22:40']]},
+ {cond:()=>D.f.fw&&!D.done.farewell,from:'Stella',msgs:[['them','we packed my room today','22:30'],['them','it fits in 6 boxes','22:30'],['them','my whole life is 6 boxes','22:31'],['them','sean called and didnt say anything for like 4 min. just breathed. it was nice actually','22:40']]},
  {cond:()=>D.done.kim&&!D.f.n6,set:()=>D.f.n6=1,from:'Dheva',msgs:[['them','alex is sleeping over','23:50'],['them','he still cant sleep with the light off','23:50'],['them','he keeps counting in his sleep. in 7s','23:51'],['them','im gonna stay up','23:51']]},
  {cond:()=>D.f.pj1&&!D.done.pauljones&&pjKind()>=1,from:'Paul Jones',msgs:[['them','hey its paul. jones. got ur number off the class list','23:30'],['them','sorry thats weird','23:30'],['them','thanks for sitting there','23:31']]},
  {cond:()=>D.done.stepeleven&&!D.f.n8,set:()=>D.f.n8=1,from:'Hasan',msgs:[['them','darren texted me step 12','22:15'],['them','it just says “keep going”','22:15'],['them','im not crying ur crying','22:16']]},
@@ -319,8 +319,8 @@ RIDE.push(
  }},
  {id:'tobyBus',w:7,cond:()=>D.done.toby&&!D.f.rideTo&&onBus('sean'),run:async()=>{
   if(!onBus('sean'))return;D.f.rideTo=1;put('toby',A.sean.x+14,-1,{y:A.sean.y,pose:'sit'});
-  await N('Toby from Ohio has started riding the 43. He sits behind Sean and Imani and gives them both friendship bracelets every Thursday. Nobody asked him to. Everybody wears them.');
-  await say('toby','(leaning over the seat) Sean. Your hair. Today. Ten out of ten. Imani. Your hair. Eleven.','happy');
+  await N('Toby from Ohio has started riding the 43. He sits behind Sean and Stella and gives them both friendship bracelets every Thursday. Nobody asked him to. Everybody wears them.');
+  await say('toby','(leaning over the seat) Sean. Your hair. Today. Ten out of ten. Stella. Your hair. Eleven.','happy');
  }},
  {id:'davidList',w:8,cond:()=>P.crew&&P.crew.beat2&&!P.crew.rideDL&&onBus('david'),run:async()=>{
   crew().rideDL=1;save();hold('david','clipboard');
@@ -330,7 +330,7 @@ RIDE.push(
  }},
  {id:'stellaDad',w:8,cond:()=>D.done.striketwo&&!D.f.rideSD&&onBus('stella'),run:async()=>{
   if(!onBus('stella'))return;D.f.rideSD=1;hold('stella','ball');
-  await N('Imani is turning her lucky ball over and over in her hands. Strike one.');
+  await N('Stella is turning her lucky ball over and over in her hands. Strike one.');
   await say('stella','My dad texted. First time in two years. He saw a photo of me and Sean. He said “who’s the boy”.','sad');
   await say('stella','I didn’t answer. I’m gonna let him wonder. He can wonder for two years.','angry');hold('stella',null);
  }}

@@ -15,7 +15,7 @@ const MOUTH={
  david:['As class president, I’d like to say: what the hell is wrong with this school.','I don’t swear. I legislate. (pause) This school is a shitshow.'],
  nivaan:['Chat said I look like a guy who apologizes to Roombas. I DO apologize to Roombas. They have feelings.','Got banned on stream for saying “hell”. Then I said it again, louder. Twelve new followers.'],
  corey:['My hair isn’t a personality. It’s a lifestyle. There’s a difference and it’s six products.','Arjun called my curls “a cry for help.” They ARE a cry for help. That’s not the point.'],
- sean:['My voice is cool. The rest of me is in beta.','Imani says I flirt like a golden retriever. I don’t know how to argue with that.'],
+ sean:['My voice is cool. The rest of me is in beta.','Stella says I flirt like a golden retriever. I don’t know how to argue with that.'],
  kenneth:['Since the leak I’ve changed my password to something nobody will guess. It’s my dad’s name. Everyone knows my dad’s name. Damn it.','I’m small but I’m fast. Mostly away from things.'],
  paul:['I’m not violent. I’m affectionate at high speed.','Somebody told me to calm down once. I picked them up. They calmed down.'],
  marcus:['I don’t make it weird. It arrives weird. I just open the door.','Coach said “nice ball control” to Alex and I had to leave the gym. I had to LEAVE.','Everything is a double meaning if you’re brave enough.'],
@@ -23,7 +23,7 @@ const MOUTH={
  alex:['I talk to the ball more than I talk to people. The ball listens. The ball doesn’t say “what?”','Coach told me I’ve got “the soul of a substitute.” What does that MEAN, Coach.'],
  angelo:['I don’t sell to snitches, narcs, or Aidan. Aidan just stares at the merchandise.','Business is good. Business is always good. Business is a little bit illegal.'],
  jacob:['I did a backflip off a shed on Saturday. I can’t feel the left side of my face. Worth it.','I’m not dumb. I’m confident in the wrong direction.'],
- stella:['If one more person says “Imani-vision” I’m throwing the ball at their actual skull.','I’m not mean. I just have a really accurate arm.'],
+ stella:['If one more person says “Stella-vision” I’m throwing the ball at their actual skull.','I’m not mean. I just have a really accurate arm.'],
  aidan:['People call me a creep. I prefer “early observer.”','I know what everyone’s locker combination is. I don’t do anything with it. I just like knowing.']
 };
 for(const id in MOUTH)if(CHAT[id])CHAT[id].push(...MOUTH[id]);
