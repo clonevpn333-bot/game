@@ -147,7 +147,7 @@ hook({mis:'hotsub',period:4,room:'canteen',who:'auto',cond:()=>D.f.hs1&&!D.f.hs2
  if(A.balduf)await say('balduf','I wrote you a sonnet. Fourteen lines. Iambic pentameter. The rhyme scheme is ABAB, and so, frankly, am I.','blush');
  if(A.coach){pose('coach','up');SFX.thud();shake(.6);await N('Coach picks up the vending machine. The whole vending machine. He holds it over his head and says “I can also lift YOU.” Nobody knows what to do with that.')}
  await say('valentino','(sipping an espresso he brought from home) You are all very generous. I am only here until Thursday. I am a substitute. I substitute.','smirk');
- const bet=D.f.hsBet;
+ const bet=D.f.hsBet||(D.f.hsBet='shermian');
  const c=await choose(['Help your bet: tell '+K[bet].n.replace(/^(Ms\.|Mr\.)\s*/,'')+' he “loves a bold move”.','Sabotage the others: swap the sonnet for a parking ticket.','Pull the fire alarm. Let chaos decide.']);
  if(c===0){D.f.hsHelp=1;await N('You whisper it. '+K[bet].n+' goes very still, then very determined, like a shark that just heard a heartbeat.')}
  else if(c===1){D.f.hsHelp=1;await N('You make the swap. Ms. Balduf stands up, clears her throat, and reads him a parking ticket in iambic pentameter by accident. She runs out of the cafeteria.')}
