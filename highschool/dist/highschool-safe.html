@@ -1690,7 +1690,7 @@ function openSettings(){
  btn('Fullscreen',()=>goFullscreen(),1);
  btn('Save & quit to title',()=>{o.hidden=true;if(D&&D.period!=null&&!busy){P.cur=P.cur||JSON.parse(JSON.stringify(D))}save();title()},1);
  btn('Erase all progress',()=>{if(confirm('Erase every loop, mission, collectible and ending?')){localStorage.removeItem(SAVE_KEY);loadP();o.hidden=true;title()}},1);
- const note=document.createElement('p');note.style.cssText='color:#a99aa8;font-size:12px;line-height:1.6;margin-top:14px';note.textContent='Keys: ←/→ walk · E/Space talk & advance · M map · Q quests · L backlog · A auto · S skip (or hold Ctrl) · Esc settings. The game saves at the start of every period.';o.querySelector('.box').appendChild(note);
+ const note=document.createElement('p');note.style.cssText='color:#a99aa8;font-size:12px;line-height:1.6;margin-top:14px';note.textContent='Keys: ←/→ walk · E/Space talk & advance · M map · Q quests · L backlog · A auto · hold Ctrl to skip · X shove · T tracker · Shift sprint · Esc settings. The game saves at the start of every period.';o.querySelector('.box').appendChild(note);
 }
 
 /* ---------------- title ---------------- */
@@ -20023,7 +20023,7 @@ function nowCard(t){
  const d=describe(t),M=MIS[t.mis],r=qel('div','qcard'+(t.main?' main':t.started?' go':' new'));
  r.appendChild(qel('div','ic',M?M.icon:'★'));
  const m=qel('div','m');r.appendChild(m);
- const h=qel('h4','',d.name);h.appendChild(chip(t.main?'MAIN STORY':t.started?'IN PROGRESS':'NEW',t.main?'main':t.started?'go':'new'));m.appendChild(h);
+ const h=qel('h4','',d.name);h.appendChild(chip(t.main?'MAIN STORY':t.started?'IN PROGRESS':'NEW',t.main?'main':t.started?'go':'new'));if(M&&M.filthy)h.appendChild(chip('🔞 FILTHY','filthy'));m.appendChild(h);
  if(d.label)m.appendChild(qel('div','act',/^[“"]/.test(d.label)?d.label:'“'+d.label+'”'));
  m.appendChild(qel('div','wh','📍 '+(D.room===t.room?'Right here':d.where)+(d.who?' · with '+d.who:'')));
  if(D.room!==t.room)m.appendChild(qel('div','rt','➜ '+d.route));
@@ -20037,13 +20037,15 @@ function qlQuests(body){
  const st=m=>{if(D&&D.done[m.id])return'done';if(D&&(D.mp[m.id]||0)>0)return'active';if(P.done[m.id])return'done';if(D&&!D.weekend&&[0,1,2,3,4,5,6,7,8].some(p=>thingsAt(p).some(t=>t.mis===m.id)))return'open';return'later'};
  const groups={active:[],open:[],done:[],later:[]};for(const m of all)groups[st(m)].push(m);
  const bar=qel('div','qfil');body.appendChild(bar);
- for(const [k,n] of[['active','In progress'],['open','Can start today'],['done','Done'],['later','Not yet']]){const b=qel('button','',n+' '+groups[k].length);b.setAttribute('aria-pressed',String(QL.filter===k));b.onclick=()=>{QL.filter=k;openQuest()};bar.appendChild(b)}
+ groups.filthy=all.filter(m=>m.filthy);
+ for(const [k,n] of[['active','In progress'],['open','Can start today'],['done','Done'],['later','Not yet'],['filthy','🔞 Filthy']]){const b=qel('button','',n+' '+groups[k].length);b.setAttribute('aria-pressed',String(QL.filter===k));b.onclick=()=>{QL.filter=k;openQuest()};bar.appendChild(b)}
  const done=Object.keys(P.done).filter(m=>MIS[m]).length;
  body.appendChild(qel('div','qlnote',done+' of '+all.length+' quests finished across all runs. Tap a quest for its steps.'));
  const list=groups[QL.filter];
+ if(QL.filter==='filthy'&&typeof filthRank==='function'){const k=filthRank(),bx=qel('div','qcard');bx.style.borderLeftColor='#ff6a8a';bx.appendChild(qel('div','ic','🔞'));const mm=qel('div','m');mm.appendChild(qel('h4','','FILTH-O-METER: '+filthCount()+'/'+FILTHY.length+' · '+k[1].toUpperCase()));mm.appendChild(qel('div','act',k[2]));if(!filthyOn())mm.appendChild(qel('div','rt','Filthy quests are OFF. Turn them on in Settings.'));bx.appendChild(mm);body.appendChild(bx)}
  if(!list.length)body.appendChild(qel('p','qlnote',QL.filter==='active'?'Nothing in progress. Check ⚡ Do Now for something to start.':'Nothing here.'));
  list.sort((a,b)=>a.name.localeCompare(b.name));
- for(const M of list)body.appendChild(questRow(M,QL.filter));
+ for(const M of list)body.appendChild(questRow(M,QL.filter==='filthy'?st(M):QL.filter));
 }
 function questRow(M,grp){
  const reached=Math.max(P.parts[M.id]||0,D?(D.mp[M.id]||0):0),isDone=grp==='done',locked=grp==='later'&&M.hidden&&!reached;
@@ -20051,7 +20053,7 @@ function questRow(M,grp){
  const top=qel('div','qtop');r.appendChild(top);
  top.appendChild(qel('div','ic',locked?'?':M.icon));
  const mid=qel('div','m');top.appendChild(mid);
- mid.appendChild(qel('h4','',locked?'???':M.name));
+ {const h4=qel('h4','',locked?'???':M.name);if(M.filthy&&!locked)h4.appendChild(chip('🔞 FILTHY','filthy'));mid.appendChild(h4)}
  const pips=qel('div','pips');for(let i=0;i<M.parts.length;i++)pips.appendChild(qel('i',i<reached||isDone?'ok':i===reached&&grp==='active'?'cur':''));mid.appendChild(pips);
  if(!locked&&D&&!D.weekend&&grp!=='done'){
   let line='';if(grp==='active'&&typeof stepLine==='function'){const s=stepLine(M.id);line=s.when+': '+s.text}
@@ -20587,10 +20589,10 @@ hook({mis:'hotmic',period:[5,6],get room(){return D&&myClassFor(D.period)},set r
  SFX.static&&SFX.static();pa.on=1;
  await N('Halfway through the lesson, the speaker on the wall crackles. The little red light on it comes on. Everybody looks up.');
  await say('adam','(on the speaker) …is it on? It’s not on. The kid fixed it. The light’s just broken, Doris. Get over here.');
- await say('balduf','(on the speaker) Lock the door, Gerald. I’ve been thinking about you through all of second period. Even during the Dewey Decimal unit. ESPECIALLY during the Dewey Decimal unit.');
+ await say('balduf','(on the speaker) Pants. Off. Now, Gerald. I’ve been thinking about your sad little body through all of second period.');
  for(const k of kids)if(A[k])A[k].ex='shock';
- await say('adam','(on the speaker) Yes ma’am. Should I— should I take my tie off?');
- await say('balduf','(on the speaker) Leave the tie on. I want something to hold on to. Like last time. Like the staff Christmas party.');
+ await say('adam','(on the speaker) Yes ma’am. Should I— should I fold them?');
+ await say('balduf','(on the speaker) Did I SAY fold them? Throw them in the shredder. You’re going home in a trash bag like last time.');
  if(A.hasan){pose('hasan','drink');await N('Hasan, frozen, takes a slow sip of his chocolate milk so his face has something to do.')}
  SFX.thud&&SFX.thud();shake(.4);
  await N('A desk creaks. Then it creaks again. Then it starts creaking on a rhythm, and the rhythm is not a good rhythm, and the whole school is now hearing it in surround sound.');
@@ -20792,7 +20794,7 @@ spot({room:'carpark',x:236,y:150,label:'Deliver the key bowl to the rocking whit
  await N('The van starts rocking twice as fast. The left tire squeaks on every beat. A sock is pressed against the inside of the window and slowly slides down it.');
  v.rock=0;SFX.door&&SFX.door();
  put('shermian',250,-1,{y:150});await walk('shermian',222,50);face('shermian','you');
- await N('The side door slides open a foot and Ms. Sherman steps out, perfectly calm, fixing her lanyard, with her hair completely flat on one side and somebody else’s glasses on.');
+ await N('The side door slides open a foot and Ms. Sherman steps out, perfectly calm, buttoning her blouse up to the very top, with her hair completely flat on one side and somebody else’s glasses on.');
  await say('shermian','(holding out her hand for the bowl, eyes dead) You saw nothing. You’re going to tell everyone you saw nothing. And if I hear “key party” in my hallway, I’ll find out whose key you are.','cold');
  const c=await choose([{t:'Hand her the bowl. Swap two keys first.',tag:'🔑'},{t:'Hand her the bowl. Then take off the handbrake.',tag:'🚐'},{t:'Hand her the bowl. Take your money. Leave.',tag:'💵'}]);
  take('keybowl');
@@ -20805,7 +20807,7 @@ spot({room:'carpark',x:236,y:150,label:'Deliver the key bowl to the rocking whit
  if(c===1){await walk('shermian',250,50);remove('shermian');await walk('you',270,60);pose('you','reach');SFX.door&&SFX.door();pose('you',null);await walk('you',150,90);
   v.rock=2;await N('Click. The van rolls. It rolls slowly at first, still rocking, still squeaking on the beat, and then it hits the ramp.');
   await tw(v,{x:420},1400,'in');SFX.crash&&SFX.crash();shake(1.2);
-  await N('It goes down three floors of parking ramp at forty miles an hour with nine teachers inside screaming in harmony and comes to a stop in the mall fountain. The doors fly open. Steam comes out. So does Coach, still blowing the whistle, still yelling “PICK A KEY”.');
+  await N('It goes down three floors of parking ramp at forty miles an hour with nine teachers inside screaming in harmony and comes to a stop in the mall fountain. The doors fly open. Steam comes out. So does Coach. He is wearing only the whistle. He is still blowing it.');
   if(typeof repAdd==='function')repAdd('legend',2,'The Key Bowl');await complete('keybowl','brake');return 'stay'}
  await say('shermian','(taking the bowl) Good. Smart. You’ll go far. Not tonight. Tonight you go home.','cold');await walk('shermian',250,50);remove('shermian');
  D.money=(D.money||0)+(D.f.kb40?40:20);updateLoc();toast('+$'+(D.f.kb40?40:20));
@@ -21113,6 +21115,80 @@ async function eatContest(){
 /* the swap table is on the stage when you've got the box */
 {const _br=buildRoom;buildRoom=function(room){const r=_br(room);try{if(room==='hall'&&D&&D.f.ei1&&!D.f.ei2&&!props.some(p=>p.t==='dogtable'))prop({t:'dogtable',x:160,y:104,layer:-2,l:12,r:12,keep:1})}catch(e){}return r}}
 ON_PERIOD.push(async()=>{if(!D||TEST||!D.done||!D.done.eatit||Math.random()>.3||D.period===0)return;setTimeout(()=>toast('🗣 '+pick(['The front row of the Main Hall is roped off. Forever.','Arjun brushed his teeth eleven times. It’s still in there, he says.','Coach is eating salad now. Nobody’s ever seen Coach scared before.','They had to replace the microphone. And the curtains. And Mr. Adam.'])),5600)});
+
+</script>
+<script>
+/* js/filthy.js */
+'use strict';
+/* =====================================================================
+   HIGHSCHOOL — 🔞 FILTHY QUESTS
+   The R-rated teacher quests are a feature now:
+   • 🔞 FILTHY tag in ⚡ Do Now and the Quests tab, plus its own filter.
+   • A PARENTAL ADVISORY card the first time each one starts:
+     LET'S GO or NOPE, with a "don't warn me again" box.
+   • The Filth-o-Meter: ranks for how many you've survived.
+   • Settings: Filthy quests ON/OFF (on in the main game, off by
+     default in the safe version).
+   ===================================================================== */
+const FILTHY=['hotmic','codebrown','keybowl','dungeon','eatit','replyall'];
+for(const m of FILTHY)if(MIS[m])MIS[m].filthy=1;
+function filthyOn(){P.set=P.set||{};if(P.set.filthy==null)P.set.filthy=window.EDITION==='safe'?0:1;return !!P.set.filthy}
+/* off = they never show up */
+for(const h of HOOKS)if(FILTHY.includes(h.mis)){const c=h.cond;h.cond=function(){return filthyOn()&&(!c||c.apply(this,arguments))}}
+for(const s of SPOTS)if(FILTHY.includes(s.mis)){const c=s.cond;s.cond=function(){return filthyOn()&&(!c||c.apply(this,arguments))}}
+/* the warning */
+const ADVISORY=[
+ ['PARENTAL ADVISORY','EXPLICIT TEACHERS','What happens next involves grown adults, a total lack of shame, and at least one bodily fluid. Highgate High is not responsible for any milk that comes out of your nose.'],
+ ['⚠ CONTENT WARNING ⚠','THE STAFF ARE HORNY AND UNWELL','You are about to learn things about your teachers that you cannot unlearn. Your therapist will want to see this level.'],
+ ['WARNING: FILTHY','SIT DOWN FOR THIS ONE','This quest is rated R for Really Disgusting. Keep your hands, feet and dignity inside the ride at all times.'],
+ ['🔞 FILTH AHEAD 🔞','NO, SERIOUSLY','Coach is involved. That’s all we’re going to say. If you’re eating, stop. If you’re not eating, good.'],
+ ['HEADS UP','YOUR TEACHERS HAVE SEX LIVES','And they are LOUD about it. The following contains filthy jokes, gross-out, and one (1) whistle that has seen things.'],
+ ['VIEWER DISCRETION','IS ADVISED. ADVISED HARD.','Nobody in this scene has ever been told “no”. Mr. Adam has never been told “slow down”. Proceed with eye bleach.']];
+function advisory(m){
+ return new Promise(res=>{
+  const [t1,t2,body]=ADVISORY[(Object.keys(P.filthOK||{}).length+FILTHY.indexOf(m))%ADVISORY.length];
+  const o=document.createElement('div');o.id='advisory';
+  o.innerHTML='<div class="pa"><div class="t1"></div><div class="t2"></div></div><div class="qn"></div><p></p><div class="b"><button class="go">LET’S GO <small>(I’m built different)</small></button><button class="no">NOPE <small>(take me back)</small></button></div><label><input type="checkbox"> don’t warn me again</label>';
+  o.querySelector('.t1').textContent=t1;o.querySelector('.t2').textContent=t2;o.querySelector('.qn').textContent='🔞 '+(MIS[m]?MIS[m].name.toUpperCase():'');o.querySelector('p').textContent=body;
+  const done=v=>{if(o.querySelector('input').checked){P.set.filthyNoWarn=1}removeEventListener('keydown',key,true);o.remove();save&&save();res(v)};
+  const key=e=>{if(e.key==='Enter'||e.key===' '||e.key==='1'){e.preventDefault();e.stopImmediatePropagation();done(true)}if(e.key==='Escape'||e.key==='2'){e.preventDefault();e.stopImmediatePropagation();done(false)}};
+  o.querySelector('.go').onclick=()=>done(true);o.querySelector('.no').onclick=()=>done(false);
+  addEventListener('keydown',key,true);document.body.appendChild(o);SFX.sting&&SFX.sting();
+ })}
+{const st=document.createElement('style');st.textContent=`
+#advisory{position:fixed;inset:0;z-index:70;background:radial-gradient(ellipse at 50% 40%,#2a0a12f4,#050307fa);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px;text-align:center;color:#f4ead8;animation:advIn .3s ease-out}
+@keyframes advIn{from{opacity:0;transform:scale(1.06)}to{opacity:1;transform:none}}
+#advisory .pa{border:4px solid #fff;background:#000;padding:8px 18px;min-width:240px;transform:rotate(-2deg);box-shadow:0 0 0 3px #000,0 0 40px #ff204080;animation:advShake 2.4s ease-in-out infinite}
+@keyframes advShake{0%,100%{transform:rotate(-2deg)}50%{transform:rotate(1deg) scale(1.03)}}
+#advisory .t1{font-size:clamp(18px,4vw,30px);letter-spacing:.14em;color:#fff;border-bottom:3px solid #fff;padding-bottom:4px;margin-bottom:4px}
+#advisory .t2{font-size:clamp(12px,2.4vw,17px);letter-spacing:.2em;color:#fff}
+#advisory .qn{color:#ff6a8a;letter-spacing:.2em;font-size:14px}
+#advisory p{max-width:30em;font-size:clamp(12px,1.8vw,15px);line-height:1.6;color:#e8d8e0;margin:0}
+#advisory .b{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+#advisory button{font:inherit;font-size:15px;padding:10px 18px;border:2px solid #ff6a8a;background:#3a0a18;color:#fff;cursor:pointer;letter-spacing:.1em}
+#advisory button.no{border-color:#6a5a7a;background:#1a1424;color:#cbbfd8}#advisory button small{display:block;font-size:10px;opacity:.7;letter-spacing:.05em}
+#advisory button:hover{transform:translateY(-1px)}#advisory label{font-size:12px;color:#a99aa8;cursor:pointer}
+#quest.ql2 .chip.filthy{background:#5a0a20;color:#ff9ab0}`;document.head.appendChild(st)}
+{const _rh=runHook;runHook=async function(h){
+ if(h&&FILTHY.includes(h.mis)&&!TEST&&!(P.filthOK&&P.filthOK[h.mis])&&!P.set.filthyNoWarn&&!h._inner){
+  const ok=await advisory(h.mis);if(!ok){toast('Coward. (It’ll still be there.)');busy=false;if(panelMode!=='roam')roam();return}
+  (P.filthOK=P.filthOK||{})[h.mis]=1;save&&save()}
+ return _rh(h)}}
+{const _us=useSpot;useSpot=async function(s){
+ if(s&&FILTHY.includes(s.mis)&&!TEST&&!(P.filthOK&&P.filthOK[s.mis])&&!P.set.filthyNoWarn){
+  const ok=await advisory(s.mis);if(!ok){toast('Coward. (It’ll still be there.)');return}(P.filthOK=P.filthOK||{})[s.mis]=1;save&&save()}
+ return _us(s)}}
+/* the Filth-o-Meter */
+const FILTH_RANKS=[[0,'Innocent','You still think teachers go home and grade papers.'],[1,'Corrupted','You’ve heard things. You can’t un-hear them.'],[3,'Seen Things','You look at the staff room door differently now.'],[5,'Eye Bleach Subscriber','Your browser history is clean. Your soul is not.'],[6,'Certified Degenerate','You have seen every filthy thing Highgate has to offer. Coach salutes you. Please don’t salute back.']];
+function filthCount(){return FILTHY.filter(m=>P.done[m]).length}
+function filthRank(){let r=FILTH_RANKS[0];for(const x of FILTH_RANKS)if(filthCount()>=x[0])r=x;return r}
+{const _cp=complete;complete=async function(m,v,big){const before=filthCount();const r=await _cp(m,v,big);try{if(FILTHY.includes(m)&&filthCount()>before&&!TEST){const k=filthRank();setTimeout(()=>toast('🔞 Filth-o-Meter: '+filthCount()+'/'+FILTHY.length+' · '+k[1].toUpperCase()),2800)}}catch(e){}return r}}
+/* settings */
+{const _os=openSettings;openSettings=function(){_os();const s=$('settings').querySelector('.set');if(!s)return;
+ s.appendChild(Object.assign(document.createElement('div'),{textContent:'🔞 Filthy quests'}));const w=document.createElement('div');w.className='opts';
+ [[1,'On'],[0,'Off']].forEach(([v,n])=>{const b=document.createElement('button');b.textContent=n;b.setAttribute('aria-pressed',String(+filthyOn()===v));b.onclick=()=>{P.set.filthy=v;save&&save();openSettings()};w.appendChild(b)});s.appendChild(w);
+ s.appendChild(Object.assign(document.createElement('div'),{textContent:'🔞 Filth warnings'}));const w2=document.createElement('div');w2.className='opts';
+ [[0,'Warn me'],[1,'I’m built different']].forEach(([v,n])=>{const b=document.createElement('button');b.textContent=n;b.setAttribute('aria-pressed',String(+(!!P.set.filthyNoWarn)===v));b.onclick=()=>{P.set.filthyNoWarn=v;save&&save();openSettings()};w2.appendChild(b)});s.appendChild(w2)}}
 
 </script>
 <script>

@@ -433,7 +433,7 @@ function openSettings(){
  btn('Fullscreen',()=>goFullscreen(),1);
  btn('Save & quit to title',()=>{o.hidden=true;if(D&&D.period!=null&&!busy){P.cur=P.cur||JSON.parse(JSON.stringify(D))}save();title()},1);
  btn('Erase all progress',()=>{if(confirm('Erase every loop, mission, collectible and ending?')){localStorage.removeItem(SAVE_KEY);loadP();o.hidden=true;title()}},1);
- const note=document.createElement('p');note.style.cssText='color:#a99aa8;font-size:12px;line-height:1.6;margin-top:14px';note.textContent='Keys: ←/→ walk · E/Space talk & advance · M map · Q quests · L backlog · A auto · S skip (or hold Ctrl) · Esc settings. The game saves at the start of every period.';o.querySelector('.box').appendChild(note);
+ const note=document.createElement('p');note.style.cssText='color:#a99aa8;font-size:12px;line-height:1.6;margin-top:14px';note.textContent='Keys: ←/→ walk · E/Space talk & advance · M map · Q quests · L backlog · A auto · hold Ctrl to skip · X shove · T tracker · Shift sprint · Esc settings. The game saves at the start of every period.';o.querySelector('.box').appendChild(note);
 }
 
 /* ---------------- title ---------------- */

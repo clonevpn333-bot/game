@@ -60,7 +60,7 @@ so check every line.
 ## Tone and content
 - M-rated: swearing, gore, dark comedy and edgy teen humor are wanted.
 - No slurs and no disguised slurs (not even made-up words that sound like them).
-- No sexual content involving the kids. Raunchy = actually filthy, not innuendo: the ADULTS (teachers, parents, randos) can be explicitly crude, with sex stuff happening just off-screen (heard, van rocking, gear found), plus gross-out. Kids react, puke, film, roast, get revenge, never take part. Sex jokes yes (dialogue, chats, audio); NO nudity and no mentions of nudity. See `js/raunch.js` and `js/hotmic.js`. Gross-out hits the audience on screen with `spew()`/`pukeChain()`/`stain()` in `js/splash.js` (puke, brown, milk, chili only).
+- No sexual content involving the kids. Raunchy = actually filthy, not innuendo: the ADULTS (teachers, parents, randos) can be explicitly crude, with sex stuff happening just off-screen (heard, van rocking, gear found), plus gross-out. Kids react, puke, film, roast, get revenge, never take part. Sex jokes and joking mentions of adult nudity are wanted (dialogue, chats, audio); nothing sexual or nude is drawn on screen. These quests are tagged 🔞 FILTHY (`js/filthy.js`: add new ones to FILTHY): Parental Advisory card on first start, Filth-o-Meter, Settings on/off (off by default in the safe version). See `js/raunch.js` and `js/hotmic.js`. Gross-out hits the audience on screen with `spew()`/`pukeChain()`/`stain()` in `js/splash.js` (puke, brown, milk, chili only).
 - American English everywhere.
 - The “safe version” has no Abby and no Corey romance. Call it “safe version”, never “no Abby”.
 

@@ -69,10 +69,10 @@ hook({mis:'hotmic',period:[5,6],get room(){return D&&myClassFor(D.period)},set r
  SFX.static&&SFX.static();pa.on=1;
  await N('Halfway through the lesson, the speaker on the wall crackles. The little red light on it comes on. Everybody looks up.');
  await say('adam','(on the speaker) …is it on? It’s not on. The kid fixed it. The light’s just broken, Doris. Get over here.');
- await say('balduf','(on the speaker) Lock the door, Gerald. I’ve been thinking about you through all of second period. Even during the Dewey Decimal unit. ESPECIALLY during the Dewey Decimal unit.');
+ await say('balduf','(on the speaker) Pants. Off. Now, Gerald. I’ve been thinking about your sad little body through all of second period.');
  for(const k of kids)if(A[k])A[k].ex='shock';
- await say('adam','(on the speaker) Yes ma’am. Should I— should I take my tie off?');
- await say('balduf','(on the speaker) Leave the tie on. I want something to hold on to. Like last time. Like the staff Christmas party.');
+ await say('adam','(on the speaker) Yes ma’am. Should I— should I fold them?');
+ await say('balduf','(on the speaker) Did I SAY fold them? Throw them in the shredder. You’re going home in a trash bag like last time.');
  if(A.hasan){pose('hasan','drink');await N('Hasan, frozen, takes a slow sip of his chocolate milk so his face has something to do.')}
  SFX.thud&&SFX.thud();shake(.4);
  await N('A desk creaks. Then it creaks again. Then it starts creaking on a rhythm, and the rhythm is not a good rhythm, and the whole school is now hearing it in surround sound.');

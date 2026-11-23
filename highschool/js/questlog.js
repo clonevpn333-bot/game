@@ -119,7 +119,7 @@ function nowCard(t){
  const d=describe(t),M=MIS[t.mis],r=qel('div','qcard'+(t.main?' main':t.started?' go':' new'));
  r.appendChild(qel('div','ic',M?M.icon:'★'));
  const m=qel('div','m');r.appendChild(m);
- const h=qel('h4','',d.name);h.appendChild(chip(t.main?'MAIN STORY':t.started?'IN PROGRESS':'NEW',t.main?'main':t.started?'go':'new'));m.appendChild(h);
+ const h=qel('h4','',d.name);h.appendChild(chip(t.main?'MAIN STORY':t.started?'IN PROGRESS':'NEW',t.main?'main':t.started?'go':'new'));if(M&&M.filthy)h.appendChild(chip('🔞 FILTHY','filthy'));m.appendChild(h);
  if(d.label)m.appendChild(qel('div','act',/^[“"]/.test(d.label)?d.label:'“'+d.label+'”'));
  m.appendChild(qel('div','wh','📍 '+(D.room===t.room?'Right here':d.where)+(d.who?' · with '+d.who:'')));
  if(D.room!==t.room)m.appendChild(qel('div','rt','➜ '+d.route));
@@ -133,13 +133,15 @@ function qlQuests(body){
  const st=m=>{if(D&&D.done[m.id])return'done';if(D&&(D.mp[m.id]||0)>0)return'active';if(P.done[m.id])return'done';if(D&&!D.weekend&&[0,1,2,3,4,5,6,7,8].some(p=>thingsAt(p).some(t=>t.mis===m.id)))return'open';return'later'};
  const groups={active:[],open:[],done:[],later:[]};for(const m of all)groups[st(m)].push(m);
  const bar=qel('div','qfil');body.appendChild(bar);
- for(const [k,n] of[['active','In progress'],['open','Can start today'],['done','Done'],['later','Not yet']]){const b=qel('button','',n+' '+groups[k].length);b.setAttribute('aria-pressed',String(QL.filter===k));b.onclick=()=>{QL.filter=k;openQuest()};bar.appendChild(b)}
+ groups.filthy=all.filter(m=>m.filthy);
+ for(const [k,n] of[['active','In progress'],['open','Can start today'],['done','Done'],['later','Not yet'],['filthy','🔞 Filthy']]){const b=qel('button','',n+' '+groups[k].length);b.setAttribute('aria-pressed',String(QL.filter===k));b.onclick=()=>{QL.filter=k;openQuest()};bar.appendChild(b)}
  const done=Object.keys(P.done).filter(m=>MIS[m]).length;
  body.appendChild(qel('div','qlnote',done+' of '+all.length+' quests finished across all runs. Tap a quest for its steps.'));
  const list=groups[QL.filter];
+ if(QL.filter==='filthy'&&typeof filthRank==='function'){const k=filthRank(),bx=qel('div','qcard');bx.style.borderLeftColor='#ff6a8a';bx.appendChild(qel('div','ic','🔞'));const mm=qel('div','m');mm.appendChild(qel('h4','','FILTH-O-METER: '+filthCount()+'/'+FILTHY.length+' · '+k[1].toUpperCase()));mm.appendChild(qel('div','act',k[2]));if(!filthyOn())mm.appendChild(qel('div','rt','Filthy quests are OFF. Turn them on in Settings.'));bx.appendChild(mm);body.appendChild(bx)}
  if(!list.length)body.appendChild(qel('p','qlnote',QL.filter==='active'?'Nothing in progress. Check ⚡ Do Now for something to start.':'Nothing here.'));
  list.sort((a,b)=>a.name.localeCompare(b.name));
- for(const M of list)body.appendChild(questRow(M,QL.filter));
+ for(const M of list)body.appendChild(questRow(M,QL.filter==='filthy'?st(M):QL.filter));
 }
 function questRow(M,grp){
  const reached=Math.max(P.parts[M.id]||0,D?(D.mp[M.id]||0):0),isDone=grp==='done',locked=grp==='later'&&M.hidden&&!reached;
@@ -147,7 +149,7 @@ function questRow(M,grp){
  const top=qel('div','qtop');r.appendChild(top);
  top.appendChild(qel('div','ic',locked?'?':M.icon));
  const mid=qel('div','m');top.appendChild(mid);
- mid.appendChild(qel('h4','',locked?'???':M.name));
+ {const h4=qel('h4','',locked?'???':M.name);if(M.filthy&&!locked)h4.appendChild(chip('🔞 FILTHY','filthy'));mid.appendChild(h4)}
  const pips=qel('div','pips');for(let i=0;i<M.parts.length;i++)pips.appendChild(qel('i',i<reached||isDone?'ok':i===reached&&grp==='active'?'cur':''));mid.appendChild(pips);
  if(!locked&&D&&!D.weekend&&grp!=='done'){
   let line='';if(grp==='active'&&typeof stepLine==='function'){const s=stepLine(M.id);line=s.when+': '+s.text}

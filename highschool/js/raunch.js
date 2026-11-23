@@ -134,7 +134,7 @@ spot({room:'carpark',x:236,y:150,label:'Deliver the key bowl to the rocking whit
  await N('The van starts rocking twice as fast. The left tire squeaks on every beat. A sock is pressed against the inside of the window and slowly slides down it.');
  v.rock=0;SFX.door&&SFX.door();
  put('shermian',250,-1,{y:150});await walk('shermian',222,50);face('shermian','you');
- await N('The side door slides open a foot and Ms. Sherman steps out, perfectly calm, fixing her lanyard, with her hair completely flat on one side and somebody else’s glasses on.');
+ await N('The side door slides open a foot and Ms. Sherman steps out, perfectly calm, buttoning her blouse up to the very top, with her hair completely flat on one side and somebody else’s glasses on.');
  await say('shermian','(holding out her hand for the bowl, eyes dead) You saw nothing. You’re going to tell everyone you saw nothing. And if I hear “key party” in my hallway, I’ll find out whose key you are.','cold');
  const c=await choose([{t:'Hand her the bowl. Swap two keys first.',tag:'🔑'},{t:'Hand her the bowl. Then take off the handbrake.',tag:'🚐'},{t:'Hand her the bowl. Take your money. Leave.',tag:'💵'}]);
  take('keybowl');
@@ -147,7 +147,7 @@ spot({room:'carpark',x:236,y:150,label:'Deliver the key bowl to the rocking whit
  if(c===1){await walk('shermian',250,50);remove('shermian');await walk('you',270,60);pose('you','reach');SFX.door&&SFX.door();pose('you',null);await walk('you',150,90);
   v.rock=2;await N('Click. The van rolls. It rolls slowly at first, still rocking, still squeaking on the beat, and then it hits the ramp.');
   await tw(v,{x:420},1400,'in');SFX.crash&&SFX.crash();shake(1.2);
-  await N('It goes down three floors of parking ramp at forty miles an hour with nine teachers inside screaming in harmony and comes to a stop in the mall fountain. The doors fly open. Steam comes out. So does Coach, still blowing the whistle, still yelling “PICK A KEY”.');
+  await N('It goes down three floors of parking ramp at forty miles an hour with nine teachers inside screaming in harmony and comes to a stop in the mall fountain. The doors fly open. Steam comes out. So does Coach. He is wearing only the whistle. He is still blowing it.');
   if(typeof repAdd==='function')repAdd('legend',2,'The Key Bowl');await complete('keybowl','brake');return 'stay'}
  await say('shermian','(taking the bowl) Good. Smart. You’ll go far. Not tonight. Tonight you go home.','cold');await walk('shermian',250,50);remove('shermian');
  D.money=(D.money||0)+(D.f.kb40?40:20);updateLoc();toast('+$'+(D.f.kb40?40:20));
