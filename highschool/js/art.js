@@ -110,6 +110,7 @@ function drawHead(k,x,hy,d,o){
  else if(hs==='bald'){R(hx-1,hy+3,2,4,c);R(hx+hw-1,hy+3,2,4,c);R(hx+3,hy,4,1,'rgba(255,255,255,.35)')}
  else if(hs==='capr'){R(hx-1,hy-2,hw+2,4,'#c02a32');R(hx+1,hy-3,hw-2,1,'#c02a32');R(d>0?hx+hw-1:hx-4,hy+1,5,1,'#8a1a22');R(d>0?hx-1:hx+hw-1,hy+2,2,3,c);R(hx+4,hy-1,3,2,'#fff')}
  else if(hs==='receding'){R(hx-1,hy+1,2,5,c);R(hx+hw-1,hy+1,2,5,c);R(hx+1,hy-1,3,2,c);R(hx+hw-4,hy-1,3,2,c);if(o.messy){R(hx-3,hy-3,2,4,c);R(hx+hw+1,hy-4,2,5,c);R(hx+5,hy-3,1,2,c);R(hx+1,hy-4,1,3,c)}}
+ else if(hs==='braids'){R(hx-1,hy-2,hw+2,4,c);R(hx+1,hy-3,hw-2,1,c);for(let i=0;i<4;i++){const bx=hx-2+i*(i<2?1:0)+(i>=2?hw-1+(i-2):0);R(bx,hy+1,1,hd+5,c);if(i%2)R(bx,hy+hd+5,1,1,'#e8c040')}for(let i=0;i<3;i++)R(hx+1+i*4,hy-2,1,3,'rgba(255,255,255,.18)');R(d>0?hx-3:hx+hw+1,hy+2,2,hd+6,c);R(d>0?hx-3:hx+hw+1,hy+hd+8,2,1,'#e8c040')}
  else if(hs==='ponytail'){R(hx-1,hy-2,hw+2,4,c);R(hx-1,hy+2,2,3,c);R(hx+hw-1,hy+2,2,3,c);R(d>0?hx-4:hx+hw+1,hy+1,3,9,c);R(d>0?hx-3:hx+hw+1,hy,2,1,'#c03030');R(hx+3,hy-1,3,1,'rgba(255,255,255,.2)')}
  else if(hs==='side'){R(hx-1,hy-2,hw+2,3,c);R(hx-1,hy+1,2,3,c);R(hx+hw-1,hy+1,2,3,c);R(hx+3,hy-2,1,2,'rgba(0,0,0,.3)');R(hx+4,hy+1,5,1,c)}
  else if(hs==='mod'){R(hx+1,hy-2,hw-2,1,c);R(hx,hy-1,hw,3,c);R(hx,hy+2,hw,1,c);for(let k=1;k<hw-1;k+=2)R(hx+k,hy+3,1,1,c);R(hx-1,hy,1,3,c);R(hx+hw,hy,1,3,c);R(hx+2,hy-1,4,1,'rgba(255,255,255,.14)')}
