@@ -27,7 +27,7 @@ function milkSpray(x,y,dir){for(let i=0;i<46;i++){const a=dir>0?rand(-.5,.15):ra
 
 /* 1 · the favor */
 hook({mis:'hotmic',period:[2,4],room:'office',who:'adam',label:'Ask Mr. Adam why he’s sweating',look:{ex:'scared'},cond:()=>!D.f.hm1&&!D.dead.adam&&cal()>=2,run:async()=>{
- scene('office',{adam:[200,-1,{y:146,ex:'scared'}],you:[160,1,{y:154}]});
+ scene('office',{adam:[160,-1,{y:154,ex:'scared'}],you:[118,1,{y:156}]});
  if(typeof beat==='function')await beat('HOT MIC','PART ONE · THE FAVOR');
  const pa=prop({t:'pabox',x:262,y:120,layer:5});
  await say('adam','You. Kid. You look like a kid who’s good with wires. You have a wire face.','scared');
@@ -107,7 +107,7 @@ hook({mis:'hotmic',period:[5,6],get room(){return D&&myClassFor(D.period)},set r
  const c=await choose([{t:'Sprint to the office and cut the power.',tag:'⚡'},{t:'Let it play. Hit record.',tag:'📱'},{t:'Grab the classroom phone and get on the PA yourself.',tag:'🎙️'}],'The whole school is listening. You did this.');
  if(c===0){
   pose('you',null);await walk('you',-20,170);
-  scene('office',{you:[200,1,{y:156,pose:'lie'}],adam:[150,1,{y:150,ex:'shock'}],balduf:[230,-1,{y:150,ex:'shock'}],coach:[260,-1,{y:146}],nurse:[120,1,{y:146}],grieve:[290,-1,{y:144,ex:'angry'}]},true);
+  scene('office',{you:[130,1,{y:158,pose:'lie'}],adam:[160,-1,{y:154,ex:'shock'}],balduf:[190,-1,{y:154,ex:'shock'}],coach:[70,1,{y:150}],nurse:[100,1,{y:152}],grieve:[40,1,{y:148,ex:'angry'}]},true);
   const pb=prop({t:'pabox',x:262,y:120,layer:5});
   SFX.zap&&SFX.zap();flash('#fff',.8);shake(1.4);
   await N('You yank the PA cable out with both hands. Two hundred and forty volts go up your arms and you black out.');

@@ -71,5 +71,6 @@ so check every line.
 - New rooms must be drawn to the forest glow-up standard: cached static layer with light, shade, texture and clutter, plus small animated touches (see `js/glowup.js`).
 - Music is calm, mellow and slow.
 - Skip/fast-forward only runs in cutscenes (Ctrl or ⏩); S and A are movement keys. Every room change uses the one dip-to-black in `js/fixes.js`.
+- Definitive Edition layer (`js/remaster.js`): squash & stretch, blinking, talk gestures, startle hops, run dust, footsteps, sliding cutscene bars, NEW/UPDATED/COMPLETE quest banners (top right), sprite rim light, time-of-day grade and dust motes (Settings → Remaster effects). Version shown on title + settings.
 - Quick check after each change: `tools/quick.sh` (~2 min, normal + safe). Full run only at milestones: `node tools/test.mjs` and `HS_URL=.../dist/highschool-safe.html` (~25 min). Build with `python3 tools/build.py`.
 - Always rebuild `dist/` and send all four HTML files after changes.
