@@ -9,7 +9,7 @@
    • Settings: Filthy quests ON/OFF (on in the main game, off by
      default in the safe version).
    ===================================================================== */
-const FILTHY=['hotmic','codebrown','keybowl','dungeon','eatit','replyall'];
+const FILTHY=['hotmic','codebrown','keybowl','dungeon','eatit','replyall','speeddate','pickupline'].filter(m=>MIS[m]);
 for(const m of FILTHY)if(MIS[m])MIS[m].filthy=1;
 function filthyOn(){P.set=P.set||{};if(P.set.filthy==null)P.set.filthy=window.EDITION==='safe'?0:1;return !!P.set.filthy}
 /* off = they never show up */
