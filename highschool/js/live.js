@@ -112,6 +112,7 @@ function approachCandidate(){
  const out=[];
  for(const id in A){if(id==='you'||!A[id]||A[id].dead||A[id].extra||!K[id])continue;
   let hs;try{hs=availableHooks(D.room,id)}catch(e){continue}
+  if(D.f.noApproach&&D.f.noApproach[id]===cal())continue;
   for(const h of hs){const m=h.mis;if(!m||!MIS[m]||D.done[m]||/^(cq_|wk_|ret_)/.test(m)||['passing','gigs','robbery','lockedroom'].includes(m))continue;
    if(/^Shove|^Take|^Jump|^Get the powder|^Make .* pay/.test(h.label||''))continue;
    out.push({id,h,started:(D.mp[m]||0)>0,track:D.f.track===m})}}
@@ -130,5 +131,33 @@ function evApproach(){
  const you=A.you;
  if(a.tx!=null&&Math.abs(a.tx-you.x)>16)a.tx=you.x+(a.x<you.x?-13:13);   /* follow you if you walk off */
  if(T-ev.t0>12){RT.ev=null;liveSchedule();a.noPush=0;return}
- if(a.tx==null&&Math.abs(a.x-you.x)<20){RT.ev=null;a.noPush=0;liveSchedule();
-  runHook(Object.assign({},ev.h,{run:async()=>{face(ev.id,'you');face('you',ev.id);await say(ev.id,pick(ev.started?HAIL_GO:HAIL),ev.started?'smirk':'happy');return ev.h.run()}}))}}}
+ if(a.tx==null&&Math.abs(a.x-you.x)<20){face(ev.id,'you');pose(ev.id,'grab');a.ex=ev.started?'smirk':'happy';
+  D.f.declined=D.f.declined||{};const n=D.f.declined[ev.id]||0;
+  RT.ev={k:'held',id:ev.id,h:ev.h,t0:T,started:ev.started,x0:you.x,n};
+  if(typeof bubbles!=='undefined')bubbles.push({id:ev.id,txt:pick(n?['YOU AGAIN. Listen to me.','Don’t you DARE walk off again.','I’m asking NICELY.']:ev.started?HAIL_GO:HAIL).slice(0,40),t:3.5})}}}
+/* held by the arm: E = hear them out · walk away = pull free · X (2nd time) = slap */
+function heldEnd(){const ev=RT.ev;RT.ev=null;const a=A[ev.id];if(a){pose(ev.id,null);a.noPush=0}liveSchedule()}
+function heldListen(){const ev=RT.ev;heldEnd();
+ runHook(Object.assign({},ev.h,{run:async()=>{face(ev.id,'you');face('you',ev.id);await say(ev.id,pick(ev.started?HAIL_GO:HAIL),ev.started?'smirk':'happy');return ev.h.run()}}))}
+function heldPull(){const ev=RT.ev,a=A[ev.id];heldEnd();D.f.declined[ev.id]=(D.f.declined[ev.id]||0)+1;
+ if(a){a.ex='angry';if(typeof squash==='function')squash('you','jump');if(typeof bubbles!=='undefined')bubbles.push({id:ev.id,txt:pick(['Fine. FINE.','Wow. Okay.','You’ll be back.','Rude!']),t:2.4})}}
+function heldSlap(){const ev=RT.ev,a=A[ev.id];heldEnd();if(!a)return;
+ runHook({run:async()=>{face('you',ev.id);pose('you','slam');SFX.smack&&SFX.smack();shake(.6);flash('#fff',.25);if(typeof squash==='function')squash(ev.id,'hit');await wait(TEST?0:200);pose('you',null);
+  a.ex='cry';a._tears=T+12;a.dir=a.x<A.you.x?-1:1;
+  await say(ev.id,pick(['(holding their cheek, eyes filling up) …You SLAPPED me. I just wanted to TALK to you.','(lip wobbling) …Okay. Okay. I get it. I won’t ask you for anything ever again.','(tears welling up, voice cracking) I was gonna give you a COOKIE. I had a COOKIE for you.']),'cry');
+  (D.f.noApproach=D.f.noApproach||{})[ev.id]=cal();if(typeof repAdd==='function'){repAdd('feared',1);repAdd('liked',-1)}
+  await walk(ev.id,a.x<160?-30:350,45);remove(ev.id);return 'stay'}})}
+addEventListener('keydown',e=>{const ev=RT.ev;if(!ev||ev.k!=='held'||panelMode!=='roam'||busy)return;const k=e.key;
+ if(k==='e'||k==='E'||k===' '||k==='Enter'){e.preventDefault();e.stopImmediatePropagation();heldListen()}
+ else if((k==='x'||k==='X')&&ev.n>=1){e.preventDefault();e.stopImmediatePropagation();heldSlap()}},true);
+{const b=$('bShove');if(b){const _c=b.onclick;b.onclick=e=>{const ev=RT.ev;if(ev&&ev.k==='held'&&ev.n>=1){e.stopPropagation();return heldSlap()}return _c&&_c(e)}}}
+{const _act=INPUT.act;INPUT.act=function(){const ev=RT.ev;if(ev&&ev.k==='held')return heldListen();return _act.apply(this,arguments)}}
+{const _hu=HOOK.update;HOOK.update=(dt,rdt)=>{_hu&&_hu(dt,rdt);const ev=RT.ev;if(!ev||ev.k!=='held')return;const a=A[ev.id],you=A.you;
+ if(!a||!you||busy||panelMode!=='roam'){RT.ev=null;return}
+ face(ev.id,'you');if(Math.abs(you.x-ev.x0)>16||Math.abs(a.x-you.x)>24)return heldPull();
+ if(T-ev.t0>6)return heldPull()}}
+{const _do=HOOK.drawOver;HOOK.drawOver=(...x)=>{_do&&_do(...x);const ev=RT.ev;if(!ev||ev.k!=='held'||TEST)return;
+ const t=ev.n>=1?'E: HEAR THEM OUT · WALK AWAY: PULL FREE · X: SLAP':'E: HEAR THEM OUT · WALK AWAY: PULL FREE';const w=pxw(t)+10;R(W/2-w/2,98,w,12,'#141020');R(W/2-w/2,98,w,1,'#ffd27a');pxc(t,W/2,101,Math.sin(T*6)>0?'#ffd27a':'#ffffff')}}
+/* tears */
+{const _do=HOOK.drawOver;HOOK.drawOver=(...x)=>{_do&&_do(...x);if(TEST)return;for(const id in A){const a=A[id];if(!a||!a._tears||T>a._tears||!a.k||a.vis===false)continue;let G;try{G=kidGeom(a.k,a)}catch(e){continue}
+ const ey=a.y-G.legH-G.bodyH-G.hd+Math.round(G.hd*.55);for(let i=0;i<2;i++){const q=((T*1.6+i*.5)%1);R(a.x+(i?2:-2)*(a.dir||1),ey+q*7,1,2,'#7ac8f0')}}}}

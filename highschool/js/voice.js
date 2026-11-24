@@ -46,7 +46,7 @@ let MURM=null;
 /* the crowd: six distant people humming-talking (“mm-ah-mm”), each with
    their own pitch, rising and falling, taking turns, muffled and echoey */
 function murmEnsure(){if(MURM||!AC||!SFXG)return;
- const out=AC.createGain();out.gain.value=0;const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1300;lp.connect(out);out.connect(SFXG);
+ const out=AC.createGain();out.gain.value=0;const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1300;const hp=AC.createBiquadFilter();hp.type='highpass';hp.frequency.value=150;lp.connect(hp).connect(out);out.connect(SFXG);
  if(vbus()&&VECHO)out.connect(VECHO);
  const people=[];
  for(let i=0;i<14;i++){const kid=i<11,girl=i%2===0;const f0=kid?(girl?240+Math.random()*70:170+Math.random()*60):(girl?185:115)+Math.random()*30;
@@ -65,7 +65,7 @@ function murmEnsure(){if(MURM||!AC||!SFXG)return;
   const n=AC.createBufferSource();n.buffer=b;n.loop=true;const bp=AC.createBiquadFilter();bp.type='bandpass';bp.frequency.value=520;bp.Q.value=.8;const bp2=AC.createBiquadFilter();bp2.type='lowpass';bp2.frequency.value=1500;
   const wg=AC.createGain();wg.gain.value=.9;const am=AC.createOscillator(),amg=AC.createGain();am.frequency.value=.23;amg.gain.value=.2;am.connect(amg).connect(wg.gain);am.start();n.connect(bp).connect(bp2).connect(wg).connect(lp);n.start()}
  try{const ir=AC.createBuffer(2,AC.sampleRate*2.6|0,AC.sampleRate);for(let c=0;c<2;c++){const d=ir.getChannelData(c);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,2.2)}
-  const hall=AC.createConvolver();hall.buffer=ir;const wet=AC.createGain();wet.gain.value=.55;lp.connect(hall).connect(wet).connect(out)}catch(e){}
+  const hall=AC.createConvolver();hall.buffer=ir;const wet=AC.createGain();wet.gain.value=.28;lp.connect(hall).connect(wet).connect(out)}catch(e){}
  MURM={out,type:null,people}}
 function murmTick(){if(!MURM)return;const now=AC.currentTime;
  for(const p of MURM.people){if(now<p.next)continue;
@@ -76,7 +76,7 @@ function murmTick(){if(!MURM)return;const now=AC.currentTime;
   const sc=p.kid?1.15:1,v=pick([[420,1000],[330,900],[600,1150],[500,1500],[360,1900]]);p.f1.frequency.setTargetAtTime(v[0]*sc,now,.3);p.f2.frequency.setTargetAtTime(v[1]*sc,now,.3)}}
 {const _hu=HOOK.update;HOOK.update=(dt,rdt)=>{_hu&&_hu(dt,rdt);if(TEST||!AC||AC.state!=='running')return;murmEnsure();if(!MURM)return;murmTick();
  const ty=(!D||panelMode==='none'||P.set.ambOff)?null:RAMB_TYPE(ROOM),crowd=Object.keys(A).filter(k=>k!=='you'&&A[k]&&!A[k].dead).length;
- const base={hall:.15,cafe:.22,gym:.12,out:.06,arcade:.12}[ty]||0;const v=base*Math.min(1,.35+crowd*.07)*(P.set.ambVol!=null?P.set.ambVol:1)*(DL?.3:1);
+ const base={hall:.11,cafe:.16,gym:.09,out:.045,arcade:.09}[ty]||0;const v=base*Math.min(1,.35+crowd*.07)*(P.set.ambVol!=null?P.set.ambVol:1)*(DL?.3:1);
  MURM.out.gain.setTargetAtTime(v,AC.currentTime,.4)}}
 /* settings: voice and chatter loudness */
 {const _os=openSettings;openSettings=function(){_os();const s=$('settings').querySelector('.set');if(!s)return;
@@ -84,3 +84,21 @@ function murmTick(){if(!MURM)return;const now=AC.currentTime;
   opts.forEach(([v,n])=>{const b=document.createElement('button');b.textContent=n;const cur=P.set[key]!=null?P.set[key]:1;b.setAttribute('aria-pressed',String(cur===v));b.onclick=()=>{P.set[key]=v;save&&save();openSettings()};w.appendChild(b)});s.appendChild(w)};
  add('🗣 Dialogue voices','voiceVol',[[.5,'Quiet'],[1,'Normal'],[1.6,'Loud']]);
  add('👥 Crowd hum','ambVol',[[.5,'Quiet'],[1,'Normal'],[1.6,'Loud']])}}
+
+/* ---------- students you can HEAR: mm's and ahh's from the kids on screen ---------- */
+VOW.m=[260,1050,2300];
+let KIDTALK_T=0;
+function kidMumble(id,n){const a=A[id],k=K[id];if(!a||!k||!AC||!vbus()||P.set.ambOff)return;
+ const f0=(k.v||300)*(.85+Math.random()*.15),t0=AC.currentTime+.02,dist=A.you?Math.abs(a.x-A.you.x):100;
+ const vol=.16*(P.set.ambVol!=null?P.set.ambVol:1)*(DL?.35:1)*Math.max(.35,1-dist/260);
+ let t=t0;const N_=n||3+(Math.random()*4|0);
+ for(let i=0;i<N_;i++){const v=i%2?'a':(Math.random()<.6?'m':'u');const d=v==='m'?.09+Math.random()*.06:.07+Math.random()*.05;
+  syl(t,f0*(1+(i===N_-1?-.08:Math.sin(i*1.9)*.06)),vol*(v==='m'?.8:1),v,{kid:!k.adult,girl:!!k.girl,dur:d,glide:(Math.random()-.5)*.1});
+  t+=d+.03+Math.random()*.05;if(Math.random()<.15)t+=.12}}
+/* gossip bubbles speak */
+if(typeof bubbles!=='undefined'){const _push=bubbles.push;bubbles.push=function(...b){for(const x of b)try{if(!TEST&&x&&x.id)kidMumble(x.id)}catch(e){}return _push.apply(this,b)}}
+/* and kids on screen mumble now and then */
+{const _hu=HOOK.update;HOOK.update=(dt,rdt)=>{_hu&&_hu(dt,rdt);if(TEST||!AC||AC.state!=='running'||!D||panelMode==='none'||T<KIDTALK_T)return;
+ KIDTALK_T=T+1.4+Math.random()*2.2;
+ const ks=Object.keys(A).filter(id=>id!=='you'&&A[id]&&!A[id].dead&&A[id].vis!==false&&K[id]&&!K[id].adult&&A[id].x>-5&&A[id].x<325&&!(DL&&DL.who===id));
+ if(ks.length)kidMumble(pick(ks))}}

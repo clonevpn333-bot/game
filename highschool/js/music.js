@@ -105,7 +105,7 @@ const DRUMS={
 const RAMB_TYPE=r=>{if(!r)return null;if(['corridor','hallb','upper','wing_sci','wing_arts','wing_sports','walkway','stairwell'].includes(r))return'hall';
  if(r==='canteen'||r==='foodcourt')return'cafe';if(['field','bus','courtyard','carpark','forest','lake'].includes(r))return'out';if(r==='gym'||r==='weightroom')return'gym';
  if(r==='arcade')return'arcade';if(r==='titlescreen')return null;return'room'};
-const RAMB_SET={hall:{type:'lowpass',f:560,v:.09},cafe:{type:'bandpass',f:900,v:.11},out:{type:'highpass',f:1400,v:.04},gym:{type:'lowpass',f:700,v:.06},arcade:{type:'bandpass',f:1400,v:.08},room:{type:'lowpass',f:220,v:.03}};
+const RAMB_SET={hall:{type:'lowpass',f:560,v:.05},cafe:{type:'bandpass',f:900,v:.06},out:{type:'highpass',f:1400,v:.03},gym:{type:'lowpass',f:700,v:.035},arcade:{type:'bandpass',f:1400,v:.05},room:{type:'lowpass',f:220,v:.015}};
 let RAMB=null;
 function ambEnsure(){if(RAMB||!AC||!SFXG)return;const len=AC.sampleRate*2,b=AC.createBuffer(1,len,AC.sampleRate),d=b.getChannelData(0);let last=0;for(let i=0;i<len;i++){last=last*.97+(Math.random()*2-1)*.03;d[i]=last*6}
  const s=AC.createBufferSource();s.buffer=b;s.loop=true;const f=AC.createBiquadFilter(),gn=AC.createGain();gn.gain.value=0;s.connect(f).connect(gn).connect(SFXG);s.start();RAMB={f,gn,type:null,t:0}}
