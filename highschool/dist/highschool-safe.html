@@ -21482,9 +21482,9 @@ setInterval(()=>{try{const m=$('menu');if(m&&!m.hidden&&!m.querySelector('.defed
 'use strict';
 /* =====================================================================
    HIGHSCHOOL — THE DEFINITIVE SOUNDTRACK
-   Creepy-cute and HARD: music-box and toy-piano nursery tunes (minor,
-   with wrong notes in the right places) over hard drums and an 808-ish
-   sub. Every melody here is original.
+   Creepy-cute and CALM: music-box and toy-piano nursery tunes (minor,
+   with wrong notes in the right places) over a soft pulse, a warm pad
+   and a low sub. Slow. Every melody here is original.
    Settings → Soundtrack: Definitive (this) or Classic (the old mellow one).
    Also: room ambience (hallway murmur, cafeteria clatter, birds, gym
    squeaks, the hum of an empty office) and little one-shot sounds.
@@ -21521,6 +21521,7 @@ const KG={
  dead:{beat:.9,roots:[38,37,38,33],ch:[[0,3,7],[0,4,7],[0,3,7],[0,4,7]],lead:'box',drums:'none',bass:'sub',creep:30,
   A:[74,-1,-1,-1,73,-1,-1,-1,69,-1,-1,-1,-1,-1,-1,-1],B:[70,-1,-1,-1,69,-1,-1,-1,65,-1,-1,-1,-1,-1,-1,-1],C:[74,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]}
 };
+for(const k in KG){const t=KG[k];t.beat=Math.min(.95,t.beat*1.35);t.drums=(k==='evil'||k==='finale')?'pulse':(k==='dead'?'none':'soft');t.bass='sub';t.pad=1;t.creep=Math.min(t.creep,9)}
 const KGMAP={title:'theme',curtain:'theme',bus:'theme',field:'theme',corridor:'hall',canteen:'lunch',class:'class',library:'class',gym:'drill',office:'creep',chem:'creep',toilets:'creep',tension:'creep',evil:'evil',fight:'evil',romance:'lullaby',sad:'lullaby',dawn:'lullaby',dead:'dead',finale:'finale'};
 const kgOn=()=>!(P&&P.set&&P.set.classicMusic);
 function kgTrack(){return KG[KGMAP[scoreName]]||KG.hall}
@@ -21548,8 +21549,8 @@ function kgBass(t,n,len,v){const o=AC.createOscillator(),a=AC.createGain(),s=AC.
 function kgPad(t,n,len,v){for(const off of[0,7,12]){const o=AC.createOscillator(),a=AC.createGain();o.type='triangle';o.frequency.value=midi(n+off);o.detune.value=(Math.random()*2-1)*9;a.gain.setValueAtTime(.0001,t);a.gain.linearRampToValueAtTime(v,t+len*.4);a.gain.exponentialRampToValueAtTime(.0001,t+len);o.connect(a);kgOut(a);o.start(t);o.stop(t+len+.05)}}
 const DRUMS={
  none:{},
- soft:{k:[0,8],h:[4,12],hv:.012,kv:.32},
- pulse:{k:[0,10],h:[],sn:[],hv:0,kv:.4,tick:[6,14]},
+ soft:{k:[0],h:[8],hv:.006,kv:.12},
+ pulse:{k:[0,8],h:[],sn:[],hv:0,kv:.16,tick:[12]},
  boom:{k:[0,7,10],s:[4,12],h:[0,2,4,6,8,10,12,14],hv:.02,kv:.55,sv:.16},
  trap:{k:[0,6,10],s:[8],h:[0,2,4,6,8,10,12,13,14,15],hv:.022,kv:.55,sv:.18,clap:1,open:[11]},
  march:{k:[0,4,8,12],s:[4,12,14,15],h:[2,6,10,14],hv:.018,kv:.5,sv:.15},
@@ -21564,14 +21565,14 @@ const DRUMS={
   const t=kgNext,i=kgStep%16,bar=(kgStep>>4)%4,sect=(kgStep>>6)%4,n=m.roots[bar];
   /* melody: A A B C over four bars, varied each time round */
   const mel=[m.A,m.A,m.B,m.C][bar];const ln=mel[i];
-  const lv=m.lead==='toy'?.07:.09;
+  const lv=m.lead==='toy'?.042:.055;
   if(ln>=0){const nn=ln+(sect===2&&bar===1?12:0);if(m.lead==='toy')kgToy(t,nn,lv);else kgBox(t,nn,lv,m.creep);if(m.lead==='both')kgToy(t,nn-12,.05)}
   /* music box arpeggio under the tune */
-  if(i%4===2&&m.drums!=='none'){const c=m.ch[bar];kgBox(t,n+24+c[(i>>2)%3],.022,m.creep)}
+  if(i%4===2&&m.drums!=='none'){const c=m.ch[bar];kgBox(t,n+24+c[(i>>2)%3],.013,m.creep)}
   /* chords and pad */
-  if(i===0&&m.pad)kgPad(t,n+12,m.beat*4.2,.018);
+  if(i===0&&m.pad)kgPad(t,n+12,m.beat*4.2,.014);
   /* bass */
-  if(m.bass==='808'){if(i===0||i===7||i===10)kgBass(t,n-12,m.beat*(i===0?1.6:.7),.22)}else if(m.bass==='sub'&&i===0)kgBass(t,n-12,m.beat*3.6,.15);
+  if(m.bass==='808'){if(i===0||i===7||i===10)kgBass(t,n-12,m.beat*(i===0?1.6:.7),.22)}else if(m.bass==='sub'&&i===0)kgBass(t,n-12,m.beat*3.6,.085);
   /* drums (they drop out on the first bar of every fourth phrase, then hit back) */
   const drop=sect===3&&bar===0;
   if(!drop){if((dr.k||[]).includes(i))kgKick(t,dr.kv||.5);if((dr.s||[]).includes(i)){if(dr.clap)kgClap(t,dr.sv||.16);else kgSnare(t,dr.sv||.16)}
@@ -21585,7 +21586,7 @@ const DRUMS={
 const RAMB_TYPE=r=>{if(!r)return null;if(['corridor','hallb','upper','wing_sci','wing_arts','wing_sports','walkway','stairwell'].includes(r))return'hall';
  if(r==='canteen'||r==='foodcourt')return'cafe';if(['field','bus','courtyard','carpark','forest','lake'].includes(r))return'out';if(r==='gym'||r==='weightroom')return'gym';
  if(r==='arcade')return'arcade';if(r==='titlescreen')return null;return'room'};
-const RAMB_SET={hall:{type:'lowpass',f:520,v:.03},cafe:{type:'bandpass',f:900,v:.04},out:{type:'highpass',f:1600,v:.012},gym:{type:'lowpass',f:700,v:.022},arcade:{type:'bandpass',f:1400,v:.03},room:{type:'lowpass',f:220,v:.012}};
+const RAMB_SET={hall:{type:'lowpass',f:560,v:.09},cafe:{type:'bandpass',f:900,v:.11},out:{type:'highpass',f:1400,v:.04},gym:{type:'lowpass',f:700,v:.06},arcade:{type:'bandpass',f:1400,v:.08},room:{type:'lowpass',f:220,v:.03}};
 let RAMB=null;
 function ambEnsure(){if(RAMB||!AC||!SFXG)return;const len=AC.sampleRate*2,b=AC.createBuffer(1,len,AC.sampleRate),d=b.getChannelData(0);let last=0;for(let i=0;i<len;i++){last=last*.97+(Math.random()*2-1)*.03;d[i]=last*6}
  const s=AC.createBufferSource();s.buffer=b;s.loop=true;const f=AC.createBiquadFilter(),gn=AC.createGain();gn.gain.value=0;s.connect(f).connect(gn).connect(SFXG);s.start();RAMB={f,gn,type:null,t:0}}
@@ -21594,15 +21595,15 @@ function ambTick(){if(TEST||!AC||AC.state!=='running')return;ambEnsure();if(!RAM
  if(ty!==RAMB.type){RAMB.type=ty;const s=RAMB_SET[ty];if(s){RAMB.f.type=s.type;RAMB.f.frequency.setTargetAtTime(s.f,now,.3)}RAMB.gn.gain.setTargetAtTime(s?s.v*(P.set.ambOff?0:1):0,now,.5)}
  if(ty==='hall'||ty==='cafe'){const s=RAMB_SET[ty];RAMB.gn.gain.setTargetAtTime(s.v*(.7+Math.sin(T*.7)*.2+Math.sin(T*1.9)*.15),now,.4)}
  /* one-shots */
- if(T-RAMB.t<.4)return;RAMB.t=T;const r=Math.random();
+ if(T-RAMB.t<.25)return;RAMB.t=T;const r=Math.random();
  try{
-  if(ty==='hall'&&r<.07){noise(.12,.05,260,1,'bandpass');setTimeout(()=>noise(.05,.03,1800,1,'bandpass'),60)}           /* a locker */
-  else if(ty==='hall'&&r<.11){for(let i=0;i<3;i++)setTimeout(()=>noise(.025,.025,700,1.3,'bandpass'),i*180)}             /* footsteps going past */
-  else if(ty==='cafe'&&r<.18){noise(.02,.03,3200+Math.random()*1500,2,'bandpass')}                                       /* cutlery */
+  if(ty==='hall'&&r<.07){noise(.12,.12,260,1,'bandpass');setTimeout(()=>noise(.05,.03,1800,1,'bandpass'),60)}           /* a locker */
+  else if(ty==='hall'&&r<.11){for(let i=0;i<3;i++)setTimeout(()=>noise(.03,.07,700,1.3,'bandpass'),i*180)}             /* footsteps going past */
+  else if(ty==='cafe'&&r<.18){noise(.02,.07,3200+Math.random()*1500,2,'bandpass')}                                       /* cutlery */
   else if(ty==='cafe'&&r<.22){tone(220+Math.random()*60,.08,'triangle',.02)}                                             /* a tray */
-  else if(ty==='out'&&r<.1){for(let i=0;i<2+(Math.random()*3|0);i++)setTimeout(()=>tone(2400+Math.random()*900,.06,'sine',.02,3400),i*110)} /* birds */
-  else if(ty==='gym'&&r<.12){tone(1700,.05,'sine',.02,2300)}                                                              /* sneaker squeak */
-  else if(ty==='gym'&&r<.18){tone(90,.12,'sine',.05,60)}                                                                  /* ball bounce */
+  else if(ty==='out'&&r<.28){const b=2200+Math.random()*1200;for(let i=0;i<2+(Math.random()*4|0);i++)setTimeout(()=>tone(b+Math.random()*500,.05+Math.random()*.04,'sine',.06,b+900+Math.random()*600),i*(90+Math.random()*70))} /* birds */
+  else if(ty==='gym'&&r<.12){tone(1700,.05,'sine',.05,2300)}                                                              /* sneaker squeak */
+  else if(ty==='gym'&&r<.18){tone(90,.12,'sine',.1,60)}                                                                  /* ball bounce */
   else if(ty==='arcade'&&r<.2){tone(600+Math.random()*900,.05,'square',.012)}
   else if(ty==='room'&&r<.03){tone(58,.6,'sine',.015)}                                                                    /* the hum */
  }catch(e){}}
@@ -21613,8 +21614,23 @@ function ambTick(){if(TEST||!AC||AC.state!=='running')return;ambEnsure();if(!RAM
  const add=(label,key,opts)=>{s.appendChild(Object.assign(document.createElement('div'),{textContent:label}));const w=document.createElement('div');w.className='opts';
   opts.forEach(([v,n])=>{const b=document.createElement('button');b.textContent=n;b.setAttribute('aria-pressed',String(+(!!P.set[key])===v));b.onclick=()=>{P.set[key]=v;save&&save();if(key==='classicMusic')cue(scoreName,true);if(key==='ambOff'&&RAMB)RAMB.type='x';openSettings()};w.appendChild(b)});
   const ver=s.parentNode.querySelector('p:last-child');s.appendChild(w)};
- add('🎵 Soundtrack','classicMusic',[[0,'Definitive (hard)'],[1,'Classic (mellow)']]);
+ add('🎵 Soundtrack','classicMusic',[[0,'Definitive (music box)'],[1,'Classic']]);
  add('🔊 Room ambience','ambOff',[[0,'On'],[1,'Off']])}}
+
+/* ---------------- chatter + everyone's footsteps ---------------- */
+let CHAT_T=0;
+function babble(v){/* one distant voice: a little run of syllables */const base=140+Math.random()*180,n=3+(Math.random()*6|0);let t=0;
+ for(let i=0;i<n;i++){const d=.05+Math.random()*.08;setTimeout(()=>{try{tone(base*(.85+Math.random()*.35),d,'triangle',v)}catch(e){}},t*1000);t+=d+.02+Math.random()*.05}}
+{const _hu=HOOK.update;HOOK.update=(dt,rdt)=>{_hu&&_hu(dt,rdt);
+ if(TEST||!AC||AC.state!=='running'||!D||P.set.ambOff||panelMode==='none')return;
+ const ty=RAMB_TYPE(ROOM);
+ /* talking: halls, cafeteria, gym, outside at break */
+ if((ty==='hall'||ty==='cafe'||ty==='gym'||ty==='out'&&!['forest','lake'].includes(ROOM))&&T>CHAT_T){
+  const crowd=Object.keys(A).filter(k=>k!=='you'&&A[k]&&!A[k].dead).length;
+  CHAT_T=T+(ty==='cafe'?.35:.7)+Math.random()*(crowd>4?.6:1.6);babble(ty==='cafe'?.022:.016)}
+ /* everyone's feet */
+ for(const id in A){const a=A[id];if(id==='you'||!a||!a.moving||a.dead||a.x<-10||a.x>330)continue;
+  const s=Math.floor((a.walk||0)/Math.PI);if(a._stp!==s){a._stp=s;try{noise(.025,a.fast?.05:.03,450+Math.random()*350,1.3,'bandpass')}catch(e){}}}}}
 
 </script>
 <script>
