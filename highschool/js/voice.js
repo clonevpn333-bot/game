@@ -1,0 +1,55 @@
+'use strict';
+/* =====================================================================
+   HIGHSCHOOL — VOICES
+   Talking sounds like talking now, not beeps. A buzzing “voice box”
+   (sawtooth at the speaker's pitch) goes through vowel filters (the
+   formants of a, e, i, o, u), with consonant clicks and hisses in
+   between and a natural rise and fall of pitch.
+   • Dialogue: the vowel follows the letters actually being typed, so
+     every line sounds like itself. Each character keeps their own pitch.
+   • Background chatter: whole crowds of distant, overlapping voices,
+     with the odd laugh, in a bit of room echo.
+   ===================================================================== */
+const VOW={a:[730,1090,2440],e:[530,1840,2480],i:[300,2250,3000],o:[570,840,2410],u:[330,870,2240],y:[300,2250,3000]};
+let VBUS=null,VECHO=null;
+function vbus(){if(VBUS||!AC||!SFXG)return VBUS;VBUS=AC.createGain();VBUS.gain.value=1;VBUS.connect(SFXG);
+ try{VECHO=AC.createConvolver();VECHO.buffer=musicRoom&&musicRoom.buffer;const w=AC.createGain();w.gain.value=.35;VECHO.connect(w).connect(SFXG)}catch(e){VECHO=null}return VBUS}
+/* one syllable. f0 = pitch, v = loudness, vowel = a/e/i/o/u, o: {kid,girl,dur,glide,cons,far} */
+function syl(t,f0,v,vowel,o){o=o||{};if(!AC||!vbus())return;
+ const dur=o.dur||.09,F=VOW[vowel]||VOW.a,sc=o.kid?1.18:o.girl?1.1:1;
+ const src=AC.createOscillator();src.type='sawtooth';
+ const g0=f0*(1+(o.glide||0));src.frequency.setValueAtTime(f0*(1-(o.glide||0)*.3),t);src.frequency.linearRampToValueAtTime(g0,t+dur);
+ const vib=AC.createOscillator(),vg=AC.createGain();vib.frequency.value=5.5;vg.gain.value=f0*.012;vib.connect(vg).connect(src.frequency);
+ const env=AC.createGain();env.gain.setValueAtTime(.0001,t);env.gain.linearRampToValueAtTime(v,t+.012);env.gain.setValueAtTime(v*.85,t+dur*.7);env.gain.exponentialRampToValueAtTime(.0001,t+dur+.03);
+ const out=o.far?(()=>{const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1700;lp.connect(VBUS);if(VECHO)lp.connect(VECHO);return lp})():VBUS;
+ env.connect(out);
+ [[F[0]*sc,8,1],[F[1]*sc,11,.55],[F[2]*sc,14,.22]].forEach(([fq,q,lv])=>{const bp=AC.createBiquadFilter();bp.type='bandpass';bp.frequency.value=fq;bp.Q.value=q;const gg=AC.createGain();gg.gain.value=lv*3.2;src.connect(bp).connect(gg).connect(env)});
+ src.start(t);src.stop(t+dur+.05);vib.start(t);vib.stop(t+dur+.05);
+ /* consonants: a click or a hiss in front */
+ if(o.cons){const s=AC.createBufferSource(),f=AC.createBiquadFilter(),a=AC.createGain();s.buffer=drumBuf;f.type=o.cons==='s'?'highpass':'bandpass';f.frequency.value=o.cons==='s'?4200:o.cons==='k'?1800:2600;f.Q.value=1;
+  a.gain.setValueAtTime(v*(o.cons==='s'?.5:.8),t-.025);a.gain.exponentialRampToValueAtTime(.0001,t+(o.cons==='s'?.05:.018));s.connect(f).connect(a).connect(out);s.start(Math.max(AC.currentTime,t-.025));s.stop(t+.06)}
+}
+const CONS={s:'s',z:'s',f:'s',h:'s',c:'k',k:'k',g:'k',q:'k',t:'t',d:'t',p:'t',b:'t'};
+/* dialogue: replace the beep with a syllable that matches the text */
+{const _b=SFX.blip;SFX.blip=function(f,w){
+ if(TEST||!AC||!DL||!DL.who||($('phoneov')&&!$('phoneov').hidden))return _b(f,w);
+ try{const k=K[DL.who]||{},tx=DL.text||'',i=Math.max(0,Math.floor(DL.i)-1);let vw='a',cons=null;
+  for(let j=i;j>=Math.max(0,i-3);j--){const ch=(tx[j]||'').toLowerCase();if(VOW[ch]){vw=ch;break}if(!cons&&CONS[ch])cons=CONS[ch]}
+  const up=tx[i]&&tx[i]===tx[i].toUpperCase()&&/[A-Z]/.test(tx[i]),q=/[?]/.test(tx.slice(i,i+6)),ex=/!/.test(tx.slice(i,i+4));
+  const vol=(P.set.voiceVol!=null?P.set.voiceVol:1)*(up||ex?.2:.14);
+  syl(AC.currentTime+.005,f,vol,vw,{kid:!k.adult,girl:!!k.girl,dur:.075+Math.random()*.03,glide:q?.12:ex?.08:(Math.random()-.55)*.08,cons})
+ }catch(e){return _b(f,w)}}}
+/* background chatter: distant overlapping voices, the odd laugh */
+babble=function(v){if(!AC)return;const t0=AC.currentTime+.02,kid=Math.random()<.8,girl=Math.random()<.5,f0=kid?(girl?250+Math.random()*90:180+Math.random()*80):(girl?190+Math.random()*50:105+Math.random()*45);
+ const vol=(v||.02)*3.2*(P.set.ambVol!=null?P.set.ambVol:1)*(DL?.5:1);
+ if(Math.random()<.12){for(let i=0;i<3+(Math.random()*3|0);i++)syl(t0+i*.13,f0*(1.25+i*.04),vol*1.1,'a',{kid,girl,dur:.08,glide:-.1,cons:'s',far:1});return}
+ let t=t0;const n=4+(Math.random()*9|0),vows='aeiouaeoa';const fall=Math.random()<.6;
+ for(let i=0;i<n;i++){const d=.06+Math.random()*.08;const pf=f0*(1+(fall?(.08-i/n*.18):(i===n-1?.15:Math.sin(i*1.7)*.05)));
+  syl(t,pf,vol*(.75+Math.random()*.35),vows[(Math.random()*vows.length)|0],{kid,girl,dur:d,glide:(Math.random()-.5)*.1,cons:Math.random()<.5?pick(['s','k','t']):null,far:1});
+  t+=d+.015+Math.random()*.045;if(Math.random()<.12)t+=.15}};
+/* settings: voice and chatter loudness */
+{const _os=openSettings;openSettings=function(){_os();const s=$('settings').querySelector('.set');if(!s)return;
+ const add=(label,key,opts)=>{s.appendChild(Object.assign(document.createElement('div'),{textContent:label}));const w=document.createElement('div');w.className='opts';
+  opts.forEach(([v,n])=>{const b=document.createElement('button');b.textContent=n;const cur=P.set[key]!=null?P.set[key]:1;b.setAttribute('aria-pressed',String(cur===v));b.onclick=()=>{P.set[key]=v;save&&save();openSettings()};w.appendChild(b)});s.appendChild(w)};
+ add('🗣 Dialogue voices','voiceVol',[[.5,'Quiet'],[1,'Normal'],[1.6,'Loud']]);
+ add('👥 Crowd chatter','ambVol',[[.5,'Quiet'],[1,'Normal'],[1.6,'Loud']])}}
