@@ -75,7 +75,7 @@ function endGrab(free){const g=RT.grab;RT.grab=null;RT.ev=null;
  if(!liveOk()&&!RT.grab){if(ev&&(busy||panelMode!=='roam'||ROOM!==D.room)){if(ev.id&&A[ev.id])remove(ev.id);if(ev.crew)for(const k of ev.crew)if(A[k]&&!busy)remove(k);RT.ev=null}return}
  if(RT.grab){const g=RT.grab;for(const [i,k] of g.crew.entries())if(A[k])A[k].x=A.you.x+(i?8:-8);
   if(g.pull>=g.need)endGrab(true);else if(T-g.t0>3.4)endGrab(false);return}
- if(!ev){if(T>RT.next){const outside=['field','bus','courtyard','walkway'].includes(D.room);
+ if(!ev){if(T>RT.next&&Math.random()<.55&&evApproach())return;if(T>RT.next){const outside=['field','bus','courtyard','walkway'].includes(D.room);
    const r=Math.random(),young=YOUNG.some(k=>K[k]&&!D.dead[k]&&!A[k]);
    if(young&&(outside?r<.4:r<.22))evSneak();else if(r<.5)evBall();else if(r<.75&&!['canteen'].includes(D.room))evRunner();else evCash();}
   return}
@@ -104,3 +104,31 @@ function endGrab(free){const g=RT.grab;RT.grab=null;RT.ev=null;
   R(x0,y0,w,5,'#3a1a1a');R(x0,y0,Math.round(w*k),5,'#9ad09a');R(x0,y0+7,Math.round(w*tl),3,'#ff6a5a')}
 }}
 {const st=document.createElement('style');st.textContent='';document.head.appendChild(st)}
+
+/* ---------- quests come to YOU ---------- */
+const HAIL=['Yo! YO! C’mere. I need you.','Hey. Hey! You. Don’t walk away. I need a favor.','Oh thank God, it’s you. Come here, come here.','Psst. Over here. No, HERE.','Wait up! WAIT UP!','Bro. Bro. You got a second? You got a second.'];
+const HAIL_GO=['There you are. Okay. It’s happening. Come on.','Finally! We gotta go. Like, now.','You ready? Say you’re ready.'];
+function approachCandidate(){
+ const out=[];
+ for(const id in A){if(id==='you'||!A[id]||A[id].dead||A[id].extra||!K[id])continue;
+  let hs;try{hs=availableHooks(D.room,id)}catch(e){continue}
+  for(const h of hs){const m=h.mis;if(!m||!MIS[m]||D.done[m]||/^(cq_|wk_|ret_)/.test(m)||['passing','gigs','robbery','lockedroom'].includes(m))continue;
+   if(/^Shove|^Take|^Jump|^Get the powder|^Make .* pay/.test(h.label||''))continue;
+   out.push({id,h,started:(D.mp[m]||0)>0,track:D.f.track===m})}}
+ out.sort((a,b)=>(b.track-a.track)||(b.started-a.started)||(Math.random()-.5));
+ return out[0]||null}
+function evApproach(){
+ if(RT.lastApproach&&T-RT.lastApproach<25)return false;
+ const c=approachCandidate();if(!c)return false;
+ const a=A[c.id],you=A.you;RT.lastApproach=T;
+ RT.ev={k:'approach',id:c.id,h:c.h,t0:T,started:c.started};
+ a.noPush=1;if(typeof bubbles!=='undefined')bubbles.push({id:c.id,txt:c.started?'Psst!':'Hey! YOU!',t:1.8});
+ a.pose=null;walk(c.id,you.x+(a.x<you.x?-13:13),70);
+ return true}
+{const _hu=HOOK.update;HOOK.update=(dt,rdt)=>{_hu&&_hu(dt,rdt);const ev=RT.ev;if(!ev||ev.k!=='approach')return;
+ const a=A[ev.id];if(!a||!liveOk()){if(!busy)RT.ev=null;return}
+ const you=A.you;
+ if(a.tx!=null&&Math.abs(a.tx-you.x)>16)a.tx=you.x+(a.x<you.x?-13:13);   /* follow you if you walk off */
+ if(T-ev.t0>12){RT.ev=null;liveSchedule();a.noPush=0;return}
+ if(a.tx==null&&Math.abs(a.x-you.x)<20){RT.ev=null;a.noPush=0;liveSchedule();
+  runHook(Object.assign({},ev.h,{run:async()=>{face(ev.id,'you');face('you',ev.id);await say(ev.id,pick(ev.started?HAIL_GO:HAIL),ev.started?'smirk':'happy');return ev.h.run()}}))}}}
