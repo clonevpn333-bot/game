@@ -43,11 +43,33 @@ const CONS={s:'s',z:'s',f:'s',h:'s',c:'k',k:'k',g:'k',q:'k',t:'t',d:'t',p:'t',b:
 /* background: no voices, just a low crowd hum (a murmur that swells and dips) */
 babble=function(){};
 let MURM=null;
-function murmEnsure(){if(MURM||!AC||!SFXG||!drumBuf)return;const len=AC.sampleRate*3,b=AC.createBuffer(1,len,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<len;i++)d[i]=Math.random()*2-1;
- const src=AC.createBufferSource();src.buffer=b;src.loop=true;const bp=AC.createBiquadFilter();bp.type='bandpass';bp.frequency.value=210;bp.Q.value=1.2;const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=480;
- const am=AC.createGain();am.gain.value=.6;for(const f of[2.3,3.7,5.1]){const o=AC.createOscillator(),og=AC.createGain();o.frequency.value=f+Math.random()*.4;og.gain.value=.13;o.connect(og).connect(am.gain);o.start()}
- const out=AC.createGain();out.gain.value=0;src.connect(bp).connect(lp).connect(am).connect(out).connect(SFXG);src.start();MURM={out,type:null}}
-{const _hu=HOOK.update;HOOK.update=(dt,rdt)=>{_hu&&_hu(dt,rdt);if(TEST||!AC||AC.state!=='running')return;murmEnsure();if(!MURM)return;
+/* the crowd: six distant people humming-talking (“mm-ah-mm”), each with
+   their own pitch, rising and falling, taking turns, muffled and echoey */
+function murmEnsure(){if(MURM||!AC||!SFXG)return;
+ const out=AC.createGain();out.gain.value=0;const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1300;lp.connect(out);out.connect(SFXG);
+ if(vbus()&&VECHO)out.connect(VECHO);
+ const people=[];
+ for(let i=0;i<6;i++){const kid=i<5,girl=i%2===0;const f0=kid?(girl?240+Math.random()*70:170+Math.random()*60):(girl?185:115)+Math.random()*30;
+  const o=AC.createOscillator();o.type='sawtooth';o.frequency.value=f0;
+  const vib=AC.createOscillator(),vg=AC.createGain();vib.frequency.value=4.5+Math.random()*2;vg.gain.value=f0*.015;vib.connect(vg).connect(o.frequency);vib.start();
+  const sc=kid?1.15:1;const f1=AC.createBiquadFilter(),f2=AC.createBiquadFilter(),m=AC.createGain();
+  f1.type='bandpass';f1.frequency.value=420*sc;f1.Q.value=5;f2.type='bandpass';f2.frequency.value=1000*sc;f2.Q.value=6;
+  const g2=AC.createGain();g2.gain.value=.45;o.connect(f1).connect(m);o.connect(f2).connect(g2).connect(m);
+  /* syllables: the voice pulses at talking speed */
+  const syl=AC.createGain();syl.gain.value=.5;const s1=AC.createOscillator(),s1g=AC.createGain();s1.frequency.value=3+Math.random()*2.5;s1g.gain.value=.45;s1.connect(s1g).connect(syl.gain);s1.start();
+  /* turns: each person talks for a few seconds, then listens */
+  const turn=AC.createGain();turn.gain.value=0;
+  m.connect(syl).connect(turn).connect(lp);o.start();
+  people.push({o,f0,turn,f1,f2,next:0,kid})}
+ MURM={out,type:null,people}}
+function murmTick(){if(!MURM)return;const now=AC.currentTime;
+ for(const p of MURM.people){if(now<p.next)continue;
+  const talking=Math.random()<.6,len=1.2+Math.random()*3.2;p.next=now+len;
+  p.turn.gain.setTargetAtTime(talking?.55+Math.random()*.45:0,now,.25);
+  /* intonation: drift the pitch and the vowel */
+  const nf=p.f0*(.88+Math.random()*.3);p.o.frequency.setTargetAtTime(nf,now,.4);
+  const sc=p.kid?1.15:1,v=pick([[420,1000],[330,900],[600,1150],[500,1500],[360,1900]]);p.f1.frequency.setTargetAtTime(v[0]*sc,now,.3);p.f2.frequency.setTargetAtTime(v[1]*sc,now,.3)}}
+{const _hu=HOOK.update;HOOK.update=(dt,rdt)=>{_hu&&_hu(dt,rdt);if(TEST||!AC||AC.state!=='running')return;murmEnsure();if(!MURM)return;murmTick();
  const ty=(!D||panelMode==='none'||P.set.ambOff)?null:RAMB_TYPE(ROOM),crowd=Object.keys(A).filter(k=>k!=='you'&&A[k]&&!A[k].dead).length;
  const base={hall:.15,cafe:.22,gym:.12,out:.06,arcade:.12}[ty]||0;const v=base*Math.min(1,.35+crowd*.07)*(P.set.ambVol!=null?P.set.ambVol:1)*(DL?.3:1);
  MURM.out.gain.setTargetAtTime(v,AC.currentTime,.4)}}
