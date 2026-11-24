@@ -184,7 +184,7 @@ setPiece(/^Go down the old hatch/,{patrol:'adam',sp:20,obj:'Get to the old hatch
 
 /* ================= 6. BREAK-IN ================= */
 const BINIGHT={on:false};
-{const _do=HOOK.drawOver;HOOK.drawOver=(...x)=>{if(BINIGHT.on&&!TEST&&A.you){g.save();g.globalAlpha=.93;g.fillStyle='#04030a';g.beginPath();g.rect(0,0,W,H);
+{const _do=HOOK.drawOver;HOOK.drawOver=(...x)=>{if(false&&BINIGHT.on&&!TEST&&A.you){g.save();g.globalAlpha=.93;g.fillStyle='#04030a';g.beginPath();g.rect(0,0,W,H);
   const lx=A.you.x+(A.you.dir||1)*18,ly=A.you.y-16;g.moveTo(lx+40,ly);g.arc(lx,ly,40,0,Math.PI*2,true);const t=PAT&&A[PAT.id];if(t){g.moveTo(t.x+24,t.y-18);g.arc(t.x,t.y-18,24,0,Math.PI*2,true)}g.fill('evenodd');g.restore();
   g.globalAlpha=.25;g.fillStyle='#ffe8a0';g.beginPath();g.arc(lx,ly,40,0,Math.PI*2);g.fill();g.globalAlpha=1}
  _do&&_do(...x)}}

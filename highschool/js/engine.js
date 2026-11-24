@@ -428,7 +428,7 @@ function update(dt,rdt){
  HOOK.update&&HOOK.update(dt,rdt);
 }
 function draw(){
- g.setTransform(1,0,0,1,0,0);g.globalAlpha=1;
+ if(!g._zm)g.setTransform(1,0,0,1,0,0);g.globalAlpha=1;
  const sx=fxState.shake?Math.round((Math.random()-.5)*fxState.shake*8):0,sy=fxState.shake?Math.round((Math.random()-.5)*fxState.shake*5):0;
  g.translate(sx,sy);
  const room=(typeof ROOMS!=="undefined")&&ROOMS[ROOM];
