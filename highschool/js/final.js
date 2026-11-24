@@ -114,7 +114,7 @@ const EXNEXT={};
 {const _hu=HOOK.update;HOOK.update=(dt,rdt)=>{_hu&&_hu(dt,rdt);if(TEST||!D)return;
  for(const id in A){const a=A[id];if(!a||a._role!=='posted'||a.tx!=null)continue;
   if(T>a._turnT){a._turnT=T+5+Math.random()*9;const nb=Object.keys(A).find(k=>k!==id&&A[k]&&A[k]._role==='posted'&&Math.abs(A[k].x-a.x)<26);
-   if(nb){face(id,nb)}else if(Math.random()<.4)a.dir*=-1;
+   if(nb&&!A[nb].moving)face(id,nb);
    if(nb&&Math.random()<.35&&typeof bubbles!=='undefined'&&typeof GOSSIP==='function')bubbles.push({id,txt:pick(GOSSIP()),t:3})}}}}
 /* named kids: once you’ve seen someone in one hall this period, they’re not in the next one too */
 const SEENIN={};
@@ -125,3 +125,6 @@ const SEENIN={};
    if(seen[id]&&seen[id]!==room&&!busyHere){if(HALLISH.has(room))remove(id);continue}
    seen[id]=room}}}catch(e){}
  return r}}
+
+/* sidesteps keep facing the same way (no flip-flopping when people shuffle apart) */
+{const _u=update;update=function(dt,rdt){_u(dt,rdt);for(const id in A){const a=A[id];if(a&&a._keepDir!=null){if(a.tx==null)a._keepDir=null;else a.dir=a._keepDir}}}}

@@ -37,19 +37,22 @@ const CONS={s:'s',z:'s',f:'s',h:'s',c:'k',k:'k',g:'k',q:'k',t:'t',d:'t',p:'t',b:
   for(let j=i;j>=Math.max(0,i-3);j--){const ch=(tx[j]||'').toLowerCase();if(VOW[ch]){vw=ch;break}if(!cons&&CONS[ch])cons=CONS[ch]}
   const up=tx[i]&&tx[i]===tx[i].toUpperCase()&&/[A-Z]/.test(tx[i]),q=/[?]/.test(tx.slice(i,i+6)),ex=/!/.test(tx.slice(i,i+4));
   const vol=(P.set.voiceVol!=null?P.set.voiceVol:1)*(up||ex?.2:.14);
-  syl(AC.currentTime+.005,f,vol,vw,{kid:!k.adult,girl:!!k.girl,dur:.075+Math.random()*.03,glide:q?.12:ex?.08:(Math.random()-.55)*.08,cons})
+  syl(AC.currentTime+.005,f,vol,'a',{kid:!k.adult,girl:!!k.girl,dur:.06,glide:q?.1:ex?.06:(Math.random()-.55)*.05})
  }catch(e){return _b(f,w)}}}
-/* background chatter: distant overlapping voices, the odd laugh */
-babble=function(v){if(!AC)return;const t0=AC.currentTime+.02,kid=Math.random()<.8,girl=Math.random()<.5,f0=kid?(girl?250+Math.random()*90:180+Math.random()*80):(girl?190+Math.random()*50:105+Math.random()*45);
- const vol=(v||.02)*3.2*(P.set.ambVol!=null?P.set.ambVol:1)*(DL?.5:1);
- if(Math.random()<.12){for(let i=0;i<3+(Math.random()*3|0);i++)syl(t0+i*.13,f0*(1.25+i*.04),vol*1.1,'a',{kid,girl,dur:.08,glide:-.1,cons:'s',far:1});return}
- let t=t0;const n=4+(Math.random()*9|0),vows='aeiouaeoa';const fall=Math.random()<.6;
- for(let i=0;i<n;i++){const d=.06+Math.random()*.08;const pf=f0*(1+(fall?(.08-i/n*.18):(i===n-1?.15:Math.sin(i*1.7)*.05)));
-  syl(t,pf,vol*(.75+Math.random()*.35),vows[(Math.random()*vows.length)|0],{kid,girl,dur:d,glide:(Math.random()-.5)*.1,cons:Math.random()<.5?pick(['s','k','t']):null,far:1});
-  t+=d+.015+Math.random()*.045;if(Math.random()<.12)t+=.15}};
+/* background: no voices, just a low crowd hum (a murmur that swells and dips) */
+babble=function(){};
+let MURM=null;
+function murmEnsure(){if(MURM||!AC||!SFXG||!drumBuf)return;const len=AC.sampleRate*3,b=AC.createBuffer(1,len,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<len;i++)d[i]=Math.random()*2-1;
+ const src=AC.createBufferSource();src.buffer=b;src.loop=true;const bp=AC.createBiquadFilter();bp.type='bandpass';bp.frequency.value=330;bp.Q.value=1.4;const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=700;
+ const am=AC.createGain();am.gain.value=.6;for(const f of[2.3,3.7,5.1]){const o=AC.createOscillator(),og=AC.createGain();o.frequency.value=f+Math.random()*.4;og.gain.value=.13;o.connect(og).connect(am.gain);o.start()}
+ const out=AC.createGain();out.gain.value=0;src.connect(bp).connect(lp).connect(am).connect(out).connect(SFXG);src.start();MURM={out,type:null}}
+{const _hu=HOOK.update;HOOK.update=(dt,rdt)=>{_hu&&_hu(dt,rdt);if(TEST||!AC||AC.state!=='running')return;murmEnsure();if(!MURM)return;
+ const ty=(!D||panelMode==='none'||P.set.ambOff)?null:RAMB_TYPE(ROOM),crowd=Object.keys(A).filter(k=>k!=='you'&&A[k]&&!A[k].dead).length;
+ const base={hall:.27,cafe:.4,gym:.22,out:.1,arcade:.22}[ty]||0;const v=base*Math.min(1,.35+crowd*.07)*(P.set.ambVol!=null?P.set.ambVol:1)*(DL?.55:1);
+ MURM.out.gain.setTargetAtTime(v,AC.currentTime,.4)}}
 /* settings: voice and chatter loudness */
 {const _os=openSettings;openSettings=function(){_os();const s=$('settings').querySelector('.set');if(!s)return;
  const add=(label,key,opts)=>{s.appendChild(Object.assign(document.createElement('div'),{textContent:label}));const w=document.createElement('div');w.className='opts';
   opts.forEach(([v,n])=>{const b=document.createElement('button');b.textContent=n;const cur=P.set[key]!=null?P.set[key]:1;b.setAttribute('aria-pressed',String(cur===v));b.onclick=()=>{P.set[key]=v;save&&save();openSettings()};w.appendChild(b)});s.appendChild(w)};
  add('🗣 Dialogue voices','voiceVol',[[.5,'Quiet'],[1,'Normal'],[1.6,'Loud']]);
- add('👥 Crowd chatter','ambVol',[[.5,'Quiet'],[1,'Normal'],[1.6,'Loud']])}}
+ add('👥 Crowd hum','ambVol',[[.5,'Quiet'],[1,'Normal'],[1.6,'Loud']])}}

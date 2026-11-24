@@ -25,7 +25,7 @@ const ADVISORY=[
  ['VIEWER DISCRETION','IS ADVISED. ADVISED HARD.','Nobody in this scene has ever been told “no”. Mr. Adam has never been told “slow down”. Proceed with eye bleach.']];
 function advisory(m){
  return new Promise(res=>{
-  const [t1,t2,body]=ADVISORY[(Object.keys(P.filthOK||{}).length+FILTHY.indexOf(m))%ADVISORY.length];
+  const n_=Object.keys(P.filthOK||{}).length+Math.max(0,FILTHY.indexOf(m));const [t1,t2,body]=ADVISORY[n_%ADVISORY.length];
   const o=document.createElement('div');o.id='advisory';
   o.innerHTML='<div class="pa"><div class="t1"></div><div class="t2"></div></div><div class="qn"></div><p></p><div class="b"><button class="go">LET’S GO <small>(I’m built different)</small></button><button class="no">NOPE <small>(take me back)</small></button></div><label><input type="checkbox"> don’t warn me again</label>';
   o.querySelector('.t1').textContent=t1;o.querySelector('.t2').textContent=t2;o.querySelector('.qn').textContent='🔞 '+(MIS[m]?MIS[m].name.toUpperCase():'');o.querySelector('p').textContent=body;

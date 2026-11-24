@@ -290,12 +290,13 @@ function unoverlap(){
   const aFix=a.id==='you'||SEATED.has(a.pose)||a.sit||a.sitHigh,bFix=b.id==='you'||SEATED.has(b.pose)||b.sit||b.sitHigh;
   if(aFix&&bFix)continue;
   const m=aFix?b:bFix?a:(hsh((a.id||'').length*31+(b.id||'').length)<.5?a:b);
-  if(m._unov&&T-m._unov<.7)continue;m._unov=T;
+  if(a.moving||b.moving)continue;
+  if(m._unov&&T-m._unov<2.5)continue;m._unov=T;
   const o=m===a?b:a;let s=Math.sign(m.x-o.x)||((m.id||'').length%2?1:-1);
   let to=o.x+s*(need+1);if(to<10||to>310){s=-s;to=o.x+s*(need+1)}
   to=clamp(to,10,310);
   const d0=m.dir,p0=m.pose;
-  walk(m.id,to,38).then(()=>{if(A[m.id]===m&&m.tx==null){m.dir=d0;if(p0&&!m.pose)m.pose=p0}});
+  m._keepDir=d0;walk(m.id,to,30).then(()=>{m._keepDir=null;if(A[m.id]===m&&m.tx==null){m.dir=d0;if(p0&&!m.pose)m.pose=p0}});
  }
 }
 {const _hu=HOOK.update;HOOK.update=(dt,rdt)=>{_hu&&_hu(dt,rdt);if(!TEST)try{unoverlap()}catch(e){}}}
@@ -319,11 +320,10 @@ function idleOf(a){
 }
 {const _da=drawActor;drawActor=function(a){
  if(!a||TEST||a.id==='you'||a.dead||a.pose||a.moving||a.tx!=null||a.hold||a.sit||a.sitHigh||a.z>0||a.back||!D||busy||panelMode!=='roam'||ROOM==='busride'||ROOM==='door'||(K[a.id]&&K[a.id].ghost))return _da(a);
- const st=idleOf(a);const od=a.dir,ot=a.talk;
+ const st=idleOf(a);let od=a.dir;const ot=a.talk;
  /* someone close by? face them and talk sometimes */
- let mate=null;for(const k in A){const b=A[k];if(b&&b!==a&&b.vis!==false&&!b.dead&&b.id!=='you'&&Math.abs(b.x-a.x)<34&&Math.abs(b.y-a.y)<10){mate=b;break}}
- if(mate){a.dir=mate.x>a.x?1:-1;const sd=hsh((a.id||'').length*7+mate.x);a.talk=Math.sin(T*.9+sd*9)>.35&&Math.sin(T*.37+sd*5)>0}
- else if(st.look)a.dir=-od;
+ let mate=null;for(const k in A){const b=A[k];if(b&&b!==a&&b.vis!==false&&!b.dead&&b.id!=='you'&&!b.moving&&b.tx==null&&Math.abs(b.x-a.x)<34&&Math.abs(b.y-a.y)<10){mate=b;break}}
+ if(mate){const nd=mate.x>a.x?1:-1;if(nd!==od&&(!a._faceT||T-a._faceT>4)){a._faceT=T;od=nd}a.dir=od;const sd=hsh((a.id||'').length*7+mate.x);a.talk=Math.sin(T*.9+sd*9)>.35&&Math.sin(T*.37+sd*5)>0}
  a.pose=st.p;
  try{return _da(a)}finally{a.pose=null;a.dir=od;a.talk=ot}
 }}
