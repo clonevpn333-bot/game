@@ -739,8 +739,8 @@ const K={
 const FRIENDS=['hasan','arjun','david','omer','nivaan','corey','sean','stella','abby','aidan','angelo','alex','dheva','marcus','paul','kenneth','jacob'];
 const TEACHERS=['balduf','shermian','sherman','loach','voss','coach','pat'];
 
-function kidGeom(k,o){const ad=k.adult?1:0,hh=k.h||0,lr=Math.round(hh/2),p=o&&o.pose,sit=p==='sit'||p==='write',kn=p==='kneel';
- return{legH:sit?4:kn?3:(7+lr+ad*3),bodyH:9+hh-lr+ad*3,bw:(k.wide?13:k.thin?8:10)+ad,hw:k.knob?10:12,hd:k.knob?12:11}}
+function kidGeom(k,o){const ad=k.adult?1:0,hh=k.h||0,lr=Math.round(hh/2),p=o&&o.pose,sit=p==='sit'||p==='write',kn=p==='kneel',cr=p==='crouch';
+ return{legH:sit?4:kn?3:cr?(5+ad):(7+lr+ad*3),bodyH:9+hh-lr+ad*3,bw:(k.wide?13:k.thin?8:10)+ad,hw:k.knob?10:12,hd:k.knob?12:11}}
 
 /* ---------- head: used by bodies, portraits and severed heads ---------- */
 function drawHead(k,x,hy,d,o){
@@ -836,12 +836,16 @@ function drawKid(k,x,y,o){
  const mv=o.moving,ph=o.walk||0,st=mv?Math.sin(ph):0,ct=mv?Math.cos(ph):0;
  const bob=o.still||p==='sit'||p==='write'?0:mv?(Math.abs(st)>.6?1:0):(Math.sin(T*2.2+k.seed)>.6?1:0);
  const run=o.fast&&mv&&!p;
- let lean=run?d:0;if(p==='lean'||p==='hurt'||p==='drag')lean=-d*2;if(p==='stab'||p==='overhead')lean=d;if(p==='headbutt')lean=d*(Math.sin(T*10)>0?4:2);if(p==='kiss')lean=d*2;if(p==='punch'&&o.punchT>T)lean=d;if(k.old)lean+=d;
+ let lean=run?d:0;if(p==='lean'||p==='hurt'||p==='drag')lean=-d*2;if(p==='crouch')lean=d;if(p==='stab'||p==='overhead')lean=d;if(p==='headbutt')lean=d*(Math.sin(T*10)>0?4:2);if(p==='kiss')lean=d*2;if(p==='punch'&&o.punchT>T)lean=d;if(k.old)lean+=d;
  const bx=x-(bw>>1)+lean,lw=k.baggy?5:k.tight?3:4;
  /* legs */
  const shoe=k.tight?'#ddd':k.adult?'#1a1418':'#2a2a30';
  const leg=(lx,top_,h,f)=>{R(lx,y-h+top_,lw,h+f,k.pants);if(k.shorts)R(lx,y-h+top_+3,lw,h-3+f,sk);if(k.skirt)R(lx,y-h+top_+4,lw-1,h-4+f,'#d9b49a');if(k.stripe)R(lx+(d>0?0:lw-1),y-h+top_,1,h+f,'#e8e8e8');if(k.cuff)R(lx,y-2+f,lw,1,'#a8c8ff');R(lx-(d<0?1:0),y-1+f,lw+1,1,shoe)};
  if(p==='sit'||p==='write'){R(x-3,y-4,bw-2,3,k.pants);R(x+d*4-1,y-3,lw,4,k.shorts?sk:k.pants);R(x+d*4-1,y,lw+1,1,shoe);R(x-1,y-4,lw,4,k.pants)}
+ else if(p==='crouch'){/* squat: thighs folded, front knee forward, back heel tucked under */
+  const sh=mv?Math.round(st*1.5):0,fk=d>0?bx+bw-3:bx-1,bk=d>0?bx-1:bx+bw-3;
+  R(bx+1,y-legH,bw-2,3,k.pants);R(fk,y-legH,4,3,k.pants);R(fk+(d>0?1:0),y-legH+2,lw-1,legH-2,k.pants);R(fk+(d>0?0:-1)+sh,y-1,lw+1,1,shoe);
+  R(bk,y-legH+2,4,legH-2,k.pants);R(bk-(d>0?1:0)-sh,y-1,lw+1,1,shoe)}
  else if(p==='kneel'){R(bx+1,y-3,bw-2,3,k.pants);R(bx-(d>0?2:-bw+3),y-1,5,1,shoe)}
  else if(p==='kick'){const kk=Math.sin(T*12)>0;R(bx+(d>0?1:bw-1-lw),y-legH,lw,legH,k.pants);R(bx+(d>0?1:bw-1-lw)-(d<0?1:0),y-1,lw+1,1,shoe);if(kk){R(d>0?bx+bw-2:bx-8,y-legH+1,10,lw-1,k.pants);R(d>0?bx+bw+7:bx-10,y-legH,3,lw,shoe)}else{R(bx+bw-1-lw,y-legH,lw,legH-2,k.pants)}}
  else if(p==='stomp'){const up=Math.sin(T*9)>0;R(bx+(d>0?1:bw-1-lw),y-legH,lw,legH,k.pants);R(bx+(d>0?1:bw-1-lw)-(d<0?1:0),y-1,lw+1,1,shoe);const kx=bx+(d>0?bw-1-lw:1);if(up){R(kx,y-legH,lw,legH-4,k.pants);R(kx+d*2,y-legH+legH-6,lw,3,k.pants);R(kx+d*2-(d<0?1:0),y-5,lw+1,2,shoe)}else{R(kx,y-legH,lw,legH,k.pants);R(kx-(d<0?1:0),y-1,lw+2,1,shoe)}}
@@ -22905,8 +22909,8 @@ function snkStart(){SNK.on=true;SNK.crouch=false;SNK.light=true;SNK.grab=null;SN
  if(!P.f)P.f={};if(!P.f.snkTip){P.f.snkTip=1;setTimeout(()=>toast('SNEAK MODE: C crouch · E drag a box · stand on a box under a vent and press UP · V flashlight in the dark'),900)}}
 function snkStop(){if(SNK.vent)snkUnvent();for(const p of SNK.crates.concat(SNK.grates))p.hide=1;
  for(const p of SNK.crates.concat(SNK.grates)){const i=props.indexOf(p);if(i>=0)props.splice(i,1)}
- SNK.crates=[];SNK.grates=[];SNK.on=false;SNK.grab=null;SNK.peek=null;if(A.you&&A.you.pose==='kneel')A.you.pose=null;snkBtns(false);
- if(!busy&&CAM.z>1.01)camZoom()}
+ SNK.crates=[];SNK.grates=[];SNK.on=false;SNK.grab=null;SNK.peek=null;if(A.you&&A.you.pose==='crouch')A.you.pose=null;snkBtns(false);
+ CAM.z=1;if(A.you&&!SNK.vent)A.you.alpha=1}
 function snkUnvent(){const a=A.you;SNK.vent=false;HIDE=null;if(a){a.alpha=1;a.back=0;a.x=SNK.vx;a.y=floorOf(D.room)[0]+10}}
 /* ---------- drawing the bits ---------- */
 {const _dp=drawProp;drawProp=function(p){
@@ -22921,7 +22925,7 @@ function snkUnvent(){const a=A.you;SNK.vent=false;HIDE=null;if(a){a.alpha=1;a.ba
 const nearCrate=()=>SNK.crates.find(c=>Math.abs(c.x-A.you.x)<16);
 const grateAt=x=>SNK.grates.find(g=>Math.abs(g.x-x)<11);
 const canClimb=()=>{const g=grateAt(A.you.x);if(!g)return null;const c=SNK.crates.find(c=>Math.abs(c.x-g.x)<11&&Math.abs(c.x-A.you.x)<13);return c?g:false};
-function covered(){if(!SNK.crouch||!PAT||SNK.grab)return false;const t=A[PAT.id];if(!t)return false;const s=Math.sign(t.x-A.you.x);return SNK.crates.some(c=>Math.abs(c.x-A.you.x)<14&&Math.sign(c.x-A.you.x)===s)}
+function covered(){if(!SNK.crouch||!PAT||SNK.grab)return false;const t=A[PAT.id];if(!t)return false;const s=Math.sign(t.x-A.you.x);return SNK.crates.some(c=>Math.abs(c.x-A.you.x)<19&&Math.sign(c.x-A.you.x)===s)}
 function snkSay(id,t){SNK.line={id,t,until:T+2.6}}
 async function snkClimb(g){const a=A.you;SNK.anim=true;SNK.crouch=false;a.pose='reach';a.dir=g.x>a.x?1:-1;await tw(a,{x:g.x,y:a.y-12},260,'out');SFX.locker&&SFX.locker();g.open=1;await tw(a,{alpha:0},200);
  SNK.vent=true;SNK.vx=g.x;HIDE={x:a.x,y:floorOf(D.room)[0]+10,d:{x:g.x}};a.pose=null;g.open=0;SNK.anim=false;
@@ -22938,7 +22942,7 @@ function snkCaughtVent(){const p=SNK.peek;if(!p)return;SNK.peek=null;const id=PA
 /* ---------- input ---------- */
 const snkFree=()=>SNK.on&&!busy&&panelMode==='roam'&&!DL&&!CH&&A.you&&!SNK.anim;
 function snkToggleGrab(){if(SNK.grab){SNK.grab=null;SFX.thud&&SFX.thud();return}const c=nearCrate();if(!c)return false;SNK.grab=c;SNK.side=Math.sign(c.x-A.you.x)||1;SNK.crouch=false;SFX.pick&&SFX.pick();return true}
-function snkCrouch(){if(SNK.vent)return;SNK.crouch=!SNK.crouch;if(SNK.crouch)SNK.grab=null;if(!SNK.crouch&&A.you.pose==='kneel')A.you.pose=null}
+function snkCrouch(){if(SNK.vent)return;SNK.crouch=!SNK.crouch;if(SNK.crouch)SNK.grab=null;if(!SNK.crouch&&A.you.pose==='crouch')A.you.pose=null}
 function snkLight(){if(!snkDark())return toast('It’s daytime. You don’t need the flashlight.');SNK.light=!SNK.light;SFX.click&&SFX.click()}
 function snkUp(){if(SNK.vent)return true;const g=canClimb();if(g){snkClimb(g);return true}if(g===false){toast('Too high. Drag a box under it.');return true}return false}
 function snkDown(){if(!SNK.vent)return false;const g=grateAt(SNK.vx);if(g)snkDrop(g);else toast('No grate here. Crawl to one.');return true}
@@ -22965,8 +22969,8 @@ function snkBtns(on){let b=$('snkb');if(!b&&on){b=document.createElement('div');
  _hu&&_hu(dt,rdt);
  if(!A.you||!SNK.on)return;
  /* camera */
- if(free){const vz=SNK.vent?2:1.75,tx=a.x,ty=SNK.vent?112:a.y-24,k=Math.min(1,rdt*4);CAM.z+=(vz-CAM.z)*k;CAM.x+=(tx-CAM.x)*k;CAM.y+=(ty-CAM.y)*k;SNK.lastZ=CAM.z}
- else if(SNK.wasFree&&Math.abs(CAM.z-SNK.lastZ)<.02)camZoom();
+ if(free){const tx=a.x,ty=SNK.vent?112:a.y-24;if(CAM.z!==2){CAM.z=2;CAM.x=tx;CAM.y=ty;fxState.flash=.35;fxState.flashC='#000'}const k=Math.min(1,rdt*5);CAM.x+=(tx-CAM.x)*k;CAM.y+=(ty-CAM.y)*k;SNK.lastZ=2}
+ else if(SNK.wasFree&&CAM.z===2)CAM.z=1;
  SNK.wasFree=free;
  if(!free)return;
  /* in the vent */
@@ -22975,8 +22979,9 @@ function snkBtns(on){let b=$('snkb');if(!b&&on){b=document.createElement('div');
   a.x=SNK.vx;if(HIDE)HIDE.d.x=SNK.vx;
   const t=PAT&&A[PAT.id];
   if(SNK.peek&&t){const p=SNK.peek;
-   if(p.ph==='walk'){const d=p.g.x-t.x;t.dir=Math.sign(d)||t.dir;t.moving=true;t.walk=(t.walk||0)+rdt*10;t.x+=Math.sign(d)*Math.min(Math.abs(d),(p.quick?70:42)*rdt);if(Math.abs(d)<2){p.ph='open';p.t0=T;t.moving=false;t.pose='reach';SFX.locker&&SFX.locker()}}
-   else if(p.ph==='open'){p.g.open=Math.min(1,(T-p.t0)/.4);if(T-p.t0>.45){p.ph='look';p.t0=T;p.side=-(Math.sign(SNK.vx-p.g.x)||1)}}
+   if(p.ph==='walk'){const d=p.g.x-t.x;t.dir=Math.sign(d)||t.dir;t.moving=true;t.walk=(t.walk||0)+rdt*10;t.x+=Math.sign(d)*Math.min(Math.abs(d),(p.quick?70:42)*rdt);if(Math.abs(d)<2){p.ph='grip';p.t0=T;p.rt=0;t.moving=false;t.pose='reach'}}
+   else if(p.ph==='grip'){if(T>p.rt){p.rt=T+.22;SFX.locker&&SFX.locker()}if(T-p.t0>1.1){p.ph='open';p.t0=T;SFX.door&&SFX.door()}}
+   else if(p.ph==='open'){p.g.open=Math.min(1,(T-p.t0)/.5);if(T-p.t0>.6){p.ph='look';p.t0=T;p.side=-(Math.sign(SNK.vx-p.g.x)||1)}}
    else if(p.ph==='look'){const el=T-p.t0;if(Math.floor(el/1.3)%2===1&&!p.fl){p.fl=1;p.side*=-1}if(Math.floor(el/1.3)%2===0)p.fl=0;
     const dx=SNK.vx-p.g.x,inBeam=Math.abs(dx)<9||(Math.sign(dx)===p.side&&Math.abs(dx)<42);
     p.caught=inBeam?p.caught+rdt:Math.max(0,p.caught-rdt*.6);if(p.caught>.9)return snkCaughtVent();if(el>4.2)snkPeekEnd()}}
@@ -22986,8 +22991,9 @@ function snkBtns(on){let b=$('snkb');if(!b&&on){b=document.createElement('div');
   else if(t&&PAT.state==='chase'&&PAT.knows&&!SNK.peek){const g=SNK.grates.slice().sort((x,y)=>Math.abs(x.x-SNK.vx)-Math.abs(y.x-SNK.vx))[0];snkPeek(g,true)}
   return}
  /* on the floor */
- for(const c of SNK.crates)c.layer=(SNK.crouch&&!SNK.grab&&Math.abs(c.x-a.x)<14)?(a.y-c.y+2):0;
- if(SNK.crouch){a.pose='kneel';a.x=ox+(a.x-ox)*.5}else if(a.pose==='kneel')a.pose=null;
+ for(const c of SNK.crates){c.layer=Math.min(0,a.y-c.y-1);if(SNK.crouch&&!SNK.grab&&Math.abs(c.x-a.x)<15){const t=PAT&&A[PAT.id];const away=t?(t.x>c.x?-1:1):(a.x<c.x?-1:1);a.x=c.x+away*15}}
+ a.alpha=covered()?.85:1;
+ if(SNK.crouch){a.pose='crouch';a.x=ox+(a.x-ox)*.5}else if(a.pose==='crouch')a.pose=null;
  if(SNK.grab){const c=SNK.grab;a.x=ox+(a.x-ox)*.6;a.dir=SNK.side;if(Math.abs(a.x-ox)>.01){SNK.noise=Math.min(1,SNK.noise+rdt*1.4);if(Math.random()<rdt*7){try{noise(.08,.07,180+Math.random()*120,2,'bandpass')}catch(_){}}}
   c.x=clamp(a.x+SNK.side*13,14,306);c.y=a.y+2;if(c.x===14||c.x===306)a.x=c.x-SNK.side*13;a.pose='drag'}
  else if(a.pose==='drag')a.pose=null;
@@ -23035,22 +23041,8 @@ function cone(c,x,y,dir,len,spread,rgb,al){const gr=c.createRadialGradient(x,y,1
 function crawler(sx,sy,s,dir,ph){const k=K.you,leg=Math.round(Math.sin(ph)*1.5),arm=Math.round(Math.sin(ph+Math.PI)*1.5);const P_=(x,y,w,h,c)=>R(Math.round(sx+(dir>0?x:-x-w)*s),Math.round(sy+y*s),w*s,h*s,c);
  P_(-9+leg,-3,4,3,k.pants);P_(-11+leg,-1,2,2,'#1a1a1a');P_(-6,-6,8,4,k.top);P_(-6,-6,8,1,'#e05a5a');P_(1+arm,-3,2,3,k.top);P_(2+arm,-1,2,1,k.skin);P_(2,-10,5,5,k.skin);P_(2,-11,5,2,k.top);P_(6,-10,2,1,k.top);P_(5,-8,1,1,'#1a1a1a')}
 function snkScreen(){if(!SNK.on||!A.you||ROOM!==D.room||TEST)return;g.setTransform(1,0,0,1,0,0);
- const z=CAM.z,cx=clamp(CAM.x,W/2/z,W-W/2/z),cy=clamp(CAM.y,H/2/z,H-H/2/z),SX=wx=>(wx-cx)*z+W/2;
- if(SNK.vent){const bot=60;
-  const gr=g.createLinearGradient(0,0,0,bot);gr.addColorStop(0,'#0e1014');gr.addColorStop(.5,'#1d2129');gr.addColorStop(1,'#0e1014');g.fillStyle=gr;g.fillRect(0,0,W,bot);
-  R(0,0,W,6,'#2c3038');R(0,6,W,1,'#454a54');R(0,bot,W,8,'#2c3038');R(0,bot,W,1,'#5a606a');
-  for(let wx=Math.floor((cx-W/2/z)/24)*24;wx<cx+W/2/z+24;wx+=24){const s=SX(wx);R(s,6,2,bot-6,'#151820');R(s+2,6,1,bot-6,'#2a2e36');R(s-3,2,1,1,'#6a707a');R(s-3,bot+4,1,1,'#6a707a')}
-  for(let i=0;i<24;i++){const wx=(i*53.7)%320,s=SX(wx);if(s>0&&s<W)R(s,bot-2-(i%3),2,1,'#3a3e46')}
-  for(const gt of SNK.grates){const s=SX(gt.x),hw=8*z;if(s<-20||s>W+20)continue;
-   if(gt.open>0){R(s-hw,bot,hw*2,8,'#000');g.save();g.globalCompositeOperation='lighter';const lg=g.createLinearGradient(0,bot+8,0,0);lg.addColorStop(0,'rgba(255,240,190,.55)');lg.addColorStop(1,'rgba(255,240,190,0)');g.fillStyle=lg;g.beginPath();g.moveTo(s-hw,bot);g.lineTo(s+hw,bot);g.lineTo(s+hw+20,0);g.lineTo(s-hw-20,0);g.fill();g.restore()}
-   else{R(s-hw,bot,hw*2,8,'#0a0b0e');for(let i=0;i<5;i++)R(s-hw+2,bot+1+i*1.5,hw*2-4,1,'#6a707a');if(!snkDark()){g.save();g.globalCompositeOperation='lighter';g.globalAlpha=.12;R(s-hw,bot-10,hw*2,10,'#fff2c8');g.restore()}}}
-  const p=SNK.peek;if(p&&p.ph==='look'){const s=SX(p.g.x),len=42*z;g.save();g.globalCompositeOperation='lighter';const bx=s+p.side*len;const lg=g.createLinearGradient(s,0,bx,0);lg.addColorStop(0,'rgba(255,240,190,.75)');lg.addColorStop(1,'rgba(255,240,190,0)');g.fillStyle=lg;g.beginPath();g.moveTo(s-9*z*(p.side>0?1:-1)*0,bot);g.lineTo(bx,8);g.lineTo(bx,bot);g.closePath();g.fill();
-   R(s-6,bot-10,12,10,'rgba(255,240,190,.35)');g.restore();
-   const fl=Math.sin(T*14)>0;R(W/2-60,70,120,14,'#120206ee');pxc(p.caught>.15?'GET OUT OF THE LIGHT':'BACK AWAY. QUIETLY.',W/2,74,fl?'#ff6a6a':'#ffd0d0')}
-  else if(p&&p.ph!=='look'){R(W/2-60,70,120,14,'#120206ee');pxc(((PAT&&K[PAT.id]&&K[PAT.id].n)||'They')+' heard you. Move.',W/2,74,'#ffb0a0')}
-  const ys=bot-2;crawler(SX(SNK.vx),ys,2,A.you.dir||1,SNK.crawl);
-  if(SNK.hear>.05&&!p){R(W-64,10,56,7,'#141020');R(W-63,11,Math.round(54*Math.min(1,SNK.hear)),5,SNK.hear>.7?'#ff5a4a':'#ffc860');px('NOISE',W-63,19,'#cbbfd8')}
-  g.globalAlpha=.25;R(0,bot+8,W,H-bot-8,'#000');g.globalAlpha=1}
+ const z=CAM.z,cx=clamp(CAM.x,W/2/z,W-W/2/z),cy=clamp(CAM.y,H/2/z,H-H/2/z),SX=wx=>Math.round(W/2-cx*z)+wx*z;
+ if(SNK.vent){ventScreen();}
  /* film look */
  g.save();if(!REDV2){REDV2=document.createElement('canvas');REDV2.width=W;REDV2.height=H;const v=REDV2.getContext('2d');const gr=v.createRadialGradient(W/2,H/2,H*.3,W/2,H/2,H*.85);gr.addColorStop(0,'rgba(0,0,0,0)');gr.addColorStop(1,'rgba(0,0,0,.85)');v.fillStyle=gr;v.fillRect(0,0,W,H)}
  g.drawImage(REDV2,0,0);g.globalAlpha=.06;g.fillStyle='#4060a0';g.fillRect(0,0,W,H);g.globalAlpha=1;
@@ -23066,7 +23058,61 @@ let REDV2=null;
 {const _er=enterRoom;enterRoom=async function(r){if(SNK.on)snkStop();return _er(r)}}
 /* the close camera: cinema's zoom is reset by the engine every frame, so sneak mode draws its own */
 {const _zd=zDraw;zDraw=function(){if(!SNK.on||TEST||Math.abs(CAM.z-1)<.01)return _zd();const z=CAM.z,cx=clamp(CAM.x,W/2/z,W-W/2/z),cy=clamp(CAM.y,H/2/z,H-H/2/z);
- g.setTransform(z,0,0,z,W/2-cx*z,H/2-cy*z);g._zm=1;try{_DRAW0()}finally{g._zm=0;g.setTransform(1,0,0,1,0,0)}}}
+ g.imageSmoothingEnabled=false;g.setTransform(z,0,0,z,Math.round(W/2-cx*z),Math.round(H/2-cy*z));g._zm=1;try{_DRAW0()}finally{g._zm=0;g.setTransform(1,0,0,1,0,0)}}}
+
+/* ---------- the vent, full screen ---------- */
+const VF=138;   /* duct floor, screen y */
+function ventScreen(){
+ const vcx=clamp(SNK.vx,80,240),SV=wx=>Math.round(W/2+(wx-vcx)*2),dk=snkDark(),t=PAT&&A[PAT.id],p=SNK.peek;
+ const lo=Math.max(14,Math.min(...SNK.grates.map(q=>q.x))-20),hi=Math.min(306,Math.max(...SNK.grates.map(q=>q.x))+20);
+ /* shell */
+ R(0,0,W,H,'#07080b');
+ const wg=g.createLinearGradient(0,22,0,VF);wg.addColorStop(0,'#14171d');wg.addColorStop(.55,'#232832');wg.addColorStop(1,'#181b22');g.fillStyle=wg;g.fillRect(0,22,W,VF-22);
+ R(0,8,W,14,'#2a2e36');R(0,20,W,2,'#3c414b');R(0,22,W,1,'#0c0d10');
+ for(let wx=Math.floor((vcx-90)/24)*24;wx<vcx+90;wx+=24){const s=SV(wx);R(s,22,2,VF-22,'#11131a');R(s+2,22,1,VF-22,'#30353f');for(const yy of[13,30,VF-6])R(s-4,yy,2,2,'#5a606a');R(s-4,14,1,1,'#8a909a')}
+ for(let i=0;i<40;i++){const wx=lo+((i*47.3)%(hi-lo)),s=SV(wx);R(s,VF-1-(i%2),2+(i%3),1,'#3a3f48')}
+ for(let i=0;i<6;i++){const wx=lo+((i*83.1)%(hi-lo)),s=SV(wx);g.globalAlpha=.25;for(let k=0;k<8;k++)R(s+k,23+Math.round(Math.sin(k)*2)+k,1,1,'#9aa0aa');g.globalAlpha=1}
+ /* ends of the duct */
+ if(SV(lo)>0)R(0,8,SV(lo),VF+12,'#050507');if(SV(hi)<W)R(SV(hi),8,W-SV(hi),VF+12,'#050507');
+ /* floor */
+ R(0,VF,W,3,'#4a505a');R(0,VF+3,W,9,'#2a2e36');R(0,VF+12,W,1,'#0c0d10');
+ /* teacher underneath: light and shadow leaking through the floor seams */
+ if(t&&!t.dead){const s=SV(t.x);if(s>-30&&s<W+30){g.save();g.globalCompositeOperation='lighter';const lg=g.createRadialGradient(s,VF+6,1,s,VF+6,34);const c=dk?'255,220,150':'255,240,210';lg.addColorStop(0,'rgba('+c+','+(dk?.5:.22)+')');lg.addColorStop(1,'rgba('+c+',0)');g.fillStyle=lg;g.fillRect(s-34,VF-20,68,40);g.restore();
+  for(let k=-10;k<=10;k+=4)R(s+k+Math.round(Math.sin(T*6+k)),VF+3,2,1,'#0a0a0c')}}
+ /* grates */
+ for(const q of SNK.grates){const s=SV(q.x);if(s<-24||s>W+24)continue;const hw=16;
+  const under=t&&!t.dead&&Math.abs(t.x-q.x)<16;
+  R(s-hw,VF,hw*2,12,dk?'#020203':'#2a2418');
+  if(!dk){g.save();g.globalCompositeOperation='lighter';const lg=g.createLinearGradient(0,VF+12,0,VF-40);lg.addColorStop(0,'rgba(255,236,190,.28)');lg.addColorStop(1,'rgba(255,236,190,0)');g.fillStyle=lg;g.fillRect(s-hw-4,VF-40,hw*2+8,52);g.restore()}
+  if(under&&(!p||p.g!==q||p.ph==='walk')){const hs=SV(t.x);const k=K[t.id]||{};R(hs-6,VF+4,12,8,k.hair||'#3a2a20');R(hs-4,VF+3,8,2,k.hair||'#3a2a20');if(dk){g.save();g.globalCompositeOperation='lighter';R(hs+(t.dir||1)*8-3,VF+6,6,4,'rgba(255,230,160,.6)');g.restore()}}
+  const op=q.open||0,jit=p&&p.g===q&&p.ph==='grip'?Math.round(Math.sin(T*40)*1):0;
+  if(op<1){const hh=Math.round(12*(1-op));for(let i=0;i<5;i++){const y=VF+1+Math.round(i*hh/5);if(i*hh/5<hh)R(s-hw+2+jit,y,hw*2-4,1,'#7a808a')}R(s-hw+jit,VF,1,12,'#5a606a');R(s+hw-1+jit,VF,1,12,'#5a606a')}
+  else{R(s-hw,VF+10,hw*2,2,'#7a808a')}
+  /* fingers through the slats */
+  if(p&&p.g===q&&p.ph==='grip'){const k=K[t.id]||{};const sk=k.skin||'#e0b090';for(let f=0;f<4;f++){const fx=s-9+f*4+(f>1?4:0),up=Math.round(2+Math.abs(Math.sin(T*9+f))*3);R(fx+jit,VF-up+2,2,up,sk);R(fx+jit,VF-up+2,2,1,'#f4d0b0')}}
+  /* face in the hole */
+  if(p&&p.g===q&&(p.ph==='open'||p.ph==='look')&&t){const rise=p.ph==='open'?Math.min(1,(T-p.t0)/.5):1;
+   g.save();g.beginPath();g.rect(s-hw,VF-40,hw*2,40+12);g.clip();
+   g.setTransform(2,0,0,2,W/2-vcx*2,0);drawCopy(t,{x:q.x,y:Math.round((VF+12+70-26*rise)/2),dir:Math.sign(SNK.vx-q.x)||1,pose:p.ph==='look'?'reach':null,alpha:1,moving:false,ex:'cold',back:0,hold:null});g.setTransform(1,0,0,1,0,0);g.restore()}}
+ /* the beam */
+ if(p&&p.ph==='look'){const s=SV(p.g.x),len=42*2,bx=s+p.side*len,ey=VF-16;g.save();g.globalCompositeOperation='lighter';const lg=g.createLinearGradient(s,0,bx,0);lg.addColorStop(0,'rgba(255,240,190,.7)');lg.addColorStop(1,'rgba(255,240,190,0)');g.fillStyle=lg;g.beginPath();g.moveTo(s,ey-3);g.lineTo(bx,ey-34);g.lineTo(bx,VF+2);g.lineTo(s,ey+3);g.closePath();g.fill();g.restore()}
+ /* you, crouch-crawling */
+ const a=A.you;g.setTransform(2,0,0,2,W/2-vcx*2,0);drawCopy(a,{x:SNK.vx,y:Math.round(VF/2)+1,alpha:1,pose:'crouch',moving:!!(keys.l||keys.r),back:0,vis:true,hold:null,ex:p&&p.ph==='look'?'scared':a.ex});g.setTransform(1,0,0,1,0,0);
+ /* where they are: the strip under the duct */
+ const ry=VF+20,rx=v=>Math.round(24+(v-lo)/(hi-lo)*(W-48));R(18,ry-4,W-36,15,'#000000c0');R(24,ry+3,W-48,1,'#3a3e46');
+ for(const q of SNK.grates){R(rx(q.x)-2,ry+1,5,5,'#5a606a');R(rx(q.x)-1,ry+2,3,3,'#1c2026')}
+ R(rx(SNK.vx)-1,ry,3,7,'#ffe8a0');
+ if(t&&!t.dead){const c=PAT.state==='peek'||PAT.state==='chase'?'#ff4a3a':'#ff9a6a';R(rx(clamp(t.x,lo,hi))-1,ry,3,7,c);px((K[t.id]?K[t.id].n:'').toUpperCase(),clamp(rx(clamp(t.x,lo,hi))-10,20,W-70),ry-11,c)}
+ px('YOU',clamp(rx(SNK.vx)-6,20,W-40),ry+8,'#ffe8a0');
+ if(t&&!t.dead){const s=SV(t.x);if(s<0||s>W){const L=s<0,x=L?6:W-12;R(x,VF-30,6,1,'#ff9a6a');for(let i=0;i<4;i++)R(L?x+i:x+5-i,VF-30-i,1,i*2+1,'#ff9a6a')}}
+ /* noise */
+ if(SNK.hear>.05&&!p){R(W-64,30,56,7,'#141020');R(W-63,31,Math.round(54*Math.min(1,SNK.hear)),5,SNK.hear>.7?'#ff5a4a':'#ffc860');px('NOISE',W-63,39,'#cbbfd8')}
+ if(p&&p.ph==='look'&&p.caught>.15){const fl=Math.sin(T*14)>0;R(W/2-50,44,100,12,'#120206ee');pxc('GET OUT OF THE LIGHT',W/2,47,fl?'#ff6a6a':'#ffd0d0')}
+}
+
+function drawCopy(a,o){const c=Object.assign({},a,o);c._sx=c._sy=undefined;c._room=undefined;c._pose=c.pose;c._tr=null;c._lie=0;try{drawActor(c)}catch(e){if(TEST)throw e}}
+
+
 
 </script>
 <script>

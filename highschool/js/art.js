@@ -38,8 +38,8 @@ const K={
 const FRIENDS=['hasan','arjun','david','omer','nivaan','corey','sean','stella','abby','aidan','angelo','alex','dheva','marcus','paul','kenneth','jacob'];
 const TEACHERS=['balduf','shermian','sherman','loach','voss','coach','pat'];
 
-function kidGeom(k,o){const ad=k.adult?1:0,hh=k.h||0,lr=Math.round(hh/2),p=o&&o.pose,sit=p==='sit'||p==='write',kn=p==='kneel';
- return{legH:sit?4:kn?3:(7+lr+ad*3),bodyH:9+hh-lr+ad*3,bw:(k.wide?13:k.thin?8:10)+ad,hw:k.knob?10:12,hd:k.knob?12:11}}
+function kidGeom(k,o){const ad=k.adult?1:0,hh=k.h||0,lr=Math.round(hh/2),p=o&&o.pose,sit=p==='sit'||p==='write',kn=p==='kneel',cr=p==='crouch';
+ return{legH:sit?4:kn?3:cr?(5+ad):(7+lr+ad*3),bodyH:9+hh-lr+ad*3,bw:(k.wide?13:k.thin?8:10)+ad,hw:k.knob?10:12,hd:k.knob?12:11}}
 
 /* ---------- head: used by bodies, portraits and severed heads ---------- */
 function drawHead(k,x,hy,d,o){
@@ -135,12 +135,16 @@ function drawKid(k,x,y,o){
  const mv=o.moving,ph=o.walk||0,st=mv?Math.sin(ph):0,ct=mv?Math.cos(ph):0;
  const bob=o.still||p==='sit'||p==='write'?0:mv?(Math.abs(st)>.6?1:0):(Math.sin(T*2.2+k.seed)>.6?1:0);
  const run=o.fast&&mv&&!p;
- let lean=run?d:0;if(p==='lean'||p==='hurt'||p==='drag')lean=-d*2;if(p==='stab'||p==='overhead')lean=d;if(p==='headbutt')lean=d*(Math.sin(T*10)>0?4:2);if(p==='kiss')lean=d*2;if(p==='punch'&&o.punchT>T)lean=d;if(k.old)lean+=d;
+ let lean=run?d:0;if(p==='lean'||p==='hurt'||p==='drag')lean=-d*2;if(p==='crouch')lean=d;if(p==='stab'||p==='overhead')lean=d;if(p==='headbutt')lean=d*(Math.sin(T*10)>0?4:2);if(p==='kiss')lean=d*2;if(p==='punch'&&o.punchT>T)lean=d;if(k.old)lean+=d;
  const bx=x-(bw>>1)+lean,lw=k.baggy?5:k.tight?3:4;
  /* legs */
  const shoe=k.tight?'#ddd':k.adult?'#1a1418':'#2a2a30';
  const leg=(lx,top_,h,f)=>{R(lx,y-h+top_,lw,h+f,k.pants);if(k.shorts)R(lx,y-h+top_+3,lw,h-3+f,sk);if(k.skirt)R(lx,y-h+top_+4,lw-1,h-4+f,'#d9b49a');if(k.stripe)R(lx+(d>0?0:lw-1),y-h+top_,1,h+f,'#e8e8e8');if(k.cuff)R(lx,y-2+f,lw,1,'#a8c8ff');R(lx-(d<0?1:0),y-1+f,lw+1,1,shoe)};
  if(p==='sit'||p==='write'){R(x-3,y-4,bw-2,3,k.pants);R(x+d*4-1,y-3,lw,4,k.shorts?sk:k.pants);R(x+d*4-1,y,lw+1,1,shoe);R(x-1,y-4,lw,4,k.pants)}
+ else if(p==='crouch'){/* squat: thighs folded, front knee forward, back heel tucked under */
+  const sh=mv?Math.round(st*1.5):0,fk=d>0?bx+bw-3:bx-1,bk=d>0?bx-1:bx+bw-3;
+  R(bx+1,y-legH,bw-2,3,k.pants);R(fk,y-legH,4,3,k.pants);R(fk+(d>0?1:0),y-legH+2,lw-1,legH-2,k.pants);R(fk+(d>0?0:-1)+sh,y-1,lw+1,1,shoe);
+  R(bk,y-legH+2,4,legH-2,k.pants);R(bk-(d>0?1:0)-sh,y-1,lw+1,1,shoe)}
  else if(p==='kneel'){R(bx+1,y-3,bw-2,3,k.pants);R(bx-(d>0?2:-bw+3),y-1,5,1,shoe)}
  else if(p==='kick'){const kk=Math.sin(T*12)>0;R(bx+(d>0?1:bw-1-lw),y-legH,lw,legH,k.pants);R(bx+(d>0?1:bw-1-lw)-(d<0?1:0),y-1,lw+1,1,shoe);if(kk){R(d>0?bx+bw-2:bx-8,y-legH+1,10,lw-1,k.pants);R(d>0?bx+bw+7:bx-10,y-legH,3,lw,shoe)}else{R(bx+bw-1-lw,y-legH,lw,legH-2,k.pants)}}
  else if(p==='stomp'){const up=Math.sin(T*9)>0;R(bx+(d>0?1:bw-1-lw),y-legH,lw,legH,k.pants);R(bx+(d>0?1:bw-1-lw)-(d<0?1:0),y-1,lw+1,1,shoe);const kx=bx+(d>0?bw-1-lw:1);if(up){R(kx,y-legH,lw,legH-4,k.pants);R(kx+d*2,y-legH+legH-6,lw,3,k.pants);R(kx+d*2-(d<0?1:0),y-5,lw+1,2,shoe)}else{R(kx,y-legH,lw,legH,k.pants);R(kx-(d<0?1:0),y-1,lw+2,1,shoe)}}
