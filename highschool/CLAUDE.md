@@ -29,6 +29,7 @@ so check every line.
 - When the bell goes, everyone in the room runs off-screen before the next period starts (`js/tracker.js`).
 - Shoving has payback (`js/payback.js`): hot-headed kids swing back, pull a weapon (run/fight/beg; losing can kill you: Shanked/Jumped deaths) or hold a grudge and ambush you later with backup. 7th/8th graders (Jaxon, Kaylee, Brayden + 8th graders) do Bin Day outside: carry you and dump you in the big trash can, or pull a weapon.
 - Real-time roam events (`js/live.js`) every 30–45 s so walking around is never dead time: dodge a thrown ball or a sprinting kid (move up/down; streak rewards), sneak-grab by 7th/8th graders (mash LEFT+RIGHT to pull away or get binned), loose cash to race for, and people with a quest for you walk up and start it themselves (new quests and next steps of started ones; tracked quest first). Walking is faster and text is faster by default. Pixel font has no arrow glyphs: write LEFT/RIGHT.
+- Variety (`js/variety.js`): ~45% of steps of STARTED quests get a playable complication first (chase a snatcher, lockpick, Simon handshake/patrol, throw at a moving target, race a rival), win = bonus, lose = small cost, quest continues. Three daily challenges (top of ⚡ Do Now) pay $5 + 🍎 each, $10 for all three.
 - Random chaos happens around the school (`js/chaos.js`): free, quick, edgy.
 - Characters you’re mid-quest with come back the next day if they die.
 - Apples are only spent on doing things (quest steps, investigating, picking things up), never on chatting.
