@@ -52,7 +52,7 @@ hook({mis:'robbery',period:8,room:'arcade',who:'auto',cond:()=>robRoll('arcade')
  await N('The glass comes in. Stuffed animals everywhere. Somewhere a man in an Arcadia polo shirt starts running toward you from very far away.');
  const c=await choose(['Grab a stuffed animal and run.','Help the polo-shirt man catch them.','Walk away. Not your claw machine.']);
  if(c===0){hold('you','flower');D.f.robbedToday=1;await walk('you',-20,140);await N('You got a one-eyed duck. It looks exactly like the one Sean won Stella. It might be its brother.');hold('you',null)}
- else if(c===1){await walk('you',A.kid4.x+10,110);await hit('you','kid4',{blood:3});await N('You tackle one. The other one gets away with a dinosaur under each arm. The polo-shirt man arrives two minutes later, out of breath, and gives you a single ticket.')}
+ else if(c===1&&A.kid4){await walk('you',A.kid4.x+10,110);await hit('you','kid4',{blood:3});await N('You tackle one. The other one gets away with a dinosaur under each arm. The polo-shirt man arrives two minutes later, out of breath, and gives you a single ticket.')}
  else await N('You walk away. Behind you there’s the sound of a second hammer.');
  return 'stay';
 }});

@@ -65,21 +65,21 @@ for(let i=0;i<3;i++){
   get room(){const g=G(i);return g&&g.st==='get'?g.from:null},get x(){const g=G(i);return g?g.fx:0},get label(){const g=G(i);return g?gigLabel(g):''},set label(v){},
   get jdraw(){const g=G(i);return g&&g.st==='get'?{sh:g.sh}:null},
   cond:()=>{const g=G(i);return !!(g&&g.st==='get'&&(g.kind==='deliver'||g.kind==='plant'))},
-  run:async()=>{const g=G(i);if(!g||g.st!=='get'||g.fx==null||!A.you)return 'stay';clearTalk();await walk('you',g.fx+(A.you.x<g.fx?-6:6),70);pose('you','reach');await wait(220);pose('you','grab');SFX.pick&&SFX.pick();
+  run:async()=>{const g=G(i);if(!g||g.st!=='get'||g.fx==null||!A.you||!PERIODS[D.period])return 'stay';clearTalk();await walk('you',g.fx+(A.you.x<g.fx?-6:6),70);pose('you','reach');await wait(220);pose('you','grab');SFX.pick&&SFX.pick();
    hold('you','J:'+g.sh);await wait(380);hold('you',null);pose('you',null);g.st=g.kind==='plant'?'plant':'give';
    toast('Now: '+gigLabel(g)+' · '+shortName(g.kind==='plant'?g.to:g.room));return 'stay'}});
  /* the prank */
  SPOTS.push({_gig:1,mis:'gigs',short:'PLANT',y:150,
   get room(){const g=G(i);return g&&g.kind==='plant'&&g.st==='plant'?g.to:null},get x(){const g=G(i);return g?g.tx:0},get label(){const g=G(i);return g?gigLabel(g):''},set label(v){},
   cond:()=>{const g=G(i);return !!(g&&g.kind==='plant'&&g.st==='plant')},
-  run:async()=>{const g=G(i);if(!g||g.kind!=='plant'||g.tx==null||!A.you)return 'stay';clearTalk();await walk('you',g.tx+(A.you.x<g.tx?-6:6),70);hold('you','J:'+g.sh);pose('you','kneel');await wait(320);pose('you','reach');await wait(250);hold('you',null);pose('you',null);
+  run:async()=>{const g=G(i);if(!g||g.kind!=='plant'||g.tx==null||!A.you||!PERIODS[D.period])return 'stay';clearTalk();await walk('you',g.tx+(A.you.x<g.tx?-6:6),70);hold('you','J:'+g.sh);pose('you','kneel');await wait(320);pose('you','reach');await wait(250);hold('you',null);pose('you',null);
    await N(pick(['Done. You step back and admire it. Art.','Planted. Somewhere a teacher’s day just got worse and they don’t know it yet.','It’s in. You wipe your prints off with your sleeve, like in the movies, which does nothing.']));
    gigPay(g);return 'stay'}});
  /* the person: hand-over, shove, or fight */
  HOOKS.push({_gig:1,mis:'gigs',
   get period(){const g=G(i);return g?g.per:-1},get room(){const g=G(i);return g?g.room:null},get who(){const g=G(i);return g?g.tgt:null},get label(){const g=G(i);return g?gigLabel(g):''},set label(v){},
   cond:()=>{const g=G(i);return !!(g&&!D.dead[g.tgt]&&((g.kind==='deliver'&&g.st==='give')||((g.kind==='shove'||g.kind==='fight')&&g.st==='do')))},
-  run:async()=>{const g=G(i);if(!g||!A.you)return 'stay';
+  run:async()=>{const g=G(i);if(!g||!A.you||!PERIODS[D.period])return 'stay';
    if(g.kind==='deliver'){await handOver(g.tgt,{sh:g.sh,thx:pick(GIG_THX)});gigPay(g);return 'stay'}
    if(g.kind==='shove'){await doShove(g.tgt,{react:pick(GIG_REACT)});gigPay(g);return 'stay'}
    const won=await doFight(g.tgt,{why:K[g.tgt].n+' owes '+K[g.client].n+' '+g.debt+'.',win:K[g.tgt].n+' hands over the cash from the floor, one bill at a time, without making eye contact.',lose:K[g.tgt].n+' is stronger than they look. A LOT stronger.'});

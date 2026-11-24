@@ -74,7 +74,7 @@ function drawHead(k,x,hy,d,o){
  else if(o.talk&&Math.sin(T*15)>0&&ex_!=='evil')R(ex-1,my,3,2,dark);
  else if(ex_==='evil'){R(ex-3,my-1,7,3,'#2a0408');R(ex-2,my-1,1,1,'#fff');R(ex,my-1,1,1,'#fff');R(ex+2,my-1,1,1,'#fff');R(ex-1,my+1,1,1,'#fff');R(ex+1,my+1,1,1,'#fff')}
  else if(ex_==='cold'){R(ex-2,my,4,1,mouthC);R(ex-3,my-1,1,1,mouthC);R(ex+2,my-1,1,1,mouthC)}
- else if(ex_==='laugh'){R(ex-2,my,5,1,dark);R(ex-1,my+1,3,1,dark);R(ex-1,my,1,1,'#f2ece4')}
+ else if(ex_==='laugh'){R(ex-2,my,5,2,dark);R(ex-1,my+2,3,1,dark);R(ex-1,my,3,1,'#f2ece4');R(ex,my+1,1,1,'#c8606a')}
  else if(ex_==='happy'||ex_==='love'){R(ex-2,my,1,1,mouthC);R(ex-1,my+1,3,1,mouthC);R(ex+2,my,1,1,mouthC)}
  else if(ex_==='angry'||ex_==='sad'||ex_==='cry'){R(ex-2,my,4,1,dark);R(ex-3,my+1,1,1,dark);R(ex+2,my+1,1,1,dark)}
  else if(ex_==='shock'){R(ex-1,my,2,3,dark)}

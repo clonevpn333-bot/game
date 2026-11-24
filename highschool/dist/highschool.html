@@ -775,7 +775,7 @@ function drawHead(k,x,hy,d,o){
  else if(o.talk&&Math.sin(T*15)>0&&ex_!=='evil')R(ex-1,my,3,2,dark);
  else if(ex_==='evil'){R(ex-3,my-1,7,3,'#2a0408');R(ex-2,my-1,1,1,'#fff');R(ex,my-1,1,1,'#fff');R(ex+2,my-1,1,1,'#fff');R(ex-1,my+1,1,1,'#fff');R(ex+1,my+1,1,1,'#fff')}
  else if(ex_==='cold'){R(ex-2,my,4,1,mouthC);R(ex-3,my-1,1,1,mouthC);R(ex+2,my-1,1,1,mouthC)}
- else if(ex_==='laugh'){R(ex-2,my,5,1,dark);R(ex-1,my+1,3,1,dark);R(ex-1,my,1,1,'#f2ece4')}
+ else if(ex_==='laugh'){R(ex-2,my,5,2,dark);R(ex-1,my+2,3,1,dark);R(ex-1,my,3,1,'#f2ece4');R(ex,my+1,1,1,'#c8606a')}
  else if(ex_==='happy'||ex_==='love'){R(ex-2,my,1,1,mouthC);R(ex-1,my+1,3,1,mouthC);R(ex+2,my,1,1,mouthC)}
  else if(ex_==='angry'||ex_==='sad'||ex_==='cry'){R(ex-2,my,4,1,dark);R(ex-3,my+1,1,1,dark);R(ex+2,my+1,1,1,dark)}
  else if(ex_==='shock'){R(ex-1,my,2,3,dark)}
@@ -14671,7 +14671,7 @@ hook({mis:'robbery',period:8,room:'arcade',who:'auto',cond:()=>robRoll('arcade')
  await N('The glass comes in. Stuffed animals everywhere. Somewhere a man in an Arcadia polo shirt starts running toward you from very far away.');
  const c=await choose(['Grab a stuffed animal and run.','Help the polo-shirt man catch them.','Walk away. Not your claw machine.']);
  if(c===0){hold('you','flower');D.f.robbedToday=1;await walk('you',-20,140);await N('You got a one-eyed duck. It looks exactly like the one Sean won Stella. It might be its brother.');hold('you',null)}
- else if(c===1){await walk('you',A.kid4.x+10,110);await hit('you','kid4',{blood:3});await N('You tackle one. The other one gets away with a dinosaur under each arm. The polo-shirt man arrives two minutes later, out of breath, and gives you a single ticket.')}
+ else if(c===1&&A.kid4){await walk('you',A.kid4.x+10,110);await hit('you','kid4',{blood:3});await N('You tackle one. The other one gets away with a dinosaur under each arm. The polo-shirt man arrives two minutes later, out of breath, and gives you a single ticket.')}
  else await N('You walk away. Behind you there’s the sound of a second hammer.');
  return 'stay';
 }});
@@ -17053,6 +17053,7 @@ function unoverlap(){
   const a=L[i],b=L[j];if(a.tx!=null||b.tx!=null)continue;
   const dy=Math.abs(a.y-b.y);if(dy>18)continue;
   const dx=b.x-a.x,ad=Math.abs(dx),need=12;if(ad>=need)continue;
+  if(a.id==='you'||b.id==='you')continue;
   const aFix=a.id==='you'||SEATED.has(a.pose)||a.sit||a.sitHigh,bFix=b.id==='you'||SEATED.has(b.pose)||b.sit||b.sitHigh;
   if(aFix&&bFix)continue;
   const m=aFix?b:bFix?a:(hsh((a.id||'').length*31+(b.id||'').length)<.5?a:b);
@@ -19924,7 +19925,7 @@ function qlLegacy(tab){
 }
 const qel=(t,c,txt)=>{const e=document.createElement(t);if(c)e.className=c;if(txt!=null)e.textContent=txt;return e};
 const QTABS=[['now','⚡','Do Now'],['track','🗺','Today'],['quests','📜','Quests'],['story','★','Story'],['bonds','👥','People'],['coll','🏆','Collection']];
-if(!QTABS.some(t=>t[0]===questTab))questTab='now';
+questTab='now';
 
 /* ---------- what's tracked ---------- */
 function trackedMis(){
@@ -19959,6 +19960,8 @@ function nextHop(to){
 
 /* ---------- the window ---------- */
 openQuest=function(){
+ let pre=null;if(!['now','quests','coll'].includes(questTab)){try{pre=qlLegacy(questTab)}catch(e){console.error(e)}}
+ else if(questTab==='coll'){try{pre=qlLegacy(QL.sub)}catch(e){console.error(e)}}
  const o=$('quest');o.hidden=false;o.classList.add('ql2');if(openQuest._last!==questTab)QL.allNew=0;openQuest._last=questTab;
  o.innerHTML='';
  const head=qel('div','qlh');o.appendChild(head);
@@ -19974,8 +19977,8 @@ openQuest=function(){
  try{
   if(questTab==='now')qlNow(body);
   else if(questTab==='quests')qlQuests(body);
-  else if(questTab==='coll')qlColl(body);
-  else body.appendChild(qlLegacy(questTab));
+  else if(questTab==='coll')qlColl(body,pre);
+  else if(pre)body.appendChild(pre);
  }catch(e){console.error(e);body.appendChild(qel('p','qlnote','Something went wrong drawing this tab.'))}
 };
 
@@ -20073,10 +20076,10 @@ function questRow(M,grp){
 }
 
 /* ---------- 🏆 COLLECTION ---------- */
-function qlColl(body){
+function qlColl(body,pre){
  const bar=qel('div','qfil');body.appendChild(bar);
  for(const [k,n] of[['coll','Collectibles'],['deaths','Deaths'],['endings','Endings'],['archive','Archive']]){const b=qel('button','',n);b.setAttribute('aria-pressed',String(QL.sub===k));b.onclick=()=>{QL.sub=k;openQuest()};bar.appendChild(b)}
- body.appendChild(qlLegacy(QL.sub));
+ if(pre)body.appendChild(pre);
 }
 
 /* ---------- under the clock: one tracked line instead of a list ---------- */
@@ -20471,21 +20474,21 @@ for(let i=0;i<3;i++){
   get room(){const g=G(i);return g&&g.st==='get'?g.from:null},get x(){const g=G(i);return g?g.fx:0},get label(){const g=G(i);return g?gigLabel(g):''},set label(v){},
   get jdraw(){const g=G(i);return g&&g.st==='get'?{sh:g.sh}:null},
   cond:()=>{const g=G(i);return !!(g&&g.st==='get'&&(g.kind==='deliver'||g.kind==='plant'))},
-  run:async()=>{const g=G(i);if(!g||g.st!=='get'||g.fx==null||!A.you)return 'stay';clearTalk();await walk('you',g.fx+(A.you.x<g.fx?-6:6),70);pose('you','reach');await wait(220);pose('you','grab');SFX.pick&&SFX.pick();
+  run:async()=>{const g=G(i);if(!g||g.st!=='get'||g.fx==null||!A.you||!PERIODS[D.period])return 'stay';clearTalk();await walk('you',g.fx+(A.you.x<g.fx?-6:6),70);pose('you','reach');await wait(220);pose('you','grab');SFX.pick&&SFX.pick();
    hold('you','J:'+g.sh);await wait(380);hold('you',null);pose('you',null);g.st=g.kind==='plant'?'plant':'give';
    toast('Now: '+gigLabel(g)+' · '+shortName(g.kind==='plant'?g.to:g.room));return 'stay'}});
  /* the prank */
  SPOTS.push({_gig:1,mis:'gigs',short:'PLANT',y:150,
   get room(){const g=G(i);return g&&g.kind==='plant'&&g.st==='plant'?g.to:null},get x(){const g=G(i);return g?g.tx:0},get label(){const g=G(i);return g?gigLabel(g):''},set label(v){},
   cond:()=>{const g=G(i);return !!(g&&g.kind==='plant'&&g.st==='plant')},
-  run:async()=>{const g=G(i);if(!g||g.kind!=='plant'||g.tx==null||!A.you)return 'stay';clearTalk();await walk('you',g.tx+(A.you.x<g.tx?-6:6),70);hold('you','J:'+g.sh);pose('you','kneel');await wait(320);pose('you','reach');await wait(250);hold('you',null);pose('you',null);
+  run:async()=>{const g=G(i);if(!g||g.kind!=='plant'||g.tx==null||!A.you||!PERIODS[D.period])return 'stay';clearTalk();await walk('you',g.tx+(A.you.x<g.tx?-6:6),70);hold('you','J:'+g.sh);pose('you','kneel');await wait(320);pose('you','reach');await wait(250);hold('you',null);pose('you',null);
    await N(pick(['Done. You step back and admire it. Art.','Planted. Somewhere a teacher’s day just got worse and they don’t know it yet.','It’s in. You wipe your prints off with your sleeve, like in the movies, which does nothing.']));
    gigPay(g);return 'stay'}});
  /* the person: hand-over, shove, or fight */
  HOOKS.push({_gig:1,mis:'gigs',
   get period(){const g=G(i);return g?g.per:-1},get room(){const g=G(i);return g?g.room:null},get who(){const g=G(i);return g?g.tgt:null},get label(){const g=G(i);return g?gigLabel(g):''},set label(v){},
   cond:()=>{const g=G(i);return !!(g&&!D.dead[g.tgt]&&((g.kind==='deliver'&&g.st==='give')||((g.kind==='shove'||g.kind==='fight')&&g.st==='do')))},
-  run:async()=>{const g=G(i);if(!g||!A.you)return 'stay';
+  run:async()=>{const g=G(i);if(!g||!A.you||!PERIODS[D.period])return 'stay';
    if(g.kind==='deliver'){await handOver(g.tgt,{sh:g.sh,thx:pick(GIG_THX)});gigPay(g);return 'stay'}
    if(g.kind==='shove'){await doShove(g.tgt,{react:pick(GIG_REACT)});gigPay(g);return 'stay'}
    const won=await doFight(g.tgt,{why:K[g.tgt].n+' owes '+K[g.client].n+' '+g.debt+'.',win:K[g.tgt].n+' hands over the cash from the floor, one bill at a time, without making eye contact.',lose:K[g.tgt].n+' is stronger than they look. A LOT stronger.'});
@@ -21124,12 +21127,10 @@ ON_PERIOD.push(async()=>{if(!D||TEST||!D.done||!D.done.eatit||Math.random()>.3||
    HIGHSCHOOL — MORE FILTH
      SPEED DATING   Ms. Balduf’s Faculty Mixer. Nurse Pam vs. the staff.
                     You ring the bell. You pick who she leaves with.
-     PICKUP LINE    The moms at home-time pickup vs. Mr. Valentino.
-                    Arjun’s mom put on lipstick for PICKUP.
+     PICKUP LINE    Ms. Loach vs. Ms. Sherman over Mr. Valentino at the
+                    bus loop. Kayden runs the book, Tez sells snacks.
    (Adults being filthy. Kids watching, screaming, getting splashed.)
    ===================================================================== */
-K.arjunmom={n:'Arjun’s Mom',col:'#c84a7a',skin:'#a8724e',hair:'#1a1010',hs:'long',top:'#c84a7a',pants:'#2a2a3a',adult:1,girl:1,seed:401,v:210};K.arjunmom.id='arjunmom';
-K.kaymom={n:'Kayden’s Mom',col:'#3a8ad8',skin:'#e8c0a0',hair:'#e8d070',hs:'ponytail',top:'#3a8ad8',pants:'#1a1a2a',adult:1,girl:1,seed:402,v:230};K.kaymom.id='kaymom';
 {const _dp=drawProp;drawProp=function(p){const x=Math.round(p.x),y=Math.round(p.y);
  if(p.t==='datetable'){R(x-14,y-6,28,3,'#7a5a3a');R(x-14,y-6,28,1,'#9a7a5a');R(x-1,y-3,2,9,'#5a3a2a');R(x-4,y-9,2,3,'#f4f0e6');R(x-4,y-10,2,1,p.flame?'#ffd040':'#888');return}
  if(p.t==='bell'){R(x-3,y-3,6,3,'#d8b040');R(x-1,y-5,2,2,'#f0d060');R(x-4,y,8,1,'#6a4a2a');return}
@@ -21200,61 +21201,66 @@ hook({mis:'speeddate',period:4,room:'library',who:'auto',_bomb:1,cond:()=>D.f.sd
 }});
 
 /* ================= PICKUP LINE ================= */
-mission('pickupline',{name:'Pickup Line',icon:'💋',who:['arjun','valentino','arjunmom','kaymom','kayden'],
- goal:'Stop the moms at home-time pickup from fighting over Mr. Valentino. Or don’t.',
- blurb:'Word has got out to the parents that the new substitute is a former pastry chef with forearms. Pickup at the bus loop has turned into a nature documentary. Arjun’s mom put on lipstick for PICKUP.',
- parts:['Arjun is not okay','Home time: the bus loop'],
- tips:['Break or lunch, the cafeteria. Arjun is staring at his phone in horror.','Home time, the bus loop.'],
- variants:{rash:'The pastry rash',horn:'The bus horn',fight:'Mom fight'}});
-hook({mis:'pickupline',period:[2,4],room:'canteen',who:'arjun',label:'Ask Arjun why he looks like he’s seen a ghost',look:{ex:'shock',pose:'phone'},_here:1,cond:()=>!D.f.pl1&&!!K.valentino&&!D.dead.arjun&&(D.done.hotsub||cal()>=3),run:async()=>{
- scene('canteen',{arjun:[176,-1,{y:146,ex:'shock',pose:'phone'}],you:[150,1,{y:152}]});
- if(typeof beat==='function')await beat('PICKUP LINE','PART ONE · THE TEXT');
- await dms('MOM 👑','online',[['them','Hi baby! Mommy is picking you up today 💕','11:02'],['me','u never pick me up','11:03'],['them','Is the new substitute going to be outside?? The pastry one??','11:03'],['them','Asking for the PTA','11:03'],['them','Does he like a woman who can cook or a woman who can be COOKED 🔥','11:04'],['me','MOM','11:04'],['them','I’m wearing the red dress 😘','11:05']]);
- await say('arjun','She’s wearing the red dress. The RED DRESS. She wore it to my uncle’s wedding and my uncle’s wedding got CANCELLED.','shock');
- await say('arjun','And Kayden’s mom’s coming too. She texted the PTA chat a photo of her “pickup outfit”. Bro, it’s a bikini top and a lanyard. At PICKUP.','shock');
- await say('arjun','You gotta be there. Home time. Bus loop. If my mom marries a substitute I’m moving to the woods.','scared');
+mission('pickupline',{name:'Pickup Line',icon:'💋',who:['kayden','tez','valentino','loach','shermian','jaxon','kaylee'],
+ goal:'Ms. Loach and Ms. Sherman are fighting over the sub at the bus loop. Kayden is taking bets.',
+ blurb:'Mr. Valentino has been at Highgate four days and two teachers are already at war over him. Ms. Loach wore lipstick to cafeteria duty. Ms. Sherman ironed her lanyard. Kayden has opened a betting book. Tez is selling snacks. The seventh graders are losing their minds.',
+ parts:['Kayden opens the book','Home time: the bus loop'],
+ tips:['Break or lunch, the cafeteria. Kayden is taking bets.','Home time, the bus loop.'],
+ variants:{rash:'The pastry rash',horn:'The bus horn',fight:'Teacher fight'}});
+hook({mis:'pickupline',period:[2,4],room:'canteen',who:'kayden',label:'Ask Kayden why he has a notebook full of odds',look:{ex:'smirk'},_here:1,cond:()=>!D.f.pl1&&!!K.valentino&&!D.dead.kayden&&!D.dead.loach&&!D.dead.shermian&&(D.done.hotsub||cal()>=3),run:async()=>{
+ const cast={kayden:[176,-1,{y:146,ex:'smirk'}],you:[150,1,{y:152}]};if(!D.dead.tez)cast.tez=[204,-1,{y:146,pose:'cross'}];
+ scene('canteen',cast);if(typeof beat==='function')await beat('PICKUP LINE','PART ONE · THE BOOK');
+ await say('kayden','Loach versus Sherman. For the sub. Bus loop, home time. I got Sherman at two-to-one. She ironed her LANYARD, bro.','smirk');
+ await say('kayden','Loach put on lipstick for cafeteria duty. She’s been reapplying it every twenty minutes. She reapplied it while she was yelling at a sixth grader.','laugh');
+ if(A.tez)await say('tez','I’m selling snacks at ringside. Takis, two bucks. Popcorn, three. Front row, five.','smirk');
+ await say('kayden','The seventh graders already put forty bucks on Loach. They don’t know anything. They’re SEVENTH graders. You in?','smirk');
+ const c=await choose(['“Five on Sherman.”','“Five on Loach.”','“Five on the sub running away.”']);D.f.plBet=['shermian','loach','run'][c];
+ await say('kayden',c===2?'…Honestly? Smartest bet in the book.':'Locked in. Home time. Bring a poncho, it might get wet.','smirk');
  D.f.pl1=1;part('pickupline',1);return 'stay';
 }});
-hook({mis:'pickupline',period:7,room:'bus',who:'auto',_bomb:1,cond:()=>D.f.pl1&&!D.done.pickupline&&!!K.valentino,run:async()=>{
- const cast={valentino:[200,-1,{y:146,ex:'smirk'}],arjunmom:[150,1,{y:150,ex:'love'}],kaymom:[246,-1,{y:150,ex:'love'}],you:[80,1,{y:154}]};
- if(!D.dead.arjun)cast.arjun=[60,1,{y:150,ex:'shock'}];if(!D.dead.kayden)cast.kayden=[290,-1,{y:150,ex:'shock'}];
+hook({mis:'pickupline',period:7,room:'bus',who:'auto',_bomb:1,cond:()=>D.f.pl1&&!D.done.pickupline&&!!K.valentino&&!D.dead.loach&&!D.dead.shermian,run:async()=>{
+ const cast={valentino:[200,-1,{y:146,ex:'smirk',hold:'mug'}],loach:[150,1,{y:150,ex:'love'}],shermian:[246,-1,{y:150,ex:'cold'}],you:[80,1,{y:154}]};
+ for(const [k,x] of[['kayden',40],['tez',60],['jaxon',290],['kaylee',306],['arjun',100]])if(K[k]&&!D.dead[k])cast[k]=[x,x<160?1:-1,{y:156}];
  scene('bus',cast,true);if(typeof beat==='function')await beat('PICKUP LINE','PART TWO · THE BUS LOOP');
- await N('Home time. The bus loop. Mr. Valentino is standing by the curb eating a croissant. Two moms have him surrounded like nature documentary lions around a very confident gazelle.');
- await say('arjunmom','So you were a PASTRY chef. That must mean you’re very good with your hands.','love');
- await say('valentino','I can make a croissant with eighty-one layers, ma’am. Each one by hand. Slowly.','smirk');
- await say('arjunmom','(fanning herself with a permission slip) Arjun’s father can’t make toast. He can’t make ANYTHING. He can’t make it to the end, if you know what I mean.','love');
- if(A.arjun)await say('arjun','MOM. MOM. I’M RIGHT HERE. I CAN HEAR YOU. I CAN SEE YOU.','shock');
- await say('kaymom','(stepping in front of her) Excuse me, Priya, I was in line. I’ve been in line since lunch. I’ve been in line since my DIVORCE.','angry');
- await say('kaymom','(to Valentino) I’d let you substitute my husband. Full time. Benefits.','love');
- if(A.kayden)await say('kayden','I’m gonna throw myself under the 43. I’m gonna lie down in front of it. Tell the driver it’s fine.','shock');
- await say('valentino','Ladies. Please. I only sub. I never commit. But I have office hours. My office is my car. My car is a Corolla.','smirk');
- await say('arjunmom','(digging her nails into Kayden’s mom’s arm) Arjun, baby, get on the bus. Mommy’s going to a… parent-teacher conference.','love');
- if(A.arjun)await say('arjun','IN A COROLLA?!','shock');
- const c=await choose([{t:'“Mr. Valentino, is your rash still contagious? The pastry rash?”',tag:'🤢'},{t:'Lean on the bus horn until everybody scatters.',tag:'📯'},{t:'“Ladies, he said whoever wins gets the Corolla.”',tag:'🥊'}],'The moms are circling.');
- if(c===0){await say('you','Mr. Valentino! Is that pastry rash still contagious? The one on your—you know. Your cream horn.');
-  for(const m of['arjunmom','kaymom'])if(A[m])A[m].ex='shock';await say('valentino','(very slowly lowering his croissant) …It’s mostly cleared up.','cold');
-  await Promise.all([walk('arjunmom',-20,120),walk('kaymom',340,120)]);
-  await N('Both moms are back in their cars before the sentence is over. Arjun’s mom does a three-point turn in one point. Mr. Valentino looks at you for a long time and eats the rest of his croissant without breaking eye contact.');
-  if(A.arjun)await say('arjun','(hugging you, then immediately stopping) I owe you my life. I don’t want to talk about the rash. Is there a rash? Don’t tell me.','happy');
-  if(typeof repAdd==='function')repAdd('liked',1);await complete('pickupline','rash');return 'stay'}
+ if(A.tez)pose('tez','cross');if(A.kayden)pose('kayden','phone');
+ await N('Home time. The bus loop. Mr. Valentino is eating a croissant by the curb. Ms. Loach and Ms. Sherman have him surrounded like two lions around a very relaxed gazelle. Behind you, Kayden is still taking bets.');
+ await say('loach','So. You were a PASTRY chef, Mr. Valentino. That must mean you’re very good with your hands.','love');
+ await say('valentino','I can make a croissant with eighty-one layers, Linda. Each one by hand. Slowly.','smirk');
+ await say('loach','(fanning herself with a detention slip) My ex-husband couldn’t make toast. He couldn’t make anything. He couldn’t make it past the first commercial break, if you know what I mean.','love');
+ if(A.jaxon)await say('jaxon','(seventh grader, horrified) WHAT DOES THAT MEAN. WHAT COMMERCIAL BREAK.','shock');
+ await say('shermian','(stepping between them) Linda. You are wearing lipstick on bus duty. That is a uniform violation. I could write you up.','cold');
+ await say('shermian','(to Valentino, flatly) I have a set of handcuffs and the keys to every room in this building. Including the ones with no windows.','smirk');
+ if(A.kaylee)await say('kaylee','(eighth grader, filming) SHE SAID NO WINDOWS. SHE SAID NO WINDOWS, CHAT.','laugh');
+ await say('valentino','Ladies. Please. I only sub. I never commit. But I do have office hours. My office is my car. My car is a Corolla.','smirk');
+ if(A.arjun)await say('arjun','A COROLLA. THEY’RE FIGHTING OVER A MAN WITH A COROLLA.','shock');
+ const c=await choose([{t:'“Mr. Valentino, is that pastry rash still contagious?”',tag:'🤢'},{t:'Lean on the bus horn until everybody scatters.',tag:'📯'},{t:'“Miss! He said whoever wins gets the Corolla!”',tag:'🥊'}],'Two teachers. One sub. One Corolla.');
+ const pay=w=>{if(D.f.plBet===w){D.money=(D.money||0)+10;updateLoc();toast('💸 Your bet came in. +$10')}};
+ if(c===0){await say('you','Mr. Valentino! Is that pastry rash still contagious? The one on your— you know. Your cream horn.');
+  for(const m of['loach','shermian'])if(A[m])A[m].ex='shock';await say('valentino','(very slowly lowering his croissant) …It’s mostly cleared up.','cold');
+  await Promise.all([walk('loach',-20,120),walk('shermian',340,100)]);
+  await N('Both teachers are gone before the sentence is over. Ms. Loach leaves so fast she forgets her cardigan on the bench. Mr. Valentino looks at you for a long time and eats the rest of the croissant without breaking eye contact.');
+  if(A.kayden)await say('kayden','(closing the book) Nobody wins. House wins. I’m the house.','smirk');
+  pay('run');if(typeof repAdd==='function')repAdd('liked',1);await complete('pickupline','rash');return 'stay'}
  if(c===1){SFX.horn?SFX.horn():SFX.bell&&SFX.bell();shake(.8);
-  for(const m of['arjunmom','kaymom','valentino'])if(A[m])A[m].ex='shock';
-  await N('You lean on the bus horn. The bus horn is the loudest thing in the state. Kayden’s mom drops her iced coffee. Arjun’s mom drops her dignity. Mr. Valentino drops the croissant and everybody watches it roll into a drain like a little sad wheel.');
-  if(typeof spew==='function'&&A.arjun){await spew({x:A.kaymom.x,y:A.kaymom.y-24},['arjun'],'milk',{n:40,dur:700,arc:20})}
-  if(A.arjun)await say('arjun','(dripping iced coffee) …It’s still better than a stepdad.','closed');
-  await Promise.all([walk('arjunmom',-20,100),walk('kaymom',340,100),walk('valentino',340,60)]);
-  await complete('pickupline','horn');return 'stay'}
- await say('you','Ladies! He said whoever wins gets the Corolla!');
- for(const m of['arjunmom','kaymom'])if(A[m])A[m].ex='angry';
- await walk('kaymom',172,120);
- if(typeof spew==='function'){await spew({x:A.kaymom.x-4,y:A.kaymom.y-26},['arjunmom','arjun'].filter(k=>A[k]),'milk',{n:50,dur:700,arc:16});}
- await N('Kayden’s mom throws her entire iced coffee in Arjun’s mom’s face. Most of it misses and hits Arjun.');
- for(const m of['arjunmom','kaymom'])if(A[m]){A[m].pose='lie';A[m].shake=1}SFX.smack&&SFX.smack();shake(.8);
- await N('Arjun’s mom grabs Kayden’s mom’s ponytail. They go down on the curb like two raccoons in a bag.');
- if(A.kayden)await say('kayden','(filming) MOM. MOM, YOUR TOP. MOM, NOT IN FRONT OF THE BUS.','shock');
- await say('valentino','(stepping over them, finishing his croissant) …I’ll be in the Corolla.','smirk');await walk('valentino',340,60);
- if(A.arjun)await say('arjun','(dripping, watching his mom bite someone) I’m moving to the woods. I’m actually moving to the woods.','closed');
- for(const m of['arjunmom','kaymom'])if(A[m])A[m].shake=0;
+  for(const m of['loach','shermian','valentino'])if(A[m])A[m].ex='shock';hold('valentino',null);
+  await N('You lean on the bus horn. The bus horn is the loudest thing in the state. Ms. Loach drops her lipstick. Ms. Sherman drops her dignity. Mr. Valentino drops his coffee.');
+  if(typeof spew==='function'&&A.arjun)await spew({x:A.valentino.x,y:A.valentino.y-22},['arjun'],'milk',{n:40,dur:700,arc:20});
+  if(A.arjun)await say('arjun','(dripping coffee) …Why is it always me. I wasn’t even in this one.','closed');
+  await Promise.all([walk('loach',-20,100),walk('shermian',340,100),walk('valentino',340,60)]);
+  pay('run');await complete('pickupline','horn');return 'stay'}
+ await say('you','Miss! He said whoever wins gets the Corolla!');
+ for(const m of['loach','shermian'])if(A[m])A[m].ex='angry';
+ await walk('shermian',172,120);
+ if(typeof spew==='function')await spew({x:A.valentino.x,y:A.valentino.y-22},['loach','arjun'].filter(k=>A[k]),'milk',{n:50,dur:700,arc:16});
+ await N('Ms. Sherman grabs the coffee out of Mr. Valentino’s hand and throws it at Ms. Loach. Most of it misses and hits Arjun.');
+ for(const m of['loach','shermian'])if(A[m]){A[m].pose='lie';A[m].shake=1}SFX.smack&&SFX.smack();shake(.8);
+ await N('Ms. Loach grabs Ms. Sherman’s lanyard. They go down on the curb like two raccoons in a bag. The seventh graders start chanting. The eighth graders start a livestream.');
+ if(A.jaxon){pose('jaxon','cheer');await say('jaxon','LOACH! LOACH! LOACH! I GOT FORTY BUCKS ON YOU, MISS!','laugh')}
+ await say('valentino','(stepping over them) …I’ll be in the Corolla. Whoever’s still standing.','smirk');await walk('valentino',340,60);
+ for(const m of['loach','shermian'])if(A[m])A[m].shake=0;
+ const w=Math.random()<.5?'loach':'shermian';A[w].pose=null;A[w].ex='evil';await say(w,'(standing up, hair everywhere, holding the other one’s lanyard) …Nobody saw this.','evil');
+ await walk(w,340,140);pay(w);
+ if(A.kayden)await say('kayden','(counting money) Best day of my LIFE.','laugh');
  if(typeof repAdd==='function')repAdd('legend',2,'the Pickup Line');await complete('pickupline','fight');return 'stay';
 }});
 /* people who start these turn up */
@@ -21264,7 +21270,7 @@ if(typeof OUTCOME_FIX!=='undefined')Object.assign(OUTCOME_FIX,{'speeddate:valent
 for(const m of['speeddate','pickupline']){if(MIS[m])MIS[m].filthy=1;if(typeof FILTHY!=='undefined'&&!FILTHY.includes(m))FILTHY.push(m)}
 ON_PERIOD.push(async()=>{if(!D||TEST||D.period===0||Math.random()>.3)return;const l=[];
  if(D.done.speeddate)l.push('The nurse’s office sign says “SICK? GO HOME.” It’s said that for three days.','Somebody keeps ringing a little bell in the hallway and Mr. Adam flinches every time.');
- if(D.done.pickupline)l.push('Arjun’s mom has been banned from pickup. She now does DROP-OFF. In the red dress.','Mr. Valentino’s Corolla has a PTA sticker on it now.');
+ if(D.done.pickupline)l.push('Ms. Loach and Ms. Sherman aren’t allowed on bus duty together any more.','Mr. Valentino’s Corolla has two lanyards hanging off the mirror now.');
  if(l.length)setTimeout(()=>toast('🗣 '+pick(l)),6400)});
 
 </script>
@@ -21469,6 +21475,277 @@ setInterval(()=>{try{const m=$('menu');if(m&&!m.hidden&&!m.querySelector('.defed
  const a=A.you;if(!a||TEST||panelMode!=='roam'||!a.moving)return;
  const s=Math.floor((a.walk||0)/Math.PI);if(s!==lastStep){lastStep=s;try{noise(.03,a.fast?.07:.045,500+Math.random()*300,1.4,'bandpass')}catch(e){}
   if(RM()&&Math.random()<.35)parts.push({x:a.x-(a.dir||1)*2,y:a.y-1,vx:-(a.dir||1)*rand(3,8),vy:rand(-6,-2),c:'rgba(200,190,170,.4)',s:1,fy:a.y,life:.35})}}}
+
+</script>
+<script>
+/* js/music.js */
+'use strict';
+/* =====================================================================
+   HIGHSCHOOL — THE DEFINITIVE SOUNDTRACK
+   Creepy-cute and HARD: music-box and toy-piano nursery tunes (minor,
+   with wrong notes in the right places) over hard drums and an 808-ish
+   sub. Every melody here is original.
+   Settings → Soundtrack: Definitive (this) or Classic (the old mellow one).
+   Also: room ambience (hallway murmur, cafeteria clatter, birds, gym
+   squeaks, the hum of an empty office) and little one-shot sounds.
+   ===================================================================== */
+const KG={
+ /* the main theme: a playground rhyme that went wrong */
+ theme:{beat:.5,roots:[45,41,48,40],ch:[[0,3,7],[0,4,7],[0,4,7],[0,4,7]],lead:'box',drums:'boom',bass:'808',creep:6,
+  A:[69,-1,72,-1,76,-1,74,72,71,-1,72,-1,69,-1,-1,-1],B:[76,-1,77,-1,76,74,72,-1,71,-1,68,-1,69,-1,-1,-1],C:[81,-1,-1,80,81,-1,76,-1,77,-1,76,74,72,-1,71,-1]},
+ /* hallways: toy piano over a trap beat */
+ hall:{beat:.46,roots:[38,34,36,33],ch:[[0,3,7],[0,4,7],[0,4,7],[0,4,7]],lead:'toy',drums:'trap',bass:'808',creep:4,
+  A:[74,-1,74,77,-1,76,74,-1,73,-1,74,-1,69,-1,70,-1],B:[74,-1,77,-1,81,-1,80,-1,77,76,74,-1,73,-1,-1,-1],C:[69,70,69,-1,74,-1,73,-1,70,-1,69,-1,65,-1,64,-1]},
+ /* cafeteria: bouncy, sticky, slightly sick */
+ lunch:{beat:.42,roots:[43,48,45,38],ch:[[0,4,7],[0,4,7],[0,3,7],[0,4,7]],lead:'toy',drums:'boom',bass:'808',creep:8,
+  A:[79,-1,76,-1,79,-1,76,-1,78,79,81,-1,79,-1,-1,-1],B:[74,-1,76,-1,78,-1,79,-1,81,-1,79,-1,75,-1,74,-1],C:[79,81,79,76,74,-1,72,-1,71,-1,72,-1,74,-1,-1,-1]},
+ /* class: a music box nobody wound all the way */
+ class:{beat:.62,roots:[40,36,39,35],ch:[[0,3,7],[0,4,7],[0,4,7],[0,4,7]],lead:'box',drums:'soft',bass:'sub',creep:14,pad:1,
+  A:[76,-1,-1,79,-1,-1,78,-1,75,-1,-1,76,-1,-1,-1,-1],B:[71,-1,72,-1,71,-1,67,-1,66,-1,-1,-1,63,-1,-1,-1],C:[79,-1,-1,78,-1,-1,76,-1,75,-1,74,-1,71,-1,-1,-1]},
+ /* gym: a nursery rhyme drill sergeant */
+ drill:{beat:.38,roots:[40,40,43,38],ch:[[0,3,7],[0,3,7],[0,4,7],[0,4,7]],lead:'toy',drums:'march',bass:'808',creep:3,
+  A:[64,-1,64,-1,67,-1,64,-1,62,-1,62,-1,64,-1,-1,-1],B:[64,-1,64,67,69,-1,67,-1,64,-1,62,-1,59,-1,-1,-1],C:[71,-1,71,-1,69,-1,67,-1,66,-1,67,-1,64,-1,-1,-1]},
+ /* creep: offices, chem, toilets, the library at the wrong time */
+ creep:{beat:.66,roots:[37,36,34,32],ch:[[0,3,6],[0,3,7],[0,3,6],[0,4,7]],lead:'box',drums:'pulse',bass:'sub',creep:22,pad:1,
+  A:[73,-1,-1,76,-1,-1,75,-1,-1,-1,73,-1,72,-1,-1,-1],B:[68,-1,69,-1,-1,72,-1,71,-1,-1,68,-1,67,-1,-1,-1],C:[80,-1,79,-1,-1,-1,76,-1,75,-1,-1,-1,73,-1,-1,-1]},
+ /* evil/fight: the hard one */
+ evil:{beat:.36,roots:[36,36,32,31],ch:[[0,3,7],[0,3,6],[0,4,7],[0,4,7]],lead:'box',drums:'hard',bass:'808',creep:10,
+  A:[72,-1,72,-1,75,-1,74,-1,73,-1,72,-1,67,-1,66,-1],B:[72,73,72,-1,79,-1,78,-1,75,-1,74,-1,73,-1,72,-1],C:[84,-1,83,-1,79,-1,78,-1,75,74,73,-1,72,-1,71,-1]},
+ /* lullaby: romance, sad, dawn */
+ lullaby:{beat:.72,roots:[41,38,34,36],ch:[[0,4,7],[0,3,7],[0,4,7],[0,4,7]],lead:'box',drums:'soft',bass:'sub',creep:5,pad:1,
+  A:[77,-1,-1,76,74,-1,72,-1,74,-1,-1,72,70,-1,-1,-1],B:[69,-1,72,-1,77,-1,76,-1,74,-1,72,-1,72,-1,-1,-1],C:[81,-1,-1,79,77,-1,76,-1,74,-1,76,-1,77,-1,-1,-1]},
+ /* finale: everything at once */
+ finale:{beat:.4,roots:[38,41,36,43],ch:[[0,3,7],[0,4,7],[0,4,7],[0,4,7]],lead:'both',drums:'hard',bass:'808',creep:6,pad:1,
+  A:[74,-1,72,74,-1,77,-1,76,74,-1,72,-1,69,-1,72,-1],B:[77,-1,79,-1,81,-1,79,77,76,-1,74,-1,73,-1,-1,-1],C:[86,-1,84,-1,81,-1,79,-1,77,-1,76,-1,74,-1,-1,-1]},
+ /* dead: the music box winds down */
+ dead:{beat:.9,roots:[38,37,38,33],ch:[[0,3,7],[0,4,7],[0,3,7],[0,4,7]],lead:'box',drums:'none',bass:'sub',creep:30,
+  A:[74,-1,-1,-1,73,-1,-1,-1,69,-1,-1,-1,-1,-1,-1,-1],B:[70,-1,-1,-1,69,-1,-1,-1,65,-1,-1,-1,-1,-1,-1,-1],C:[74,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]}
+};
+const KGMAP={title:'theme',curtain:'theme',bus:'theme',field:'theme',corridor:'hall',canteen:'lunch',class:'class',library:'class',gym:'drill',office:'creep',chem:'creep',toilets:'creep',tension:'creep',evil:'evil',fight:'evil',romance:'lullaby',sad:'lullaby',dawn:'lullaby',dead:'dead',finale:'finale'};
+const kgOn=()=>!(P&&P.set&&P.set.classicMusic);
+function kgTrack(){return KG[KGMAP[scoreName]]||KG.hall}
+let kgStep=0,kgNext=0,kgShaper=null;
+function kgShape(){if(kgShaper)return kgShaper;const n=1024,c=new Float32Array(n);for(let i=0;i<n;i++){const x=i/n*2-1;c[i]=Math.tanh(x*2.4)}kgShaper=c;return c}
+function kgOut(node,echo){node.connect(scoreBus);if(echo&&scoreDelay)node.connect(scoreDelay)}
+function kgBox(t,n,v,creep){
+ const g1=AC.createGain();g1.gain.setValueAtTime(.0001,t);g1.gain.linearRampToValueAtTime(v,t+.003);g1.gain.exponentialRampToValueAtTime(.0001,t+1.5);kgOut(g1,true);
+ const det=(Math.random()*2-1)*creep;
+ for(const [type,off,lv] of[['sine',0,1],['triangle',0,.35],['sine',12,.28],['sine',24,.08]]){const o=AC.createOscillator(),a=AC.createGain();o.type=type;o.frequency.setValueAtTime(midi(n+off),t);o.detune.value=det+(off?3:0);a.gain.value=lv;o.connect(a).connect(g1);o.start(t);o.stop(t+1.55)}}
+function kgToy(t,n,v){
+ const f=AC.createBiquadFilter();f.type='lowpass';f.frequency.setValueAtTime(3200,t);f.frequency.exponentialRampToValueAtTime(900,t+.4);
+ const a=AC.createGain();a.gain.setValueAtTime(.0001,t);a.gain.linearRampToValueAtTime(v,t+.004);a.gain.exponentialRampToValueAtTime(.0001,t+.5);
+ const o=AC.createOscillator();o.type='square';o.frequency.setValueAtTime(midi(n),t);o.connect(f).connect(a);kgOut(a,true);o.start(t);o.stop(t+.52);
+ const b=AC.createOscillator(),bg=AC.createGain();b.type='sine';b.frequency.setValueAtTime(midi(n+19),t);bg.gain.setValueAtTime(v*.25,t);bg.gain.exponentialRampToValueAtTime(.0001,t+.25);b.connect(bg);kgOut(bg,false);b.start(t);b.stop(t+.27)}
+function kgKick(t,v){const o=AC.createOscillator(),a=AC.createGain(),s=AC.createWaveShaper();s.curve=kgShape();o.type='sine';o.frequency.setValueAtTime(150,t);o.frequency.exponentialRampToValueAtTime(42,t+.14);
+ a.gain.setValueAtTime(v,t);a.gain.exponentialRampToValueAtTime(.0001,t+.36);o.connect(s).connect(a);kgOut(a);o.start(t);o.stop(t+.38)}
+function kgNoise(t,v,type,fq,q,dec){const s=AC.createBufferSource(),f=AC.createBiquadFilter(),a=AC.createGain();s.buffer=drumBuf;f.type=type;f.frequency.value=fq;f.Q.value=q;a.gain.setValueAtTime(v,t);a.gain.exponentialRampToValueAtTime(.0001,t+dec);s.connect(f).connect(a);kgOut(a);s.start(t);s.stop(t+dec+.02)}
+function kgSnare(t,v){kgNoise(t,v,'bandpass',1900,.7,.17);const o=AC.createOscillator(),a=AC.createGain();o.type='triangle';o.frequency.setValueAtTime(200,t);o.frequency.exponentialRampToValueAtTime(140,t+.08);a.gain.setValueAtTime(v*.6,t);a.gain.exponentialRampToValueAtTime(.0001,t+.09);o.connect(a);kgOut(a);o.start(t);o.stop(t+.1)}
+function kgClap(t,v){for(let i=0;i<3;i++)kgNoise(t+i*.011,v*(i===2?1:.6),'bandpass',1250,1.1,i===2?.16:.03)}
+function kgHat(t,v,open){kgNoise(t,v,'highpass',8200,.7,open?.16:.035)}
+function kgBass(t,n,len,v){const o=AC.createOscillator(),a=AC.createGain(),s=AC.createWaveShaper(),f=AC.createBiquadFilter();s.curve=kgShape();f.type='lowpass';f.frequency.value=420;
+ o.type='sine';o.frequency.setValueAtTime(midi(n+3),t);o.frequency.exponentialRampToValueAtTime(midi(n),t+.05);a.gain.setValueAtTime(.0001,t);a.gain.linearRampToValueAtTime(v,t+.01);a.gain.setValueAtTime(v,t+len*.7);a.gain.exponentialRampToValueAtTime(.0001,t+len);
+ o.connect(s).connect(f).connect(a);kgOut(a);o.start(t);o.stop(t+len+.02)}
+function kgPad(t,n,len,v){for(const off of[0,7,12]){const o=AC.createOscillator(),a=AC.createGain();o.type='triangle';o.frequency.value=midi(n+off);o.detune.value=(Math.random()*2-1)*9;a.gain.setValueAtTime(.0001,t);a.gain.linearRampToValueAtTime(v,t+len*.4);a.gain.exponentialRampToValueAtTime(.0001,t+len);o.connect(a);kgOut(a);o.start(t);o.stop(t+len+.05)}}
+const DRUMS={
+ none:{},
+ soft:{k:[0,8],h:[4,12],hv:.012,kv:.32},
+ pulse:{k:[0,10],h:[],sn:[],hv:0,kv:.4,tick:[6,14]},
+ boom:{k:[0,7,10],s:[4,12],h:[0,2,4,6,8,10,12,14],hv:.02,kv:.55,sv:.16},
+ trap:{k:[0,6,10],s:[8],h:[0,2,4,6,8,10,12,13,14,15],hv:.022,kv:.55,sv:.18,clap:1,open:[11]},
+ march:{k:[0,4,8,12],s:[4,12,14,15],h:[2,6,10,14],hv:.018,kv:.5,sv:.15},
+ hard:{k:[0,3,6,10,12],s:[4,12],h:[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15],hv:.016,kv:.62,sv:.2,clap:1,open:[14]}};
+{const _c=cue;cue=function(name,force){const before=scoreName;_c(name,force);if(scoreName!==before||force){kgStep=0;kgNext=AC?AC.currentTime+.06:0;try{if(scoreDelay&&kgOn())scoreDelay.delayTime.value=kgTrack().beat*.75}catch(e){}}}}
+{const _mt=musicTick;musicTick=function(){
+ if(!kgOn())return _mt();
+ if(!scoreBus||!AC||AC.state!=='running')return;
+ const m=kgTrack(),t0=AC.currentTime;if(kgNext<t0-.2)kgNext=t0+.02;
+ const dr=DRUMS[m.drums]||{};
+ while(kgNext<t0+.17){
+  const t=kgNext,i=kgStep%16,bar=(kgStep>>4)%4,sect=(kgStep>>6)%4,n=m.roots[bar];
+  /* melody: A A B C over four bars, varied each time round */
+  const mel=[m.A,m.A,m.B,m.C][bar];const ln=mel[i];
+  const lv=m.lead==='toy'?.07:.09;
+  if(ln>=0){const nn=ln+(sect===2&&bar===1?12:0);if(m.lead==='toy')kgToy(t,nn,lv);else kgBox(t,nn,lv,m.creep);if(m.lead==='both')kgToy(t,nn-12,.05)}
+  /* music box arpeggio under the tune */
+  if(i%4===2&&m.drums!=='none'){const c=m.ch[bar];kgBox(t,n+24+c[(i>>2)%3],.022,m.creep)}
+  /* chords and pad */
+  if(i===0&&m.pad)kgPad(t,n+12,m.beat*4.2,.018);
+  /* bass */
+  if(m.bass==='808'){if(i===0||i===7||i===10)kgBass(t,n-12,m.beat*(i===0?1.6:.7),.22)}else if(m.bass==='sub'&&i===0)kgBass(t,n-12,m.beat*3.6,.15);
+  /* drums (they drop out on the first bar of every fourth phrase, then hit back) */
+  const drop=sect===3&&bar===0;
+  if(!drop){if((dr.k||[]).includes(i))kgKick(t,dr.kv||.5);if((dr.s||[]).includes(i)){if(dr.clap)kgClap(t,dr.sv||.16);else kgSnare(t,dr.sv||.16)}
+   if((dr.h||[]).includes(i))kgHat(t,dr.hv||.02,(dr.open||[]).includes(i));if((dr.tick||[]).includes(i))kgNoise(t,.03,'highpass',5000,.8,.02);
+   if(m.drums==='trap'&&bar===3&&i>=12){kgHat(t+m.beat/8,dr.hv*.8,false)}}
+  kgStep++;kgNext+=m.beat/4;
+ }
+}}
+
+/* ---------------- ambience ---------------- */
+const RAMB_TYPE=r=>{if(!r)return null;if(['corridor','hallb','upper','wing_sci','wing_arts','wing_sports','walkway','stairwell'].includes(r))return'hall';
+ if(r==='canteen'||r==='foodcourt')return'cafe';if(['field','bus','courtyard','carpark','forest','lake'].includes(r))return'out';if(r==='gym'||r==='weightroom')return'gym';
+ if(r==='arcade')return'arcade';if(r==='titlescreen')return null;return'room'};
+const RAMB_SET={hall:{type:'lowpass',f:520,v:.03},cafe:{type:'bandpass',f:900,v:.04},out:{type:'highpass',f:1600,v:.012},gym:{type:'lowpass',f:700,v:.022},arcade:{type:'bandpass',f:1400,v:.03},room:{type:'lowpass',f:220,v:.012}};
+let RAMB=null;
+function ambEnsure(){if(RAMB||!AC||!SFXG)return;const len=AC.sampleRate*2,b=AC.createBuffer(1,len,AC.sampleRate),d=b.getChannelData(0);let last=0;for(let i=0;i<len;i++){last=last*.97+(Math.random()*2-1)*.03;d[i]=last*6}
+ const s=AC.createBufferSource();s.buffer=b;s.loop=true;const f=AC.createBiquadFilter(),gn=AC.createGain();gn.gain.value=0;s.connect(f).connect(gn).connect(SFXG);s.start();RAMB={f,gn,type:null,t:0}}
+function ambTick(){if(TEST||!AC||AC.state!=='running')return;ambEnsure();if(!RAMB)return;
+ const ty=(panelMode==='none'||!D)?null:RAMB_TYPE(ROOM),now=AC.currentTime;
+ if(ty!==RAMB.type){RAMB.type=ty;const s=RAMB_SET[ty];if(s){RAMB.f.type=s.type;RAMB.f.frequency.setTargetAtTime(s.f,now,.3)}RAMB.gn.gain.setTargetAtTime(s?s.v*(P.set.ambOff?0:1):0,now,.5)}
+ if(ty==='hall'||ty==='cafe'){const s=RAMB_SET[ty];RAMB.gn.gain.setTargetAtTime(s.v*(.7+Math.sin(T*.7)*.2+Math.sin(T*1.9)*.15),now,.4)}
+ /* one-shots */
+ if(T-RAMB.t<.4)return;RAMB.t=T;const r=Math.random();
+ try{
+  if(ty==='hall'&&r<.07){noise(.12,.05,260,1,'bandpass');setTimeout(()=>noise(.05,.03,1800,1,'bandpass'),60)}           /* a locker */
+  else if(ty==='hall'&&r<.11){for(let i=0;i<3;i++)setTimeout(()=>noise(.025,.025,700,1.3,'bandpass'),i*180)}             /* footsteps going past */
+  else if(ty==='cafe'&&r<.18){noise(.02,.03,3200+Math.random()*1500,2,'bandpass')}                                       /* cutlery */
+  else if(ty==='cafe'&&r<.22){tone(220+Math.random()*60,.08,'triangle',.02)}                                             /* a tray */
+  else if(ty==='out'&&r<.1){for(let i=0;i<2+(Math.random()*3|0);i++)setTimeout(()=>tone(2400+Math.random()*900,.06,'sine',.02,3400),i*110)} /* birds */
+  else if(ty==='gym'&&r<.12){tone(1700,.05,'sine',.02,2300)}                                                              /* sneaker squeak */
+  else if(ty==='gym'&&r<.18){tone(90,.12,'sine',.05,60)}                                                                  /* ball bounce */
+  else if(ty==='arcade'&&r<.2){tone(600+Math.random()*900,.05,'square',.012)}
+  else if(ty==='room'&&r<.03){tone(58,.6,'sine',.015)}                                                                    /* the hum */
+ }catch(e){}}
+{const _hu=HOOK.update;HOOK.update=(dt,rdt)=>{_hu&&_hu(dt,rdt);ambTick()}}
+
+/* ---------------- settings ---------------- */
+{const _os=openSettings;openSettings=function(){_os();const s=$('settings').querySelector('.set');if(!s)return;
+ const add=(label,key,opts)=>{s.appendChild(Object.assign(document.createElement('div'),{textContent:label}));const w=document.createElement('div');w.className='opts';
+  opts.forEach(([v,n])=>{const b=document.createElement('button');b.textContent=n;b.setAttribute('aria-pressed',String(+(!!P.set[key])===v));b.onclick=()=>{P.set[key]=v;save&&save();if(key==='classicMusic')cue(scoreName,true);if(key==='ambOff'&&RAMB)RAMB.type='x';openSettings()};w.appendChild(b)});
+  const ver=s.parentNode.querySelector('p:last-child');s.appendChild(w)};
+ add('🎵 Soundtrack','classicMusic',[[0,'Definitive (hard)'],[1,'Classic (mellow)']]);
+ add('🔊 Room ambience','ambOff',[[0,'On'],[1,'Off']])}}
+
+</script>
+<script>
+/* js/final.js */
+'use strict';
+/* =====================================================================
+   HIGHSCHOOL — FINAL TOUCHES (Definitive Edition)
+   • The text box is wiped the moment a conversation ends, so the last
+     line never flashes up when you start a new one.
+   • No more teleporting after cutscenes: you walk from where the scene
+     left you, and if a scene happened elsewhere you come back to where
+     you were standing.
+   • BEHIND CLOSED DOORS (🔞 filthy, off-screen): a supply closet or the
+     staff room starts THUMPING. The door rattles, stuff flies out, two
+     teachers stumble out pretending nothing happened.
+   • The backgrounds breathe: birds and clouds outside, flickering tubes
+     and drifting litter in the halls, steam over the cafeteria counter,
+     passing cloud-shadows in classrooms.
+   ===================================================================== */
+/* ---------------- no stale lines ---------------- */
+function wipeTalk(){try{$('text').textContent='';$('name').textContent='';$('name').style.background='';$('choices').innerHTML='';if(typeof drawPortrait==='function')drawPortrait(null)}catch(e){}}
+{const _r=roam;roam=function(){wipeTalk();return _r.apply(this,arguments)}}
+{const _tt=talkTo;talkTo=async function(id){if(!DL&&!CH)wipeTalk();return _tt(id)}}
+{const _us=useSpot;useSpot=async function(s){if(!DL&&!CH)wipeTalk();return _us(s)}}
+
+/* ---------------- no teleporting ---------------- */
+let PRE=null,LASTYOU=null;
+{const _rh=runHook;runHook=async function(h){if(!busy&&A.you&&D)PRE={room:D.room,x:A.you.x,y:A.you.y};return _rh(h)}}
+{const _hu=HOOK.update;HOOK.update=(dt,rdt)=>{_hu&&_hu(dt,rdt);if(A.you&&(busy||panelMode!=='roam'))LASTYOU={room:ROOM,x:A.you.x,y:A.you.y}}}
+{const _btr=backToRoom;backToRoom=function(){
+ const rebuilt=ROOM!==D.room||!A.you;const r=_btr();
+ try{if(TEST||!A.you)return r;
+  if(rebuilt&&PRE&&PRE.room===D.room){A.you.x=PRE.x;A.you.y=PRE.y;D.x=Math.round(PRE.x)}
+  else if(!rebuilt&&LASTYOU&&LASTYOU.room===ROOM){const tx=A.you.x,ty=A.you.y;if(Math.abs(LASTYOU.x-tx)>4||Math.abs(LASTYOU.y-ty)>3){A.you.x=LASTYOU.x;A.you.y=LASTYOU.y;busy=true;Promise.all([walk('you',tx,90),tw(A.you,{y:ty},Math.max(120,Math.abs(LASTYOU.y-ty)*30))]).finally(()=>{busy=false;roam()})}}
+ }catch(e){}PRE=null;return r}}
+/* ---------------- BEHIND CLOSED DOORS ---------------- */
+const DOORBANG={corridor:{x:160,name:'the History room'},hallb:{x:220,name:'the Vice Principal’s Office'},wing_sci:{x:110,name:'the nurse’s office'}};
+const BANG_PAIRS=[
+ ['coach','balduf',[['coach','(through the door) Doris. DORIS. Where’s the light switch—'],['balduf','(through the door) That is NOT the light switch, Dale.'],['coach','(through the door) …Should I keep looking for it?'],['balduf','(through the door) Keep looking for it.']],['Inventory.','Inventory.']],
+ ['voss','nurse',[['nurse','(through the door) Frederick, put the goggles back on. It’s a lab. Safety first.'],['voss','(through the door) I don’t— why do you have a Bunsen burner in your PURSE—'],['nurse','(through the door) Because I’m a professional, baby.']],['We were… restocking the gauze.','There is so much gauze.']],
+ ['grieve','loach',[['grieve','(through the door) FOR THE UNION!'],['loach','(through the door) Barnaby, every time. EVERY time you yell that.'],['grieve','(through the door) The Union deserves to KNOW, Linda!']],['…History department meeting.','It was very… historical.']],
+ ['adam','balduf',[['balduf','(through the door) Say it, Gerald.'],['adam','(through the door) …Budget—'],['balduf','(through the door) LOUDER.'],['adam','(through the door) BUDGET! BUDGET! BUDGET!']],['We’ve balanced the budget.','Barely.']],
+ ['valentino','shermian',[['shermian','(through the door) You are in violation of eleven school policies.'],['valentino','(through the door) Write me up, Miss Sherman.'],['shermian','(through the door) Oh, I’m going to write you up. I’m going to write you up SO hard.']],['Disciplinary meeting.','He’s been disciplined.']],
+ ['coach','valentino',[['coach','(through the door) Is this the key thing? I brought my keys.'],['valentino','(through the door) Dale, it’s a CLOSET. Put your keys— okay. Okay, sure.']],['We were looking for the keys.','Found ’em.']]];
+const FLY=['tie','whistle','shoe','lanyard','goggles','sock'];
+{const _dp=drawProp;drawProp=function(p){const x=Math.round(p.x),y=Math.round(p.y);
+ if(p.t==='flyout'){switch(p.what){case'tie':R(x-1,y-4,2,8,'#a02030');R(x-2,y-5,4,2,'#a02030');break;case'whistle':R(x-2,y-1,4,3,'#c0c0c0');R(x-4,y-3,2,1,'#e8e8e8');break;case'shoe':R(x-3,y-2,6,3,'#2a1a14');R(x+1,y-3,2,1,'#2a1a14');break;case'lanyard':R(x-3,y-3,6,1,'#3a6ad8');R(x-1,y-2,3,4,'#f4f0e6');break;case'goggles':R(x-3,y-1,3,2,'#9ad0e0');R(x,y-1,3,2,'#9ad0e0');break;default:R(x-2,y-2,4,3,'#e8e8e8')}return}
+ if(p.t==='bangfx'){const k=(T*2.6)%1,j=Math.sin(T*26)>0?1:-1;
+  /* the door rattles in its frame */
+  g.globalAlpha=.55;R(x-13+j,42,2,78,'#1a1018');R(x+11+j,42,2,78,'#1a1018');R(x-12+j,41,24,2,'#1a1018');g.globalAlpha=1;
+  if(Math.sin(T*13)>.3){R(x-14,60+((T*40)%50|0),2,1,'#e8e2d0');R(x+12,70+((T*55)%40|0),2,1,'#e8e2d0')}
+  if(k<.6){const s_=p.s||'THUMP';g.save();g.globalAlpha=1-k/.6;g.translate(x+(p.n%2?30:-30),62-k*14);g.scale(2,2);g.rotate((p.n%2?1:-1)*.12);for(const [ox,oy] of[[-1,0],[1,0],[0,-1],[0,1]])pxc(s_,ox*.5,oy*.5,'#1a0a10');pxc(s_,0,0,'#ffd27a');g.restore();g.globalAlpha=1}
+  return}
+ return _dp(p)}}
+chaos('doorbang',Object.keys(DOORBANG),[1,2,3,4,5,6],.22,async()=>{
+ const room=D.room,d=DOORBANG[room];const pair=pick(BANG_PAIRS.filter(p=>p.slice(0,2).every(k=>K[k]&&!D.dead[k])));if(!pair)return;
+ const [a,b,lines,out]=pair;
+ const kids=Object.keys(A).filter(k=>k!=='you'&&A[k]&&!A[k].dead&&K[k]&&!K[k].adult).slice(0,3);
+ if(typeof advisory==='function'&&!P.set.filthyNoWarn&&!(P.filthOK&&P.filthOK.doorbang)){const ok=await advisory('doorbang');if(!ok)return;(P.filthOK=P.filthOK||{}).doorbang=1}
+ const fx=prop({t:'bangfx',x:d.x,y:200,n:0,s:'THUMP',layer:60});
+ for(let i=0;i<4;i++){SFX.thud&&SFX.thud();shake(.25);fx.n++;await wait(TEST?0:260)}
+ for(const k of kids)if(A[k]){A[k].ex='shock';face(k,d.x>A[k].x?1:-1)}
+ await N('From behind '+d.name+' door: a rhythmic THUMP. THUMP. THUMP. The door is rattling in its frame. Something falls off a shelf in there. Nobody stops.');
+ for(const [w,t] of lines){fx.s=pick(['THUMP','BANG','*squeak*','THUD','*rattle*']);await say(w,t);SFX.thud&&SFX.thud()}
+ if(kids[0])await say(kids[0],pick(['Bro. BRO. It’s second period.','I’m gonna need therapy and I’m gonna need it in cash.','Is the door… is the door supposed to bend like that?','My little brother’s in there for detention. Oh no. OH NO.']),'shock');
+ /* things fly out */
+ for(let i=0;i<2;i++){const it=prop({t:'flyout',what:pick(FLY),x:d.x,y:110,layer:60});SFX.whoosh&&SFX.whoosh();await tw(it,{x:d.x+(i?-40:46)+Math.random()*20,y:158+Math.random()*8},TEST?0:380,'in')}
+ props=props.filter(p=>p!==fx);SFX.door&&SFX.door();
+ /* they come out */
+ const f=floorOf(room);for(const [k,dx] of[[a,-4],[b,5]]){put(k,d.x+dx,1,{y:f[0]+2,alpha:0});A[k].ex='closed';tw(A[k],{alpha:1,y:f[0]+8},TEST?0:260)}
+ await wait(TEST?0:350);
+ await say(a,out[0],'closed');await say(b,out[1],'smirk');
+ await N(pick(['They walk off in opposite directions. Then they both come back for the same shoe.','One of them is wearing the other one’s lanyard. Nobody says anything.','They walk away very normally. Too normally. Like two people who have practiced walking normally.']));
+ await Promise.all([walk(a,-30,70),walk(b,350,70)]);remove(a);remove(b);
+ if(typeof repAdd==='function')repAdd('legend',1);
+},()=>typeof filthyOn==='function'?filthyOn():true);
+
+/* ---------------- living backgrounds ---------------- */
+const BIRDS=Array.from({length:4},(_,i)=>({p:hsh(i*9.1)*40,y:16+hsh(i*3.3)*40,s:18+hsh(i*5.7)*14}));
+const HALLISH=new Set(['corridor','hallb','upper','wing_sci','wing_arts','wing_sports','walkway','stairwell']);
+const OUTSIDE=new Set(['bus','field','courtyard','carpark','forest','lake']);
+let FLICK={t:-9,room:null},LITTER=null;
+{const _do=HOOK.drawOver;HOOK.drawOver=(...x)=>{
+ if(!TEST&&D&&ROOM&&ROOM!=='titlescreen'&&!(P.set&&P.set.rmOff)){
+  if(OUTSIDE.has(ROOM)){for(const b of BIRDS){const q=((T+b.p)%40)/40,bx=-10+q*(W+20)*(b.s/24),by=b.y+Math.sin(T*2+b.p)*3;if(bx>W+10)continue;const f=Math.sin(T*12+b.p)>0;g.globalAlpha=.7;R(bx,by,1,1,'#1a1420');R(bx-2,by-(f?1:0),2,1,'#1a1420');R(bx+1,by-(f?1:0),2,1,'#1a1420');g.globalAlpha=1}}
+  if(HALLISH.has(ROOM)){
+   if(Math.random()<.004&&T-FLICK.t>3)FLICK={t:T,room:ROOM};
+   if(T-FLICK.t<.18&&FLICK.room===ROOM&&Math.sin(T*90)>0){g.globalAlpha=.12;R(0,0,W,H,'#000');g.globalAlpha=1}
+   if(!LITTER||LITTER.room!==ROOM||LITTER.x>W+10){if(!LITTER||Math.random()<.002)LITTER={room:ROOM,x:-8,y:162+Math.random()*6,v:8+Math.random()*10,r:0}}
+   if(LITTER&&LITTER.room===ROOM&&LITTER.x<=W+10){LITTER.x+=LITTER.v*(1/60);LITTER.r+=.08;const lx=Math.round(LITTER.x),ly=Math.round(LITTER.y+Math.sin(T*3)*1.5);R(lx,ly,3,2,'#e8e4d8');R(lx+(Math.sin(LITTER.r)>0?1:0),ly-1,2,1,'#c8c4b8')}
+  }
+  if(ROOM==='canteen'){for(let i=0;i<6;i++){const q=(T*.4+i/6)%1;g.globalAlpha=.16*(1-q);R(60+i*24+Math.sin(T+i)*3,128-q*30,2,2,'#ffffff');g.globalAlpha=1}}
+  if(!OUTSIDE.has(ROOM)&&!HALLISH.has(ROOM)&&!['boiler','closet','black','busride'].includes(ROOM)){const q=((T*.02)%1.6)-.3;g.globalAlpha=.05;g.fillStyle='#000';g.beginPath();g.moveTo(q*W*1.5,0);g.lineTo(q*W*1.5+80,0);g.lineTo(q*W*1.5+30,H);g.lineTo(q*W*1.5-50,H);g.fill();g.globalAlpha=1}
+ }
+ _do&&_do(...x)}}
+
+/* ---------------- hallway people: unique, and doing something ---------------- */
+/* each room gets its own background kids (no clones from hall to hall) */
+let EXROOM=null;const EXOFF={};let EXN=0;
+const EXNEXT={};
+{const _mx=makeExtra;makeExtra=function(i){if(EXROOM==null)return _mx(i);const key=EXROOM+':'+(D?cal()+':'+D.period:'');if(EXOFF[EXROOM]==null)EXOFF[EXROOM]=(++EXN)*40;if(EXNEXT[key]==null)EXNEXT[key]=0;let j=EXOFF[EXROOM]+(EXNEXT[key]++);while(A['x'+j])j++;return _mx(j)}}
+{const _se=spawnExtras;spawnExtras=function(room,walkIn){EXROOM=room;
+ /* count only this room's extras as "have" */
+ try{_se(room,walkIn)}finally{EXROOM=null}
+ if(TEST||!D)return;
+ const hall=HALLISH.has(room),doors=((WORLD[room]||{}).doors||[]).filter(d=>!d.stairs&&!d.front);
+ for(const id in A){const a=A[id];if(!a||!a.extra||a._role)continue;
+  if(hall&&Math.random()<.45&&(doors.length||true)){
+   a._role='going';a.idle=1e9;a.pose=null;
+   const useDoor=doors.length&&Math.random()<.6,dest=useDoor?pick(doors):null,tx=dest?dest.x:(Math.random()<.5?-24:344);
+   walk(id,tx,32+Math.random()*12).then(()=>{const b=A[id];if(!b||b!==a)return;
+    if(dest){b.back=1;tw(b,{alpha:0,y:b.y-6},TEST?0:280).then(()=>{if(A[id]===b)remove(id)})}else remove(id)});
+  }else{
+   a._role='posted';a.idle=1e9;a.pose=pick(['cross','phone','hips',null,'cross','phone']);
+   a._turnT=T+4+Math.random()*8;
+  }}
+}}
+{const _hu=HOOK.update;HOOK.update=(dt,rdt)=>{_hu&&_hu(dt,rdt);if(TEST||!D)return;
+ for(const id in A){const a=A[id];if(!a||a._role!=='posted'||a.tx!=null)continue;
+  if(T>a._turnT){a._turnT=T+5+Math.random()*9;const nb=Object.keys(A).find(k=>k!==id&&A[k]&&A[k]._role==='posted'&&Math.abs(A[k].x-a.x)<26);
+   if(nb){face(id,nb)}else if(Math.random()<.4)a.dir*=-1;
+   if(nb&&Math.random()<.35&&typeof bubbles!=='undefined'&&typeof GOSSIP==='function')bubbles.push({id,txt:pick(GOSSIP()),t:3})}}}}
+/* named kids: once you’ve seen someone in one hall this period, they’re not in the next one too */
+const SEENIN={};
+{const _br=buildRoom;buildRoom=function(room){const r=_br(room);
+ try{if(!TEST&&D&&!D.weekend){const key=cal()+':'+D.period;SEENIN[key]=SEENIN[key]||{};const seen=SEENIN[key];
+  for(const id of Object.keys(A)){const a=A[id];if(!a||id==='you'||a.extra||!K[id]||K[id].adult||a.dead)continue;
+   const busyHere=availableHooks(room,id).length>0||(typeof jobFor==='function'&&false);
+   if(seen[id]&&seen[id]!==room&&!busyHere){if(HALLISH.has(room))remove(id);continue}
+   seen[id]=room}}}catch(e){}
+ return r}}
 
 </script>
 <script>

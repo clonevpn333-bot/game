@@ -69,7 +69,8 @@ so check every line.
 - The HUD box stays compact on phones (tap to expand). Don’t let on-screen text cover the action.
 - Pixel art at 320×180, full-screen game with a floating text box. Keyboard and touch both work.
 - New rooms must be drawn to the forest glow-up standard: cached static layer with light, shade, texture and clutter, plus small animated touches (see `js/glowup.js`).
-- Music is calm, mellow and slow.
+- Soundtrack (`js/music.js`): the Definitive score is hard and creepy-cute (music box / toy piano nursery tunes in minor over hard drums and 808 sub), all original; Classic mellow score selectable in Settings. Room ambience beds + one-shots per room type.
+- Raunch happens behind closed doors / off-screen: thumping, rattling doors, things flying out, muffled lines (`doorbang` chaos in `js/final.js`). No moms in filthy quests; kids only bet, film, react.
 - Skip/fast-forward only runs in cutscenes (Ctrl or ⏩); S and A are movement keys. Every room change uses the one dip-to-black in `js/fixes.js`.
 - Definitive Edition layer (`js/remaster.js`): squash & stretch, blinking, talk gestures, startle hops, run dust, footsteps, sliding cutscene bars, NEW/UPDATED/COMPLETE quest banners (top right), sprite rim light, time-of-day grade and dust motes (Settings → Remaster effects). Version shown on title + settings.
 - Quick check after each change: `tools/quick.sh` (~2 min, normal + safe). Full run only at milestones: `node tools/test.mjs` and `HS_URL=.../dist/highschool-safe.html` (~25 min). Build with `python3 tools/build.py`.

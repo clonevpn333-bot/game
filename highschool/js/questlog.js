@@ -20,7 +20,7 @@ function qlLegacy(tab){
 }
 const qel=(t,c,txt)=>{const e=document.createElement(t);if(c)e.className=c;if(txt!=null)e.textContent=txt;return e};
 const QTABS=[['now','⚡','Do Now'],['track','🗺','Today'],['quests','📜','Quests'],['story','★','Story'],['bonds','👥','People'],['coll','🏆','Collection']];
-if(!QTABS.some(t=>t[0]===questTab))questTab='now';
+questTab='now';
 
 /* ---------- what's tracked ---------- */
 function trackedMis(){
@@ -55,6 +55,8 @@ function nextHop(to){
 
 /* ---------- the window ---------- */
 openQuest=function(){
+ let pre=null;if(!['now','quests','coll'].includes(questTab)){try{pre=qlLegacy(questTab)}catch(e){console.error(e)}}
+ else if(questTab==='coll'){try{pre=qlLegacy(QL.sub)}catch(e){console.error(e)}}
  const o=$('quest');o.hidden=false;o.classList.add('ql2');if(openQuest._last!==questTab)QL.allNew=0;openQuest._last=questTab;
  o.innerHTML='';
  const head=qel('div','qlh');o.appendChild(head);
@@ -70,8 +72,8 @@ openQuest=function(){
  try{
   if(questTab==='now')qlNow(body);
   else if(questTab==='quests')qlQuests(body);
-  else if(questTab==='coll')qlColl(body);
-  else body.appendChild(qlLegacy(questTab));
+  else if(questTab==='coll')qlColl(body,pre);
+  else if(pre)body.appendChild(pre);
  }catch(e){console.error(e);body.appendChild(qel('p','qlnote','Something went wrong drawing this tab.'))}
 };
 
@@ -169,10 +171,10 @@ function questRow(M,grp){
 }
 
 /* ---------- 🏆 COLLECTION ---------- */
-function qlColl(body){
+function qlColl(body,pre){
  const bar=qel('div','qfil');body.appendChild(bar);
  for(const [k,n] of[['coll','Collectibles'],['deaths','Deaths'],['endings','Endings'],['archive','Archive']]){const b=qel('button','',n);b.setAttribute('aria-pressed',String(QL.sub===k));b.onclick=()=>{QL.sub=k;openQuest()};bar.appendChild(b)}
- body.appendChild(qlLegacy(QL.sub));
+ if(pre)body.appendChild(pre);
 }
 
 /* ---------- under the clock: one tracked line instead of a list ---------- */

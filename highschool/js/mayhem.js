@@ -286,6 +286,7 @@ function unoverlap(){
   const a=L[i],b=L[j];if(a.tx!=null||b.tx!=null)continue;
   const dy=Math.abs(a.y-b.y);if(dy>18)continue;
   const dx=b.x-a.x,ad=Math.abs(dx),need=12;if(ad>=need)continue;
+  if(a.id==='you'||b.id==='you')continue;
   const aFix=a.id==='you'||SEATED.has(a.pose)||a.sit||a.sitHigh,bFix=b.id==='you'||SEATED.has(b.pose)||b.sit||b.sitHigh;
   if(aFix&&bFix)continue;
   const m=aFix?b:bFix?a:(hsh((a.id||'').length*31+(b.id||'').length)<.5?a:b);

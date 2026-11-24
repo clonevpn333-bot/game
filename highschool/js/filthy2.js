@@ -3,12 +3,10 @@
    HIGHSCHOOL — MORE FILTH
      SPEED DATING   Ms. Balduf’s Faculty Mixer. Nurse Pam vs. the staff.
                     You ring the bell. You pick who she leaves with.
-     PICKUP LINE    The moms at home-time pickup vs. Mr. Valentino.
-                    Arjun’s mom put on lipstick for PICKUP.
+     PICKUP LINE    Ms. Loach vs. Ms. Sherman over Mr. Valentino at the
+                    bus loop. Kayden runs the book, Tez sells snacks.
    (Adults being filthy. Kids watching, screaming, getting splashed.)
    ===================================================================== */
-K.arjunmom={n:'Arjun’s Mom',col:'#c84a7a',skin:'#a8724e',hair:'#1a1010',hs:'long',top:'#c84a7a',pants:'#2a2a3a',adult:1,girl:1,seed:401,v:210};K.arjunmom.id='arjunmom';
-K.kaymom={n:'Kayden’s Mom',col:'#3a8ad8',skin:'#e8c0a0',hair:'#e8d070',hs:'ponytail',top:'#3a8ad8',pants:'#1a1a2a',adult:1,girl:1,seed:402,v:230};K.kaymom.id='kaymom';
 {const _dp=drawProp;drawProp=function(p){const x=Math.round(p.x),y=Math.round(p.y);
  if(p.t==='datetable'){R(x-14,y-6,28,3,'#7a5a3a');R(x-14,y-6,28,1,'#9a7a5a');R(x-1,y-3,2,9,'#5a3a2a');R(x-4,y-9,2,3,'#f4f0e6');R(x-4,y-10,2,1,p.flame?'#ffd040':'#888');return}
  if(p.t==='bell'){R(x-3,y-3,6,3,'#d8b040');R(x-1,y-5,2,2,'#f0d060');R(x-4,y,8,1,'#6a4a2a');return}
@@ -79,61 +77,66 @@ hook({mis:'speeddate',period:4,room:'library',who:'auto',_bomb:1,cond:()=>D.f.sd
 }});
 
 /* ================= PICKUP LINE ================= */
-mission('pickupline',{name:'Pickup Line',icon:'💋',who:['arjun','valentino','arjunmom','kaymom','kayden'],
- goal:'Stop the moms at home-time pickup from fighting over Mr. Valentino. Or don’t.',
- blurb:'Word has got out to the parents that the new substitute is a former pastry chef with forearms. Pickup at the bus loop has turned into a nature documentary. Arjun’s mom put on lipstick for PICKUP.',
- parts:['Arjun is not okay','Home time: the bus loop'],
- tips:['Break or lunch, the cafeteria. Arjun is staring at his phone in horror.','Home time, the bus loop.'],
- variants:{rash:'The pastry rash',horn:'The bus horn',fight:'Mom fight'}});
-hook({mis:'pickupline',period:[2,4],room:'canteen',who:'arjun',label:'Ask Arjun why he looks like he’s seen a ghost',look:{ex:'shock',pose:'phone'},_here:1,cond:()=>!D.f.pl1&&!!K.valentino&&!D.dead.arjun&&(D.done.hotsub||cal()>=3),run:async()=>{
- scene('canteen',{arjun:[176,-1,{y:146,ex:'shock',pose:'phone'}],you:[150,1,{y:152}]});
- if(typeof beat==='function')await beat('PICKUP LINE','PART ONE · THE TEXT');
- await dms('MOM 👑','online',[['them','Hi baby! Mommy is picking you up today 💕','11:02'],['me','u never pick me up','11:03'],['them','Is the new substitute going to be outside?? The pastry one??','11:03'],['them','Asking for the PTA','11:03'],['them','Does he like a woman who can cook or a woman who can be COOKED 🔥','11:04'],['me','MOM','11:04'],['them','I’m wearing the red dress 😘','11:05']]);
- await say('arjun','She’s wearing the red dress. The RED DRESS. She wore it to my uncle’s wedding and my uncle’s wedding got CANCELLED.','shock');
- await say('arjun','And Kayden’s mom’s coming too. She texted the PTA chat a photo of her “pickup outfit”. Bro, it’s a bikini top and a lanyard. At PICKUP.','shock');
- await say('arjun','You gotta be there. Home time. Bus loop. If my mom marries a substitute I’m moving to the woods.','scared');
+mission('pickupline',{name:'Pickup Line',icon:'💋',who:['kayden','tez','valentino','loach','shermian','jaxon','kaylee'],
+ goal:'Ms. Loach and Ms. Sherman are fighting over the sub at the bus loop. Kayden is taking bets.',
+ blurb:'Mr. Valentino has been at Highgate four days and two teachers are already at war over him. Ms. Loach wore lipstick to cafeteria duty. Ms. Sherman ironed her lanyard. Kayden has opened a betting book. Tez is selling snacks. The seventh graders are losing their minds.',
+ parts:['Kayden opens the book','Home time: the bus loop'],
+ tips:['Break or lunch, the cafeteria. Kayden is taking bets.','Home time, the bus loop.'],
+ variants:{rash:'The pastry rash',horn:'The bus horn',fight:'Teacher fight'}});
+hook({mis:'pickupline',period:[2,4],room:'canteen',who:'kayden',label:'Ask Kayden why he has a notebook full of odds',look:{ex:'smirk'},_here:1,cond:()=>!D.f.pl1&&!!K.valentino&&!D.dead.kayden&&!D.dead.loach&&!D.dead.shermian&&(D.done.hotsub||cal()>=3),run:async()=>{
+ const cast={kayden:[176,-1,{y:146,ex:'smirk'}],you:[150,1,{y:152}]};if(!D.dead.tez)cast.tez=[204,-1,{y:146,pose:'cross'}];
+ scene('canteen',cast);if(typeof beat==='function')await beat('PICKUP LINE','PART ONE · THE BOOK');
+ await say('kayden','Loach versus Sherman. For the sub. Bus loop, home time. I got Sherman at two-to-one. She ironed her LANYARD, bro.','smirk');
+ await say('kayden','Loach put on lipstick for cafeteria duty. She’s been reapplying it every twenty minutes. She reapplied it while she was yelling at a sixth grader.','laugh');
+ if(A.tez)await say('tez','I’m selling snacks at ringside. Takis, two bucks. Popcorn, three. Front row, five.','smirk');
+ await say('kayden','The seventh graders already put forty bucks on Loach. They don’t know anything. They’re SEVENTH graders. You in?','smirk');
+ const c=await choose(['“Five on Sherman.”','“Five on Loach.”','“Five on the sub running away.”']);D.f.plBet=['shermian','loach','run'][c];
+ await say('kayden',c===2?'…Honestly? Smartest bet in the book.':'Locked in. Home time. Bring a poncho, it might get wet.','smirk');
  D.f.pl1=1;part('pickupline',1);return 'stay';
 }});
-hook({mis:'pickupline',period:7,room:'bus',who:'auto',_bomb:1,cond:()=>D.f.pl1&&!D.done.pickupline&&!!K.valentino,run:async()=>{
- const cast={valentino:[200,-1,{y:146,ex:'smirk'}],arjunmom:[150,1,{y:150,ex:'love'}],kaymom:[246,-1,{y:150,ex:'love'}],you:[80,1,{y:154}]};
- if(!D.dead.arjun)cast.arjun=[60,1,{y:150,ex:'shock'}];if(!D.dead.kayden)cast.kayden=[290,-1,{y:150,ex:'shock'}];
+hook({mis:'pickupline',period:7,room:'bus',who:'auto',_bomb:1,cond:()=>D.f.pl1&&!D.done.pickupline&&!!K.valentino&&!D.dead.loach&&!D.dead.shermian,run:async()=>{
+ const cast={valentino:[200,-1,{y:146,ex:'smirk',hold:'mug'}],loach:[150,1,{y:150,ex:'love'}],shermian:[246,-1,{y:150,ex:'cold'}],you:[80,1,{y:154}]};
+ for(const [k,x] of[['kayden',40],['tez',60],['jaxon',290],['kaylee',306],['arjun',100]])if(K[k]&&!D.dead[k])cast[k]=[x,x<160?1:-1,{y:156}];
  scene('bus',cast,true);if(typeof beat==='function')await beat('PICKUP LINE','PART TWO · THE BUS LOOP');
- await N('Home time. The bus loop. Mr. Valentino is standing by the curb eating a croissant. Two moms have him surrounded like nature documentary lions around a very confident gazelle.');
- await say('arjunmom','So you were a PASTRY chef. That must mean you’re very good with your hands.','love');
- await say('valentino','I can make a croissant with eighty-one layers, ma’am. Each one by hand. Slowly.','smirk');
- await say('arjunmom','(fanning herself with a permission slip) Arjun’s father can’t make toast. He can’t make ANYTHING. He can’t make it to the end, if you know what I mean.','love');
- if(A.arjun)await say('arjun','MOM. MOM. I’M RIGHT HERE. I CAN HEAR YOU. I CAN SEE YOU.','shock');
- await say('kaymom','(stepping in front of her) Excuse me, Priya, I was in line. I’ve been in line since lunch. I’ve been in line since my DIVORCE.','angry');
- await say('kaymom','(to Valentino) I’d let you substitute my husband. Full time. Benefits.','love');
- if(A.kayden)await say('kayden','I’m gonna throw myself under the 43. I’m gonna lie down in front of it. Tell the driver it’s fine.','shock');
- await say('valentino','Ladies. Please. I only sub. I never commit. But I have office hours. My office is my car. My car is a Corolla.','smirk');
- await say('arjunmom','(digging her nails into Kayden’s mom’s arm) Arjun, baby, get on the bus. Mommy’s going to a… parent-teacher conference.','love');
- if(A.arjun)await say('arjun','IN A COROLLA?!','shock');
- const c=await choose([{t:'“Mr. Valentino, is your rash still contagious? The pastry rash?”',tag:'🤢'},{t:'Lean on the bus horn until everybody scatters.',tag:'📯'},{t:'“Ladies, he said whoever wins gets the Corolla.”',tag:'🥊'}],'The moms are circling.');
- if(c===0){await say('you','Mr. Valentino! Is that pastry rash still contagious? The one on your—you know. Your cream horn.');
-  for(const m of['arjunmom','kaymom'])if(A[m])A[m].ex='shock';await say('valentino','(very slowly lowering his croissant) …It’s mostly cleared up.','cold');
-  await Promise.all([walk('arjunmom',-20,120),walk('kaymom',340,120)]);
-  await N('Both moms are back in their cars before the sentence is over. Arjun’s mom does a three-point turn in one point. Mr. Valentino looks at you for a long time and eats the rest of his croissant without breaking eye contact.');
-  if(A.arjun)await say('arjun','(hugging you, then immediately stopping) I owe you my life. I don’t want to talk about the rash. Is there a rash? Don’t tell me.','happy');
-  if(typeof repAdd==='function')repAdd('liked',1);await complete('pickupline','rash');return 'stay'}
+ if(A.tez)pose('tez','cross');if(A.kayden)pose('kayden','phone');
+ await N('Home time. The bus loop. Mr. Valentino is eating a croissant by the curb. Ms. Loach and Ms. Sherman have him surrounded like two lions around a very relaxed gazelle. Behind you, Kayden is still taking bets.');
+ await say('loach','So. You were a PASTRY chef, Mr. Valentino. That must mean you’re very good with your hands.','love');
+ await say('valentino','I can make a croissant with eighty-one layers, Linda. Each one by hand. Slowly.','smirk');
+ await say('loach','(fanning herself with a detention slip) My ex-husband couldn’t make toast. He couldn’t make anything. He couldn’t make it past the first commercial break, if you know what I mean.','love');
+ if(A.jaxon)await say('jaxon','(seventh grader, horrified) WHAT DOES THAT MEAN. WHAT COMMERCIAL BREAK.','shock');
+ await say('shermian','(stepping between them) Linda. You are wearing lipstick on bus duty. That is a uniform violation. I could write you up.','cold');
+ await say('shermian','(to Valentino, flatly) I have a set of handcuffs and the keys to every room in this building. Including the ones with no windows.','smirk');
+ if(A.kaylee)await say('kaylee','(eighth grader, filming) SHE SAID NO WINDOWS. SHE SAID NO WINDOWS, CHAT.','laugh');
+ await say('valentino','Ladies. Please. I only sub. I never commit. But I do have office hours. My office is my car. My car is a Corolla.','smirk');
+ if(A.arjun)await say('arjun','A COROLLA. THEY’RE FIGHTING OVER A MAN WITH A COROLLA.','shock');
+ const c=await choose([{t:'“Mr. Valentino, is that pastry rash still contagious?”',tag:'🤢'},{t:'Lean on the bus horn until everybody scatters.',tag:'📯'},{t:'“Miss! He said whoever wins gets the Corolla!”',tag:'🥊'}],'Two teachers. One sub. One Corolla.');
+ const pay=w=>{if(D.f.plBet===w){D.money=(D.money||0)+10;updateLoc();toast('💸 Your bet came in. +$10')}};
+ if(c===0){await say('you','Mr. Valentino! Is that pastry rash still contagious? The one on your— you know. Your cream horn.');
+  for(const m of['loach','shermian'])if(A[m])A[m].ex='shock';await say('valentino','(very slowly lowering his croissant) …It’s mostly cleared up.','cold');
+  await Promise.all([walk('loach',-20,120),walk('shermian',340,100)]);
+  await N('Both teachers are gone before the sentence is over. Ms. Loach leaves so fast she forgets her cardigan on the bench. Mr. Valentino looks at you for a long time and eats the rest of the croissant without breaking eye contact.');
+  if(A.kayden)await say('kayden','(closing the book) Nobody wins. House wins. I’m the house.','smirk');
+  pay('run');if(typeof repAdd==='function')repAdd('liked',1);await complete('pickupline','rash');return 'stay'}
  if(c===1){SFX.horn?SFX.horn():SFX.bell&&SFX.bell();shake(.8);
-  for(const m of['arjunmom','kaymom','valentino'])if(A[m])A[m].ex='shock';
-  await N('You lean on the bus horn. The bus horn is the loudest thing in the state. Kayden’s mom drops her iced coffee. Arjun’s mom drops her dignity. Mr. Valentino drops the croissant and everybody watches it roll into a drain like a little sad wheel.');
-  if(typeof spew==='function'&&A.arjun){await spew({x:A.kaymom.x,y:A.kaymom.y-24},['arjun'],'milk',{n:40,dur:700,arc:20})}
-  if(A.arjun)await say('arjun','(dripping iced coffee) …It’s still better than a stepdad.','closed');
-  await Promise.all([walk('arjunmom',-20,100),walk('kaymom',340,100),walk('valentino',340,60)]);
-  await complete('pickupline','horn');return 'stay'}
- await say('you','Ladies! He said whoever wins gets the Corolla!');
- for(const m of['arjunmom','kaymom'])if(A[m])A[m].ex='angry';
- await walk('kaymom',172,120);
- if(typeof spew==='function'){await spew({x:A.kaymom.x-4,y:A.kaymom.y-26},['arjunmom','arjun'].filter(k=>A[k]),'milk',{n:50,dur:700,arc:16});}
- await N('Kayden’s mom throws her entire iced coffee in Arjun’s mom’s face. Most of it misses and hits Arjun.');
- for(const m of['arjunmom','kaymom'])if(A[m]){A[m].pose='lie';A[m].shake=1}SFX.smack&&SFX.smack();shake(.8);
- await N('Arjun’s mom grabs Kayden’s mom’s ponytail. They go down on the curb like two raccoons in a bag.');
- if(A.kayden)await say('kayden','(filming) MOM. MOM, YOUR TOP. MOM, NOT IN FRONT OF THE BUS.','shock');
- await say('valentino','(stepping over them, finishing his croissant) …I’ll be in the Corolla.','smirk');await walk('valentino',340,60);
- if(A.arjun)await say('arjun','(dripping, watching his mom bite someone) I’m moving to the woods. I’m actually moving to the woods.','closed');
- for(const m of['arjunmom','kaymom'])if(A[m])A[m].shake=0;
+  for(const m of['loach','shermian','valentino'])if(A[m])A[m].ex='shock';hold('valentino',null);
+  await N('You lean on the bus horn. The bus horn is the loudest thing in the state. Ms. Loach drops her lipstick. Ms. Sherman drops her dignity. Mr. Valentino drops his coffee.');
+  if(typeof spew==='function'&&A.arjun)await spew({x:A.valentino.x,y:A.valentino.y-22},['arjun'],'milk',{n:40,dur:700,arc:20});
+  if(A.arjun)await say('arjun','(dripping coffee) …Why is it always me. I wasn’t even in this one.','closed');
+  await Promise.all([walk('loach',-20,100),walk('shermian',340,100),walk('valentino',340,60)]);
+  pay('run');await complete('pickupline','horn');return 'stay'}
+ await say('you','Miss! He said whoever wins gets the Corolla!');
+ for(const m of['loach','shermian'])if(A[m])A[m].ex='angry';
+ await walk('shermian',172,120);
+ if(typeof spew==='function')await spew({x:A.valentino.x,y:A.valentino.y-22},['loach','arjun'].filter(k=>A[k]),'milk',{n:50,dur:700,arc:16});
+ await N('Ms. Sherman grabs the coffee out of Mr. Valentino’s hand and throws it at Ms. Loach. Most of it misses and hits Arjun.');
+ for(const m of['loach','shermian'])if(A[m]){A[m].pose='lie';A[m].shake=1}SFX.smack&&SFX.smack();shake(.8);
+ await N('Ms. Loach grabs Ms. Sherman’s lanyard. They go down on the curb like two raccoons in a bag. The seventh graders start chanting. The eighth graders start a livestream.');
+ if(A.jaxon){pose('jaxon','cheer');await say('jaxon','LOACH! LOACH! LOACH! I GOT FORTY BUCKS ON YOU, MISS!','laugh')}
+ await say('valentino','(stepping over them) …I’ll be in the Corolla. Whoever’s still standing.','smirk');await walk('valentino',340,60);
+ for(const m of['loach','shermian'])if(A[m])A[m].shake=0;
+ const w=Math.random()<.5?'loach':'shermian';A[w].pose=null;A[w].ex='evil';await say(w,'(standing up, hair everywhere, holding the other one’s lanyard) …Nobody saw this.','evil');
+ await walk(w,340,140);pay(w);
+ if(A.kayden)await say('kayden','(counting money) Best day of my LIFE.','laugh');
  if(typeof repAdd==='function')repAdd('legend',2,'the Pickup Line');await complete('pickupline','fight');return 'stay';
 }});
 /* people who start these turn up */
@@ -143,5 +146,5 @@ if(typeof OUTCOME_FIX!=='undefined')Object.assign(OUTCOME_FIX,{'speeddate:valent
 for(const m of['speeddate','pickupline']){if(MIS[m])MIS[m].filthy=1;if(typeof FILTHY!=='undefined'&&!FILTHY.includes(m))FILTHY.push(m)}
 ON_PERIOD.push(async()=>{if(!D||TEST||D.period===0||Math.random()>.3)return;const l=[];
  if(D.done.speeddate)l.push('The nurse’s office sign says “SICK? GO HOME.” It’s said that for three days.','Somebody keeps ringing a little bell in the hallway and Mr. Adam flinches every time.');
- if(D.done.pickupline)l.push('Arjun’s mom has been banned from pickup. She now does DROP-OFF. In the red dress.','Mr. Valentino’s Corolla has a PTA sticker on it now.');
+ if(D.done.pickupline)l.push('Ms. Loach and Ms. Sherman aren’t allowed on bus duty together any more.','Mr. Valentino’s Corolla has two lanyards hanging off the mirror now.');
  if(l.length)setTimeout(()=>toast('🗣 '+pick(l)),6400)});
