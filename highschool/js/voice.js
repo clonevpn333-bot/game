@@ -25,6 +25,7 @@ function syl(t,f0,v,vowel,o){o=o||{};if(!AC||!vbus())return;
  env.connect(out);
  [[F[0]*sc,8,1],[F[1]*sc,11,.55],[F[2]*sc,14,.22]].forEach(([fq,q,lv])=>{const bp=AC.createBiquadFilter();bp.type='bandpass';bp.frequency.value=fq;bp.Q.value=q;const gg=AC.createGain();gg.gain.value=lv*3.2;src.connect(bp).connect(gg).connect(env)});
  src.start(t);src.stop(t+dur+.05);vib.start(t);vib.stop(t+dur+.05);
+ if(!o.far){const sq=AC.createOscillator(),sl=AC.createBiquadFilter(),sg=AC.createGain();sq.type='square';sq.frequency.setValueAtTime(f0,t);sl.type='lowpass';sl.frequency.value=2200;sg.gain.value=.05;sq.connect(sl).connect(sg).connect(env);sq.start(t);sq.stop(t+dur+.05)}
  /* consonants: a click or a hiss in front */
  if(o.cons){const s=AC.createBufferSource(),f=AC.createBiquadFilter(),a=AC.createGain();s.buffer=drumBuf;f.type=o.cons==='s'?'highpass':'bandpass';f.frequency.value=o.cons==='s'?4200:o.cons==='k'?1800:2600;f.Q.value=1;
   a.gain.setValueAtTime(v*(o.cons==='s'?.5:.8),t-.025);a.gain.exponentialRampToValueAtTime(.0001,t+(o.cons==='s'?.05:.018));s.connect(f).connect(a).connect(out);s.start(Math.max(AC.currentTime,t-.025));s.stop(t+.06)}
@@ -36,19 +37,19 @@ const CONS={s:'s',z:'s',f:'s',h:'s',c:'k',k:'k',g:'k',q:'k',t:'t',d:'t',p:'t',b:
  try{const k=K[DL.who]||{},tx=DL.text||'',i=Math.max(0,Math.floor(DL.i)-1);let vw='a',cons=null;
   for(let j=i;j>=Math.max(0,i-3);j--){const ch=(tx[j]||'').toLowerCase();if(VOW[ch]){vw=ch;break}if(!cons&&CONS[ch])cons=CONS[ch]}
   const up=tx[i]&&tx[i]===tx[i].toUpperCase()&&/[A-Z]/.test(tx[i]),q=/[?]/.test(tx.slice(i,i+6)),ex=/!/.test(tx.slice(i,i+4));
-  const vol=(P.set.voiceVol!=null?P.set.voiceVol:1)*(up||ex?.2:.14);
+  const vol=(P.set.voiceVol!=null?P.set.voiceVol:1)*(up||ex?.4:.3);
   syl(AC.currentTime+.005,f,vol,'a',{kid:!k.adult,girl:!!k.girl,dur:.06,glide:q?.1:ex?.06:(Math.random()-.55)*.05})
  }catch(e){return _b(f,w)}}}
 /* background: no voices, just a low crowd hum (a murmur that swells and dips) */
 babble=function(){};
 let MURM=null;
 function murmEnsure(){if(MURM||!AC||!SFXG||!drumBuf)return;const len=AC.sampleRate*3,b=AC.createBuffer(1,len,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<len;i++)d[i]=Math.random()*2-1;
- const src=AC.createBufferSource();src.buffer=b;src.loop=true;const bp=AC.createBiquadFilter();bp.type='bandpass';bp.frequency.value=330;bp.Q.value=1.4;const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=700;
+ const src=AC.createBufferSource();src.buffer=b;src.loop=true;const bp=AC.createBiquadFilter();bp.type='bandpass';bp.frequency.value=210;bp.Q.value=1.2;const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=480;
  const am=AC.createGain();am.gain.value=.6;for(const f of[2.3,3.7,5.1]){const o=AC.createOscillator(),og=AC.createGain();o.frequency.value=f+Math.random()*.4;og.gain.value=.13;o.connect(og).connect(am.gain);o.start()}
  const out=AC.createGain();out.gain.value=0;src.connect(bp).connect(lp).connect(am).connect(out).connect(SFXG);src.start();MURM={out,type:null}}
 {const _hu=HOOK.update;HOOK.update=(dt,rdt)=>{_hu&&_hu(dt,rdt);if(TEST||!AC||AC.state!=='running')return;murmEnsure();if(!MURM)return;
  const ty=(!D||panelMode==='none'||P.set.ambOff)?null:RAMB_TYPE(ROOM),crowd=Object.keys(A).filter(k=>k!=='you'&&A[k]&&!A[k].dead).length;
- const base={hall:.27,cafe:.4,gym:.22,out:.1,arcade:.22}[ty]||0;const v=base*Math.min(1,.35+crowd*.07)*(P.set.ambVol!=null?P.set.ambVol:1)*(DL?.55:1);
+ const base={hall:.15,cafe:.22,gym:.12,out:.06,arcade:.12}[ty]||0;const v=base*Math.min(1,.35+crowd*.07)*(P.set.ambVol!=null?P.set.ambVol:1)*(DL?.3:1);
  MURM.out.gain.setTargetAtTime(v,AC.currentTime,.4)}}
 /* settings: voice and chatter loudness */
 {const _os=openSettings;openSettings=function(){_os();const s=$('settings').querySelector('.set');if(!s)return;

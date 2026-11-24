@@ -27,6 +27,7 @@ so check every line.
 - The player DOES things in quests (`js/jobs.js`): many quest steps are jobs: fetch an item from another room and hand it over, plant something, shove (X or E) or fight (mash) someone. Add new ones with `J(mission, step, {...})`; items are drawn where they wait. X shoves anyone; teachers who see it punish you.
 - Side Hustles (`js/gigs.js`): three generated gigs every school day (deliver, shove, fight, plant), in ⚡ Do Now, paying cash and rep.
 - When the bell goes, everyone in the room runs off-screen before the next period starts (`js/tracker.js`).
+- Shoving has payback (`js/payback.js`): hot-headed kids swing back, pull a weapon (run/fight/beg; losing can kill you: Shanked/Jumped deaths) or hold a grudge and ambush you later with backup. 7th/8th graders (Jaxon, Kaylee, Brayden + 8th graders) do Bin Day outside: carry you and dump you in the big trash can, or pull a weapon.
 - Random chaos happens around the school (`js/chaos.js`): free, quick, edgy.
 - Characters you’re mid-quest with come back the next day if they die.
 - Apples are only spent on doing things (quest steps, investigating, picking things up), never on chatting.
