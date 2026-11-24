@@ -28,6 +28,7 @@ so check every line.
 - Side Hustles (`js/gigs.js`): three generated gigs every school day (deliver, shove, fight, plant), in ⚡ Do Now, paying cash and rep.
 - When the bell goes, everyone in the room runs off-screen before the next period starts (`js/tracker.js`).
 - Shoving has payback (`js/payback.js`): hot-headed kids swing back, pull a weapon (run/fight/beg; losing can kill you: Shanked/Jumped deaths) or hold a grudge and ambush you later with backup. 7th/8th graders (Jaxon, Kaylee, Brayden + 8th graders) do Bin Day outside: carry you and dump you in the big trash can, or pull a weapon.
+- Real-time roam events (`js/live.js`) every 30–45 s so walking around is never dead time: dodge a thrown ball or a sprinting kid (move up/down; streak rewards), sneak-grab by 7th/8th graders (mash LEFT+RIGHT to pull away or get binned), loose cash to race for. Walking is faster and text is faster by default. Pixel font has no arrow glyphs: write LEFT/RIGHT.
 - Random chaos happens around the school (`js/chaos.js`): free, quick, edgy.
 - Characters you’re mid-quest with come back the next day if they die.
 - Apples are only spent on doing things (quest steps, investigating, picking things up), never on chatting.
