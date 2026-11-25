@@ -128,7 +128,7 @@ function setPiece(re,cfg){const s=SPOTS.find(s=>re.test(s.label||''));if(!s)retu
 {const _hi=hideIn;hideIn=function(d){if(SPC&&A.you&&Math.abs(A.you.x-SPC.x)<14){const s=SPOTS.find(s=>s.room===D.room&&s.x===SPC.x);if(s)return useSpot(s)}return _hi(d)}}
 {const _do=HOOK.drawOver;HOOK.drawOver=(...x)=>{_do&&_do(...x);if(!SPC||TEST||ROOM!==SPC.room||panelMode!=='roam')return;const y=118+(Math.sin(T*5)>0?1:0);R(SPC.x-3,y,7,2,'#ff6a5a');R(SPC.x-2,y+2,5,2,'#ff6a5a');R(SPC.x-1,y+4,3,2,'#ff6a5a');const t='OBJECTIVE';pxc(t,SPC.x,y-9,'#ff6a5a')}}
 /* chapter 1: the empty seat */
-setPiece(/^Search Ms\. Sherman’s desk/,{patrol:'shermian',sp:22,obj:'Get to her desk without her seeing you. Then crack the bottom drawer.',
+setPiece(/^Search Ms\. Sherman’s desk/,{goal:'GET TO HER DESK',patrol:'shermian',sp:22,obj:'Get to her desk without her seeing you. Then crack the bottom drawer.',
  intro:async()=>{scene('maths',{shermian:[200,-1,{y:146,pose:'phone',ex:'blush'}],you:[290,-1,{y:156}]},true);cue('tension',true);if(typeof camZoom==='function')await camZoom(200,120,1.8,500);
   await say('shermian','(into her phone, very low) No, Gerald. Not on the PHONE. …Because the stapler stays in the DRAWER, that’s why. …Fine. Fine. Wednesday. Bring the good tape.','blush');
   if(typeof camZoom==='function')await camZoom();pose('shermian',null);A.shermian.ex='cold';await N('She hangs up. She starts pacing the room, slowly, between you and her desk. The bottom drawer is the only one with a lock.')},
@@ -139,7 +139,7 @@ setPiece(/^Search Ms\. Sherman’s desk/,{patrol:'shermian',sp:22,obj:'Get to he
  game:()=>vgLock(),failLine:'The drawer bangs. Ms. Sherman’s head turns like an owl’s.',
  before:async()=>{slowmo(.5);await N('The drawer gives. Inside, under a stack of graded tests, something small and pink catches the light.');slowmo(1)}});
 /* chapter 2: the file */
-setPiece(/^Photograph the back fridge/,{patrol:'voss',sp:20,obj:'Get to the back fridge. Get the photos. Don’t let the flash go off near him.',
+setPiece(/^Photograph the back fridge/,{goal:'GET TO THE BACK FRIDGE',patrol:'voss',sp:20,obj:'Get to the back fridge. Get the photos. Don’t let the flash go off near him.',
  intro:async()=>{scene('chem',{voss:[160,1,{y:146,hold:'mug',ex:'happy'}],you:[30,1,{y:156}]},true);cue('evil',true);if(typeof camZoom==='function')await camZoom(160,120,2,500);
   await say('voss','(humming, to a jar on the bench) Don’t look at me like that. You were delicious— delightful. DELIGHTFUL company.','happy');
   SFX.knock&&SFX.knock();await say('nurse','(through the door) Frederick? I brought the long gloves. And the other gloves.','smirk');
@@ -150,7 +150,7 @@ setPiece(/^Photograph the back fridge/,{patrol:'voss',sp:20,obj:'Get to the back
  game:()=>vgThrow('HOLD THE CAMERA STEADY'),failLine:'The flash goes off. The whole lab goes white for half a second.',
  before:async()=>{slowmo(.45);flash('#fff',.5);await wait(TEST?0:300);slowmo(1)}});
 /* chapter 4: the office */
-setPiece(/^Pick the lock on Ms\. Sherman’s office/,{patrol:'shermian',sp:26,obj:'Pick her office lock before she comes back down the hall.',
+setPiece(/^Pick the lock on Ms\. Sherman’s office/,{goal:'PICK THE OFFICE LOCK',patrol:'shermian',sp:26,obj:'Pick her office lock before she comes back down the hall.',
  intro:async()=>{cue('tension',true);SFX.knock&&SFX.knock();await say('adam','(through the office door) Doris said you borrowed the laminator again.','cold');
   await say('shermian','(through the door) I laminate what I want, Gerald. I laminated your LETTERS. Every single one. They’re on my FRIDGE.','evil');
   if(K.shermian&&!A.shermian){const f=floorOf(D.room);put('shermian',282,-1,{y:f[0]+4,ex:'cold'})}SFX.door&&SFX.door();await N('The door opens. Ms. Sherman comes out, locks it behind her, and starts her patrol. Down the hall. And, eventually, back.')},
@@ -159,13 +159,13 @@ setPiece(/^Pick the lock on Ms\. Sherman’s office/,{patrol:'shermian',sp:26,ob
   if(PAT)PAT.pause=6;await say('shermian','SIX INCHES. SIX INCHES OF AIR BETWEEN STUDENTS. I HAVE A RULER.','yell');await say(p[1],'(not letting go) Worth it.','love');cue('tension');walk(p[0],-30,90);walk(p[1],-30,90).then(()=>{for(const k of p)if(A[k])remove(k)})},
  game:()=>vgLock(),failLine:'The pick slips and scrapes. Down the hall, footsteps stop.'});
 /* chapter 8: the leak */
-setPiece(/^Wipe the phones in Ms\. Sherman’s drawer/,{patrol:'shermian',sp:24,obj:'Get to the drawer and wipe every phone. One wrong pattern and they all start buzzing.',
+setPiece(/^Wipe the phones in Ms\. Sherman’s drawer/,{goal:'GET TO HER DRAWER',patrol:'shermian',sp:24,obj:'Get to the drawer and wipe every phone. One wrong pattern and they all start buzzing.',
  intro:async()=>{scene('maths',{shermian:[150,1,{y:146,hold:'phone',ex:'shock'}],you:[290,-1,{y:156}]},true);cue('tension',true);if(typeof camZoom==='function')await camZoom(150,118,2.2,400);
   await N('Ms. Sherman is holding a confiscated phone. A text lights it up: “GERALD (VP): cant stop thinking about the budget meeting 😳🍆”.');
   await say('shermian','(very quietly) …Every. Single. Time.','closed');hold('shermian',null);if(typeof camZoom==='function')await camZoom();await N('She throws it in the drawer with the others and starts pacing. Fourteen phones in that drawer. Fourteen phones full of what everyone saw.')},
  game:()=>vgSimon(6,'UNLOCK PATTERN'),failLine:'Wrong pattern. Fourteen phones start buzzing at once in the drawer like a nest.'});
 /* chapter 10: the boiler room */
-setPiece(/^Go down the old hatch/,{patrol:'adam',sp:20,obj:'Get to the old hatch at the far left. Crack the padlock code. Mr. Adam is doing his rounds.',
+setPiece(/^Go down the old hatch/,{goal:'GET TO THE OLD HATCH',patrol:'adam',sp:20,obj:'Get to the old hatch at the far left. Crack the padlock code. Mr. Adam is doing his rounds.',
  intro:async()=>{cue('evil',true);LDS.on=true;LDS.rate=96;await N('The hall lights are half off. Mr. Adam is walking the corridor with a flashlight, humming. It’s the song from the Hot Mic. Of course it is.');
   if(K.adam&&!A.adam){const f=floorOf(D.room);put('adam',280,-1,{y:f[0]+4,ex:'cold'})}},
  game:()=>vgSimon(6,'THE PADLOCK CODE'),failLine:'The padlock clanks against the hatch. The humming stops.',after:async()=>{LDS.on=false}});
