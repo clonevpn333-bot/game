@@ -116,7 +116,7 @@ function snkBtns(on){let b=$('snkb');if(!b&&on){b=document.createElement('div');
   return}
  /* on the floor */
  for(const c of SNK.crates){c.layer=Math.min(0,a.y-c.y-1);if(SNK.crouch&&!SNK.grab&&Math.abs(c.x-a.x)<15){const t=PAT&&A[PAT.id];const away=t?(t.x>c.x?-1:1):(a.x<c.x?-1:1);a.x=c.x+away*15}}
- a.alpha=covered()?.85:1;
+ a.alpha=1;if(covered()&&!keys.l&&!keys.r){const c=SNK.crates.find(c=>Math.abs(c.x-a.x)<19);if(c)a.dir=c.x>a.x?1:-1}
  if(SNK.crouch){a.pose='crouch';a.x=ox+(a.x-ox)*.5}else if(a.pose==='crouch')a.pose=null;
  if(SNK.grab){const c=SNK.grab;a.x=ox+(a.x-ox)*.6;a.dir=SNK.side;if(Math.abs(a.x-ox)>.01){SNK.noise=Math.min(1,SNK.noise+rdt*1.4);if(Math.random()<rdt*7){try{noise(.08,.07,180+Math.random()*120,2,'bandpass')}catch(_){}}}
   c.x=clamp(a.x+SNK.side*13,14,306);c.y=a.y+2;if(c.x===14||c.x===306)a.x=c.x-SNK.side*13;a.pose='drag'}

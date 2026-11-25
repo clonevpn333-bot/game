@@ -39,7 +39,7 @@ const FRIENDS=['hasan','arjun','david','omer','nivaan','corey','sean','stella','
 const TEACHERS=['balduf','shermian','sherman','loach','voss','coach','pat'];
 
 function kidGeom(k,o){const ad=k.adult?1:0,hh=k.h||0,lr=Math.round(hh/2),p=o&&o.pose,sit=p==='sit'||p==='write',kn=p==='kneel',cr=p==='crouch';
- return{legH:sit?4:kn?3:cr?(5+ad):(7+lr+ad*3),bodyH:9+hh-lr+ad*3,bw:(k.wide?13:k.thin?8:10)+ad,hw:k.knob?10:12,hd:k.knob?12:11}}
+ return{legH:sit?4:kn?3:cr?(4+ad):(7+lr+ad*3),bodyH:9+hh-lr+ad*3,bw:(k.wide?13:k.thin?8:10)+ad,hw:k.knob?10:12,hd:k.knob?12:11}}
 
 /* ---------- head: used by bodies, portraits and severed heads ---------- */
 function drawHead(k,x,hy,d,o){
@@ -135,16 +135,18 @@ function drawKid(k,x,y,o){
  const mv=o.moving,ph=o.walk||0,st=mv?Math.sin(ph):0,ct=mv?Math.cos(ph):0;
  const bob=o.still||p==='sit'||p==='write'?0:mv?(Math.abs(st)>.6?1:0):(Math.sin(T*2.2+k.seed)>.6?1:0);
  const run=o.fast&&mv&&!p;
- let lean=run?d:0;if(p==='lean'||p==='hurt'||p==='drag')lean=-d*2;if(p==='crouch')lean=d;if(p==='stab'||p==='overhead')lean=d;if(p==='headbutt')lean=d*(Math.sin(T*10)>0?4:2);if(p==='kiss')lean=d*2;if(p==='punch'&&o.punchT>T)lean=d;if(k.old)lean+=d;
+ let lean=run?d:0;if(p==='lean'||p==='hurt'||p==='drag')lean=-d*2;if(p==='crouch')lean=d*2;if(p==='stab'||p==='overhead')lean=d;if(p==='headbutt')lean=d*(Math.sin(T*10)>0?4:2);if(p==='kiss')lean=d*2;if(p==='punch'&&o.punchT>T)lean=d;if(k.old)lean+=d;
  const bx=x-(bw>>1)+lean,lw=k.baggy?5:k.tight?3:4;
  /* legs */
  const shoe=k.tight?'#ddd':k.adult?'#1a1418':'#2a2a30';
  const leg=(lx,top_,h,f)=>{R(lx,y-h+top_,lw,h+f,k.pants);if(k.shorts)R(lx,y-h+top_+3,lw,h-3+f,sk);if(k.skirt)R(lx,y-h+top_+4,lw-1,h-4+f,'#d9b49a');if(k.stripe)R(lx+(d>0?0:lw-1),y-h+top_,1,h+f,'#e8e8e8');if(k.cuff)R(lx,y-2+f,lw,1,'#a8c8ff');R(lx-(d<0?1:0),y-1+f,lw+1,1,shoe)};
  if(p==='sit'||p==='write'){R(x-3,y-4,bw-2,3,k.pants);R(x+d*4-1,y-3,lw,4,k.shorts?sk:k.pants);R(x+d*4-1,y,lw+1,1,shoe);R(x-1,y-4,lw,4,k.pants)}
- else if(p==='crouch'){/* squat: thighs folded, front knee forward, back heel tucked under */
-  const sh=mv?Math.round(st*1.5):0,fk=d>0?bx+bw-3:bx-1,bk=d>0?bx-1:bx+bw-3;
-  R(bx+1,y-legH,bw-2,3,k.pants);R(fk,y-legH,4,3,k.pants);R(fk+(d>0?1:0),y-legH+2,lw-1,legH-2,k.pants);R(fk+(d>0?0:-1)+sh,y-1,lw+1,1,shoe);
-  R(bk,y-legH+2,4,legH-2,k.pants);R(bk-(d>0?1:0)-sh,y-1,lw+1,1,shoe)}
+ else if(p==='crouch'){/* sneak crouch: wide low stance, back foot behind on its toes, front knee forward; feet shuffle when moving */
+  const M=(u,w)=>d>0?x+u:x-u-w,sh=mv?Math.round(st):0,P=k.shorts?sk:k.pants;
+  R(M(-5,10),y-5,10,2,k.pants);
+  R(M(-7,5),y-4,5,3,P);R(M(-8-sh,5),y-1,5,1,shoe);
+  R(M(1,7),y-5,7,2,k.pants);R(M(4,4),y-3,4,2,P);R(M(4+sh,5),y-1,5,1,shoe);R(M(7+sh,1),y-1,1,1,'rgba(255,255,255,.18)');
+  R(M(-4,8),y-4,8,1,'rgba(0,0,0,.18)')}
  else if(p==='kneel'){R(bx+1,y-3,bw-2,3,k.pants);R(bx-(d>0?2:-bw+3),y-1,5,1,shoe)}
  else if(p==='kick'){const kk=Math.sin(T*12)>0;R(bx+(d>0?1:bw-1-lw),y-legH,lw,legH,k.pants);R(bx+(d>0?1:bw-1-lw)-(d<0?1:0),y-1,lw+1,1,shoe);if(kk){R(d>0?bx+bw-2:bx-8,y-legH+1,10,lw-1,k.pants);R(d>0?bx+bw+7:bx-10,y-legH,3,lw,shoe)}else{R(bx+bw-1-lw,y-legH,lw,legH-2,k.pants)}}
  else if(p==='stomp'){const up=Math.sin(T*9)>0;R(bx+(d>0?1:bw-1-lw),y-legH,lw,legH,k.pants);R(bx+(d>0?1:bw-1-lw)-(d<0?1:0),y-1,lw+1,1,shoe);const kx=bx+(d>0?bw-1-lw:1);if(up){R(kx,y-legH,lw,legH-4,k.pants);R(kx+d*2,y-legH+legH-6,lw,3,k.pants);R(kx+d*2-(d<0?1:0),y-5,lw+1,2,shoe)}else{R(kx,y-legH,lw,legH,k.pants);R(kx-(d<0?1:0),y-1,lw+2,1,shoe)}}
@@ -154,7 +156,8 @@ function drawKid(k,x,y,o){
  /* body */
  const by=y-legH-bodyH+bob+(p==='hurt'?1:0),bh=bodyH-bob;
  if(k.coat){R(bx-1,by,bw+2,bh+5,top);R(x+lean,by+3,1,bh+2,'#c8c6bc');R(bx-1,by+bh+4,bw+2,1,'#c8c6bc')}
- R(bx,by,bw,bh,top);R(d>0?bx:bx+bw-2,by,2,bh,'rgba(0,0,0,.2)');
+ if(p==='crouch'){const M=(u,w)=>d>0?x+u:x-u-w,sd='rgba(0,0,0,.2)';R(M(-4,bw),by+4,bw,bh-4,top);R(M(-3,bw),by+2,bw,2,top);R(M(-2,bw),by,bw,2,top);R(M(-4,2),by+4,2,bh-4,sd);R(M(-3,2),by+2,2,2,sd);R(M(-2,2),by,2,2,sd)}
+ else{R(bx,by,bw,bh,top);R(d>0?bx:bx+bw-2,by,2,bh,'rgba(0,0,0,.2)')}
  if(k.apron){R(bx+1,by+3,bw-2,bh+3,'#f2f0ea');R(bx+2,by+2,bw-4,1,'#f2f0ea')}
  if(k.puffer){for(let i=2;i<bh;i+=3)R(bx,by+i,bw,1,'rgba(0,0,0,.28)');R(bx-1,by,bw+2,2,top)}
  if(k.hivis){R(bx,by+3,bw,2,'#e8f040');R(bx,by+7,bw,1,'#e8f040')}
@@ -213,14 +216,17 @@ function drawKid(k,x,y,o){
   case'stab':{back();const ph_=Math.sin(T*14)>0;const ex_=ph_?7:3;R(d>0?bx+bw:bx-ex_,by+3,ex_,2,sl);R(d>0?bx+bw+ex_:bx-ex_-2,by+3,2,3,sk);hx=d>0?bx+bw+ex_:bx-ex_-2;hy=by+5;break}
   case'drag':R(d>0?bx-7:bx+bw,by+4,7,2,sl);R(d>0?bx-9:bx+bw+7,by+3,2,3,sk);R(fs,by+1,2,5,sl);hx=d>0?bx-9:bx+bw+7;hy=by+4;break;
   case'stomp':R(bx-4,by+1,4,2,sl);R(bx-5,by-1,2,2,sk);R(bx+bw,by+1,4,2,sl);R(bx+bw+3,by-1,2,2,sk);hx=-99;break;
+  case'crouch':{const M=(u,w)=>d>0?x+u:x-u-w,a1=mv?Math.round(st):0;
+   R(M(-4,2),by+3,2,3,top);R(M(-4-Math.max(0,a1),2),by+6,2,2,sk);
+   R(M(6,2),by+3,2,2,top);R(M(7+a1,2),by+5,2,2,sl);R(M(8+a1,2),by+7,2,2,sk);hx=M(8+a1,2);hy=by+7;break}
   case'kneel':R(bx-2,by+1,2,6,sl);R(bx-2,by+7,2,2,sk);R(fs,by+2,2,4,sl);R(fs+d*2,by+5,2,2,sk);hx=fs+d*2;hy=by+5;break;
   default:
    if(run){const s2=Math.round(st*3);R(bx-2+s2,by+1,2,4,top);R(bx-2+s2+d,by+5,2,2,sl);R(bx-2+s2+d,by+6,2,2,sk);R(bx+bw-s2,by+1,2,4,top);R(bx+bw-s2+d,by+5,2,2,sl);R(bx+bw-s2+d,by+6,2,2,sk);hx=-99;break}
    arm(bx-2+sw,by+1,6);arm(bx+bw-sw,by+1,6);hx=d>0?bx+bw-sw:bx-2+sw;hy=by+7;
  }
  /* head */
- const {hw,hd}=G,hTop=by-hd+1+(k.old?1:0);
- const hcx=x+lean+(p==='headbutt'?d*2:0)+(p==='kiss'?d*1:0);
+ const {hw,hd}=G,hTop=by-hd+1+(k.old?1:0)+(p==='crouch'?1:0);
+ const hcx=x+lean+(p==='headbutt'?d*2:0)+(p==='kiss'?d*1:0)+(p==='crouch'?d*2:0);
  if(!o.noHead)drawHead(k,hcx,hTop,d,o);
  else{R(hcx-3,by-2,6,3,BLOOD[1]);R(hcx-2,by-3,4,1,'#f1e6da');R(hcx-1,by-4,2,1,BLOOD[2])}
  if(o.bloody){R(bx+2,by+2,2,2,BLOOD[2]);R(bx+5,by+4,3,2,BLOOD[1]);R(bx+3,by+6,2,1,BLOOD[2])}
