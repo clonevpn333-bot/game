@@ -121,8 +121,8 @@ function snkBtns(on){let b=$('snkb');if(!b&&on){b=document.createElement('div');
  a.alpha=1;if(covered()&&!keys.l&&!keys.r){const c=SNK.crates.find(c=>Math.abs(c.x-a.x)<19);if(c)a.dir=c.x>a.x?1:-1}
  if(SNK.crouch){a.pose='crouch';a.x=ox+(a.x-ox)*.5}else if(a.pose==='crouch')a.pose=null;
  if(SNK.grab){const c=SNK.grab;a.x=ox+(a.x-ox)*.6;a.dir=SNK.side;if(Math.abs(a.x-ox)>.01){SNK.noise=Math.min(1,SNK.noise+rdt*1.4);if(Math.random()<rdt*7){try{noise(.08,.07,180+Math.random()*120,2,'bandpass')}catch(_){}}}
-  c.x=clamp(a.x+SNK.side*13,14,306);c.y=a.y+2;if(c.x===14||c.x===306)a.x=c.x-SNK.side*13;a.pose='drag'}
- else if(a.pose==='drag')a.pose=null;
+  c.x=clamp(a.x+SNK.side*13,14,306);c.y=a.y+2;if(c.x===14||c.x===306)a.x=c.x-SNK.side*13;a.pose='grab'}
+ else if(a.pose==='grab')a.pose=null;
  SNK.noise=Math.max(0,SNK.noise-rdt*.5);
  if(PAT&&ps==='walk'&&PAT.state==='walk'){const t=A[PAT.id];const inc=PAT.alert-pa;
   if(cov)PAT.alert=Math.max(0,pa-.5*rdt);
@@ -134,15 +134,17 @@ function snkBtns(on){let b=$('snkb');if(!b&&on){b=document.createElement('div');
 /* the push pose falls back to reach in art if unknown */
 /* ---------- world-space drawing: cones, flashlights, darkness, hints ---------- */
 const LCV=document.createElement('canvas');LCV.width=W;LCV.height=H;const lcx=LCV.getContext('2d');
-function handOf(a){const ad=K[a.id]&&K[a.id].adult;return{x:a.x+(a.dir||1)*(ad?7:6),y:a.y-(ad?19:15)}}
+function handOf(a){if(a._lensW&&T-a._lensT<.2)return a._lensW;const ad=K[a.id]&&K[a.id].adult;return{x:a.x+(a.dir||1)*(ad?7:6),y:a.y-(ad?19:15)}}
 function cone(c,x,y,dir,len,spread,rgb,al){const gr=c.createRadialGradient(x,y,1,x,y,len);gr.addColorStop(0,'rgba('+rgb+','+al+')');gr.addColorStop(.7,'rgba('+rgb+','+(al*.6)+')');gr.addColorStop(1,'rgba('+rgb+',0)');
  c.fillStyle=gr;c.beginPath();c.moveTo(x,y-1.5);c.lineTo(x+dir*len,y-spread+4);c.lineTo(x+dir*len,y+spread+4);c.lineTo(x,y+1.5);c.closePath();c.fill()}
 {const _do=HOOK.drawOver;HOOK.drawOver=(...x)=>{_do&&_do(...x);if(!SNK.on||!A.you||ROOM!==D.room)return;
- const a=A.you,t=PAT&&A[PAT.id],dk=snkDark();
+ const a=A.you,t=(PAT&&A[PAT.id])||(typeof BI!=='undefined'&&BI.on&&A.voss)||null,dk=snkDark();
  const al=PAT?(PAT.state==='chase'?'255,70,60':PAT.alert>.5?'255,170,60':'255,236,170'):'255,236,170';
  if(dk){lcx.globalCompositeOperation='source-over';lcx.clearRect(0,0,W,H);lcx.fillStyle='rgba(4,3,10,'+(.92*snkDA())+')';lcx.fillRect(0,0,W,H);lcx.globalCompositeOperation='destination-out';
   if(!SNK.vent){const amb=lcx.createRadialGradient(a.x,a.y-14,1,a.x,a.y-14,16);amb.addColorStop(0,'rgba(0,0,0,.55)');amb.addColorStop(1,'rgba(0,0,0,0)');lcx.fillStyle=amb;lcx.fillRect(0,0,W,H)}
-  if(SNK.light&&!SNK.vent){const h=handOf(a);cone(lcx,h.x,h.y,a.dir||1,92,22,'0,0,0',1)}
+  if(SNK.light&&!SNK.vent&&a.torch==='on'){const h=handOf(a);cone(lcx,h.x,h.y,a.dir||1,92,22,'0,0,0',1)}
+  const glow=(q,r)=>{const lg=lcx.createRadialGradient(q.x,q.y,1,q.x,q.y,r);lg.addColorStop(0,'rgba(0,0,0,.9)');lg.addColorStop(1,'rgba(0,0,0,0)');lcx.fillStyle=lg;lcx.fillRect(q.x-r,q.y-r,r*2,r*2)};
+  if(!SNK.vent&&a.torch==='on')glow(handOf(a),9);if(t&&!t.dead)glow(handOf(t),10);
   if(t&&!t.dead){const h=handOf(t);if(t.id==='voss'){const lg=lcx.createRadialGradient(h.x,h.y,1,h.x,h.y,40);lg.addColorStop(0,'rgba(0,0,0,1)');lg.addColorStop(1,'rgba(0,0,0,0)');lcx.fillStyle=lg;lcx.fillRect(0,0,W,H)}
    if(SNK.peek&&SNK.peek.ph!=='walk'){const gq=SNK.peek.g;const lg=lcx.createRadialGradient(gq.x,gq.y,1,gq.x,gq.y,30);lg.addColorStop(0,'rgba(0,0,0,1)');lg.addColorStop(1,'rgba(0,0,0,0)');lcx.fillStyle=lg;lcx.fillRect(0,0,W,H)}
    else cone(lcx,h.x,h.y,t.dir||1,100,24,'0,0,0',1)}
@@ -151,14 +153,11 @@ function cone(c,x,y,dir,len,spread,rgb,al){const gr=c.createRadialGradient(x,y,1
   g.save();g.globalAlpha=.55*snkDA()+(1-snkDA());for(const q of SNK.grates)drawProp(q);for(const c of SNK.crates)drawProp(c);g.restore();
   if(!SNK.vent&&SNK.crates.some(c=>Math.abs(c.x-a.x)<22))drawActor(a);
   g.save();g.globalCompositeOperation='lighter';
-  if(SNK.light&&!SNK.vent){const h=handOf(a);cone(g,h.x,h.y,a.dir||1,92,22,'255,230,160',.1*snkDA())}
+  if(SNK.light&&!SNK.vent&&a.torch==='on'){const h=handOf(a);cone(g,h.x,h.y,a.dir||1,92,22,'255,230,160',.1*snkDA())}
   if(t&&!t.dead){const h=handOf(t);if(t.id==='voss'){const lg=g.createRadialGradient(h.x,h.y,1,h.x,h.y,40);lg.addColorStop(0,'rgba(255,170,80,.35)');lg.addColorStop(1,'rgba(255,170,80,0)');g.fillStyle=lg;g.fillRect(h.x-40,h.y-40,80,80)}
    if(!SNK.peek)cone(g,h.x,h.y,t.dir||1,100,24,al,.16*snkDA())}
   g.restore()}
  else if(t&&!t.dead&&PAT&&PAT.state!=='peek'){const ey=t.y-24;g.save();cone(g,t.x+(t.dir||1)*4,ey+8,t.dir||1,95,24,al,PAT.state==='chase'?.32:.24);g.restore()}
- /* things in hands */
- if(dk&&!SNK.vent){const h=handOf(a);R(h.x-(a.dir<0?4:0),h.y-1,4,2,'#3a3a44');R(h.x+(a.dir<0?-5:4),h.y-1,1,2,SNK.light?'#fff6c0':'#555')}
- if(dk&&t&&!t.dead){const h=handOf(t);if(t.id==='voss'){R(h.x-2,h.y-1,5,6,'#5a4020');R(h.x-1,h.y,3,4,'#ffc860');R(h.x,h.y-3,1,2,'#3a2a14')}else{R(h.x-(t.dir<0?4:0),h.y-1,4,2,'#2a2a30');R(h.x+(t.dir<0?-5:4),h.y-1,1,2,'#fff6c0')}}
  /* ?/! */
  if(t&&PAT){const mk=PAT.state==='chase'?'!':PAT.state==='peek'?'?':PAT.alert>.08?'?':'';if(mk){const y=t.y-44-(Math.sin(T*8)>0?1:0);R(t.x-4,y-1,9,10,'#141020');R(t.x-4,y-1,9,1,'rgb('+al+')');
   if(mk==='?'&&PAT.state!=='peek'){g.globalAlpha=.35;R(t.x-3,y+1,7,7,'#ffffff');g.globalAlpha=1;R(t.x-3,y+8-Math.round(7*Math.min(1,PAT.alert)),7,Math.round(7*Math.min(1,PAT.alert)),'rgb('+al+')')}
@@ -278,3 +277,10 @@ function snkGoal(){if(typeof BI!=='undefined'&&BI.on)return BI.got?{x:20,t:'GET 
  /* danger tip */
  if(t&&PAT&&PAT.state==='walk'&&PAT.alert>.25&&!covered()){const tip=SNK.crates.some(c=>Math.abs(c.x-a.x)<40)?'SHE SEES SOMETHING. PRESS C, HIDE BEHIND THE BOX':'SHE SEES SOMETHING. GET OUT OF THE LIGHT';const tt=K[t.id]&&/^(Mr|Coach)/.test(K[t.id].n)?tip.replace('SHE','HE'):tip;const w=pxw(tt)+8;R(W/2-w/2,128,w,10,'#300808e0');pxc(tt,W/2,130,Math.sin(T*10)>0?'#ff7a6a':'#ffd0c8')}
  if(t&&PAT&&PAT.state==='chase'){const tt='SPOTTED. RUN. HIDE IN A DOORWAY WITH E, OR A VENT';const w=pxw(tt)+8;R(W/2-w/2,128,w,10,'#300808e0');pxc(tt,W/2,130,'#ff7a6a')}}}
+
+/* who holds what: the flashlight is gripped in the sprite's hand and the beam starts at its lens */
+{const _da=drawActor;drawActor=function(a){if(!a||!a.k)return _da(a);
+ const want=SNK.on&&snkDark()&&ROOM===D.room?(a.id==='you'&&!SNK.vent?(SNK.light?'on':'off'):((PAT&&a.id===PAT.id)||(typeof BI!=='undefined'&&BI.on&&a.id==='voss')?(a.id==='voss'?'lantern':'on'):null)):null;
+ if(want&&!a.dead&&a.pose!=='reach'&&a.pose!=='grab')a.torch=want;else if(a.torch)a.torch=null;
+ drawKid._lens=null;const r=_da(a);
+ if(a.torch&&drawKid._lens){a._lensW={x:Math.round(a.x)+drawKid._lens.dx,y:Math.round(a.y-(a.z||0))+drawKid._lens.dy};a._lensT=T}return r}}

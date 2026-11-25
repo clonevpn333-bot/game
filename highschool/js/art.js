@@ -129,7 +129,7 @@ function drawHead(k,x,hy,d,o){
 
 /* ---------- full body ---------- */
 function drawKid(k,x,y,o){
- o=o||{};x=Math.round(x);y=Math.round(y);
+ o=o||{};x=Math.round(x);y=Math.round(y);drawKid._lens=null;
  const d=o.dir||1,p=o.pose,G=kidGeom(k,o),{legH,bodyH,bw}=G,top=o.topC||k.top,sk=k.skin;
  if(o.shake)x+=Math.round(Math.sin(T*38));
  const mv=o.moving,ph=o.walk||0,st=mv?Math.sin(ph):0,ct=mv?Math.cos(ph):0;
@@ -218,12 +218,17 @@ function drawKid(k,x,y,o){
   case'stomp':R(bx-4,by+1,4,2,sl);R(bx-5,by-1,2,2,sk);R(bx+bw,by+1,4,2,sl);R(bx+bw+3,by-1,2,2,sk);hx=-99;break;
   case'crouch':{const M=(u,w)=>d>0?x+u:x-u-w,a1=mv?Math.round(st):0;
    R(M(-4,2),by+3,2,3,top);R(M(-4-Math.max(0,a1),2),by+6,2,2,sk);
-   R(M(6,2),by+3,2,2,top);R(M(7+a1,2),by+5,2,2,sl);R(M(8+a1,2),by+7,2,2,sk);hx=M(8+a1,2);hy=by+7;break}
+   if(!o.torch){R(M(6,2),by+3,2,2,top);R(M(7+a1,2),by+5,2,2,sl);R(M(8+a1,2),by+7,2,2,sk)}hx=M(8+a1,2);hy=by+7;break}
   case'kneel':R(bx-2,by+1,2,6,sl);R(bx-2,by+7,2,2,sk);R(fs,by+2,2,4,sl);R(fs+d*2,by+5,2,2,sk);hx=fs+d*2;hy=by+5;break;
   default:
    if(run){const s2=Math.round(st*3);R(bx-2+s2,by+1,2,4,top);R(bx-2+s2+d,by+5,2,2,sl);R(bx-2+s2+d,by+6,2,2,sk);R(bx+bw-s2,by+1,2,4,top);R(bx+bw-s2+d,by+5,2,2,sl);R(bx+bw-s2+d,by+6,2,2,sk);hx=-99;break}
-   arm(bx-2+sw,by+1,6);arm(bx+bw-sw,by+1,6);hx=d>0?bx+bw-sw:bx-2+sw;hy=by+7;
+   if(o.torch){if(d>0)arm(bx-2+sw,by+1,6);else arm(bx+bw-sw,by+1,6)}else{arm(bx-2+sw,by+1,6);arm(bx+bw-sw,by+1,6)}hx=d>0?bx+bw-sw:bx-2+sw;hy=by+7;
  }
+ /* a flashlight or lantern gripped in the front hand */
+ if(o.torch){const cr=p==='crouch',sx=cr?(d>0?x+6:x-8):(d>0?bx+bw:bx-2),sy=cr?by+3:by+1,F=(u,w)=>d>0?sx+u:sx+2-u-w;
+  if(o.torch==='lantern'){R(F(0,2),sy,2,4,top);R(F(1,2),sy+4,2,3,sl);R(F(1,2),sy+7,2,2,sk);R(F(1,1),sy+9,1,2,'#2a2014');R(F(0,4),sy+11,4,5,'#4a3418');R(F(1,2),sy+12,2,3,'#ffc860');R(F(0,4),sy+11,4,1,'#6a4c24');drawKid._lens={dx:F(1,2)+1-x,dy:sy+13-y,lantern:1}}
+  else{R(F(0,2),sy,2,2,top);R(F(1,4),sy+2,4,2,sl);R(F(4,6),sy+2,6,2,'#30303a');R(F(6,1),sy+2,1,2,'#4a4a56');R(F(9,2),sy+1,2,4,'#585866');R(F(9,2),sy+1,2,1,'#7a7a88');R(F(11,1),sy+2,1,2,o.torch==='off'?'#5a5a60':'#fff6c0');
+   R(F(4,3),sy+1,3,3,sk);R(F(4,3),sy+3,3,1,'rgba(0,0,0,.18)');R(F(4,1),sy+1,1,1,'rgba(255,255,255,.2)');drawKid._lens={dx:F(12,1)-x,dy:sy+3-y}}}
  /* head */
  const {hw,hd}=G,hTop=by-hd+1+(k.old?1:0)+(p==='crouch'?1:0);
  const hcx=x+lean+(p==='headbutt'?d*2:0)+(p==='kiss'?d*1:0)+(p==='crouch'?d*2:0);

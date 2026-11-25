@@ -46,7 +46,7 @@ drawActor=function(a){
  }
  const seated=a.pose==='sit'||a.pose==='write'||a.pose==='type'||a.pose==='swim';
  if(!seated)groundShadow(x,a.y,a.z||0,k.wide||k.adult);
- bufferKid(k,{tr:a._trK,back:a.back,fast:a.fast,messy,dir:a.dir,moving:a.moving,walk:a.walk,pose:a.air&&!a.pose?'up':a.pose,ex:a.ex||a._ex||(a.air?'shock':null),talk:a.talk,hold:a.hold,hurt:a.hurt,bloody:a.bloody,shake:a.shake,punchT:a.punchT,still:a.still,hairC:a.hairC,topC:a.topC,hs:a.hs||(a.id==='dheva'&&(typeof D!=='undefined'&&D)&&D.f&&D.f.dheva1&&!D.f.dhevaFixed?'limp':null)});
+ bufferKid(k,{tr:a._trK,back:a.back,fast:a.fast,messy,dir:a.dir,moving:a.moving,walk:a.walk,pose:a.air&&!a.pose?'up':a.pose,ex:a.ex||a._ex||(a.air?'shock':null),talk:a.talk,hold:a.hold,torch:a.torch,hurt:a.hurt,bloody:a.bloody,shake:a.shake,punchT:a.punchT,still:a.still,hairC:a.hairC,topC:a.topC,hs:a.hs||(a.id==='dheva'&&(typeof D!=='undefined'&&D)&&D.f&&D.f.dheva1&&!D.f.dhevaFixed?'limp':null)});
  blitKid(x-OX,y-OY,alpha);
 };
 
