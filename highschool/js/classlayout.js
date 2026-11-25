@@ -52,9 +52,10 @@ let LAYOUT_ON=null;
 {const _ci=classIn;classIn=async function(room,opts){
  opts=opts||{};
  const L=LAYOUT_ROOMS[room]&&!opts.fixed&&opts.you==null&&!(typeof EDITION!=='undefined'&&false)?layoutFor(room):'rows';
- if(L==='rows'||!LAYOUT[L]||TEST&&!TEST.auto&&Math.random()<.5)return _ci(room,opts);
+ if(L==='rows'||!LAYOUT[L]||TEST&&!TEST.auto&&Math.random()<.5){if(D&&D.f&&D.f.lay)delete D.f.lay[room];return _ci(room,opts)}
  const t=opts.teacher||(TEACH[D.period]&&TEACH[D.period][room]);
  const lay=LAYOUT[L](room,t);
+ if(D&&D.f){D.f.lay=D.f.lay||{};D.f.lay[room]=[L,t||null]}
  const oS=seatsFor,oT=TEACHER_SPOT[room],oI=ROOMS[room]&&ROOMS[room].items;
  seatsFor=r=>r===room?lay.S.map(s=>Object.assign({},s)):oS(r);
  TEACHER_SPOT[room]=lay.teacher;
@@ -72,5 +73,8 @@ let LAYOUT_ON=null;
  return c;
 }}
 function layoutOff(){if(LAYOUT_ON&&ROOMS[LAYOUT_ON.room]){ROOMS[LAYOUT_ON.room].items=LAYOUT_ON.items}LAYOUT_ON=null}
-{const _co=classOut;classOut=async function(c,line){try{for(const s of c.seats||[])if(s.present&&A[s.who])hold(s.who,null);return await _co(c,line)}finally{layoutOff()}}}
-{const _br=buildRoom;buildRoom=function(room){layoutOff();return _br(room)}}
+{const _co=classOut;classOut=async function(c,line){try{for(const s of c.seats||[])if(s.present&&A[s.who])hold(s.who,null);return await _co(c,line)}finally{const v=D&&D.f&&D.f.lay&&LAYOUT_ON&&D.f.lay[LAYOUT_ON.room];if(!v)layoutOff()}}}
+{const _br=buildRoom;buildRoom=function(room){layoutOff();const r=_br(room);
+ /* the room stays set up the way it was for today's lesson (carpet, horseshoe...) until the next lesson in it */
+ try{const v=D&&D.f&&D.f.lay&&D.f.lay[room];if(v&&v[0]!=='rows'&&LAYOUT[v[0]]&&ROOMS[room]){const lay=LAYOUT[v[0]](room,v[1]);LAYOUT_ON={room,items:ROOMS[room].items};ROOMS[room].items=lay.items}}catch(e){}
+ return r}}

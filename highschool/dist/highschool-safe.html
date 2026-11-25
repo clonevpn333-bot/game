@@ -17573,9 +17573,10 @@ let LAYOUT_ON=null;
 {const _ci=classIn;classIn=async function(room,opts){
  opts=opts||{};
  const L=LAYOUT_ROOMS[room]&&!opts.fixed&&opts.you==null&&!(typeof EDITION!=='undefined'&&false)?layoutFor(room):'rows';
- if(L==='rows'||!LAYOUT[L]||TEST&&!TEST.auto&&Math.random()<.5)return _ci(room,opts);
+ if(L==='rows'||!LAYOUT[L]||TEST&&!TEST.auto&&Math.random()<.5){if(D&&D.f&&D.f.lay)delete D.f.lay[room];return _ci(room,opts)}
  const t=opts.teacher||(TEACH[D.period]&&TEACH[D.period][room]);
  const lay=LAYOUT[L](room,t);
+ if(D&&D.f){D.f.lay=D.f.lay||{};D.f.lay[room]=[L,t||null]}
  const oS=seatsFor,oT=TEACHER_SPOT[room],oI=ROOMS[room]&&ROOMS[room].items;
  seatsFor=r=>r===room?lay.S.map(s=>Object.assign({},s)):oS(r);
  TEACHER_SPOT[room]=lay.teacher;
@@ -17593,8 +17594,11 @@ let LAYOUT_ON=null;
  return c;
 }}
 function layoutOff(){if(LAYOUT_ON&&ROOMS[LAYOUT_ON.room]){ROOMS[LAYOUT_ON.room].items=LAYOUT_ON.items}LAYOUT_ON=null}
-{const _co=classOut;classOut=async function(c,line){try{for(const s of c.seats||[])if(s.present&&A[s.who])hold(s.who,null);return await _co(c,line)}finally{layoutOff()}}}
-{const _br=buildRoom;buildRoom=function(room){layoutOff();return _br(room)}}
+{const _co=classOut;classOut=async function(c,line){try{for(const s of c.seats||[])if(s.present&&A[s.who])hold(s.who,null);return await _co(c,line)}finally{const v=D&&D.f&&D.f.lay&&LAYOUT_ON&&D.f.lay[LAYOUT_ON.room];if(!v)layoutOff()}}}
+{const _br=buildRoom;buildRoom=function(room){layoutOff();const r=_br(room);
+ /* the room stays set up the way it was for today's lesson (carpet, horseshoe...) until the next lesson in it */
+ try{const v=D&&D.f&&D.f.lay&&D.f.lay[room];if(v&&v[0]!=='rows'&&LAYOUT[v[0]]&&ROOMS[room]){const lay=LAYOUT[v[0]](room,v[1]);LAYOUT_ON={room,items:ROOMS[room].items};ROOMS[room].items=lay.items}}catch(e){}
+ return r}}
 
 </script>
 <script>
@@ -22780,11 +22784,14 @@ function spPatrol(id,sp){if(!A[id]&&K[id]){const f=floorOf(D.room);put(id,A.you.
 function setPiece(re,cfg){const s=SPOTS.find(s=>re.test(s.label||''));if(!s)return;const orig=s.run;
  s.run=async function(){if(TEST)return orig.apply(this,arguments);
   if(!SPC||SPC.cfg!==cfg){SPC={cfg,x:s.x,room:s.room,id:cfg.patrol};await cfg.intro();if(SPC&&cfg.patrol)spPatrol(cfg.patrol,cfg.sp);if(cfg.during){const go=()=>{if(!SPC||SPC.cfg!==cfg||SPC.did)return;if(busy||panelMode!=='roam'||(PAT&&PAT.state==='chase'))return setTimeout(go,800);SPC.did=1;runHook({run:async()=>{await cfg.during();return 'stay'}})};setTimeout(go,cfg.duringAt||7000)}toast(cfg.obj);return 'stay'}
-  if(typeof PAT!=='undefined'&&PAT&&PAT.state==='chase')return 'stay';const saved=PAT;PAT=null;
-  if(typeof camZoom==='function')await camZoom(A.you.x,A.you.y-18,1.6,300);
-  const ok=await cfg.game();if(typeof camZoom==='function')await camZoom();
-  if(!ok){PAT=saved;if(PAT){PAT.state='chase';PAT.alert=1.05}await N(cfg.failLine||'Too loud. They heard that.');return 'stay'}
-  const id=SPC.id;spEnd();if(cfg.before)await cfg.before();const r=await orig.apply(this,arguments);if(cfg.after)await cfg.after();cue('romance');return r||'stay'}}
+  if(typeof PAT!=='undefined'&&PAT&&PAT.state==='chase')return 'stay';const saved=PAT;if(PAT){PAT.state='script';const tt=A[PAT.id];if(tt){tt.dir=A.you.x>tt.x?-1:1;tt.moving=false;tt.pose=null}}
+  const ok=await cfg.game();
+  if(!ok){PAT=saved;if(PAT){PAT.state='chase';PAT.alert=1.05;A[PAT.id]&&(A[PAT.id].dir=A.you.x>A[PAT.id].x?1:-1)}await N(cfg.failLine||'Too loud. They heard that.');return 'stay'}
+  if(typeof SNK!=='undefined')SNK.hold=1;
+  try{const tt=PAT&&A[PAT.id];PAT=null;if(tt){const L={shermian:['shermian','(her phone buzzes. She reads it. She goes bright red.) …Gerald. NOW? …Fine. FINE.','blush'],voss:['voss','(a knock at the far door) Pamela? …Coming, coming.','happy'],adam:['adam','(his walkie crackles) …On my way. Nobody touch the laminator.','cold']}[tt.id]||[tt.id,'(checking the time) …I’ll deal with you later, whoever you are.','cold'];
+    if(tt.id==='shermian')pose(tt.id,'phone');await say(L[0],L[1],L[2]);pose(tt.id,null);await walk(tt.id,tt.x<160?-30:350,70);remove(tt.id);await N('The door clicks shut behind her. You’re alone in the dark.'.replace('her',tt.id==='shermian'?'her':'him'))}
+   spEnd();if(cfg.before)await cfg.before();const r=await orig.apply(this,arguments);if(cfg.after)await cfg.after();cue('romance');return r||'stay'}
+  finally{if(typeof SNK!=='undefined')SNK.hold=0}}}
 {const _er=enterRoom;enterRoom=async function(room){if(SPC&&room!==SPC.room){SPC=null}return _er(room)}}
 {const _hi=hideIn;hideIn=function(d){if(SPC&&A.you&&Math.abs(A.you.x-SPC.x)<14){const s=SPOTS.find(s=>s.room===D.room&&s.x===SPC.x);if(s)return useSpot(s)}return _hi(d)}}
 {const _do=HOOK.drawOver;HOOK.drawOver=(...x)=>{_do&&_do(...x);if(!SPC||TEST||ROOM!==SPC.room||panelMode!=='roam')return;const y=118+(Math.sin(T*5)>0?1:0);R(SPC.x-3,y,7,2,'#ff6a5a');R(SPC.x-2,y+2,5,2,'#ff6a5a');R(SPC.x-1,y+4,3,2,'#ff6a5a');const t='OBJECTIVE';pxc(t,SPC.x,y-9,'#ff6a5a')}}
@@ -22913,7 +22920,7 @@ const SNK={on:false,crouch:false,light:true,grab:null,side:1,vent:false,vx:0,cra
 const snkDarkBase=()=>(typeof BI!=='undefined'&&BI.on)||(typeof LDS!=='undefined'&&LDS.on&&typeof SPC!=='undefined'&&SPC);
 const snkDark=()=>snkDarkBase()||SNK.blind>.05;
 const snkDA=()=>snkDarkBase()?1:SNK.blind;
-const sneakActive=()=>!TEST&&D&&A.you&&ROOM===D.room&&((typeof SPC!=='undefined'&&SPC&&ROOM===SPC.room&&PAT)||(typeof BI!=='undefined'&&BI.on));
+const sneakActive=()=>!TEST&&D&&A.you&&ROOM===D.room&&((typeof SPC!=='undefined'&&SPC&&ROOM===SPC.room&&(PAT||SNK.on))||SNK.hold&&SNK.on||(typeof BI!=='undefined'&&BI.on));
 function snkSetup(){
  const f=floorOf(D.room),ox=typeof SPC!=='undefined'&&SPC?SPC.x:198,px_=A.you.x;
  const ga=clamp(ox+(ox<160?16:-16),24,296),gb=clamp(px_+(px_<160?34:-34),24,296);const xs=[ga];if(Math.abs(gb-ga)>=40)xs.push(gb);if(Math.abs(gb-ga)>=90)xs.splice(1,0,Math.round((ga+gb)/2));else xs.push(clamp(ga+(ga<160?110:-110),24,296));
@@ -22985,8 +22992,8 @@ function snkBtns(on){let b=$('snkb');if(!b&&on){b=document.createElement('div');
  _hu&&_hu(dt,rdt);
  if(!A.you||!SNK.on)return;
  /* camera */
- if(free){const tx=a.x,ty=SNK.vent?112:a.y-24;if(CAM.z!==2){CAM.z=2;CAM.x=tx;CAM.y=ty;fxState.flash=.35;fxState.flashC='#000'}const k=Math.min(1,rdt*5);CAM.x+=(tx-CAM.x)*k;CAM.y+=(ty-CAM.y)*k;SNK.lastZ=2}
- else if(SNK.wasFree&&CAM.z===2)CAM.z=1;
+ 
+ 
  SNK.wasFree=free;
  if(!free)return;
  /* in the vent */
@@ -23074,60 +23081,50 @@ function snkScreen(){if(!SNK.on||!A.you||ROOM!==D.room||TEST)return;g.setTransfo
 let REDV2=null;
 {const _dr=draw;draw=function(){_dr();try{snkScreen()}catch(e){if(TEST)throw e}}}
 {const _er=enterRoom;enterRoom=async function(r){if(SNK.on)snkStop();return _er(r)}}
-/* the close camera: cinema's zoom is reset by the engine every frame, so sneak mode draws its own */
-{const _zd=zDraw;zDraw=function(){if(!SNK.on||TEST||Math.abs(CAM.z-1)<.01)return _zd();const z=CAM.z,cx=clamp(CAM.x,W/2/z,W-W/2/z),cy=clamp(CAM.y,H/2/z,H-H/2/z);
- g.imageSmoothingEnabled=false;g.setTransform(z,0,0,z,Math.round(W/2-cx*z),Math.round(H/2-cy*z));g._zm=1;try{_DRAW0()}finally{g._zm=0;g.setTransform(1,0,0,1,0,0)}}}
+
 
 /* ---------- the vent, full screen ---------- */
 const VF=138;   /* duct floor, screen y */
 function ventScreen(){
- const vcx=clamp(SNK.vx,80,240),SV=wx=>Math.round(W/2+(wx-vcx)*2),dk=snkDark(),t=PAT&&A[PAT.id],p=SNK.peek;
+ /* 1:1 scale, the whole duct on screen: a cramped crawlspace above the room */
+ const SV=wx=>Math.round(wx),dk=snkDark(),t=PAT&&A[PAT.id],p=SNK.peek,TOP=VF-40;
  const lo=Math.max(14,Math.min(...SNK.grates.map(q=>q.x))-20),hi=Math.min(306,Math.max(...SNK.grates.map(q=>q.x))+20);
- /* shell */
  R(0,0,W,H,'#07080b');
- const wg=g.createLinearGradient(0,22,0,VF);wg.addColorStop(0,'#14171d');wg.addColorStop(.55,'#232832');wg.addColorStop(1,'#181b22');g.fillStyle=wg;g.fillRect(0,22,W,VF-22);
- R(0,8,W,14,'#2a2e36');R(0,20,W,2,'#3c414b');R(0,22,W,1,'#0c0d10');
- for(let wx=Math.floor((vcx-90)/24)*24;wx<vcx+90;wx+=24){const s=SV(wx);R(s,22,2,VF-22,'#11131a');R(s+2,22,1,VF-22,'#30353f');for(const yy of[13,30,VF-6])R(s-4,yy,2,2,'#5a606a');R(s-4,14,1,1,'#8a909a')}
- for(let i=0;i<40;i++){const wx=lo+((i*47.3)%(hi-lo)),s=SV(wx);R(s,VF-1-(i%2),2+(i%3),1,'#3a3f48')}
- for(let i=0;i<6;i++){const wx=lo+((i*83.1)%(hi-lo)),s=SV(wx);g.globalAlpha=.25;for(let k=0;k<8;k++)R(s+k,23+Math.round(Math.sin(k)*2)+k,1,1,'#9aa0aa');g.globalAlpha=1}
- /* ends of the duct */
- if(SV(lo)>0)R(0,8,SV(lo),VF+12,'#050507');if(SV(hi)<W)R(SV(hi),8,W-SV(hi),VF+12,'#050507');
- /* floor */
- R(0,VF,W,3,'#4a505a');R(0,VF+3,W,9,'#2a2e36');R(0,VF+12,W,1,'#0c0d10');
- /* teacher underneath: light and shadow leaking through the floor seams */
- if(t&&!t.dead){const s=SV(t.x);if(s>-30&&s<W+30){g.save();g.globalCompositeOperation='lighter';const lg=g.createRadialGradient(s,VF+6,1,s,VF+6,34);const c=dk?'255,220,150':'255,240,210';lg.addColorStop(0,'rgba('+c+','+(dk?.5:.22)+')');lg.addColorStop(1,'rgba('+c+',0)');g.fillStyle=lg;g.fillRect(s-34,VF-20,68,40);g.restore();
-  for(let k=-10;k<=10;k+=4)R(s+k+Math.round(Math.sin(T*6+k)),VF+3,2,1,'#0a0a0c')}}
+ /* above the duct: beams, pipes, insulation */
+ for(let x=0;x<W;x+=40){R(x,0,6,TOP,'#14161b');R(x+6,0,1,TOP,'#1e2128')}
+ R(0,TOP-30,W,4,'#2a2420');R(0,TOP-29,W,1,'#3a332c');R(0,TOP-18,W,3,'#30343c');R(0,TOP-18,W,1,'#454a54');
+ for(let i=0;i<14;i++){const x=(i*61.3)%W;g.globalAlpha=.25;R(x,TOP-12,10,4,'#c8b080');g.globalAlpha=1}
+ /* the duct */
+ const wg=g.createLinearGradient(0,TOP,0,VF);wg.addColorStop(0,'#151820');wg.addColorStop(.5,'#232832');wg.addColorStop(1,'#181b22');g.fillStyle=wg;g.fillRect(0,TOP,W,VF-TOP);
+ R(0,TOP-6,W,6,'#2a2e36');R(0,TOP-1,W,1,'#3c414b');
+ for(let wx=0;wx<W;wx+=24){R(wx,TOP,1,VF-TOP,'#11131a');R(wx+1,TOP,1,VF-TOP,'#2c313a');R(wx-2,TOP-4,1,1,'#6a707a');R(wx-2,VF+4,1,1,'#6a707a')}
+ for(let i=0;i<30;i++){const wx=lo+((i*47.3)%(hi-lo));R(wx,VF-1,1+(i%3),1,'#3a3f48')}
+ if(lo>0)R(0,TOP-6,lo,VF-TOP+18,'#050507');if(hi<W)R(hi,TOP-6,W-hi,VF-TOP+18,'#050507');
+ R(0,VF,W,2,'#4a505a');R(0,VF+2,W,6,'#2a2e36');R(0,VF+8,W,1,'#0c0d10');
+ /* the teacher underneath: light and shadow through the floor seams */
+ if(t&&!t.dead){const s=SV(t.x);g.save();g.globalCompositeOperation='lighter';const lg=g.createRadialGradient(s,VF+4,1,s,VF+4,22);const c=dk?'255,220,150':'255,240,210';lg.addColorStop(0,'rgba('+c+','+(dk?.5:.22)+')');lg.addColorStop(1,'rgba('+c+',0)');g.fillStyle=lg;g.fillRect(s-22,VF-14,44,26);g.restore();
+  for(let k=-6;k<=6;k+=3)R(s+k+Math.round(Math.sin(T*6+k)),VF+2,1,1,'#0a0a0c')}
  /* grates */
- for(const q of SNK.grates){const s=SV(q.x);if(s<-24||s>W+24)continue;const hw=16;
-  const under=t&&!t.dead&&Math.abs(t.x-q.x)<16;
-  R(s-hw,VF,hw*2,12,dk?'#020203':'#2a2418');
-  if(!dk){g.save();g.globalCompositeOperation='lighter';const lg=g.createLinearGradient(0,VF+12,0,VF-40);lg.addColorStop(0,'rgba(255,236,190,.28)');lg.addColorStop(1,'rgba(255,236,190,0)');g.fillStyle=lg;g.fillRect(s-hw-4,VF-40,hw*2+8,52);g.restore()}
-  if(under&&(!p||p.g!==q||p.ph==='walk')){const hs=SV(t.x);const k=K[t.id]||{};R(hs-6,VF+4,12,8,k.hair||'#3a2a20');R(hs-4,VF+3,8,2,k.hair||'#3a2a20');if(dk){g.save();g.globalCompositeOperation='lighter';R(hs+(t.dir||1)*8-3,VF+6,6,4,'rgba(255,230,160,.6)');g.restore()}}
-  const op=q.open||0,jit=p&&p.g===q&&p.ph==='grip'?Math.round(Math.sin(T*40)*1):0;
-  if(op<1){const hh=Math.round(12*(1-op));for(let i=0;i<5;i++){const y=VF+1+Math.round(i*hh/5);if(i*hh/5<hh)R(s-hw+2+jit,y,hw*2-4,1,'#7a808a')}R(s-hw+jit,VF,1,12,'#5a606a');R(s+hw-1+jit,VF,1,12,'#5a606a')}
-  else{R(s-hw,VF+10,hw*2,2,'#7a808a')}
-  /* fingers through the slats */
-  if(p&&p.g===q&&p.ph==='grip'){const k=K[t.id]||{};const sk=k.skin||'#e0b090';for(let f=0;f<4;f++){const fx=s-9+f*4+(f>1?4:0),up=Math.round(2+Math.abs(Math.sin(T*9+f))*3);R(fx+jit,VF-up+2,2,up,sk);R(fx+jit,VF-up+2,2,1,'#f4d0b0')}}
-  /* face in the hole */
+ for(const q of SNK.grates){const s=SV(q.x),hw=8,under=t&&!t.dead&&Math.abs(t.x-q.x)<10;
+  R(s-hw,VF,hw*2,8,dk?'#020203':'#2a2418');
+  if(!dk){g.save();g.globalCompositeOperation='lighter';const lg=g.createLinearGradient(0,VF+8,0,VF-24);lg.addColorStop(0,'rgba(255,236,190,.25)');lg.addColorStop(1,'rgba(255,236,190,0)');g.fillStyle=lg;g.fillRect(s-hw-2,VF-24,hw*2+4,32);g.restore()}
+  if(under&&(!p||p.g!==q||p.ph==='walk')){const k=K[t.id]||{};R(s+(t.x-q.x)-4,VF+3,8,5,k.hair||'#3a2a20')}
+  const op=q.open||0,jit=p&&p.g===q&&p.ph==='grip'?Math.round(Math.sin(T*40)):0;
+  if(op<1){const hh=Math.round(8*(1-op));for(let i=0;i<4;i++){const y=VF+1+Math.round(i*hh/4);if(i*hh/4<hh)R(s-hw+1+jit,y,hw*2-2,1,'#7a808a')}R(s-hw+jit,VF,1,8,'#5a606a');R(s+hw-1+jit,VF,1,8,'#5a606a')}
+  else R(s-hw,VF+7,hw*2,1,'#7a808a');
+  if(p&&p.g===q&&p.ph==='grip'){const sk=(K[t.id]||{}).skin||'#e0b090';for(let f=0;f<4;f++){const fx=s-6+f*3+(f>1?2:0),up=1+Math.round(Math.abs(Math.sin(T*9+f))*2);R(fx+jit,VF-up+1,1,up,sk)}}
   if(p&&p.g===q&&(p.ph==='open'||p.ph==='look')&&t){const rise=p.ph==='open'?Math.min(1,(T-p.t0)/.5):1;
-   g.save();g.beginPath();g.rect(s-hw,VF-40,hw*2,40+12);g.clip();
-   g.setTransform(2,0,0,2,W/2-vcx*2,0);drawCopy(t,{x:q.x,y:Math.round((VF+12+70-26*rise)/2),dir:Math.sign(SNK.vx-q.x)||1,pose:p.ph==='look'?'reach':null,alpha:1,moving:false,ex:'cold',back:0,hold:null});g.setTransform(1,0,0,1,0,0);g.restore()}}
+   g.save();g.beginPath();g.rect(s-hw,VF-24,hw*2,32);g.clip();drawCopy(t,{x:q.x,y:Math.round(VF+42-14*rise),dir:Math.sign(SNK.vx-q.x)||1,pose:p.ph==='look'?'reach':null,alpha:1,moving:false,ex:'cold',back:0,hold:null,torch:null});g.restore()}}
  /* the beam */
- if(p&&p.ph==='look'){const s=SV(p.g.x),len=42*2,bx=s+p.side*len,ey=VF-16;g.save();g.globalCompositeOperation='lighter';const lg=g.createLinearGradient(s,0,bx,0);lg.addColorStop(0,'rgba(255,240,190,.7)');lg.addColorStop(1,'rgba(255,240,190,0)');g.fillStyle=lg;g.beginPath();g.moveTo(s,ey-3);g.lineTo(bx,ey-34);g.lineTo(bx,VF+2);g.lineTo(s,ey+3);g.closePath();g.fill();g.restore()}
- /* you, crouch-crawling */
- const a=A.you;g.setTransform(2,0,0,2,W/2-vcx*2,0);drawCopy(a,{x:SNK.vx,y:Math.round(VF/2)+1,alpha:1,pose:'crouch',moving:!!(keys.l||keys.r),back:0,vis:true,hold:null,ex:p&&p.ph==='look'?'scared':a.ex});g.setTransform(1,0,0,1,0,0);
- /* where they are: the strip under the duct */
- const ry=VF+20,rx=v=>Math.round(24+(v-lo)/(hi-lo)*(W-48));R(18,ry-4,W-36,15,'#000000c0');R(24,ry+3,W-48,1,'#3a3e46');
- for(const q of SNK.grates){R(rx(q.x)-2,ry+1,5,5,'#5a606a');R(rx(q.x)-1,ry+2,3,3,'#1c2026')}
- R(rx(SNK.vx)-1,ry,3,7,'#ffe8a0');
- if(t&&!t.dead){const c=PAT.state==='peek'||PAT.state==='chase'?'#ff4a3a':'#ff9a6a';R(rx(clamp(t.x,lo,hi))-1,ry,3,7,c);px((K[t.id]?K[t.id].n:'').toUpperCase(),clamp(rx(clamp(t.x,lo,hi))-10,20,W-70),ry-11,c)}
- px('YOU',clamp(rx(SNK.vx)-6,20,W-40),ry+8,'#ffe8a0');
- if(t&&!t.dead){const s=SV(t.x);if(s<0||s>W){const L=s<0,x=L?6:W-12;R(x,VF-30,6,1,'#ff9a6a');for(let i=0;i<4;i++)R(L?x+i:x+5-i,VF-30-i,1,i*2+1,'#ff9a6a')}}
- /* noise */
- if(SNK.hear>.05&&!p){R(W-64,30,56,7,'#141020');R(W-63,31,Math.round(54*Math.min(1,SNK.hear)),5,SNK.hear>.7?'#ff5a4a':'#ffc860');px('NOISE',W-63,39,'#cbbfd8')}
- if(p&&p.ph==='look'&&p.caught>.15){const fl=Math.sin(T*14)>0;R(W/2-50,44,100,12,'#120206ee');pxc('GET OUT OF THE LIGHT',W/2,47,fl?'#ff6a6a':'#ffd0d0')}
+ if(p&&p.ph==='look'){const s=SV(p.g.x),bx=s+p.side*42,ey=VF-10;g.save();g.globalCompositeOperation='lighter';const lg=g.createLinearGradient(s,0,bx,0);lg.addColorStop(0,'rgba(255,240,190,.7)');lg.addColorStop(1,'rgba(255,240,190,0)');g.fillStyle=lg;g.beginPath();g.moveTo(s,ey-2);g.lineTo(bx,TOP);g.lineTo(bx,VF+1);g.lineTo(s,ey+2);g.closePath();g.fill();g.restore()}
+ /* you, crouch-crawling, normal size */
+ const a=A.you;drawCopy(a,{x:SNK.vx,y:VF,alpha:1,pose:'crouch',moving:!!(keys.l||keys.r),walk:SNK.crawl,back:0,vis:true,hold:null,torch:null,ex:p&&p.ph==='look'?'scared':a.ex});
+ /* who's where */
+ if(t&&!t.dead)pxc((K[t.id]?K[t.id].n:'').toUpperCase(),clamp(SV(t.x),24,W-24),VF+12,PAT.state==='peek'||PAT.state==='chase'?'#ff4a3a':'#ff9a6a');
+ pxc('YOU',SNK.vx,TOP-16,'#ffe8a0');
+ if(SNK.hear>.05&&!p){R(W-64,TOP-26,56,7,'#141020');R(W-63,TOP-25,Math.round(54*Math.min(1,SNK.hear)),5,SNK.hear>.7?'#ff5a4a':'#ffc860');px('NOISE',W-63,TOP-17,'#cbbfd8')}
+ if(p&&p.ph==='look'&&p.caught>.15){const fl=Math.sin(T*14)>0;R(W/2-50,VF+18,100,12,'#120206ee');pxc('GET OUT OF THE LIGHT',W/2,VF+21,fl?'#ff6a6a':'#ffd0d0')}
 }
-
 function drawCopy(a,o){const c=Object.assign({},a,o);c._sx=c._sy=undefined;c._room=undefined;c._pose=c.pose;c._tr=null;c._lie=0;try{drawActor(c)}catch(e){if(TEST)throw e}}
 
 
@@ -23174,6 +23171,16 @@ function snkGoal(){if(typeof BI!=='undefined'&&BI.on)return BI.got?{x:20,t:'GET 
  if(want&&!a.dead&&a.pose!=='reach'&&a.pose!=='grab')a.torch=want;else if(a.torch)a.torch=null;
  drawKid._lens=null;const r=_da(a);
  if(a.torch&&drawKid._lens){a._lensW={x:Math.round(a.x)+drawKid._lens.dx,y:Math.round(a.y-(a.z||0))+drawKid._lens.dy};a._lensT=T}return r}}
+/* ---------- in the vent: where to drop out ---------- */
+{const _vs=ventScreen;ventScreen=function(){_vs();const gl=snkGoal();if(!gl||!SNK.grates.length)return;
+ const tgt=SNK.grates.slice().sort((p,q)=>Math.abs(p.x-gl.x)-Math.abs(q.x-gl.x))[0],s=Math.round(tgt.x),pu=Math.sin(T*5)>0?1:0,TOP=VF-40;
+ R(s,VF-14+pu,1,5,'#ff6a5a');for(let i=0;i<3;i++)R(s-2+i,VF-9+pu+i,5-i*2,1,'#ff6a5a');pxc('DROP HERE',s,VF-22+pu,'#ff8a7a');
+ const at=Math.abs(SNK.vx-tgt.x)<9,dir=tgt.x<SNK.vx?'LEFT':'RIGHT';
+ const txt=at?'PRESS DOWN TO DROP OUT HERE':'CRAWL '+dir+' TO DROP HERE, THEN PRESS DOWN';const w=pxw(txt)+8;R(W/2-w/2,44,w,9,'#000000b0');pxc(txt,W/2,46,'#ff9a8a');
+ const t2='GOAL: '+gl.t;const w2=pxw(t2)+8;R(W/2-w2/2,56,w2,9,'#000000b0');pxc(t2,W/2,58,'#cbbfd8')}}
+{const _cl=snkClimb;snkClimb=async function(g){const r=await _cl(g);if(!P.f)P.f={};if(!P.f.ventTip){P.f.ventTip=1;toast('You’re in the vents. Crawl to the grate marked DROP HERE and press DOWN. Go slow near the teacher: they can hear you.')}return r}}
+/* mini-games and the guide sit above the dark */
+{const _do=HOOK.drawOver;HOOK.drawOver=(...x)=>{_do&&_do(...x);if(SNK.on&&!TEST&&typeof VG!=='undefined'&&VG&&VG.draw)VG.draw()}}
 
 </script>
 <script>

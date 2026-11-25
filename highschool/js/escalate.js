@@ -122,11 +122,14 @@ function spPatrol(id,sp){if(!A[id]&&K[id]){const f=floorOf(D.room);put(id,A.you.
 function setPiece(re,cfg){const s=SPOTS.find(s=>re.test(s.label||''));if(!s)return;const orig=s.run;
  s.run=async function(){if(TEST)return orig.apply(this,arguments);
   if(!SPC||SPC.cfg!==cfg){SPC={cfg,x:s.x,room:s.room,id:cfg.patrol};await cfg.intro();if(SPC&&cfg.patrol)spPatrol(cfg.patrol,cfg.sp);if(cfg.during){const go=()=>{if(!SPC||SPC.cfg!==cfg||SPC.did)return;if(busy||panelMode!=='roam'||(PAT&&PAT.state==='chase'))return setTimeout(go,800);SPC.did=1;runHook({run:async()=>{await cfg.during();return 'stay'}})};setTimeout(go,cfg.duringAt||7000)}toast(cfg.obj);return 'stay'}
-  if(typeof PAT!=='undefined'&&PAT&&PAT.state==='chase')return 'stay';const saved=PAT;PAT=null;
-  if(typeof camZoom==='function')await camZoom(A.you.x,A.you.y-18,1.6,300);
-  const ok=await cfg.game();if(typeof camZoom==='function')await camZoom();
-  if(!ok){PAT=saved;if(PAT){PAT.state='chase';PAT.alert=1.05}await N(cfg.failLine||'Too loud. They heard that.');return 'stay'}
-  const id=SPC.id;spEnd();if(cfg.before)await cfg.before();const r=await orig.apply(this,arguments);if(cfg.after)await cfg.after();cue('romance');return r||'stay'}}
+  if(typeof PAT!=='undefined'&&PAT&&PAT.state==='chase')return 'stay';const saved=PAT;if(PAT){PAT.state='script';const tt=A[PAT.id];if(tt){tt.dir=A.you.x>tt.x?-1:1;tt.moving=false;tt.pose=null}}
+  const ok=await cfg.game();
+  if(!ok){PAT=saved;if(PAT){PAT.state='chase';PAT.alert=1.05;A[PAT.id]&&(A[PAT.id].dir=A.you.x>A[PAT.id].x?1:-1)}await N(cfg.failLine||'Too loud. They heard that.');return 'stay'}
+  if(typeof SNK!=='undefined')SNK.hold=1;
+  try{const tt=PAT&&A[PAT.id];PAT=null;if(tt){const L={shermian:['shermian','(her phone buzzes. She reads it. She goes bright red.) …Gerald. NOW? …Fine. FINE.','blush'],voss:['voss','(a knock at the far door) Pamela? …Coming, coming.','happy'],adam:['adam','(his walkie crackles) …On my way. Nobody touch the laminator.','cold']}[tt.id]||[tt.id,'(checking the time) …I’ll deal with you later, whoever you are.','cold'];
+    if(tt.id==='shermian')pose(tt.id,'phone');await say(L[0],L[1],L[2]);pose(tt.id,null);await walk(tt.id,tt.x<160?-30:350,70);remove(tt.id);await N('The door clicks shut behind her. You’re alone in the dark.'.replace('her',tt.id==='shermian'?'her':'him'))}
+   spEnd();if(cfg.before)await cfg.before();const r=await orig.apply(this,arguments);if(cfg.after)await cfg.after();cue('romance');return r||'stay'}
+  finally{if(typeof SNK!=='undefined')SNK.hold=0}}}
 {const _er=enterRoom;enterRoom=async function(room){if(SPC&&room!==SPC.room){SPC=null}return _er(room)}}
 {const _hi=hideIn;hideIn=function(d){if(SPC&&A.you&&Math.abs(A.you.x-SPC.x)<14){const s=SPOTS.find(s=>s.room===D.room&&s.x===SPC.x);if(s)return useSpot(s)}return _hi(d)}}
 {const _do=HOOK.drawOver;HOOK.drawOver=(...x)=>{_do&&_do(...x);if(!SPC||TEST||ROOM!==SPC.room||panelMode!=='roam')return;const y=118+(Math.sin(T*5)>0?1:0);R(SPC.x-3,y,7,2,'#ff6a5a');R(SPC.x-2,y+2,5,2,'#ff6a5a');R(SPC.x-1,y+4,3,2,'#ff6a5a');const t='OBJECTIVE';pxc(t,SPC.x,y-9,'#ff6a5a')}}
