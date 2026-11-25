@@ -136,7 +136,7 @@ chaos('trailerTip',['walkway'],[0,2,4],.15,async()=>{
 /* when you walk in, maybe it’s already going off */
 {const _er=enterRoom;enterRoom=async function(room){
  const r=await _er(room);
- if(TEST||!D||D.weekend||busy||panelMode!=='roam')return r;
+ if(TEST||!D||D.weekend||busy||panelMode!=='roam'||(typeof atHome==='function'&&atHome()))return r;
  D.f.chaos=D.f.chaos||{};
  if(D.f.chaos['p'+cal()+'_'+D.period])return r;
  const c=Object.entries(CHX).filter(([id,e])=>e.rooms.includes(room)&&e.periods.includes(D.period)&&!chaosDone(id)&&(!e.cond||e.cond())&&Math.random()<e.chance);

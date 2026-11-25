@@ -23,7 +23,7 @@ DEFAULT_SET.text=3;
 
 const RT={next:0,ev:null,grab:null,streak:0,objs:[]};
 const RT_ROOMS=new Set(['corridor','hallb','upper','wing_sci','wing_arts','wing_sports','walkway','canteen','field','bus','gym','courtyard','toilets']);
-const liveOk=()=>!TEST&&D&&!D.weekend&&panelMode==='roam'&&!busy&&A.you&&RT_ROOMS.has(D.room)&&ROOM===D.room&&!anyOverlay()&&!(typeof PAT!=='undefined'&&PAT);
+const liveOk=()=>!TEST&&D&&!(typeof atHome==='function'&&atHome())&&!D.weekend&&panelMode==='roam'&&!busy&&A.you&&RT_ROOMS.has(D.room)&&ROOM===D.room&&!anyOverlay()&&!(typeof PAT!=='undefined'&&PAT);
 function liveSchedule(s){RT.next=T+(s!=null?s:30+Math.random()*15)}
 liveSchedule(12);
 function liveToast(t){toast(t)}

@@ -89,7 +89,7 @@ const COMP=[
    const ok=await vgRace(id);if(ok){D.money=(D.money||0)+2;updateLoc();await N('You get there first, wheezing. '+K[id].n+' owes you snacks. +$2.')}else{D.money=Math.max(0,(D.money||0)-2);updateLoc();await N(K[id].n+' wins by a mile and does a little dance. You owe snacks. -$2.')}return ok}}];
 let COMP_T=-99;
 {const _rh=runHook;runHook=async function(h){
- try{if(!TEST&&h&&h.mis&&MIS[h.mis]&&!h._comp&&(D.mp[h.mis]||0)>0&&!D.done[h.mis]&&!/^(cq_|wk_|ret_)/.test(h.mis)&&!['passing','gigs','robbery','lockedroom','crew'].includes(h.mis)&&!(typeof FILTHY!=='undefined'&&FILTHY.includes(h.mis))&&!busy&&D&&!D.weekend&&T-COMP_T>50&&Math.random()<.45&&panelMode==='roam'){
+ try{if(!TEST&&h&&h.mis&&MIS[h.mis]&&!h._comp&&(D.mp[h.mis]||0)>0&&!D.done[h.mis]&&!/^(cq_|wk_|ret_)/.test(h.mis)&&!['passing','gigs','robbery','lockedroom','crew'].includes(h.mis)&&!(typeof FILTHY!=='undefined'&&FILTHY.includes(h.mis))&&!busy&&D&&!(typeof atHome==='function'&&atHome())&&!D.weekend&&T-COMP_T>50&&Math.random()<.45&&panelMode==='roam'){
   COMP_T=T;const tot=COMP.reduce((s,c)=>s+c.w,0);let r=Math.random()*tot,c=COMP[0];for(const x of COMP){r-=x.w;if(r<=0){c=x;break}}
   await _rh({_comp:1,run:async()=>{await c.run();D.f.compDone=(D.f.compDone||0)+1;return 'stay'}});
   if(busy)return}}catch(e){console.error(e)}
@@ -121,4 +121,4 @@ if(CHX.hallfight){const _r=CHX.hallfight.run;CHX.hallfight.run=async()=>{challEv
  m.appendChild(qel('h4','','TODAY’S CHALLENGES  ·  $5 + 🍎 each, $10 for all three'));
  for(const c of l)m.appendChild(qel('div','act',(c.done?'✔ ':'▢ ')+c.t+'  ('+Math.min(c.c,c.n)+'/'+c.n+')'));
  const first=body.querySelector('.qsec');body.insertBefore(box,first||null)}}
-ON_PERIOD.push(async(i,resume)=>{if(resume||!D||D.weekend||TEST||i!==0)return;const l=challToday();setTimeout(()=>toast('🏆 Today: '+l.map(c=>c.t).join(' · ')),6000)});
+ON_PERIOD.push(async(i,resume)=>{if(resume||!D||D.weekend||TEST||i!==0)return;const l=challToday();const show=()=>{if(typeof atHome==='function'&&atHome())return setTimeout(show,3000);toast('🏆 Today: '+l.map(c=>c.t).join(' · '))};setTimeout(show,6000)});
