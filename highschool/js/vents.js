@@ -32,7 +32,7 @@ function snkSetup(){
  SNK.crates=[prop({t:'crate',x:clamp(near.x+(near.x<160?28:-28),18,302),y:f[0]+12}),prop({t:'crate',x:clamp(obj.x+(obj.x<160?30:-30),18,302),y:f[0]+12})];
 }
 function snkStart(){SNK.blind=0;SNK.blindDone=0;if(typeof SPC!=='undefined'&&SPC&&!snkDarkBase())setTimeout(snkBlinds,700);SNK.on=true;SNK.crouch=false;SNK.light=true;SNK.grab=null;SNK.vent=false;SNK.peek=null;SNK.hear=0;SNK.noise=0;SNK.cool=T+6;snkSetup();snkBtns(true);
- if(!P.f)P.f={};if(!P.f.snkTip){P.f.snkTip=1;setTimeout(()=>toast('SNEAK MODE: C crouch · E drag a box · stand on a box under a vent and press UP · V flashlight in the dark'),900)}}
+ SNK.intro=[];if(!P.f)P.f={};if(!P.f.snkTip){P.f.snkTip=1;SNK.intro.push({t:'SNEAK: C CROUCH   E DRAG A BOX   UP INTO A VENT',until:T+6})}}
 function snkStop(){SNK.blind=0;SNK.blindDone=1;if(SNK.vent)snkUnvent();for(const p of SNK.crates.concat(SNK.grates))p.hide=1;
  for(const p of SNK.crates.concat(SNK.grates)){const i=props.indexOf(p);if(i>=0)props.splice(i,1)}
  SNK.crates=[];SNK.grates=[];SNK.on=false;SNK.grab=null;SNK.peek=null;if(A.you&&A.you.pose==='crouch')A.you.pose=null;snkBtns(false);
@@ -52,7 +52,7 @@ const nearCrate=()=>SNK.crates.find(c=>Math.abs(c.x-A.you.x)<16);
 const grateAt=x=>SNK.grates.find(g=>Math.abs(g.x-x)<11);
 const canClimb=()=>{const g=grateAt(A.you.x);if(!g)return null;const c=SNK.crates.find(c=>Math.abs(c.x-g.x)<11&&Math.abs(c.x-A.you.x)<13);return c?g:false};
 function covered(){if(!SNK.crouch||!PAT||SNK.grab)return false;const t=A[PAT.id];if(!t)return false;const s=Math.sign(t.x-A.you.x);return SNK.crates.some(c=>Math.abs(c.x-A.you.x)<19&&Math.sign(c.x-A.you.x)===s)}
-function snkSay(id,t){SNK.line={id,t,until:T+2.6}}
+function snkSay(id,t){t=String(t).replace(/\([^)]*\)\s*/g,'').replace(/,/g,'').trim()||'…';SNK.line={id,t,until:T+2.6}}
 async function snkClimb(g){const a=A.you;SNK.anim=true;SNK.crouch=false;a.pose='reach';a.dir=g.x>a.x?1:-1;await tw(a,{x:g.x,y:a.y-12},260,'out');SFX.locker&&SFX.locker();g.open=1;await tw(a,{alpha:0},200);
  SNK.vent=true;SNK.vx=g.x;HIDE={x:a.x,y:floorOf(D.room)[0]+10,d:{x:g.x}};a.pose=null;g.open=0;SNK.anim=false;
  if(PAT&&PAT.state==='chase'){const t=A[PAT.id];if(t&&Math.abs(t.x-a.x)<90){PAT.knows=1;snkPeek(g,true)}}}
@@ -147,7 +147,7 @@ function cone(c,x,y,dir,len,spread,rgb,al){const gr=c.createRadialGradient(x,y,1
   if(!SNK.vent&&a.torch==='on')glow(handOf(a),9);if(t&&!t.dead)glow(handOf(t),10);
   if(t&&!t.dead){const h=handOf(t);if(t.id==='voss'){const lg=lcx.createRadialGradient(h.x,h.y,1,h.x,h.y,40);lg.addColorStop(0,'rgba(0,0,0,1)');lg.addColorStop(1,'rgba(0,0,0,0)');lcx.fillStyle=lg;lcx.fillRect(0,0,W,H)}
    if(SNK.peek&&SNK.peek.ph!=='walk'){const gq=SNK.peek.g;const lg=lcx.createRadialGradient(gq.x,gq.y,1,gq.x,gq.y,30);lg.addColorStop(0,'rgba(0,0,0,1)');lg.addColorStop(1,'rgba(0,0,0,0)');lcx.fillStyle=lg;lcx.fillRect(0,0,W,H)}
-   else cone(lcx,h.x,h.y,t.dir||1,100,24,'0,0,0',1)}
+   else cone(lcx,h.x,h.y,t.dir||1,SNK.coneLen||100,SNK.coneW||24,'0,0,0',1)}
   g.drawImage(LCV,0,0);
   /* things you can use stay readable in the dark */
   g.save();g.globalAlpha=.55*snkDA()+(1-snkDA());for(const q of SNK.grates)drawProp(q);for(const c of SNK.crates)drawProp(c);g.restore();
@@ -155,15 +155,16 @@ function cone(c,x,y,dir,len,spread,rgb,al){const gr=c.createRadialGradient(x,y,1
   g.save();g.globalCompositeOperation='lighter';
   if(SNK.light&&!SNK.vent&&a.torch==='on'){const h=handOf(a);cone(g,h.x,h.y,a.dir||1,92,22,'255,230,160',.1*snkDA())}
   if(t&&!t.dead){const h=handOf(t);if(t.id==='voss'){const lg=g.createRadialGradient(h.x,h.y,1,h.x,h.y,40);lg.addColorStop(0,'rgba(255,170,80,.35)');lg.addColorStop(1,'rgba(255,170,80,0)');g.fillStyle=lg;g.fillRect(h.x-40,h.y-40,80,80)}
-   if(!SNK.peek)cone(g,h.x,h.y,t.dir||1,100,24,al,.16*snkDA())}
+   if(!SNK.peek)cone(g,h.x,h.y,t.dir||1,SNK.coneLen||100,SNK.coneW||24,al,.16*snkDA())}
   g.restore()}
- else if(t&&!t.dead&&PAT&&PAT.state!=='peek'){const ey=t.y-24;g.save();cone(g,t.x+(t.dir||1)*4,ey+8,t.dir||1,95,24,al,PAT.state==='chase'?.32:.24);g.restore()}
+ else if(t&&!t.dead&&PAT&&(PAT.state!=='peek'&&PAT.state!=='script'||SNK.coneLen)){const ey=t.y-24;g.save();cone(g,t.x+(t.dir||1)*4,ey+8,t.dir||1,SNK.coneLen||95,SNK.coneW||24,al,PAT.state==='chase'?.32:.24);g.restore()}
  /* ?/! */
  if(t&&PAT){const mk=PAT.state==='chase'?'!':PAT.state==='peek'?'?':PAT.alert>.08?'?':'';if(mk){const y=t.y-44-(Math.sin(T*8)>0?1:0);R(t.x-4,y-1,9,10,'#141020');R(t.x-4,y-1,9,1,'rgb('+al+')');
   if(mk==='?'&&PAT.state!=='peek'){g.globalAlpha=.35;R(t.x-3,y+1,7,7,'#ffffff');g.globalAlpha=1;R(t.x-3,y+8-Math.round(7*Math.min(1,PAT.alert)),7,Math.round(7*Math.min(1,PAT.alert)),'rgb('+al+')')}
   pxc(mk,t.x+1,y+1,mk==='!'?'#ffffff':'#2a2030')}}
  /* lines */
- if(SNK.line&&T<SNK.line.until&&A[SNK.line.id]&&!SNK.vent){const s=A[SNK.line.id],w=Math.min(150,pxw(SNK.line.t)+6),x=clamp(s.x-w/2,2,W-w-2),y=s.y-58;R(x,y,w,9,'#f4f0e6');R(x,y+9,w,1,'#2a2030');px(SNK.line.t,x+3,y+2,'#2a2030')}
+ if(SNK.line&&T<SNK.line.until&&A[SNK.line.id]&&!SNK.vent){const s=A[SNK.line.id],ws=SNK.line.t.split(' '),L=[''];for(const w_ of ws){const tr=(L[L.length-1]+' '+w_).trim();if(pxw(tr)>130&&L[L.length-1])L.push(w_);else L[L.length-1]=tr}
+ const w=Math.max(...L.map(l=>pxw(l)))+6,h=L.length*8+2,x=clamp(s.x-w/2,2,W-w-2),y=s.y-50-h;R(x,y,w,h,'#f4f0e6');R(x,y+h,w,1,'#2a2030');L.forEach((l,i)=>px(l,x+3,y+2+i*8,'#2a2030'))}
 }}
 /* ---------- screen space: the different look, the vent cutaway, hints ---------- */
 function crawler(sx,sy,s,dir,ph){const k=K.you,leg=Math.round(Math.sin(ph)*1.5),arm=Math.round(Math.sin(ph+Math.PI)*1.5);const P_=(x,y,w,h,c)=>R(Math.round(sx+(dir>0?x:-x-w)*s),Math.round(sy+y*s),w*s,h*s,c);
@@ -176,11 +177,7 @@ function snkScreen(){if(!SNK.on||!A.you||ROOM!==D.room||TEST)return;g.setTransfo
  g.drawImage(REDV2,0,0);g.globalAlpha=.06;g.fillStyle='#4060a0';g.fillRect(0,0,W,H);g.globalAlpha=1;
  for(let i=0;i<60;i++){g.globalAlpha=.08;R(Math.random()*W|0,Math.random()*H|0,1,1,Math.random()<.5?'#fff':'#000')}g.globalAlpha=1;g.restore();
  R(0,0,W,8,'#000');R(0,H-8,W,8,'#000');
- /* hints */
- let h='';if(SNK.anim)h='';else if(SNK.vent)h=grateAt(SNK.vx)?'DOWN OR E: DROP OUT':'LEFT/RIGHT: CRAWL. QUIET NEAR THEM.';
- else if(SNK.grab)h='DRAGGING. IT SCRAPES. E TO LET GO';else{const gc=canClimb();if(gc)h='UP: CLIMB INTO THE VENT';else if(gc===false)h='VENT. TOO HIGH. DRAG A BOX UNDER IT';else if(nearCrate())h=SNK.crouch?'HIDE BEHIND THE BOX, OR E: GRAB IT':'E: GRAB THE BOX · C: CROUCH BEHIND IT';else h=(SNK.crouch?'CROUCHING':'C: CROUCH')+(snkDark()?' · V: FLASHLIGHT '+(SNK.light?'ON':'OFF'):'')}
- if(h&&!busy&&panelMode==='roam'){const w=pxw(h)+8;R(W/2-w/2,28,w,9,'#000000aa');pxc(h,W/2,30,'#ffe8a0')}
- if(covered()&&!busy){R(W/2-30,39,60,9,'#000000aa');pxc('HIDDEN',W/2,41,'#9ad09a')}}
+}
 let REDV2=null;
 {const _dr=draw;draw=function(){_dr();try{snkScreen()}catch(e){if(TEST)throw e}}}
 {const _er=enterRoom;enterRoom=async function(r){if(SNK.on)snkStop();return _er(r)}}
@@ -240,7 +237,7 @@ async function snkBlinds(){if(!SNK.on||SNK.blindDone||!PAT)return;SNK.blindDone=
   for(let i=0;i<3;i++){SFX.whoosh&&SFX.whoosh();await wait(180)}}
  else{pose(id,'reach');snkSay(id,'Lights off.');SFX.click&&SFX.click();await wait(250)}
  SFX.click&&SFX.click();await tw(SNK,{blind:1},900);if(A[id])pose(id,null);if(PAT&&PAT.id===id)PAT.state='walk';
- toast('The room goes dark. Your flashlight is on (V turns it off: harder to see, harder to be seen).')}
+ (SNK.intro=SNK.intro||[]).push({t:'DARK. V TURNS YOUR FLASHLIGHT OFF: HARDER TO SEE YOU',until:T+5})}
 /* ---------- where to go ---------- */
 function snkGoal(){if(typeof BI!=='undefined'&&BI.on)return BI.got?{x:20,t:'GET BACK TO THE CREW'}:{x:198,t:'GET INTO THE CHEM LAB'};
  if(typeof SPC!=='undefined'&&SPC)return{x:SPC.x,t:(SPC.cfg&&SPC.cfg.goal)||'GET TO THE OBJECTIVE, PRESS E'};return null}
@@ -251,23 +248,27 @@ function snkGoal(){if(typeof BI!=='undefined'&&BI.on)return BI.got?{x:20,t:'GET 
  if(!busy){for(const c of SNK.crates)if(Math.abs(c.x-a.x)<34&&SNK.grab!==c)ring(Math.round(c.x)-10,Math.round(c.y)-17,20,18);
   const gc=canClimb();for(const q of SNK.grates)if(Math.abs(q.x-a.x)<12||gc===q)ring(q.x-11,q.y-7,22,14)}}}
 /* the guide strip, edge arrows and a danger tip, on screen */
-{const _ss=snkScreen;snkScreen=function(){_ss();if(!SNK.on||SNK.vent||!A.you||ROOM!==D.room||TEST||busy)return;g.setTransform(1,0,0,1,0,0);
- const a=A.you,t=PAT&&A[PAT.id],gl=snkGoal(),z=CAM.z,cx=clamp(CAM.x,W/2/z,W-W/2/z),SX=wx=>Math.round(W/2-cx*z)+wx*z;
- /* strip */
- const y=42,rx=v=>Math.round(24+(clamp(v,0,320))/320*(W-48));R(16,y-1,W-32,10,'#000000b8');R(24,y+6,W-48,1,'#3a3e46');
- for(const q of SNK.grates)R(rx(q.x)-2,y+1,5,2,'#7a808a');
- for(const c of SNK.crates)R(rx(c.x)-2,y+4,5,4,'#a8743c');
- if(gl){R(rx(gl.x)-1,y,3,8,'#ff6a5a');R(rx(gl.x)+2,y,3,2,'#ff6a5a')}
- if(t&&!t.dead){const tx=rx(t.x),c=PAT.state==='chase'?'#ff3a2a':'#ff9a6a';R(tx-1,y+1,3,7,c);g.globalAlpha=.5;R(t.dir>0?tx+2:tx-6,y+3,4,3,'#ffd890');g.globalAlpha=1}
- R(rx(a.x)-1,y+1,3,7,'#ffe8a0');
- /* goal line */
- if(gl){const dir=gl.x<a.x-8?'LEFT':gl.x>a.x+8?'RIGHT':'HERE';const txt='GOAL: '+gl.t+(dir==='HERE'?' · PRESS E':' · GO '+dir);const w=pxw(txt)+8;R(W/2-w/2,y+11,w,9,'#000000b0');pxc(txt,W/2,y+13,'#ff9a8a')}
- /* edge arrow to the goal */
- if(gl){const s=SX(gl.x);if(s<6||s>W-6){const L=s<6,x0=L?8:W-14;for(let i=0;i<5;i++)R(L?x0+i:x0+5-i,90-i,1,i*2+1,'#ff6a5a');pxc('GOAL',L?x0+10:x0-6,100,'#ff8a7a')}}
- /* danger tip */
- if(t&&PAT&&PAT.state==='walk'&&PAT.alert>.25&&!covered()){const tip=SNK.crates.some(c=>Math.abs(c.x-a.x)<40)?'SHE SEES SOMETHING. PRESS C, HIDE BEHIND THE BOX':'SHE SEES SOMETHING. GET OUT OF THE LIGHT';const tt=K[t.id]&&/^(Mr|Coach)/.test(K[t.id].n)?tip.replace('SHE','HE'):tip;const w=pxw(tt)+8;R(W/2-w/2,128,w,10,'#300808e0');pxc(tt,W/2,130,Math.sin(T*10)>0?'#ff7a6a':'#ffd0c8')}
- if(t&&PAT&&PAT.state==='chase'){const tt='SPOTTED. RUN. HIDE IN A DOORWAY WITH E, OR A VENT';const w=pxw(tt)+8;R(W/2-w/2,128,w,10,'#300808e0');pxc(tt,W/2,130,'#ff7a6a')}}}
-
+/* ---------- ONE message line: the most important thing right now ---------- */
+function snkMessage(){const a=A.you,t=PAT&&A[PAT.id],gl=snkGoal(),he=t&&K[t.id]&&/^(Mr|Coach)/.test(K[t.id].n)?'HE':'SHE',fl=Math.sin(T*10)>0;
+ const p=SNK.peek;
+ if(p&&p.ph!=='walk')return{t:p.caught>.15?'GET OUT OF THE LIGHT!':'THE GRATE IS OPENING. BACK AWAY FROM IT',c:fl?'#ff6a5a':'#ffd0c8',bg:'#300808'};
+ if(p)return{t:he+' HEARD YOU. CRAWL AWAY FROM THAT GRATE',c:'#ffb0a0',bg:'#300808'};
+ if(t&&PAT&&PAT.state==='chase')return{t:'SPOTTED! RUN. HIDE IN A DOORWAY WITH E OR GET IN A VENT',c:fl?'#ff6a5a':'#ffd0c8',bg:'#300808'};
+ if(SNK.twMsg&&T-SNK.twMsgT<.15&&SNK.twMsg.pri<=2)return SNK.twMsg;
+ if(t&&PAT&&PAT.state==='walk'&&PAT.alert>.25&&!covered()&&!SNK.vent)return{t:he+' SEES SOMETHING. CROUCH WITH C'+(SNK.crates.some(c=>Math.abs(c.x-a.x)<40)?' BEHIND THE BOX':' OR BACK OFF'),c:fl?'#ff7a6a':'#ffd0c8',bg:'#300808'};
+ if(covered())return{t:'HIDDEN. '+he+' CANNOT SEE YOU',c:'#9ad09a'};
+ while(SNK.intro&&SNK.intro.length&&T>SNK.intro[0].until)SNK.intro.shift();
+ if(SNK.intro&&SNK.intro.length)return{t:SNK.intro[0].t,c:'#ffd890'};
+ if(SNK.twMsg&&T-SNK.twMsgT<.15&&SNK.twMsg.pri<=3)return SNK.twMsg;
+ if(SNK.vent){if(!gl)return{t:'CRAWL WITH LEFT AND RIGHT. DOWN AT A GRATE TO DROP',c:'#ffe8a0'};const tgt=SNK.grates.slice().sort((p,q)=>Math.abs(p.x-gl.x)-Math.abs(q.x-gl.x))[0];
+  if(Math.abs(SNK.vx-tgt.x)<9)return{t:'PRESS DOWN TO DROP OUT HERE',c:'#ffe8a0'};return{t:'CRAWL '+(tgt.x<SNK.vx?'LEFT':'RIGHT')+' TO THE RED ARROW THEN PRESS DOWN',c:'#ffe8a0'}}
+ if(SNK.grab)return{t:'DRAGGING THE BOX. IT IS LOUD. E TO LET GO',c:'#ffe8a0'};
+ const gc=canClimb();if(gc)return{t:'PRESS UP TO CLIMB INTO THE VENT',c:'#ffe8a0'};if(gc===false)return{t:'VENT TOO HIGH. DRAG A BOX UNDER IT WITH E',c:'#ffe8a0'};
+ if(nearCrate())return{t:'C: CROUCH BEHIND THE BOX   E: DRAG IT',c:'#ffe8a0'};
+ if(gl){const dir=gl.x<a.x-8?'GO LEFT':gl.x>a.x+8?'GO RIGHT':'PRESS E';return{t:'GOAL: '+gl.t+'   '+dir,c:'#ff9a8a'}}
+ return null}
+{const _ss=snkScreen;snkScreen=function(){_ss();if(!SNK.on||!A.you||ROOM!==D.room||TEST||busy||panelMode!=='roam')return;g.setTransform(1,0,0,1,0,0);
+ const m=snkMessage();if(!m)return;const w=pxw(m.t)+14;R(W/2-w/2,36,w,12,(m.bg||'#000000')+'e0');R(W/2-w/2,47,w,1,m.c);pxc(m.t,W/2,39,m.c)}}
 /* who holds what: the flashlight is gripped in the sprite's hand and the beam starts at its lens */
 {const _da=drawActor;drawActor=function(a){if(!a||!a.k)return _da(a);
  const want=SNK.on&&snkDark()&&ROOM===D.room?(a.id==='you'&&!SNK.vent?(SNK.light?'on':'off'):((PAT&&a.id===PAT.id)||(typeof BI!=='undefined'&&BI.on&&a.id==='voss')?(a.id==='voss'?'lantern':'on'):null)):null;
@@ -278,9 +279,9 @@ function snkGoal(){if(typeof BI!=='undefined'&&BI.on)return BI.got?{x:20,t:'GET 
 {const _vs=ventScreen;ventScreen=function(){_vs();const gl=snkGoal();if(!gl||!SNK.grates.length)return;
  const tgt=SNK.grates.slice().sort((p,q)=>Math.abs(p.x-gl.x)-Math.abs(q.x-gl.x))[0],s=Math.round(tgt.x),pu=Math.sin(T*5)>0?1:0,TOP=VF-40;
  R(s,VF-14+pu,1,5,'#ff6a5a');for(let i=0;i<3;i++)R(s-2+i,VF-9+pu+i,5-i*2,1,'#ff6a5a');pxc('DROP HERE',s,VF-22+pu,'#ff8a7a');
- const at=Math.abs(SNK.vx-tgt.x)<9,dir=tgt.x<SNK.vx?'LEFT':'RIGHT';
- const txt=at?'PRESS DOWN TO DROP OUT HERE':'CRAWL '+dir+' TO DROP HERE, THEN PRESS DOWN';const w=pxw(txt)+8;R(W/2-w/2,44,w,9,'#000000b0');pxc(txt,W/2,46,'#ff9a8a');
- const t2='GOAL: '+gl.t;const w2=pxw(t2)+8;R(W/2-w2/2,56,w2,9,'#000000b0');pxc(t2,W/2,58,'#cbbfd8')}}
-{const _cl=snkClimb;snkClimb=async function(g){const r=await _cl(g);if(!P.f)P.f={};if(!P.f.ventTip){P.f.ventTip=1;toast('You’re in the vents. Crawl to the grate marked DROP HERE and press DOWN. Go slow near the teacher: they can hear you.')}return r}}
+ }}
+{const _cl=snkClimb;snkClimb=async function(g){const r=await _cl(g);if(!P.f)P.f={};return r}}
 /* mini-games and the guide sit above the dark */
 {const _do=HOOK.drawOver;HOOK.drawOver=(...x)=>{_do&&_do(...x);if(SNK.on&&!TEST&&typeof VG!=='undefined'&&VG&&VG.draw)VG.draw()}}
+/* in sneak mode the one message line does the talking: no duplicate pop-ups */
+{const _t=toast;toast=function(m){if(SNK.on&&/spotted you|lost you|Hidden\.|saw you go in|too high|No grate here|daytime/i.test(String(m)))return;return _t.apply(this,arguments)}}

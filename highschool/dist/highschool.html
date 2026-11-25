@@ -22794,9 +22794,9 @@ function setPiece(re,cfg){const s=SPOTS.find(s=>re.test(s.label||''));if(!s)retu
   finally{if(typeof SNK!=='undefined')SNK.hold=0}}}
 {const _er=enterRoom;enterRoom=async function(room){if(SPC&&room!==SPC.room){SPC=null}return _er(room)}}
 {const _hi=hideIn;hideIn=function(d){if(SPC&&A.you&&Math.abs(A.you.x-SPC.x)<14){const s=SPOTS.find(s=>s.room===D.room&&s.x===SPC.x);if(s)return useSpot(s)}return _hi(d)}}
-{const _do=HOOK.drawOver;HOOK.drawOver=(...x)=>{_do&&_do(...x);if(!SPC||TEST||ROOM!==SPC.room||panelMode!=='roam')return;const y=118+(Math.sin(T*5)>0?1:0);R(SPC.x-3,y,7,2,'#ff6a5a');R(SPC.x-2,y+2,5,2,'#ff6a5a');R(SPC.x-1,y+4,3,2,'#ff6a5a');const t='OBJECTIVE';pxc(t,SPC.x,y-9,'#ff6a5a')}}
+{const _do=HOOK.drawOver;HOOK.drawOver=(...x)=>{_do&&_do(...x);if(!SPC||TEST||ROOM!==SPC.room||panelMode!=='roam'||(typeof SNK!=='undefined'&&SNK.on))return;const y=118+(Math.sin(T*5)>0?1:0);R(SPC.x-3,y,7,2,'#ff6a5a');R(SPC.x-2,y+2,5,2,'#ff6a5a');R(SPC.x-1,y+4,3,2,'#ff6a5a');const t='OBJECTIVE';pxc(t,SPC.x,y-9,'#ff6a5a')}}
 /* chapter 1: the empty seat */
-setPiece(/^Search Ms\. Sherman’s desk/,{goal:'GET TO HER DESK',patrol:'shermian',sp:22,obj:'Get to her desk without her seeing you. Then crack the bottom drawer.',
+setPiece(/^Search Ms\. Sherman’s desk/,{goal:'GET TO HER DESK',twist:'count',patrol:'shermian',sp:22,obj:'Get to her desk without her seeing you. Then crack the bottom drawer.',
  intro:async()=>{scene('maths',{shermian:[200,-1,{y:146,pose:'phone',ex:'blush'}],you:[290,-1,{y:156}]},true);cue('tension',true);if(typeof camZoom==='function')await camZoom(200,120,1.8,500);
   await say('shermian','(into her phone, very low) No, Gerald. Not on the PHONE. …Because the stapler stays in the DRAWER, that’s why. …Fine. Fine. Wednesday. Bring the good tape.','blush');
   if(typeof camZoom==='function')await camZoom();pose('shermian',null);A.shermian.ex='cold';await N('She hangs up. She starts pacing the room, slowly, between you and her desk. The bottom drawer is the only one with a lock.')},
@@ -22807,7 +22807,7 @@ setPiece(/^Search Ms\. Sherman’s desk/,{goal:'GET TO HER DESK',patrol:'shermia
  game:()=>vgLock(),failLine:'The drawer bangs. Ms. Sherman’s head turns like an owl’s.',
  before:async()=>{slowmo(.5);await N('The drawer gives. Inside, under a stack of graded tests, something small and pink catches the light.');slowmo(1)}});
 /* chapter 2: the file */
-setPiece(/^Photograph the back fridge/,{goal:'GET TO THE BACK FRIDGE',patrol:'voss',sp:20,obj:'Get to the back fridge. Get the photos. Don’t let the flash go off near him.',
+setPiece(/^Photograph the back fridge/,{goal:'GET TO THE BACK FRIDGE',twist:'hum',patrol:'voss',sp:20,obj:'Get to the back fridge. Get the photos. Don’t let the flash go off near him.',
  intro:async()=>{scene('chem',{voss:[160,1,{y:146,hold:'mug',ex:'happy'}],you:[30,1,{y:156}]},true);cue('evil',true);if(typeof camZoom==='function')await camZoom(160,120,2,500);
   await say('voss','(humming, to a jar on the bench) Don’t look at me like that. You were delicious— delightful. DELIGHTFUL company.','happy');
   SFX.knock&&SFX.knock();await say('nurse','(through the door) Frederick? I brought the long gloves. And the other gloves.','smirk');
@@ -22818,7 +22818,7 @@ setPiece(/^Photograph the back fridge/,{goal:'GET TO THE BACK FRIDGE',patrol:'vo
  game:()=>vgThrow('HOLD THE CAMERA STEADY'),failLine:'The flash goes off. The whole lab goes white for half a second.',
  before:async()=>{slowmo(.45);flash('#fff',.5);await wait(TEST?0:300);slowmo(1)}});
 /* chapter 4: the office */
-setPiece(/^Pick the lock on Ms\. Sherman’s office/,{goal:'PICK THE OFFICE LOCK',patrol:'shermian',sp:26,obj:'Pick her office lock before she comes back down the hall.',
+setPiece(/^Pick the lock on Ms\. Sherman’s office/,{goal:'PICK THE OFFICE LOCK',twist:'sensors',patrol:'shermian',sp:26,obj:'Pick her office lock before she comes back down the hall.',
  intro:async()=>{cue('tension',true);SFX.knock&&SFX.knock();await say('adam','(through the office door) Doris said you borrowed the laminator again.','cold');
   await say('shermian','(through the door) I laminate what I want, Gerald. I laminated your LETTERS. Every single one. They’re on my FRIDGE.','evil');
   if(K.shermian&&!A.shermian){const f=floorOf(D.room);put('shermian',282,-1,{y:f[0]+4,ex:'cold'})}SFX.door&&SFX.door();await N('The door opens. Ms. Sherman comes out, locks it behind her, and starts her patrol. Down the hall. And, eventually, back.')},
@@ -22827,13 +22827,13 @@ setPiece(/^Pick the lock on Ms\. Sherman’s office/,{goal:'PICK THE OFFICE LOCK
   if(PAT)PAT.pause=6;await say('shermian','SIX INCHES. SIX INCHES OF AIR BETWEEN STUDENTS. I HAVE A RULER.','yell');await say(p[1],'(not letting go) Worth it.','love');cue('tension');walk(p[0],-30,90);walk(p[1],-30,90).then(()=>{for(const k of p)if(A[k])remove(k)})},
  game:()=>vgLock(),failLine:'The pick slips and scrapes. Down the hall, footsteps stop.'});
 /* chapter 8: the leak */
-setPiece(/^Wipe the phones in Ms\. Sherman’s drawer/,{goal:'GET TO HER DRAWER',patrol:'shermian',sp:24,obj:'Get to the drawer and wipe every phone. One wrong pattern and they all start buzzing.',
+setPiece(/^Wipe the phones in Ms\. Sherman’s drawer/,{goal:'GET TO HER DRAWER',twist:'phone',patrol:'shermian',sp:24,obj:'Get to the drawer and wipe every phone. One wrong pattern and they all start buzzing.',
  intro:async()=>{scene('maths',{shermian:[150,1,{y:146,hold:'phone',ex:'shock'}],you:[290,-1,{y:156}]},true);cue('tension',true);if(typeof camZoom==='function')await camZoom(150,118,2.2,400);
   await N('Ms. Sherman is holding a confiscated phone. A text lights it up: “GERALD (VP): cant stop thinking about the budget meeting 😳🍆”.');
   await say('shermian','(very quietly) …Every. Single. Time.','closed');hold('shermian',null);if(typeof camZoom==='function')await camZoom();await N('She throws it in the drawer with the others and starts pacing. Fourteen phones in that drawer. Fourteen phones full of what everyone saw.')},
  game:()=>vgSimon(6,'UNLOCK PATTERN'),failLine:'Wrong pattern. Fourteen phones start buzzing at once in the drawer like a nest.'});
 /* chapter 10: the boiler room */
-setPiece(/^Go down the old hatch/,{goal:'GET TO THE OLD HATCH',patrol:'adam',sp:20,obj:'Get to the old hatch at the far left. Crack the padlock code. Mr. Adam is doing his rounds.',
+setPiece(/^Go down the old hatch/,{goal:'GET TO THE OLD HATCH',twist:'breath',patrol:'adam',sp:20,obj:'Get to the old hatch at the far left. Crack the padlock code. Mr. Adam is doing his rounds.',
  intro:async()=>{cue('evil',true);LDS.on=true;LDS.rate=96;await N('The hall lights are half off. Mr. Adam is walking the corridor with a flashlight, humming. It’s the song from the Hot Mic. Of course it is.');
   if(K.adam&&!A.adam){const f=floorOf(D.room);put('adam',280,-1,{y:f[0]+4,ex:'cold'})}},
  game:()=>vgSimon(6,'THE PADLOCK CODE'),failLine:'The padlock clanks against the hatch. The humming stops.',after:async()=>{LDS.on=false}});
@@ -22929,7 +22929,7 @@ function snkSetup(){
  SNK.crates=[prop({t:'crate',x:clamp(near.x+(near.x<160?28:-28),18,302),y:f[0]+12}),prop({t:'crate',x:clamp(obj.x+(obj.x<160?30:-30),18,302),y:f[0]+12})];
 }
 function snkStart(){SNK.blind=0;SNK.blindDone=0;if(typeof SPC!=='undefined'&&SPC&&!snkDarkBase())setTimeout(snkBlinds,700);SNK.on=true;SNK.crouch=false;SNK.light=true;SNK.grab=null;SNK.vent=false;SNK.peek=null;SNK.hear=0;SNK.noise=0;SNK.cool=T+6;snkSetup();snkBtns(true);
- if(!P.f)P.f={};if(!P.f.snkTip){P.f.snkTip=1;setTimeout(()=>toast('SNEAK MODE: C crouch · E drag a box · stand on a box under a vent and press UP · V flashlight in the dark'),900)}}
+ SNK.intro=[];if(!P.f)P.f={};if(!P.f.snkTip){P.f.snkTip=1;SNK.intro.push({t:'SNEAK: C CROUCH   E DRAG A BOX   UP INTO A VENT',until:T+6})}}
 function snkStop(){SNK.blind=0;SNK.blindDone=1;if(SNK.vent)snkUnvent();for(const p of SNK.crates.concat(SNK.grates))p.hide=1;
  for(const p of SNK.crates.concat(SNK.grates)){const i=props.indexOf(p);if(i>=0)props.splice(i,1)}
  SNK.crates=[];SNK.grates=[];SNK.on=false;SNK.grab=null;SNK.peek=null;if(A.you&&A.you.pose==='crouch')A.you.pose=null;snkBtns(false);
@@ -22949,7 +22949,7 @@ const nearCrate=()=>SNK.crates.find(c=>Math.abs(c.x-A.you.x)<16);
 const grateAt=x=>SNK.grates.find(g=>Math.abs(g.x-x)<11);
 const canClimb=()=>{const g=grateAt(A.you.x);if(!g)return null;const c=SNK.crates.find(c=>Math.abs(c.x-g.x)<11&&Math.abs(c.x-A.you.x)<13);return c?g:false};
 function covered(){if(!SNK.crouch||!PAT||SNK.grab)return false;const t=A[PAT.id];if(!t)return false;const s=Math.sign(t.x-A.you.x);return SNK.crates.some(c=>Math.abs(c.x-A.you.x)<19&&Math.sign(c.x-A.you.x)===s)}
-function snkSay(id,t){SNK.line={id,t,until:T+2.6}}
+function snkSay(id,t){t=String(t).replace(/\([^)]*\)\s*/g,'').replace(/,/g,'').trim()||'…';SNK.line={id,t,until:T+2.6}}
 async function snkClimb(g){const a=A.you;SNK.anim=true;SNK.crouch=false;a.pose='reach';a.dir=g.x>a.x?1:-1;await tw(a,{x:g.x,y:a.y-12},260,'out');SFX.locker&&SFX.locker();g.open=1;await tw(a,{alpha:0},200);
  SNK.vent=true;SNK.vx=g.x;HIDE={x:a.x,y:floorOf(D.room)[0]+10,d:{x:g.x}};a.pose=null;g.open=0;SNK.anim=false;
  if(PAT&&PAT.state==='chase'){const t=A[PAT.id];if(t&&Math.abs(t.x-a.x)<90){PAT.knows=1;snkPeek(g,true)}}}
@@ -23044,7 +23044,7 @@ function cone(c,x,y,dir,len,spread,rgb,al){const gr=c.createRadialGradient(x,y,1
   if(!SNK.vent&&a.torch==='on')glow(handOf(a),9);if(t&&!t.dead)glow(handOf(t),10);
   if(t&&!t.dead){const h=handOf(t);if(t.id==='voss'){const lg=lcx.createRadialGradient(h.x,h.y,1,h.x,h.y,40);lg.addColorStop(0,'rgba(0,0,0,1)');lg.addColorStop(1,'rgba(0,0,0,0)');lcx.fillStyle=lg;lcx.fillRect(0,0,W,H)}
    if(SNK.peek&&SNK.peek.ph!=='walk'){const gq=SNK.peek.g;const lg=lcx.createRadialGradient(gq.x,gq.y,1,gq.x,gq.y,30);lg.addColorStop(0,'rgba(0,0,0,1)');lg.addColorStop(1,'rgba(0,0,0,0)');lcx.fillStyle=lg;lcx.fillRect(0,0,W,H)}
-   else cone(lcx,h.x,h.y,t.dir||1,100,24,'0,0,0',1)}
+   else cone(lcx,h.x,h.y,t.dir||1,SNK.coneLen||100,SNK.coneW||24,'0,0,0',1)}
   g.drawImage(LCV,0,0);
   /* things you can use stay readable in the dark */
   g.save();g.globalAlpha=.55*snkDA()+(1-snkDA());for(const q of SNK.grates)drawProp(q);for(const c of SNK.crates)drawProp(c);g.restore();
@@ -23052,15 +23052,16 @@ function cone(c,x,y,dir,len,spread,rgb,al){const gr=c.createRadialGradient(x,y,1
   g.save();g.globalCompositeOperation='lighter';
   if(SNK.light&&!SNK.vent&&a.torch==='on'){const h=handOf(a);cone(g,h.x,h.y,a.dir||1,92,22,'255,230,160',.1*snkDA())}
   if(t&&!t.dead){const h=handOf(t);if(t.id==='voss'){const lg=g.createRadialGradient(h.x,h.y,1,h.x,h.y,40);lg.addColorStop(0,'rgba(255,170,80,.35)');lg.addColorStop(1,'rgba(255,170,80,0)');g.fillStyle=lg;g.fillRect(h.x-40,h.y-40,80,80)}
-   if(!SNK.peek)cone(g,h.x,h.y,t.dir||1,100,24,al,.16*snkDA())}
+   if(!SNK.peek)cone(g,h.x,h.y,t.dir||1,SNK.coneLen||100,SNK.coneW||24,al,.16*snkDA())}
   g.restore()}
- else if(t&&!t.dead&&PAT&&PAT.state!=='peek'){const ey=t.y-24;g.save();cone(g,t.x+(t.dir||1)*4,ey+8,t.dir||1,95,24,al,PAT.state==='chase'?.32:.24);g.restore()}
+ else if(t&&!t.dead&&PAT&&(PAT.state!=='peek'&&PAT.state!=='script'||SNK.coneLen)){const ey=t.y-24;g.save();cone(g,t.x+(t.dir||1)*4,ey+8,t.dir||1,SNK.coneLen||95,SNK.coneW||24,al,PAT.state==='chase'?.32:.24);g.restore()}
  /* ?/! */
  if(t&&PAT){const mk=PAT.state==='chase'?'!':PAT.state==='peek'?'?':PAT.alert>.08?'?':'';if(mk){const y=t.y-44-(Math.sin(T*8)>0?1:0);R(t.x-4,y-1,9,10,'#141020');R(t.x-4,y-1,9,1,'rgb('+al+')');
   if(mk==='?'&&PAT.state!=='peek'){g.globalAlpha=.35;R(t.x-3,y+1,7,7,'#ffffff');g.globalAlpha=1;R(t.x-3,y+8-Math.round(7*Math.min(1,PAT.alert)),7,Math.round(7*Math.min(1,PAT.alert)),'rgb('+al+')')}
   pxc(mk,t.x+1,y+1,mk==='!'?'#ffffff':'#2a2030')}}
  /* lines */
- if(SNK.line&&T<SNK.line.until&&A[SNK.line.id]&&!SNK.vent){const s=A[SNK.line.id],w=Math.min(150,pxw(SNK.line.t)+6),x=clamp(s.x-w/2,2,W-w-2),y=s.y-58;R(x,y,w,9,'#f4f0e6');R(x,y+9,w,1,'#2a2030');px(SNK.line.t,x+3,y+2,'#2a2030')}
+ if(SNK.line&&T<SNK.line.until&&A[SNK.line.id]&&!SNK.vent){const s=A[SNK.line.id],ws=SNK.line.t.split(' '),L=[''];for(const w_ of ws){const tr=(L[L.length-1]+' '+w_).trim();if(pxw(tr)>130&&L[L.length-1])L.push(w_);else L[L.length-1]=tr}
+ const w=Math.max(...L.map(l=>pxw(l)))+6,h=L.length*8+2,x=clamp(s.x-w/2,2,W-w-2),y=s.y-50-h;R(x,y,w,h,'#f4f0e6');R(x,y+h,w,1,'#2a2030');L.forEach((l,i)=>px(l,x+3,y+2+i*8,'#2a2030'))}
 }}
 /* ---------- screen space: the different look, the vent cutaway, hints ---------- */
 function crawler(sx,sy,s,dir,ph){const k=K.you,leg=Math.round(Math.sin(ph)*1.5),arm=Math.round(Math.sin(ph+Math.PI)*1.5);const P_=(x,y,w,h,c)=>R(Math.round(sx+(dir>0?x:-x-w)*s),Math.round(sy+y*s),w*s,h*s,c);
@@ -23073,11 +23074,7 @@ function snkScreen(){if(!SNK.on||!A.you||ROOM!==D.room||TEST)return;g.setTransfo
  g.drawImage(REDV2,0,0);g.globalAlpha=.06;g.fillStyle='#4060a0';g.fillRect(0,0,W,H);g.globalAlpha=1;
  for(let i=0;i<60;i++){g.globalAlpha=.08;R(Math.random()*W|0,Math.random()*H|0,1,1,Math.random()<.5?'#fff':'#000')}g.globalAlpha=1;g.restore();
  R(0,0,W,8,'#000');R(0,H-8,W,8,'#000');
- /* hints */
- let h='';if(SNK.anim)h='';else if(SNK.vent)h=grateAt(SNK.vx)?'DOWN OR E: DROP OUT':'LEFT/RIGHT: CRAWL. QUIET NEAR THEM.';
- else if(SNK.grab)h='DRAGGING. IT SCRAPES. E TO LET GO';else{const gc=canClimb();if(gc)h='UP: CLIMB INTO THE VENT';else if(gc===false)h='VENT. TOO HIGH. DRAG A BOX UNDER IT';else if(nearCrate())h=SNK.crouch?'HIDE BEHIND THE BOX, OR E: GRAB IT':'E: GRAB THE BOX · C: CROUCH BEHIND IT';else h=(SNK.crouch?'CROUCHING':'C: CROUCH')+(snkDark()?' · V: FLASHLIGHT '+(SNK.light?'ON':'OFF'):'')}
- if(h&&!busy&&panelMode==='roam'){const w=pxw(h)+8;R(W/2-w/2,28,w,9,'#000000aa');pxc(h,W/2,30,'#ffe8a0')}
- if(covered()&&!busy){R(W/2-30,39,60,9,'#000000aa');pxc('HIDDEN',W/2,41,'#9ad09a')}}
+}
 let REDV2=null;
 {const _dr=draw;draw=function(){_dr();try{snkScreen()}catch(e){if(TEST)throw e}}}
 {const _er=enterRoom;enterRoom=async function(r){if(SNK.on)snkStop();return _er(r)}}
@@ -23137,7 +23134,7 @@ async function snkBlinds(){if(!SNK.on||SNK.blindDone||!PAT)return;SNK.blindDone=
   for(let i=0;i<3;i++){SFX.whoosh&&SFX.whoosh();await wait(180)}}
  else{pose(id,'reach');snkSay(id,'Lights off.');SFX.click&&SFX.click();await wait(250)}
  SFX.click&&SFX.click();await tw(SNK,{blind:1},900);if(A[id])pose(id,null);if(PAT&&PAT.id===id)PAT.state='walk';
- toast('The room goes dark. Your flashlight is on (V turns it off: harder to see, harder to be seen).')}
+ (SNK.intro=SNK.intro||[]).push({t:'DARK. V TURNS YOUR FLASHLIGHT OFF: HARDER TO SEE YOU',until:T+5})}
 /* ---------- where to go ---------- */
 function snkGoal(){if(typeof BI!=='undefined'&&BI.on)return BI.got?{x:20,t:'GET BACK TO THE CREW'}:{x:198,t:'GET INTO THE CHEM LAB'};
  if(typeof SPC!=='undefined'&&SPC)return{x:SPC.x,t:(SPC.cfg&&SPC.cfg.goal)||'GET TO THE OBJECTIVE, PRESS E'};return null}
@@ -23148,23 +23145,27 @@ function snkGoal(){if(typeof BI!=='undefined'&&BI.on)return BI.got?{x:20,t:'GET 
  if(!busy){for(const c of SNK.crates)if(Math.abs(c.x-a.x)<34&&SNK.grab!==c)ring(Math.round(c.x)-10,Math.round(c.y)-17,20,18);
   const gc=canClimb();for(const q of SNK.grates)if(Math.abs(q.x-a.x)<12||gc===q)ring(q.x-11,q.y-7,22,14)}}}
 /* the guide strip, edge arrows and a danger tip, on screen */
-{const _ss=snkScreen;snkScreen=function(){_ss();if(!SNK.on||SNK.vent||!A.you||ROOM!==D.room||TEST||busy)return;g.setTransform(1,0,0,1,0,0);
- const a=A.you,t=PAT&&A[PAT.id],gl=snkGoal(),z=CAM.z,cx=clamp(CAM.x,W/2/z,W-W/2/z),SX=wx=>Math.round(W/2-cx*z)+wx*z;
- /* strip */
- const y=42,rx=v=>Math.round(24+(clamp(v,0,320))/320*(W-48));R(16,y-1,W-32,10,'#000000b8');R(24,y+6,W-48,1,'#3a3e46');
- for(const q of SNK.grates)R(rx(q.x)-2,y+1,5,2,'#7a808a');
- for(const c of SNK.crates)R(rx(c.x)-2,y+4,5,4,'#a8743c');
- if(gl){R(rx(gl.x)-1,y,3,8,'#ff6a5a');R(rx(gl.x)+2,y,3,2,'#ff6a5a')}
- if(t&&!t.dead){const tx=rx(t.x),c=PAT.state==='chase'?'#ff3a2a':'#ff9a6a';R(tx-1,y+1,3,7,c);g.globalAlpha=.5;R(t.dir>0?tx+2:tx-6,y+3,4,3,'#ffd890');g.globalAlpha=1}
- R(rx(a.x)-1,y+1,3,7,'#ffe8a0');
- /* goal line */
- if(gl){const dir=gl.x<a.x-8?'LEFT':gl.x>a.x+8?'RIGHT':'HERE';const txt='GOAL: '+gl.t+(dir==='HERE'?' · PRESS E':' · GO '+dir);const w=pxw(txt)+8;R(W/2-w/2,y+11,w,9,'#000000b0');pxc(txt,W/2,y+13,'#ff9a8a')}
- /* edge arrow to the goal */
- if(gl){const s=SX(gl.x);if(s<6||s>W-6){const L=s<6,x0=L?8:W-14;for(let i=0;i<5;i++)R(L?x0+i:x0+5-i,90-i,1,i*2+1,'#ff6a5a');pxc('GOAL',L?x0+10:x0-6,100,'#ff8a7a')}}
- /* danger tip */
- if(t&&PAT&&PAT.state==='walk'&&PAT.alert>.25&&!covered()){const tip=SNK.crates.some(c=>Math.abs(c.x-a.x)<40)?'SHE SEES SOMETHING. PRESS C, HIDE BEHIND THE BOX':'SHE SEES SOMETHING. GET OUT OF THE LIGHT';const tt=K[t.id]&&/^(Mr|Coach)/.test(K[t.id].n)?tip.replace('SHE','HE'):tip;const w=pxw(tt)+8;R(W/2-w/2,128,w,10,'#300808e0');pxc(tt,W/2,130,Math.sin(T*10)>0?'#ff7a6a':'#ffd0c8')}
- if(t&&PAT&&PAT.state==='chase'){const tt='SPOTTED. RUN. HIDE IN A DOORWAY WITH E, OR A VENT';const w=pxw(tt)+8;R(W/2-w/2,128,w,10,'#300808e0');pxc(tt,W/2,130,'#ff7a6a')}}}
-
+/* ---------- ONE message line: the most important thing right now ---------- */
+function snkMessage(){const a=A.you,t=PAT&&A[PAT.id],gl=snkGoal(),he=t&&K[t.id]&&/^(Mr|Coach)/.test(K[t.id].n)?'HE':'SHE',fl=Math.sin(T*10)>0;
+ const p=SNK.peek;
+ if(p&&p.ph!=='walk')return{t:p.caught>.15?'GET OUT OF THE LIGHT!':'THE GRATE IS OPENING. BACK AWAY FROM IT',c:fl?'#ff6a5a':'#ffd0c8',bg:'#300808'};
+ if(p)return{t:he+' HEARD YOU. CRAWL AWAY FROM THAT GRATE',c:'#ffb0a0',bg:'#300808'};
+ if(t&&PAT&&PAT.state==='chase')return{t:'SPOTTED! RUN. HIDE IN A DOORWAY WITH E OR GET IN A VENT',c:fl?'#ff6a5a':'#ffd0c8',bg:'#300808'};
+ if(SNK.twMsg&&T-SNK.twMsgT<.15&&SNK.twMsg.pri<=2)return SNK.twMsg;
+ if(t&&PAT&&PAT.state==='walk'&&PAT.alert>.25&&!covered()&&!SNK.vent)return{t:he+' SEES SOMETHING. CROUCH WITH C'+(SNK.crates.some(c=>Math.abs(c.x-a.x)<40)?' BEHIND THE BOX':' OR BACK OFF'),c:fl?'#ff7a6a':'#ffd0c8',bg:'#300808'};
+ if(covered())return{t:'HIDDEN. '+he+' CANNOT SEE YOU',c:'#9ad09a'};
+ while(SNK.intro&&SNK.intro.length&&T>SNK.intro[0].until)SNK.intro.shift();
+ if(SNK.intro&&SNK.intro.length)return{t:SNK.intro[0].t,c:'#ffd890'};
+ if(SNK.twMsg&&T-SNK.twMsgT<.15&&SNK.twMsg.pri<=3)return SNK.twMsg;
+ if(SNK.vent){if(!gl)return{t:'CRAWL WITH LEFT AND RIGHT. DOWN AT A GRATE TO DROP',c:'#ffe8a0'};const tgt=SNK.grates.slice().sort((p,q)=>Math.abs(p.x-gl.x)-Math.abs(q.x-gl.x))[0];
+  if(Math.abs(SNK.vx-tgt.x)<9)return{t:'PRESS DOWN TO DROP OUT HERE',c:'#ffe8a0'};return{t:'CRAWL '+(tgt.x<SNK.vx?'LEFT':'RIGHT')+' TO THE RED ARROW THEN PRESS DOWN',c:'#ffe8a0'}}
+ if(SNK.grab)return{t:'DRAGGING THE BOX. IT IS LOUD. E TO LET GO',c:'#ffe8a0'};
+ const gc=canClimb();if(gc)return{t:'PRESS UP TO CLIMB INTO THE VENT',c:'#ffe8a0'};if(gc===false)return{t:'VENT TOO HIGH. DRAG A BOX UNDER IT WITH E',c:'#ffe8a0'};
+ if(nearCrate())return{t:'C: CROUCH BEHIND THE BOX   E: DRAG IT',c:'#ffe8a0'};
+ if(gl){const dir=gl.x<a.x-8?'GO LEFT':gl.x>a.x+8?'GO RIGHT':'PRESS E';return{t:'GOAL: '+gl.t+'   '+dir,c:'#ff9a8a'}}
+ return null}
+{const _ss=snkScreen;snkScreen=function(){_ss();if(!SNK.on||!A.you||ROOM!==D.room||TEST||busy||panelMode!=='roam')return;g.setTransform(1,0,0,1,0,0);
+ const m=snkMessage();if(!m)return;const w=pxw(m.t)+14;R(W/2-w/2,36,w,12,(m.bg||'#000000')+'e0');R(W/2-w/2,47,w,1,m.c);pxc(m.t,W/2,39,m.c)}}
 /* who holds what: the flashlight is gripped in the sprite's hand and the beam starts at its lens */
 {const _da=drawActor;drawActor=function(a){if(!a||!a.k)return _da(a);
  const want=SNK.on&&snkDark()&&ROOM===D.room?(a.id==='you'&&!SNK.vent?(SNK.light?'on':'off'):((PAT&&a.id===PAT.id)||(typeof BI!=='undefined'&&BI.on&&a.id==='voss')?(a.id==='voss'?'lantern':'on'):null)):null;
@@ -23175,12 +23176,131 @@ function snkGoal(){if(typeof BI!=='undefined'&&BI.on)return BI.got?{x:20,t:'GET 
 {const _vs=ventScreen;ventScreen=function(){_vs();const gl=snkGoal();if(!gl||!SNK.grates.length)return;
  const tgt=SNK.grates.slice().sort((p,q)=>Math.abs(p.x-gl.x)-Math.abs(q.x-gl.x))[0],s=Math.round(tgt.x),pu=Math.sin(T*5)>0?1:0,TOP=VF-40;
  R(s,VF-14+pu,1,5,'#ff6a5a');for(let i=0;i<3;i++)R(s-2+i,VF-9+pu+i,5-i*2,1,'#ff6a5a');pxc('DROP HERE',s,VF-22+pu,'#ff8a7a');
- const at=Math.abs(SNK.vx-tgt.x)<9,dir=tgt.x<SNK.vx?'LEFT':'RIGHT';
- const txt=at?'PRESS DOWN TO DROP OUT HERE':'CRAWL '+dir+' TO DROP HERE, THEN PRESS DOWN';const w=pxw(txt)+8;R(W/2-w/2,44,w,9,'#000000b0');pxc(txt,W/2,46,'#ff9a8a');
- const t2='GOAL: '+gl.t;const w2=pxw(t2)+8;R(W/2-w2/2,56,w2,9,'#000000b0');pxc(t2,W/2,58,'#cbbfd8')}}
-{const _cl=snkClimb;snkClimb=async function(g){const r=await _cl(g);if(!P.f)P.f={};if(!P.f.ventTip){P.f.ventTip=1;toast('You’re in the vents. Crawl to the grate marked DROP HERE and press DOWN. Go slow near the teacher: they can hear you.')}return r}}
+ }}
+{const _cl=snkClimb;snkClimb=async function(g){const r=await _cl(g);if(!P.f)P.f={};return r}}
 /* mini-games and the guide sit above the dark */
 {const _do=HOOK.drawOver;HOOK.drawOver=(...x)=>{_do&&_do(...x);if(SNK.on&&!TEST&&typeof VG!=='undefined'&&VG&&VG.draw)VG.draw()}}
+/* in sneak mode the one message line does the talking: no duplicate pop-ups */
+{const _t=toast;toast=function(m){if(SNK.on&&/spotted you|lost you|Hidden\.|saw you go in|too high|No grate here|daytime/i.test(String(m)))return;return _t.apply(this,arguments)}}
+
+</script>
+<script>
+/* js/twists.js */
+'use strict';
+/* =====================================================================
+   HIGHSCHOOL — EVERY SNEAK IS DIFFERENT
+   Each stealth set piece has its own scary rule on top of sneak mode:
+   • count   (Sherman's desk)   she counts to twenty out loud; at twenty
+                                she sweeps the whole room. Be behind a box
+                                or up in the vent. Then again, faster.
+   • hum     (Voss's fridge)    he hums while he works. When the humming
+                                stops he's LISTENING: freeze. Broken glass
+                                crunches unless you crouch.
+   • sensors (Sherman's office) motion-sensor lights click on if you walk
+                                upright under them, and she comes to look.
+   • phone   (wiping the phones) your own phone buzzes. P to silence it
+                                before it rings out loud.
+   • breath  (the old hatch)    when Mr. Adam passes right by you, hold
+                                SPACE to hold your breath. Run out: gasp.
+   • traps   (the Break-In)     Voss's mousetraps. Crouch to step over.
+   ===================================================================== */
+const TW={id:null,s:{}};
+const twId=()=>!SNK.on?null:(typeof BI!=='undefined'&&BI.on)?'traps':(typeof SPC!=='undefined'&&SPC&&SPC.cfg&&SPC.cfg.twist)||null;
+const twT=()=>PAT&&A[PAT.id];
+const twHe=id=>K[id]&&/^(Mr|Coach)/.test(K[id].n)?'HE':'SHE';
+function twBanner(txt,col,bg,pri){SNK.twMsg={t:txt,c:col,bg:bg?bg.slice(0,7):null,pri:pri||2};SNK.twMsgT=T}
+function twMoved(s,a){const m=Math.abs(a.x-(s.lx==null?a.x:s.lx))>.05||Math.abs(a.y-(s.ly==null?a.y:s.ly))>.05;s.lx=a.x;s.ly=a.y;return m}
+function twSpot(s,x){const t=twT();if(!t||!PAT||PAT.state!=='walk')return;PAT.inv=x;t.dir=x>t.x?1:-1;PAT.pause=0}
+
+const TWX={
+/* ---------- 1. THE COUNT ---------- */
+count:{
+ start(s){s.ph='wait';s.round=0},
+ update(s,rdt){const t=twT(),a=A.you;if(!t)return;
+  if(s.ph==='wait'){if(SNK.blind>=.99&&PAT.state==='walk'){s.ph='count';s.n=0;s.max=20;s.step=1.1;s.next=T+1.4;snkSay(t.id,'I’m going to count to twenty. Anyone still in my room at twenty gets the RULER.');(SNK.intro=SNK.intro||[]).push({t:'AT TWENTY SHE SWEEPS. HIDE BEHIND A BOX OR IN A VENT',until:T+7})}return}
+  if(s.ph==='count'){if(T>s.next){s.n++;s.next=T+s.step;SFX.click&&SFX.click();try{tone(s.n>=s.max-3?180:120,.08,'square',.06)}catch(_){}
+    snkSay(t.id,s.n>=s.max?'…'+s.n+'. Ready or not.':s.n+'…');
+    if(s.n>=s.max){s.ph='sweep';s.t0=T;s.seen=0;PAT.state='script';t.moving=false;SNK.coneLen=210;SNK.coneW=38;SFX.sting&&SFX.sting()}}return}
+  if(s.ph==='sweep'){const el=T-s.t0;t.dir=Math.floor(el/1.1)%2===0?(a.x>t.x?1:-1):(a.x>t.x?-1:1);
+   const hidden=SNK.vent||covered();const facing=Math.sign(a.x-t.x)===t.dir&&Math.abs(a.x-t.x)<210;
+   if(!hidden&&facing){s.seen+=rdt;if(s.seen>.35){SNK.coneLen=0;SNK.coneW=0;PAT.state='walk';snkSay(t.id,'THERE you are.');return caughtBy(PAT.id)}}
+   if(el>3.3){SNK.coneLen=0;SNK.coneW=0;PAT.state='walk';s.round++;s.ph='count';s.n=0;s.max=s.round===1?12:8;s.step=s.round===1?.95:.8;s.next=T+1.5;
+    snkSay(t.id,s.round===1?'…Hm. Again. Twelve this time.':'Eight. I can do this all day, sweetheart.')}}},
+ screen(s){if(s.ph==='count'||s.ph==='sweep'){const n=s.ph==='sweep'?s.max:s.n,col=s.ph==='sweep'?'#ff4a3a':n>=s.max-3?'#ff8a6a':'#ffe8d0';
+   R(W-46,64,40,26,'#000000b8');px(String(n),W-40,68,col,3);px('/'+s.max,W-22,82,'#8a8090');
+   if(s.ph==='sweep')twBanner(SNK.vent||covered()?'SWEEP. STAY DOWN.':'SWEEP. HIDE NOW: BOX OR VENT',Math.sin(T*12)>0?'#ff6a5a':'#ffd0c8','#300808e0')}}},
+/* ---------- 2. HE HUMS ---------- */
+hum:{
+ start(s){s.ph='hum';s.t=T+4;s.glass=[];const gl=snkGoal();const a=A.you;const lo=Math.min(a.x,gl?gl.x:160),hi=Math.max(a.x,gl?gl.x:160);
+  for(let i=1;i<=3;i++){let x=Math.round(lo+(hi-lo)*i/4);if(SNK.crates.some(c=>Math.abs(c.x-x)<12))x+=14;s.glass.push({x,y:floorOf(D.room)[0]+16,hit:0})}
+  (SNK.intro=SNK.intro||[]).push({t:'WHEN THE HUMMING STOPS FREEZE. CROUCH OVER GLASS',until:T+7})},
+ update(s,rdt){const t=twT(),a=A.you;if(!t)return;const mv=twMoved(s,a);
+  if(PAT.state==='walk'||PAT.state==='script'){
+   if(T>s.t){if(s.ph==='hum'){s.ph='listen';s.t=T+2+Math.random()*1.6;PAT.state='script';t.moving=false;snkSay(t.id,'(stops humming)');try{tone(90,.3,'sine',.12)}catch(_){}}
+    else{s.ph='hum';s.t=T+3.5+Math.random()*3;PAT.state='walk';s.sus=0}}
+   if(s.ph==='hum'&&Math.random()<rdt*2.2){try{tone(pick([262,294,330,349,392]),.32,'triangle',.05)}catch(_){}}
+   if(s.ph==='listen'&&mv&&!SNK.vent){s.sus=(s.sus||0)+rdt;if(s.sus>.18){PAT.state='walk';PAT.alert=Math.min(1.05,PAT.alert+.6);t.dir=a.x>t.x?1:-1;s.ph='hum';s.t=T+2;snkSay(t.id,'I HEARD that.')}}}
+  if(!SNK.vent)for(const gl of s.glass){const on=Math.abs(a.x-gl.x)<6;if(on&&mv&&!SNK.crouch&&!gl.hit){gl.hit=1;SFX.glass&&SFX.glass();shake(.15);if(PAT&&PAT.state!=='chase'){PAT.state='walk';PAT.alert=Math.min(1.05,PAT.alert+.5);twSpot(s,a.x);snkSay(t.id,'…Glass? Who’s walking on my glass?')}}if(!on)gl.hit=0}},
+ draw(s){for(const gl of s.glass){const lit=Math.sin(T*3+gl.x)>.2;R(gl.x-5,gl.y,3,1,'#9ac8e0');R(gl.x-1,gl.y-1,2,1,'#c8e8f8');R(gl.x+2,gl.y+1,3,1,'#8ab0c8');if(lit)R(gl.x,gl.y-1,1,1,'#ffffff')}
+  const t=twT();if(t&&!SNK.vent){const x=t.x+8,y=t.y-46+Math.round(Math.sin(T*3)*1);if(s.ph==='hum'){R(x,y,1,5,'#ffe8a0');R(x-2,y+4,3,2,'#ffe8a0');R(x+1,y,2,1,'#ffe8a0')}}},
+ screen(s){if(SNK.vent)return;if(s.ph==='listen')twBanner(twHe(PAT&&PAT.id)+' STOPPED HUMMING. FREEZE.',Math.sin(T*10)>0?'#ff6a5a':'#ffd0c8','#300808e0');else twBanner(twHe(PAT&&PAT.id)+' IS HUMMING. MOVE NOW','#9ad09a',null,3)}},
+/* ---------- 3. MOTION-SENSOR LIGHTS ---------- */
+sensors:{
+ start(s){s.sens=[56,128,200,272].map(x=>({x,on:0}));(SNK.intro=SNK.intro||[]).push({t:'SENSOR LIGHTS. CROUCH WHEN YOU PASS UNDER ONE',until:T+7})},
+ update(s,rdt){const t=twT(),a=A.you;if(!t)return;const mv=twMoved(s,a);
+  for(const z of s.sens){if(!SNK.vent&&mv&&!SNK.crouch&&Math.abs(a.x-z.x)<18&&T>z.on){z.on=T+4;SFX.click&&SFX.click();try{tone(1200,.04,'square',.04)}catch(_){}if(Math.abs(t.x-z.x)<180&&PAT.state==='walk'){twSpot(s,z.x);snkSay(t.id,pick(['Who’s there?','Somebody tripped my light.','I SEE that light.']))}}
+   if(T<z.on&&!SNK.vent&&Math.abs(a.x-z.x)<22&&PAT.state==='walk'&&Math.sign(a.x-t.x)===t.dir&&Math.abs(a.x-t.x)<170)PAT.alert=Math.min(1.05,PAT.alert+.9*rdt)}
+  if(PAT.inv!=null&&PAT.state==='walk'){t.dir=PAT.inv>t.x?1:-1;PAT.pause=0;if(Math.abs(t.x-PAT.inv)<6){PAT.inv=null;PAT.pause=1.6}}},
+ draw(s){for(const z of s.sens){const on=T<z.on;R(z.x-4,70,9,4,'#2a2a30');R(z.x-3,71,7,2,'#3a3a44');R(z.x,73,1,1,on?'#9aff9a':(Math.sin(T*2+z.x)>0?'#ff3a3a':'#6a1a1a'));
+   if(on){g.save();g.globalCompositeOperation='lighter';const lg=g.createLinearGradient(0,74,0,170);lg.addColorStop(0,'rgba(255,240,200,.45)');lg.addColorStop(1,'rgba(255,240,200,.05)');g.fillStyle=lg;g.beginPath();g.moveTo(z.x-4,74);g.lineTo(z.x+4,74);g.lineTo(z.x+28,170);g.lineTo(z.x-28,170);g.fill();g.restore()}}},
+ screen(s){const a=A.you;if(SNK.vent||busy)return;const near=s.sens.find(z=>Math.abs(a.x-z.x)<26);if(near&&!SNK.crouch)twBanner('SENSOR LIGHT ABOVE YOU. CROUCH WITH C','#ffd890')}},
+/* ---------- 4. YOUR PHONE ---------- */
+phone:{
+ start(s){s.next=T+9+Math.random()*5;s.count=0;(SNK.intro=SNK.intro||[]).push({t:'IF YOUR PHONE BUZZES PRESS P FAST',until:T+7})},
+ update(s,rdt){const t=twT();if(!t)return;
+  if(!s.ring&&T>s.next&&s.count<4&&PAT.state==='walk'){s.ring={t0:T,dur:2},s.count++;s.from=pick([['HASAN','yo where r u'],['NIVAAN','did u get it yet'],['MOM','pick up milk'],['KAYDEN','bro answer'],['DAVID','dont get caught lol']])}
+  if(s.ring){const el=T-s.ring.t0;if(Math.floor(el*6)%2===0&&Math.random()<rdt*14){try{noise(.04,.05,140,3,'bandpass')}catch(_){}}
+   if(el>s.ring.dur){s.ring=null;s.next=T+12+Math.random()*8;s.show=null;
+    for(let i=0;i<6;i++)setTimeout(()=>{try{tone([659,784,880,784,659,523][i],.14,'square',.08)}catch(_){}},i*140);
+    snkSay(t.id,'WHOSE. PHONE. IS. THAT.');
+    if(SNK.vent){const g0=SNK.grates.slice().sort((p,q)=>Math.abs(p.x-SNK.vx)-Math.abs(q.x-SNK.vx))[0];snkPeek(g0,true)}else{PAT.state='chase';PAT.seen=true;PAT.alert=1.05;t.ex='angry'}}}},
+ key(s){if(!s.ring)return false;s.ring=null;s.next=T+11+Math.random()*8;s.show={t:s.from,until:T+2.4};SFX.click&&SFX.click();return true},
+ screen(s){if(s.ring){const left=Math.max(0,1-(T-s.ring.t0)/s.ring.dur);twBanner('YOUR PHONE IS BUZZING! PRESS P TO SILENCE IT',Math.sin(T*12)>0?'#ff6a5a':'#ffe8a0','#300808',1);R(W/2-50,50,Math.round(100*left),2,'#ff6a5a')}
+  else if(s.show&&T<s.show.until)twBanner('SILENCED. '+s.show.t[0]+': '+s.show.t[1].toUpperCase(),'#cbbfd8',null,3)}},
+/* ---------- 5. HOLD YOUR BREATH ---------- */
+breath:{
+ start(s){s.air=1;s.hold=false;(SNK.intro=SNK.intro||[]).push({t:'WHEN HE IS CLOSE HOLD SPACE TO HOLD YOUR BREATH',until:T+7})},
+ update(s,rdt){const t=twT(),a=A.you;if(!t||PAT.state==='chase')return;const ax=SNK.vent?SNK.vx:a.x;s.zone=Math.abs(t.x-ax)<44;
+  if(s.hold){s.air=Math.max(0,s.air-rdt*.26);if(s.air<=0){s.hold=false;SFX.gasp&&SFX.gasp();s.air=.25;if(s.zone){PAT.alert=Math.min(1.05,PAT.alert+.7);t.dir=ax>t.x?1:-1;snkSay(t.id,'…Was that a gasp?')}}}
+  else s.air=Math.min(1,s.air+rdt*.32);
+  if(s.zone&&!s.hold){s.heard=(s.heard||0)+rdt;if(s.heard>.5){PAT.alert=Math.min(1.05,PAT.alert+1.1*rdt);if(!s.said){s.said=1;snkSay(t.id,'(sniffing) …Is somebody BREATHING in here?')}}}else{s.heard=0;if(!s.zone)s.said=0}
+  if(s.zone&&Math.random()<rdt*1.6){try{tone(48,.12,'sine',.22)}catch(_){}}},
+ screen(s){if(busy)return;const a=A.you;if(s.zone||s.air<1){const x=8;R(x,148,70,9,'#000000c0');R(x+2,150,Math.round(66*s.air),5,s.air<.3?'#ff5a4a':'#8ac8f0');px('BREATH',x+2,140,'#cbe0f0')}
+  if(s.zone&&!s.hold)twBanner('HE IS RIGHT THERE. HOLD SPACE TO HOLD YOUR BREATH',Math.sin(T*10)>0?'#ff6a5a':'#ffd0c8','#300808e0')}},
+/* ---------- 6. MOUSETRAPS ---------- */
+traps:{
+ start(s){const f=floorOf(D.room);s.traps=[84,140,236].map(x=>({x,y:f[0]+14,shut:0}));(SNK.intro=SNK.intro||[]).push({t:'MOUSETRAPS. CROUCH TO STEP OVER THEM',until:T+7})},
+ update(s,rdt){const a=A.you;if(SNK.vent||!a)return;const mv=twMoved(s,a);const t=A.voss;
+  for(const tr of s.traps){if(tr.shut||!mv||Math.abs(a.x-tr.x)>4)continue;if(SNK.crouch){tr.over=T;continue}
+   tr.shut=1;SFX.smack&&SFX.smack();shake(.35);a.ex='hurt';setTimeout(()=>{if(A.you)A.you.ex=null},700);
+   if(t&&PAT&&PAT.state==='walk'){PAT.alert=Math.min(1.05,PAT.alert+.7);t.dir=a.x>t.x?1:-1;snkSay('voss','(far away, delighted) Oh! Did we catch one?')}}},
+ draw(s){for(const tr of s.traps){const x=tr.x,y=tr.y;R(x-4,y-1,9,2,'#8a6038');R(x-4,y-1,9,1,'#a87848');if(tr.shut){R(x-3,y-3,7,1,'#c8c8c8');R(x-3,y-2,1,1,'#c8c8c8')}else{R(x-3,y-2,6,1,'#c8c8c8');R(x+3,y-5,1,4,'#c8c8c8');R(x-1,y-2,2,1,'#e8d070')}
+  if(Math.sin(T*4+x)>.6)R(x+3,y-5,1,1,'#ffffff')}}}
+};
+/* run them */
+{const _hu=HOOK.update;HOOK.update=(dt,rdt)=>{_hu&&_hu(dt,rdt);const id=twId();
+ if(id!==TW.id){if(TW.id){SNK.coneLen=0;SNK.coneW=0;if(PAT)PAT.inv=null}TW.id=id;TW.s={};if(id&&TWX[id].start)TWX[id].start(TW.s)}
+ if(id&&!TEST&&snkFree()&&TWX[id].update)TWX[id].update(TW.s,rdt)}}
+{const _do=HOOK.drawOver;HOOK.drawOver=(...x)=>{_do&&_do(...x);if(TW.id&&TWX[TW.id].draw&&!TEST&&ROOM===D.room)TWX[TW.id].draw(TW.s)}}
+{const _ss=snkScreen;snkScreen=function(){_ss();if(TW.id&&TWX[TW.id].screen&&!TEST&&SNK.on){g.setTransform(1,0,0,1,0,0);TWX[TW.id].screen(TW.s)}}}
+/* keys: P silences the phone, SPACE/H held = hold your breath */
+addEventListener('keydown',e=>{if(!TW.id||busy||panelMode!=='roam')return;const k=e.key;
+ if(TW.id==='phone'&&(k==='p'||k==='P')){if(TWX.phone.key(TW.s)){e.preventDefault();e.stopImmediatePropagation()}}
+ if(TW.id==='breath'&&(k===' '||k==='h'||k==='H')&&TW.s.zone!=null&&(TW.s.zone||TW.s.hold)){e.preventDefault();e.stopImmediatePropagation();if(TW.s.air>.05)TW.s.hold=true}},true);
+addEventListener('keyup',e=>{if(TW.id==='breath'&&(e.key===' '||e.key==='h'||e.key==='H'))TW.s.hold=false});
+/* touch buttons */
+{const _sb=snkBtns;snkBtns=function(on){_sb(on);const b=$('snkb');if(!b)return;if(!$('sbP')){const p=document.createElement('button');p.id='sbP';p.textContent='SILENCE';p.onclick=e=>{e.preventDefault();if(TW.id==='phone')TWX.phone.key(TW.s)};b.appendChild(p);
+  const h=document.createElement('button');h.id='sbH';h.textContent='HOLD BREATH';h.addEventListener('pointerdown',e=>{e.preventDefault();if(TW.id==='breath'&&TW.s.air>.05)TW.s.hold=true});h.addEventListener('pointerup',()=>{if(TW.id==='breath')TW.s.hold=false});b.appendChild(h)}}}
 
 </script>
 <script>
