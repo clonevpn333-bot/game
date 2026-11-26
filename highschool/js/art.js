@@ -38,7 +38,7 @@ const K={
 const FRIENDS=['hasan','arjun','david','omer','nivaan','corey','sean','stella','abby','aidan','angelo','alex','dheva','marcus','paul','kenneth','jacob'];
 const TEACHERS=['balduf','shermian','sherman','loach','voss','coach','pat'];
 
-function kidGeom(k,o){const ad=k.adult?1:0,hh=k.h||0,lr=Math.round(hh/2),p=o&&o.pose,sit=p==='sit'||p==='write',kn=p==='kneel',cr=p==='crouch';
+function kidGeom(k,o){const ad=k.adult?1:0,hh=k.h||0,lr=Math.round(hh/2),p=o&&o.pose,sit=p==='sit'||p==='write',kn=p==='kneel'||p==='beg'||p==='sob',cr=p==='crouch';
  return{legH:sit?4:kn?3:cr?(4+ad):(7+lr+ad*3),bodyH:9+hh-lr+ad*3,bw:(k.wide?13:k.thin?8:10)+ad,hw:k.knob?10:12,hd:k.knob?12:11}}
 
 /* ---------- head: used by bodies, portraits and severed heads ---------- */
@@ -148,7 +148,7 @@ function drawKid(k,x,y,o){
   R(M(-7,5),y-4,5,3,P);R(M(-8-sh,5),y-1,5,1,shoe);
   R(M(1,7),y-5,7,2,k.pants);R(M(4,4),y-3,4,2,P);R(M(4+sh,5),y-1,5,1,shoe);R(M(7+sh,1),y-1,1,1,'rgba(255,255,255,.18)');
   R(M(-4,8),y-4,8,1,'rgba(0,0,0,.18)')}
- else if(p==='kneel'){R(bx+1,y-3,bw-2,3,k.pants);R(bx-(d>0?2:-bw+3),y-1,5,1,shoe)}
+ else if(p==='kneel'||p==='beg'||p==='sob'){R(bx+1,y-3,bw-2,3,k.pants);R(bx-(d>0?2:-bw+3),y-1,5,1,shoe)}
  else if(p==='kick'){const kk=Math.sin(T*12)>0;R(bx+(d>0?1:bw-1-lw),y-legH,lw,legH,k.pants);R(bx+(d>0?1:bw-1-lw)-(d<0?1:0),y-1,lw+1,1,shoe);if(kk){R(d>0?bx+bw-2:bx-8,y-legH+1,10,lw-1,k.pants);R(d>0?bx+bw+7:bx-10,y-legH,3,lw,shoe)}else{R(bx+bw-1-lw,y-legH,lw,legH-2,k.pants)}}
  else if(p==='stomp'){const up=Math.sin(T*9)>0;R(bx+(d>0?1:bw-1-lw),y-legH,lw,legH,k.pants);R(bx+(d>0?1:bw-1-lw)-(d<0?1:0),y-1,lw+1,1,shoe);const kx=bx+(d>0?bw-1-lw:1);if(up){R(kx,y-legH,lw,legH-4,k.pants);R(kx+d*2,y-legH+legH-6,lw,3,k.pants);R(kx+d*2-(d<0?1:0),y-5,lw+1,2,shoe)}else{R(kx,y-legH,lw,legH,k.pants);R(kx-(d<0?1:0),y-1,lw+2,1,shoe)}}
  else if(p==='drag'){R(bx+1-d,y-legH,lw,legH,k.pants);R(bx-d,y-1,lw+1,1,shoe);R(bx+bw-1-lw-d*2,y-legH+1,lw,legH-1,k.pants);R(bx+bw-1-lw-d*3,y-1,lw+1,1,shoe)}
@@ -220,6 +220,10 @@ function drawKid(k,x,y,o){
   case'crouch':{const M=(u,w)=>d>0?x+u:x-u-w,a1=mv?Math.round(st):0;
    R(M(-4,2),by+3,2,3,top);R(M(-4-Math.max(0,a1),2),by+6,2,2,sk);
    if(!o.torch){R(M(6,2),by+3,2,2,top);R(M(7+a1,2),by+5,2,2,sl);R(M(8+a1,2),by+7,2,2,sk)}hx=M(8+a1,2);hy=by+7;break}
+  case'clap':case'slowclap':{const c=Math.sin(T*(p==='slowclap'?4:11)+k.seed)>0;R(d>0?bx+bw-2:bx-4,by+3,6,2,sl);R(d>0?bx-1:bx+bw-1,by+3,2,2,sl);R(d>0?bx+bw+3:bx-5,by+(c?2:3),2,3,sk);R(d>0?bx+bw+(c?3:5):bx-(c?5:7),by+(c?2:1),2,3,sk);hx=-99;break}
+  case'dance':{const a1=Math.sin(T*7+k.seed)>0,L=typeof limb==='function'?limb:null;if(L){if(a1){L(bx-1,by+1,bx-8,by-7,-1,top,sl,sk);L(bx+bw-1,by+1,bx+bw+4,by+6,1,top,sl,sk)}else{L(bx-1,by+1,bx-5,by+6,-1,top,sl,sk);L(bx+bw-1,by+1,bx+bw+6,by-7,1,top,sl,sk)}}hx=-99;break}
+  case'beg':{const s1=Math.sin(T*9)>0?1:0;R(d>0?bx+bw-2:bx-3,by+3,5,2,sl);R(d>0?bx-1:bx+bw-1,by+3,3,2,sl);R(d>0?bx+bw+2:bx-5,by+1-s1,3,4,sk);hx=-99;break}
+  case'sob':for(const ax of[bx-2,bx+bw]){R(ax,by+1,2,4,sl)}hx=-99;break;
   case'kneel':R(bx-2,by+1,2,6,sl);R(bx-2,by+7,2,2,sk);R(fs,by+2,2,4,sl);R(fs+d*2,by+5,2,2,sk);hx=fs+d*2;hy=by+5;break;
   default:
    if(run){const s2=Math.round(st*3);R(bx-2+s2,by+1,2,4,top);R(bx-2+s2+d,by+5,2,2,sl);R(bx-2+s2+d,by+6,2,2,sk);R(bx+bw-s2,by+1,2,4,top);R(bx+bw-s2+d,by+5,2,2,sl);R(bx+bw-s2+d,by+6,2,2,sk);hx=-99;break}

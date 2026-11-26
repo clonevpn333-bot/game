@@ -19,6 +19,7 @@ const ARMS={
  zombie:{f:[9,1],b:[7,3]},overhead:{f:[-1,-13],b:[1,-13]},stab:{f:[8,3],b:[0,7]},drag:{f:[-9,3],b:[0,5]},stomp:{f:[4,-1],b:[-4,-1]},
  kneel:{f:[2,5],b:[0,7]},conduct:{f:[1,-6],b:[0,7]},paint:{f:[6,1],b:[0,7]},type:{f:[4,5],b:[3,6]},swim:{f:[0,-8],b:[0,-8]},
  saw:{f:[7,3],b:[0,7]},sing:{f:[2,3],b:[-2,3]},dribble:{f:[1,8],b:[0,7]},
+ clap:{f:[5,3],b:[5,3]},slowclap:{f:[5,3],b:[5,3]},dance:{f:[0,-8],b:[0,7]},beg:{f:[2,-3],b:[2,-3]},sob:{f:[-2,-4],b:[2,-4]},
 };
 const armOf=p=>ARMS[p]||ARMS._;
 /* how a feeling moves */

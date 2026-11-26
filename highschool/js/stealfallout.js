@@ -25,6 +25,7 @@ const FALL=[
   text:'He wrote me a letter. By hand. He spelt “sorry” wrong in three different ways.'}
 ];
 const day=()=>typeof cal==='function'?cal():0;
+const alive_=k=>K[k]&&!D.dead[k];
 for(const F of FALL){
  const {gid,bf,steal,id}=F,G=()=>K[gid].n.split(' ')[0],B=()=>K[bf].n.split(' ')[0];
  if(!K[gid]||!K[bf])continue;
@@ -118,7 +119,7 @@ for(const F of FALL){
   await say(gid,'We’re done. I’m telling you here so you can’t make it a secret thing. Secret things are how you two operate.','cold');
   const c=await choose(['Beg.','Dump her first. Loudly.','“…Okay.”']);
   let v='took';
-  if(c===0){v='begged';pose('you','kneel');await mash('BEG',{need:18,time:3,info:'Out loud. In the cafeteria.'});
+  if(c===0){v='begged';pose('you','beg');await mash('BEG',{need:18,time:3,info:'Out loud. In the cafeteria.'});
    await N('You beg. Out loud. On one knee, by the ketchup. Kaylee zooms in so hard the phone focuses on your nostril.');
    await say(gid,'(quietly) Get up. Please. You’re making it worse for both of us.','sad');pose('you',null)}
   else if(c===1){v='first';pose('you',null);await say('you','Actually, I’M breaking up with YOU.');
@@ -128,7 +129,11 @@ for(const F of FALL){
   await N('She doesn’t walk to '+B()+'’s table either. She walks out of the cafeteria and, as far as anyone can tell, out of both your lives.');
   SFX.crowd&&SFX.crowd();
   for(const k of watch)if(typeof bubbles!=='undefined')bubbles.push({id:k,txt:'LOSER',t:2.2});
-  await N('Somebody starts a slow clap. It catches. It goes round the whole cafeteria. Lunch Lady Pat joins in.');
+  if(watch[1])pose(watch[1],'slowclap');
+  await N('Somebody starts a slow clap.');
+  for(const k of watch){pose(k,'slowclap');await wait(TEST?0:220)}
+  await N('It catches. It goes round the whole cafeteria.');
+  if(alive_('pat')){put('pat',-14,1,{y:146});await walk('pat',60,70);face('pat',1);pose('pat','slowclap');await N('Lunch Lady Pat comes out from behind the counter to join in.')}
   if(A[bf]){await walk(bf,96,60);face(bf,1);
    await say(bf,'You know the worst part? I’m not even happy. I wanted to be so happy about this.','sad');
    await say(bf,'She left both of us. We’re the same now. Me and you. Two idiots.','cold');
