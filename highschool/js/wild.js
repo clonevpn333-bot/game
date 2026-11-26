@@ -28,7 +28,7 @@ spot({room:'gym',period:[2,4],x:286,y:140,label:'Look up at the gym doors',short
  if(c===1){await N('You catch Brayden in the hall and tell him. He looks at you for a long time. Then he goes in through the OTHER door, walks up behind Kayden, and pulls the rope himself. Kayden was standing under it to check the aim.');
   stain('kayden','blood',14);A.kayden.ex='shock';SFX.squelch&&SFX.squelch();prop({t:'bloodpool',x:250,y:150,layer:-1});await say('kayden','(dripping, very calm) …There’s a heart in my hood.','shock');return 'stay'}
  if(c===0){put('brayden',334,-1,{y:150});await walk('brayden',292,70);bk.tip=1;SFX.squelch&&SFX.squelch();shake(.6);stain('brayden','blood',16);A.brayden.ex='scream';prop({t:'bloodpool',x:292,y:152,layer:-1});
-  await say('brayden','AAAAAAAAAAAAAAAA','scream');await N('The whole gym goes silent. Then the whole gym films it. Brayden walks out with a pig’s heart on his shoulder like a parrot. By sixth period he’s a legend. Nobody knows why.');
+  await say('brayden','AAAAAAAAAAAAAAAA','scream');await N('The whole gym goes silent. Then the whole gym films it. Brayden walks out with a pig’s heart on his shoulder like a parrot. By sixth period he’s a legend.');
   await walk('brayden',350,90);remove('brayden');return 'stay'}
  await N('Kayden hands you the rope like it’s a sacred duty. You wait. Footsteps. Heavy. A whistle, swinging.');
  put('coach',334,-1,{y:146,ex:'cold'});await walk('coach',292,60);

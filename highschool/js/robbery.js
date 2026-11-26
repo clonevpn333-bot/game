@@ -49,7 +49,7 @@ hook({mis:'robbery',period:8,room:'arcade',who:'auto',cond:()=>robRoll('arcade')
  const cm=pprop({t:'claw',x:200,y:148,layer:-5});
  await N('Two kids are going at the claw machine with a hammer they definitely got from Mr. Oakes’s room.');
  pose('kid2','overhead');await wait(200);SFX.glass();shake(.8);cm.smashed=1;pose('kid2',null);
- await N('The glass comes in. Stuffed animals everywhere. Somewhere a man in an Arcadia polo shirt starts running toward you from very far away.');
+ await N('The glass comes in. Stuffed animals everywhere. A man in an Arcadia polo shirt starts running from very far away.');
  const c=await choose(['Grab a stuffed animal and run.','Help the polo-shirt man catch them.','Walk away. Not your claw machine.']);
  if(c===0){hold('you','flower');D.f.robbedToday=1;await walk('you',-20,140);await N('You got a one-eyed duck. It looks exactly like the one Sean won Stella. It might be its brother.');hold('you',null)}
  else if(c===1&&A.kid4){await walk('you',A.kid4.x+10,110);await hit('you','kid4',{blood:3});await N('You tackle one. The other one gets away with a dinosaur under each arm. The polo-shirt man arrives two minutes later, out of breath, and gives you a single ticket.')}

@@ -308,7 +308,7 @@ spot({room:'hallb',x:220,y:146,label:'Knock on the VP office door for Mr. Adam',
  await say('you','It’s Jacob. His little sister had a seizure at school. His mom’s in surgery. He needs a ride. Now.');
  await say('adam','(already grabbing his keys) Where is he? Go. Go get him. Bus loop. I’ll bring the car round.','yell');
  await walk('adam',-20,120);remove('adam');
- await N('Later you hear what happened. Mr. Adam drove Jacob there doing fifty in a thirty, with his hazard lights on the whole way, and sat in the school office with him for an hour. He missed a meeting with the district. He didn’t tell anybody that part. Jacob did.');
+ await N('Later, Jacob tells you. Fifty in a thirty, hazards on the whole way. Mr. Adam sat with him for an hour and missed the district meeting. He never mentioned it.');
  D.f.gi3=1;part('giant',3);return 'stay';
 }});
 hook({mis:'giant',period:7,room:'bus',who:'jacob',label:'Sit with Jacob',look:{ex:'sad'},cond:()=>D.f.gi3&&!D.done.giant&&!D.dead.jacob,run:async()=>{

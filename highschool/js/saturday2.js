@@ -17,7 +17,7 @@
  await say('you','I know what happened in 1987.');
  await say('aidan','…Nobody knows what happened in 1987. That’s the whole point. That’s why it keeps happening.','sad');
  await say('you','Detention in the boiler room. Four sixth graders. She told them to wait and went to get a coffee. The boiler went at quarter past three.');
- await say('aidan','(very quietly) Ollie Finch. Danny Shaw. Priya Lal. Michael Kerr.','cry');
+ await say('aidan','(very quietly) Ollie Finch. Raj Patel. Danny Mason. Louise Okafor.','cry');
  await say('aidan','It keeps the day because nobody ever said it. Not one person, out loud, all together. It needs more than me. It needs everyone.','sad');
  /* 1. bring them over */
  const line=[];const lineX=i=>188+Math.min(i,7)*16;
@@ -34,7 +34,7 @@
  }
  /* 2. the names */
  cue('dawn');fxState.romance=.15;
- const names=['OLLIE FINCH','DANNY SHAW','PRIYA LAL','MICHAEL KERR'],ghosts=['ollie','ghost1','ghost2','ghost3'];
+ const names=['OLLIE FINCH','RAJ PATEL','DANNY MASON','LOUISE OKAFOR'],ghosts=['ollie','ghost1','ghost2','ghost3'];
  for(let i=0;i<4;i++){
   let ok=0;while(!ok){ok=await meter('Together: “'+names[i]+'”',{speed:.75,info:'Everyone says it at once. Hit it when they do.'});
    if(!ok){await N(pick(['It comes out ragged. Half the line is a beat behind. Again.','Somebody laughs, nervous. Again. Properly.']))}}

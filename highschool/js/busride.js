@@ -123,7 +123,7 @@ const RIDE=[
    await say('pauljones','(crying now) I wasn’t gonna— I didn’t know who it was for. I didn’t know if it was for them or for me. I just didn’t want to go home.','cry');
    hold('pauljones',null);hold('you','pistol');
    await N('He holds it out flat on his hand, the way you’d give somebody a bird. You take it. Your hands are shaking worse than his.');
-   await N('Then he sits down in the aisle with his head in his hands. The whole bus is completely silent. The driver opens the door, puts on the hazard lights and doesn’t say a single word.');
+   await N('He sits down in the aisle with his head in his hands. Silence. The driver opens the door, puts the hazards on, and says nothing.');
    pose('pauljones',null);pose('you',null);hold('you',null);
    await N('When the police come, Paul Jones tells them everything before they ask. On his way off the bus, he looks back at you and nods. Just once.');
    await complete('pauljones','given');
@@ -139,7 +139,7 @@ const RIDE=[
    for(const k of['you'])A[k].pose='kneel';
    SFX.bang&&SFX.bang();shake(1.5);flash('#a00010',.4);
    if(target&&A[target]){blood(A[target].x,A[target].y-20,40,null,80,A[target].y+2);kill(target,'lie',{pool:30});D.dead[target]=1}
-   await N('One shot. Then nothing. Paul Jones sits down in the aisle, puts the gun on the floor in front of him, and puts his hands on his head. He knows what happens next. He looks like he’s known for a while.');
+   await N('One shot. Then nothing. Paul Jones sits down in the aisle, puts the gun on the floor in front of him, and puts his hands on his head. He looks like he’s known for a while.');
    if(target)await N(K[target].n+' doesn’t get up. Nobody on the 43 says anything all the way to the hospital stop, where an ambulance is already waiting, lights on, no siren.');
    await complete('pauljones','shot');
   }
@@ -235,7 +235,7 @@ const RIDE=[
  }},
  {id:'adamCar',w:8,cond:()=>P.crew&&P.crew.ev&&P.crew.ev.confession&&!P.crew.rideAd,run:async()=>{
   crew().rideAd=1;save();
-  await N('Mr. Adam’s car is parked at the side of the road near the arcade. He’s just sitting in it with the engine off. As the bus goes past, he looks up at your window and nods. He looks lighter. Thirty-nine years lighter.');
+  await N('Mr. Adam’s car is parked at the side of the road near the arcade. He’s just sitting in it with the engine off. As the bus goes past, he looks up at your window and nods. He looks lighter.');
  }}
 ];
 async function busRide(fromMall){

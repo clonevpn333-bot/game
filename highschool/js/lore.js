@@ -77,14 +77,14 @@ hook({mis:'calling',period:7,room:'bus',who:'aidan',label:'“I know what happen
  await say('aidan','…Nobody knows what happened in 1987. That’s the whole point. That’s why it keeps happening.','sad');
  await say('you','Friday the thirteenth of March. Detention in the boiler room, because Ms. Sherman’s office was being painted. Four sixth graders. She told them to wait and went to get a coffee.');
  await say('you','The boiler went at quarter past three. They were in the coal chute. The paper said nobody was hurt. They built a swimming pool on top and a trapdoor over the chute and never said their names again.');
- await say('aidan','(very quietly) Ollie Finch. Danny Shaw. Priya Lal. Michael Kerr.','cry');
+ await say('aidan','(very quietly) Ollie Finch. Raj Patel. Danny Mason. Louise Okafor.','cry');
  if(A.hasan)await say('hasan','What are you two talking about? What’s— why is everyone being quiet?','shock');
  await say('aidan','It doesn’t keep the day because of me. It keeps it because nobody said it. It finds whoever’s alone enough on a Friday and it keeps them. Ollie was the first. I’m the latest.','sad');
  await say('aidan','It found me in sixth grade. The Friday you all laughed at my haircut. I went to the bathroom and I didn’t come out until Monday, except Monday never came.','cry');
  const c=await choose(['“Then we say it. Everyone. Right now.”','Say nothing. Hold his hand.']);
  if(c===1){pose('you','hold');await N('You take his hand. It’s cold. It stays cold. But he doesn’t let go.')}
- await say('you','Their names were Ollie Finch, Danny Shaw, Priya Lal and Michael Kerr.');
- for(const n of present.slice(0,6))if(A[n]){await say(n,'Ollie Finch. Danny Shaw. Priya Lal. Michael Kerr.','sad');}
+ await say('you','Their names were Ollie Finch, Raj Patel, Danny Mason and Louise Okafor.');
+ for(const n of present.slice(0,6))if(A[n]){await say(n,'Ollie Finch. Raj Patel. Danny Mason. Louise Okafor.','sad');}
  if(!D.dead.sherman){
   put('sherman',334,-1,{y:150});await walk('sherman',236,40);
   await say('sherman','…Where did you hear those names.','shock');

@@ -327,7 +327,7 @@ async function inspectionDay(){
    await walk(who,A.insp1.x+16,60);face(who,-1);
    await say(who,'(holding her wrists out to the inspectors, very quietly) It was me. In 1987. I left them in the boiler room and went for a coffee. I went back. I was too late for one of them. I have been too late every Friday since.','cry');
    if(!(D.done.dopple||P.done.dopple))await N('Somewhere under the school, under the pool, under the boiler, something that has been chewing for thirty-nine years stops. And doesn’t start again.');
-   await N('Nobody moves. The smiles along the wall go out one by one, like somebody walking down a corridor turning off lights. Not a single person gets hurt. It is the strangest, quietest ending anyone in that hall will ever see.');
+   await N('Nobody moves. The smiles along the wall go out one by one, like someone walking down a corridor turning off lights.');
    c.finale='confessed';
   }else if(A.shermian){
    await walk('shermian',A.insp1.x+12,120);
