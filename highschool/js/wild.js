@@ -5,20 +5,16 @@
    they go somewhere nobody expects.
    • THE BUCKET  (gym, break/lunch) a bucket of fake blood rigged over the
      gym doors. Who gets it is up to you. Coach is never the same.
-   • THE HOLE    (field, break/lunch) Wormy has been digging to the
-     vending machine room for a year. Follow him down.
+   • LOCKER 217  (js/locker217.js) ten minutes in 1987.
    • VENT VICTOR (any vent) a kid has lived in the vents for three years.
    + Mr. Kim's magic box now goes DOWN: a playable crawl under the stage.
    ===================================================================== */
 GOO.blood=GOO.blood||['#8a0d16','#b3121e','#d21f2b','#5e0a12'];
-K.wormy={id:'wormy',n:'Wormy',col:'#8a6a3a',skin:'#e8c0a0',hair:'#5a3a1a',hs:'messy',top:'#7a5a3a',pants:'#3a2a1a',seed:211,v:310};
 K.victor={id:'victor',n:'Vent Victor',col:'#6a7a6a',skin:'#d8c8b0',hair:'#3a3a2a',hs:'long',top:'#4a5a4a',pants:'#2a2a2a',seed:212,v:240};
 Object.assign(DEATHS,{
- bucket:{name:'Drenched',desc:'Coach found out who pulled the rope. He did forty laps with you. You were the baton.',hint:'The bucket over the gym door. Pull it, then RUN.'},
- buried:{name:'Nugget',desc:'You kept digging. The field came down. They put a small cross of popsicle sticks where you were.',hint:'Wormy’s hole on the field. Know when to stop digging.'}});
+ bucket:{name:'Drenched',desc:'Coach found out who pulled the rope. He did forty laps with you. You were the baton.',hint:'The bucket over the gym door. Pull it, then RUN.'}});
 {const _dp=drawProp;drawProp=function(p){const x=Math.round(p.x),y=Math.round(p.y);
  if(p.t==='wbucket'){if(p.tip){g.save();g.translate(x,y);g.rotate(p.tip*1.8);R(-5,-6,10,8,'#7a7a82');R(-5,-6,10,2,'#9a9aa2');R(-4,-5,8,2,'#b3121e');g.restore()}else{R(x-5,y-6,10,8,'#7a7a82');R(x-5,y-6,10,2,'#9a9aa2');R(x-4,y-5,8,2,'#b3121e')}R(x+5,y-4,30,1,'#c8b080');return}
- if(p.t==='hole'){R(x-16,y-12,32,13,'#6a4a2a');R(x-18,y-6,36,7,'#5a3a1a');R(x-14,y-13,28,2,'#7a5a3a');R(x-20,y-2,4,3,'#6a4a2a');R(x+16,y-3,5,4,'#6a4a2a');for(let i=0;i<6;i++)R(x-14+i*5,y-9+(i%2),2,1,'#4a2a10');R(x+18,y-16,1,10,'#c8c8c8');R(x+16,y-17,4,2,'#c8c8c8');return}
  if(p.t==='bloodpool'){R(x-12,y-1,24,3,'#8a0d16');R(x-9,y,18,2,'#b3121e');return}
  return _dp(p)}}
 
@@ -47,28 +43,6 @@ spot({room:'gym',period:[2,4],x:286,y:140,label:'Look up at the gym doors',short
 /* Coach is bloody the rest of the day */
 {const _br=buildRoom;buildRoom=function(room){const r=_br(room);try{if(D&&D.f&&D.f.coachBloody===cal()&&A.coach&&!(A.coach.stain&&A.coach.stain.length))stain('coach','blood',18)}catch(e){}return r}}
 
-/* ---------------- THE HOLE ---------------- */
-spot({room:'field',period:[2,4],x:250,y:150,label:'Look in the hole by the goalpost',short:'?',cond:()=>!D.weekend&&!D.f.holeDone&&!(P.wormyGone&&P.wormyGone===P.runs),run:async()=>{
- for(const id in A)if(id!=='you'&&A[id]&&!A[id].dead&&Math.abs(A[id].x-250)<40)walk(id,A[id].x<250?A[id].x-60:A[id].x+60,90);put('wormy',250,-1,{y:142,ex:'happy'});prop({t:'hole',x:250,y:142,layer:4});await walk('you',214,90);
- await say('wormy','(head and shoulders out of the ground, covered in dirt) Oh. Hi. I’m Wormy. I’m digging to the vending machine room. It’s under the school. Everyone knows that.','happy');
- await say('wormy','I’ve been digging for a year. I’m SO close. Wanna see?','happy');
- const c=await choose(['Climb down with him.','“Wormy. Get out of the hole.”','Walk away.']);
- if(c===2){await N('You walk away. Behind you, the sound of a tiny spoon going into dirt, forever.');return 'stay'}
- if(c===1){await say('wormy','Out? But the vending machine room—','sad');await N('You pull him out by the armpits. He weighs nothing. He’s been eating dirt. He cries a little and then thanks you and then asks if you have any chips.');D.f.holeDone=1;P.wormySaved=1;return 'stay'}
- /* down */
- D.f.holeDone=1;remove('wormy');fxState.dark=0;await tw(fxState,{dark:.82},500);
- await N('Down. The tunnel goes sideways, then down again. Spoon marks on every wall. Wormy has dug about thirty feet with a spoon. It smells like worms and Takis.');
- await say('wormy','(somewhere ahead, in the dark) Hear that? That’s the vending machine. Humming. We’re SO close.','happy');
- let depth=0;
- while(true){const k=await choose(['Keep digging. ('+(depth+1)+')','Stop. Go back up. Now.'],'The ceiling is dripping dirt.');
-  if(k===1)break;depth++;shake(.2*depth);SFX.thud&&SFX.thud();
-  if(depth===2)await N('Your spoon hits metal. A pipe. Warm. Something on the other side of it is humming, and it is NOT a vending machine.');
-  if(depth===3)await N('Dirt comes down in a sheet. Wormy laughs, delighted. “It’s FINE, it does that.”');
-  if(depth>=4){shake(1.2);SFX.crunch&&SFX.crunch();await N('It isn’t fine. The field comes down.');fxState.dark=0;await die('buried')}}
- if(depth>=2){await N('You climb out alone. You call down the hole. A small voice: “I’m staying! I can HEAR it!”');P.wormyGone=P.runs||1;await tw(fxState,{dark:0},500);
-  await N('Next morning there’s a cross made of popsicle sticks by the goalpost. Nobody knows who put it there. Nobody else remembers a kid called Wormy.');return 'stay'}
- await tw(fxState,{dark:0},500);await N('You climb out. Wormy pops up behind you, grinning, a Takis bag in his hand. “Found it in the wall. Told you.”');P.wormySaved=1;return 'stay'}});
-
 /* ---------------- VENT VICTOR ---------------- */
 {const _vs=ventScreen;ventScreen=function(){_vs();if(D&&D.f&&D.f.victorMet!==undefined&&D.f.victorMet!==1)return;const v=VVIC;if(!v.on)return;const x=v.x;
  drawCopy({id:'victor',k:K.victor},{x,y:VF,dir:x>SNK.vx?-1:1,pose:'crouch',alpha:1,vis:true,moving:false,ex:'happy'});if(v.say&&T<v.until)pxc(v.say,x,VF-36,'#cbe0b0')}}
@@ -77,7 +51,7 @@ const VVIC={on:false,x:0,say:'',until:0};
  if(!VVIC.on){const lo=Math.min(...SNK.grates.map(q=>q.x));const hi=Math.max(...SNK.grates.map(q=>q.x));VVIC.on=true;VVIC.x=SNK.vx<160?Math.min(hi+14,300):Math.max(lo-14,20);return}
  if(Math.abs(SNK.vx-VVIC.x)<16&&!busy){D.f.victorMet=1;const lines=[['VICTOR','shhhh. hi. i live here. three years. dont tell']],gift=Math.random()<.5;
   VVIC.say='psst. hi. i live here.';VVIC.until=T+3;D.money=(D.money||0)+6;updateLoc&&updateLoc();
-  toast(gift?'Vent Victor gives you $6 he found in the ducts. “For the vending machine. If you find it. Tell Wormy.”':'Vent Victor gives you $6. “I hear everything up here. Ms. Sherman calls Mr. Adam “Gerry-bear”. Don’t tell.”');
+  toast(gift?'Vent Victor gives you $6 he found in the ducts. “For the vending machine. Don’t tell anyone I exist.”':'Vent Victor gives you $6. “I hear everything up here. Ms. Sherman calls Mr. Adam “Gerry-bear”. Don’t tell.”');
   setTimeout(()=>{VVIC.on=false},3500)}}}
 
 /* ---------------- MR. KIM: the box goes DOWN ---------------- */
