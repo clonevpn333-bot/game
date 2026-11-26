@@ -139,7 +139,7 @@ function drawKid(k,x,y,o){
  const bx=x-(bw>>1)+lean,lw=k.baggy?5:k.tight?3:4;
  /* legs */
  const shoe=k.tight?'#ddd':k.adult?'#1a1418':'#2a2a30';
- const leg=(lx,top_,h,f)=>{R(lx,y-h+top_,lw,h+f,k.pants);if(k.shorts)R(lx,y-h+top_+3,lw,h-3+f,sk);if(k.skirt)R(lx,y-h+top_+4,lw-1,h-4+f,'#d9b49a');if(k.stripe)R(lx+(d>0?0:lw-1),y-h+top_,1,h+f,'#e8e8e8');if(k.cuff)R(lx,y-2+f,lw,1,'#a8c8ff');R(lx-(d<0?1:0),y-1+f,lw+1,1,shoe)};
+ const leg=(lx,top_,h,f)=>{R(lx,y-h+top_,lw,h+f,k.pants);R(lx+(d>0?lw-1:0),y-h+top_+1,1,Math.max(0,h+f-2),'rgba(255,255,255,.1)');R(lx+(d>0?0:lw-1),y-h+top_,1,h+f,'rgba(0,0,0,.12)');if(k.shorts)R(lx,y-h+top_+3,lw,h-3+f,sk);if(k.skirt)R(lx,y-h+top_+4,lw-1,h-4+f,'#d9b49a');if(k.stripe)R(lx+(d>0?0:lw-1),y-h+top_,1,h+f,'#e8e8e8');if(k.cuff)R(lx,y-2+f,lw,1,'#a8c8ff');R(lx-(d<0?1:0),y-1+f,lw+1,1,shoe)};
  if(p==='sit'||p==='write'){R(x-3,y-4,bw-2,3,k.pants);R(x+d*4-1,y-3,lw,4,k.shorts?sk:k.pants);R(x+d*4-1,y,lw+1,1,shoe);R(x-1,y-4,lw,4,k.pants)}
  else if(p==='crouch'){/* sneak crouch: wide low stance, back foot behind on its toes, front knee forward; feet shuffle when moving */
   const M=(u,w)=>d>0?x+u:x-u-w,sh=mv?Math.round(st):0,P=k.shorts?sk:k.pants;
@@ -157,7 +157,7 @@ function drawKid(k,x,y,o){
  const by=y-legH-bodyH+bob+(p==='hurt'?1:0),bh=bodyH-bob;
  if(k.coat){R(bx-1,by,bw+2,bh+5,top);R(x+lean,by+3,1,bh+2,'#c8c6bc');R(bx-1,by+bh+4,bw+2,1,'#c8c6bc')}
  if(p==='crouch'){const M=(u,w)=>d>0?x+u:x-u-w,sd='rgba(0,0,0,.2)';R(M(-4,bw),by+4,bw,bh-4,top);R(M(-3,bw),by+2,bw,2,top);R(M(-2,bw),by,bw,2,top);R(M(-4,2),by+4,2,bh-4,sd);R(M(-3,2),by+2,2,2,sd);R(M(-2,2),by,2,2,sd)}
- else{R(bx,by,bw,bh,top);R(d>0?bx:bx+bw-2,by,2,bh,'rgba(0,0,0,.2)')}
+ else{R(bx,by,bw,bh,top);R(d>0?bx:bx+bw-2,by,2,bh,'rgba(0,0,0,.2)');/* fabric: lit edge, shoulder light, chin shadow, waist fold, hem */R(d>0?bx+bw-1:bx,by+1,1,bh-2,'rgba(255,255,255,.14)');R(bx+2,by,bw-4,1,'rgba(255,255,255,.12)');R(x-2+lean,by,4,1,'rgba(0,0,0,.28)');if(bh>6){R(bx+2,by+bh-4,bw-4,1,'rgba(0,0,0,.14)');R(x+(d>0?1:-2)+lean,by+bh-5,2,1,'rgba(0,0,0,.12)')}R(bx,by+bh-1,bw,1,'rgba(0,0,0,.22)')}
  if(k.apron){R(bx+1,by+3,bw-2,bh+3,'#f2f0ea');R(bx+2,by+2,bw-4,1,'#f2f0ea')}
  if(k.puffer){for(let i=2;i<bh;i+=3)R(bx,by+i,bw,1,'rgba(0,0,0,.28)');R(bx-1,by,bw+2,2,top)}
  if(k.hivis){R(bx,by+3,bw,2,'#e8f040');R(bx,by+7,bw,1,'#e8f040')}
