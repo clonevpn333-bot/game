@@ -23806,7 +23806,7 @@ const SLIDE={t:'',lock:0};
    4. AFTER     Where they are now: a payoff for every story you finished.
    ===================================================================== */
 const FIN={};
-const EVL={timesheets:'Mr. Adam’s sign-out sheets (Love, Miss)',seats:'Paul Jones’s seating plan of the 43',hatchkey:'Coach’s lanyard (the boiler hatch key)',sketchbook:'Abby’s sketchbook (nineteen Fridays)',voicenote:'Sean’s voice note to Stella',retainer:'Tyler’s retainer',jars:'The fourteen jars labelled AIDAN',ledger:'Mr. Voss’s ledger (GRAMS)',volunteers:'Mr. Kim’s VOLUNTEERS wall',boiler:'The four names from 1987',register:'The 1987 register',notebook:'Tyler’s notebook',footage:'The night camera footage',confession:'Mr. Adam, on the record',rota:'Pat’s staff rota',finch:'Oliver Finch, alive',sher87:'Ms. Sherman’s memory of 1987'};
+const EVL={cheekscam:'Fists of Fair City 4 (the background)',timesheets:'Mr. Adam’s sign-out sheets (Love, Miss)',seats:'Paul Jones’s seating plan of the 43',hatchkey:'Coach’s lanyard (the boiler hatch key)',sketchbook:'Abby’s sketchbook (nineteen Fridays)',voicenote:'Sean’s voice note to Stella',retainer:'Tyler’s retainer',jars:'The fourteen jars labelled AIDAN',ledger:'Mr. Voss’s ledger (GRAMS)',volunteers:'Mr. Kim’s VOLUNTEERS wall',boiler:'The four names from 1987',register:'The 1987 register',notebook:'Tyler’s notebook',footage:'The night camera footage',confession:'Mr. Adam, on the record',rota:'Pat’s staff rota',finch:'Oliver Finch, alive',sher87:'Ms. Sherman’s memory of 1987'};
 const evList=()=>{const c=crew(),out=[];for(const k in EVL)if(c.ev&&c.ev[k])out.push({k,t:EVL[k]});for(const v in (c.saved||{}))if(K[v])out.push({k:'saved_'+v,t:K[v].n+', who you rescued'});return out};
 const allyPool=()=>{const c=crew(),a=Object.keys(c.allies||{}).concat(Object.keys(c.saved||{}));return [...new Set(a)].filter(k=>K[k]&&!(D.dead&&D.dead[k])&&!(window.EDITION_CUT||[]).includes(k))};
 const doneV=m=>(D.done&&D.done[m])||(P.done&&P.done[m]);
@@ -23825,6 +23825,7 @@ updateLoc&&updateLoc();cue('tension',true);
  await say('david','(holding up a thick folder) The File. Everything. If this gets to the hall projector before the inspectors leave, it’s over. For them.','scared');
  await say('nivaan','Three things between here and the hall. Coach on the stairs. The hall doors, chained. Mr. Voss in the projector booth. Pick your people.','cold');
  hold('you','paper');
+ if(c.cheeksIn)await say('nivaan','(holding up his phone: a livestream, two huge men in tracksuits outside the front gate) And Cheeks and Cheek-Clapper are live from the bus loop. Nine hundred people watching. It’s 8:41 in the morning.','smirk');
  const pool=allyPool();if(pool.length)await N('Your phone buzzes. And buzzes. And buzzes. '+pool.slice(0,6).map(k=>K[k].n).join(', ')+(pool.length>6?' and more':'')+'. All the same message: “where do you need me”.');
  const OBS=[
   {room:'stairwell',t:'coach',label:'COACH ON THE STAIRS',pref:['jacob','mateo','paul','omer','kenneth'],ally:async(k)=>{await say(k,k==='mateo'?'(blowing a whistle right in his ear) EXTRA REPS, COACH.':'(walking straight at Coach) Hey, Coach. Remember me?','angry');pose('coach','hurt');await N(K[k].n+' takes Coach down the stairs in a heap. Neither of them gets up quickly. '+K[k].n+' gives you a thumbs-up from the bottom.')},
@@ -23860,7 +23861,7 @@ updateLoc&&updateLoc();cue('tension',true);
  const OBJ=[
   {t:'voss',line:'Those jars? Science. Pickled vegetables. Educational. I have the receipts. Mostly.',beat:['ledger','jars','saved_priya','saved_devon'],crack:'(a jar slips out of his coat pocket and smashes on the floor. Nobody looks at what was inside. Everybody looks at what was inside.)'},
   {t:'kim',line:'Magic club is a registered after-school activity! The children LOVE magic club.',beat:['voicenote','seats','volunteers','saved_lily'],crack:'(his smile stays exactly where it is while the rest of his face gives up)'},
-  {t:'coach',line:'Kids get hurt in sport. It’s called building character. Some characters don’t make it.',beat:['sketchbook','hatchkey','seats','saved_mateo','footage','register','rota'],crack:'(he blows his whistle at the inspectors. Nobody moves. He blows it again, smaller.)'},
+  {t:'coach',line:'Kids get hurt in sport. It’s called building character. Some characters don’t make it.',beat:['sketchbook','cheekscam','hatchkey','seats','saved_mateo','footage','register','rota'],crack:'(he blows his whistle at the inspectors. Nobody moves. He blows it again, smaller.)'},
   {t:'shermian',line:'1987 was a tragedy. An ACCIDENT. Nobody could have known about that boiler.',beat:['timesheets','boiler','retainer','finch','sher87','notebook','saved_theo'],crack:'(for the first time in thirty-nine years, she has nothing to say)'}];
  const evs=evList();
  for(const o of OBJ){if(!A[o.t])continue;
@@ -23876,6 +23877,9 @@ updateLoc&&updateLoc();cue('tension',true);
    else if(e.k==='voicenote'&&A.stella){await N('Click. Mr. Kim’s voice fills the hall. “Nobody looks for a girl who’s leaving.”');await say('stella',(crew().stellaTaken?'(standing up) He painted a clown nose on me. I don’t remember where I was for forty minutes. ':'(standing up) ')+'I’m the girl who’s leaving. I’m still here.','angry');if(A.sean){await walk('sean',A.stella.x+12,80);await say('sean','(not letting go of her hand) Look at her. Everybody look at her.','angry')}}
    else if(e.k==='timesheets'&&A.adam){await say('adam','(at the podium, holding up a stack of paper) Twenty-two years of sign-out sheets. Every kid who “transferred”. Every one authorised by the same two words: Love, Miss. I signed the front pages. I never turned one over. I’m turning them over.','cold');A.adam.ex='cold'}
    else if(e.k==='seats'){if(!A.pauljones)put('pauljones',-14,1,{y:160});await walk('pauljones',36,60);await say('pauljones','(from the back, hood down for once) Every Friday a seat on the 43 goes empty. I drew them. Nobody else noticed. I notice where everyone is.','cold')}
+   else if(e.k==='cheekscam'){put('cheeks',334,-1,{y:150,hold:'laptop'});put('clapper',354,-1,{y:150});await walk('cheeks',270,120);walk('clapper',292,120);
+    await say('cheeks','(bursting through the side door, laptop held high) FISTS OF FAIR CITY FOUR. Scene nine. Look at the BACKGROUND.','yell');
+    await say('clapper','We ENHANCED it.','angry')}
    else if(e.k==='hatchkey'&&A.jacob){await say('jacob','(standing up, all of him) I took that off him. He was dragging a seventh grader to the cupboard. I pushed him. First time in my life.','cold')}
    else await N('Click. '+e.t+'. On the big screen, in front of everyone.');
    SFX.sting&&SFX.sting();shake(.5);A[o.t].ex='shock';await N(o.crack);FIN.score+=2;FIN['cracked_'+o.t]=1;
@@ -23904,6 +23908,9 @@ updateLoc&&updateLoc();cue('tension',true);
   await say('insp2','(standing) Nobody leaves this hall.','angry');
   const helpers=allyPool().filter(k=>!A[k]).slice(0,5);let x=20;for(const k of helpers){put(k,x,1,{y:158,ex:'angry'});x+=14}
   if(helpers.length)await N('And then '+helpers.map(k=>K[k].n).join(', ')+' come over the chairs. Then the kids next to them. Then the whole hall. Everybody you helped for two weeks, all at once.');
+  if(c.cheeksIn&&A.coach){put('clapper',334,-1,{y:150,ex:'angry'});put('cheeks',354,-1,{y:150,hold:'laptop'});await walk('clapper',A.coach.x+16,160);face('clapper',1);
+   SFX.smack();shake(1);pose('coach','lie');await tw(A.coach,{x:A.coach.x-26},300);
+   await N('Through the side doors, at a full sprint: Cheek-Clapper. He turns round, sticks his backside out, and reverses Coach into the front row. Cheeks films it. Of course he does.')}
   {const lv=lovers().map(k=>({corey:'Corey and Abby at the front, holding hands so hard their knuckles go white',sean:'Sean with Stella right behind him, for once not leaving',hasan:'Hasan and Darren, shoulder to shoulder, exactly as planned'}[k]));if(lv.length)await N(lv.join('. ')+'.')}
   const ok=await mash('HOLD THE LINE',{need:30,time:5,info:'Get between them and the inspectors. MASH!'});
   if(!ok&&!helpers.length){await N('You’re one kid against a wall of teachers. It doesn’t last.');return finEnd('bloodbath')}
@@ -23943,6 +23950,7 @@ async function finEnd(v){
   else if(lv.includes('sean'))add('bus',{sean:[140,1,{y:150}],stella:[162,-1,{y:150}]},'Stella’s mom turned the Portland job down. She said she wasn’t moving her daughter away from the only school that ever fought for her. Sean has stopped recording voice notes. He doesn’t need them.',1);
   if(FIN.lost==='hasan')add('library',{hasan:[150,1,{y:150,hold:'paper'}]},'Hasan keeps the laminated list in his blazer pocket. Step fourteen is still blank. He won’t fill it in.',1);
   else if(lv.includes('hasan'))add('library',{hasan:[140,1,{y:150}],darren:[162,-1,{y:150,hold:'paper'}]},'Darren’s mum shut Highgate down in an afternoon. At dinner, she asks Hasan to pass the salt. Step fifteen.',1);}
+ if(c.cheeksIn&&K.cheeks)add('carpark',{cheeks:[140,1,{y:150,hold:'laptop'}],clapper:[164,-1,{y:150,pose:'hips'}]},v==='bloodbath'?'Cheeks and Cheek-Clapper’s livestream got taken down after forty minutes. They still post the clips. Every Friday. Somebody has to.':'Fists of Fair City 5: Inspection Day gets eleven million views. Their channel still has 312 subscribers. Nobody can explain it.',1);
  if(c.pjSafe&&K.pauljones)add('bus',{pauljones:[120,1,{y:150,pose:'sit'}],you:[142,-1,{y:150,pose:'sit'}]},'Paul Jones sits at the front of the 43 now. Second seat. He still draws the bus from above. Nobody’s crossed out.',1);
  if((c.ev||{}).hatchkey&&K.jacob)add('field',{jacob:[150,1,{y:150}]},'Jacob still lets people bump into him in the corridor. He just doesn’t move out of the way any more.',1);
  if(c.adamIn&&K.adam&&v!=='bloodbath')add('foodcourt',{adam:[150,1,{y:150,pose:'sit'}]},'Mr. Adam gives evidence for eleven days straight. On the twelfth he eats noodles in the food court in a cardigan. Nobody has ever seen him look this calm.',1);
@@ -24365,6 +24373,338 @@ if(typeof FEATURED!=='undefined')for(const m of['jade','stall','ringing','stain'
  if(p.t==='drain'){R(x-12,y-3,24,6,'#2a2a2e');for(let i=0;i<6;i++)R(x-11+i*4,y-2,2,4,'#5a5a62');R(x-12,y-3,24,1,'#7a7a82');return}
  if(p.t==='keys'){R(x-6,y,12,1,'#c8c0a0');R(x-7,y-2,3,3,'#e0c040');R(x+3,y-1,4,2,'#3a3a3a');R(x+6,y-2,2,3,'#9a9aa2');return}
  return _dp(p)}}
+
+</script>
+<script>
+/* js/cheeksmain.js */
+'use strict';
+/* =====================================================================
+   HIGHSCHOOL — CHEEKS & CHEEK-CLAPPER, IN THE MAIN STORY
+   Not a quest any more (their quest is cut in js/cuts.js). They're part of
+   the crew's plot: two grown men with 312 subscribers become the reason
+   Inspection Day gets filmed.
+   • THE CLAPPENING (week one, home time, bus loop, auto): they're filming
+     in front of the school. Coach storms out. Cheek-Clapper reverses into
+     him. Nivaan recruits them. → crew().cheeksIn
+   • DAILIES (week two, before school, bus loop, auto): their footage has
+     Coach in the background at the boiler hatch with bin bags, 3:20.
+     → ev.cheekscam
+   • INSPECTION DAY (js/finale3.js): they livestream it, crack Coach with
+     the footage, clap him at the turn, and get a montage line.
+   ===================================================================== */
+{const _dp=drawProp;drawProp=function(p){const x=Math.round(p.x),y=Math.round(p.y);
+ if(p.t==='dailies'){/* their laptop footage, big enough to read */
+  const w=96,h=56,l=x-w/2,t=y-h;R(l-3,t-3,w+6,h+12,'#1a1a1e');R(l,t,w,h,'#7a8aa0');
+  R(l,t+30,w,26,'#8a8a8a');R(l,t+20,w,10,'#b86a4a');for(let i=0;i<6;i++)R(l+4+i*16,t+22,10,6,'#d8e0e8');
+  R(l+60,t+40,16,6,'#2a2a2e');R(l+58,t+39,20,1,'#4a4a52');/* the hatch */
+  const k=(T*.25)%1,cx=l+18+k*40;R(cx,t+34,4,9,'#c84a4a');R(cx-1,t+31,6,3,'#e8b890');R(cx+4,t+37,4,5,'#1a1a1a');R(cx+5,t+36,3,2,'#1a1a1a');/* Coach with a bin bag */
+  R(l+4,t+38,22,8,'#5a5a6a');/* his car */
+  R(l+2,t+2,30,6,'rgba(0,0,0,.5)');pxc('15:20',l+17,t+3,'#ff5050');if(Math.sin(T*6)>0)R(l+w-8,t+3,4,4,'#ff2020');
+  R(l-3,t+h+2,w+6,7,'#2a2a30');return}
+ return _dp(p)}}
+
+const ckReady=()=>!TEST&&D&&!D.weekend&&!busy&&panelMode==='roam'&&!(typeof atHome==='function'&&atHome())&&!(typeof PAT!=='undefined'&&PAT)&&K.cheeks&&K.clapper;
+{const _er=enterRoom;enterRoom=async function(room){const r=await _er(room);
+ try{const c=crew();
+  if(room==='bus'&&D.period===7&&cal()>=2&&cal()<=7&&!c.cheeksIn&&!D.dead.coach&&ckReady())return runHook({run:clappening});
+  if(room==='bus'&&D.period===0&&cal()>=8&&cal()<12&&c.cheeksIn&&!(c.ev||{}).cheekscam&&ckReady())return runHook({run:dailies});
+ }catch(e){console.error(e)}
+ return r}}
+
+async function clappening(){
+ const cast={cheeks:[186,1,{y:150,hold:'clipboard'}],clapper:[226,-1,{y:150,pose:'hips'}],you:[-14,1,{y:156}]};
+ if(!D.dead.nivaan)cast.nivaan=[120,1,{y:152,pose:'film'}];
+ scene('bus',cast,true);const tri=prop({t:'tripod',x:160,y:152,layer:-1});cue('arcade',true);
+ await walk('you',140,90);face('you',1);
+ await N('Home time. Two enormous grown men in matching tracksuits are filming a movie in your bus loop.');
+ if(A.nivaan)await say('nivaan','(filming them filming) Cheeks and Cheek-Clapper. IN OUR BUS LOOP. I’m going to cry.','laugh');
+ await say('cheeks','You! Kid! You’ve got a steady face. Stand by the camera. Don’t breathe on it.','happy');
+ await walk('you',152,50);
+ prop({t:'clapboard',x:204,y:132});SFX.smack();
+ await say('cheeks','FISTS OF FAIR CITY FOUR. Scene nine. The Bus Loop Showdown. ACTION!','yell');
+ await say('clapper','(deep movie voice) This is MY bus loop, Cheeks.','angry');
+ SFX.whistle?SFX.whistle():SFX.beep&&SFX.beep();
+ put('coach',-14,1,{y:148,ex:'angry'});await walk('coach',96,120);
+ await say('coach','NOT. IN. MY. BUS LOOP.','yell');
+ await say('cheeks','(not turning round) Keep rolling. KEEP ROLLING. He’s perfect. He’s the villain.','happy');
+ const c=await choose(['Keep rolling.','Grab the camera and hide it.','Run for the bus.'],'COACH IS COMING');
+ if(c===2){await walk('you',40,140);face('you',1)}
+ else if(c===1){pose('you','reach');await wait(250);pose('you',null);hold('you','laptop');{const i=props.indexOf(tri);if(i>=0)props.splice(i,1)}await walk('you',120,80);face('you',1)}
+ await walk('coach',196,110);pose('coach','grab');
+ await N('Coach goes for Cheeks. Cheek-Clapper turns round, plants his feet, and sticks his backside out like a battering ram.');
+ await walk('clapper',214,60);face('clapper',1);
+ let held=true;
+ if(c===0){held=await mash('HOLD THE SHOT',{need:20,time:3,info:'Keep the camera on them. Don’t you dare wobble.'})}
+ SFX.smack();shake(1.1);pose('coach','hurt');await tw(A.coach,{x:84,y:150},380);pose('coach','lie');SFX.thud();
+ await N('BOOMF. Coach goes backwards into the side of the 43 and slides down it.');
+ if(c===0)await say('cheeks',held?'(whispering, eyes wet) Did you get that. Tell me you got that.':'(watching you wobble) …It’s fine. It’s art. Shaky is art.','laugh');
+ if(A.nivaan)await say('nivaan','I got it. I got it from the other side. I’m never going to be okay again.','laugh');
+ pose('coach',null);A.coach.ex='evil';
+ await say('coach','(getting up, very slowly, looking only at you) I know your bus number.','evil');
+ await walk('coach',-20,70);remove('coach');cue('tension',true);
+ if(A.nivaan){
+  await say('nivaan','(walking up to Cheeks) You two want subscribers? Like, real ones?','cold');
+  await say('cheeks','We have three hundred and twelve.','smirk');
+  await say('nivaan','Friday week. Inspection Day. Something’s going to happen in that hall, and somebody needs to film it who can’t be stopped by a teacher.','cold');
+  await say('cheeks','…Is there fighting?','shock');
+  await say('you','Probably.');
+  await say('clapper','(slowly, like a man seeing God) Then Fists of Fair City Five is a documentary.','happy')}
+ else{await say('cheeks','(handing you a business card covered in fingerprints) Whatever that man is, kid, he needs to be on camera. Call us.','cold')}
+ hold('you',null);
+ crew().cheeksIn=1;save&&save();
+ toast('🎬 Cheeks & Cheek-Clapper are in. Inspection Day is going to be filmed.');
+ return 'stay'}
+
+async function dailies(){
+ scene('bus',{cheeks:[176,-1,{y:150,hold:'laptop',ex:'shock'}],clapper:[248,-1,{y:150,pose:'hips'}],you:[-14,1,{y:156}]},true);
+ prop({t:'car',x:196,y:150,col:'#6a6a72',driver:1,layer:-3});
+ await walk('you',140,90);face('you',1);
+ await N('A grey Honda Civic with one headlight is parked across two bus bays. Cheeks is waving a laptop at you like a flare.');
+ await say('cheeks','DAILIES. From the bus loop shoot. Don’t look at the clap. Look BEHIND the clap.','shock');
+ const tv=prop({t:'dailies',x:160,y:96,layer:40});SFX.click&&SFX.click();
+ await N('Behind the school, small and grainy: Coach’s car at the old boiler hatch. Boot open. Coach carrying a black bin bag. Then another. 15:20.');
+ await say('clapper','We zoomed. We ENHANCED. Is that… is that a SHOE coming out of the bag?','scared');
+ const c=await choose(['“Send me that file. Right now.”','“Delete it. They’ll come for you.”'],'THE FOOTAGE');
+ if(c===1){await say('cheeks','DELETE it? This is our Citizen Kane. We’re putting it in the trailer.','angry');await say('you','…Send me a copy, then.')}
+ await N('Across the bus loop, a pink cardigan. Ms. Sherman, crossing to the front doors with a coffee. She slows down.');
+ put('shermian',-14,1,{y:148,ex:'smirk'});await walk('shermian',110,50);face('shermian',1);
+ await say('shermian','Lovely morning, gentlemen.','smirk');
+ const ok=await mash('ACT NATURAL',{need:14,time:3,info:'Get the laptop shut before she sees the screen!'});
+ const i=props.indexOf(tv);if(i>=0)props.splice(i,1);
+ if(ok){hold('cheeks',null);await say('cheeks','(very high voice) MORNING.','scared')}
+ else{await N('She sees the screen. Just for a second. She smiles at it like it’s a baby photo.');await say('shermian','Coach always did have a lovely car.','evil');crew().sherSawCam=1}
+ await walk('shermian',340,50);remove('shermian');
+ await say('clapper','(watching her go) …I’ve been in four fights this year and I have never been that scared.','scared');
+ crew().ev=crew().ev||{};crew().ev.cheekscam=1;save&&save();
+ toast('🎁 EVIDENCE: the background of Fists of Fair City 4. Coach, the hatch, 3:20.');
+ return 'stay'}
+{const _ce=crewEvidence;crewEvidence=function(){return _ce()+((crew().ev||{}).cheekscam?1:0)}}
+
+</script>
+<script>
+/* js/loachlook.js */
+'use strict';
+/* =====================================================================
+   Ms. Loach: a Black woman in her 40s. Cornrows that are falling apart
+   (frizz, loose strands, a couple of rows coming undone) under a big
+   satin hair cover she sometimes takes off.
+   • k.hs 'cornrows' draws the rows; k.cover draws the cover over them.
+   • She wears the cover most days (two days in three); a scene can take it
+     off with loachCover(false) (and she sometimes does, mid-lesson).
+   ===================================================================== */
+Object.assign(K.loach,{skin:'#7a4e36',hair:'#17110e',hs:'cornrows',cover:1});
+{const _dh=drawHead;drawHead=function(k,x,hy,d,o){
+ if(k.hs!=='cornrows')return _dh(k,x,hy,d,o);
+ _dh(Object.assign({},k,{hs:'bald'}),x,hy,d,o);
+ if(o&&o.crushed)return;
+ const {hw,hd}=kidGeom(k,o),hx=x-(hw>>1),c=k.hair,dk='#0a0706',fz='#2e2420';
+ if(k.cover){/* the big satin cover */
+  const sc='#5e2a5a',sh='#7e3e78',bd='#3e1a3c';
+  R(hx-3,hy-6,hw+6,8,sc);R(hx-2,hy-8,hw+4,2,sc);R(hx,hy-9,hw,1,sc);R(hx-4,hy-4,1,6,sc);R(hx+hw+3,hy-4,1,6,sc);
+  R(hx-3,hy+1,hw+6,1,bd);R(hx+1,hy-7,4,1,sh);R(hx+2,hy-8,2,1,'rgba(255,255,255,.35)');R(hx+hw-3,hy-5,2,2,sh);
+  R(d>0?hx-4:hx+hw+2,hy+1,2,3,sc);/* the gathered bit at the back */
+  R(d>0?hx+hw:hx-2,hy+2,2,1,fz);/* a loose strand escaping at the front */
+  return}
+ /* cornrows: rows front to back, half of them coming undone */
+ R(hx-1,hy-2,hw+2,4,c);R(hx,hy-3,hw,1,c);
+ for(let i=0;i<hw;i+=2)R(hx+i,hy-3,1,5,dk);
+ const s=k.seed||34;
+ for(let i=0;i<7;i++){const fx=hx-1+((s*7+i*13)%(hw+2)),fy=hy-4-((s+i*5)%2);R(fx,fy,1,1,fz)}/* frizz */
+ R(hx-2,hy-1,1,3,fz);R(hx+hw+1,hy,1,2,fz);/* flyaways at the temples */
+ R(d>0?hx-3:hx+hw+1,hy+1,1,hd-2,c);R(d>0?hx-2:hx+hw,hy+2,1,hd-1,c);/* braid tails at the back */
+ R(d>0?hx-4:hx+hw+2,hy+hd-2,1,2,fz);/* one undone at the end */
+}}
+/* she wears it two days in three */
+{const _put=put;put=function(id,x,dir,o){const a=_put(id,x,dir,o);if(id==='loach'&&a&&a.k&&D&&typeof cal==='function'){a.k=Object.assign({},a.k,{cover:D.f&&D.f.loachBare===cal()?0:(cal()%3!==1?1:0)})}return a}}
+function loachCover(on){if(A.loach){A.loach.k=Object.assign({},A.loach.k,{cover:on?1:0});if(!on&&D&&D.f)D.f.loachBare=cal()}}
+
+</script>
+<script>
+/* js/anyreaction.js */
+'use strict';
+/* =====================================================================
+   HIGHSCHOOL — ANY REACTION, REMASTERED (side mission, insane)
+   Ms. Loach has said "page forty-seven" every lesson since 2009.
+   Act 1 (Period 3, the old stunts) stays. Then it turns into a heist:
+   2. Break/lunch, Cafeteria: Angelo sells you a replica of her mug.
+   3. Period 7, Science: THE SWAP. She ignores everything except the mug,
+      and the only time she looks down is when she says "page forty-seven"
+      and turns the page. So: get a classmate to ask her something, and
+      swap the mugs while she turns it (meter). Fail = her hand on your
+      wrist; try another day.
+   4. Lunch, Cafeteria: THE HOSTAGE. You on a table, her real mug over
+      your head, the whole cafeteria chanting. Hand it back (she says
+      "page forty-eight" and the entire cafeteria, Coach included, sits
+      down and learns photosynthesis), drop it (the scream: every window
+      comes in), or drink it (the scissors).
+   ===================================================================== */
+ITEMS.fakemug='Angelo’s replica of Ms. Loach’s mug (aged with a teabag and a hairdryer)';
+ITEMS.realmug='MS. LOACH’S MUG. The real one. Still warm.';
+Object.assign(DEATHS,{mug:DEATHS.mug||{name:'Earl Grey',desc:'You drank from Ms. Loach’s mug.',hint:'Never drink from the mug.'}});
+if(MIS.loach){
+ Object.assign(MIS.loach,{
+  goal:'Get ANY reaction out of Ms. Loach. Anything except “page forty-seven”.',
+  parts:['Period 3, Science: escalate','Break or lunch, Cafeteria: Angelo’s replica','Period 7, Science: the swap','Lunch, Cafeteria: the hostage'],
+  tips:['Period 3, Science. Everyone gets a turn. So do you.','Break or lunch, the Cafeteria. Angelo has something “for collectors”.','Period 7, Science. She only looks down when she turns the page.','Lunch, the Cafeteria. Get up on a table. Hold it high.'],
+  variants:{fortyeight:'Page forty-eight',scream:'The scream',drink:'Earl Grey'}});
+ /* the old Period 7 ending is folded into act 4 */
+ for(let i=HOOKS.length-1;i>=0;i--)if(HOOKS[i].mis==='loach'&&HOOKS[i].period===6)HOOKS.splice(i,1);
+}
+OUTCOME_FIX['loach:fortyeight']='good';OUTCOME_FIX['loach:scream']='messy';OUTCOME_FIX['loach:drink']='bad';
+const arHere=n=>K[n]&&!(D.dead&&D.dead[n])&&!(window.EDITION_CUT||[]).includes(n);
+
+/* ---- 2. the replica ---- */
+spot({mis:'loach',room:'canteen',period:[2,4],x:176,y:150,label:'Angelo is selling something “for collectors”',short:'ANGELO',
+ cond:()=>MIS.loach&&D.f.loach1&&!has('fakemug')&&!has('realmug')&&!D.f.loach3&&!D.done.loach&&arHere('angelo'),run:async()=>{
+ scene('canteen',{angelo:[176,-1,{y:150,ex:'smirk',hold:'mug'}],you:[-14,1,{y:156}]},true);
+ await walk('you',148,90);face('you',1);
+ await say('angelo','Heard you want her mug. Everybody wants her mug. I’ve got the only replica in Fair City.','smirk');
+ await say('angelo','Same chip on the handle. Same tea ring inside. I aged it with a teabag and a hairdryer. Five bucks. I’ve sold eleven.','smirk');
+ const c=await choose([{t:'Pay $5.',dis:(D.money||0)<5,why:'you’re broke'},'Haggle.','Grab it and walk.'],'THE REPLICA');
+ if(c===0){D.money-=5;updateLoc&&updateLoc();await say('angelo','Pleasure. Don’t tell her where you got it. She knows where I live. Everybody knows where I live.','smirk')}
+ else if(c===1){await say('you','Three.');await say('angelo','(looking at you for a long time) …Three. And you never saw me.','smirk');D.money=Math.max(0,(D.money||0)-3);updateLoc&&updateLoc()}
+ else{hold('angelo',null);hold('you','mug');const ok=await vgRace('angelo');
+  if(ok)await N('You’re out of the cafeteria before he’s off his chair. From behind you, quite proud: “That’s my boy.”');
+  else{await N('Angelo catches you at the door and takes five dollars out of your pocket without asking. Then he lets you keep the mug. Business is business.');D.money=Math.max(0,(D.money||0)-5);updateLoc&&updateLoc()}}
+ hold('angelo',null);hold('you',null);give('fakemug');part('loach',2);
+ return 'stay'}});
+
+/* ---- 3. the swap ---- */
+hook({mis:'loach',period:6,room:'science',who:'auto',cond:()=>MIS.loach&&has('fakemug')&&!D.f.loach3&&D.f.loachTry!==cal(),run:async()=>{
+ D.f.loachTry=cal();
+ const kids=['hasan','sean','stella','abby'].filter(arHere);
+ const c=await classIn('science',{kids,fixed:Object.fromEntries(kids.map((n,i)=>[n,[0,1,6,7][i]])),you:2});
+ cue('class');hold('loach','mug');
+ await N('Period 7. Science. Angelo’s replica is in your hoodie pocket. Her real mug is in her hand. It goes back on the ring, every time.');
+ await say('loach','Page forty-seven.');
+ await N('Then you see it. When she says it, she turns a page. And for one second, she looks down.');
+ const asks={hasan:['Hasan','(hand up) Miss, is God real?'],sean:['Sean','(hand up) Miss, my house is on fire. Like, right now. I can see it from here.'],stella:['Stella','(hand up) Miss, what page are we on?'],abby:['Abby','(hand up, very calm) Miss, there’s someone standing behind you.']};
+ const who=kids.filter(k=>asks[k]);
+ const opts=who.map(k=>'Get '+asks[k][0]+' to ask her something.').concat(['Ask her yourself.']);
+ const pi=await choose(opts,'MAKE HER TURN THE PAGE');
+ let asker='you',easy=1;if(pi<who.length){asker=who[pi];easy=0.85}
+ await Promise.all([walk('you',96,70),tw(A.you,{y:140},400)]);
+ if(asker==='you')await say('you','Miss? What page are we on?');else await say(asker,asks[asker][1],'happy');
+ hold('loach',null);const dm=prop({t:'mug',x:66,y:122,layer:3});
+ await say('loach','Page forty-seven.');
+ pose('you','reach');
+ const ok=await meter('SWAP IT WHILE SHE TURNS THE PAGE',{speed:1.15*easy});
+ pose('you',null);
+ if(!ok){ex('loach','evil');SFX.sting();fxState.dark=.3;
+  await N('Her hand is round your wrist before the page lands. She doesn’t squeeze. She doesn’t need to.');
+  {const i=props.indexOf(dm);if(i>=0)props.splice(i,1)}hold('loach','mug');
+  await say('loach','Don’t.','evil');fxState.dark=0;ex('loach',null);
+  await Promise.all([walk('you',c.mine.x,80),tw(A.you,{y:c.mine.y},400)]);A.you.dir=-1;
+  await N('Not today. The replica is still in your pocket. There’s always another Period 7.');
+  await classOut(c);return}
+ SFX.click&&SFX.click();take('fakemug');give('realmug');{const i=props.indexOf(dm);if(i>=0)props.splice(i,1)}
+ await Promise.all([walk('you',c.mine.x,80),tw(A.you,{y:c.mine.y},400)]);A.you.dir=-1;
+ hold('loach','mug');
+ await N('Swapped. Her real mug is in your hoodie, warm against your stomach. She picks up Angelo’s replica and takes a sip.');
+ await N('She stops. She looks into it for a very long time.');
+ await say('loach','…Page forty-seven.');
+ if(A.hasan)await say('hasan','(whispering, ashen) Bro. She knows. She KNOWS.','scared');
+ D.f.loach3=1;part('loach',3);await classOut(c);
+}});
+
+/* ---- 4. the hostage ---- */
+spot({mis:'loach',room:'canteen',period:4,x:160,y:148,label:'Get up on the middle table with her mug',short:'MUG',
+ cond:()=>MIS.loach&&has('realmug')&&!D.done.loach,run:async()=>{
+ const crowd=['hasan','paul','kenneth','angelo','stella','sean','abby','jacob','arjun','david'].filter(arHere).slice(0,8);
+ const cast={you:[160,1,{y:146}],pat:[290,-1,{y:132}]};crowd.forEach((n,i)=>cast[n]=[i<4?30+i*24:214+(i-4)*22,i<4?1:-1,{y:150+(i%2)*4}]);
+ scene('canteen',cast,true);
+ await tw(A.you,{z:16},350);hold('you','mug');pose('you','up');cue('fight',true);
+ await N('You climb up on the middle table and hold the mug over your head. The real one. The chip. The ring.');
+ SFX.cheer&&SFX.cheer();for(const n of crowd)if(A[n]){A[n].ex='laugh';pose(n,'cheer')}
+ await say(crowd[0]||'pat','MUG! MUG! MUG! MUG!','yell');
+ put('loach',-14,1,{y:150,ex:null,hold:'mug'});for(const n of crowd)if(A[n]){pose(n,null);A[n].ex='shock'}
+ await walk('loach',132,40);face('loach',1);cue('tension',true);
+ await N('Ms. Loach walks in. She doesn’t hurry. She’s holding Angelo’s replica. She has known since Period 7.');
+ await say('you','Say something else. Anything. And you get it back.');
+ await wait(1200);
+ const c=await choose(['Hand it back.','Drop it.','Drink from it.'],'MS. LOACH IS WAITING');
+ if(c===0){await tw(A.you,{z:0},300);pose('you',null);await walk('you',146,40);hold('you',null);hold('loach','mug');
+  SFX.sting&&SFX.sting();loachCover(false);A.loach.ex='happy';flash('#ffffff',.3);fxState.dark=.2;
+  await N('She takes it with both hands. Then she reaches up and pulls off the big satin cover. Her cornrows are a week past saving. For the first time since 2009, Ms. Loach smiles.');
+  await say('loach','Page forty-eight.','happy');fxState.dark=0;
+  if(!D.dead.coach){put('coach',334,-1,{y:150,hold:'cup'});await walk('coach',250,60)}
+  for(const n of Object.keys(A))if(n!=='loach'&&n!=='you'&&A[n]&&!A[n].dead){pose(n,'sit');hold(n,'book');A[n].ex=null}
+  pose('you','sit');hold('you','book');
+  await N('Every kid in the cafeteria sits down on the floor. Then Pat. Then Coach, who only came in for a yogurt. Nobody decided to. Everybody has a notebook. Nobody brought a notebook.');
+  await say('loach','Photosynthesis.','happy');
+  await N('For eleven minutes, the entire cafeteria learns photosynthesis. It is the best lesson anyone in this building has ever had. Nobody ever mentions it again.');
+  for(const n of Object.keys(A)){pose(n,null);hold(n,null)}
+  await walk('loach',-20,40);remove('loach');
+  take('realmug');await complete('loach','fortyeight');return 'stay'}
+ if(c===1){hold('you',null);SFX.glass&&SFX.glass();
+  for(let i=0;i<14;i++)parts.push({x:A.you.x,y:A.you.y-20,vx:rand(-60,60),vy:rand(-80,-10),c:'#e8e0d0',s:2,fy:158,life:1.2});
+  await wait(500);A.loach.ex='scream';hold('loach',null);
+  SFX.scream&&SFX.scream();flash('#ffffff',.9);shake(2.2);
+  for(let i=0;i<60;i++)parts.push({x:rand(10,310),y:rand(10,60),vx:rand(-40,40),vy:rand(20,120),c:i%3?'#c8e0f0':'#ffffff',s:2,fy:rand(140,170),life:1.6});
+  for(const n of Object.keys(A))if(n!=='loach'&&A[n]&&!A[n].dead){pose(n,'cover');A[n].ex='scared'}
+  await N('Ms. Loach screams. It’s the first sound she’s made since 2009 that isn’t a page number. Every window in the cafeteria comes in at once.');
+  if(A.pat)await say('pat','(from under the counter, hairnet gone) MY GRAVY.','yell');
+  await wait(600);A.loach.ex=null;pose('loach','kneel');
+  await N('Then silence. She kneels down and picks up the pieces of the mug, one at a time, in no hurry, while forty kids pick glass out of their hair.');
+  await say('loach','(standing up, holding the pieces) Page forty-seven.');
+  await walk('loach',-20,40);remove('loach');for(const n of Object.keys(A))pose(n,null);
+  await tw(A.you,{z:0},300);pose('you',null);take('realmug');await complete('loach','scream');return 'stay'}
+ /* drink */
+ pose('you','drink');SFX.slurp&&SFX.slurp();
+ await say('you','(sipping) Mmm. Earl Grey. Four sugars.');
+ hold('you',null);pose('you',null);A.loach.ex='evil';fxState.dark=.35;
+ await N('Ms. Loach puts the replica down on the next table. From her cardigan pocket she takes the big orange scissors. She climbs onto the table with you. She doesn’t hurry at all.');
+ hold('loach','knife');await tw(A.loach,{z:16,x:A.you.x-12},500);pose('loach','slam');await wait(250);
+ SFX.squelch&&SFX.squelch();blood(A.you.x,A.you.y-24-16,70,1,120,A.you.y+2);shake(1.2);
+ take('realmug');fxState.dark=0;await die('mug');
+}});
+
+/* her mug, set down on the desk while she turns the page */
+{const _dp=drawProp;drawProp=function(p){if(p.t!=='mug')return _dp(p);const x=Math.round(p.x),y=Math.round(p.y);
+ R(x-3,y-6,6,6,'#e8e2d4');R(x-3,y-6,6,1,'#5a3a22');R(x+3,y-5,2,3,'#e8e2d4');R(x+4,y-4,1,1,'#2a2a2a');R(x-2,y-1,1,1,'#b0a898')}}
+
+</script>
+<script>
+/* js/passing2.js */
+'use strict';
+/* =====================================================================
+   A REAL PASSING PERIOD
+   The bell rings → you get a countdown to the SECOND BELL, sized to how
+   far your class is (25 s + 9 s per hallway on the way). Walk there in
+   time and you just walk in. Miss it: second bell, you're late (the owl
+   heads at the door), and if you're still out there, you're skipping.
+   While the countdown runs, nothing in the hall costs an apple, so the
+   period can't end under you on the way.
+   ===================================================================== */
+const PASS2={};
+function passSecs(from,cls){
+ try{const ex=exitOf(cls);const th=ex?ex[0]:'corridor';const path=hallPath(from,th);return 25+9*Math.max(0,(path?path.length:2)-1)}catch(e){return 40}}
+{const _wp=worldPlace;worldPlace=async function(){
+ const i=D.period,p=PERIODS[i];
+ D.pass=null;
+ if(!TEST&&p&&p.lesson&&!D.weekend){const cls=myClassToday();
+  if(cls){let from=D.lastRoom||'corridor';if(!HALLS.has(from)){const ex=exitOf(from);from=ex?ex[0]:'corridor'}
+   const s=passSecs(from,cls);D.pass={to:cls,end:T+s,len:s,per:i,day:cal()}}}
+ return _wp()}}
+/* got there */
+{const _er=enterRoom;enterRoom=async function(room){if(D&&D.pass&&room===D.pass.to){D.pass=null;D.lateTo=null}return _er(room)}}
+/* the second bell */
+{const _hu=HOOK.update;HOOK.update=(dt,rdt)=>{_hu&&_hu(dt,rdt);
+ const ps=D&&D.pass;if(!ps||TEST)return;
+ if(D.period!==ps.per||cal()!==ps.day||D.inClass){D.pass=null;return}
+ if(T<ps.end)return;
+ D.pass=null;D.lateTo=ps.to;D.wander=D.period;
+ SFX.bell&&SFX.bell();
+ toast('🔔 Second bell. You’re late for '+shortName(ps.to)+'. Out here now, you’re skipping.');
+}}
+/* free hallway on the way */
+{const _sa=spendApple;spendApple=async function(per,day){if(D&&D.pass&&T<D.pass.end)return;return _sa(per,day)}}
+/* the countdown, top centre */
+{const _do=HOOK.drawOver;HOOK.drawOver=()=>{_do&&_do();const ps=D&&D.pass;if(!ps||TEST||busy&&panelMode!=='roam')return;
+ const left=Math.max(0,Math.ceil(ps.end-T)),m=Math.floor(left/60),s=String(left%60).padStart(2,'0');
+ const txt='BELL '+m+':'+s+' '+shortName(ps.to).toUpperCase().replace(/^THE /,'').slice(0,11);
+ const cx=199,w=txt.length*4+8;R(cx-w/2,3,w,9,'rgba(10,8,16,.8)');R(cx-w/2,3,Math.round(w*left/ps.len),1,left<10?'#ff5050':'#ffd27a');
+ pxc(txt,cx,5,left<10&&Math.sin(T*10)>0?'#ff6060':'#f4ead8')}}
 
 </script>
 <script>

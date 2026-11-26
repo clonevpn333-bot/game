@@ -13,7 +13,7 @@
    4. AFTER     Where they are now: a payoff for every story you finished.
    ===================================================================== */
 const FIN={};
-const EVL={timesheets:'Mr. Adam’s sign-out sheets (Love, Miss)',seats:'Paul Jones’s seating plan of the 43',hatchkey:'Coach’s lanyard (the boiler hatch key)',sketchbook:'Abby’s sketchbook (nineteen Fridays)',voicenote:'Sean’s voice note to Stella',retainer:'Tyler’s retainer',jars:'The fourteen jars labelled AIDAN',ledger:'Mr. Voss’s ledger (GRAMS)',volunteers:'Mr. Kim’s VOLUNTEERS wall',boiler:'The four names from 1987',register:'The 1987 register',notebook:'Tyler’s notebook',footage:'The night camera footage',confession:'Mr. Adam, on the record',rota:'Pat’s staff rota',finch:'Oliver Finch, alive',sher87:'Ms. Sherman’s memory of 1987'};
+const EVL={cheekscam:'Fists of Fair City 4 (the background)',timesheets:'Mr. Adam’s sign-out sheets (Love, Miss)',seats:'Paul Jones’s seating plan of the 43',hatchkey:'Coach’s lanyard (the boiler hatch key)',sketchbook:'Abby’s sketchbook (nineteen Fridays)',voicenote:'Sean’s voice note to Stella',retainer:'Tyler’s retainer',jars:'The fourteen jars labelled AIDAN',ledger:'Mr. Voss’s ledger (GRAMS)',volunteers:'Mr. Kim’s VOLUNTEERS wall',boiler:'The four names from 1987',register:'The 1987 register',notebook:'Tyler’s notebook',footage:'The night camera footage',confession:'Mr. Adam, on the record',rota:'Pat’s staff rota',finch:'Oliver Finch, alive',sher87:'Ms. Sherman’s memory of 1987'};
 const evList=()=>{const c=crew(),out=[];for(const k in EVL)if(c.ev&&c.ev[k])out.push({k,t:EVL[k]});for(const v in (c.saved||{}))if(K[v])out.push({k:'saved_'+v,t:K[v].n+', who you rescued'});return out};
 const allyPool=()=>{const c=crew(),a=Object.keys(c.allies||{}).concat(Object.keys(c.saved||{}));return [...new Set(a)].filter(k=>K[k]&&!(D.dead&&D.dead[k])&&!(window.EDITION_CUT||[]).includes(k))};
 const doneV=m=>(D.done&&D.done[m])||(P.done&&P.done[m]);
@@ -32,6 +32,7 @@ updateLoc&&updateLoc();cue('tension',true);
  await say('david','(holding up a thick folder) The File. Everything. If this gets to the hall projector before the inspectors leave, it’s over. For them.','scared');
  await say('nivaan','Three things between here and the hall. Coach on the stairs. The hall doors, chained. Mr. Voss in the projector booth. Pick your people.','cold');
  hold('you','paper');
+ if(c.cheeksIn)await say('nivaan','(holding up his phone: a livestream, two huge men in tracksuits outside the front gate) And Cheeks and Cheek-Clapper are live from the bus loop. Nine hundred people watching. It’s 8:41 in the morning.','smirk');
  const pool=allyPool();if(pool.length)await N('Your phone buzzes. And buzzes. And buzzes. '+pool.slice(0,6).map(k=>K[k].n).join(', ')+(pool.length>6?' and more':'')+'. All the same message: “where do you need me”.');
  const OBS=[
   {room:'stairwell',t:'coach',label:'COACH ON THE STAIRS',pref:['jacob','mateo','paul','omer','kenneth'],ally:async(k)=>{await say(k,k==='mateo'?'(blowing a whistle right in his ear) EXTRA REPS, COACH.':'(walking straight at Coach) Hey, Coach. Remember me?','angry');pose('coach','hurt');await N(K[k].n+' takes Coach down the stairs in a heap. Neither of them gets up quickly. '+K[k].n+' gives you a thumbs-up from the bottom.')},
@@ -67,7 +68,7 @@ updateLoc&&updateLoc();cue('tension',true);
  const OBJ=[
   {t:'voss',line:'Those jars? Science. Pickled vegetables. Educational. I have the receipts. Mostly.',beat:['ledger','jars','saved_priya','saved_devon'],crack:'(a jar slips out of his coat pocket and smashes on the floor. Nobody looks at what was inside. Everybody looks at what was inside.)'},
   {t:'kim',line:'Magic club is a registered after-school activity! The children LOVE magic club.',beat:['voicenote','seats','volunteers','saved_lily'],crack:'(his smile stays exactly where it is while the rest of his face gives up)'},
-  {t:'coach',line:'Kids get hurt in sport. It’s called building character. Some characters don’t make it.',beat:['sketchbook','hatchkey','seats','saved_mateo','footage','register','rota'],crack:'(he blows his whistle at the inspectors. Nobody moves. He blows it again, smaller.)'},
+  {t:'coach',line:'Kids get hurt in sport. It’s called building character. Some characters don’t make it.',beat:['sketchbook','cheekscam','hatchkey','seats','saved_mateo','footage','register','rota'],crack:'(he blows his whistle at the inspectors. Nobody moves. He blows it again, smaller.)'},
   {t:'shermian',line:'1987 was a tragedy. An ACCIDENT. Nobody could have known about that boiler.',beat:['timesheets','boiler','retainer','finch','sher87','notebook','saved_theo'],crack:'(for the first time in thirty-nine years, she has nothing to say)'}];
  const evs=evList();
  for(const o of OBJ){if(!A[o.t])continue;
@@ -83,6 +84,9 @@ updateLoc&&updateLoc();cue('tension',true);
    else if(e.k==='voicenote'&&A.stella){await N('Click. Mr. Kim’s voice fills the hall. “Nobody looks for a girl who’s leaving.”');await say('stella',(crew().stellaTaken?'(standing up) He painted a clown nose on me. I don’t remember where I was for forty minutes. ':'(standing up) ')+'I’m the girl who’s leaving. I’m still here.','angry');if(A.sean){await walk('sean',A.stella.x+12,80);await say('sean','(not letting go of her hand) Look at her. Everybody look at her.','angry')}}
    else if(e.k==='timesheets'&&A.adam){await say('adam','(at the podium, holding up a stack of paper) Twenty-two years of sign-out sheets. Every kid who “transferred”. Every one authorised by the same two words: Love, Miss. I signed the front pages. I never turned one over. I’m turning them over.','cold');A.adam.ex='cold'}
    else if(e.k==='seats'){if(!A.pauljones)put('pauljones',-14,1,{y:160});await walk('pauljones',36,60);await say('pauljones','(from the back, hood down for once) Every Friday a seat on the 43 goes empty. I drew them. Nobody else noticed. I notice where everyone is.','cold')}
+   else if(e.k==='cheekscam'){put('cheeks',334,-1,{y:150,hold:'laptop'});put('clapper',354,-1,{y:150});await walk('cheeks',270,120);walk('clapper',292,120);
+    await say('cheeks','(bursting through the side door, laptop held high) FISTS OF FAIR CITY FOUR. Scene nine. Look at the BACKGROUND.','yell');
+    await say('clapper','We ENHANCED it.','angry')}
    else if(e.k==='hatchkey'&&A.jacob){await say('jacob','(standing up, all of him) I took that off him. He was dragging a seventh grader to the cupboard. I pushed him. First time in my life.','cold')}
    else await N('Click. '+e.t+'. On the big screen, in front of everyone.');
    SFX.sting&&SFX.sting();shake(.5);A[o.t].ex='shock';await N(o.crack);FIN.score+=2;FIN['cracked_'+o.t]=1;
@@ -111,6 +115,9 @@ updateLoc&&updateLoc();cue('tension',true);
   await say('insp2','(standing) Nobody leaves this hall.','angry');
   const helpers=allyPool().filter(k=>!A[k]).slice(0,5);let x=20;for(const k of helpers){put(k,x,1,{y:158,ex:'angry'});x+=14}
   if(helpers.length)await N('And then '+helpers.map(k=>K[k].n).join(', ')+' come over the chairs. Then the kids next to them. Then the whole hall. Everybody you helped for two weeks, all at once.');
+  if(c.cheeksIn&&A.coach){put('clapper',334,-1,{y:150,ex:'angry'});put('cheeks',354,-1,{y:150,hold:'laptop'});await walk('clapper',A.coach.x+16,160);face('clapper',1);
+   SFX.smack();shake(1);pose('coach','lie');await tw(A.coach,{x:A.coach.x-26},300);
+   await N('Through the side doors, at a full sprint: Cheek-Clapper. He turns round, sticks his backside out, and reverses Coach into the front row. Cheeks films it. Of course he does.')}
   {const lv=lovers().map(k=>({corey:'Corey and Abby at the front, holding hands so hard their knuckles go white',sean:'Sean with Stella right behind him, for once not leaving',hasan:'Hasan and Darren, shoulder to shoulder, exactly as planned'}[k]));if(lv.length)await N(lv.join('. ')+'.')}
   const ok=await mash('HOLD THE LINE',{need:30,time:5,info:'Get between them and the inspectors. MASH!'});
   if(!ok&&!helpers.length){await N('You’re one kid against a wall of teachers. It doesn’t last.');return finEnd('bloodbath')}
@@ -150,6 +157,7 @@ async function finEnd(v){
   else if(lv.includes('sean'))add('bus',{sean:[140,1,{y:150}],stella:[162,-1,{y:150}]},'Stella’s mom turned the Portland job down. She said she wasn’t moving her daughter away from the only school that ever fought for her. Sean has stopped recording voice notes. He doesn’t need them.',1);
   if(FIN.lost==='hasan')add('library',{hasan:[150,1,{y:150,hold:'paper'}]},'Hasan keeps the laminated list in his blazer pocket. Step fourteen is still blank. He won’t fill it in.',1);
   else if(lv.includes('hasan'))add('library',{hasan:[140,1,{y:150}],darren:[162,-1,{y:150,hold:'paper'}]},'Darren’s mum shut Highgate down in an afternoon. At dinner, she asks Hasan to pass the salt. Step fifteen.',1);}
+ if(c.cheeksIn&&K.cheeks)add('carpark',{cheeks:[140,1,{y:150,hold:'laptop'}],clapper:[164,-1,{y:150,pose:'hips'}]},v==='bloodbath'?'Cheeks and Cheek-Clapper’s livestream got taken down after forty minutes. They still post the clips. Every Friday. Somebody has to.':'Fists of Fair City 5: Inspection Day gets eleven million views. Their channel still has 312 subscribers. Nobody can explain it.',1);
  if(c.pjSafe&&K.pauljones)add('bus',{pauljones:[120,1,{y:150,pose:'sit'}],you:[142,-1,{y:150,pose:'sit'}]},'Paul Jones sits at the front of the 43 now. Second seat. He still draws the bus from above. Nobody’s crossed out.',1);
  if((c.ev||{}).hatchkey&&K.jacob)add('field',{jacob:[150,1,{y:150}]},'Jacob still lets people bump into him in the corridor. He just doesn’t move out of the way any more.',1);
  if(c.adamIn&&K.adam&&v!=='bloodbath')add('foodcourt',{adam:[150,1,{y:150,pose:'sit'}]},'Mr. Adam gives evidence for eleven days straight. On the twelfth he eats noodles in the food court in a cardigan. Nobody has ever seen him look this calm.',1);
