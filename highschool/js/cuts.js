@@ -14,7 +14,7 @@ const CUT_MIS=[
  'seat','group','beep','alex','dheva','marcus','paul','kenneth','bully','alone','pits','phone','flimbus','inhaler',
  'ladle','shorts','vapes','emergency','roast','cheeks','kaivibes','groupchat','leaked','beef',
  /* fringe characters */
- 'jade','stall','ringing','stain','steal_mia','bayonet','closet','ditch','lunchrun','hotsub','swipe','nursecal','gains','rave','lockedroom',
+ 'jade','stall','ringing','stain','steal_mia','bayonet','closet','ditch','lunchrun','hotsub','swipe','nursecal','gains','rave',
  /* family */
  'quiet','omermum','omerscarf','grandad','ohio',
  /* shops are places now, not quests */
