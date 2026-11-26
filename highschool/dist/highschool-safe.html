@@ -763,7 +763,7 @@ function drawHead(k,x,hy,d,o){
  else if(ex_==='closed'||blink||ex_==='happy'&&k.squint||ex_==='laugh'){R(ex-4,ey+1,2,1,ink);R(ex+2,ey+1,2,1,ink);if(ex_==='laugh'){R(ex-5,ey,1,1,ink);R(ex+4,ey,1,1,ink)}}
  else if(ex_==='smirk'||ex_==='sly'){/* smug: steady eyes, one brow cocked up */R(ex-4,ey,2,2,ink);R(ex+2,ey,2,2,ink);R(ex+2,ey-3,2,1,ink);R(ex-4,ey-2,2,1,'rgba(30,15,15,.5)')}
  else if(k.squint||k.tired){R(ex-4,ey+1,2,1,ink);R(ex+2,ey+1,2,1,ink);if(k.tired){R(ex-4,ey+2,2,1,'#9a7a8a');R(ex+2,ey+2,2,1,'#9a7a8a')}}
- else{R(ex-4,ey,2,2,ink);R(ex+2,ey,2,2,ink);R(ex-4+(d>0?1:0),ey,1,1,'rgba(255,255,255,.45)');R(ex+2+(d>0?1:0),ey,1,1,'rgba(255,255,255,.45)')}
+ else{R(ex-4,ey,2,2,ink);R(ex+2,ey,2,2,ink)}
  if(!k.adult&&ex_!=='blush'&&ex_!=='love'&&ex_!=='dead'&&!o.deadFace){R(ex-6,ey+2,2,1,'rgba(232,121,142,.22)');R(ex+3,ey+2,2,1,'rgba(232,121,142,.22)')}
  if(ex_==='cry'){const q=(T*3|0)%3;R(ex-4,ey+2,1,2+q,'#7ac0ff');R(ex+3,ey+2,1,1+((q+1)%3),'#7ac0ff')}
  if(ex_==='blush'||ex_==='love'){R(ex-6,ey+2,2,1,'#e8798e');R(ex+3,ey+2,2,1,'#e8798e')}
@@ -18641,10 +18641,11 @@ function stealArc(gid,S){
   tips:['Break or lunch, '+shortName(S.places.a[0][1])+'. '+G+' is venting.','Break or lunch, '+shortName(S.places.b[0][1])+'. She asked you to come.','Home time, the bus loop. '+K[bf].n+' knows.','Break or lunch, Main Corridor. Everybody’s heard.','After school, Fair City Mall, '+shortName(S.places.e[1])+'. '+K[bf].n+' has a plan.'],
   variants:{you:'She chose you',back:'She went back to him',bros:'You gave her back'}});
  /* 1 */
- for(const [p,room] of S.places.a)hook({mis,period:p,room,who:gid,label:'Ask '+G+' what’s wrong',look:{ex:'angry',pose:'cross'},cond:()=>ok()&&!f('a'),run:async()=>{
-  scene(room,{[gid]:[170,-1,{y:146,ex:'angry',pose:'cross'}],you:[140,1,{y:154}]});
+ for(const [p,room] of S.places.a)hook({mis,period:p,room,who:gid,label:'Ask '+G+' what’s wrong',look:{ex:'sad',pose:'cross'},cond:()=>ok()&&!f('a'),run:async()=>{
+  scene(room,{[gid]:[170,-1,{y:146,ex:'sad',pose:'cross'}],you:[140,1,{y:154}]});
   await beat(S.title.toUpperCase(),'PART ONE · THE OPENING');
-  for(const l of S.l1)await say(gid,l,'angry');
+  for(const l of S.l1)await say(gid,l,'cold');
+  await say(gid,'(seeing your face) Not you. God. Him. You’re the first person who’s asked.','sad');
   const c=await choose(['Make a joke about him. A mean one.','“He’s just like that, he loves you.”','“Sounds like you need a break from him.”']);
   if(c===1){await say(gid,'(cold) Yeah. Everybody says that. It’s always somebody’s job to say that.','cold');sf('a');sf('cold');part(mis,1);await N(G+' walks off. Whatever that was, it’s over.');await complete(mis,'cold');return 'stay'}
   if(c===0){await say('you',bf==='sean'?'Does he do the breathing on the phone? The “babe…” one? Like a haunted doorbell?':'Does the mustache have its own Instagram yet? It looks like it has opinions.');await say(gid,'(snorting, covering her mouth) Oh my god. Oh my GOD. You can’t say that. Say it again.','laugh')}
@@ -18712,7 +18713,8 @@ function stealArc(gid,S){
   if(c===2){await say(gid,'(staring at you) …You’re serious.','shock');await say('you','He’s '+(S.friend?'my boy. He was my boy before any of this.':'a mess. But he’s a mess for you.'));
    await walk(gid,206,60);await N('She goes to him. He doesn’t even look at her at first. He’s looking at you. '+(S.friend?'Then he does the first part of the handshake. Just the first part. You do the second.':'Then he gives you a very small nod. Mustache-less. Honorable.'));
    if(S.friend)delete (P.grudge=P.grudge||{})[bf];await complete(mis,'bros');return 'stay'}
-  const you=c===0?!f('doubt')||Math.random()<.5:(f('won')?Math.random()<.55:Math.random()<.35);
+  /* she likes you. She only goes back if you hesitated at every chance you had. */
+  const you=!(c===1&&f('doubt'));
   if(you){await say(gid,'(not letting go of your hand) '+B()+'. Go home.','cold');await N('He stands there a long time. Then he walks out, alone, past everybody who filmed it. The mall plays a song about summer over the speakers. It’s November.');
    await walk(bf,350,60);remove(bf);await say(gid,'(quietly, leaning on you) I picked you. Don’t make me look stupid for it.','blush');D.f['with_'+gid]=1;await complete(mis,'you')}
   else{await say(gid,'(slowly letting go) …He did something stupid for me. In front of everybody. You never did anything stupid for me.','sad');
@@ -25710,6 +25712,71 @@ if(ROOMS.roof){const rb=ROOMS.roof.bg;ROOMS.roof.bg=function(){rb.apply(this,arg
  if(Math.sin(T*3)>.3){R(132,24,2,2,'#ff3030');rmGlow(133,25,10,'#ff3030',.08)}
  const pq=(T*.2)%4;if(pq<2){const px_=200+Math.sin(pq*3)*2;R(px_,108,4,3,'#8a8a92');R(px_+3,107,2,2,'#6a6a72');R(px_+4,108,1,1,'#e8a030')}}}
 /* =====================================================================
+   THE MAIN HALL — where it ends (layout kept: proscenium 40-280, screen 110-210 x 34-78)
+   ===================================================================== */
+if(ROOMS.hall){
+ function hallPaint(){
+  /* warm panelled walls, high windows */
+  R(0,0,W,112,'#5a4230');for(let x=0;x<W;x+=20){R(x,0,20,112,'#5e4634');R(x,0,1,112,'rgba(0,0,0,.18)');R(x+1,0,1,112,'rgba(255,220,170,.07)')}
+  for(const x of[8,292]){R(x-1,4,22,22,'#2a1e16');guGrad(5,25,'#f0e8d0','#c8b890',x,20);R(x+9,5,2,20,'#2a1e16');guShaft(x+2,25,16,60,x<160?.4:-.4,'#fff4d8',.05)}
+  /* honour boards in gold leaf */
+  for(const x of[4,286]){R(x,40,30,44,'#2a160e');R(x+1,41,28,42,'#4a2a18');pxc(x<100?'HOUSE':'POINTS',x+15,43,'#e8c860');for(let i=0;i<5;i++){R(x+4,51+i*6,22,1,'rgba(232,200,96,.55)');if(i===2&&x<100)R(x+4,51+i*6,22,1,'rgba(0,0,0,.6)')}}
+  /* the proscenium: gilded arch, the crest */
+  R(36,16,248,96,'#1a0e0a');R(36,16,248,4,'#c8a040');R(36,16,4,96,'#c8a040');R(280,16,4,96,'#c8a040');R(37,17,246,1,'#f0d070');
+  R(146,4,28,14,'#c8a040');R(148,6,24,10,'#3a1a40');pxc('1962',160,8,'#f0d070');R(138,10,8,2,'#c8a040');R(174,10,8,2,'#c8a040');
+  R(40,20,240,70,'#140a08');
+  /* house curtains and the valance */
+  for(const cx of[40,250])for(let i=0;i<30;i+=3){const f=Math.sin(i*.9+cx)*.5+.5;R(cx+i,24,3,66,rmMix('#5a0c18','#a8203a',f))}
+  R(40,20,240,10,'#6a1020');for(let i=0;i<240;i+=12){R(40+i,30,12,4,'#7a1424');R(40+i,33,12,1,'#c8a040')}R(40,20,240,1,'#c8a040');
+  /* the screen frame (the slide draws on top) */
+  R(108,32,104,48,'#2a2a30');R(110,34,100,44,'#e8e8f0');pxc('HIGHGATE',160,40,'#2a2a5a');pxc('GOT TALENT',160,50,'#c02020');pxc('NO.',160,62,'#6a6a7a');
+  /* the stage apron, footlights, a piano under a sheet */
+  R(40,88,240,24,'#6a4a2a');R(40,88,240,2,'#d8b060');for(let x=0;x<240;x+=30)R(40+x,90,1,22,'rgba(0,0,0,.25)');
+  for(let x=52;x<280;x+=24){R(x,86,8,3,'#1a1a1a');R(x+1,86,6,1,'#f8e0a0')}
+  R(232,70,30,18,'#e8e4dc');R(232,70,30,2,'#ffffff');R(234,86,2,6,'#3a2a1a');R(258,86,2,6,'#3a2a1a');
+  /* wall sconces */
+  for(const x of[24,296])for(const y of[30]){R(x-2,y,5,6,'#c8a040');R(x-1,y-3,3,3,'#fff0c0')}
+  /* parquet floor */
+  guGrad(112,180,'#9a6a3a','#5a3a1e');for(let y=112;y<180;y+=6)for(let x=((y/6)%2)*8;x<W;x+=16){R(x,y,8,6,'rgba(255,220,160,.05)');R(x,y,1,6,'rgba(0,0,0,.12)')}
+  g.globalAlpha=.12;guGrad(112,140,'#ffd890','#ffd890');g.globalAlpha=1;
+ }
+ ROOMS.hall.bg=function(){rmCache('hall',hallPaint);
+  for(const x of[24,296]){const f=.6+.4*Math.sin(T*7+x);rmGlow(x,28,26,'#ffd890',.05*f)}
+  for(let i=0;i<10;i++){const q=(T*.03+hsh(i+1501))%1;g.globalAlpha=.35*(1-q);R(20+hsh(i+1502)*280,26+q*80,1,1,'#fff4d8');g.globalAlpha=1}};
+ if(typeof LIGHT!=='undefined')LIGHT.hall={amb:.62,tint:[50,30,15],src:[[160,50,140,.3,[255,240,210]],[24,28,50,.25,[255,220,160]],[296,28,50,.25,[255,220,160]],[160,90,120,.2,[255,230,170]]],wallAO:1};
+}
+
+/* =====================================================================
+   THE CAFETERIA — Pat's (layout kept: menu board, counter 10-160, window, vending)
+   ===================================================================== */
+if(ROOMS.canteen){
+ function canteenPaint(){
+  guTiles(0,0,W,106,10,'#dfe6ea','#d6dee4','rgba(120,140,160,.25)',1601);R(0,58,W,4,'#3a7ac8');R(0,62,W,1,'#ffffff');R(0,0,W,6,'#8a98a8');
+  for(let i=0;i<4;i++){const x=40+i*80;R(x-16,1,32,3,'#f4f8f8');R(x-16,4,32,1,'#a8b0b8')}
+  /* menu board */
+  R(14,16,100,44,'#4a3a2a');R(16,18,96,40,'#1e3a2c');R(16,18,96,1,'rgba(255,255,255,.15)');px('TODAY:',22,23,'#f0f0a0');px('MYSTERY NUGGETS',22,31,'#fff');px('GREY PASTA',22,39,'#fff');px('PAT\'S STEW ?',22,47,'#e06a6a');
+  /* hatch to the kitchen, warm light behind */
+  R(116,18,56,36,'#3a3a42');R(118,20,52,32,'#e8b870');guGrad(20,52,'#f4d090','#c88a50',118,52);R(118,48,52,4,'#9aa0aa');for(let i=0;i<4;i++)R(124+i*12,28,6,14,'rgba(90,60,30,.35)');
+  /* window */
+  R(178,18,78,48,'#6a7a8a');guGrad(20,64,'#c8e4f8','#8ab8d8',180,74);R(216,20,2,44,'#6a7a8a');R(180,42,74,2,'#6a7a8a');for(let i=0;i<5;i++)R(184+i*14,52-i%2*2,6,10,'#4a8a4a');
+  /* serving line: steel, sneeze guard, trays of food */
+  R(10,70,150,36,'#9aa2ac');R(10,70,150,2,'#e8ecf0');for(let x=10;x<160;x+=12)R(x,72,1,34,'rgba(0,0,0,.12)');R(10,104,150,2,'#5a6068');
+  for(let i=0;i<6;i++){R(16+i*24,62,20,8,'#c8ccd0');R(18+i*24,64,16,4,['#e8c04a','#a8a088','#c86a3a','#7a9a3a','#e8e0c8','#8a5a3a'][i]);R(18+i*24,64,16,1,'rgba(255,255,255,.3)')}
+  g.globalAlpha=.35;R(12,56,146,2,'#e8f8ff');R(12,58,146,4,'#c8e8f8');g.globalAlpha=1;R(12,56,2,8,'#9aa0aa');R(156,56,2,8,'#9aa0aa');
+  /* vending machine */
+  R(270,38,40,68,'#8a1820');R(272,40,36,66,'#b82030');R(276,46,20,40,'#1a1a2a');for(let r=0;r<5;r++)for(let c=0;c<3;c++)R(278+c*6,48+r*7,4,5,['#e8c040','#40a0e0','#e04040','#40c060'][(r+c)%4]);R(298,60,6,10,'#8a8a8a');pxc('SNAX',290,92,'#fff');R(272,40,1,66,'rgba(255,255,255,.2)');
+  guPoster(258,72,10,18,'#3a8a3a',['EAT'],'#fff');
+  /* floor */
+  guTiles(0,112,W,68,16,'#c8d0c8','#bcc4bc','rgba(0,0,0,.08)',1611);guFloorShine(112,68,.08);
+ }
+ ROOMS.canteen.bg=function(){rmCache('canteen',canteenPaint);
+  /* steam off the trays, the vending glow */
+  for(let i=0;i<6;i++){const q=(T*.4+i/6)%1;g.globalAlpha=.25*(1-q);R(22+i*24+Math.sin(T+i)*2,60-q*14,4,2,'#ffffff');g.globalAlpha=1}
+  g.globalAlpha=.08+.03*Math.sin(T*3);R(276,46,20,40,'#9ad8ff');g.globalAlpha=1};
+ if(typeof LIGHT!=='undefined')LIGHT.canteen={amb:.84,tint:[40,40,40],src:[[40,4,80,.25],[120,4,80,.25],[200,4,80,.25],[280,4,80,.25],[144,36,60,.25,[255,210,150]]],wallAO:1};
+}
+
+/* =====================================================================
    THE ENRICHMENT LAYER for every room not fully repainted
    grain on the walls, a ceiling shadow, a baseboard shadow, floor depth,
    soft window light, and small clutter in the empty places
@@ -25719,12 +25786,12 @@ const ENR={
  hallb:{clutter:[['plant',300,110],['bin',20,150],['paper',180,166]]},
  upper:{clutter:[['bin',300,150],['paper',120,168],['bag',230,162]]},
  wing_sci:{clutter:[['bin',300,150],['paper',90,166]]},wing_arts:{clutter:[['paper',150,168],['bag',260,162]]},wing_sports:{clutter:[['bin',18,150],['ball',240,168]]},
- canteen:{clutter:[['tray',90,164],['paper',200,170],['bin',300,150],['spill',150,172]]},
+ canteen_x:{clutter:[]},
  library:{clutter:[['plant',300,110],['books',40,168]]},
  maths:{clutter:[['bag',300,164],['paper',60,172]]},english:{clutter:[['bag',300,164],['paper',220,172]]},history:{clutter:[['bag',18,164],['paper',150,172]]},
  science:{clutter:[['bag',300,164],['paper',90,172]]},trailer:{clutter:[['bag',300,166],['paper',150,174]]},art:{clutter:[['paper',90,172],['paper',230,166]]},
  foodtech:{clutter:[['spill',120,172],['paper',250,168]]},toilets:{clutter:[['paper',140,170],['spill',220,168]]},staffroom:{clutter:[['plant',20,110],['bag',300,164]]},
- nurse:{clutter:[['bin',300,150]]},hall:{clutter:[['paper',60,174],['paper',260,172]]},
+ nurse:{clutter:[['bin',300,150]]},
  checkpoint:{clutter:[['bin',10,150],['paper',120,172]]},door:{clutter:[]},walkway:{clutter:[['paper',90,170]]},courtyard:{clutter:[['paper',200,172]]},
  roof:{clutter:[['vent',60,112],['puddle',200,160],['puddle',90,170]]},party:{clutter:[['cup',100,168],['cup',220,172],['cup',160,164]]},lake:{clutter:[]},carpark:{clutter:[['paper',200,172]]},
  stairwell:{clutter:[]},gymx:{}};
@@ -26015,6 +26082,276 @@ for(const fn of['screening','clappening','dailies'])if(typeof window[fn]==='func
 
 </script>
 <script>
+/* js/remaster_fix2.js */
+'use strict';
+/* =====================================================================
+   HIGHSCHOOL REMASTERED — fixes from playtesting
+   • Strike Three (steal_stella) can't start until Sean and Stella are
+     actually together THIS run (In Person finished).
+   • The courtyard moves downstairs: a glass double door in the Science
+     Wing (ground floor, right past the Front Hall), with signs to it from
+     the Main Corridor and the Front Hall. The old upstairs door is gone.
+   • The courtyard is repainted.
+   ===================================================================== */
+{
+const rmCache=(id,draw)=>guCache('rm_'+id,'',draw);
+const rmMix=(a,b,t)=>{const A_=guRGB(a),B=guRGB(b);return`rgb(${A_[0]+(B[0]-A_[0])*t|0},${A_[1]+(B[1]-A_[1])*t|0},${A_[2]+(B[2]-A_[2])*t|0})`};
+/* ---- Strike Three gate ---- */
+const together=()=>!!(D&&D.done&&D.done.instella);
+for(const h of HOOKS)if(h.mis==='steal_stella'){const c=h.cond;h.cond=()=>together()&&(!c||c())}
+if(MIS.steal_stella&&MIS.steal_stella.tips)MIS.steal_stella.tips=['First, Sean and Stella have to be together (finish In Person). Then: break or lunch, the field. Stella is venting.'].concat(MIS.steal_stella.tips.slice(1));
+
+/* ---- the courtyard door moves to the Science Wing ---- */
+if(WORLD.wing_arts)WORLD.wing_arts.doors=WORLD.wing_arts.doors.filter(d=>d.to!=='courtyard');
+if(WORLD.wing_sci&&!WORLD.wing_sci.doors.some(d=>d.to==='courtyard'))WORLD.wing_sci.doors.unshift({x:40,to:'courtyard',label:'COURTYARD',glass:1});
+if(typeof DOORS!=='undefined')DOORS.courtyard={hall:'wing_sci',x:40};
+{const _hd=hpDoor;hpDoor=function(d,T_){if(!d.glass)return _hd(d,T_);
+ const x=d.x;
+ /* a wide glass double door, daylight and green through it */
+ R(x-21,29,42,79,'#4a5a52');R(x-21,29,42,1,'rgba(255,255,255,.3)');
+ guGrad(31,106,'#bfe4f4','#8ac08a',x-19,38);
+ for(let i=0;i<5;i++)R(x-18+i*8,60-(i%2)*6,6,46,i%2?'#4a8a3a':'#5a9a4a');R(x-19,88,38,18,'#c8c0a8');
+ g.globalAlpha=.35;R(x-17,33,4,70,'#fff');R(x+3,33,3,70,'#fff');g.globalAlpha=1;
+ R(x-1,31,2,75,'#4a5a52');R(x-19,31,38,2,'#4a5a52');R(x-5,64,3,8,'#c8c8d0');R(x+2,64,3,8,'#c8c8d0');
+ /* the sign over it */
+ R(x-20,20,40,9,'#2a6a3a');R(x-20,20,40,1,'#5aa06a');pxc('COURTYARD',x,22,'#f4f0e0');
+ /* daylight on the floor */
+ g.globalAlpha=.12;for(let i=0;i<24;i++)R(x-18-i*.6,108+i,36+i*1.2,1,'#fff8d8');g.globalAlpha=1}}
+/* signs pointing there */
+const SIGN={corridor:274,hallb:262};
+for(const r of Object.keys(SIGN)){if(!ROOMS[r])continue;const ob=ROOMS[r].bg;ROOMS[r].bg=function(){ob.apply(this,arguments);
+ if(D&&D.weekend)return;const x=SIGN[r];
+ R(x+2,0,1,3,'#3a3a3a');R(x+40,0,1,3,'#3a3a3a');R(x,3,44,10,'#2a6a3a');R(x,3,44,1,'#5aa06a');R(x,12,44,1,'#1a4a2a');
+ px('COURTYARD',x+3,5,'#f4f0e0');R(x+38,7,3,1,'#f4f0e0');R(x+39,6,1,3,'#f4f0e0');R(x+40,7,1,1,'#f4f0e0')}}
+
+/* ---- the courtyard, repainted ---- */
+if(ROOMS.courtyard){
+ function cyPaint(){
+  /* sky */
+  guGrad(0,40,'#7ab4e4','#c4e0f2');
+  for(const [x,y,w] of[[30,8,40],[150,14,56],[250,6,34]]){R(x,y,w,5,'#ffffff');R(x+6,y-3,w-16,4,'#ffffff');R(x,y+4,w,1,'#d8e8f4')}
+  /* the school on three sides: brick, windows with sills and reflections */
+  R(0,26,W,86,'#8a3a32');for(let y=28;y<110;y+=4)for(let x=(y%8?0:6);x<W;x+=12){R(x,y,11,3,rmMix('#9a4438','#a84c3e',hsh(x*.13+y)));R(x,y+3,11,1,'rgba(0,0,0,.12)')}
+  R(0,26,W,3,'#6a6a6e');R(0,29,W,1,'rgba(0,0,0,.3)');
+  for(let r=0;r<2;r++)for(let c=0;c<8;c++){const x=10+c*40,y=36+r*32;if(x>184&&x<240)continue;
+   R(x-1,y-1,26,22,'#e8e0d0');R(x,y,24,20,'#2a3a4a');guGrad(y+1,y+19,'#a8cce4','#6a92b4',x+1,22);
+   R(x+12,y,1,20,'#e8e0d0');R(x,y+10,24,1,'#e8e0d0');g.globalAlpha=.4;R(x+2,y+2,3,7,'#fff');R(x+14,y+12,3,6,'#fff');g.globalAlpha=1;
+   if(hsh(c+r*9)>.6){R(x+1,y+1,11,7,'#e8d8a8');for(let i=0;i<7;i+=2)R(x+1,y+1+i,11,1,'#c8b888')}
+   if(hsh(c*3+r)>.75)R(x+3,y+14,4,5,'#d86a3a');
+   R(x-2,y+20,28,2,'#c8c0b0')}
+  /* ivy climbing the brick */
+  for(const [x0,top] of[[4,40],[300,34],[160,60]]){for(let i=0;i<70;i++){const yy=top+hsh(i+x0)*(110-top),xx=x0+Math.sin(yy*.15+x0)*8+hsh(i*2+x0)*14;R(xx,yy,3,2,hsh(i*5)>.5?'#3a7a3a':'#4e9444')}}
+  /* the covered walkway along the back */
+  R(0,96,W,4,'#5a5a5e');for(let x=6;x<W;x+=46)R(x,100,4,12,'#7a7a7e');
+  /* paving: big stones, moss in the joints, worn path */
+  guGrad(112,180,'#c8bea8','#a89e88');
+  for(let y=112,r=0;y<180;y+=11,r++)for(let x=-((r%2)*13);x<W;x+=26){const t=hsh(x*.7+y);R(x+1,y+1,24,9,rmMix('#cfc5ae','#b8ae96',t));R(x+1,y+1,24,1,'rgba(255,255,255,.18)');R(x,y,26,1,'#7a8a5a');R(x,y,1,11,'#7a8a5a')}
+  g.globalAlpha=.12;R(120,112,80,68,'#6a5a48');g.globalAlpha=1;
+  for(let i=0;i<6;i++){g.globalAlpha=.22*(1-i/6);R(0,112+i*2,W,2,'#000')}g.globalAlpha=1;
+  /* planters with flowers (the fetch spots) */
+  for(const x of[60,110,200,240]){R(x-12,104,24,10,'#7a5a3a');R(x-12,104,24,2,'#9a7a52');R(x-11,106,22,1,'rgba(0,0,0,.25)');
+   for(let i=0;i<9;i++){const fx=x-10+i*2.4,fh=4+hsh(i+x)*6;R(fx,104-fh,1,fh,'#4a8a3a');R(fx-1,103-fh,3,2,['#e85a7a','#f0d040','#f4f0f0','#b07ae0'][(i+x)%4])}}
+  /* trees, layered round canopies */
+  for(const x of[28,288]){R(x-3,52,7,60,'#5a3a22');R(x-1,52,2,60,'#7a5232');R(x-8,108,17,4,'#4a3020');
+   for(const [dx,dy,r,c] of[[-14,30,16,'#2e6a2e'],[12,34,15,'#2e6a2e'],[0,22,18,'#3a7e36'],[-8,40,13,'#448a3c'],[10,44,12,'#448a3c'],[2,32,12,'#56a046']])for(let yy=-r;yy<=r;yy+=2){const w_=Math.sqrt(r*r-yy*yy)*2|0;R(x+dx-w_/2,dy+yy,w_,2,c)}
+   for(let i=0;i<18;i++)R(x-20+hsh(i+x)*40,16+hsh(i*3+x)*36,2,1,'#7ac060')}
+  /* the founder, on his plinth */
+  R(194,58,36,52,'#8a8a90');R(192,56,40,4,'#aeaeb4');R(192,106,40,4,'#6a6a70');R(196,60,2,48,'rgba(255,255,255,.15)');R(226,60,2,48,'rgba(0,0,0,.18)');
+  R(200,84,24,10,'#6a6a70');pxc('FOUNDER',212,86,'#d8d8dc');pxc('1962',212,98,'#4a4a52');
+  R(205,34,14,22,'#7e7e86');R(207,22,10,12,'#7e7e86');R(208,24,8,2,'#9a9aa2');R(203,36,4,14,'#6e6e76');R(219,28,4,10,'#6e6e76');R(219,24,4,4,'#7e7e86');R(205,56,5,2,'#5e5e66');R(214,56,5,2,'#5e5e66');
+  R(206,36,2,20,'rgba(255,255,255,.18)');R(212,20,6,2,'#ffffff');/* a pigeon's contribution */
+  for(let i=0;i<8;i++)R(207+hsh(i)*10,26+hsh(i+1)*30,1,2,'rgba(240,240,230,.6)');
+  /* the fountain basin */
+  R(82,100,80,14,'#9a9aa2');R(84,98,76,4,'#c4c4cc');R(86,102,72,8,'#3a7ab0');R(86,102,72,1,'#8ac8f0');R(84,110,76,4,'#7a7a82');
+  R(118,82,8,20,'#a8a8b0');R(120,82,2,20,'#d0d0d8');R(110,80,24,3,'#c4c4cc');R(112,83,20,1,'rgba(0,0,0,.2)');
+  for(let i=0;i<6;i++)R(90+hsh(i+7)*60,104+hsh(i+8)*4,2,1,'#e8c040');/* coins */
+  /* benches (on top of the paving this time) */
+  for(const x of[20,250]){R(x,122,50,3,'#9a7450');R(x,122,50,1,'#c09a6a');R(x,128,50,4,'#8a6a48');R(x,128,50,1,'#b08a60');R(x+4,132,3,10,'#3a3a3a');R(x+43,132,3,10,'#3a3a3a');R(x+2,142,48,1,'rgba(0,0,0,.18)')}
+  /* dappled shade under the trees */
+  for(const x of[28,288])for(let i=0;i<14;i++){g.globalAlpha=.14;R(x-30+hsh(i+x*2)*60,114+hsh(i*7+x)*24,8,3,'#1a3a1a')}g.globalAlpha=1;
+  /* edges of the grass at the front */
+  R(0,172,W,8,'#4e9444');for(let x=0;x<W;x+=3)R(x,170-hsh(x)*3,1,4,'#5aa04a');
+ }
+ ROOMS.courtyard.bg=function(){rmCache('courtyard2',cyPaint);
+  /* fountain spray and ripples */
+  for(let i=0;i<16;i++){const q=(T*1.3+i/16)%1,a=i*.4;R(122+Math.cos(a)*q*18,81-Math.sin(q*3.14)*14+q*20,1,2,'rgba(200,235,255,.9)')}
+  for(let i=0;i<3;i++){const q=(T*.6+i/3)%1;g.globalAlpha=.4*(1-q);R(122-q*30,104,q*60,1,'#cfeaff');g.globalAlpha=1}
+  /* clouds drift, leaves sway and fall */
+  for(let i=0;i<2;i++){const x=((T*3+i*170)%380)-40;R(x,4+i*10,26,4,'rgba(255,255,255,.7)')}
+  for(const x of[28,288]){const s=Math.round(Math.sin(T*1.3+x)*1.5);g.globalAlpha=.15;R(x-14+s,16,28,2,'#ffffff');g.globalAlpha=1}
+  for(let i=0;i<4;i++){const q=(T*.12+i/4)%1,lx=(i%2?288:28)+Math.sin(T*2+i)*10;R(lx,40+q*130,2,1,'#8ab050')}
+  {const k=((T%14)/14);if(k<.4){const x=360-k/.4*400,f=Math.sin(T*12)>0;R(x,20,3,1,'#2a2a2a');R(x-1,19+(f?0:2),1,1,'#2a2a2a');R(x+3,19+(f?0:2),1,1,'#2a2a2a')}}};
+ if(typeof LIGHT!=='undefined')LIGHT.courtyard=()=>({amb:1,tint:[70,60,30],src:[[160,10,220,.18,[255,245,215]]]});
+}
+}
+
+</script>
+<script>
+/* js/stealfallout.js */
+'use strict';
+/* =====================================================================
+   HIGHSCHOOL REMASTERED — THE FALLOUT (after you steal someone)
+   You steal her, she picks you, she likes you. Then it falls apart,
+   slowly, in public, one day at a time, and the whole school decides
+   you're a loser. One part per day, starting the day after.
+     1. THE TABLE       lunch, cafeteria   your friends move tables
+     2. THE GROUP CHAT  break, corridor    removed from everything; SNAKE
+                                           on your locker; she's texting him
+     3. THE WRONG NAME  home time, bus     she calls you his name
+     4. DUMPED          lunch, cafeteria   in front of everyone. LOSER.
+   Works for every steal: Stella (from Sean), and Mia (Tez) and Jade
+   (Brayden) if those come back. Full version only.
+   ===================================================================== */
+{
+const FALL=[
+ {gid:'stella',bf:'sean',steal:'steal_stella',id:'after_stella',title:'Foul Ball',icon:'🐍',friend:1,
+  trophy:'I’m not a trophy. I play softball. I have a batting average. It’s .340.',
+  text:'Not the breathing one. He did a whole voice note about “his patterns.” He’s been listening to podcasts.'},
+ {gid:'mia',bf:'tez',steal:'steal_mia',id:'after_mia',title:'Curtain Call',icon:'🐍',friend:0,
+  trophy:'I’m not a prop. I’m the lead. I’ve always been the lead.',
+  text:'He’s growing it back. The mustache. He sent me a progress photo. It’s… honestly it’s coming in thicker.'},
+ {gid:'jade',bf:'brayden',steal:'jade',id:'after_jade',title:'Rebound',icon:'🐍',friend:0,
+  trophy:'I didn’t leave him to be somebody’s prize. I left him to be nobody’s.',
+  text:'He wrote me a letter. By hand. He spelt “sorry” wrong in three different ways.'}
+];
+const day=()=>typeof cal==='function'?cal():0;
+for(const F of FALL){
+ const {gid,bf,steal,id}=F,G=()=>K[gid].n.split(' ')[0],B=()=>K[bf].n.split(' ')[0];
+ if(!K[gid]||!K[bf])continue;
+ const f=k=>D.f[id+'_'+k],sf=k=>{D.f[id+'_'+k]=day()};
+ const ok=()=>!TEST_SKIP()&&D.done[steal]==='you'&&!D.dead[gid]&&!D.done[id];
+ const next=k=>f(k)!=null&&day()>f(k);
+ mission(id,{name:F.title,icon:F.icon,who:[gid],goal:'You took '+K[gid].n+' from '+K[bf].n+'. Now live in it.',
+  blurb:'You won. She picked you. Everybody saw. Now everybody has an opinion, and none of them are good.',
+  parts:['The table','The group chat','The wrong name','Dumped'],
+  tips:['The day after: lunch, the cafeteria. Sit with her.','The next day: break, Main Corridor. Check your phone.','The next day: home time, the bus loop.','The next day: lunch, the cafeteria. She wants to talk.'],
+  variants:{begged:'You begged. On camera.',first:'You tried to dump her first. Nobody bought it.',took:'Dumped in the cafeteria'}});
+ /* the steal finishing stamps the day */
+ {const _c=complete;complete=async function(mis,v,big){if(mis===steal&&v==='you')D.f[id+'_s']=day();return _c(mis,v,big)}}
+
+ /* 1 · THE TABLE */
+ hook({mis:id,period:4,room:'canteen',who:'auto',cond:()=>ok()&&next('s')&&f('a')==null,run:async()=>{
+  const cast={you:[110,1,{y:152,pose:'sit'}],[gid]:[134,-1,{y:152,pose:'sit',ex:'happy'}]};
+  const crew_=(F.friend?['hasan','omer','arjun']:['kayden','jaxon']).filter(k=>K[k]&&!D.dead[k]);
+  cast[bf]=[250,-1,{y:150,pose:'sit',ex:'sad'}];crew_.forEach((k,i)=>cast[k]=[190+i*22,1,{y:150}]);
+  if(K.kaylee&&!D.dead.kaylee)cast.kaylee=[296,-1,{y:146,pose:'film'}];
+  scene('canteen',cast,true);cue('sad');
+  await beat(F.title.toUpperCase(),'PART ONE · THE TABLE');
+  await N('Lunch. She sits next to you. Your old table is twenty feet away, and it has never been this quiet.');
+  await say(gid,'Is it weird? It’s weird. Everyone’s looking.','blush');
+  for(const k of crew_){await walk(k,226+crew_.indexOf(k)*14,50);pose(k,'sit');face(k,1)}
+  if(crew_.length)await N(crew_.map(k=>K[k].n.split(' ')[0]).join(', then ')+'. They pick up their trays and sit either side of '+B()+' like bodyguards.');
+  const c=await choose(['Wave at them.','Kiss her. Right here.','Eat. Look at nobody.']);
+  if(c===0){if(A.arjun){pose('arjun','wave');await wait(500);await say('arjun','(lowering his hand very slowly) Sorry, man. I can’t be seen.','sad');pose('arjun','sit')}
+   else await N('Nobody waves back. One kid at the next table waves, out of pity. That’s worse.')}
+  else if(c===1){SFX.kiss&&SFX.kiss();fxState.romance=.4;await N('You kiss her in the middle of the cafeteria. The whole room goes “OHHHHHH” like a stadium.');fxState.romance=0;
+   if(A[bf]){pose(bf,null);await walk(bf,350,80);remove(bf)}await say(gid,'(laughing into your shoulder) That was so mean. That was so mean to him.','blush')}
+  else await N('The nuggets taste like nothing. Everybody watches you chew.');
+  await say(gid,'They’ll get over it.','happy');
+  await N('They will not get over it.');
+  if(typeof repAdd==='function')repAdd('liked',-1,'snake');
+  sf('a');part(id,1);return 'stay'}});
+
+ /* 2 · THE GROUP CHAT */
+ hook({mis:id,period:2,room:'corridor',who:'auto',cond:()=>ok()&&next('a')&&f('b')==null,run:async()=>{
+  const cast={you:[100,1,{y:154}]};const kids=['kid1','kid2','kid3'].filter(k=>K[k]);kids.forEach((k,i)=>cast[k]=[200+i*24,-1,{y:146,ex:'laugh'}]);
+  scene('corridor',cast,true);cue('tension');
+  await beat(F.title.toUpperCase(),'PART TWO · THE GROUP CHAT');
+  SFX.buzz?SFX.buzz():SFX.beep&&SFX.beep();
+  await N('Your phone buzzes eleven times in a row.');
+  await N('“'+B()+' removed you from THE BOYS 🏀.” “Hasan removed you from SATURDAY FIFA.” Then a group you didn’t know existed: “ppl who hate the snake (47).”');
+  const snake=prop({t:'snakesign',x:150,y:104,layer:-1});
+  await N('Someone has written SNAKE on your locker in silver Sharpie. Someone else has drawn the snake. It’s a good snake. That’s the worst part.');
+  for(const k of kids)if(typeof bubbles!=='undefined')bubbles.push({id:k,txt:'SNAKE',t:2});
+  const c=await choose(['Scrub it off.','Leave it. Own it.','“Who did this?”']);
+  if(c===0){await mash('SCRUB',{need:16,time:3,info:'It’s silver Sharpie. It is not coming off.'});await N('It doesn’t come off. Now it’s a smudged snake. It looks angrier.')}
+  else if(c===1)await N('You leave it. You walk past it six times a day. It does not become iconic. It stays a snake.');
+  else{if(kids[0])await say(kids[0],'(not even pretending) Everyone. Everyone did this.','laugh');else await N('Nobody answers. Everybody did it.')}
+  put(gid,-14,1,{y:150,hold:'phone',ex:'happy'});await walk(gid,124,70);face(gid,-1);
+  await N(G()+' walks up, smiling at her phone. Not at you. At her phone.');
+  await say(gid,'Sorry. It’s '+B()+'. '+F.text,'happy');
+  const d=await choose(['“Block him.”','Say nothing.']);
+  if(d===0)await say(gid,'(the smile going) Don’t do that. That’s his thing. Telling me who to talk to. Don’t become his thing.','cold');
+  else await N('You say nothing. She keeps texting while you talk. She laughs once, at something you didn’t say.');
+  {const i=props.indexOf(snake);if(i>=0)props.splice(i,1)}
+  if(typeof repAdd==='function')repAdd('liked',-1,'snake');
+  sf('b');part(id,2);return 'stay'}});
+
+ /* 3 · THE WRONG NAME */
+ hook({mis:id,period:7,room:'bus',who:'auto',cond:()=>ok()&&next('b')&&f('c')==null,run:async()=>{
+  const cast={you:[130,1,{y:154}],[gid]:[160,-1,{y:150,ex:'sad'}]};if(K.kaylee&&!D.dead.kaylee)cast.kaylee=[270,-1,{y:146}];
+  scene('bus',cast,true);cue('sad');
+  await beat(F.title.toUpperCase(),'PART THREE · THE WRONG NAME');
+  await say(gid,'Hey, '+B()+'— (stopping) …','shock');
+  await N('She said '+B()+'. On the bus loop. Kaylee was in range.');
+  if(A.kaylee){pose('kaylee','film');await wait(300)}
+  await say(gid,'That’s just— muscle memory. It doesn’t mean anything.','scared');
+  await say(gid,'(after a long time) Can I ask you something? Did you actually like me? Or did you like that he had me?','sad');
+  const c=await choose(['“I liked you.”','“…Both?”','“Honestly? I don’t know.”']);
+  if(c===0)await say(gid,'(nodding, not believing it) Okay.','sad');
+  else if(c===1)await say(gid,'(a laugh with nothing in it) At least that’s honest.','cold');
+  else await say(gid,'Yeah. Me neither. About you, I mean.','cold');
+  await N('She gets on the 43. You get on the 43. She sits at the front. You sit at the back. It’s a long ride for two people on the same bus.');
+  sf('c');part(id,3);return 'ended'}});
+
+ /* 4 · DUMPED */
+ hook({mis:id,period:4,room:'canteen',who:'auto',cond:()=>ok()&&next('c'),run:async()=>{
+  const cast={you:[120,1,{y:152,pose:'sit'}],[gid]:[156,-1,{y:150,ex:'cold'}]};
+  const watch=['kaylee','kid1','kid2','kid3','kid4'].filter(k=>K[k]&&!D.dead[k]);watch.forEach((k,i)=>cast[k]=[200+i*24,-1,{y:146+(i%2)*6,pose:k==='kaylee'?'film':null,ex:'shock'}]);
+  if(!D.dead[bf])cast[bf]=[40,1,{y:150,ex:'cold'}];
+  scene('canteen',cast,true);cue('tension');
+  await beat(F.title.toUpperCase(),'PART FOUR · DUMPED');
+  await say(gid,'I need to say this somewhere you can’t make it weird.','cold');
+  await N('Two hundred kids stop eating at once. You can hear the vending machine.');
+  await say(gid,'I left a guy who needed me to be his whole life. Then I picked a guy who needed me to be a trophy.','sad');
+  await say(gid,F.trophy,'cold');
+  await say(gid,'We’re done. I’m telling you here so you can’t make it a secret thing. Secret things are how you two operate.','cold');
+  const c=await choose(['Beg.','Dump her first. Loudly.','“…Okay.”']);
+  let v='took';
+  if(c===0){v='begged';pose('you','kneel');await mash('BEG',{need:18,time:3,info:'Out loud. In the cafeteria.'});
+   await N('You beg. Out loud. On one knee, by the ketchup. Kaylee zooms in so hard the phone focuses on your nostril.');
+   await say(gid,'(quietly) Get up. Please. You’re making it worse for both of us.','sad');pose('you',null)}
+  else if(c===1){v='first';pose('you',null);await say('you','Actually, I’M breaking up with YOU.');
+   await N('Nobody buys it. Somebody at the back actually says “nobody buys it” out loud.')}
+  else await say('you','…Okay.');
+  await walk(gid,350,60);remove(gid);
+  await N('She doesn’t walk to '+B()+'’s table either. She walks out of the cafeteria and, as far as anyone can tell, out of both your lives.');
+  SFX.crowd&&SFX.crowd();
+  for(const k of watch)if(typeof bubbles!=='undefined')bubbles.push({id:k,txt:'LOSER',t:2.2});
+  await N('Somebody starts a slow clap. It catches. It goes round the whole cafeteria. Lunch Lady Pat joins in.');
+  if(A[bf]){await walk(bf,96,60);face(bf,1);
+   await say(bf,'You know the worst part? I’m not even happy. I wanted to be so happy about this.','sad');
+   await say(bf,'She left both of us. We’re the same now. Me and you. Two idiots.','cold');
+   await walk(bf,-20,60);remove(bf)}
+  if(F.friend&&K.arjun&&!D.dead.arjun){put('arjun',340,-1,{y:150});await walk('arjun',144,90);pose('arjun','sit');
+   await say('arjun','(taking one of your nuggets) You are, mathematically, the biggest loser in this school.','smirk');
+   await say('arjun','I’ll sit here a bit. Not because I like you. The view’s funny.','smirk')}
+  else await N('You eat lunch alone. The nuggets still taste like nothing.');
+  if(typeof repAdd==='function'){repAdd('liked',-2,'loser');repAdd('legend',-1)}
+  D.f['with_'+gid]=0;(P.dumped=P.dumped||{})[gid]=1;
+  toast('🐍 Everyone in Highgate thinks you’re a loser now. Fair, honestly.');
+  await complete(id,v);return 'stay'}});
+ for(const v of['begged','first','took'])OUTCOME_FIX[id+':'+v]='bad';
+}
+function TEST_SKIP(){return false}
+
+/* SNAKE on your locker */
+{const _dp=drawProp;drawProp=function(p){if(p.t!=='snakesign')return _dp(p);const x=Math.round(p.x),y=Math.round(p.y);
+ R(x-20,y-16,40,14,'rgba(0,0,0,.12)');pxc('SNAKE',x,y-14,'#d8d8e0');
+ for(let i=0;i<14;i++)R(x-16+i*2,y-5+Math.round(Math.sin(i*.9)*2),2,2,'#c8c8d0');R(x+12,y-6,3,3,'#c8c8d0');R(x+15,y-5,2,1,'#e05050')}}
+
+/* once she's dumped you, she stops turning up at your lunch table (every run) */
+{const _br=buildRoom;buildRoom=function(room){const sw=[];
+ for(const F of FALL)if((P.dumped||{})[F.gid]&&P.done[F.steal]==='you'){sw.push(F.steal);P.done[F.steal]='_'}
+ try{return _br(room)}finally{for(const m of sw)P.done[m]='you'}}}
+
+/* in the quest tab, it's a chapter of the same love arc */
+if(typeof ARCS!=='undefined')for(const sec of ARCS)for(const a of (sec[2]||[]))if(a[0]==='ldist'&&!a[3].includes('after_stella'))a[3].push('after_stella');
+if(typeof ARC_MIS!=='undefined')ARC_MIS.push('after_stella','after_mia','after_jade');
+}
+
+</script>
+<script>
 /* js/edition-safe.js */
 'use strict';
 /* =====================================================================
@@ -26067,7 +26404,7 @@ if(typeof DAYSET!=='undefined')for(const t in DAYSET)for(const i in DAYSET[t]){c
 if(typeof WHISPER!=='undefined')delete WHISPER.abby;
 
 /* no Hasan & Darren, and no Sean & Stella: they’re friends, that’s all */
-{const CUT=['darren','steptwelve','steal_stella','stepeleven','toby','instella','striketwo','firstfight','farewell'];
+{const CUT=['darren','steptwelve','steal_stella','after_stella','stepeleven','toby','instella','striketwo','firstfight','farewell'];
  for(const m of CUT)delete MIS[m];
  for(const m in MIS){const w=MIS[m].who||[];if(w.includes('darren')||w.includes('toby'))delete MIS[m]}
  for(let i=HOOKS.length-1;i>=0;i--){const h=HOOKS[i];if(h.who==='darren'||h.who==='toby'||/A\.(darren|toby)\b/.test(String(h.run)))HOOKS.splice(i,1)}

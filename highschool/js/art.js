@@ -62,7 +62,7 @@ function drawHead(k,x,hy,d,o){
  else if(ex_==='closed'||blink||ex_==='happy'&&k.squint||ex_==='laugh'){R(ex-4,ey+1,2,1,ink);R(ex+2,ey+1,2,1,ink);if(ex_==='laugh'){R(ex-5,ey,1,1,ink);R(ex+4,ey,1,1,ink)}}
  else if(ex_==='smirk'||ex_==='sly'){/* smug: steady eyes, one brow cocked up */R(ex-4,ey,2,2,ink);R(ex+2,ey,2,2,ink);R(ex+2,ey-3,2,1,ink);R(ex-4,ey-2,2,1,'rgba(30,15,15,.5)')}
  else if(k.squint||k.tired){R(ex-4,ey+1,2,1,ink);R(ex+2,ey+1,2,1,ink);if(k.tired){R(ex-4,ey+2,2,1,'#9a7a8a');R(ex+2,ey+2,2,1,'#9a7a8a')}}
- else{R(ex-4,ey,2,2,ink);R(ex+2,ey,2,2,ink);R(ex-4+(d>0?1:0),ey,1,1,'rgba(255,255,255,.45)');R(ex+2+(d>0?1:0),ey,1,1,'rgba(255,255,255,.45)')}
+ else{R(ex-4,ey,2,2,ink);R(ex+2,ey,2,2,ink)}
  if(!k.adult&&ex_!=='blush'&&ex_!=='love'&&ex_!=='dead'&&!o.deadFace){R(ex-6,ey+2,2,1,'rgba(232,121,142,.22)');R(ex+3,ey+2,2,1,'rgba(232,121,142,.22)')}
  if(ex_==='cry'){const q=(T*3|0)%3;R(ex-4,ey+2,1,2+q,'#7ac0ff');R(ex+3,ey+2,1,1+((q+1)%3),'#7ac0ff')}
  if(ex_==='blush'||ex_==='love'){R(ex-6,ey+2,2,1,'#e8798e');R(ex+3,ey+2,2,1,'#e8798e')}

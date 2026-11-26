@@ -452,6 +452,71 @@ if(ROOMS.roof){const rb=ROOMS.roof.bg;ROOMS.roof.bg=function(){rb.apply(this,arg
  if(Math.sin(T*3)>.3){R(132,24,2,2,'#ff3030');rmGlow(133,25,10,'#ff3030',.08)}
  const pq=(T*.2)%4;if(pq<2){const px_=200+Math.sin(pq*3)*2;R(px_,108,4,3,'#8a8a92');R(px_+3,107,2,2,'#6a6a72');R(px_+4,108,1,1,'#e8a030')}}}
 /* =====================================================================
+   THE MAIN HALL — where it ends (layout kept: proscenium 40-280, screen 110-210 x 34-78)
+   ===================================================================== */
+if(ROOMS.hall){
+ function hallPaint(){
+  /* warm panelled walls, high windows */
+  R(0,0,W,112,'#5a4230');for(let x=0;x<W;x+=20){R(x,0,20,112,'#5e4634');R(x,0,1,112,'rgba(0,0,0,.18)');R(x+1,0,1,112,'rgba(255,220,170,.07)')}
+  for(const x of[8,292]){R(x-1,4,22,22,'#2a1e16');guGrad(5,25,'#f0e8d0','#c8b890',x,20);R(x+9,5,2,20,'#2a1e16');guShaft(x+2,25,16,60,x<160?.4:-.4,'#fff4d8',.05)}
+  /* honour boards in gold leaf */
+  for(const x of[4,286]){R(x,40,30,44,'#2a160e');R(x+1,41,28,42,'#4a2a18');pxc(x<100?'HOUSE':'POINTS',x+15,43,'#e8c860');for(let i=0;i<5;i++){R(x+4,51+i*6,22,1,'rgba(232,200,96,.55)');if(i===2&&x<100)R(x+4,51+i*6,22,1,'rgba(0,0,0,.6)')}}
+  /* the proscenium: gilded arch, the crest */
+  R(36,16,248,96,'#1a0e0a');R(36,16,248,4,'#c8a040');R(36,16,4,96,'#c8a040');R(280,16,4,96,'#c8a040');R(37,17,246,1,'#f0d070');
+  R(146,4,28,14,'#c8a040');R(148,6,24,10,'#3a1a40');pxc('1962',160,8,'#f0d070');R(138,10,8,2,'#c8a040');R(174,10,8,2,'#c8a040');
+  R(40,20,240,70,'#140a08');
+  /* house curtains and the valance */
+  for(const cx of[40,250])for(let i=0;i<30;i+=3){const f=Math.sin(i*.9+cx)*.5+.5;R(cx+i,24,3,66,rmMix('#5a0c18','#a8203a',f))}
+  R(40,20,240,10,'#6a1020');for(let i=0;i<240;i+=12){R(40+i,30,12,4,'#7a1424');R(40+i,33,12,1,'#c8a040')}R(40,20,240,1,'#c8a040');
+  /* the screen frame (the slide draws on top) */
+  R(108,32,104,48,'#2a2a30');R(110,34,100,44,'#e8e8f0');pxc('HIGHGATE',160,40,'#2a2a5a');pxc('GOT TALENT',160,50,'#c02020');pxc('NO.',160,62,'#6a6a7a');
+  /* the stage apron, footlights, a piano under a sheet */
+  R(40,88,240,24,'#6a4a2a');R(40,88,240,2,'#d8b060');for(let x=0;x<240;x+=30)R(40+x,90,1,22,'rgba(0,0,0,.25)');
+  for(let x=52;x<280;x+=24){R(x,86,8,3,'#1a1a1a');R(x+1,86,6,1,'#f8e0a0')}
+  R(232,70,30,18,'#e8e4dc');R(232,70,30,2,'#ffffff');R(234,86,2,6,'#3a2a1a');R(258,86,2,6,'#3a2a1a');
+  /* wall sconces */
+  for(const x of[24,296])for(const y of[30]){R(x-2,y,5,6,'#c8a040');R(x-1,y-3,3,3,'#fff0c0')}
+  /* parquet floor */
+  guGrad(112,180,'#9a6a3a','#5a3a1e');for(let y=112;y<180;y+=6)for(let x=((y/6)%2)*8;x<W;x+=16){R(x,y,8,6,'rgba(255,220,160,.05)');R(x,y,1,6,'rgba(0,0,0,.12)')}
+  g.globalAlpha=.12;guGrad(112,140,'#ffd890','#ffd890');g.globalAlpha=1;
+ }
+ ROOMS.hall.bg=function(){rmCache('hall',hallPaint);
+  for(const x of[24,296]){const f=.6+.4*Math.sin(T*7+x);rmGlow(x,28,26,'#ffd890',.05*f)}
+  for(let i=0;i<10;i++){const q=(T*.03+hsh(i+1501))%1;g.globalAlpha=.35*(1-q);R(20+hsh(i+1502)*280,26+q*80,1,1,'#fff4d8');g.globalAlpha=1}};
+ if(typeof LIGHT!=='undefined')LIGHT.hall={amb:.62,tint:[50,30,15],src:[[160,50,140,.3,[255,240,210]],[24,28,50,.25,[255,220,160]],[296,28,50,.25,[255,220,160]],[160,90,120,.2,[255,230,170]]],wallAO:1};
+}
+
+/* =====================================================================
+   THE CAFETERIA — Pat's (layout kept: menu board, counter 10-160, window, vending)
+   ===================================================================== */
+if(ROOMS.canteen){
+ function canteenPaint(){
+  guTiles(0,0,W,106,10,'#dfe6ea','#d6dee4','rgba(120,140,160,.25)',1601);R(0,58,W,4,'#3a7ac8');R(0,62,W,1,'#ffffff');R(0,0,W,6,'#8a98a8');
+  for(let i=0;i<4;i++){const x=40+i*80;R(x-16,1,32,3,'#f4f8f8');R(x-16,4,32,1,'#a8b0b8')}
+  /* menu board */
+  R(14,16,100,44,'#4a3a2a');R(16,18,96,40,'#1e3a2c');R(16,18,96,1,'rgba(255,255,255,.15)');px('TODAY:',22,23,'#f0f0a0');px('MYSTERY NUGGETS',22,31,'#fff');px('GREY PASTA',22,39,'#fff');px('PAT\'S STEW ?',22,47,'#e06a6a');
+  /* hatch to the kitchen, warm light behind */
+  R(116,18,56,36,'#3a3a42');R(118,20,52,32,'#e8b870');guGrad(20,52,'#f4d090','#c88a50',118,52);R(118,48,52,4,'#9aa0aa');for(let i=0;i<4;i++)R(124+i*12,28,6,14,'rgba(90,60,30,.35)');
+  /* window */
+  R(178,18,78,48,'#6a7a8a');guGrad(20,64,'#c8e4f8','#8ab8d8',180,74);R(216,20,2,44,'#6a7a8a');R(180,42,74,2,'#6a7a8a');for(let i=0;i<5;i++)R(184+i*14,52-i%2*2,6,10,'#4a8a4a');
+  /* serving line: steel, sneeze guard, trays of food */
+  R(10,70,150,36,'#9aa2ac');R(10,70,150,2,'#e8ecf0');for(let x=10;x<160;x+=12)R(x,72,1,34,'rgba(0,0,0,.12)');R(10,104,150,2,'#5a6068');
+  for(let i=0;i<6;i++){R(16+i*24,62,20,8,'#c8ccd0');R(18+i*24,64,16,4,['#e8c04a','#a8a088','#c86a3a','#7a9a3a','#e8e0c8','#8a5a3a'][i]);R(18+i*24,64,16,1,'rgba(255,255,255,.3)')}
+  g.globalAlpha=.35;R(12,56,146,2,'#e8f8ff');R(12,58,146,4,'#c8e8f8');g.globalAlpha=1;R(12,56,2,8,'#9aa0aa');R(156,56,2,8,'#9aa0aa');
+  /* vending machine */
+  R(270,38,40,68,'#8a1820');R(272,40,36,66,'#b82030');R(276,46,20,40,'#1a1a2a');for(let r=0;r<5;r++)for(let c=0;c<3;c++)R(278+c*6,48+r*7,4,5,['#e8c040','#40a0e0','#e04040','#40c060'][(r+c)%4]);R(298,60,6,10,'#8a8a8a');pxc('SNAX',290,92,'#fff');R(272,40,1,66,'rgba(255,255,255,.2)');
+  guPoster(258,72,10,18,'#3a8a3a',['EAT'],'#fff');
+  /* floor */
+  guTiles(0,112,W,68,16,'#c8d0c8','#bcc4bc','rgba(0,0,0,.08)',1611);guFloorShine(112,68,.08);
+ }
+ ROOMS.canteen.bg=function(){rmCache('canteen',canteenPaint);
+  /* steam off the trays, the vending glow */
+  for(let i=0;i<6;i++){const q=(T*.4+i/6)%1;g.globalAlpha=.25*(1-q);R(22+i*24+Math.sin(T+i)*2,60-q*14,4,2,'#ffffff');g.globalAlpha=1}
+  g.globalAlpha=.08+.03*Math.sin(T*3);R(276,46,20,40,'#9ad8ff');g.globalAlpha=1};
+ if(typeof LIGHT!=='undefined')LIGHT.canteen={amb:.84,tint:[40,40,40],src:[[40,4,80,.25],[120,4,80,.25],[200,4,80,.25],[280,4,80,.25],[144,36,60,.25,[255,210,150]]],wallAO:1};
+}
+
+/* =====================================================================
    THE ENRICHMENT LAYER for every room not fully repainted
    grain on the walls, a ceiling shadow, a baseboard shadow, floor depth,
    soft window light, and small clutter in the empty places
@@ -461,12 +526,12 @@ const ENR={
  hallb:{clutter:[['plant',300,110],['bin',20,150],['paper',180,166]]},
  upper:{clutter:[['bin',300,150],['paper',120,168],['bag',230,162]]},
  wing_sci:{clutter:[['bin',300,150],['paper',90,166]]},wing_arts:{clutter:[['paper',150,168],['bag',260,162]]},wing_sports:{clutter:[['bin',18,150],['ball',240,168]]},
- canteen:{clutter:[['tray',90,164],['paper',200,170],['bin',300,150],['spill',150,172]]},
+ canteen_x:{clutter:[]},
  library:{clutter:[['plant',300,110],['books',40,168]]},
  maths:{clutter:[['bag',300,164],['paper',60,172]]},english:{clutter:[['bag',300,164],['paper',220,172]]},history:{clutter:[['bag',18,164],['paper',150,172]]},
  science:{clutter:[['bag',300,164],['paper',90,172]]},trailer:{clutter:[['bag',300,166],['paper',150,174]]},art:{clutter:[['paper',90,172],['paper',230,166]]},
  foodtech:{clutter:[['spill',120,172],['paper',250,168]]},toilets:{clutter:[['paper',140,170],['spill',220,168]]},staffroom:{clutter:[['plant',20,110],['bag',300,164]]},
- nurse:{clutter:[['bin',300,150]]},hall:{clutter:[['paper',60,174],['paper',260,172]]},
+ nurse:{clutter:[['bin',300,150]]},
  checkpoint:{clutter:[['bin',10,150],['paper',120,172]]},door:{clutter:[]},walkway:{clutter:[['paper',90,170]]},courtyard:{clutter:[['paper',200,172]]},
  roof:{clutter:[['vent',60,112],['puddle',200,160],['puddle',90,170]]},party:{clutter:[['cup',100,168],['cup',220,172],['cup',160,164]]},lake:{clutter:[]},carpark:{clutter:[['paper',200,172]]},
  stairwell:{clutter:[]},gymx:{}};

@@ -41,10 +41,11 @@ function stealArc(gid,S){
   tips:['Break or lunch, '+shortName(S.places.a[0][1])+'. '+G+' is venting.','Break or lunch, '+shortName(S.places.b[0][1])+'. She asked you to come.','Home time, the bus loop. '+K[bf].n+' knows.','Break or lunch, Main Corridor. Everybody’s heard.','After school, Fair City Mall, '+shortName(S.places.e[1])+'. '+K[bf].n+' has a plan.'],
   variants:{you:'She chose you',back:'She went back to him',bros:'You gave her back'}});
  /* 1 */
- for(const [p,room] of S.places.a)hook({mis,period:p,room,who:gid,label:'Ask '+G+' what’s wrong',look:{ex:'angry',pose:'cross'},cond:()=>ok()&&!f('a'),run:async()=>{
-  scene(room,{[gid]:[170,-1,{y:146,ex:'angry',pose:'cross'}],you:[140,1,{y:154}]});
+ for(const [p,room] of S.places.a)hook({mis,period:p,room,who:gid,label:'Ask '+G+' what’s wrong',look:{ex:'sad',pose:'cross'},cond:()=>ok()&&!f('a'),run:async()=>{
+  scene(room,{[gid]:[170,-1,{y:146,ex:'sad',pose:'cross'}],you:[140,1,{y:154}]});
   await beat(S.title.toUpperCase(),'PART ONE · THE OPENING');
-  for(const l of S.l1)await say(gid,l,'angry');
+  for(const l of S.l1)await say(gid,l,'cold');
+  await say(gid,'(seeing your face) Not you. God. Him. You’re the first person who’s asked.','sad');
   const c=await choose(['Make a joke about him. A mean one.','“He’s just like that, he loves you.”','“Sounds like you need a break from him.”']);
   if(c===1){await say(gid,'(cold) Yeah. Everybody says that. It’s always somebody’s job to say that.','cold');sf('a');sf('cold');part(mis,1);await N(G+' walks off. Whatever that was, it’s over.');await complete(mis,'cold');return 'stay'}
   if(c===0){await say('you',bf==='sean'?'Does he do the breathing on the phone? The “babe…” one? Like a haunted doorbell?':'Does the mustache have its own Instagram yet? It looks like it has opinions.');await say(gid,'(snorting, covering her mouth) Oh my god. Oh my GOD. You can’t say that. Say it again.','laugh')}
@@ -112,7 +113,8 @@ function stealArc(gid,S){
   if(c===2){await say(gid,'(staring at you) …You’re serious.','shock');await say('you','He’s '+(S.friend?'my boy. He was my boy before any of this.':'a mess. But he’s a mess for you.'));
    await walk(gid,206,60);await N('She goes to him. He doesn’t even look at her at first. He’s looking at you. '+(S.friend?'Then he does the first part of the handshake. Just the first part. You do the second.':'Then he gives you a very small nod. Mustache-less. Honorable.'));
    if(S.friend)delete (P.grudge=P.grudge||{})[bf];await complete(mis,'bros');return 'stay'}
-  const you=c===0?!f('doubt')||Math.random()<.5:(f('won')?Math.random()<.55:Math.random()<.35);
+  /* she likes you. She only goes back if you hesitated at every chance you had. */
+  const you=!(c===1&&f('doubt'));
   if(you){await say(gid,'(not letting go of your hand) '+B()+'. Go home.','cold');await N('He stands there a long time. Then he walks out, alone, past everybody who filmed it. The mall plays a song about summer over the speakers. It’s November.');
    await walk(bf,350,60);remove(bf);await say(gid,'(quietly, leaning on you) I picked you. Don’t make me look stupid for it.','blush');D.f['with_'+gid]=1;await complete(mis,'you')}
   else{await say(gid,'(slowly letting go) …He did something stupid for me. In front of everybody. You never did anything stupid for me.','sad');
