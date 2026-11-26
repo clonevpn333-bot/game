@@ -17,7 +17,7 @@ K.ollie87=Object.assign({},K.ollie,{id:'ollie87',ghost:0,n:'Ollie'});
 K.y87a=Object.assign({},K.ghost1||K.kid1,{id:'y87a',ghost:0,n:'Year 7'});
 K.y87b=Object.assign({},K.ghost2||K.kid3,{id:'y87b',ghost:0,n:'Year 7'});
 K.y87c=Object.assign({},K.ghost3||K.kid2,{id:'y87c',ghost:0,n:'Boy with a bowl cut',hs:'bowl'});
-K.sher87=Object.assign({},K.shermian,{id:'sher87',n:'Miss Sherman',hs:'perm',top:'#c86aa0',old:0});
+K.sher87=Object.assign({},K.sherman||K.shermian,{id:'sher87',n:'Miss Sherman',hs:'perm',hair:'#5a3424',top:'#c86aa0',old:0,glasses:0,wide:0});
 K.oliver=Object.assign({},K.ollie,{id:'oliver',ghost:0,n:'Oliver Finch',adult:1,h:0,hair:'#7a6a5a',top:'#5a6a5a',tie:0,coat:1});
 DEATHS.class87={name:'Class of ’87',desc:'3:15. The boiler. They put up a photo afterwards. You’re in it now: back row, end, half out of frame.',hint:'Locker 217. Every minute counts. Get out before 3:15.'};
 const Y87={on:false,min:5,log:[]};
@@ -109,12 +109,12 @@ hook({mis:null,period:7,room:'bus',who:'auto',cond:()=>!TEST&&P.ollie87&&!P.oliv
  await say('oliver','I’m Oliver. Finch. My daughter starts here next year. (holding up the book) I still read it. Rule one.','happy');
  const cr=crew();cr.ev=cr.ev||{};cr.ev.finch=1;save&&save();toast('🎁 EVIDENCE: Oliver Finch remembers the boiler. The file gets thicker.');
  await walk('oliver',-30,70);remove('oliver');return 'stay'}});
-hook({mis:null,period:[0,2,4],room:'corridor',who:'auto',cond:()=>!TEST&&P.sher87&&!P.sherRemembers&&!D.weekend&&K.shermian&&!D.dead.shermian,run:async()=>{
- P.sherRemembers=1;save&&save();put('shermian',334,-1,{y:146,ex:'cold'});await walk('shermian',A.you?A.you.x+22:200,60);face('shermian','you');
- await say('shermian','(stopping dead, staring) …You.','shock');
- await say('shermian','You were in the staff room. In 1987. You told me to go back. I’ve seen your face every night for thirty-nine years.','scared');
- await say('shermian','I went back. I got three of them up the chute. Not the fourth. Never the fourth.','cry');
- await say('shermian','(composing herself, all at once, terribly) Detention. Friday. My room. …No. No, I’m not going to say that to you. Go. Go to class.','cold');
+hook({mis:null,period:[0,2,4],room:'corridor',who:'auto',cond:()=>!TEST&&P.sher87&&!P.sherRemembers&&!D.weekend&&K.sherman&&!D.dead.sherman,run:async()=>{
+ P.sherRemembers=1;save&&save();put('sherman',334,-1,{y:146,ex:'cold'});await walk('sherman',A.you?A.you.x+22:200,60);face('sherman','you');
+ await say('sherman','(stopping dead, staring) …You.','shock');
+ await say('sherman','You were in the staff room. In 1987. You told me to go back. I’ve seen your face every night for thirty-nine years.','scared');
+ await say('sherman','I went back. I got three of them up the chute. Not the fourth. Never the fourth.','cry');
+ await say('sherman','(composing herself, all at once, terribly) Detention. Friday. My room. …No. No, I’m not going to say that to you. Go. Go to class.','cold');
  const cr=crew();cr.ev=cr.ev||{};cr.ev.sher87=1;save&&save();toast('🎁 EVIDENCE: Ms. Sherman remembers 1987. The file gets thicker.');
- await walk('shermian',-30,60);remove('shermian');return 'stay'}});
+ await walk('sherman',-30,60);remove('sherman');return 'stay'}});
 {const _ce=crewEvidence;crewEvidence=function(){const c=crew();return _ce()+(c.ev&&c.ev.finch?1:0)+(c.ev&&c.ev.sher87?1:0)}}

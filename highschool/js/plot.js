@@ -297,7 +297,8 @@ async function inspectionDay(){
  const shown=[];if(ev.retainer)shown.push('Tyler’s retainer, with blood on the wire, from Ms. Sherman’s bin');if(ev.jars)shown.push('Mr. Voss’s fridge: fourteen jars labelled AIDAN, and one labelled TYLER');if(P.intel.shermianList)shown.push('Ms. Sherman’s list: NOT PASSING, with names crossed out');if(ev.register)shown.push('the 1987 detention register: four names, crossed out in red');if(ev.boiler)shown.push('four names scratched into the boiler-room wall');if(ev.notebook)shown.push('Tyler’s notebook: “if I tell anyone she says I get a seat in her drawer”');if(ev.footage)shown.push('night camera footage: Mr. Voss wheeling a laundry cart into the chem lab at 3 a.m., and every teacher in the building sitting in the dark, not moving');if(ev.confession)shown.push(c.adamNamed?'a voice memo: Mr. Adam, crying, telling the whole story of 1987':'a voice memo: an anonymous adult, crying, telling the whole story of 1987');if(ev.rota)shown.push('the staff rota, with a little skull next to Ms. Sherman');
  if(!shown.length)shown.push('a slideshow that is mostly memes, because the File is nearly empty');
  for(const s of shown){SFX.click();await N('Click. On the wall: '+s+'.')}
- if(ev.boiler){await say('you','(standing up) Ollie Finch. Raj Patel. Danny Mason. Louise Okafor. March 13, 1987. They were in detention in the boiler room. Ms. Sherman left them there.');
+ if(typeof finaleDiscoveries==='function')score+=await finaleDiscoveries(c);
+ if(ev.boiler){await say('you','(standing up) '+(P.ollie87?'':'Ollie Finch. ')+'Raj Patel. Danny Mason. Louise Okafor. March 13, 1987. They were in detention in the boiler room. Ms. Sherman left them there.');
   if(A.sherman){A.sherman.ex='cry';await N('Ms. Sherman makes a sound nobody has ever heard a teacher make. She sits down on the floor of the hall, very slowly, with her hands over her face.')}}
  for(const t of teachers)if(A[t])A[t].ex='evil';
  await N('Along the side wall, the smiles come off. All of them. All at once.');
@@ -322,7 +323,13 @@ async function inspectionDay(){
  if(score>=8){
   c.finale='exposed';save();
   await say('insp2','(standing, very calm) Nobody leaves this hall. Mr. Hale, call the state police. And then call everybody else.','angry');
-  if(A.shermian){
+  if(c.ev.sher87&&K.sherman&&!D.dead.sherman){const who='sherman';if(typeof SLIDE!=='undefined')SLIDE.t='';if(!A.sherman){put('sherman',334,-1,{y:126,ex:'cry'});await walk('sherman',A.insp1.x+40,50)}
+   await walk(who,A.insp1.x+16,60);face(who,-1);
+   await say(who,'(holding her wrists out to the inspectors, very quietly) It was me. In 1987. I left them in the boiler room and went for a coffee. I went back. I was too late for one of them. I have been too late every Friday since.','cry');
+   if(who==='sherman'&&A.shermian){await N('Beside her, the other Ms. Sherman, the one that stands wrong, stops smiling. Then it stops being there. Like breath on a window.');await tw(A.shermian,{alpha:0},1400);remove('shermian')}
+   await N('Nobody moves. The smiles along the wall go out one by one, like somebody walking down a corridor turning off lights. Not a single person gets hurt. It is the strangest, quietest ending anyone in that hall will ever see.');
+   c.finale='confessed';
+  }else if(A.shermian){
    await walk('shermian',A.insp1.x+12,120);
    SFX.squelch();blood(A.insp1.x,A.insp1.y-24,50,null,100,A.insp1.y+2);kill('insp1','lie',{pool:40,bleed:4,spray:60});
    await N('Ms. Sherman gets to Inspector Hale before anyone can move. It takes her four seconds. His clipboard lands face-up in the blood. He had given the school a “Good”.');
@@ -341,5 +348,5 @@ async function inspectionDay(){
   await say('david','(on the steps outside, shaking) We should’ve had more. We should’ve had more in the File.','cry');
  }
  crowd=null;await complete('crew',c.finale);
- toast('★ Main story: Inspection Day — '+(c.finale==='exposed'?'EXPOSED':'not enough evidence'));
+ toast('★ Main story: Inspection Day — '+(c.finale==='confessed'?'SHE CONFESSED':c.finale==='exposed'?'EXPOSED':'not enough evidence'));
 }

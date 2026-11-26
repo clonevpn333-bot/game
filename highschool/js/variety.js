@@ -39,7 +39,7 @@ function vgChase(id,what){const a=A[id],you=A.you;if(!a||!you)return Promise.res
 /* ---------- LOCKPICK ---------- */
 function vgLock(){let ang=0,notch=Math.random()*6.28,hits=0,spd=2.6;
  return vgRun({tick(rdt){ang=(ang+spd*rdt)%(Math.PI*2);if(T-this.t0>12)vgEnd(false)},
-  key(k){if(k!=='E')return;let d=Math.abs(((ang-notch+Math.PI*3)%(Math.PI*2))-Math.PI);if(d<(typeof PERK==="function"&&PERK("lockpro")?.5:.32)){hits++;SFX.click&&SFX.click();shake(.15);notch=Math.random()*6.28;spd*=1.3;if(hits>=3)vgEnd(true)}else{SFX.bad&&SFX.bad();spd*=1.05;hits=Math.max(0,hits-1)}},
+  key(k){if(k!=='E')return;let d=Math.abs(((ang-notch+Math.PI*3)%(Math.PI*2))-Math.PI);if(d<((typeof PERK==="function"&&PERK("lockpro"))||(typeof has==="function"&&D&&has("lockpick"))?.5:.32)){hits++;SFX.click&&SFX.click();shake(.15);notch=Math.random()*6.28;spd*=1.3;if(hits>=3)vgEnd(true)}else{SFX.bad&&SFX.bad();spd*=1.05;hits=Math.max(0,hits-1)}},
   draw(){vgPanel('LOCKPICK','PRESS E WHEN THE PICK IS IN THE NOTCH · '+hits+'/3',1-(T-this.t0)/12);const cx=W/2,cy=86,r=22;
    for(let i=0;i<48;i++){const a=i/48*6.28;R(cx+Math.cos(a)*r,cy+Math.sin(a)*r,2,2,'#5a4a6e')}
    for(let i=-2;i<=2;i++){const a=notch+i*.08;R(cx+Math.cos(a)*r-1,cy+Math.sin(a)*r-1,4,4,'#9ad09a')}
