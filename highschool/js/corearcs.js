@@ -26,11 +26,11 @@ spot({mis:'crew',room:'hallb',period:[2,4],x:238,y:146,label:'Mr. Adam’s door 
  scene('office',{adam:[262,-1,{y:142,pose:'sit',ex:'sad'}],you:[-14,1,{y:148}]},true);
  for(const [bx,by,n] of [[236,146,1],[250,134,2],[284,134,3],[294,148,4],[226,134,5],[304,124,6]])prop({t:'archbox',x:bx,y:by,n,layer:by>142?2:-2});
  await walk('you',206,80);face('you',1);
- await N('Mr. Adam is sitting on the carpet in his office in his socks, surrounded by archive boxes. Twenty-two of them. One for every year.');
+ await N('Mr. Adam, on the carpet, in his socks. Twenty-two archive boxes. One for every year.');
  await say('adam','(not looking up) You told me nobody ever told me I was good at it. So I thought: fine. Be good at it. Properly. Before the inspectors. Read everything I ever signed.','sad');
  await say('adam','Turns out I never read anything I ever signed. Sit. Help me. I don’t know what I’m looking for.','sad');
  pose('you','kneel');hold('adam','paper');
- await N('The sign-out sheets. Every time a kid “transferred”, a teacher on duty signed them out of the building at 3:20 on a Friday.');
+ await N('Sign-out sheets. Every kid who “transferred”. Friday, 3:20, every time.');
  await N('TYLER, 7th grade. Signed out Friday 3:20. On duty: Coach, Mr. Voss.');
  await N('ALEX, 8th grade. Signed out Friday 3:20. On duty: Mr. Kim, Ms. Loach.');
  await N('MADDOX, 6th grade, four years ago. Signed out Friday 3:20. On duty: Mr. Voss, Ms. Balduf.');
@@ -39,10 +39,10 @@ spot({mis:'crew',room:'hallb',period:[2,4],x:238,y:146,label:'Mr. Adam’s door 
   q1=await choose(['Mr. Voss. Close enough.','Nobody. It’s different every time.'],'LOOK AGAIN')===1?3:0}
  if(q1===3){await say('adam','Nobody. Different every time. So it’s not one of them. It’s all of them, taking turns. Like a… like a rota.','shock');crew().adamSharp=1}
  else await say('adam','No. No, it changes. Different names every time. It’s not one of them. It’s all of them. Taking turns.','shock');
- await N('Then you look at the box at the bottom of every sheet. AUTHORISED BY. Twenty-two years of it. The same loopy handwriting, every single time. Two words.');
+ await N('At the bottom of every sheet: AUTHORISED BY. The same loopy handwriting. Two words.');
  const q2=await choose(['“Mr. Adam”. You signed them.','“Love, Miss”.','“Pat”. In capitals.','“Coach”, with a whistle drawn on it.'],'WHAT DOES THE SIGNATURE SAY?');
  if(q2!==1)await say('adam',q2===0?'Mine’s a squiggle and a full stop. That’s not mine. Look. Look at the little heart.':'No. Look. Little loopy letters. Two words. Where have you seen two words like that?','scared');
- await N('“Love, Miss.” The same two words written on the whiteboard in the Trailer, under TRAILER RULES. Every sheet. Every Friday. Since 1987.');
+ await N('“Love, Miss.” Like the Trailer whiteboard. Every sheet. Since 1987.');
  A.adam.ex='cry';
  await say('adam','I signed the front pages. The covering letters. Twenty-two years. I never turned a single one over.','cry');
  await say('adam','(putting them in a folder, very carefully, like they might break) I’m turning them over now. All of them. On Friday. In front of the lanyards.','cold');
@@ -71,10 +71,10 @@ spot({mis:'crew',room:'bus',period:0,x:200,y:150,label:'Paul Jones got off the 4
  cond:()=>!D.weekend&&D.f&&D.f.pj3&&!(D.done&&D.done.pauljones)&&!crew().pjSafe&&!crew().pjKept&&(D.f.pjKind||0)>=2&&!D.dead.pauljones&&cal()<12,run:async()=>{
  scene('bus',{pauljones:[200,-1,{y:150,hold:'bag',ex:'sad'}],you:[-14,1,{y:156}]},true);
  await walk('you',170,80);face('you',1);
- await N('Paul Jones is standing by the bus shelter with his hood up and his backpack on his front, both arms round it, like it’s a baby.');
+ await N('Paul Jones. Hood up. Backpack on his front, both arms round it.');
  await say('pauljones','You said I could talk to you. So. I’m talking.','sad');
  await say('pauljones','(opening the zip an inch) It’s my dad’s. From the shoebox. The code’s my birthday. That’s the only reason he remembers my birthday.','scared');
- await N('Inside the backpack, under a PE shirt: a shoebox. You don’t need to open it. You can see the shape of the weight in how he’s holding it.');
+ await N('A shoebox, under a PE shirt. You don’t need to open it.');
  await say('pauljones','I took it Monday. I don’t know why. I keep bringing it. Every day it gets heavier. I don’t want to find out why I took it.','cry');
  cue('sad',true);
  const kind=(D.f.pjKind||0)>=3;
@@ -105,7 +105,7 @@ spot({mis:'crew',room:'bus',period:0,x:200,y:150,label:'Paul Jones got off the 4
   await say('pauljones','(laughing, crying, both) I didn’t know what I was gonna do with it. Now I don’t have to know.','cry');
   hold('pauljones','book');
   await say('pauljones','(holding out his notebook) You should have this. The 43, from above. Look at the seats. Look at the red ones.','sad');
-  await N('Every Friday, one seat on the 43 goes empty and never fills again. Paul crossed each one out in red. TYLER. ALEX. Kids from years ago. And this week’s seats, already ringed. Waiting.');
+  await N('Red crosses. One empty seat a Friday. TYLER. ALEX. Older names. Two seats this week, already ringed.');
   await say('pauljones','Nobody noticed. I notice where everyone is. It’s the only thing I’m good at.','sad');
   crew().pjSafe=1;crewEv().seats=1;joinCrew('pauljones');
   toast('🎁 EVIDENCE: Paul Jones’s seating plan. The empty seats. Paul is with you.')}
@@ -131,9 +131,9 @@ spot({mis:'crew',room:'field',period:4,x:200,y:150,label:'Coach is dragging a se
  D.f.pushTry=cal();
  scene('field',{coach:[230,-1,{y:148,pose:'grab',ex:'smirk'}],kid3:[246,-1,{y:150,ex:'scared'}],jacob:[150,1,{y:150}],you:[-14,1,{y:156}]},true);
  await walk('you',120,90);face('you',1);cue('tension',true);
- await N('Coach has a seventh grader by the hood. The kid’s trainers are dragging two lines in the grass towards the gym.');
+ await N('Coach has a seventh grader by the hood. Two lines in the grass, towards the gym.');
  await say('coach','Extra practice, champ. Equipment cupboard. Very special drills.','smirk');
- await N('The kid looks straight at you. Then at Jacob. Jacob is standing very still, with his hands opening and closing.');
+ await N('The kid looks at you. Then at Jacob. Jacob’s hands open and close.');
  await say('jacob','(very quietly) He’s little. He’s so little.','scared');
  const c=await choose(['“Jacob. Push.”','Go for the kid yourself.','Yell at the kid to RUN.'],'COACH HAS A SEVENTH GRADER');
  const push=async()=>{if(A.you.x>170)await walk('you',150,120);await walk('jacob',212,140);pose('jacob','grab');

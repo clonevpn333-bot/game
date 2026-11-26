@@ -31,13 +31,13 @@ spot({mis:'crew',room:'walkway',period:[2,4],x:150,y:148,label:'Abby is drawing 
  cond:()=>!D.weekend&&loveOn('corey')&&!(crew().ev||{}).sketchbook&&cal()<12,run:async()=>{
  scene('walkway',{you:[-14,1,{y:156}],abby:[140,1,{y:150,pose:'sit',hold:'paper'}],corey:[162,-1,{y:150,pose:'sit',ex:'happy'}]},true);
  await walk('you',108,80);face('you',1);
- await N('Abby is on the Trailer steps with her sketchbook on her knees. Corey is next to her, looking at absolutely anything except her.');
+ await N('Abby on the Trailer steps, sketchbook on her knees. Corey next to her, looking at anything else.');
  await say('corey','She’s drawn the view out of the Trailer window every Period 3 since seventh grade. Every single one. I counted.','happy');
  await say('abby','He counted. That’s not weird at all.','smirk');
  await say('abby','(flipping pages) The walkway. The walkway in the rain. The walkway and the back of Corey’s head, because he sits in front of the window and won’t MOVE.','happy');
  await say('corey','…There’s a lot of the back of my head in here.','shock');
  await say('abby','It’s a good head.','happy');A.corey.ex='happy';
- await N('Then she goes quiet and flips to the back. The pages are dated. Fridays. Every Friday for two years, the same drawing: 3:20, the walkway, Coach, carrying black bin bags towards the old boiler hatch.');
+ await N('She flips to the back. Fridays. Two years of the same drawing: 3:20, Coach, black bin bags, the boiler hatch.');
  await say('abby','I thought it was rubbish. Then I counted the bags. Then I counted the kids who stopped coming to Period 3.','sad');
  await say('abby','Nineteen bags. Nineteen kids.','sad');
  cue('tension',true);SFX.whistle?SFX.whistle():SFX.click&&SFX.click();
@@ -84,7 +84,7 @@ spot({mis:'crew',room:'field',period:[2,4],x:150,y:150,label:'Sean and Stella ar
  cond:()=>!D.weekend&&loveOn('sean')&&!(crew().ev||{}).voicenote&&cal()<12,run:async()=>{
  scene('field',{you:[-14,1,{y:156}],sean:[140,1,{y:152,pose:'sit',hold:'phone'}],stella:[160,-1,{y:152,pose:'sit',ex:'happy'}]},true);
  await walk('you',108,80);face('you',1);
- await N('Sean and Stella are lying in the grass with one pair of earbuds between them. Sean’s phone is on his chest, playing voice notes.');
+ await N('Sean and Stella in the grass. One pair of earbuds. Voice notes.');
  await say('stella','He records me one every hour. For Portland. So when I’m there I can play Highgate at the right time of day.','happy');
  await say('sean','Ten a.m. is the bell and Kenneth sneezing. Eleven is Pat yelling about stew. It’s a whole system.','happy');
  await say('stella','It’s the most romantic thing anybody has ever done for me and it’s mostly Pat.','laugh');
@@ -137,7 +137,7 @@ spot({mis:'crew',room:'library',period:[2,4],x:160,y:150,label:'Darren has a new
  await say('darren','So. Step ten point five. You meet MY family. Specifically my mother. Specifically: she’s coming here. Friday week. With a clipboard.','smirk');
  await say('hasan','…Your mum’s a SCHOOL INSPECTOR?','shock');
  await say('darren','Lead inspector. She’s read every report this school has sent since 1987. She says the numbers don’t add up. She says it at dinner. Every dinner.','cold');
- await N('Darren turns the laminated sheet over. On the back, in his tidy capitals: STEP THIRTEEN: GET HER THE TRUTH. And under that, a tiny heart, crossed out, and drawn again.');
+ await N('On the back, in tidy capitals: STEP THIRTEEN: GET HER THE TRUTH. A tiny heart, crossed out, drawn again.');
  cue('tension',true);
  put('shermian',334,-1,{y:150,ex:'smirk'});await walk('shermian',212,60);
  await say('shermian','Did I hear the word INSPECTOR, boys? How exciting. Darren, is it? I would LOVE to meet your mother.','smirk');

@@ -24032,13 +24032,13 @@ spot({mis:'crew',room:'walkway',period:[2,4],x:150,y:148,label:'Abby is drawing 
  cond:()=>!D.weekend&&loveOn('corey')&&!(crew().ev||{}).sketchbook&&cal()<12,run:async()=>{
  scene('walkway',{you:[-14,1,{y:156}],abby:[140,1,{y:150,pose:'sit',hold:'paper'}],corey:[162,-1,{y:150,pose:'sit',ex:'happy'}]},true);
  await walk('you',108,80);face('you',1);
- await N('Abby is on the Trailer steps with her sketchbook on her knees. Corey is next to her, looking at absolutely anything except her.');
+ await N('Abby on the Trailer steps, sketchbook on her knees. Corey next to her, looking at anything else.');
  await say('corey','She’s drawn the view out of the Trailer window every Period 3 since seventh grade. Every single one. I counted.','happy');
  await say('abby','He counted. That’s not weird at all.','smirk');
  await say('abby','(flipping pages) The walkway. The walkway in the rain. The walkway and the back of Corey’s head, because he sits in front of the window and won’t MOVE.','happy');
  await say('corey','…There’s a lot of the back of my head in here.','shock');
  await say('abby','It’s a good head.','happy');A.corey.ex='happy';
- await N('Then she goes quiet and flips to the back. The pages are dated. Fridays. Every Friday for two years, the same drawing: 3:20, the walkway, Coach, carrying black bin bags towards the old boiler hatch.');
+ await N('She flips to the back. Fridays. Two years of the same drawing: 3:20, Coach, black bin bags, the boiler hatch.');
  await say('abby','I thought it was rubbish. Then I counted the bags. Then I counted the kids who stopped coming to Period 3.','sad');
  await say('abby','Nineteen bags. Nineteen kids.','sad');
  cue('tension',true);SFX.whistle?SFX.whistle():SFX.click&&SFX.click();
@@ -24085,7 +24085,7 @@ spot({mis:'crew',room:'field',period:[2,4],x:150,y:150,label:'Sean and Stella ar
  cond:()=>!D.weekend&&loveOn('sean')&&!(crew().ev||{}).voicenote&&cal()<12,run:async()=>{
  scene('field',{you:[-14,1,{y:156}],sean:[140,1,{y:152,pose:'sit',hold:'phone'}],stella:[160,-1,{y:152,pose:'sit',ex:'happy'}]},true);
  await walk('you',108,80);face('you',1);
- await N('Sean and Stella are lying in the grass with one pair of earbuds between them. Sean’s phone is on his chest, playing voice notes.');
+ await N('Sean and Stella in the grass. One pair of earbuds. Voice notes.');
  await say('stella','He records me one every hour. For Portland. So when I’m there I can play Highgate at the right time of day.','happy');
  await say('sean','Ten a.m. is the bell and Kenneth sneezing. Eleven is Pat yelling about stew. It’s a whole system.','happy');
  await say('stella','It’s the most romantic thing anybody has ever done for me and it’s mostly Pat.','laugh');
@@ -24138,7 +24138,7 @@ spot({mis:'crew',room:'library',period:[2,4],x:160,y:150,label:'Darren has a new
  await say('darren','So. Step ten point five. You meet MY family. Specifically my mother. Specifically: she’s coming here. Friday week. With a clipboard.','smirk');
  await say('hasan','…Your mum’s a SCHOOL INSPECTOR?','shock');
  await say('darren','Lead inspector. She’s read every report this school has sent since 1987. She says the numbers don’t add up. She says it at dinner. Every dinner.','cold');
- await N('Darren turns the laminated sheet over. On the back, in his tidy capitals: STEP THIRTEEN: GET HER THE TRUTH. And under that, a tiny heart, crossed out, and drawn again.');
+ await N('On the back, in tidy capitals: STEP THIRTEEN: GET HER THE TRUTH. A tiny heart, crossed out, drawn again.');
  cue('tension',true);
  put('shermian',334,-1,{y:150,ex:'smirk'});await walk('shermian',212,60);
  await say('shermian','Did I hear the word INSPECTOR, boys? How exciting. Darren, is it? I would LOVE to meet your mother.','smirk');
@@ -24212,11 +24212,11 @@ spot({mis:'crew',room:'hallb',period:[2,4],x:238,y:146,label:'Mr. Adam’s door 
  scene('office',{adam:[262,-1,{y:142,pose:'sit',ex:'sad'}],you:[-14,1,{y:148}]},true);
  for(const [bx,by,n] of [[236,146,1],[250,134,2],[284,134,3],[294,148,4],[226,134,5],[304,124,6]])prop({t:'archbox',x:bx,y:by,n,layer:by>142?2:-2});
  await walk('you',206,80);face('you',1);
- await N('Mr. Adam is sitting on the carpet in his office in his socks, surrounded by archive boxes. Twenty-two of them. One for every year.');
+ await N('Mr. Adam, on the carpet, in his socks. Twenty-two archive boxes. One for every year.');
  await say('adam','(not looking up) You told me nobody ever told me I was good at it. So I thought: fine. Be good at it. Properly. Before the inspectors. Read everything I ever signed.','sad');
  await say('adam','Turns out I never read anything I ever signed. Sit. Help me. I don’t know what I’m looking for.','sad');
  pose('you','kneel');hold('adam','paper');
- await N('The sign-out sheets. Every time a kid “transferred”, a teacher on duty signed them out of the building at 3:20 on a Friday.');
+ await N('Sign-out sheets. Every kid who “transferred”. Friday, 3:20, every time.');
  await N('TYLER, 7th grade. Signed out Friday 3:20. On duty: Coach, Mr. Voss.');
  await N('ALEX, 8th grade. Signed out Friday 3:20. On duty: Mr. Kim, Ms. Loach.');
  await N('MADDOX, 6th grade, four years ago. Signed out Friday 3:20. On duty: Mr. Voss, Ms. Balduf.');
@@ -24225,10 +24225,10 @@ spot({mis:'crew',room:'hallb',period:[2,4],x:238,y:146,label:'Mr. Adam’s door 
   q1=await choose(['Mr. Voss. Close enough.','Nobody. It’s different every time.'],'LOOK AGAIN')===1?3:0}
  if(q1===3){await say('adam','Nobody. Different every time. So it’s not one of them. It’s all of them, taking turns. Like a… like a rota.','shock');crew().adamSharp=1}
  else await say('adam','No. No, it changes. Different names every time. It’s not one of them. It’s all of them. Taking turns.','shock');
- await N('Then you look at the box at the bottom of every sheet. AUTHORISED BY. Twenty-two years of it. The same loopy handwriting, every single time. Two words.');
+ await N('At the bottom of every sheet: AUTHORISED BY. The same loopy handwriting. Two words.');
  const q2=await choose(['“Mr. Adam”. You signed them.','“Love, Miss”.','“Pat”. In capitals.','“Coach”, with a whistle drawn on it.'],'WHAT DOES THE SIGNATURE SAY?');
  if(q2!==1)await say('adam',q2===0?'Mine’s a squiggle and a full stop. That’s not mine. Look. Look at the little heart.':'No. Look. Little loopy letters. Two words. Where have you seen two words like that?','scared');
- await N('“Love, Miss.” The same two words written on the whiteboard in the Trailer, under TRAILER RULES. Every sheet. Every Friday. Since 1987.');
+ await N('“Love, Miss.” Like the Trailer whiteboard. Every sheet. Since 1987.');
  A.adam.ex='cry';
  await say('adam','I signed the front pages. The covering letters. Twenty-two years. I never turned a single one over.','cry');
  await say('adam','(putting them in a folder, very carefully, like they might break) I’m turning them over now. All of them. On Friday. In front of the lanyards.','cold');
@@ -24257,10 +24257,10 @@ spot({mis:'crew',room:'bus',period:0,x:200,y:150,label:'Paul Jones got off the 4
  cond:()=>!D.weekend&&D.f&&D.f.pj3&&!(D.done&&D.done.pauljones)&&!crew().pjSafe&&!crew().pjKept&&(D.f.pjKind||0)>=2&&!D.dead.pauljones&&cal()<12,run:async()=>{
  scene('bus',{pauljones:[200,-1,{y:150,hold:'bag',ex:'sad'}],you:[-14,1,{y:156}]},true);
  await walk('you',170,80);face('you',1);
- await N('Paul Jones is standing by the bus shelter with his hood up and his backpack on his front, both arms round it, like it’s a baby.');
+ await N('Paul Jones. Hood up. Backpack on his front, both arms round it.');
  await say('pauljones','You said I could talk to you. So. I’m talking.','sad');
  await say('pauljones','(opening the zip an inch) It’s my dad’s. From the shoebox. The code’s my birthday. That’s the only reason he remembers my birthday.','scared');
- await N('Inside the backpack, under a PE shirt: a shoebox. You don’t need to open it. You can see the shape of the weight in how he’s holding it.');
+ await N('A shoebox, under a PE shirt. You don’t need to open it.');
  await say('pauljones','I took it Monday. I don’t know why. I keep bringing it. Every day it gets heavier. I don’t want to find out why I took it.','cry');
  cue('sad',true);
  const kind=(D.f.pjKind||0)>=3;
@@ -24291,7 +24291,7 @@ spot({mis:'crew',room:'bus',period:0,x:200,y:150,label:'Paul Jones got off the 4
   await say('pauljones','(laughing, crying, both) I didn’t know what I was gonna do with it. Now I don’t have to know.','cry');
   hold('pauljones','book');
   await say('pauljones','(holding out his notebook) You should have this. The 43, from above. Look at the seats. Look at the red ones.','sad');
-  await N('Every Friday, one seat on the 43 goes empty and never fills again. Paul crossed each one out in red. TYLER. ALEX. Kids from years ago. And this week’s seats, already ringed. Waiting.');
+  await N('Red crosses. One empty seat a Friday. TYLER. ALEX. Older names. Two seats this week, already ringed.');
   await say('pauljones','Nobody noticed. I notice where everyone is. It’s the only thing I’m good at.','sad');
   crew().pjSafe=1;crewEv().seats=1;joinCrew('pauljones');
   toast('🎁 EVIDENCE: Paul Jones’s seating plan. The empty seats. Paul is with you.')}
@@ -24317,9 +24317,9 @@ spot({mis:'crew',room:'field',period:4,x:200,y:150,label:'Coach is dragging a se
  D.f.pushTry=cal();
  scene('field',{coach:[230,-1,{y:148,pose:'grab',ex:'smirk'}],kid3:[246,-1,{y:150,ex:'scared'}],jacob:[150,1,{y:150}],you:[-14,1,{y:156}]},true);
  await walk('you',120,90);face('you',1);cue('tension',true);
- await N('Coach has a seventh grader by the hood. The kid’s trainers are dragging two lines in the grass towards the gym.');
+ await N('Coach has a seventh grader by the hood. Two lines in the grass, towards the gym.');
  await say('coach','Extra practice, champ. Equipment cupboard. Very special drills.','smirk');
- await N('The kid looks straight at you. Then at Jacob. Jacob is standing very still, with his hands opening and closing.');
+ await N('The kid looks at you. Then at Jacob. Jacob’s hands open and close.');
  await say('jacob','(very quietly) He’s little. He’s so little.','scared');
  const c=await choose(['“Jacob. Push.”','Go for the kid yourself.','Yell at the kid to RUN.'],'COACH HAS A SEVENTH GRADER');
  const push=async()=>{if(A.you.x>170)await walk('you',150,120);await walk('jacob',212,140);pose('jacob','grab');
@@ -24413,7 +24413,7 @@ async function clappening(){
  if(!D.dead.nivaan)cast.nivaan=[120,1,{y:152,pose:'film'}];
  scene('bus',cast,true);const tri=prop({t:'tripod',x:160,y:152,layer:-1});cue('arcade',true);
  await walk('you',140,90);face('you',1);
- await N('Home time. Two enormous grown men in matching tracksuits are filming a movie in your bus loop.');
+ await N('Home time. Two enormous men in matching tracksuits, filming a movie in your bus loop.');
  if(A.nivaan)await say('nivaan','(filming them filming) Cheeks and Cheek-Clapper. IN OUR BUS LOOP. I’m going to cry.','laugh');
  await say('cheeks','You! Kid! You’ve got a steady face. Stand by the camera. Don’t breathe on it.','happy');
  await walk('you',152,50);
@@ -24456,7 +24456,7 @@ async function dailies(){
  scene('bus',{cheeks:[176,-1,{y:150,hold:'laptop',ex:'shock'}],clapper:[248,-1,{y:150,pose:'hips'}],you:[-14,1,{y:156}]},true);
  prop({t:'car',x:196,y:150,col:'#6a6a72',driver:1,layer:-3});
  await walk('you',140,90);face('you',1);
- await N('A grey Honda Civic with one headlight is parked across two bus bays. Cheeks is waving a laptop at you like a flare.');
+ await N('A grey Civic, one headlight, across two bus bays. Cheeks waves a laptop like a flare.');
  await say('cheeks','DAILIES. From the bus loop shoot. Don’t look at the clap. Look BEHIND the clap.','shock');
  const tv=prop({t:'dailies',x:160,y:96,layer:40});SFX.click&&SFX.click();
  await N('Behind the school, small and grainy: Coach’s car at the old boiler hatch. Boot open. Coach carrying a black bin bag. Then another. 15:20.');
@@ -24974,7 +24974,7 @@ hook({mis:'robbery',period:8,room:'foodcourt',who:'auto',cond:ctDue,run:async()=
  for(const id of['kid1','kid3','noodle'])if(A[id]){A[id].ex='shock';pose(id,null)}
  put('robpig',334,-1,{y:150,hold:'hammer'});put('robclown',356,-1,{y:148,hold:'bag'});put('robprez',378,-1,{y:152,hold:'pistol'});
  await Promise.all([walk('robpig',236,90),walk('robclown',256,90),walk('robprez',200,90)]);
- await N('Three people in rubber masks. A pig with a sledgehammer. A clown with two empty duffel bags. A president, holding a pistol like he’s never held one before.');
+ await N('Rubber masks. A pig with a sledgehammer. A clown with empty bags. A president, holding a pistol like it’s his first.');
  if(A.glen){await walk('glen',224,60);face('glen',1);await say('glen','(hands up, very calm) Fellas. Fellas. It’s a Tuesday.','cold');
   pose('robpig','overhead');await wait(TEST?0:200);SFX.smack&&SFX.smack();shake(1);pose('robpig',null);await tw(A.glen,{x:A.glen.x-14},200);pose('glen','lie');A.glen.ex='hurt';
   await N('The pig puts Big Glen down with the handle of the sledgehammer. Glen is a big man. He goes down like a wardrobe.')}
@@ -25819,6 +25819,55 @@ openQuest=function(){
 #quest.ql2 .qside{display:block;width:100%;text-align:left;margin:10px 0;padding:8px 12px;background:#1a2a1e;border:1px solid #3a6a4a;color:#9ad09a;font:inherit;cursor:pointer}
 #quest.ql2 .qside:hover{background:#22382a}
 #quest.ql2 .cnt.gigc{background:#2a6a3a}`;document.head.appendChild(st)}
+
+</script>
+<script>
+/* js/remaster_systems.js */
+'use strict';
+/* =====================================================================
+   HIGHSCHOOL REMASTERED — SYSTEMS
+   • STORY MOVES (Kindergarten-style scarcity): 4 a school day. Starting
+     or continuing a chapter of one of the 13 main arcs (not The Crew,
+     not rescues, not things that happen to you in class) costs a move.
+     When they're gone, the arcs wait for tomorrow and the HUD says so.
+     Ten school days, ~40 moves, ~70 chapters: you can't do everything.
+   • TONE GUARD: after a serious scene (rescue, guns, the Other Miss,
+     Closing Time, Paul, the checkpoint), filthy quests and the door-
+     banging gag stay away for the rest of that period.
+   ===================================================================== */
+{
+const MOVES_PER_DAY=4;
+const arcMis_=new Set(ARCS.flatMap(g=>g[2]).filter(a=>a[0]!=='story').flatMap(a=>a[3]));
+const movesLeft=()=>{if(!D||D.weekend)return null;if(D.movesDay!==cal()){D.movesDay=cal();D.moves=MOVES_PER_DAY}return D.moves};
+window.movesLeft=movesLeft;
+const costs=h=>h&&h.mis&&arcMis_.has(h.mis)&&h.who!=='auto'&&!h._inner_free&&!(typeof TEST!=='undefined'&&TEST);
+{const _rh=runHook;runHook=async function(h){
+ if(costs(h)&&!(D.done&&D.done[h.mis])){const m=movesLeft();
+  if(m!=null&&m<=0){toast('★ No story moves left today. '+(MIS[h.mis]?MIS[h.mis].name:'That')+' will still be there tomorrow.');busy=false;if(panelMode!=='roam')roam();return}
+  D.moves=m-1;updateLoc&&updateLoc();
+  if(D.moves===0)setTimeout(()=>toast('★ That was your last story move today. Side stuff is still free.'),400)}
+ return _rh.apply(this,arguments)}}
+/* the HUD shows them */
+{const _ul=updateLoc;updateLoc=function(){_ul();const m=movesLeft();const e=$('ploc');if(e&&m!=null&&!D.weekend){const st='★'.repeat(m)+'<span style="opacity:.25">'+'★'.repeat(Math.max(0,MOVES_PER_DAY-m))+'</span>';if(!/story-moves/.test(e.innerHTML))e.innerHTML+=' <span class="story-moves" title="Story moves left today" style="color:#ffd27a">'+st+'</span>'}}}
+/* and Do Now explains them once */
+{const _qn=qlNow;qlNow=function(body){_qn(body);const m=movesLeft();if(m==null)return;
+ const r=qel('div','qlnote','★ '+m+' of '+MOVES_PER_DAY+' story moves left today. Each chapter of a main quest costs one. You won’t get to everything. Choose.');
+ const first=body.querySelector('.qsec');body.insertBefore(r,first||null)}}
+/* new day = fresh moves (handled lazily by movesLeft) */
+
+/* ---------------- TONE GUARD ---------------- */
+const SERIOUS=/^(rescue|abd|pauljones|robbery|dopple|lockedroom|crew)/;
+const seriousNow=()=>D&&D.f&&D.f.serious===cal()+':'+D.period;
+window.markSerious=function(){if(D&&D.f)D.f.serious=cal()+':'+D.period};
+{const _rh=runHook;runHook=async function(h){
+ const filthy=h&&typeof FILTHY!=='undefined'&&FILTHY.includes(h.mis);
+ if(filthy&&seriousNow()){toast('Not now. Not after that.');busy=false;if(panelMode!=='roam')roam();return}
+ if(h&&h.mis&&SERIOUS.test(h.mis))markSerious();
+ return _rh.apply(this,arguments)}}
+{const _die=die;die=async function(){markSerious();return _die.apply(this,arguments)}}
+if(typeof CHX!=='undefined'&&CHX.doorbang){const c=CHX.doorbang.cond;CHX.doorbang.cond=function(){return !seriousNow()&&(!c||c.apply(this,arguments))}}
+for(const fn of['screening','clappening','dailies'])if(typeof window[fn]==='function'){const o=window[fn];window[fn]=async function(){if(fn==='screening'&&cal()>=9)markSerious();return o.apply(this,arguments)}}
+}
 
 </script>
 <script>

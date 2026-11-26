@@ -37,7 +37,7 @@ async function clappening(){
  if(!D.dead.nivaan)cast.nivaan=[120,1,{y:152,pose:'film'}];
  scene('bus',cast,true);const tri=prop({t:'tripod',x:160,y:152,layer:-1});cue('arcade',true);
  await walk('you',140,90);face('you',1);
- await N('Home time. Two enormous grown men in matching tracksuits are filming a movie in your bus loop.');
+ await N('Home time. Two enormous men in matching tracksuits, filming a movie in your bus loop.');
  if(A.nivaan)await say('nivaan','(filming them filming) Cheeks and Cheek-Clapper. IN OUR BUS LOOP. I’m going to cry.','laugh');
  await say('cheeks','You! Kid! You’ve got a steady face. Stand by the camera. Don’t breathe on it.','happy');
  await walk('you',152,50);
@@ -80,7 +80,7 @@ async function dailies(){
  scene('bus',{cheeks:[176,-1,{y:150,hold:'laptop',ex:'shock'}],clapper:[248,-1,{y:150,pose:'hips'}],you:[-14,1,{y:156}]},true);
  prop({t:'car',x:196,y:150,col:'#6a6a72',driver:1,layer:-3});
  await walk('you',140,90);face('you',1);
- await N('A grey Honda Civic with one headlight is parked across two bus bays. Cheeks is waving a laptop at you like a flare.');
+ await N('A grey Civic, one headlight, across two bus bays. Cheeks waves a laptop like a flare.');
  await say('cheeks','DAILIES. From the bus loop shoot. Don’t look at the clap. Look BEHIND the clap.','shock');
  const tv=prop({t:'dailies',x:160,y:96,layer:40});SFX.click&&SFX.click();
  await N('Behind the school, small and grainy: Coach’s car at the old boiler hatch. Boot open. Coach carrying a black bin bag. Then another. 15:20.');

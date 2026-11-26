@@ -49,7 +49,7 @@ hook({mis:'robbery',period:8,room:'foodcourt',who:'auto',cond:ctDue,run:async()=
  for(const id of['kid1','kid3','noodle'])if(A[id]){A[id].ex='shock';pose(id,null)}
  put('robpig',334,-1,{y:150,hold:'hammer'});put('robclown',356,-1,{y:148,hold:'bag'});put('robprez',378,-1,{y:152,hold:'pistol'});
  await Promise.all([walk('robpig',236,90),walk('robclown',256,90),walk('robprez',200,90)]);
- await N('Three people in rubber masks. A pig with a sledgehammer. A clown with two empty duffel bags. A president, holding a pistol like he’s never held one before.');
+ await N('Rubber masks. A pig with a sledgehammer. A clown with empty bags. A president, holding a pistol like it’s his first.');
  if(A.glen){await walk('glen',224,60);face('glen',1);await say('glen','(hands up, very calm) Fellas. Fellas. It’s a Tuesday.','cold');
   pose('robpig','overhead');await wait(TEST?0:200);SFX.smack&&SFX.smack();shake(1);pose('robpig',null);await tw(A.glen,{x:A.glen.x-14},200);pose('glen','lie');A.glen.ex='hurt';
   await N('The pig puts Big Glen down with the handle of the sledgehammer. Glen is a big man. He goes down like a wardrobe.')}
