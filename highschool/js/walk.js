@@ -48,10 +48,9 @@ HOOK.update=(dt,rdt)=>{
 {let stuckT=0;const _hu=HOOK.update;HOOK.update=(dt,rdt)=>{_hu&&_hu(dt,rdt);const idle=!busy&&panelMode!=='roam'&&!DL&&!CH&&!MINI&&!anyOverlay()&&D&&D.room&&$('menu').hidden;stuckT=idle?stuckT+rdt:0;if(stuckT>2.5){stuckT=0;roam()}}}
 
 /* ---------- 3. items you can see, walk to and pick up ---------- */
-Object.assign(ITEMS,{inhaler:'Kenneth’s inhaler',thermos:'Hasan’s dad’s thermos',ladle:'Pat’s lucky ladle',shorts:'Omer’s shorts'});
+Object.assign(ITEMS,{inhaler:'Kenneth’s inhaler',ladle:'Pat’s lucky ladle',shorts:'Omer’s shorts'});
 {const _dh=drawHeld;drawHeld=function(it,x,y,d){
  if(it==='inhaler'){R(x-2,y-4,3,6,'#3a7ad8');R(x-2,y+1,6,2,'#3a7ad8');R(x-2,y-4,3,1,'#9ac0f0');return}
- if(it==='thermos'){R(x-2,y-8,5,10,'#b8bcc4');R(x-2,y-8,5,2,'#3a4a6a');R(x-1,y-5,1,6,'#e8ecf0');R(x+3,y-5,1,4,'#8a8e98');return}
  if(it==='ladle'){R(x-1,y-9,1,8,'#c8ccd4');R(x-3,y-1,5,3,'#c8ccd4');R(x-2,y,3,1,'#9a9ea8');return}
  if(it==='shorts'){R(x-4,y-4,9,3,'#1a2a6a');R(x-4,y-1,4,4,'#1a2a6a');R(x+1,y-1,4,4,'#1a2a6a');R(x-4,y-4,9,1,'#f0f0f0');return}
  return _dh(it,x,y,d)}}
@@ -87,25 +86,6 @@ hook({mis:'inhaler',period:2,room:'gym',who:'kenneth',label:'Give Kenneth his in
  bond('kenneth',1);await complete('inhaler');return 'stay';
 }});
 
-/* ---- Hasan’s dad’s thermos ---- */
-errand({id:'thermos',name:'The Thermos',icon:'☕',who:['hasan','hasandad'],
- blurb:'Hasan’s dad dropped him off on the way home from his night shift and his thermos fell out of the cab. Ms. Sherman took it to Lost Property. It was Hasan’s grandad’s.',
- tips:['Before school, the bus loop. Hasan is staring at the road.','Break or lunch, the Main Corridor. The Lost Property box at the far left, against the back wall. Then find Hasan in the Cafeteria.']});
-hook({mis:'thermos',period:0,room:'bus',who:'hasan',label:'Ask Hasan why he’s staring at the road',look:{ex:'sad'},cond:()=>!D.f.th1&&!D.done.thermos,run:async()=>{
- await say('hasan','My dad’s thermos fell out of the cab when he dropped me off. Ms. Sherman picked it up and put it in Lost Property. She said “finders keepers” and laughed for a really long time.','sad');
- await say('hasan','It was my grandad’s. It’s got a dent where he dropped it on the ferry in 1979. Dad drinks his tea out of it every night at four a.m. He’ll notice. He’ll pretend he didn’t notice.','sad');
- D.f.th1=1;part('thermos',1);return 'stay';
-}});
-spot({room:'corridor',period:[2,4],x:30,y:138,item:'thermos',label:'Dig the thermos out of Lost Property',short:'LOST PROPERTY',cond:()=>D.f.th1&&!has('thermos')&&!D.done.thermos,run:async()=>{
- pose('you','reach');await wait(300);pose('you',null);
- give('thermos');await N('Lost Property: forty-one single gloves, a retainer, a whole trumpet, and at the bottom, a dented silver thermos that still smells like cardamom.');return 'stay';
-}});
-hook({mis:'thermos',period:[2,4],room:'canteen',who:'hasan',label:'Give Hasan the thermos',look:{ex:'sad'},cond:()=>has('thermos')&&!D.done.thermos,run:async()=>{
- takeItem('thermos');hold('hasan','thermos');
- await say('hasan','(holding it with both hands) The ferry dent. That’s the ferry dent.','cry');
- await say('hasan','I’m going to put it back in the cab before he wakes up. He’ll never know it was gone. That’s the best version. Him never knowing.','happy');
- hold('hasan',null);bond('hasan',1);await complete('thermos');return 'stay';
-}});
 
 /* ---- Pat’s ladle ---- */
 errand({id:'ladle',name:'The Lucky Ladle',icon:'🥄',who:['pat','coach'],

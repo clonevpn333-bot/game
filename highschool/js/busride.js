@@ -222,12 +222,6 @@ const RIDE=[
   await say('sean','So we both stay up.','blush');
   await say('stella','(quieter, to you) He made a spreadsheet. Of the next four years. Every holiday. Every flight. He color-coded it.','cry');
  }},
- {id:'dadcab',w:10,cond:()=>(D.done.stepeleven||D.done.nightshift)&&!D.f.rideHD&&onBus('hasan'),run:async()=>{
-  D.f.rideHD=1;
-  await N('A yellow cab pulls up next to the 43 at the lights. Hasan’s dad, on his way to the rank. He honks twice. He waves at Hasan like Hasan is the only person on the bus.');
-  await say('hasan','(waving back, pretending to be embarrassed, not embarrassed at all) He does that now. Every day. Since the birthday. He drives a whole extra block to do it.','happy');
-  if(D.done.stepeleven)await say('hasan','He asked if Darren wants to come for dinner Sunday. My mom’s making the thing. THE thing. She only makes the thing for funerals and weddings.','blush');
- }},
  {id:'retainer',w:10,cond:()=>P.crew&&P.crew.ev&&P.crew.ev.retainer&&!P.crew.rideRet&&onBus('hasan'),run:async()=>{
   crew().rideRet=1;save();
   await N('Hasan has the sandwich bag with Tyler’s retainer in it on his knee. He’s supposed to have given it to Kenneth for the File. He hasn’t.');

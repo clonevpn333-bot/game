@@ -64,8 +64,6 @@ J('measure',1,{k:'fetch',nm:'safety goggles',sh:'tool',from:'science',x:150,get:
 J('talent',1,{k:'fetch',nm:'the wireless mic',sh:'mic',from:'drama',x:80,get:'Grab the wireless mic from Drama (for the show)',thx:null});
 J('darren',1,{k:'fetch',nm:'a blue hoodie',sh:'cloth',from:'gym',x:60,get:'Find a blue hoodie in the gym lost and found (D said wear blue)',give:'Give Hasan the blue hoodie',thx:'Blue. It’s blue. Oh no. It suits me. OH NO.'});
 J('darren',2,{k:'shove',tgt:'arjun',room:'canteen',lab:'Shove Arjun before he roasts Hasan',why:'Arjun’s winding up a joke about Hasan. Shut it down.',react:'WHAT DID I DO. I HAVEN’T EVEN SAID IT YET.'});
-J('nightshift',1,{k:'fetch',nm:'a bag of flour',sh:'bag',from:'foodtech',x:200,get:'Grab a bag of flour from Food Tech',give:'Hand Pat the flour',thx:'Flour. Good. Now get out of my light.'});
-J('nightshift',2,{k:'fetch',nm:'birthday candles',sh:'box',from:'foodtech',x:60,get:'Grab birthday candles from Food Tech',give:'Hand Hasan the candles',thx:'Candles. For a man who drives drunk people home. He’s gonna cry and say it’s allergies.'});
 J('cheeks',0,{k:'fetch',ask:'Casting call says “bring a headshot.” I don’t have a headshot. I have a FACE. Get the art room to print one.',nm:'a headshot',sh:'paper',from:'art',x:120,get:'Print Nivaan a headshot on the art room printer',give:'Hand Nivaan the headshot',thx:'I look like a missing person. Perfect. Directors love that.'});
 J('cheeks',1,{k:'fetch',nm:'fake blood',sh:'bottle',from:'drama',x:180,get:'Grab a bottle of fake blood from Drama (for the shoot)',thx:null});
 J('pits',1,{k:'fetch',nm:'the confiscated body spray',sh:'bottle',from:'gym',x:280,get:'Grab the confiscated body spray from the gym',give:'Hand Aidan the body spray',thx:'(spraying it at the ceiling like a fire extinguisher) For the pits. For ALL of us.'});
@@ -110,7 +108,6 @@ J('grandad',1,{k:'fetch',nm:'a flashlight',sh:'light',from:'woodwork',x:120,get:
 J('bayonet',1,{k:'fetch',nm:'an air horn',sh:'can',from:'gym',x:120,get:'Grab Coach’s air horn from the gym (cannon sound effects)',thx:null});
 J('nursecal',2,{k:'fetch',nm:'the ICT webcam',sh:'phone',from:'ict',x:260,get:'Borrow the webcam off an ICT computer (evidence)',thx:null});
 J('toby',2,{k:'fetch',nm:'a Sharpie',sh:'tool',from:'art',x:260,get:'Grab a Sharpie from the art room (for the plan)',give:'Hand Sean the Sharpie',thx:'Sharpie. Permanent. Like my mistakes. Okay, let’s go.'});
-J('tellmom',1,{k:'fetch',nm:'a box of tissues',sh:'box',from:'nurse',x:220,get:'Grab a box of tissues from the nurse’s office',give:'Hand Pat the tissues',thx:'They’re not for me. (they’re for her) …Some of them are for me.'});
 J('instella',2,{k:'fetch',nm:'flowers',sh:'flower',from:'courtyard',x:240,get:'Pick some flowers in the courtyard (for Sean’s big moment)',give:'Hand Sean the flowers',thx:'Flowers. On the field. Like a movie. Like a bad movie. Okay.'});
 J('breath',0,{k:'fetch',nm:'a nose clip',sh:'tool',from:'nurse',x:60,get:'Get a nose clip from Nurse Pam (before swimming)',thx:null});
 J('sleepy',0,{k:'fetch',nm:'a pocket watch',sh:'tool',from:'drama',x:260,get:'Grab a shiny pocket watch from the Drama prop box (before Psychology)',thx:null});

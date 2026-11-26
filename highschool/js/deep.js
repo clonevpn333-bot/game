@@ -168,7 +168,7 @@ function chatGame(title,sub,rounds){if(TEST)return Promise.resolve({win:true,sus
 }
 
 /* =================== FOCUS: fewer, better quests on screen =================== */
-const FEATURED=new Set(['crew','crew_locker','crew_dark','crew_record','kim','dopple','headcase','pauljones','brett','window','darren','stepeleven','tellmom','nightshift','jade','beef','giant','stall','upthere','tea','catfish','bigscore','voss','oldbat','staffroom','mended','toby','farewell','instella','firstfight','lockdown','steal_stella','steal_mia','flimbus','ringing','stain'].concat(typeof FILTHY!=='undefined'?FILTHY:[]));
+const FEATURED=new Set(['crew','crew_locker','crew_dark','crew_record','kim','dopple','headcase','pauljones','brett','window','darren','stepeleven','jade','beef','giant','stall','upthere','tea','catfish','bigscore','voss','oldbat','staffroom','mended','toby','farewell','instella','firstfight','lockdown','steal_stella','steal_mia','flimbus','ringing','stain'].concat(typeof FILTHY!=='undefined'?FILTHY:[]));
 const focusOn=()=>!P.set||P.set.focus!==false;
 const isFeat=m=>FEATURED.has(m)||/^crew/.test(m);
 /* new, unstarted side quests that aren't featured don't nag: no "!" marks, no walk-ups, not in the log */

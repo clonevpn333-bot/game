@@ -135,53 +135,6 @@ hook({mis:'firstfight',period:7,room:'bus',who:'sean',label:'Stand with Sean whi
 }});
 tipsFrom('firstfight',()=>!D.f.ff1?'Find Sean (Library at break, Playing Field at lunch). He’s hiding from Stella.':!D.f.ff2?'Find Stella (Library at break, Playing Field at lunch).':'Home time, the bus loop. Stand with Sean.');
 
-/* =====================================================================
-   HASAN’S MOM
-   ===================================================================== */
-mission('tellmom',{name:'Hasan’s Mom',icon:'🧺',who:['hasan','hasanmom','pat'],goal:'Help Hasan through his mom finding out about Darren.',
- blurb:'Hasan’s mom found Darren’s laminated list in the wash. Two days ago. She hasn’t said anything. Not one word.',
- parts:['The list in the wash','Pat','Pick-up'],tips:['Break or lunch, the Cafeteria. Hasan isn’t eating.']});
-hook({mis:'tellmom',period:[2,4],room:'canteen',who:'hasan',label:'Ask Hasan why he isn’t eating',look:{ex:'sad'},cond:()=>typeof darDate==='function'&&darDate()&&!D.f.tm1,run:async()=>{
- scene('canteen',{hasan:[160,1,{y:148,ex:'sad'}],you:[134,1,{y:154}]},true);
- await say('hasan','My mom found the list. Darren’s list. It went through the wash in my jeans. Laminated. It came out perfect. That’s the problem with lamination.','sad');
- await say('hasan','She put it on my bed. Folded. On my pillow. She hasn’t said anything. Two days. She made my favorite dinner both nights. She just watches me eat it.','scared');
- await say('hasan','If she yelled I’d know. The quiet’s the worst part. The quiet could be anything.','cry');
- const c=await choose(['“Do you want to tell her first? Before she says anything?”','“Maybe the dinner IS what she’s saying.”']);
- await say('hasan',c===0?'I don’t know HOW. There’s no laminated list for this. Darren would make one. I can’t ask Darren. That’s too weird.':'(very still) …I didn’t think about that. I didn’t think about that at all.','sad');
- await say('hasan','Pat knows everybody’s mom. Pat knows everything. Ask Pat. Please. I can’t ask Pat. Pat scares me.','scared');
- D.f.tm1=1;part('tellmom',1);
-}});
-hook({mis:'tellmom',period:[2,4],room:'canteen',who:'pat',label:'Ask Pat about Hasan’s mom',look:{ex:'smirk'},cond:()=>D.f.tm1&&!D.f.tm2,run:async()=>{
- scene('canteen',{pat:[90,1,{y:140}],you:[120,-1,{y:150}]},true);
- await say('you','Pat. Hasan’s mom found out he likes a boy. She’s not saying anything. He’s scared.');
- await say('pat','(stopping the ladle) …Mm.','sad');
- await say('pat','My boy told me at the kitchen table when he was fifteen. Spaghetti night. I said the wrong thing. For one whole day, I said the wrong thing.','sad');
- await say('pat','Then I spent twenty years saying the right thing. He’s married now. Nice fella. Does my taxes.','happy');
- await say('pat','Tell Hasan his mom gets one day. Everybody’s mom gets one day. Then watch what she does, not what she says. Moms say stupid stuff. They do the dinners.','sad');
- hold('pat','cookie');await wait(200);hold('pat',null);
- await N('She gives you two cookies wrapped in a napkin. One for Hasan. One for you. She doesn’t say which is which.');
- D.f.tm2=1;part('tellmom',2);
- return 'stay';
-}});
-hook({mis:'tellmom',period:7,room:'bus',who:'hasan',label:'Wait with Hasan. His mom is picking him up.',look:{ex:'scared'},cond:()=>D.f.tm2&&!D.done.tellmom&&!D.dead.hasan,run:async()=>{
- scene('bus',{hasan:[150,1,{y:150,ex:'scared'}],you:[124,1,{y:154}]},true);cue('sad');
- await say('hasan','She texted. “I’m picking you up today.” Full stop. My mom never uses full stops. She uses six emojis per word.','scared');
- const car=pprop({t:'car',x:-80,y:170,col:'#8a6a4a',driver:1,layer:40});SFX.rumble();await tw(car,{x:200},1600,'out');
- put('hasanmom',230,-1,{y:150});
- await N('A brown car pulls in. A woman gets out in a long cardigan, holding something. It’s the list. Laminated. She’s holding it with both hands.');
- await walk('hasanmom',180,40);
- await say('hasanmom','(very carefully, like she practiced it in the car) Hasan. Step eleven is blank.','sad');
- await say('hasan','…Mom—','scared');
- await say('hasanmom','Does he know he can come for dinner? He should come for dinner. Does he eat lamb? I don’t know anything about him. I want to know things about him.','cry');
- await say('hasan','(very small) You’re not mad?','cry');
- await say('hasanmom','I was quiet because I was scared I’d say it wrong. Your grandmother said it wrong to your uncle and he didn’t come home for nine years. I wasn’t going to say it wrong.','cry');
- pose('hasan','hug');pose('hasanmom','hug');SFX.heart();
- await N('She holds him in the middle of the bus loop with the laminated list still in her hand, pressed flat against his back, and she doesn’t let go even when the 43 honks.');
- await say('hasanmom','(over his shoulder, squinting at you) And you. Whoever you are. Tell the swimmer: Sunday, six o’clock, shoes off. And if he breaks my son’s heart I will find out where he swims.','smirk');
- pose('hasan',null);pose('hasanmom',null);
- await complete('tellmom');
-}});
-tipsFrom('tellmom',()=>!D.f.tm1?'Break or lunch, the Cafeteria. Hasan isn’t eating.':!D.f.tm2?'Break or lunch, the Cafeteria: ask Lunch Lady Pat.':'Home time, the bus loop. Hasan’s mom is picking him up.');
 
 /* =====================================================================
    OHIO — Toby
@@ -411,7 +364,6 @@ tipsFrom('quiet',()=>!D.f.qu1?'Break or lunch, the Main Corridor. Nivaan hit a h
 
 /* nights */
 if(typeof NIGHT!=='undefined')NIGHT.push(
- {cond:()=>D.done.tellmom&&!D.f.n13,set:()=>D.f.n13=1,from:'Hasan',msgs:[['them','darren is coming sunday','21:30'],['them','my mom bought a new tablecloth','21:30'],['them','we have never owned a tablecloth','21:31'],['them','im gonna throw up. good throw up','21:31']]},
  {cond:()=>D.done.giant&&!D.f.n14,set:()=>D.f.n14=1,from:'Jacob',msgs:[['them','maddie drew a picture of mr adams car','20:45'],['them','its just a rectangle with a sad man in it','20:45'],['them','shes giving it to him tomorrow','20:46']]},
  {cond:()=>D.done.mended&&!D.f.n15,set:()=>D.f.n15=1,from:'Abby',msgs:[['them','i played it til 3am','03:02'],['them','the neighbors banged on the wall','03:02'],['them','i played it louder','03:03'],['them','tell corey thank u. no dont. i’ll tell him','03:04']]},
  {cond:()=>D.done.grandad&&!D.f.n16,set:()=>D.f.n16=1,from:'Arjun',msgs:[['them','i called my mom','22:10'],['them','like grandad said','22:10'],['them','she cried for 20 min. annoying. anyway','22:11'],['them','tell anyone and ur dead','22:11']]}

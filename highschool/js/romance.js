@@ -595,7 +595,6 @@ function MOREGOSSIP(){const g=[];if(!D||!D.f)return g;
  if(D.done.farewell)g.push('did you see the chalk on the bus loop','i read voicemail six and cried a little');
  if(darDate())g.push('hasan and the swim team guy?? the goggles guy??');
  if(D.done.stepeleven)g.push('hasan jumped in the deep end and he CAN’T SWIM','the pool drain took a whole ankle. almost');
- if(D.done.nightshift)g.push('hasan’s dad pulled up in a cab and HUGGED him');
  if(D.done.toby)g.push('toby from ohio is kind of iconic');
  return g}
 

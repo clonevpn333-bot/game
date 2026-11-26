@@ -294,10 +294,10 @@ const GOALS={
  emergency:'Prank Corey with his own curl cream.',heads:'Survive Mr. Grieve’s French Revolution.',stilllife:'Get Marcus out of Miss Dahl’s still life alive.',
  pitch:'Get Kenneth through his singing solo.',delete:'Shut down HIGHGATE OS.',breath:'Survive Mrs. Tarn’s breath test.',measure:'Stop Mr. Oakes measuring Dheva for a coffin.',
  sleepy:'Don’t let Dr. Lyle hypnotize you out of a window.',talent:'Win Mr. Adam’s talent show.',darren:'Find out who “D” is and help Hasan answer him.',
- nightshift:'Help Hasan say happy birthday to his dad.',roast:'Win the Roast Table.',cheeks:'Help Cheeks & Cheek-Clapper finish their movie.',pits:'Survive Aidan’s deodorant.',
+ roast:'Win the Roast Table.',cheeks:'Help Cheeks & Cheek-Clapper finish their movie.',pits:'Survive Aidan’s deodorant.',
  toby:'Help Sean deal with Toby liking him.',phone:'Get Arjun’s phone back from Ms. Sherman.',lockdown:'Survive the lockdown. Find out what’s in the school.',
  crew:'Prove the teachers are killing kids before Inspection Day.',crew_locker:'Get Tyler’s notebook out of his locker.',crew_dark:'Get the night camera footage.',
- crew_record:'Get Mr. Adam on the record about 1987.',flimbus:'Find out what “mickther” means.',inhaler:'Find Kenneth’s inhaler.',thermos:'Get Hasan’s dad’s thermos back.',
+ crew_record:'Get Mr. Adam on the record about 1987.',flimbus:'Find out what “mickther” means.',inhaler:'Find Kenneth’s inhaler.',
  ladle:'Get Pat’s lucky ladle back from Coach.',shorts:'Find Omer’s shorts.',vapes:'Deal with the vape kids.',beef:'Stop Omer and Arjun killing each other. Or watch.',
  staffroom:'Find out who ate Ms. Loach’s yogurt.',passing:'Stop for things that happen in the halls between classes.',
  farewell:'Help Sean say goodbye to Stella properly.',stepeleven:'Find out what step eleven is.',kim:'Find out what Mr. Kim did with Alex.',window:'Get Corey and Abby together.',brett:'Help Corey with Abby’s boyfriend, Brett. Permanently.'

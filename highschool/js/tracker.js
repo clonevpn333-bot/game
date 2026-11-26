@@ -14,7 +14,7 @@
 
 /* ---------- quest pickups that were invisible to the guidance ---------- */
 {const TAG=[[/^Take the shovel from the groundskeeper/,'brett'],[/^Look at David’s laptop/,'tea'],[/^Steal Coach’s bucket of field chalk/,'farewell'],
- [/^Pick up the blue inhaler/,'inhaler'],[/^Dig the thermos out of Lost Property/,'thermos'],[/^Grab the ladle off Coach’s cart/,'ladle'],[/^Climb the goal and get Omer’s shorts/,'shorts'],
+ [/^Pick up the blue inhaler/,'inhaler'],[/^Grab the ladle off Coach’s cart/,'ladle'],[/^Climb the goal and get Omer’s shorts/,'shorts'],
  [/^Listen to the teachers shouting in the parking lot/,'staffroom'],[/^Sneak into the staff room/,'staffroom']];
  for(const s of SPOTS){if(s.mis||!s.label)continue;for(const [re,m] of TAG)if(re.test(s.label)&&MIS[m]){s.mis=m;break}}}
 

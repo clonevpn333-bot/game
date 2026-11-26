@@ -132,8 +132,8 @@ spot({mis:'crew',room:'library',period:[2,4],x:160,y:150,label:'Darren has a new
  cond:()=>!D.weekend&&loveOn('hasan')&&!(crew().ev||{}).inside&&cal()<12,run:async()=>{
  scene('library',{you:[-14,1,{y:156}],hasan:[140,1,{y:150,ex:'scared'}],darren:[162,-1,{y:150,hold:'paper',ex:'happy'}]},true);
  await walk('you',108,80);face('you',1);
- await say('darren','(holding up a laminated sheet) Step ten was meet the family. Done. His mum hugged me for nine seconds. I timed it.','happy');
- await say('hasan','She hasn’t said ONE word to me about it. Not one. But she hugged him for nine seconds.','scared');
+ await say('darren','(holding up a laminated sheet) Step ten was survive lunch with his friends. Done. Arjun only called me “the laminator” four times. I timed it.','happy');
+ await say('hasan','He brought a SPREADSHEET to lunch. Arjun was scared of him. Nobody’s ever been scared FOR me before.','scared');
  await say('darren','So. Step ten point five. You meet MY family. Specifically my mother. Specifically: she’s coming here. Friday week. With a clipboard.','smirk');
  await say('hasan','…Your mum’s a SCHOOL INSPECTOR?','shock');
  await say('darren','Lead inspector. She’s read every report this school has sent since 1987. She says the numbers don’t add up. She says it at dinner. Every dinner.','cold');
@@ -147,7 +147,7 @@ spot({mis:'crew',room:'library',period:[2,4],x:160,y:150,label:'Darren has a new
   await say('shermian','A dentist. Lovely. I have lovely teeth.','evil');
   await N('She smiles to show you. All of them. Then she walks away, and she doesn’t believe a word, and Hasan sits down on the floor between the shelves with his head between his knees.');
   await walk('shermian',340,60);remove('shermian');
-  await walk('darren',146,50);await say('darren','(sitting down next to him, shoulder to shoulder) Step eleven still counts. You were brave for nine seconds. I timed it.','happy');
+  await walk('darren',146,50);await say('darren','(sitting down next to him, shoulder to shoulder) Step eleven still counts. You were brave for four whole seconds. I timed it.','happy');
   crew().sherKnows=1}
  else if(c===1){
   await say('darren','My mum’s the lead inspector, miss. She’ll be in the hall on Friday week, front row. She reads everything. She’ll read you.','cold');

@@ -6651,65 +6651,6 @@ hook({mis:'darren',period:8,room:'foodcourt',who:'hasan',label:'Wave at Hasan an
  D.f.darShake=0;return 'stay';
 }});
 
-/* =================================================================
-   NIGHT SHIFT — Hasan’s dad
-   ================================================================= */
-Object.assign(ITEMS,{cupcake:'A birthday cupcake with DAD on it'});
-mission('nightshift',{name:'Night Shift',icon:'🎂',who:['hasan','pat'],
- blurb:'Hasan’s dad drives a cab at night. He’s asleep when Hasan’s up and gone when Hasan gets home. Today’s his birthday. Hasan hasn’t said happy birthday to his face in three years.',
- parts:['Break: Hasan’s quiet','Lunch: Pat’s kitchen','Home time: the cab'],
- tips:['Break, cafeteria. Hasan’s the quiet one.','Lunch, cafeteria. Ask Pat. She’s softer than she looks.','Home time, bus loop. Wait with Hasan.']});
-hook({mis:'nightshift',period:2,room:'canteen',who:'hasan',label:'Ask Hasan why he’s quiet',look:{pose:'phone',ex:'sad'},cond:()=>!D.f.ns1,run:async()=>{
- scene('canteen',{hasan:[240,-1,{y:146,pose:'phone',ex:'sad'}],you:[214,1,{y:152}]});
- await say('hasan','(showing you his phone) He sends me one every morning. Same time. Before he goes to sleep.');
- await dms('Dad','last seen 06:04',[['them','Off to bed. Have a good day son. Dad','Thu 06:03'],['them','Off to bed. Have a good day son. Dad','Fri 06:03'],['me','have a good sleep','Fri 07:40']]);
- await say('hasan','It’s his birthday. He hasn’t said. He never says. He’ll get up at four, have a coffee standing up, and go and drive drunk people home till six.','sad');
- await say('hasan','I want to give him something. Before his shift. To his FACE. I haven’t said happy birthday to his face in three years. He’s always asleep.','sad');
- await say('hasan','Arjun says he works nights so he doesn’t have to look at me. I know that’s not true. It’s just… it sits there. You know?','sad');
- const c=await choose(['“Then we make him a cake and you give it to him. Today.”','“It’s not true. You know it’s not true.”']);
- if(c===1)await say('hasan','I know. I know. Help me make it really obviously not true.','sad');
- else await say('hasan','A cake. I can’t bake. I’ve set fire to toast. Twice. Same toast.','scared');
- D.f.ns1=1;part('nightshift',1);
-}});
-hook({mis:'nightshift',period:4,room:'canteen',who:'pat',label:'Ask Pat for a favour (for Hasan)',look:{pose:null,ex:'smirk'},cond:()=>D.f.ns1&&!has('cupcake')&&!D.done.nightshift,run:async()=>{
- scene('canteen',{pat:[90,1,{y:140}],you:[120,-1,{y:150}]});
- if(!D.dead.hasan)put('hasan',146,-1,{y:148});
- await say('you','Pat. Hasan’s dad works nights. It’s his birthday. Can we borrow your kitchen for ten minutes?');
- await say('pat','(very still, holding a cleaver) …Nights?','smirk');
- await say('pat','My dad worked nights. Down the pit. I used to leave him a jam sandwich on the stairs.','sad');
- await say('pat','Ten minutes. Touch my good knives and I’ll touch you back.','evil');
- await walk('pat',60,40);if(A.hasan)await walk('hasan',76,50);await walk('you',100,50);
- pose('you','saw');const r1=await meter('Mix the batter',{speed:1.05});pose('you',null);
- SFX.fire();await N('Pat puts them in the big oven. While you wait, she tells you about her dad’s jam sandwiches. You’ve never heard her say this many words. Nobody has.');
- const r2=await meter('Pipe DAD on the top',{speed:1.15,zone:.24});
- give('cupcake');
- await say('pat',r2?'(looking at it for a long time) …That’s a real one. He’ll keep that in the cab till it goes hard.':'It says DAB. It’s fine. He’ll know.','sad');
- if(A.hasan)await say('hasan','Thank you, Pat. Seriously. You’re… not what everyone says.','happy');
- await say('pat','Tell anyone and I’ll fry you.','smirk');
- part('nightshift',2);
-}});
-hook({mis:'nightshift',period:7,room:'bus',who:'hasan',label:'Wait with Hasan',look:{ex:'scared',hold:'cupcake'},cond:()=>has('cupcake')&&!D.done.nightshift&&!D.dead.hasan,run:async()=>{
- const cast={hasan:[140,1,{y:150,hold:'cupcake'}],you:[116,1,{y:154}]};if(!D.dead.arjun)cast.arjun=[230,-1,{y:146,pose:'cross'}];
- scene('bus',cast);take('cupcake');
- await say('hasan','He drives past here at quarter past three every day on his way to the rank. He doesn’t stop. He doesn’t know I know.','scared');
- const cab=prop({t:'taxi',x:-70,y:166,layer:30});SFX.rumble();await tw(cab,{x:90},1600,'out');
- await N('A yellow cab pulls in to the bus loop, which it isn’t allowed to do. The driver has the same head as Hasan, older, greyer, with a moustache.');
- put('hasandad',118,1,{y:150});await say('hasandad','(leaning out of the window) Hasan? Is everything okay? Did something happen?','shock');
- await walk('hasan',130,50);pose('hasan','hold');
- await say('hasan','Happy birthday, Dad.','closed');
- await N('His dad looks at the cupcake. Then at Hasan. Then he gets out of the cab, which you can tell is the first time he’s stopped this cab in daylight in a long time.');
- await say('hasandad','…You remembered.','cry');
- await say('hasan','I always remember. You’re just always asleep.','sad');
- pose('hasan','hug');pose('hasandad','hug');SFX.heart();
- await N('He hugs Hasan in the middle of the bus loop, in front of everyone. Hasan hugs him back with the cupcake still in one hand.');
- await say('hasandad','I drive nights so you can have days. That’s all it is. I’m sorry I miss them.','cry');
- await say('hasan','Can you come to the mall? For ten minutes? Before your shift?','happy');
- await say('hasandad','(checking his watch, then not checking it) …Get in. You too, bro.','happy');
- pose('hasan',null);pose('hasandad',null);
- if(A.arjun){await N('Across the loop, Arjun is watching. For once he doesn’t say anything. After a while he looks at the ground.');await say('arjun','(to nobody) …Happy birthday, Mr. Hasan’s dad.','sad')}
- bond('hasan',1);
- await complete('nightshift');
-}});
 
 </script>
 <script>
@@ -9271,10 +9212,9 @@ HOOK.update=(dt,rdt)=>{
 {let stuckT=0;const _hu=HOOK.update;HOOK.update=(dt,rdt)=>{_hu&&_hu(dt,rdt);const idle=!busy&&panelMode!=='roam'&&!DL&&!CH&&!MINI&&!anyOverlay()&&D&&D.room&&$('menu').hidden;stuckT=idle?stuckT+rdt:0;if(stuckT>2.5){stuckT=0;roam()}}}
 
 /* ---------- 3. items you can see, walk to and pick up ---------- */
-Object.assign(ITEMS,{inhaler:'Kenneth’s inhaler',thermos:'Hasan’s dad’s thermos',ladle:'Pat’s lucky ladle',shorts:'Omer’s shorts'});
+Object.assign(ITEMS,{inhaler:'Kenneth’s inhaler',ladle:'Pat’s lucky ladle',shorts:'Omer’s shorts'});
 {const _dh=drawHeld;drawHeld=function(it,x,y,d){
  if(it==='inhaler'){R(x-2,y-4,3,6,'#3a7ad8');R(x-2,y+1,6,2,'#3a7ad8');R(x-2,y-4,3,1,'#9ac0f0');return}
- if(it==='thermos'){R(x-2,y-8,5,10,'#b8bcc4');R(x-2,y-8,5,2,'#3a4a6a');R(x-1,y-5,1,6,'#e8ecf0');R(x+3,y-5,1,4,'#8a8e98');return}
  if(it==='ladle'){R(x-1,y-9,1,8,'#c8ccd4');R(x-3,y-1,5,3,'#c8ccd4');R(x-2,y,3,1,'#9a9ea8');return}
  if(it==='shorts'){R(x-4,y-4,9,3,'#1a2a6a');R(x-4,y-1,4,4,'#1a2a6a');R(x+1,y-1,4,4,'#1a2a6a');R(x-4,y-4,9,1,'#f0f0f0');return}
  return _dh(it,x,y,d)}}
@@ -9310,25 +9250,6 @@ hook({mis:'inhaler',period:2,room:'gym',who:'kenneth',label:'Give Kenneth his in
  bond('kenneth',1);await complete('inhaler');return 'stay';
 }});
 
-/* ---- Hasan’s dad’s thermos ---- */
-errand({id:'thermos',name:'The Thermos',icon:'☕',who:['hasan','hasandad'],
- blurb:'Hasan’s dad dropped him off on the way home from his night shift and his thermos fell out of the cab. Ms. Sherman took it to Lost Property. It was Hasan’s grandad’s.',
- tips:['Before school, the bus loop. Hasan is staring at the road.','Break or lunch, the Main Corridor. The Lost Property box at the far left, against the back wall. Then find Hasan in the Cafeteria.']});
-hook({mis:'thermos',period:0,room:'bus',who:'hasan',label:'Ask Hasan why he’s staring at the road',look:{ex:'sad'},cond:()=>!D.f.th1&&!D.done.thermos,run:async()=>{
- await say('hasan','My dad’s thermos fell out of the cab when he dropped me off. Ms. Sherman picked it up and put it in Lost Property. She said “finders keepers” and laughed for a really long time.','sad');
- await say('hasan','It was my grandad’s. It’s got a dent where he dropped it on the ferry in 1979. Dad drinks his tea out of it every night at four a.m. He’ll notice. He’ll pretend he didn’t notice.','sad');
- D.f.th1=1;part('thermos',1);return 'stay';
-}});
-spot({room:'corridor',period:[2,4],x:30,y:138,item:'thermos',label:'Dig the thermos out of Lost Property',short:'LOST PROPERTY',cond:()=>D.f.th1&&!has('thermos')&&!D.done.thermos,run:async()=>{
- pose('you','reach');await wait(300);pose('you',null);
- give('thermos');await N('Lost Property: forty-one single gloves, a retainer, a whole trumpet, and at the bottom, a dented silver thermos that still smells like cardamom.');return 'stay';
-}});
-hook({mis:'thermos',period:[2,4],room:'canteen',who:'hasan',label:'Give Hasan the thermos',look:{ex:'sad'},cond:()=>has('thermos')&&!D.done.thermos,run:async()=>{
- takeItem('thermos');hold('hasan','thermos');
- await say('hasan','(holding it with both hands) The ferry dent. That’s the ferry dent.','cry');
- await say('hasan','I’m going to put it back in the cab before he wakes up. He’ll never know it was gone. That’s the best version. Him never knowing.','happy');
- hold('hasan',null);bond('hasan',1);await complete('thermos');return 'stay';
-}});
 
 /* ---- Pat’s ladle ---- */
 errand({id:'ladle',name:'The Lucky Ladle',icon:'🥄',who:['pat','coach'],
@@ -12204,7 +12125,6 @@ function MOREGOSSIP(){const g=[];if(!D||!D.f)return g;
  if(D.done.farewell)g.push('did you see the chalk on the bus loop','i read voicemail six and cried a little');
  if(darDate())g.push('hasan and the swim team guy?? the goggles guy??');
  if(D.done.stepeleven)g.push('hasan jumped in the deep end and he CAN’T SWIM','the pool drain took a whole ankle. almost');
- if(D.done.nightshift)g.push('hasan’s dad pulled up in a cab and HUGGED him');
  if(D.done.toby)g.push('toby from ohio is kind of iconic');
  return g}
 
@@ -13917,10 +13837,10 @@ const GOALS={
  emergency:'Prank Corey with his own curl cream.',heads:'Survive Mr. Grieve’s French Revolution.',stilllife:'Get Marcus out of Miss Dahl’s still life alive.',
  pitch:'Get Kenneth through his singing solo.',delete:'Shut down HIGHGATE OS.',breath:'Survive Mrs. Tarn’s breath test.',measure:'Stop Mr. Oakes measuring Dheva for a coffin.',
  sleepy:'Don’t let Dr. Lyle hypnotize you out of a window.',talent:'Win Mr. Adam’s talent show.',darren:'Find out who “D” is and help Hasan answer him.',
- nightshift:'Help Hasan say happy birthday to his dad.',roast:'Win the Roast Table.',cheeks:'Help Cheeks & Cheek-Clapper finish their movie.',pits:'Survive Aidan’s deodorant.',
+ roast:'Win the Roast Table.',cheeks:'Help Cheeks & Cheek-Clapper finish their movie.',pits:'Survive Aidan’s deodorant.',
  toby:'Help Sean deal with Toby liking him.',phone:'Get Arjun’s phone back from Ms. Sherman.',lockdown:'Survive the lockdown. Find out what’s in the school.',
  crew:'Prove the teachers are killing kids before Inspection Day.',crew_locker:'Get Tyler’s notebook out of his locker.',crew_dark:'Get the night camera footage.',
- crew_record:'Get Mr. Adam on the record about 1987.',flimbus:'Find out what “mickther” means.',inhaler:'Find Kenneth’s inhaler.',thermos:'Get Hasan’s dad’s thermos back.',
+ crew_record:'Get Mr. Adam on the record about 1987.',flimbus:'Find out what “mickther” means.',inhaler:'Find Kenneth’s inhaler.',
  ladle:'Get Pat’s lucky ladle back from Coach.',shorts:'Find Omer’s shorts.',vapes:'Deal with the vape kids.',beef:'Stop Omer and Arjun killing each other. Or watch.',
  staffroom:'Find out who ate Ms. Loach’s yogurt.',passing:'Stop for things that happen in the halls between classes.',
  farewell:'Help Sean say goodbye to Stella properly.',stepeleven:'Find out what step eleven is.',kim:'Find out what Mr. Kim did with Alex.',window:'Get Corey and Abby together.',brett:'Help Corey with Abby’s boyfriend, Brett. Permanently.'
@@ -14373,12 +14293,6 @@ const RIDE=[
   await say('sean','So we both stay up.','blush');
   await say('stella','(quieter, to you) He made a spreadsheet. Of the next four years. Every holiday. Every flight. He color-coded it.','cry');
  }},
- {id:'dadcab',w:10,cond:()=>(D.done.stepeleven||D.done.nightshift)&&!D.f.rideHD&&onBus('hasan'),run:async()=>{
-  D.f.rideHD=1;
-  await N('A yellow cab pulls up next to the 43 at the lights. Hasan’s dad, on his way to the rank. He honks twice. He waves at Hasan like Hasan is the only person on the bus.');
-  await say('hasan','(waving back, pretending to be embarrassed, not embarrassed at all) He does that now. Every day. Since the birthday. He drives a whole extra block to do it.','happy');
-  if(D.done.stepeleven)await say('hasan','He asked if Darren wants to come for dinner Sunday. My mom’s making the thing. THE thing. She only makes the thing for funerals and weddings.','blush');
- }},
  {id:'retainer',w:10,cond:()=>P.crew&&P.crew.ev&&P.crew.ev.retainer&&!P.crew.rideRet&&onBus('hasan'),run:async()=>{
   crew().rideRet=1;save();
   await N('Hasan has the sandwich bag with Tyler’s retainer in it on his knee. He’s supposed to have given it to Kenneth for the File. He hasn’t.');
@@ -14505,7 +14419,7 @@ NIGHT.push(
    woods, and everybody starts bringing something. One day, in a locked
    classroom, it goes off. The kids clean up after themselves.
    ===================================================================== */
-const METAL=['lockpick','key','padlock','compass','chucks','extinguisher','firstaid','bytephone','knife','energy','ladle','thermos'];
+const METAL=['lockpick','key','padlock','compass','chucks','extinguisher','firstaid','bytephone','knife','energy','ladle'];
 const detectorsOn=()=>D&&!D.weekend&&cal()>=8&&cal()<=12;
 const metalOn=()=>(D.items||[]).filter(i=>METAL.includes(i));
 DEATHS.detector={name:'Random Screening',desc:'It rang. Coach was standing right there with a javelin.',hint:'Week two: the front doors have a metal detector. Stash your metal stuff in the hedge, or go round the back through the woods.'};
@@ -14905,53 +14819,6 @@ hook({mis:'firstfight',period:7,room:'bus',who:'sean',label:'Stand with Sean whi
 }});
 tipsFrom('firstfight',()=>!D.f.ff1?'Find Sean (Library at break, Playing Field at lunch). He’s hiding from Stella.':!D.f.ff2?'Find Stella (Library at break, Playing Field at lunch).':'Home time, the bus loop. Stand with Sean.');
 
-/* =====================================================================
-   HASAN’S MOM
-   ===================================================================== */
-mission('tellmom',{name:'Hasan’s Mom',icon:'🧺',who:['hasan','hasanmom','pat'],goal:'Help Hasan through his mom finding out about Darren.',
- blurb:'Hasan’s mom found Darren’s laminated list in the wash. Two days ago. She hasn’t said anything. Not one word.',
- parts:['The list in the wash','Pat','Pick-up'],tips:['Break or lunch, the Cafeteria. Hasan isn’t eating.']});
-hook({mis:'tellmom',period:[2,4],room:'canteen',who:'hasan',label:'Ask Hasan why he isn’t eating',look:{ex:'sad'},cond:()=>typeof darDate==='function'&&darDate()&&!D.f.tm1,run:async()=>{
- scene('canteen',{hasan:[160,1,{y:148,ex:'sad'}],you:[134,1,{y:154}]},true);
- await say('hasan','My mom found the list. Darren’s list. It went through the wash in my jeans. Laminated. It came out perfect. That’s the problem with lamination.','sad');
- await say('hasan','She put it on my bed. Folded. On my pillow. She hasn’t said anything. Two days. She made my favorite dinner both nights. She just watches me eat it.','scared');
- await say('hasan','If she yelled I’d know. The quiet’s the worst part. The quiet could be anything.','cry');
- const c=await choose(['“Do you want to tell her first? Before she says anything?”','“Maybe the dinner IS what she’s saying.”']);
- await say('hasan',c===0?'I don’t know HOW. There’s no laminated list for this. Darren would make one. I can’t ask Darren. That’s too weird.':'(very still) …I didn’t think about that. I didn’t think about that at all.','sad');
- await say('hasan','Pat knows everybody’s mom. Pat knows everything. Ask Pat. Please. I can’t ask Pat. Pat scares me.','scared');
- D.f.tm1=1;part('tellmom',1);
-}});
-hook({mis:'tellmom',period:[2,4],room:'canteen',who:'pat',label:'Ask Pat about Hasan’s mom',look:{ex:'smirk'},cond:()=>D.f.tm1&&!D.f.tm2,run:async()=>{
- scene('canteen',{pat:[90,1,{y:140}],you:[120,-1,{y:150}]},true);
- await say('you','Pat. Hasan’s mom found out he likes a boy. She’s not saying anything. He’s scared.');
- await say('pat','(stopping the ladle) …Mm.','sad');
- await say('pat','My boy told me at the kitchen table when he was fifteen. Spaghetti night. I said the wrong thing. For one whole day, I said the wrong thing.','sad');
- await say('pat','Then I spent twenty years saying the right thing. He’s married now. Nice fella. Does my taxes.','happy');
- await say('pat','Tell Hasan his mom gets one day. Everybody’s mom gets one day. Then watch what she does, not what she says. Moms say stupid stuff. They do the dinners.','sad');
- hold('pat','cookie');await wait(200);hold('pat',null);
- await N('She gives you two cookies wrapped in a napkin. One for Hasan. One for you. She doesn’t say which is which.');
- D.f.tm2=1;part('tellmom',2);
- return 'stay';
-}});
-hook({mis:'tellmom',period:7,room:'bus',who:'hasan',label:'Wait with Hasan. His mom is picking him up.',look:{ex:'scared'},cond:()=>D.f.tm2&&!D.done.tellmom&&!D.dead.hasan,run:async()=>{
- scene('bus',{hasan:[150,1,{y:150,ex:'scared'}],you:[124,1,{y:154}]},true);cue('sad');
- await say('hasan','She texted. “I’m picking you up today.” Full stop. My mom never uses full stops. She uses six emojis per word.','scared');
- const car=pprop({t:'car',x:-80,y:170,col:'#8a6a4a',driver:1,layer:40});SFX.rumble();await tw(car,{x:200},1600,'out');
- put('hasanmom',230,-1,{y:150});
- await N('A brown car pulls in. A woman gets out in a long cardigan, holding something. It’s the list. Laminated. She’s holding it with both hands.');
- await walk('hasanmom',180,40);
- await say('hasanmom','(very carefully, like she practiced it in the car) Hasan. Step eleven is blank.','sad');
- await say('hasan','…Mom—','scared');
- await say('hasanmom','Does he know he can come for dinner? He should come for dinner. Does he eat lamb? I don’t know anything about him. I want to know things about him.','cry');
- await say('hasan','(very small) You’re not mad?','cry');
- await say('hasanmom','I was quiet because I was scared I’d say it wrong. Your grandmother said it wrong to your uncle and he didn’t come home for nine years. I wasn’t going to say it wrong.','cry');
- pose('hasan','hug');pose('hasanmom','hug');SFX.heart();
- await N('She holds him in the middle of the bus loop with the laminated list still in her hand, pressed flat against his back, and she doesn’t let go even when the 43 honks.');
- await say('hasanmom','(over his shoulder, squinting at you) And you. Whoever you are. Tell the swimmer: Sunday, six o’clock, shoes off. And if he breaks my son’s heart I will find out where he swims.','smirk');
- pose('hasan',null);pose('hasanmom',null);
- await complete('tellmom');
-}});
-tipsFrom('tellmom',()=>!D.f.tm1?'Break or lunch, the Cafeteria. Hasan isn’t eating.':!D.f.tm2?'Break or lunch, the Cafeteria: ask Lunch Lady Pat.':'Home time, the bus loop. Hasan’s mom is picking him up.');
 
 /* =====================================================================
    OHIO — Toby
@@ -15181,7 +15048,6 @@ tipsFrom('quiet',()=>!D.f.qu1?'Break or lunch, the Main Corridor. Nivaan hit a h
 
 /* nights */
 if(typeof NIGHT!=='undefined')NIGHT.push(
- {cond:()=>D.done.tellmom&&!D.f.n13,set:()=>D.f.n13=1,from:'Hasan',msgs:[['them','darren is coming sunday','21:30'],['them','my mom bought a new tablecloth','21:30'],['them','we have never owned a tablecloth','21:31'],['them','im gonna throw up. good throw up','21:31']]},
  {cond:()=>D.done.giant&&!D.f.n14,set:()=>D.f.n14=1,from:'Jacob',msgs:[['them','maddie drew a picture of mr adams car','20:45'],['them','its just a rectangle with a sad man in it','20:45'],['them','shes giving it to him tomorrow','20:46']]},
  {cond:()=>D.done.mended&&!D.f.n15,set:()=>D.f.n15=1,from:'Abby',msgs:[['them','i played it til 3am','03:02'],['them','the neighbors banged on the wall','03:02'],['them','i played it louder','03:03'],['them','tell corey thank u. no dont. i’ll tell him','03:04']]},
  {cond:()=>D.done.grandad&&!D.f.n16,set:()=>D.f.n16=1,from:'Arjun',msgs:[['them','i called my mom','22:10'],['them','like grandad said','22:10'],['them','she cried for 20 min. annoying. anyway','22:11'],['them','tell anyone and ur dead','22:11']]}
@@ -16621,7 +16487,7 @@ function weaponAng(item,pose){const W=GRIP_W[item];const a=GRIP_POSE_ANG[pose];r
 
 /* ---------- quest pickups that were invisible to the guidance ---------- */
 {const TAG=[[/^Take the shovel from the groundskeeper/,'brett'],[/^Look at David’s laptop/,'tea'],[/^Steal Coach’s bucket of field chalk/,'farewell'],
- [/^Pick up the blue inhaler/,'inhaler'],[/^Dig the thermos out of Lost Property/,'thermos'],[/^Grab the ladle off Coach’s cart/,'ladle'],[/^Climb the goal and get Omer’s shorts/,'shorts'],
+ [/^Pick up the blue inhaler/,'inhaler'],[/^Grab the ladle off Coach’s cart/,'ladle'],[/^Climb the goal and get Omer’s shorts/,'shorts'],
  [/^Listen to the teachers shouting in the parking lot/,'staffroom'],[/^Sneak into the staff room/,'staffroom']];
  for(const s of SPOTS){if(s.mis||!s.label)continue;for(const [re,m] of TAG)if(re.test(s.label)&&MIS[m]){s.mis=m;break}}}
 
@@ -20269,8 +20135,6 @@ J('measure',1,{k:'fetch',nm:'safety goggles',sh:'tool',from:'science',x:150,get:
 J('talent',1,{k:'fetch',nm:'the wireless mic',sh:'mic',from:'drama',x:80,get:'Grab the wireless mic from Drama (for the show)',thx:null});
 J('darren',1,{k:'fetch',nm:'a blue hoodie',sh:'cloth',from:'gym',x:60,get:'Find a blue hoodie in the gym lost and found (D said wear blue)',give:'Give Hasan the blue hoodie',thx:'Blue. It’s blue. Oh no. It suits me. OH NO.'});
 J('darren',2,{k:'shove',tgt:'arjun',room:'canteen',lab:'Shove Arjun before he roasts Hasan',why:'Arjun’s winding up a joke about Hasan. Shut it down.',react:'WHAT DID I DO. I HAVEN’T EVEN SAID IT YET.'});
-J('nightshift',1,{k:'fetch',nm:'a bag of flour',sh:'bag',from:'foodtech',x:200,get:'Grab a bag of flour from Food Tech',give:'Hand Pat the flour',thx:'Flour. Good. Now get out of my light.'});
-J('nightshift',2,{k:'fetch',nm:'birthday candles',sh:'box',from:'foodtech',x:60,get:'Grab birthday candles from Food Tech',give:'Hand Hasan the candles',thx:'Candles. For a man who drives drunk people home. He’s gonna cry and say it’s allergies.'});
 J('cheeks',0,{k:'fetch',ask:'Casting call says “bring a headshot.” I don’t have a headshot. I have a FACE. Get the art room to print one.',nm:'a headshot',sh:'paper',from:'art',x:120,get:'Print Nivaan a headshot on the art room printer',give:'Hand Nivaan the headshot',thx:'I look like a missing person. Perfect. Directors love that.'});
 J('cheeks',1,{k:'fetch',nm:'fake blood',sh:'bottle',from:'drama',x:180,get:'Grab a bottle of fake blood from Drama (for the shoot)',thx:null});
 J('pits',1,{k:'fetch',nm:'the confiscated body spray',sh:'bottle',from:'gym',x:280,get:'Grab the confiscated body spray from the gym',give:'Hand Aidan the body spray',thx:'(spraying it at the ceiling like a fire extinguisher) For the pits. For ALL of us.'});
@@ -20315,7 +20179,6 @@ J('grandad',1,{k:'fetch',nm:'a flashlight',sh:'light',from:'woodwork',x:120,get:
 J('bayonet',1,{k:'fetch',nm:'an air horn',sh:'can',from:'gym',x:120,get:'Grab Coach’s air horn from the gym (cannon sound effects)',thx:null});
 J('nursecal',2,{k:'fetch',nm:'the ICT webcam',sh:'phone',from:'ict',x:260,get:'Borrow the webcam off an ICT computer (evidence)',thx:null});
 J('toby',2,{k:'fetch',nm:'a Sharpie',sh:'tool',from:'art',x:260,get:'Grab a Sharpie from the art room (for the plan)',give:'Hand Sean the Sharpie',thx:'Sharpie. Permanent. Like my mistakes. Okay, let’s go.'});
-J('tellmom',1,{k:'fetch',nm:'a box of tissues',sh:'box',from:'nurse',x:220,get:'Grab a box of tissues from the nurse’s office',give:'Hand Pat the tissues',thx:'They’re not for me. (they’re for her) …Some of them are for me.'});
 J('instella',2,{k:'fetch',nm:'flowers',sh:'flower',from:'courtyard',x:240,get:'Pick some flowers in the courtyard (for Sean’s big moment)',give:'Hand Sean the flowers',thx:'Flowers. On the field. Like a movie. Like a bad movie. Okay.'});
 J('breath',0,{k:'fetch',nm:'a nose clip',sh:'tool',from:'nurse',x:60,get:'Get a nose clip from Nurse Pam (before swimming)',thx:null});
 J('sleepy',0,{k:'fetch',nm:'a pocket watch',sh:'tool',from:'drama',x:260,get:'Grab a shiny pocket watch from the Drama prop box (before Psychology)',thx:null});
@@ -23662,7 +23525,7 @@ function chatGame(title,sub,rounds){if(TEST)return Promise.resolve({win:true,sus
 }
 
 /* =================== FOCUS: fewer, better quests on screen =================== */
-const FEATURED=new Set(['crew','crew_locker','crew_dark','crew_record','kim','dopple','headcase','pauljones','brett','window','darren','stepeleven','tellmom','nightshift','jade','beef','giant','stall','upthere','tea','catfish','bigscore','voss','oldbat','staffroom','mended','toby','farewell','instella','firstfight','lockdown','steal_stella','steal_mia','flimbus','ringing','stain'].concat(typeof FILTHY!=='undefined'?FILTHY:[]));
+const FEATURED=new Set(['crew','crew_locker','crew_dark','crew_record','kim','dopple','headcase','pauljones','brett','window','darren','stepeleven','jade','beef','giant','stall','upthere','tea','catfish','bigscore','voss','oldbat','staffroom','mended','toby','farewell','instella','firstfight','lockdown','steal_stella','steal_mia','flimbus','ringing','stain'].concat(typeof FILTHY!=='undefined'?FILTHY:[]));
 const focusOn=()=>!P.set||P.set.focus!==false;
 const isFeat=m=>FEATURED.has(m)||/^crew/.test(m);
 /* new, unstarted side quests that aren't featured don't nag: no "!" marks, no walk-ups, not in the log */
@@ -23945,13 +23808,15 @@ const SLIDE={t:'',lock:0};
    4. AFTER     Where they are now: a payoff for every story you finished.
    ===================================================================== */
 const FIN={};
-const EVL={sketchbook:'Abby’s sketchbook (nineteen Fridays)',voicenote:'Sean’s voice note to Stella',retainer:'Tyler’s retainer',jars:'The fourteen jars labelled AIDAN',ledger:'Mr. Voss’s ledger (GRAMS)',volunteers:'Mr. Kim’s VOLUNTEERS wall',boiler:'The four names from 1987',register:'The 1987 register',notebook:'Tyler’s notebook',footage:'The night camera footage',confession:'Mr. Adam, on the record',rota:'Pat’s staff rota',finch:'Oliver Finch, alive',sher87:'Ms. Sherman’s memory of 1987'};
+const EVL={timesheets:'Mr. Adam’s sign-out sheets (Love, Miss)',seats:'Paul Jones’s seating plan of the 43',hatchkey:'Coach’s lanyard (the boiler hatch key)',sketchbook:'Abby’s sketchbook (nineteen Fridays)',voicenote:'Sean’s voice note to Stella',retainer:'Tyler’s retainer',jars:'The fourteen jars labelled AIDAN',ledger:'Mr. Voss’s ledger (GRAMS)',volunteers:'Mr. Kim’s VOLUNTEERS wall',boiler:'The four names from 1987',register:'The 1987 register',notebook:'Tyler’s notebook',footage:'The night camera footage',confession:'Mr. Adam, on the record',rota:'Pat’s staff rota',finch:'Oliver Finch, alive',sher87:'Ms. Sherman’s memory of 1987'};
 const evList=()=>{const c=crew(),out=[];for(const k in EVL)if(c.ev&&c.ev[k])out.push({k,t:EVL[k]});for(const v in (c.saved||{}))if(K[v])out.push({k:'saved_'+v,t:K[v].n+', who you rescued'});return out};
 const allyPool=()=>{const c=crew(),a=Object.keys(c.allies||{}).concat(Object.keys(c.saved||{}));return [...new Set(a)].filter(k=>K[k]&&!(D.dead&&D.dead[k])&&!(window.EDITION_CUT||[]).includes(k))};
 const doneV=m=>(D.done&&D.done[m])||(P.done&&P.done[m]);
 
 inspectionDay=async function(){
- const c=crew();FIN.score=0;FIN.used={};FIN.on=1;updateLoc&&updateLoc();cue('tension',true);
+ const c=crew();FIN.score=0;FIN.used={};FIN.on=1;document.body.classList.add('finale');
+ if(typeof CHX!=='undefined')for(const e of Object.values(CHX))if(!e._fin){const c=e.cond,r=e.run;e.cond=function(){return !FIN.on&&(!c||c.apply(this,arguments))};e.run=async function(){if(FIN.on)return 'stay';return r.apply(this,arguments)};e._fin=1}
+updateLoc&&updateLoc();cue('tension',true);
  /* nothing random interrupts the finale: mark every period's chaos roll as used */
  D.f.chaos=D.f.chaos||{};for(let pd=0;pd<8;pd++)D.f.chaos['p'+cal()+'_'+pd]=1;if(typeof STARE!=='undefined')STARE.next=T+1e9;if(typeof HEADSHOWN!=='undefined')HEADSHOWN=cal();
  await card('INSPECTION DAY','WEEK 2 · FRIDAY · 8:41 AM',2200);
@@ -23974,17 +23839,19 @@ inspectionDay=async function(){
   scene(o.room,{you:[40,1,{y:156}]},true);cue('tension',true);
   if(o.t&&K[o.t]&&!D.dead[o.t])put(o.t,200,-1,{y:146,ex:'evil'});
   if(o.room==='hall'&&typeof SLIDE!=='undefined'){SLIDE.t='NO SIGNAL';SLIDE.lock=1}
+  const chainP=o.room==='corridor'?prop({t:'halldoors',x:286,y:108,layer:-60}):null;
   await card(o.label,'',900);
   const lv=typeof lovers==='function'?lovers():[];const lk={coach:'corey',null:'sean',voss:'hasan'}[String(o.t)];
   const k=(lk&&lv.includes(lk)&&!FIN.used[lk]&&pool.includes(lk)?lk:null)||o.pref.find(p=>pool.includes(p)&&!FIN.used[p])||pool.find(p=>!FIN.used[p]&&!o.pref.includes('x'));
   let ok;
-  if(k){const c2=await choose(['Send '+K[k].n+'.','Do it yourself.'],o.label);if(c2===0){FIN.used[k]=1;put(k,-14,1,{y:152});await walk(k,150,140);if(LOVE_ALLY[k]&&loveOn(k)){FIN.used[LOVE[k].b]=1;await LOVE_ALLY[k](o)}else await o.ally(k);ok=true;FIN.score++}}
+  if(k){const c2=await choose(['Send '+K[k].n+'.','Do it yourself.'],o.label);if(c2===0){FIN.used[k]=1;put(k,-14,1,{y:152});await walk(k,o.room==='corridor'?248:150,140);if(k==='jacob'&&(crew().ev||{}).hatchkey&&o.t==='coach'){await say('jacob','(walking up the stairs, slowly) Hey, Coach.','cold');await N('Jacob doesn’t push. He just stands on the step below Coach, all of him, and doesn’t move. Coach looks at him for a long time. Then Coach walks back up the stairs and out of the way.');remove('coach')}else if(LOVE_ALLY[k]&&loveOn(k)){FIN.used[LOVE[k].b]=1;await LOVE_ALLY[k](o)}else await o.ally(k);ok=true;FIN.score++}}
   if(ok===undefined)ok=await o.solo();
+  if(chainP){chainP.open=1;SFX.crunch&&SFX.crunch();shake(.3);await wait(TEST?0:500)}
   if(!ok){A.you.ex='hurt';await N(pick(['You get through. Barely. It costs you time, and the teachers know you’re coming now.','You make it, bleeding a bit, and late.']));FIN.late=(FIN.late||0)+1}
   else if(!k||!FIN.used[k])FIN.score++;
  }
  /* ---------- 2. SHOWDOWN ---------- */
- const kids=alive([...new Set((typeof lovers==='function'?lovers():[]).flatMap(k=>[LOVE[k].a,LOVE[k].b]).concat(['david','hasan','arjun','stella','sean','omer','nivaan','kenneth','corey','abby','marcus','paul','jacob','angelo','dheva','alex']))]);
+ const kids=alive([...new Set((typeof lovers==='function'?lovers():[]).flatMap(k=>[LOVE[k].a,LOVE[k].b]).concat((crew().ev||{}).hatchkey?['jacob']:[]).concat(['david','hasan','arjun','stella','sean','omer','nivaan','kenneth','corey','abby','marcus','paul','jacob','angelo','dheva','alex']))]);
  const teachers=alive(['shermian','voss','coach','kim']).filter(t=>K[t]);
  const cast={adam:[160,1,{y:118,pose:'conduct'}],insp1:[186,-1,{y:118}],insp2:[206,-1,{y:118}],you:[40,1,{y:160,hold:'paper'}]};
  teachers.forEach((t,i)=>cast[t]=[236+i*16,-1,{y:126}]);kids.slice(0,10).forEach((n,i)=>cast[n]=[60+i*18,-1,{y:150+(i%2)*6}]);
@@ -23994,9 +23861,9 @@ inspectionDay=async function(){
  await say('adam','(at the podium, shaking, but looking straight at you) …The floor is yours.','scared');
  const OBJ=[
   {t:'voss',line:'Those jars? Science. Pickled vegetables. Educational. I have the receipts. Mostly.',beat:['ledger','jars','saved_priya','saved_devon'],crack:'(a jar slips out of his coat pocket and smashes on the floor. Nobody looks at what was inside. Everybody looks at what was inside.)'},
-  {t:'kim',line:'Magic club is a registered after-school activity! The children LOVE magic club.',beat:['voicenote','volunteers','saved_lily'],crack:'(his smile stays exactly where it is while the rest of his face gives up)'},
-  {t:'coach',line:'Kids get hurt in sport. It’s called building character. Some characters don’t make it.',beat:['sketchbook','saved_mateo','footage','register','rota'],crack:'(he blows his whistle at the inspectors. Nobody moves. He blows it again, smaller.)'},
-  {t:'shermian',line:'1987 was a tragedy. An ACCIDENT. Nobody could have known about that boiler.',beat:['boiler','retainer','finch','sher87','notebook','saved_theo'],crack:'(for the first time in thirty-nine years, she has nothing to say)'}];
+  {t:'kim',line:'Magic club is a registered after-school activity! The children LOVE magic club.',beat:['voicenote','seats','volunteers','saved_lily'],crack:'(his smile stays exactly where it is while the rest of his face gives up)'},
+  {t:'coach',line:'Kids get hurt in sport. It’s called building character. Some characters don’t make it.',beat:['sketchbook','hatchkey','seats','saved_mateo','footage','register','rota'],crack:'(he blows his whistle at the inspectors. Nobody moves. He blows it again, smaller.)'},
+  {t:'shermian',line:'1987 was a tragedy. An ACCIDENT. Nobody could have known about that boiler.',beat:['timesheets','boiler','retainer','finch','sher87','notebook','saved_theo'],crack:'(for the first time in thirty-nine years, she has nothing to say)'}];
  const evs=evList();
  for(const o of OBJ){if(!A[o.t])continue;
   await walk(o.t,A[o.t].x-12,60);face(o.t,-1);await say(o.t,o.line,'smirk');
@@ -24009,6 +23876,9 @@ inspectionDay=async function(){
    else if(e.k==='finch'&&K.oliver){put('oliver',334,-1,{y:150});await walk('oliver',280,70);await say('oliver','My name is Oliver Finch. I was supposed to be in that boiler room in 1987. Somebody told me to tell someone. I’m telling someone.','sad')}
    else if(e.k==='sketchbook'&&A.abby){A.abby.ex='cold';await say('abby','(standing up on her chair) I drew it. Every Friday for two years. Nineteen bags. Corey sat in front of that window every day so nobody would see me drawing it.','cold');if(A.corey)await say('corey','(standing up next to her, taking her hand, in front of the entire school) …I just liked the window.','cold')}
    else if(e.k==='voicenote'&&A.stella){await N('Click. Mr. Kim’s voice fills the hall. “Nobody looks for a girl who’s leaving.”');await say('stella',(crew().stellaTaken?'(standing up) He painted a clown nose on me. I don’t remember where I was for forty minutes. ':'(standing up) ')+'I’m the girl who’s leaving. I’m still here.','angry');if(A.sean){await walk('sean',A.stella.x+12,80);await say('sean','(not letting go of her hand) Look at her. Everybody look at her.','angry')}}
+   else if(e.k==='timesheets'&&A.adam){await say('adam','(at the podium, holding up a stack of paper) Twenty-two years of sign-out sheets. Every kid who “transferred”. Every one authorised by the same two words: Love, Miss. I signed the front pages. I never turned one over. I’m turning them over.','cold');A.adam.ex='cold'}
+   else if(e.k==='seats'){if(!A.pauljones)put('pauljones',-14,1,{y:160});await walk('pauljones',36,60);await say('pauljones','(from the back, hood down for once) Every Friday a seat on the 43 goes empty. I drew them. Nobody else noticed. I notice where everyone is.','cold')}
+   else if(e.k==='hatchkey'&&A.jacob){await say('jacob','(standing up, all of him) I took that off him. He was dragging a seventh grader to the cupboard. I pushed him. First time in my life.','cold')}
    else await N('Click. '+e.t+'. On the big screen, in front of everyone.');
    SFX.sting&&SFX.sting();shake(.5);A[o.t].ex='shock';await N(o.crack);FIN.score+=2;FIN['cracked_'+o.t]=1;
    if(o.t==='shermian'&&crew().ev&&crew().ev.sher87&&K.sherman&&!D.dead.sherman){FIN.confess=1}
@@ -24043,19 +23913,20 @@ inspectionDay=async function(){
   return finEnd('exposed')}
  await say('insp1','(looking at the screen, then at his clipboard) Some of this is… concerning. We’ll need more than this.','sad');
  await N('Behind the inspectors, Ms. Sherman closes the hall doors. Gently. And locks them.');cue('fight',true);
- const run=await mash('GET THEM OUT THE SIDE DOOR',{need:28,time:5,info:'The side door. Push everybody through it. MASH!'});
+ if(crew().adamIn&&A.adam){await walk('adam',300,90);await N('Mr. Adam is already at the side door, holding it open with his whole body, his tie over his shoulder.')}
+ const run=await mash('GET THEM OUT THE SIDE DOOR',{need:crew().adamIn?18:28,time:5,info:'The side door. Push everybody through it. MASH!'});
  if(run){await N('You get most of them out. Not all. The inspectors leave by the side door at 11:15 with a rating of “Requires Improvement”.')}
  else{const lb=(typeof lovers==='function'?lovers():[]).map(k=>LOVE[k].b).find(b=>A[b]);const v=lb||kids.find(k=>A[k]);if(v&&A.shermian){await walk('shermian',A[v].x+10,120);SFX.squelch();blood(A[v].x,A[v].y-24,40,null,100,A[v].y+2);kill(v,'lie',{pool:40,bleed:4,spray:50});await N(K.shermian.n+' gets to '+K[v].n+' first.');const lk=Object.keys(LOVE).find(k=>LOVE[k].b===v);if(lk&&A[LOVE[lk].a]){FIN.lost=lk;await N(K[LOVE[lk].a].n+' doesn’t scream. He just sits down on the floor next to '+K[v].n+' and holds on.')}}}
  return finEnd('bloodbath')};
 
 /* ---------- 4. AFTER: where they are now ---------- */
 async function finEnd(v){
- const c=crew();FIN.on=0;c.finale=v;save&&save();crowd=null;
+ const c=crew();FIN.on=0;document.body.classList.remove('finale');c.finale=v;save&&save();crowd=null;
  await complete('crew',v);
  fxState.dark=0;await tw(fxState,{dark:1},900);cue(v==='bloodbath'?'sad':'romance',true);
  await card(v==='confessed'?'SHE CONFESSED':v==='exposed'?'EXPOSED':'NOT ENOUGH','',2000);
  const beats=[];
- const add=(room,cast,line)=>beats.push({room,cast,line});
+ const add=(room,cast,line,pri=2)=>beats.push({room,cast,line,pri});
  if(v!=='bloodbath')add('carpark',{you:[60,1,{y:156}],nivaan:[90,1,{y:152,pose:'phone'}],david:[118,1,{y:152}]},'Fourteen police cars in the bus loop by lunch. Highgate High is closed “pending investigation”. Nivaan’s livestream of it has four million views. David is in every frame.');
  else add('carpark',{you:[60,1,{y:156}],david:[100,1,{y:152,ex:'cry'}]},'The inspectors gave Highgate “Requires Improvement”. School carries on on Monday. Some desks are empty. David sits on the steps outside for a long time.');
  const saved=Object.keys(c.saved||{}).filter(k=>K[k]),gone=Object.keys(c.gone||{}).filter(k=>K[k]);
@@ -24068,14 +23939,18 @@ async function finEnd(v){
  const kim=doneV('kim');if(kim&&K.alex)add('field',{alex:[150,1,{y:150}]},'Alex plays soccer again. He doesn’t laugh at clowns. Nobody asks him to.');
  const dop=doneV('dopple');if(dop)add('corridor',{you:[60,1,{y:156}]},dop==='merged'?'There’s only one Ms. Sherman now. She’s always hungry.':'The stairwell lights work again. Pat gets her walk-in back. Nobody ever finds out where the mop heads went.');
  {const lv=typeof lovers==='function'?lovers():[];
-  if(FIN.lost==='corey')add('trailer',{corey:[140,1,{y:150,pose:'sit'}]},'Corey still sits by the window in the Trailer. Every Period 3 he draws the walkway. He’s not very good. He keeps going.');
-  else if(lv.includes('corey'))add('trailer',{corey:[140,1,{y:150,pose:'sit'}],abby:[162,-1,{y:150,pose:'sit',hold:'guitar'}]},'Corey and Abby still sit by the window in the Trailer. Corey sings now. Badly. On purpose. Abby draws him doing it. The sketchbook’s back pages stay empty.');
-  if(FIN.lost==='sean')add('field',{sean:[150,1,{y:150,pose:'sit',hold:'phone'}]},'Sean still records a voice note every hour. He doesn’t send them anywhere. He just keeps them.');
-  else if(lv.includes('sean'))add('bus',{sean:[140,1,{y:150}],stella:[162,-1,{y:150}]},'Stella’s mom turned the Portland job down. She said she wasn’t moving her daughter away from the only school that ever fought for her. Sean has stopped recording voice notes. He doesn’t need them.');
-  if(FIN.lost==='hasan')add('library',{hasan:[150,1,{y:150,hold:'paper'}]},'Hasan keeps the laminated list in his blazer pocket. Step fourteen is still blank. He won’t fill it in.');
-  else if(lv.includes('hasan'))add('library',{hasan:[140,1,{y:150}],darren:[162,-1,{y:150,hold:'paper'}]},'Darren’s mum shut Highgate down in an afternoon. At dinner, she asks Hasan to pass the salt. Step fifteen.');}
+  if(FIN.lost==='corey')add('trailer',{corey:[140,1,{y:150,pose:'sit'}]},'Corey still sits by the window in the Trailer. Every Period 3 he draws the walkway. He’s not very good. He keeps going.',1);
+  else if(lv.includes('corey'))add('trailer',{corey:[140,1,{y:150,pose:'sit'}],abby:[162,-1,{y:150,pose:'sit',hold:'guitar'}]},'Corey and Abby still sit by the window in the Trailer. Corey sings now. Badly. On purpose. Abby draws him doing it. The sketchbook’s back pages stay empty.',1);
+  if(FIN.lost==='sean')add('field',{sean:[150,1,{y:150,pose:'sit',hold:'phone'}]},'Sean still records a voice note every hour. He doesn’t send them anywhere. He just keeps them.',1);
+  else if(lv.includes('sean'))add('bus',{sean:[140,1,{y:150}],stella:[162,-1,{y:150}]},'Stella’s mom turned the Portland job down. She said she wasn’t moving her daughter away from the only school that ever fought for her. Sean has stopped recording voice notes. He doesn’t need them.',1);
+  if(FIN.lost==='hasan')add('library',{hasan:[150,1,{y:150,hold:'paper'}]},'Hasan keeps the laminated list in his blazer pocket. Step fourteen is still blank. He won’t fill it in.',1);
+  else if(lv.includes('hasan'))add('library',{hasan:[140,1,{y:150}],darren:[162,-1,{y:150,hold:'paper'}]},'Darren’s mum shut Highgate down in an afternoon. At dinner, she asks Hasan to pass the salt. Step fifteen.',1);}
+ if(c.pjSafe&&K.pauljones)add('bus',{pauljones:[120,1,{y:150,pose:'sit'}],you:[142,-1,{y:150,pose:'sit'}]},'Paul Jones sits at the front of the 43 now. Second seat. He still draws the bus from above. Nobody’s crossed out.',1);
+ if((c.ev||{}).hatchkey&&K.jacob)add('field',{jacob:[150,1,{y:150}]},'Jacob still lets people bump into him in the corridor. He just doesn’t move out of the way any more.',1);
+ if(c.adamIn&&K.adam&&v!=='bloodbath')add('foodcourt',{adam:[150,1,{y:150,pose:'sit'}]},'Mr. Adam gives evidence for eleven days straight. On the twelfth he eats noodles in the food court in a cardigan. Nobody has ever seen him look this calm.',1);
  const n=Object.keys(D.done||{}).length;
- for(const b of beats.slice(0,8)){scene(b.room,b.cast,true);fxState.dark=1;await tw(fxState,{dark:.15},700);await N(b.line);await tw(fxState,{dark:1},600)}
+ const first=beats.shift();beats.sort((a,b)=>a.pri-b.pri);beats.unshift(first);
+ for(const b of beats.slice(0,9)){scene(b.room,b.cast,true);fxState.dark=1;await tw(fxState,{dark:.15},700);await N(b.line);await tw(fxState,{dark:1},600)}
  await card('THE END','You finished '+n+' stories. You found '+Object.keys(P.deaths||{}).length+' ways to die. '+saved.length+' kids went home because of you.',4200);
  fxState.dark=0;
  toast('★ Main story: '+(v==='confessed'?'SHE CONFESSED':v==='exposed'?'EXPOSED':'not enough'));return 'ended'}
@@ -24085,13 +23960,13 @@ async function finEnd(v){
 
 /* the couples' own lockdown scenes */
 const LOVE_ALLY={
- corey:async()=>{put('abby',-14,1,{y:148,hold:'guitar'});await walk('abby',100,140);face('abby',1);
-  await N('Abby plants her feet at the bottom of the stairs with her dad’s guitar. The one Corey glued back together. She plays one chord, very loud, and it fills the whole stairwell.');
+ corey:async()=>{put('abby',-14,1,{y:140,hold:'guitar'});await walk('abby',174,140);face('abby',1);
+  await N('Abby goes up two stairs past Corey with her dad’s guitar. The one Corey glued back together. She plays one chord, very loud, and it fills the whole stairwell.');
   await say('corey','(singing. Badly. As loud as he has ever done anything) —AND IF YOU WANT ME YOU KNOW WHERE I’LL BE—','yell');
   await say('coach','NOISE. IN MY STAIRWELL.','angry');
   await N('Coach charges. They run. Corey keeps singing all the way down to the gym, and Abby keeps playing, and you hear the equipment cupboard door slam, and a padlock, and Corey still singing on the other side of it.');
   remove('coach');remove('corey');remove('abby')},
- sean:async()=>{put('stella',-14,1,{y:152,hold:'cutters'});await walk('stella',168,140);
+ sean:async()=>{put('stella',-14,1,{y:152,hold:'cutters'});await walk('stella',270,140);
   await say('stella','(with bolt cutters from the caretaker’s closet) I’m leaving on Saturday. I am not leaving THIS.','angry');
   await N('She hands Sean the cutters. The chain is thick. He leans on them. Nothing. He leans harder.');
   await say('sean','(through his teeth, not looking at her) I love you. I never practiced it. I love you.','angry');
@@ -24105,6 +23980,18 @@ const LOVE_ALLY={
 
 /* no 'next quest' nag line during the finale */
 {const _ul=updateLoc;updateLoc=function(){_ul();if(FIN.on){const c=$('clock');if(c)c.querySelectorAll('.story.next').forEach(e=>e.remove())}}}
+
+/* the hall doors at the end of the corridor, chained shut until somebody cuts it */
+{const _dp=drawProp;drawProp=function(p){if(p.t!=='halldoors')return _dp(p);
+ const x=Math.round(p.x),y=Math.round(p.y);
+ R(x-26,y-92,52,12,'#1a1a22');R(x-25,y-91,50,10,'#7a2030');pxc('MAIN HALL',x,y-89,'#f4e8d0');
+ R(x-23,y-78,46,78,'#2a2026');R(x-22,y-77,21,77,'#6a4a3a');R(x+1,y-77,21,77,'#6a4a3a');
+ R(x-19,y-70,15,22,'#3a4a5a');R(x+4,y-70,15,22,'#3a4a5a');R(x-4,y-40,3,10,'#c8c0a8');R(x+1,y-40,3,10,'#c8c0a8');
+ if(!p.open){for(let i=0;i<9;i++){const cx=x-18+i*4.5,cy=y-36+Math.abs(i-4)*1.5;R(cx,cy,4,2,'#9a9aa4');R(cx+1,cy+1,2,1,'#3a3a44')}
+  R(x-4,y-30,8,7,'#c8a030');R(x-3,y-34,6,4,'#8a8a92');R(x-1,y-28,2,2,'#3a2a10')}
+ else{for(let i=0;i<9;i++)R(x-20+i*4,y-2+(i%2),4,2,'#8a8a94');R(x+16,y-4,7,6,'#c8a030')}}}
+
+{const st=document.createElement('style');st.textContent='body.finale #clock .story.next,body.finale #clock .trkbox{display:none}';document.head.appendChild(st)}
 
 </script>
 <script>
@@ -24243,8 +24130,8 @@ spot({mis:'crew',room:'library',period:[2,4],x:160,y:150,label:'Darren has a new
  cond:()=>!D.weekend&&loveOn('hasan')&&!(crew().ev||{}).inside&&cal()<12,run:async()=>{
  scene('library',{you:[-14,1,{y:156}],hasan:[140,1,{y:150,ex:'scared'}],darren:[162,-1,{y:150,hold:'paper',ex:'happy'}]},true);
  await walk('you',108,80);face('you',1);
- await say('darren','(holding up a laminated sheet) Step ten was meet the family. Done. His mum hugged me for nine seconds. I timed it.','happy');
- await say('hasan','She hasn’t said ONE word to me about it. Not one. But she hugged him for nine seconds.','scared');
+ await say('darren','(holding up a laminated sheet) Step ten was survive lunch with his friends. Done. Arjun only called me “the laminator” four times. I timed it.','happy');
+ await say('hasan','He brought a SPREADSHEET to lunch. Arjun was scared of him. Nobody’s ever been scared FOR me before.','scared');
  await say('darren','So. Step ten point five. You meet MY family. Specifically my mother. Specifically: she’s coming here. Friday week. With a clipboard.','smirk');
  await say('hasan','…Your mum’s a SCHOOL INSPECTOR?','shock');
  await say('darren','Lead inspector. She’s read every report this school has sent since 1987. She says the numbers don’t add up. She says it at dinner. Every dinner.','cold');
@@ -24258,7 +24145,7 @@ spot({mis:'crew',room:'library',period:[2,4],x:160,y:150,label:'Darren has a new
   await say('shermian','A dentist. Lovely. I have lovely teeth.','evil');
   await N('She smiles to show you. All of them. Then she walks away, and she doesn’t believe a word, and Hasan sits down on the floor between the shelves with his head between his knees.');
   await walk('shermian',340,60);remove('shermian');
-  await walk('darren',146,50);await say('darren','(sitting down next to him, shoulder to shoulder) Step eleven still counts. You were brave for nine seconds. I timed it.','happy');
+  await walk('darren',146,50);await say('darren','(sitting down next to him, shoulder to shoulder) Step eleven still counts. You were brave for four whole seconds. I timed it.','happy');
   crew().sherKnows=1}
  else if(c===1){
   await say('darren','My mum’s the lead inspector, miss. She’ll be in the hall on Friday week, front row. She reads everything. She’ll read you.','cold');
@@ -24290,6 +24177,196 @@ spot({mis:'crew',room:'library',period:[2,4],x:160,y:150,label:'Darren has a new
 {const _dh=drawHeld;drawHeld=function(it,x,y,d){
  if(it==='cutters'){R(x-1,y-2,2,10,'#c03030');R(x+1,y-2,2,10,'#a02828');R(x-1,y-8,2,6,'#7a7a82');R(x+1,y-8,2,6,'#9a9aa2');R(x-1,y-10,4,2,'#5a5a62');return}
  return _dh(it,x,y,d)}}
+
+</script>
+<script>
+/* js/corearcs.js */
+'use strict';
+/* =====================================================================
+   HIGHSCHOOL — THE CORE CAST CARRIES THE STORY
+   Three arcs that used to end on their own now feed the File and pay
+   off on Inspection Day (finale hooks live in js/finale3.js).
+   • HEAD CASE → THE SIGN-OUT SHEETS (office): after the bomb, Mr. Adam
+     wants to face the inspectors properly. A deduction puzzle over 22
+     years of sign-out sheets: nobody was on duty every time, but every
+     sheet is signed "Love, Miss" (it's on the Trailer whiteboard).
+     → ev.timesheets, crew().adamIn
+   • THE OTHER PAUL → THE SHOEBOX (bus loop, before school): if you've
+     been kind, Paul brings you his dad's gun before the last day. Get
+     rid of it and the last ride changes (variant 'safe'). He gives you
+     his seating plan of the 43: the empty seats. → ev.seats, pjSafe
+   • GIANT → PUSH (field, lunch): Coach drags a seventh grader towards
+     the equipment cupboard. Jacob pushes back for the first time. The
+     lanyard comes off: the boiler hatch key. → ev.hatchkey
+   ===================================================================== */
+const crewEv=()=>{const c=crew();c.ev=c.ev||{};return c.ev};
+const joinCrew=(...ks)=>{const c=crew();c.allies=c.allies||{};for(const k of ks)c.allies[k]=1;save&&save()};
+{const _ce=crewEvidence;crewEvidence=function(){const e=crew().ev||{};return _ce()+(e.timesheets?1:0)+(e.seats?1:0)+(e.hatchkey?1:0)}}
+
+/* ---------------- HEAD CASE: THE SIGN-OUT SHEETS ---------------- */
+spot({mis:'crew',room:'hallb',period:[2,4],x:238,y:146,label:'Mr. Adam’s door is open. He’s on the floor with boxes.',short:'ADAM',
+ cond:()=>!D.weekend&&D.done&&D.done.headcase&&!crewEv().timesheets&&!D.dead.adam&&cal()<12,run:async()=>{
+ scene('office',{adam:[262,-1,{y:142,pose:'sit',ex:'sad'}],you:[-14,1,{y:148}]},true);
+ for(const [bx,by,n] of [[236,146,1],[250,134,2],[284,134,3],[294,148,4],[226,134,5],[304,124,6]])prop({t:'archbox',x:bx,y:by,n,layer:by>142?2:-2});
+ await walk('you',206,80);face('you',1);
+ await N('Mr. Adam is sitting on the carpet in his office in his socks, surrounded by archive boxes. Twenty-two of them. One for every year.');
+ await say('adam','(not looking up) You told me nobody ever told me I was good at it. So I thought: fine. Be good at it. Properly. Before the inspectors. Read everything I ever signed.','sad');
+ await say('adam','Turns out I never read anything I ever signed. Sit. Help me. I don’t know what I’m looking for.','sad');
+ pose('you','kneel');hold('adam','paper');
+ await N('The sign-out sheets. Every time a kid “transferred”, a teacher on duty signed them out of the building at 3:20 on a Friday.');
+ await N('TYLER, 7th grade. Signed out Friday 3:20. On duty: Coach, Mr. Voss.');
+ await N('ALEX, 8th grade. Signed out Friday 3:20. On duty: Mr. Kim, Ms. Loach.');
+ await N('MADDOX, 6th grade, four years ago. Signed out Friday 3:20. On duty: Mr. Voss, Ms. Balduf.');
+ let q1=await choose(['Coach.','Mr. Voss.','Mr. Kim.','Nobody. It’s different every time.'],'WHO WAS ON DUTY EVERY TIME?');
+ if(q1!==3){await say('adam',q1===1?'Voss is on two. Not three. Look again. Maddox, Tyler… Alex was Kim and Loach.':'He’s on one of them. One. Look again.','scared');
+  q1=await choose(['Mr. Voss. Close enough.','Nobody. It’s different every time.'],'LOOK AGAIN')===1?3:0}
+ if(q1===3){await say('adam','Nobody. Different every time. So it’s not one of them. It’s all of them, taking turns. Like a… like a rota.','shock');crew().adamSharp=1}
+ else await say('adam','No. No, it changes. Different names every time. It’s not one of them. It’s all of them. Taking turns.','shock');
+ await N('Then you look at the box at the bottom of every sheet. AUTHORISED BY. Twenty-two years of it. The same loopy handwriting, every single time. Two words.');
+ const q2=await choose(['“Mr. Adam”. You signed them.','“Love, Miss”.','“Pat”. In capitals.','“Coach”, with a whistle drawn on it.'],'WHAT DOES THE SIGNATURE SAY?');
+ if(q2!==1)await say('adam',q2===0?'Mine’s a squiggle and a full stop. That’s not mine. Look. Look at the little heart.':'No. Look. Little loopy letters. Two words. Where have you seen two words like that?','scared');
+ await N('“Love, Miss.” The same two words written on the whiteboard in the Trailer, under TRAILER RULES. Every sheet. Every Friday. Since 1987.');
+ A.adam.ex='cry';
+ await say('adam','I signed the front pages. The covering letters. Twenty-two years. I never turned a single one over.','cry');
+ await say('adam','(putting them in a folder, very carefully, like they might break) I’m turning them over now. All of them. On Friday. In front of the lanyards.','cold');
+ crewEv().timesheets=1;crew().adamIn=1;save&&save();
+ toast('🎁 EVIDENCE: Mr. Adam’s sign-out sheets. “Love, Miss.” Mr. Adam is with you.');
+ /* and then she knocks */
+ cue('tension',true);SFX.knock?SFX.knock():SFX.thud&&SFX.thud();
+ await N('Three knocks on the office door. Soft. Friendly.');
+ await say('shermian','(through the door) Gerry-bear? Everything all right in there? I heard crying.','smirk');
+ const c=await choose(['Get down behind the desk. Don’t move.','Let Mr. Adam handle it.'],'MS. SHERMAN IS AT THE DOOR');
+ if(c===0){await walk('you',150,90);face('you',1);pose('you','crouch');
+  const ok=await vgSimon(4,'DON’T MOVE');
+  put('shermian',-14,1,{y:152,ex:'smirk'});await walk('shermian',120,50);
+  if(ok){await say('shermian','(looking round the room, slowly) …Just you, Gerald?','smirk');await say('adam','Just me. Just me and twenty-two years.','sad');
+   await say('shermian','Don’t stay late, Gerry-bear. Inspections are SO tiring.','smirk');await walk('shermian',-20,50);remove('shermian')}
+  else{await N('Your shoe squeaks on the carpet. She doesn’t walk round the desk. She doesn’t need to. She just smiles at the corner of it, right where you are.');
+   await say('shermian','(to the desk) See you Friday, sweetie.','evil');await walk('shermian',-20,50);remove('shermian');crew().sherSeen=1}
+  pose('you',null)}
+ else{await say('adam','(wiping his face with his tie, very loud) Just NORMAL Friday crying, Mary! The usual!','scared');
+  await say('shermian','(through the door, after a long pause) …See you Friday, Gerry-bear.','smirk');
+  await say('adam','(whispering) She’s never once called me Gerry-bear to my face.','scared')}
+ return 'stay'}});
+
+/* ---------------- THE OTHER PAUL: THE SHOEBOX ---------------- */
+spot({mis:'crew',room:'bus',period:0,x:200,y:150,label:'Paul Jones got off the 43 and is waiting for you',short:'PAUL',
+ cond:()=>!D.weekend&&D.f&&D.f.pj3&&!(D.done&&D.done.pauljones)&&!crew().pjSafe&&!crew().pjKept&&(D.f.pjKind||0)>=2&&!D.dead.pauljones&&cal()<12,run:async()=>{
+ scene('bus',{pauljones:[200,-1,{y:150,hold:'bag',ex:'sad'}],you:[-14,1,{y:156}]},true);
+ await walk('you',170,80);face('you',1);
+ await N('Paul Jones is standing by the bus shelter with his hood up and his backpack on his front, both arms round it, like it’s a baby.');
+ await say('pauljones','You said I could talk to you. So. I’m talking.','sad');
+ await say('pauljones','(opening the zip an inch) It’s my dad’s. From the shoebox. The code’s my birthday. That’s the only reason he remembers my birthday.','scared');
+ await N('Inside the backpack, under a PE shirt: a shoebox. You don’t need to open it. You can see the shape of the weight in how he’s holding it.');
+ await say('pauljones','I took it Monday. I don’t know why. I keep bringing it. Every day it gets heavier. I don’t want to find out why I took it.','cry');
+ cue('sad',true);
+ const kind=(D.f.pjKind||0)>=3;
+ const c=await choose([{t:'“Give it to me.”',dis:!kind,why:'he doesn’t trust you that much yet'},{t:'“We get rid of it. Right now. Together.”'},{t:'“Put it back tonight. Nobody has to know.”'}],'PAUL JONES HAS A GUN IN HIS BACKPACK');
+ if(c===2){await say('pauljones','(zipping it up) …Yeah. Tonight. Okay.','sad');
+  await N('He doesn’t look at you when he gets back on the bus. He’s still holding it like a baby.');crew().pjKept=1;return 'stay'}
+ let gone=false;
+ if(c===0){hold('pauljones',null);hold('you','bag');
+  await N('He takes it off and holds it out. It’s heavier than anything you’ve ever held. Your arms know exactly what’s in it.');
+  const d=await choose(['Take it to Pat. Pat will know what to do.','The storm drain. Now.'],'WHERE DOES IT GO');
+  if(d===0){put('pat',-14,1,{y:150,ex:'cold'});await walk('pat',130,80);
+   await say('pat','(taking the bag without opening it, not even a little bit surprised) I’ll handle it. I’ve handled worse in that kitchen. Go to class, sugar. Both of you.','cold');
+   await walk('pat',-20,80);remove('pat');hold('you',null);gone=true}
+  else gone=await drain()}
+ else gone=await drain();
+ async function drain(){
+  await walk('you',260,60);await walk('pauljones',240,60);
+  prop({t:'drain',x:276,y:160,layer:-3});
+  await N('There’s a storm drain at the edge of the bus loop. Deep. You can hear water a long way down.');
+  hold('you',null);hold('pauljones','bag');
+  let ok=await vgThrow('DROP IT THROUGH THE GRATE');
+  if(!ok){SFX.clank?SFX.clank():SFX.thud&&SFX.thud();await N('It catches on the grate. Half in, half out. A car door slams across the loop. Coach’s car.');
+   ok=await mash('SHOVE IT THROUGH',{need:16,time:3,info:'Push it through before he sees!'})}
+  SFX.splat&&SFX.splat();hold('pauljones',null);
+  await N(ok?'A long drop. A splash. Gone.':'You both stamp on it until it drops. A long drop. A splash. Gone.');
+  return true}
+ if(gone){A.pauljones.ex='happy';
+  await say('pauljones','(laughing, crying, both) I didn’t know what I was gonna do with it. Now I don’t have to know.','cry');
+  hold('pauljones','book');
+  await say('pauljones','(holding out his notebook) You should have this. The 43, from above. Look at the seats. Look at the red ones.','sad');
+  await N('Every Friday, one seat on the 43 goes empty and never fills again. Paul crossed each one out in red. TYLER. ALEX. Kids from years ago. And this week’s seats, already ringed. Waiting.');
+  await say('pauljones','Nobody noticed. I notice where everyone is. It’s the only thing I’m good at.','sad');
+  crew().pjSafe=1;crewEv().seats=1;joinCrew('pauljones');
+  toast('🎁 EVIDENCE: Paul Jones’s seating plan. The empty seats. Paul is with you.')}
+ return 'stay'}});
+/* the last ride, when the gun is already gone */
+{const r=typeof RIDE!=='undefined'&&RIDE.find(x=>x.id==='pjLast');if(r){const run=r.run;r.run=async function(){
+ if(!crew().pjSafe)return run.apply(this,arguments);
+ cue('romance');
+ await N('The last ride home. Inspection Day. Everyone is loud. Paul Jones gets up from the back seat and walks down the middle of the bus.');
+ A.pauljones.pose=null;await walk('pauljones',A.you.x+16,40);A.pauljones.pose='sit';face('pauljones','you');
+ await N('He sits down next to you. That’s it. That’s the whole thing. His backpack is empty and it flops on the floor like a dead fish.');
+ if(onBus('arjun')){await say('arjun','(from the middle) Ayo, Off-Brand P—','smirk');
+  await say('pauljones','(not loud, not looking round) It’s Paul.','cold');
+  await say('arjun','(after a really long time) …Paul. My bad.','shock')}
+ await say('pauljones','(looking out of the window) I think I’m gonna sit at the front on Monday.','happy');
+ await complete('pauljones','safe')}}}
+if(MIS.pauljones){MIS.pauljones.variants=Object.assign(MIS.pauljones.variants||{},{safe:'Nothing happened'})}
+OUTCOME_FIX['pauljones:safe']='good';
+
+/* ---------------- GIANT: PUSH ---------------- */
+spot({mis:'crew',room:'field',period:4,x:200,y:150,label:'Coach is dragging a seventh grader off the field',short:'!',
+ cond:()=>!D.weekend&&D.done&&D.done.giant&&!crewEv().hatchkey&&!D.dead.coach&&!D.dead.jacob&&cal()<12&&D.f.pushTry!==cal(),run:async()=>{
+ D.f.pushTry=cal();
+ scene('field',{coach:[230,-1,{y:148,pose:'grab',ex:'smirk'}],kid3:[246,-1,{y:150,ex:'scared'}],jacob:[150,1,{y:150}],you:[-14,1,{y:156}]},true);
+ await walk('you',120,90);face('you',1);cue('tension',true);
+ await N('Coach has a seventh grader by the hood. The kid’s trainers are dragging two lines in the grass towards the gym.');
+ await say('coach','Extra practice, champ. Equipment cupboard. Very special drills.','smirk');
+ await N('The kid looks straight at you. Then at Jacob. Jacob is standing very still, with his hands opening and closing.');
+ await say('jacob','(very quietly) He’s little. He’s so little.','scared');
+ const c=await choose(['“Jacob. Push.”','Go for the kid yourself.','Yell at the kid to RUN.'],'COACH HAS A SEVENTH GRADER');
+ const push=async()=>{if(A.you.x>170)await walk('you',150,120);await walk('jacob',212,140);pose('jacob','grab');
+  const ok=await mash('PUSH',{need:26,time:4,info:'Jacob is pushing. Push WITH him!'});
+  if(ok){SFX.smack&&SFX.smack();shake(1.2);await tw(A.coach,{x:A.coach.x+18},180);pose('coach','lie');const kp=prop({t:'keys',x:A.coach.x-20,y:156,layer:-1});A.coach.ex='shock';pose('kid3',null);
+   await walk('kid3',-20,140);remove('kid3');
+   await N('Coach goes six feet backwards and lands flat on his back on the track. His lanyard snaps. Keys everywhere.');
+   pose('jacob',null);A.jacob.ex='shock';
+   await say('jacob','(looking at his own hands) I pushed. I pushed Coach. I’ve never… I’ve never.','shock');
+   await say('coach','(on his back, sand in his hair, smiling at the sky) Big lad. Friday, big lad.','evil');
+   await walk('you',A.coach.x-24,80);pose('you','kneel');await wait(300);pose('you',null);hold('you','key');{const i=props.indexOf(kp);if(i>=0)props.splice(i,1)}
+   await N('You pick up the lanyard. A whistle. A car key. And an old iron key, black with age, stamped B.R. — the boiler room hatch.');
+   crewEv().hatchkey=1;joinCrew('jacob');
+   if(D.f.bear||(D.done&&D.done.giant))await say('jacob','(still looking at his hands, then at you) A teddy bear that pushes back. That’s just a bear.','happy');
+   toast('🎁 EVIDENCE: Coach’s lanyard. The boiler hatch key. Jacob is with you.');return true}
+  pose('jacob',null);
+  await N('Jacob pushes. Coach doesn’t move. Coach just looks at Jacob’s hands on his chest, then at Jacob, and smiles.');
+  await say('coach','Big lad. Not today, big lad.','evil');
+  pose('kid3',null);await walk('kid3',-20,140);remove('kid3');
+  await N('He lets the kid go to deal with Jacob, and the kid runs. Coach straightens his lanyard and walks away. Tomorrow. There’s always tomorrow.');
+  await walk('coach',340,60);remove('coach');return false};
+ if(c===0)await push();
+ else if(c===1){await walk('you',220,120);pose('you','grab');
+  const ok=await mash('PULL THE KID FREE',{need:30,time:4});pose('you',null);
+  if(ok){pose('kid3',null);await walk('kid3',-20,140);remove('kid3');await N('The kid comes free. Coach turns round. Now he’s got your hood instead.');pose('coach','grab')}
+  await say('jacob','(walking over, not fast) Let go of them, Coach.','cold');await push()}
+ else{await say('you','RUN!');pose('kid3',null);await walk('kid3',-20,160);remove('kid3');
+  await N('The kid twists out of the hoodie and runs. Coach is left holding an empty hood. He turns round slowly to see who yelled.');pose('coach',null);
+  const ok=await vgRace('coach');
+  if(ok){await N('You make it to the bus loop. Behind you, very faintly: a whistle. One long note.');remove('coach')}
+  else{await N('He’s faster than he looks. His hand closes on your collar. And then Jacob is there.');pose('coach','grab');await push()}}
+ return 'stay'}});
+
+/* the objective line points at a core-cast scene when the main story is waiting */
+{const _sn=storyNow;storyNow=function(){const s=_sn();if(!s||s.i>=98||!D||D.weekend)return s;
+ if(!/crew is meeting|Everything’s ready/.test(s.goal||''))return s;const e=crew().ev||{};
+ if(D.done&&D.done.headcase&&!e.timesheets&&!D.dead.adam)return{i:s.i,t:'Head Case',goal:'Mr. Adam is going through twenty-two years of boxes. Front Hall, his office, break or lunch.'};
+ if(D.done&&D.done.giant&&!e.hatchkey&&!D.dead.coach)return{i:s.i,t:'Giant',goal:'Coach takes kids off the field at lunch. Jacob is watching. Playing Field, lunch.'};
+ if(D.f&&D.f.pj3&&!crew().pjSafe&&!crew().pjKept&&(D.f.pjKind||0)>=2)return{i:s.i,t:'The Other Paul',goal:'Paul Jones wants to talk. Bus loop, before school.'};
+ return s}}
+
+/* focus: the featured set is the core cast. Fringe one-offs stay in the game but don't nag. */
+if(typeof FEATURED!=='undefined')for(const m of['jade','stall','ringing','stain','steal_mia','flimbus'])FEATURED.delete(m);
+
+/* props: archive boxes, the storm drain, Coach's dropped keys */
+{const _dp=drawProp;drawProp=function(p){const x=Math.round(p.x),y=Math.round(p.y);
+ if(p.t==='archbox'){R(x-9,y-12,18,12,'#b89a6a');R(x-9,y-12,18,2,'#d8bc88');R(x-3,y-8,6,3,'#f4ecd8');R(x-9,y-1,18,1,'#6a5a3a');px(String(1998+p.n*4).slice(2),x-3,y-8,'#3a2a1a');return}
+ if(p.t==='drain'){R(x-12,y-3,24,6,'#2a2a2e');for(let i=0;i<6;i++)R(x-11+i*4,y-2,2,4,'#5a5a62');R(x-12,y-3,24,1,'#7a7a82');return}
+ if(p.t==='keys'){R(x-6,y,12,1,'#c8c0a0');R(x-7,y-2,3,3,'#e0c040');R(x+3,y-1,4,2,'#3a3a3a');R(x+6,y-2,2,3,'#9a9aa2');return}
+ return _dp(p)}}
 
 </script>
 <script>
@@ -24345,7 +24422,7 @@ if(typeof DAYSET!=='undefined')for(const t in DAYSET)for(const i in DAYSET[t]){c
 if(typeof WHISPER!=='undefined')delete WHISPER.abby;
 
 /* no Hasan & Darren, and no Sean & Stella: they’re friends, that’s all */
-{const CUT=['darren','steptwelve','steal_stella','stepeleven','tellmom','toby','instella','striketwo','firstfight','farewell'];
+{const CUT=['darren','steptwelve','steal_stella','stepeleven','toby','instella','striketwo','firstfight','farewell'];
  for(const m of CUT)delete MIS[m];
  for(const m in MIS){const w=MIS[m].who||[];if(w.includes('darren')||w.includes('toby'))delete MIS[m]}
  for(let i=HOOKS.length-1;i>=0;i--){const h=HOOKS[i];if(h.who==='darren'||h.who==='toby'||/A\.(darren|toby)\b/.test(String(h.run)))HOOKS.splice(i,1)}

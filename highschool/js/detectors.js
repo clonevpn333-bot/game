@@ -7,7 +7,7 @@
    woods, and everybody starts bringing something. One day, in a locked
    classroom, it goes off. The kids clean up after themselves.
    ===================================================================== */
-const METAL=['lockpick','key','padlock','compass','chucks','extinguisher','firstaid','bytephone','knife','energy','ladle','thermos'];
+const METAL=['lockpick','key','padlock','compass','chucks','extinguisher','firstaid','bytephone','knife','energy','ladle'];
 const detectorsOn=()=>D&&!D.weekend&&cal()>=8&&cal()<=12;
 const metalOn=()=>(D.items||[]).filter(i=>METAL.includes(i));
 DEATHS.detector={name:'Random Screening',desc:'It rang. Coach was standing right there with a javelin.',hint:'Week two: the front doors have a metal detector. Stash your metal stuff in the hedge, or go round the back through the woods.'};
