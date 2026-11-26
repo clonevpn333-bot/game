@@ -55,6 +55,8 @@ if(typeof WHISPER!=='undefined')delete WHISPER.abby;
  for(let i=HOOKS.length-1;i>=0;i--){const h=HOOKS[i];if(h.who==='darren'||h.who==='toby'||/A\.(darren|toby)\b/.test(String(h.run)))HOOKS.splice(i,1)}
  for(let i=HOOKS.length-1;i>=0;i--)if(HOOKS[i].mis&&!MIS[HOOKS[i].mis])HOOKS.splice(i,1);
  for(let i=SPOTS.length-1;i>=0;i--)if(SPOTS[i].mis&&!MIS[SPOTS[i].mis])SPOTS.splice(i,1);
+ /* the couples' main-story scenes are full-version only */
+ for(let i=SPOTS.length-1;i>=0;i--)if(/^(Abby is drawing on the Trailer steps|Sean and Stella are sharing earbuds|Darren has a new laminated list)$/.test(SPOTS[i].label||''))SPOTS.splice(i,1);
  if(typeof PASS!=='undefined')for(let i=PASS.length-1;i>=0;i--)if(PASS[i].id==='couple')PASS.splice(i,1);
  if(typeof NIGHT!=='undefined')for(let i=NIGHT.length-1;i>=0;i--)if(/darren|stella/i.test(JSON.stringify(NIGHT[i].msgs))&&/hasan|sean|stella/i.test(NIGHT[i].from))NIGHT.splice(i,1);
  if(typeof RIDE!=='undefined')for(let i=RIDE.length-1;i>=0;i--){const s=String(RIDE[i].run)+String(RIDE[i].cond);if(/darren|toby|firstfight|instella|striketwo|farewell/i.test(s))RIDE.splice(i,1)}
