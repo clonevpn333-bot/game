@@ -46,7 +46,7 @@ function stealArc(gid,S){
   await beat(S.title.toUpperCase(),'PART ONE · THE OPENING');
   for(const l of S.l1)await say(gid,l,'angry');
   const c=await choose(['Make a joke about him. A mean one.','“He’s just like that, he loves you.”','“Sounds like you need a break from him.”']);
-  if(c===1){await say(gid,'(cold) Yeah. Everybody says that. It’s always somebody’s job to say that.','cold');sf('a');sf('cold');part(mis,1);return 'stay'}
+  if(c===1){await say(gid,'(cold) Yeah. Everybody says that. It’s always somebody’s job to say that.','cold');sf('a');sf('cold');part(mis,1);await N(G+' walks off. Whatever that was, it’s over.');await complete(mis,'cold');return 'stay'}
   if(c===0){await say('you',bf==='sean'?'Does he do the breathing on the phone? The “babe…” one? Like a haunted doorbell?':'Does the mustache have its own Instagram yet? It looks like it has opinions.');await say(gid,'(snorting, covering her mouth) Oh my god. Oh my GOD. You can’t say that. Say it again.','laugh')}
   else await say(gid,'(looking at you for a long second) …Yeah. Yeah, maybe I do.','blush');
   await camZoom(155,112,1.7,400);await N('She doesn’t walk away. She stands there a second too long. Then she steals a fry off your tray and says “come find me later” like it’s nothing.');await camZoom();
@@ -61,7 +61,7 @@ function stealArc(gid,S){
   await N('It goes quiet. Not school-quiet. The other kind. She looks at you. You look at her. Somewhere far away, a bell rings for nobody.');
   const c=await choose(['Kiss her.','Pull back. “He’s my— this is a bad idea.”','Tell her you like her. Out loud.']);
   await camZoom();
-  if(c===1){await say(gid,'(stepping back, laughing too loud) Right. Yeah. Totally. That’s— I was kidding. Obviously.','cold');sf('b');sf('cold');part(mis,2);return 'stay'}
+  if(c===1){await say(gid,'(stepping back, laughing too loud) Right. Yeah. Totally. That’s— I was kidding. Obviously.','cold');sf('b');sf('cold');part(mis,2);await N(G+' doesn’t text you after that. It’s over before it started.');await complete(mis,'cold');return 'stay'}
   if(c===0){SFX.kiss&&SFX.kiss();fxState.romance=.6;await N('It’s quick. It’s on the mouth. It’s a terrible idea. You both know it’s a terrible idea, which is somehow the best part.');fxState.romance=0}
   else await say(gid,'(very quietly) …Say it again. No. Don’t. I’ll do something stupid.','blush');
   put('kaylee',334,-1,{y:146,pose:'film'});await walk('kaylee',290,40);
@@ -121,7 +121,7 @@ function stealArc(gid,S){
   return 'stay'}});
 }
 for(const id in STEAL)if(K[id]&&K[STEAL[id].bf])stealArc(id,STEAL[id]);
-OUTCOME_FIX['steal_stella:you']='messy';OUTCOME_FIX['steal_stella:bros']='good';OUTCOME_FIX['steal_stella:back']='bad';
+OUTCOME_FIX['steal_stella:cold']='bad';OUTCOME_FIX['steal_mia:cold']='bad';OUTCOME_FIX['steal_stella:you']='messy';OUTCOME_FIX['steal_stella:bros']='good';OUTCOME_FIX['steal_stella:back']='bad';
 OUTCOME_FIX['steal_mia:you']='good';OUTCOME_FIX['steal_mia:bros']='good';OUTCOME_FIX['steal_mia:back']='bad';
 ARC_MIS.push('steal_stella','steal_mia');
 /* if she’s with you now, their couple stuff stops, and she’s with you around school */
