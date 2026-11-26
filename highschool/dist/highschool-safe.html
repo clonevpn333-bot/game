@@ -26185,6 +26185,105 @@ if(ROOMS.courtyard){
 }
 }
 
+/* =====================================================================
+   MARCUS'S HOUSE (the party) and THE RESERVOIR, repainted.
+   Kept: couch 36-134, coffee table 180-220, TV 130-210 x 22-74,
+   hot-tub doors 226-316, the photos of Marcus age 4, NO SWIM sign,
+   the dam 120-210, the dock 100-320 x 128-154.
+   ===================================================================== */
+{
+const rmCache=(id,draw)=>guCache('rm_'+id,'',draw);
+const rmMix=(a,b,t)=>{const A_=guRGB(a),B=guRGB(b);return`rgb(${A_[0]+(B[0]-A_[0])*t|0},${A_[1]+(B[1]-A_[1])*t|0},${A_[2]+(B[2]-A_[2])*t|0})`};
+if(ROOMS.party){
+ function partyPaint(){
+  /* damask wallpaper, wainscot, crown moulding */
+  R(0,0,W,106,'#3a2438');for(let y=8;y<80;y+=14)for(let x=((y/14)%2)*10;x<W;x+=20){R(x+8,y,4,2,'#4a3048');R(x+6,y+2,8,4,'#4a3048');R(x+8,y+6,4,2,'#4a3048');R(x+9,y+3,2,2,'#5a3a58')}
+  R(0,0,W,6,'#2a1828');R(0,6,W,2,'#6a4a5a');R(0,80,W,26,'#4a2a3a');R(0,80,W,2,'#7a5a6a');for(let x=0;x<W;x+=40)R(x+4,84,32,18,'rgba(0,0,0,.15)');
+  /* family photos: Marcus, age 4, in every one */
+  for(let i=0;i<4;i++){const x=16+i*28,y=24+(i%2)*3;R(x,y,22,18,'#c8a868');R(x+2,y+2,18,14,['#8aa0b0','#b08a70','#90a080','#a090b0'][i]);R(x+7,y+6,6,6,'#e8c8a0');R(x+8,y+5,4,2,'#3a2a1a');R(x+8,y+9,4,1,'#c84a4a');R(x+2,y+2,18,1,'rgba(255,255,255,.25)')}
+  pxc('MARCUS',70,48,'#f0e0c0');pxc('AGE 4',70,56,'#c8b8a0');
+  /* a lamp with a shade, knocked crooked */
+  R(118,52,2,28,'#2a2a2a');R(111,44,16,9,'#e8c890');R(112,45,14,1,'#fff0c0');R(114,78,10,3,'#2a2a2a');
+  /* the big TV, karaoke */
+  R(128,20,84,52,'#0a0a0a');R(130,22,80,48,'#141c2c');R(160,72,20,4,'#1a1a1a');R(150,76,40,4,'#2a1a20');
+  /* sliding doors to the deck and the hot tub, night outside */
+  R(224,14,94,92,'#1a1420');guGrad(16,104,'#0a1030','#2a2a5a',226,90);
+  for(let i=0;i<14;i++)R(228+hsh(i+300)*86,18+hsh(i+301)*40,1,1,'#e8e8ff');R(296,22,8,8,'#f4f0d8');R(298,22,6,6,'#0a1030');
+  R(226,70,90,34,'#3a2a22');for(let x=226;x<316;x+=10)R(x,70,1,34,'#2a1a14');
+  R(236,78,64,22,'#4a4a52');R(238,80,60,6,'#3ac8e8');R(238,86,60,14,'#2a5a6a');for(let i=0;i<4;i++)R(242+i*14,92,8,1,'rgba(150,240,255,.5)');
+  R(270,16,3,90,'#6a6a7a');R(226,16,90,1,'rgba(255,255,255,.2)');g.globalAlpha=.12;R(230,18,10,84,'#fff');R(276,18,6,84,'#fff');g.globalAlpha=1;
+  /* string lights across the ceiling */
+  for(let x=0;x<W;x+=2){const y=10+Math.sin(x/320*Math.PI*3)*4;R(x,y,2,1,'#2a2a2a')}
+  /* floor: hardwood with a rug */
+  R(0,106,W,6,'#2a1820');guGrad(112,180,'#6a4a34','#4a3224');
+  for(let y=112;y<180;y+=8)for(let x=((y/8)%3)*14;x<W;x+=42){R(x,y,41,1,'rgba(0,0,0,.2)');R(x,y+1,41,1,'rgba(255,220,180,.05)')}
+  R(24,140,160,30,'#6a2a3a');R(28,143,152,24,'#7a3a4a');for(let x=30;x<178;x+=8)R(x,154,4,2,'#c8a050');R(24,140,160,1,'rgba(255,255,255,.1)');
+  /* the couch */
+  R(36,112,98,8,'#3a2050');R(36,118,98,18,'#4a2a5a');R(36,114,6,22,'#3a2050');R(128,114,6,22,'#3a2050');for(let i=0;i<3;i++)R(44+i*28,118,26,6,'#5a3a6a');R(40,136,3,4,'#1a1a1a');R(127,136,3,4,'#1a1a1a');
+  /* the coffee table, covered in cups */
+  R(178,122,44,4,'#3a2a20');R(178,122,44,1,'#5a4a3a');R(182,126,2,12,'#2a1a14');R(216,126,2,12,'#2a1a14');
+  for(let i=0;i<6;i++)R(184+i*6,117,4,5,'#c02030');R(185,117,2,1,'#f05060');
+  /* the snack table by the doors, chips everywhere */
+  R(248,128,56,4,'#e8e8e8');R(250,132,2,10,'#8a8a8a');R(300,132,2,10,'#8a8a8a');R(256,122,14,6,'#f0c040');R(276,122,10,6,'#e06a3a');R(290,120,8,8,'#6a3a2a');
+  for(let i=0;i<26;i++)R(hsh(i+40)*W,148+hsh(i+41)*28,2,1,'#e8c04a');
+  for(let i=0;i<10;i++){const x=hsh(i+60)*W,y=150+hsh(i+61)*26;R(x,y,3,4,'#c02030');R(x,y,3,1,'#f05060')}
+ }
+ ROOMS.party.bg=function(){rmCache('party2',partyPaint);
+  /* karaoke screen cycles, lyrics bounce */
+  const k=Math.floor(T*.7)%3;R(132,24,76,44,['#2a3a8a','#8a2a5a','#2a7a5a'][k]);px('KARAOKE',150,30,'#fff');
+  const lyr=['TOTAL ECLIPSE','OF THE PARTY','SING IT MARCUS'][k];pxc(lyr,170,46,'#f0e0a0');R(140+((T*30)%56),56,4,4,'#f0e040');
+  /* string lights twinkle */
+  for(let i=0;i<20;i++){const x=8+i*16,y=11+Math.sin(x/320*Math.PI*3)*4,c=['#ff4a7a','#4ac8ff','#f0e040','#6aff8a'][i%4];R(x,y,2,2,c);if(Math.sin(T*3+i*1.3)>.3){g.globalAlpha=.18;R(x-4,y-3,10,8,c);g.globalAlpha=1}}
+  /* disco ball dots sweep the walls */
+  R(170,0,1,10,'#888');R(166,10,9,9,'#c8c8d0');R(168,12,2,2,'#fff');
+  for(let i=0;i<14;i++){const a=T*.8+i*.45,x=170+Math.cos(a)*(60+i*9),y=40+Math.sin(a*1.3+i)*30;if(x>0&&x<224){g.globalAlpha=.35;R(x,y,2,2,['#fff','#ffb0d0','#b0e0ff'][i%3]);g.globalAlpha=1}}
+  /* hot tub steam */
+  g.globalAlpha=.3;for(let i=0;i<6;i++){const q=(T*.4+i/6)%1;R(240+i*10+Math.sin(T+i)*3,78-q*50,6,3,'#d8e8f0')}g.globalAlpha=1;
+  /* bass: the cups on the table hop */
+  if(Math.sin(T*8)>.85)for(let i=0;i<6;i++)R(184+i*6,116,4,1,'#f05060')};
+ if(typeof LIGHT!=='undefined')LIGHT.party={amb:.52,tint:[60,20,70],src:[[170,46,110,.45,[120,170,255]],[270,80,80,.35,[120,220,255]],[119,48,50,.35,[255,210,150]],[60,12,90,.2,[255,120,180]]],wallAO:1};
+}
+if(ROOMS.lake){
+ function lakePaint(){
+  /* sunset sky, clouds lit from below */
+  guGrad(0,62,'#3a4a7a','#f0b080');guGrad(36,62,'#f0a070','#f8d8a0');
+  for(const [x,y,w] of[[20,14,60],[110,22,80],[220,10,50],[260,30,46]]){R(x,y,w,3,'#c88090');R(x+4,y+3,w-8,2,'#f0a080');R(x+10,y-2,w-24,2,'#a06a8a')}
+  /* far hills, three layers */
+  for(let x=0;x<W;x++){const h1=Math.sin(x*.02)*6+Math.sin(x*.07)*3;R(x,44+h1,1,20,'#8a7a9a');const h2=Math.sin(x*.035+2)*5+Math.sin(x*.11)*2;R(x,50+h2,1,14,'#6a6a7a')}
+  /* the dam */
+  R(118,46,94,16,'#a8a4a0');R(118,46,94,2,'#d8d0c8');for(let i=0;i<6;i++){R(122+i*15,50,10,10,'#7a7672');R(122+i*15,58,10,2,'#5a8ab0')}R(116,44,4,18,'#8a8682');R(210,44,4,18,'#8a8682');
+  /* water: deep at the bottom, sky reflected at the top */
+  guGrad(62,124,'#e8a888','#2a4a6a');
+  /* the sun's reflection column */
+  g.globalAlpha=.35;for(let y=64;y<120;y+=3)R(250-(y-62)*.1,y,14+(y-62)*.2,1,'#fff0c0');g.globalAlpha=1;
+  /* reeds and cattails on the left */
+  for(let i=0;i<30;i++){const x=hsh(i+20)*90,hh=10+hsh(i)*16;R(x,124-hh,1,hh,'#4a5a2a');if(i%3===0){R(x-1,124-hh-4,3,5,'#6a4a2a')}}
+  /* the bank: grass, then mud */
+  R(0,122,W,10,'#5a6a3a');for(let x=0;x<W;x+=2)R(x,121-hsh(x)*3,1,4,'#6a8a4a');guGrad(130,180,'#5a5032','#3a3424');
+  for(let i=0;i<30;i++)R(hsh(i+90)*W,134+hsh(i+91)*44,2,1,'rgba(255,230,180,.15)');
+  /* the dock */
+  R(100,128,220,26,'#6a4a2a');for(let i=0;i<220;i+=10){R(100+i,128,9,26,rmMix('#8a6a42','#7a5a38',hsh(i)));R(100+i,128,9,1,'#c8a070')}
+  R(100,154,220,2,'#3a2a18');for(let i=0;i<5;i++){R(110+i*48,154,4,20,'#4a3424');R(110+i*48,170,4,4,'rgba(80,110,140,.5)')}
+  R(300,118,3,14,'#4a3424');R(300,116,6,3,'#c84a3a');/* a mooring post with a red cap */
+  /* the NO SWIM sign */
+  R(28,98,26,18,'#e8e4da');R(28,98,26,1,'#fff');R(29,99,24,16,'#f4f0e6');pxc('NO',41,101,'#c03030');pxc('SWIM',41,108,'#c03030');R(40,116,2,14,'#6a4a2a');
+  /* a lifebuoy on the dock */
+  R(236,132,12,10,'#e84a3a');R(239,135,6,4,'#6a4a2a');R(236,136,12,2,'#f4f0e6');
+ }
+ ROOMS.lake.bg=function(){rmCache('lake2',lakePaint);
+  /* the sun sinking a little, then not */
+  R(250,14,14,14,'#fff0c0');g.globalAlpha=.25;R(244,8,26,26,'#fff0c0');g.globalAlpha=1;
+  /* ripples drift */
+  for(let y=66;y<122;y+=4){const o=Math.sin(T*1.1+y*.3)*5;g.globalAlpha=y<84?.5:.3;for(let x=(y*7)%24;x<W;x+=30)R(x+o,y,8,1,y<84?'#f8d8c0':'#8ab0c8');g.globalAlpha=1}
+  /* a fish jumps now and then */
+  {const k=(T%9)/9;if(k<.08){const q=k/.08;R(180+q*10,90-Math.sin(q*Math.PI)*10,3,2,'#c8d0d8')}if(k>.08&&k<.2){const q=(k-.08)/.12;g.globalAlpha=.5*(1-q);R(190-q*8,92,q*16+2,1,'#fff');g.globalAlpha=1}}
+  /* birds, reeds swaying */
+  for(let i=0;i<3;i++){const x=((T*6+i*110)%380)-30,y=20+i*6,f=Math.sin(T*8+i)>0;R(x,y,3,1,'#2a2a3a');R(x-1,y+(f?-1:1),1,1,'#2a2a3a');R(x+3,y+(f?-1:1),1,1,'#2a2a3a')}
+  for(let i=0;i<8;i++){const x=hsh(i+20)*90,s=Math.round(Math.sin(T*1.4+i)*1);R(x+s,100+hsh(i)*8,1,3,'#5a6a3a')}};
+ if(typeof LIGHT!=='undefined')LIGHT.lake={amb:.9,tint:[90,60,40],src:[[256,22,220,.32,[255,210,160]]]};
+}
+}
+
 </script>
 <script>
 /* js/stealfallout.js */
@@ -26348,6 +26447,168 @@ function TEST_SKIP(){return false}
 /* in the quest tab, it's a chapter of the same love arc */
 if(typeof ARCS!=='undefined')for(const sec of ARCS)for(const a of (sec[2]||[]))if(a[0]==='ldist'&&!a[3].includes('after_stella'))a[3].push('after_stella');
 if(typeof ARC_MIS!=='undefined')ARC_MIS.push('after_stella','after_mia','after_jade');
+}
+
+</script>
+<script>
+/* js/lunch.js */
+'use strict';
+/* =====================================================================
+   HIGHSCHOOL REMASTERED — LUNCH IS LUNCH
+   Lunch is still free time (every lunch quest is untouched), but now:
+   • Everyone eats. Kids in the cafeteria carry trays; kids anywhere else
+     have a sandwich, crisps or a juice box, and actually eat them
+     (hand to mouth every few seconds). The back bench of the cafeteria
+     fills up with diners.
+   • You can eat: "Get lunch from Pat" at the counter. FREE (no apple),
+     and the food gives apples back. A short scene: today's menu (three
+     dishes a day, rotating), something happening in the queue (a
+     different thing each day), then where you sit (the crew table with
+     table talk + a napkin hint for the story, Aidan, her if you're with
+     someone, or alone and fast).
+   • Skip it and your stomach growls through period 5. Flavour only.
+   ===================================================================== */
+{
+const LUNCH=4;
+const ate=()=>D&&D.f['ate'+cal()];
+const lunchNow=()=>D&&!D.weekend&&D.period===LUNCH;
+const alive=k=>K[k]&&!D.dead[k];
+const pickBy=(arr,n,s)=>{const o=arr.slice(),r=[];let x=s;while(r.length<n&&o.length){x=(x*9301+49297)%233280;r.push(o.splice(x%o.length,1)[0])}return r};
+
+/* ---- held food ---- */
+{const _dh=drawHeld;drawHeld=function(it,x,y,d){
+ if(it==='sandwich'){R(x-3,y-2,6,4,'#e8d0a0');R(x-3,y-1,6,1,'#6aa04a');R(x-3,y,6,1,'#d86a5a');R(x-3,y-2,6,1,'#f4e4c0');return}
+ if(it==='crisps'){R(x-2,y-4,5,6,'#d83a3a');R(x-2,y-4,5,1,'#f0d040');R(x-1,y-2,3,2,'#f0d040');return}
+ if(it==='juice'){R(x-2,y-4,4,6,'#f0a030');R(x-2,y-4,4,1,'#f4f0e6');R(x+1,y-6,1,2,'#f4f0e6');R(x-1,y-2,2,2,'#5ab04a');return}
+ return _dh(it,x,y,d)}}
+
+/* ---- the menu ---- */
+const MENU=[
+ {n:'Mystery Nuggets',a:1,line:'Eleven nuggets. Pat counts them out loud. You’re fairly sure one of them is a sponge.'},
+ {n:'Grey Pasta',a:1,line:'It’s pasta. It’s grey. It tastes exactly like the colour grey.'},
+ {n:'Pat’s Stew ?',a:2,line:'The question mark is part of the name. Pat won’t say what’s in it. It’s incredible. You feel strong and slightly afraid.'},
+ {n:'Square Pizza',a:1,line:'Square pizza. You get the corner piece. Someone behind you swears about it, quietly, for a long time.'},
+ {n:'Fish Fingers',a:1,line:'Six fish fingers and a scoop of peas Pat flicks onto the tray from a distance, like a dart.'},
+ {n:'Chicken Burger',a:1,line:'A chicken burger. The bun is cold and the chicken is lava. It’s perfect. Nobody knows how she does it.'},
+ {n:'Jacket Potato',a:1,line:'Pat hits the potato with a spoon until it opens. You’ve never seen her use a knife. You don’t want to.'},
+ {n:'Curry Day',a:2,line:'Curry day. The one good day. The queue goes out the door and into the Front Hall.'},
+ {n:'Tacos',a:1,line:'“Taco Tuesday,” Pat says. It isn’t Tuesday. Nobody brings it up.'},
+ {n:'The Salad',a:1,line:'You take the salad. Pat looks at you like someone died. Nobody has ever taken the salad. She gives you a cookie, out of grief.'}
+];
+const menuToday=()=>pickBy(MENU,3,cal()*7+3);
+
+/* ---- something happens in the queue (one per day) ---- */
+const QUEUE=[
+ async()=>{if(!alive('kayden'))return;put('kayden',-14,1,{y:150,ex:'smirk'});await walk('kayden',104,90);
+  await N('Kayden walks straight past the whole queue and stands in front of you like he was always there.');
+  const c=await choose(['Let it go.','“Back of the line, Kayden.”','Cut back in front of him.']);
+  if(c===1){await say('kayden','(looking you up and down) …Fine. FINE. You got lucky.','angry');await walk('kayden',340,90);remove('kayden')}
+  else if(c===2){const ok=await mash('CUT',{need:12,time:2.5,info:'Get in front. Elbows.'});await N(ok?'You slide in front of him. The queue makes a noise like a crowd at a boxing match.':'He blocks you with a hip. A practised hip.')}
+  else await N('You let it go. He takes the last chocolate milk. He makes eye contact while he does it.')},
+ async()=>{if(!alive('sherman'))return;put('sherman',-14,1,{y:148});await walk('sherman',150,60);face('sherman',1);
+  await say('sherman','(taking a fry off your tray and eating it) Tax.','smirk');await walk('sherman',340,60);remove('sherman');
+  await N('Nobody says anything. Ms. Sherman has been taxing trays since 1987.')},
+ async()=>{const ok=await mash('CATCH IT',{need:12,time:2,info:'Your tray is sliding off the rail!'});
+  if(ok)await N('You catch the tray one-handed. Not one pea falls. A Year 7 claps, alone.');
+  else{SFX.thud&&SFX.thud();await N('The tray hits the floor. Everything on it hits the floor. The cafeteria does the “OHHHH.”');
+   await say('pat','(sliding you a fresh one without looking) Don’t tell anybody I’m nice.','cold')}},
+ async()=>{if(!alive('arjun'))return;put('arjun',340,-1,{y:150});await walk('arjun',150,80);face('arjun',-1);
+  await say('arjun','I need your pudding. Legally. My grandad was in the war.','smirk');
+  const c=await choose(['Give him the pudding.','“Which war?”']);
+  if(c===1)await say('arjun','(walking off) …A war. That’s all you need to know.','cold');
+  else await say('arjun','(already eating it with his fingers) A true patriot.','happy');
+  await walk('arjun',350,80);remove('arjun')},
+ async()=>{await N('The ice cream machine has a sign on it: OUT OF ORDER. The sign is yellow with age. The date on it says 1987.');
+  await say('pat','Don’t touch it. It still hums at night.','cold')},
+ async()=>{await N('The Year 7 in front of you pays for lunch entirely in 5p coins. He counts them out one at a time. The queue ages.');
+  await say('pat','(counting with him, dead-eyed) …forty-one. Forty-two.','cold')},
+ async()=>{await N('Pat gives the quiet kid in front of you a double portion and an extra cookie. Then she sees you watching.');
+  await say('pat','You saw nothing. You’re seeing nothing now.','evil')},
+ async()=>{if(!alive('nivaan'))return;put('nivaan',340,-1,{y:150,pose:'film'});await walk('nivaan',150,80);face('nivaan',-1);
+  await say('nivaan','(filming your tray) Day nine of rating Pat’s food for my followers. What are we giving it?','happy');
+  const c=await choose(['“Ten.”','“Two.”']);
+  if(c===1){await say('pat','(from behind the counter, very calm) I heard that.','evil');await N('You will remember that she heard that.')}
+  else await say('pat','(not looking up) Good boy.','smirk');
+  await walk('nivaan',350,80);remove('nivaan')}
+];
+
+/* ---- table talk ---- */
+const TALK=[
+ ['Who would win: Coach, or a horse.','Which horse.','Any horse.','…The horse. Coach has bad knees.'],
+ ['I put hot sauce in my yogurt. On purpose.','Why.','To feel something.'],
+ ['If this school had a national anthem, what would it be?','The fire alarm.','…Yeah. The fire alarm.'],
+ ['Rate Pat’s stew out of ten.','Eleven.','Out of TEN.','Eleven.'],
+ ['Do teachers eat lunch?','I saw Mr. Voss eat a whole onion once. Like an apple.','That’s not lunch, that’s a warning.'],
+ ['Fries for the table.','Whose fries?','Ours now. I took them off Kayden.'],
+ ['What’s the actual plan for Inspection Day?','I thought you had the plan.','I thought YOU had the plan.','…We should get a plan.'],
+ ['My cousin says in high school you get a locker AND a girlfriend.','You got the locker.','I got the locker.'],
+ ['Why does the cafeteria smell like pennies today?','Don’t ask Pat.','I asked Pat.','…What did she say?','She said “don’t.”']
+];
+const CREW=['hasan','arjun','david','omer','nivaan','corey','sean','paul','kenneth'];
+
+async function sitWith(who,talk){
+ const cast={you:[150,1,{y:150,pose:'sit',hold:'tray'}]};const xs=[176,124,200];
+ who.forEach((k,i)=>cast[k]=[xs[i],i===1?1:-1,{y:150,pose:'sit',hold:pick(['tray','sandwich','tray'])}]);
+ scene('canteen',cast,true);
+ const sp=[...who,...who,...who];
+ for(let i=0;i<talk.length;i++)await say(sp[i%who.length]||who[0],talk[i],pick(['happy','smirk','shock','cold']));
+}
+
+async function lunchRun(){
+ const menu=menuToday();
+ const cast={pat:[90,1,{y:140}],you:[130,-1,{y:152}]};
+ const q=['kid1','kid2'].filter(k=>K[k]);q.forEach((k,i)=>cast[k]=[108-i*18-40,1,{y:150,hold:'tray'}]);
+ scene('canteen',cast,true);
+ await say('pat','Today: '+menu.map(m=>m.n).join('. ')+'. '+pick(['Choose fast. I’ve got a hip.','Don’t ask what’s in anything.','Move it, sweetheart.']),'cold');
+ /* the queue */
+ try{await QUEUE[cal()%QUEUE.length]()}catch(e){if(e===DEATH)throw e;console.error(e)}
+ const c=await choose(menu.map(m=>m.n),'LUNCH');const m=menu[c];
+ hold('you','tray');await N(m.line);
+ /* where to sit */
+ const crew=CREW.filter(alive);const opts=[],acts=[];
+ if(crew.length>=2){opts.push('Sit with the crew.');acts.push(async()=>{
+  const who=pickBy(crew,Math.min(3,crew.length),cal()*13+1);
+  await sitWith(who,TALK[(cal()+who.length)%TALK.length]);
+  const s=typeof storyNow==='function'?storyNow():null;
+  if(s&&s.goal)await N('Under the table, '+K[who[0]].n.split(' ')[0]+' slides you a napkin. On it, in ketchup-adjacent pen: “'+s.goal+'”')})}
+ if(alive('aidan')){opts.push('Sit with Aidan.');acts.push(async()=>{
+  scene('canteen',{aidan:[176,-1,{y:150,pose:'sit',ex:'sad'}],you:[150,1,{y:150,pose:'sit',hold:'tray'}]},true);
+  await say('aidan',pick(['(not eating) I always sit here. The light’s good. It never changes.','(pushing a pea around) Pat used to give me two cookies. She doesn’t remember why.','You don’t have to sit with me. Nobody has to sit with me.']),'sad');
+  await say('aidan','…Thanks, though.','happy')})}
+ for(const g of['stella','mia','jade'])if(D.f['with_'+g]&&!(P.dumped||{})[g]&&alive(g)){opts.push('Sit with '+K[g].n.split(' ')[0]+'.');acts.push(async()=>{
+  scene('canteen',{[g]:[176,-1,{y:150,pose:'sit',ex:'blush'}],you:[150,1,{y:150,pose:'sit',hold:'tray'}]},true);
+  await say(g,pick(['(stealing your fries one at a time) You weren’t eating these.','People are staring. Let them.']),'blush')})}
+ opts.push('Eat alone. Fast.');acts.push(async()=>{await N('You eat the whole thing in four minutes, standing up, like a raccoon. You have time for one more thing. (+1 🍎)');D.apples=(D.apples||0)+1});
+ const w=await choose(opts,'WHERE DO YOU SIT?');await acts[w]();
+ hold('you',null);D.f['ate'+cal()]=1;D.apples=(D.apples||0)+m.a;updateLoc&&updateLoc();
+ toast('🍽 Lunch: '+m.n+'. +'+m.a+' 🍎');
+ return 'stay'}
+spot({room:'canteen',period:LUNCH,x:86,y:134,label:'Get lunch from Pat',short:'LUNCH',free:1,cond:()=>lunchNow()&&!ate(),run:lunchRun});
+
+/* ---- everyone eats ---- */
+const FOOD=['sandwich','crisps','juice','sandwich','cookie'];
+{const _hu=HOOK.update;HOOK.update=(dt,rdt)=>{_hu&&_hu(dt,rdt);
+ if(!lunchNow()||busy)return;const s=rdt||dt||0.016;
+ for(const id in A){const a=A[id];
+  if(!a._lunchSet){a._lunchSet=1;if(id!=='you'&&K[id]&&!K[id].adult&&!a.hold&&!a.dead){a.hold=D.room==='canteen'?'tray':FOOD[(id.length+cal()+(id.charCodeAt(1)||0))%FOOD.length];a._lunch=1;a._eatT=Math.random()*3;if(['cross','hips','phone','lean','text'].includes(a.pose))a.pose=null}}
+  if(!a._lunch)continue;
+  if(a.pose&&a.pose!=='drink'){continue}
+  a._eatT=(a._eatT||0)-s;
+  if(a._eatT<=0){if(a.pose==='drink'){a.pose=null;a._eatT=2+Math.random()*3}else{a.pose='drink';a._eatT=.7}}}}}
+/* the back bench fills with diners */
+{const ob=ROOMS.canteen.bg;ROOMS.canteen.bg=function(){ob.apply(this,arguments);
+ if(D&&!D.weekend){R(16,18,96,40,'#1e3a2c');R(16,18,96,1,'rgba(255,255,255,.15)');px('TODAY:',22,23,'#f0f0a0');
+  menuToday().forEach((m,i)=>px(m.n.replace(/’/g,"'").toUpperCase(),22,31+i*8,i===2?'#e06a6a':'#ffffff'));
+  if(ate())px('SERVED',78,23,'#8ad08a')}
+ if(!lunchNow()||D.room!=='canteen'||typeof crowdKid!=='function')return;
+ const xs=[58,84,192,226,262,292];
+ xs.forEach((x,i)=>{const bob=Math.sin(T*5+i*1.7)>.7;drawKid(crowdKid(i+3),x,140,{dir:i%2?-1:1,pose:bob?'drink':'sit',hold:i%2?'sandwich':'tray',ex:i%3?'happy':null})});
+ for(let i=0;i<4;i++){const q=(T*.5+i/4)%1;g.globalAlpha=.25*(1-q);R(70+i*60,124-q*10,3,2,'#fff');g.globalAlpha=1}}}
+
+/* ---- toasts ---- */
+ON_PERIOD.push(async(i,resume)=>{if(resume||!D||D.weekend||TEST)return;
+ if(i===LUNCH)setTimeout(()=>toast('🍽 LUNCH. Pat’s serving: '+menuToday().map(m=>m.n).join(', ')+'. Cafeteria counter: free, +🍎.'),1800);
+ if(i===LUNCH+1&&!D.f['ate'+cal()])setTimeout(()=>toast('🫃 You skipped lunch. Your stomach growls through all of period 5. The kid next to you moves their chair.'),2200)});
 }
 
 </script>

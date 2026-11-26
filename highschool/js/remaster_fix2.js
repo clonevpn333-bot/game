@@ -99,3 +99,102 @@ if(ROOMS.courtyard){
  if(typeof LIGHT!=='undefined')LIGHT.courtyard=()=>({amb:1,tint:[70,60,30],src:[[160,10,220,.18,[255,245,215]]]});
 }
 }
+
+/* =====================================================================
+   MARCUS'S HOUSE (the party) and THE RESERVOIR, repainted.
+   Kept: couch 36-134, coffee table 180-220, TV 130-210 x 22-74,
+   hot-tub doors 226-316, the photos of Marcus age 4, NO SWIM sign,
+   the dam 120-210, the dock 100-320 x 128-154.
+   ===================================================================== */
+{
+const rmCache=(id,draw)=>guCache('rm_'+id,'',draw);
+const rmMix=(a,b,t)=>{const A_=guRGB(a),B=guRGB(b);return`rgb(${A_[0]+(B[0]-A_[0])*t|0},${A_[1]+(B[1]-A_[1])*t|0},${A_[2]+(B[2]-A_[2])*t|0})`};
+if(ROOMS.party){
+ function partyPaint(){
+  /* damask wallpaper, wainscot, crown moulding */
+  R(0,0,W,106,'#3a2438');for(let y=8;y<80;y+=14)for(let x=((y/14)%2)*10;x<W;x+=20){R(x+8,y,4,2,'#4a3048');R(x+6,y+2,8,4,'#4a3048');R(x+8,y+6,4,2,'#4a3048');R(x+9,y+3,2,2,'#5a3a58')}
+  R(0,0,W,6,'#2a1828');R(0,6,W,2,'#6a4a5a');R(0,80,W,26,'#4a2a3a');R(0,80,W,2,'#7a5a6a');for(let x=0;x<W;x+=40)R(x+4,84,32,18,'rgba(0,0,0,.15)');
+  /* family photos: Marcus, age 4, in every one */
+  for(let i=0;i<4;i++){const x=16+i*28,y=24+(i%2)*3;R(x,y,22,18,'#c8a868');R(x+2,y+2,18,14,['#8aa0b0','#b08a70','#90a080','#a090b0'][i]);R(x+7,y+6,6,6,'#e8c8a0');R(x+8,y+5,4,2,'#3a2a1a');R(x+8,y+9,4,1,'#c84a4a');R(x+2,y+2,18,1,'rgba(255,255,255,.25)')}
+  pxc('MARCUS',70,48,'#f0e0c0');pxc('AGE 4',70,56,'#c8b8a0');
+  /* a lamp with a shade, knocked crooked */
+  R(118,52,2,28,'#2a2a2a');R(111,44,16,9,'#e8c890');R(112,45,14,1,'#fff0c0');R(114,78,10,3,'#2a2a2a');
+  /* the big TV, karaoke */
+  R(128,20,84,52,'#0a0a0a');R(130,22,80,48,'#141c2c');R(160,72,20,4,'#1a1a1a');R(150,76,40,4,'#2a1a20');
+  /* sliding doors to the deck and the hot tub, night outside */
+  R(224,14,94,92,'#1a1420');guGrad(16,104,'#0a1030','#2a2a5a',226,90);
+  for(let i=0;i<14;i++)R(228+hsh(i+300)*86,18+hsh(i+301)*40,1,1,'#e8e8ff');R(296,22,8,8,'#f4f0d8');R(298,22,6,6,'#0a1030');
+  R(226,70,90,34,'#3a2a22');for(let x=226;x<316;x+=10)R(x,70,1,34,'#2a1a14');
+  R(236,78,64,22,'#4a4a52');R(238,80,60,6,'#3ac8e8');R(238,86,60,14,'#2a5a6a');for(let i=0;i<4;i++)R(242+i*14,92,8,1,'rgba(150,240,255,.5)');
+  R(270,16,3,90,'#6a6a7a');R(226,16,90,1,'rgba(255,255,255,.2)');g.globalAlpha=.12;R(230,18,10,84,'#fff');R(276,18,6,84,'#fff');g.globalAlpha=1;
+  /* string lights across the ceiling */
+  for(let x=0;x<W;x+=2){const y=10+Math.sin(x/320*Math.PI*3)*4;R(x,y,2,1,'#2a2a2a')}
+  /* floor: hardwood with a rug */
+  R(0,106,W,6,'#2a1820');guGrad(112,180,'#6a4a34','#4a3224');
+  for(let y=112;y<180;y+=8)for(let x=((y/8)%3)*14;x<W;x+=42){R(x,y,41,1,'rgba(0,0,0,.2)');R(x,y+1,41,1,'rgba(255,220,180,.05)')}
+  R(24,140,160,30,'#6a2a3a');R(28,143,152,24,'#7a3a4a');for(let x=30;x<178;x+=8)R(x,154,4,2,'#c8a050');R(24,140,160,1,'rgba(255,255,255,.1)');
+  /* the couch */
+  R(36,112,98,8,'#3a2050');R(36,118,98,18,'#4a2a5a');R(36,114,6,22,'#3a2050');R(128,114,6,22,'#3a2050');for(let i=0;i<3;i++)R(44+i*28,118,26,6,'#5a3a6a');R(40,136,3,4,'#1a1a1a');R(127,136,3,4,'#1a1a1a');
+  /* the coffee table, covered in cups */
+  R(178,122,44,4,'#3a2a20');R(178,122,44,1,'#5a4a3a');R(182,126,2,12,'#2a1a14');R(216,126,2,12,'#2a1a14');
+  for(let i=0;i<6;i++)R(184+i*6,117,4,5,'#c02030');R(185,117,2,1,'#f05060');
+  /* the snack table by the doors, chips everywhere */
+  R(248,128,56,4,'#e8e8e8');R(250,132,2,10,'#8a8a8a');R(300,132,2,10,'#8a8a8a');R(256,122,14,6,'#f0c040');R(276,122,10,6,'#e06a3a');R(290,120,8,8,'#6a3a2a');
+  for(let i=0;i<26;i++)R(hsh(i+40)*W,148+hsh(i+41)*28,2,1,'#e8c04a');
+  for(let i=0;i<10;i++){const x=hsh(i+60)*W,y=150+hsh(i+61)*26;R(x,y,3,4,'#c02030');R(x,y,3,1,'#f05060')}
+ }
+ ROOMS.party.bg=function(){rmCache('party2',partyPaint);
+  /* karaoke screen cycles, lyrics bounce */
+  const k=Math.floor(T*.7)%3;R(132,24,76,44,['#2a3a8a','#8a2a5a','#2a7a5a'][k]);px('KARAOKE',150,30,'#fff');
+  const lyr=['TOTAL ECLIPSE','OF THE PARTY','SING IT MARCUS'][k];pxc(lyr,170,46,'#f0e0a0');R(140+((T*30)%56),56,4,4,'#f0e040');
+  /* string lights twinkle */
+  for(let i=0;i<20;i++){const x=8+i*16,y=11+Math.sin(x/320*Math.PI*3)*4,c=['#ff4a7a','#4ac8ff','#f0e040','#6aff8a'][i%4];R(x,y,2,2,c);if(Math.sin(T*3+i*1.3)>.3){g.globalAlpha=.18;R(x-4,y-3,10,8,c);g.globalAlpha=1}}
+  /* disco ball dots sweep the walls */
+  R(170,0,1,10,'#888');R(166,10,9,9,'#c8c8d0');R(168,12,2,2,'#fff');
+  for(let i=0;i<14;i++){const a=T*.8+i*.45,x=170+Math.cos(a)*(60+i*9),y=40+Math.sin(a*1.3+i)*30;if(x>0&&x<224){g.globalAlpha=.35;R(x,y,2,2,['#fff','#ffb0d0','#b0e0ff'][i%3]);g.globalAlpha=1}}
+  /* hot tub steam */
+  g.globalAlpha=.3;for(let i=0;i<6;i++){const q=(T*.4+i/6)%1;R(240+i*10+Math.sin(T+i)*3,78-q*50,6,3,'#d8e8f0')}g.globalAlpha=1;
+  /* bass: the cups on the table hop */
+  if(Math.sin(T*8)>.85)for(let i=0;i<6;i++)R(184+i*6,116,4,1,'#f05060')};
+ if(typeof LIGHT!=='undefined')LIGHT.party={amb:.52,tint:[60,20,70],src:[[170,46,110,.45,[120,170,255]],[270,80,80,.35,[120,220,255]],[119,48,50,.35,[255,210,150]],[60,12,90,.2,[255,120,180]]],wallAO:1};
+}
+if(ROOMS.lake){
+ function lakePaint(){
+  /* sunset sky, clouds lit from below */
+  guGrad(0,62,'#3a4a7a','#f0b080');guGrad(36,62,'#f0a070','#f8d8a0');
+  for(const [x,y,w] of[[20,14,60],[110,22,80],[220,10,50],[260,30,46]]){R(x,y,w,3,'#c88090');R(x+4,y+3,w-8,2,'#f0a080');R(x+10,y-2,w-24,2,'#a06a8a')}
+  /* far hills, three layers */
+  for(let x=0;x<W;x++){const h1=Math.sin(x*.02)*6+Math.sin(x*.07)*3;R(x,44+h1,1,20,'#8a7a9a');const h2=Math.sin(x*.035+2)*5+Math.sin(x*.11)*2;R(x,50+h2,1,14,'#6a6a7a')}
+  /* the dam */
+  R(118,46,94,16,'#a8a4a0');R(118,46,94,2,'#d8d0c8');for(let i=0;i<6;i++){R(122+i*15,50,10,10,'#7a7672');R(122+i*15,58,10,2,'#5a8ab0')}R(116,44,4,18,'#8a8682');R(210,44,4,18,'#8a8682');
+  /* water: deep at the bottom, sky reflected at the top */
+  guGrad(62,124,'#e8a888','#2a4a6a');
+  /* the sun's reflection column */
+  g.globalAlpha=.35;for(let y=64;y<120;y+=3)R(250-(y-62)*.1,y,14+(y-62)*.2,1,'#fff0c0');g.globalAlpha=1;
+  /* reeds and cattails on the left */
+  for(let i=0;i<30;i++){const x=hsh(i+20)*90,hh=10+hsh(i)*16;R(x,124-hh,1,hh,'#4a5a2a');if(i%3===0){R(x-1,124-hh-4,3,5,'#6a4a2a')}}
+  /* the bank: grass, then mud */
+  R(0,122,W,10,'#5a6a3a');for(let x=0;x<W;x+=2)R(x,121-hsh(x)*3,1,4,'#6a8a4a');guGrad(130,180,'#5a5032','#3a3424');
+  for(let i=0;i<30;i++)R(hsh(i+90)*W,134+hsh(i+91)*44,2,1,'rgba(255,230,180,.15)');
+  /* the dock */
+  R(100,128,220,26,'#6a4a2a');for(let i=0;i<220;i+=10){R(100+i,128,9,26,rmMix('#8a6a42','#7a5a38',hsh(i)));R(100+i,128,9,1,'#c8a070')}
+  R(100,154,220,2,'#3a2a18');for(let i=0;i<5;i++){R(110+i*48,154,4,20,'#4a3424');R(110+i*48,170,4,4,'rgba(80,110,140,.5)')}
+  R(300,118,3,14,'#4a3424');R(300,116,6,3,'#c84a3a');/* a mooring post with a red cap */
+  /* the NO SWIM sign */
+  R(28,98,26,18,'#e8e4da');R(28,98,26,1,'#fff');R(29,99,24,16,'#f4f0e6');pxc('NO',41,101,'#c03030');pxc('SWIM',41,108,'#c03030');R(40,116,2,14,'#6a4a2a');
+  /* a lifebuoy on the dock */
+  R(236,132,12,10,'#e84a3a');R(239,135,6,4,'#6a4a2a');R(236,136,12,2,'#f4f0e6');
+ }
+ ROOMS.lake.bg=function(){rmCache('lake2',lakePaint);
+  /* the sun sinking a little, then not */
+  R(250,14,14,14,'#fff0c0');g.globalAlpha=.25;R(244,8,26,26,'#fff0c0');g.globalAlpha=1;
+  /* ripples drift */
+  for(let y=66;y<122;y+=4){const o=Math.sin(T*1.1+y*.3)*5;g.globalAlpha=y<84?.5:.3;for(let x=(y*7)%24;x<W;x+=30)R(x+o,y,8,1,y<84?'#f8d8c0':'#8ab0c8');g.globalAlpha=1}
+  /* a fish jumps now and then */
+  {const k=(T%9)/9;if(k<.08){const q=k/.08;R(180+q*10,90-Math.sin(q*Math.PI)*10,3,2,'#c8d0d8')}if(k>.08&&k<.2){const q=(k-.08)/.12;g.globalAlpha=.5*(1-q);R(190-q*8,92,q*16+2,1,'#fff');g.globalAlpha=1}}
+  /* birds, reeds swaying */
+  for(let i=0;i<3;i++){const x=((T*6+i*110)%380)-30,y=20+i*6,f=Math.sin(T*8+i)>0;R(x,y,3,1,'#2a2a3a');R(x-1,y+(f?-1:1),1,1,'#2a2a3a');R(x+3,y+(f?-1:1),1,1,'#2a2a3a')}
+  for(let i=0;i<8;i++){const x=hsh(i+20)*90,s=Math.round(Math.sin(T*1.4+i)*1);R(x+s,100+hsh(i)*8,1,3,'#5a6a3a')}};
+ if(typeof LIGHT!=='undefined')LIGHT.lake={amb:.9,tint:[90,60,40],src:[[256,22,220,.32,[255,210,160]]]};
+}
+}
