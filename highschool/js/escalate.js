@@ -107,9 +107,7 @@ if(typeof DAILY_F!=='undefined')DAILY_F.push('heads','headsDay');
  if(s){const done=typeof CH_GOAL!=='undefined'?CH_GOAL.filter(c=>c.done()).length:0,tot=typeof CH_GOAL!=='undefined'?CH_GOAL.length:9;m.appendChild(qel('div','act','★ MAIN STORY: '+s.t+' ('+done+'/'+tot+'): '+s.goal));}
  for(const h of headlinersToday())m.appendChild(qel('div','act',(MIS[h].icon||'•')+' '+MIS[h].name+': '+(MIS[h].goal||((MIS[h].tips||[])[D.mp[h]||0])||'')));
  const first=body.querySelector('.qcard');body.insertBefore(box,first||null);
- /* side quests fold away unless asked */
- if(!QL.allNew){for(const sec of[...body.querySelectorAll('.qsec')])if(/NEW THIS PERIOD/.test(sec.textContent)){let n=sec.nextElementSibling;const hide=[];while(n&&!n.classList.contains('qsec')){hide.push(n);n=n.nextElementSibling}
-   const cnt=hide.filter(e=>e.classList.contains('qcard')).length;hide.forEach(e=>e.remove());sec.textContent='＋ MORE SIDE QUESTS';const b=qel('button','more','Show side quests ▾');b.onclick=()=>{QL.allNew=1;openQuest()};sec.after(b)}}}}
+}}
 if(typeof approachCandidate==='function'){const _ac=approachCandidate;approachCandidate=function(){const c=_ac();if(!c)return c;const hs=headlinersToday();if(c.started||c.track||hs.includes(c.h.mis)||/^crew/.test(c.h.mis))return c;return Math.random()<.35?c:null}}
 
 /* ================= 5. MAIN STORY SET PIECES ================= */

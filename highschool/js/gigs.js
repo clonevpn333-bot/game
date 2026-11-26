@@ -90,7 +90,7 @@ for(let i=0;i<3;i++){
 {const _br=buildRoom;buildRoom=function(room){const r=_br(room);try{if(D&&!D.weekend)for(let i=0;i<3;i++){const g=G(i);if(!g||g.room!==room||!g.per.includes(D.period)||A[g.tgt]||D.dead[g.tgt]||!K[g.tgt])continue;
  if(!((g.kind==='deliver'&&g.st==='give')||((g.kind==='shove'||g.kind==='fight')&&g.st==='do')))continue;const f=floorOf(room);put(g.tgt,70+i*70,1,{y:clamp(f[0]+10,f[0],f[1])})}}catch(e){}return r}}
 /* the morning text */
-ON_PERIOD.push(async(i,resume)=>{if(resume||!D||D.weekend||TEST||i!==0)return;const l=gigsToday();if(!l.length)return;setTimeout(()=>toast('📱 3 new gigs: '+l.map(g=>K[g.client].n).join(', ')+'. Q → ⚡ Do Now.'),3200)});
+ON_PERIOD.push(async(i,resume)=>{if(resume||!D||D.weekend||TEST||i!==0)return;const l=gigsToday();if(!l.length)return;setTimeout(()=>toast('📱 3 new gigs: '+l.map(g=>K[g.client].n).join(', ')+'. Q → 🎲 Side & Gigs.'),3200)});
 /* ⚡ Do Now: its own section */
 {const _qn=qlNow;qlNow=function(body){
  const _ta=thingsAt;thingsAt=function(p,o){return _ta(p,o).filter(t=>t.mis!=='gigs')};
