@@ -71,3 +71,6 @@ const VVIC={on:false,x:0,say:'',until:0};
  if(typeof crew==='function'){const cr=crew();cr.ev=cr.ev||{};cr.ev.volunteers=1;save&&save();toast('🎁 EVIDENCE: Mr. Kim’s VOLUNTEERS wall. The file gets thicker.')}
  await tw(fxState,{dark:0},500);return r}}}
 {const _ce=crewEvidence;crewEvidence=function(){const c=crew();return _ce()+(c.ev&&c.ev.volunteers?1:0)}}
+
+/* The Other Miss stairwell chase: getting caught (lives here because stealth loads after dopple.js) */
+{const _ct=caughtBy;caughtBy=function(id){if(id!=='dopple'||!DPCH.on)return _ct(id);DPCH.on=false;PAT=null;runHook({run:async()=>{SFX.squelch();SFX.crunch();shake(2);flash('#a00010',.6);blood(A.you.x,A.you.y-22,70,null,120,A.you.y+2);fxState.dark=0;await die('hungry')}})}}

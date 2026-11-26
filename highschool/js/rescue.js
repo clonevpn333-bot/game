@@ -89,7 +89,7 @@ const rc=()=>{const c=crew();c.saved=c.saved||{};c.gone=c.gone||{};return c};
 const abdToday=()=>{if(typeof SDAY!=='function'||!D||D.weekend)return null;const a=ABD[SDAY()];if(!a||!K[a.t]||(window.EDITION_CUT||[]).includes(a.t))return null;const c=rc();if(c.saved[a.v]||c.gone[a.v])return null;return a};
 const PNAME={0:'before school',2:'break',4:'lunch'},RNAME={chem:'the Chem Lab',gym:'the gym',maths:'Ms. Sherman’s room',corridor:'the front hall',library:'the library',toilets:'the bathroom'};
 /* the morning tip, once you're at school and today's story beat is done */
-{const _hu=HOOK.update;HOOK.update=(dt,rdt)=>{_hu&&_hu(dt,rdt);if(TEST||!D||busy||panelMode!=='roam'||(typeof atHome==='function'&&atHome()))return;const a=abdToday();if(!a||D.f.abdTip||D.period>a.per||!D.f['esc'+cal()])return;
+{const _hu=HOOK.update;HOOK.update=(dt,rdt)=>{_hu&&_hu(dt,rdt);if(TEST||!D||busy||panelMode!=='roam'||(typeof atHome==='function'&&atHome())||(typeof PAT!=='undefined'&&PAT))return;const a=abdToday();if(!a||D.f.abdTip||D.period>a.per||!D.f['esc'+cal()])return;
  D.f.abdTip=1;setTimeout(()=>{if(busy||panelMode!=='roam'){D.f.abdTip=0;return}runHook({run:async()=>{await dms('Nivaan','online',a.tip.concat([['me','where and when','7:58'],['them',RNAME[a.room]+'. '+PNAME[a.per]+'. if you dont go nobody will','7:58']]));return 'stay'}})},3500)}}
 /* the bell for it, and what happens if you never show */
 ON_PERIOD.push(async(i,res)=>{if(TEST||!D||D.weekend)return;const a=abdToday();if(!a)return;
