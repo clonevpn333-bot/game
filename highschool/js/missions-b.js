@@ -66,7 +66,7 @@ hook({mis:'instella',period:2,room:'corridor',who:'arjun',label:'Get Stella’s 
  scene('corridor',{arjun:[60,1,{pose:'cross',y:146,hold:'ball'}],nivaan:[120,-1,{pose:'phone',y:146}],aidan:[215,1,{y:140}],you:[90,-1,{y:154}]});
  await say('arjun','This? Found it. In a bag. That I opened.','smirk');
  await say('arjun','Tell Sean she’s only talking to him because her dad left and she’s got low standards. Like, underground.','smirk');
- await say('nivaan','Bro, that’s actually evil.','shock');
+ await say('nivaan','Bro, that’s actually evil. That’s fucking evil.','shock');
  await say('arjun','It’s not evil. It’s accurate. Evil is just accurate with a hood on.','smirk');
  hold('arjun',null);
  await arjunGives('ball','Enjoy your little romance. I give it a week. A Friday, even.');
@@ -107,7 +107,7 @@ hook({mis:'instella',period:4,room:'field',who:'sean',label:'Give Sean the ball'
  await say('you','UNDER THE TREE! NOW!','yell');
  await Promise.all([walk('sean',70,90),walk('stella',84,90)]);face('sean',1);face('stella',-1);
  SFX.whoosh();const j=prop({t:'javelin',x:300,y:110,rot:.25});await tw(j,{x:180,y:142},300,'in');SFX.thud();shake(.5);
- await say('omer','(looking at the javelin quivering where they were standing) Bro.','shock');
+ await say('omer','(looking at the javelin quivering where they were standing) …Bro. I nearly shit.','shock');
  await wait(400);
  cue('romance');await tw(fxState,{romance:1},1200);
  await say('sean','I had a whole speech. I practiced. On your voicemail. Forty times.','blush');

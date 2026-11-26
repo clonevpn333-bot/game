@@ -218,7 +218,7 @@ hook({mis:'bakeoff',period:1,room:'foodtech',who:'auto',run:async()=>{
   SFX.scream();await wait(500);SFX.fire();prop({t:'smoke',x:276,y:60});
   await N('Brandon goes in. The little window glows a bit brighter. The screaming stops at about the same time the timer dings.');
   await say('tez','(not looking up from his icing) Every year. Every single year.','sad');
-  await say('kayden','Bro got ratio’d by a cake.','shock');
+  await say('kayden','Bro got ratio’d by a fucking cake.','shock');
   await say('kettle','Star Baker is… YOU! Here’s your sticker, petal!','happy');
   if(A.mia)await say('mia','(quietly, to you) If you swapped those tins, I saw. I won’t say anything. I’ll just remember.','angry');
   await say('kettle','Brandon pie at lunch, everyone! Tell Pat!','happy');

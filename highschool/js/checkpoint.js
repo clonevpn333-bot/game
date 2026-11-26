@@ -94,7 +94,7 @@ async function cpDay8(arch){
    blood(A.kid2.x,A.kid2.y-22,50,1,100,A.kid2.y+2);kill('kid2','impale',{pool:34});D.dead.kid2=1;hold('coach','javelin');pose('coach',null)}
   arch.light=0;
   await N('Nobody in the line makes a sound.');
-  if(A.adam)await say('adam','(very quietly, not into the megaphone) …Belts are metal. Did nobody read the letter.','scared')}
+  if(A.adam)await say('adam','(very quietly, not into the megaphone) …Belts are metal. Did nobody read the fucking letter.','scared')}
  intel('backway');
  await N('Behind you, a kid whispers to his friend: “back way. through the woods. tomorrow.”')}
 
@@ -163,7 +163,7 @@ async function cpDay10(arch){
 
 /* ---- day 11: the drop ---- */
 async function cpDay11(arch){
- if(A.adam)await say('adam','(megaphone, voice gone) Tomorrow the inspectors come. Tomorrow we are PERFECT.','yell');
+ if(A.adam)await say('adam','(megaphone, voice gone) Tomorrow the inspectors come. Tomorrow we are PERFECT. (the megaphone stays on) …Oh, fuck me, it’s still on.','yell');
  put('kid5',100,1,{y:152,hold:'pistol',ex:'scared'});
  await N('In front of you, a ninth grader pulls his hoodie off over his head to put it in the tray. Something falls out of it.');
  SFX.thud&&SFX.thud();hold('kid5',null);const gp=prop({t:'gunfloor',x:56,y:157,layer:3});
@@ -176,7 +176,7 @@ async function cpDay11(arch){
   await N('You pick it up to hand it to somebody. Coach doesn’t wait to find out who.');await die('detector')}
  if(c===1){SFX.whoosh&&SFX.whoosh();await tw(gp,{x:300},500);
   await N('It skates across the lobby and under the confiscation table. Coach watches it go. Then he looks back at you for a very long time.');
-  if(A.coach)await say('coach','Nice touch, champ. Fast feet. Friday, fast feet.','evil')}
+  if(A.coach)await say('coach','Nice touch, champ. Fast feet. Friday, fast fucking feet.','evil')}
  else{pose('you','up');
   await N('You put your foot on it and your hands in the air and you shout for the officer so loud your voice cracks in half.');
   if(K.cop){if(!A.cop)put('cop',334,-1,{y:150});await walk('cop',72,120);pose('cop','grab');const i=props.indexOf(gp);if(i>=0)props.splice(i,1);

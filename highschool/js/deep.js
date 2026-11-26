@@ -114,7 +114,7 @@ hook({mis:'bigscore',period:8,room:'foodcourt',who:'auto',cond:()=>D.f.bs2&&!D.d
   await N('You pull your beanies off and stand very still in the line for the 5:30 showing of a movie about a talking dog. Big Glen walks past you. Twice.');ok=heat<=3||Math.random()<.5}
  else if(ok){const raced=await vgRace('glen');ok=raced;if(raced)await Promise.all([walk('you',-30,170),walk('kayden',-30,170),walk('kid4',-30,170)])}
  if(!ok){pose('glen','grab');SFX.zap&&SFX.zap();SFX.static&&SFX.static();shake(.8);A.kayden.ex='hurt';pose('kayden','hurt');
-  await N('Big Glen gets Kayden with the taser and you by the hood. You spend two hours in the mall office while your mom is called. Kayden is still saying “ow” when she arrives.');
+  await N('Big Glen tases Kayden and grabs you by the hood. Two hours in the mall office. Kayden is still saying “ow” when your mom arrives.');
   hold('you',null);await complete('bigscore',pk.exit==='race'?'tased':'caught');return 'stay'}
  await N('Outside, under the streetlight, breathing like you’ve run a marathon, you look at the necklace. On the back of the pendant, tiny: MADE IN CHINA $4.99.');
  await say('kayden','(staring at it) …Eight hundred dollars.','shock');await say('kayden','(slowly putting it on anyway) …The Hittaz are still going legit.','sad');

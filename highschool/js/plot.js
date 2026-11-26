@@ -65,7 +65,7 @@ async function aidanTries(line,reply){
 
 BEATS[1]=async()=>{
  crewScene(['david','hasan','corey','nivaan','stella','sean','kenneth','arjun']);
- await N('Break. The back of the library, behind Biographies. David has called a meeting. David has never called a meeting before. He’s holding a clipboard he took from the office.');
+ await N('Behind Biographies. David has called a meeting. David has never called a meeting. He has a clipboard he stole from the office.');
  await say('david','Tyler didn’t come home on Friday. He’s not in today. His mom posted on Facebook all weekend. “MISSING”. In capitals. With the crying emoji.','sad');
  await say('corey','He’s in my math class. In the Trailer. On Friday Ms. Sherman kept him behind after the bell. I waited for him by the steps. He never came out.','scared');
  await say('hasan','Never came out? It’s a TRAILER. It’s got one door.','scared');
@@ -192,7 +192,7 @@ spot({room:'chem',period:[0,1,2,3,4,5,6],x:272,y:150,label:'Photograph the back 
   else{await N('Mr. Voss is right there. You wait until he bends down to look at something in a jar, then you move.')}
  }
  SFX.door();pose('you','phone');SFX.shutter();flash('#fff',.4);await wait(300);pose('you',null);
- await N('The fridge door swings open. Fourteen jars. AIDAN. AIDAN. AIDAN. And on the shelf below, a newer jar. Its label says TYLER M. You take the photo. You take eleven photos. Your hands won’t stop.');
+ await N('Fourteen jars. AIDAN. AIDAN. AIDAN. On the shelf below, a newer one: TYLER M. You take eleven photos. Your hands won’t stop.');
  evidence('jars','Mr. Voss’s fridge');intel('aidanJars');
  return 'stay';
 }});
@@ -215,7 +215,7 @@ spot({room:'corridor',period:[0,1,2,3,4,5,6],x:278,y:150,label:'Pick the lock on
  await N('Bottom drawer. On top, exactly like Aidan said: a detention register. FRIDAY 13 MARCH 1987. Four names. O. Finch. R. Patel. D. Mason. L. Okafor. Every one crossed out in red pen.');
  await N('In the margin, in very neat handwriting: “They were MY detention. My responsibility. I went to get a coffee.”');
  evidence('register','The 1987 detention register');lore('ollie');
- SFX.thud();await N('Footsteps in the corridor. Heels. Ms. Sherman. You get out through the side door with the register under your hoodie, and your heart trying to leave through your mouth.');
+ SFX.thud();await N('Heels in the corridor. You’re out the side door with the register under your hoodie and your heart trying to leave through your mouth.');
  D.room='corridor';buildRoom('corridor');return 'stay';
 }});
 ON_PERIOD.push(async(i)=>{if(i===7&&crew().beat5&&!D.weekend){crew().fri1=1;save()}});
@@ -240,7 +240,7 @@ hook({mis:'crew',period:[2,4],room:'canteen',who:'pat',label:'Ask Pat about the 
 spot({room:'corridor',period:[0,1,2,3,4,5,6],x:40,y:150,label:'Go down the old hatch by the pool doors',short:'HATCH',cond:()=>onOrAfter(10)&&!crew().ev.boiler,run:async()=>{
  const cast={you:[60,1,{y:156}]};if(!D.dead.omer)cast.omer=[36,1,{y:150,hold:'light'}];
  scene('boiler',cast,true);cue('evil');
- await N('Down the ladder. Under the pool. The air is wet and warm and it smells like chlorine and something much older. Your phone flashlight finds the old boiler, black and split open like a burst can.');
+ await N('Down the ladder, under the pool. Wet, warm air. Chlorine, and something much older. Your light finds the old boiler, split open like a burst can.');
  if(A.omer)await say('omer','(whispering) I said I wouldn’t come down here. I came down here. I hate that I came down here.','scared');
  await walk('you',220,50);
  await N('On the wall by the coal chute, scratched into the brick, low down, at kid height: four names. OLLIE. RAJ. DANNY. LOUISE. Underneath, smaller: “WE WAITED LIKE SHE SAID.”');
@@ -278,13 +278,13 @@ async function inspectionDay(){
  kids.slice(0,10).forEach((n,i)=>cast[n]=[60+i*18,-1,{y:150+(i%2)*6}]);
  scene('hall',cast,true);cue('tension');crowd={n:14,cheer:false,phones:true,front:4,gap:[60,180]};
  await card('INSPECTION DAY','WEEK 2 · FRIDAY',2200);
- await N('Special assembly. The whole school in the hall. Two inspectors from the state on the stage, in grey suits, with clipboards bigger than David’s. The teachers in a row along the side wall, smiling. All of them. All at once.');
+ await N('Special assembly. Two state inspectors on the stage in grey suits. The teachers lined up along the wall, smiling. All of them. All at once.');
  await say('adam','(at the podium, sweating through his shirt) Welcome, inspectors, to Highgate High, where every child is… where every child…','scared');
  await say('insp1','Take your time, Mr. Adam.','happy');
  let score=crewEvidence();
  if(typeof bossFights==='function')score+=await bossFights(teachers);
  const pa=roles.pa||'david';
- if(P.intel.adamKey){score++;await N('Mr. Adam stops. He looks out over the hall and finds you. Then he takes a little brass key out of his pocket and, very slowly, slides it across the podium. Towards the PA desk.')}
+ if(P.intel.adamKey){score++;await N('Mr. Adam finds you in the crowd. Then he slides a little brass key across the podium. Towards the PA desk.')}
  if(c.wiped===1)score++;
  if(roles.pa==='david')score++;if(roles.dis==='stella'||(roles.dis==='arjun'&&c.arjunOk))score++;if(roles.door==='omer')score++;
  cue('fight');

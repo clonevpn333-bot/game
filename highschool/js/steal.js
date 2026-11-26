@@ -93,7 +93,7 @@ function stealArc(gid,S){
   scene('corridor',cast,true);
   await beat(S.title.toUpperCase(),'PART FOUR · EVERYBODY PICKS A SIDE');
   await N('The whole corridor knows. You can tell because it goes quiet in a wave, ahead of you, like you’re a shark fin.');
-  if(S.friend&&A.hasan)await say('hasan','Bro. BRO. Sean’s been crying in the band room since first period. He’s playing the tuba. He doesn’t PLAY the tuba.','angry');
+  if(S.friend&&A.hasan)await say('hasan','Bro. BRO. Sean’s been crying in the band room since first period. He’s playing the tuba. He doesn’t fucking PLAY the tuba.','angry');
   if(S.friend&&A.omer)await say('omer','You don’t do that to a friend. You just don’t. I don’t care how good the girl is.','cold');
   if(S.friend&&A.arjun)await say('arjun','(slow clap) Honestly? Iconic. Evil. Ten out of ten. I’ve never respected you more and I’ll never trust you again.','smirk');
   if(!S.friend&&A.kayden)await say('kayden','Bro you got the mustache kid crying in the drama room. That’s crazy. I’d never. (he would)','laugh');

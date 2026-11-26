@@ -47,8 +47,8 @@ const menuToday=()=>pickBy(MENU,3,cal()*7+3);
 const QUEUE=[
  async()=>{if(!alive('kayden'))return;put('kayden',-14,1,{y:150,ex:'smirk'});await walk('kayden',104,90);
   await N('Kayden walks straight past the whole queue and stands in front of you like he was always there.');
-  const c=await choose(['Let it go.','“Back of the line, Kayden.”','Cut back in front of him.']);
-  if(c===1){await say('kayden','(looking you up and down) …Fine. FINE. You got lucky.','angry');await walk('kayden',340,90);remove('kayden')}
+  const c=await choose(['Let it go.','“Back of the fucking line, Kayden.”','Cut back in front of him.']);
+  if(c===1){await say('kayden','(looking you up and down) …Fine. FINE. Shit. You got lucky.','angry');await walk('kayden',340,90);remove('kayden')}
   else if(c===2){const ok=await mash('CUT',{need:12,time:2.5,info:'Get in front. Elbows.'});await N(ok?'You slide in front of him. The queue makes a noise like a crowd at a boxing match.':'He blocks you with a hip. A practised hip.')}
   else await N('You let it go. He takes the last chocolate milk. He makes eye contact while he does it.')},
  async()=>{if(!alive('sherman'))return;put('sherman',-14,1,{y:148});await walk('sherman',150,60);face('sherman',1);
@@ -67,13 +67,13 @@ const QUEUE=[
  async()=>{await N('The ice cream machine has a sign on it: OUT OF ORDER. The sign is yellow with age. The date on it says 1987.');
   await say('pat','Don’t touch it. It still hums at night.','cold')},
  async()=>{await N('The Year 7 in front of you pays for lunch entirely in 5p coins. He counts them out one at a time. The queue ages.');
-  await say('pat','(counting with him, dead-eyed) …forty-one. Forty-two.','cold')},
+  await say('pat','(counting with him, dead-eyed) …forty-one. Forty-two. Jesus fucking Christ, kid.','cold')},
  async()=>{await N('Pat gives the quiet kid in front of you a double portion and an extra cookie. Then she sees you watching.');
   await say('pat','You saw nothing. You’re seeing nothing now.','evil')},
  async()=>{if(!alive('nivaan'))return;put('nivaan',340,-1,{y:150,pose:'film'});await walk('nivaan',150,80);face('nivaan',-1);
   await say('nivaan','(filming your tray) Day nine of rating Pat’s food for my followers. What are we giving it?','happy');
   const c=await choose(['“Ten.”','“Two.”']);
-  if(c===1){await say('pat','(from behind the counter, very calm) I heard that.','evil');await N('You will remember that she heard that.')}
+  if(c===1){await say('pat','(from behind the counter, very calm) I heard that, you little shit.','evil');await N('You will remember that she heard that.')}
   else await say('pat','(not looking up) Good boy.','smirk');
   await walk('nivaan',350,80);remove('nivaan')}
 ];
@@ -82,6 +82,8 @@ const QUEUE=[
 const TALK=[
  ['Who would win: Coach, or a horse.','Which horse.','Any horse.','…The horse. Coach has bad knees.'],
  ['I put hot sauce in my yogurt. On purpose.','Why.','To feel something.'],
+ ['Pat called me sweetheart and I think I’d die for her.','She calls everyone sweetheart.','Don’t you fucking ruin this for me.'],
+ ['Coach called my push-up “a cry for help”.','Was it?','…Obviously it was, Coach. Shit.'],
  ['If this school had a national anthem, what would it be?','The fire alarm.','…Yeah. The fire alarm.'],
  ['Rate Pat’s stew out of ten.','Eleven.','Out of TEN.','Eleven.'],
  ['Do teachers eat lunch?','I saw Mr. Voss eat a whole onion once. Like an apple.','That’s not lunch, that’s a warning.'],
@@ -119,7 +121,7 @@ async function lunchRun(){
   if(s&&s.goal)await N('Under the table, '+K[who[0]].n.split(' ')[0]+' slides you a napkin. On it, in ketchup-adjacent pen: “'+s.goal+'”')})}
  if(alive('aidan')){opts.push('Sit with Aidan.');acts.push(async()=>{
   scene('canteen',{aidan:[176,-1,{y:150,pose:'sit',ex:'sad'}],you:[150,1,{y:150,pose:'sit',hold:'tray'}]},true);
-  await say('aidan',pick(['(not eating) I always sit here. The light’s good. It never changes.','(pushing a pea around) Pat used to give me two cookies. She doesn’t remember why.','You don’t have to sit with me. Nobody has to sit with me.']),'sad');
+  await say('aidan',pick(['(not eating) I always sit here. The light’s good. It never changes.','(pushing a pea around) Pat used to give me two cookies. She doesn’t remember why.','You don’t have to sit with me. Nobody has to sit with me.','(staring at the pasta) This tastes like a wet fucking sock. (he looks shocked at himself) …Sorry. It does, though.']),'sad');
   await say('aidan','…Thanks, though.','happy')})}
  for(const g of['stella','mia','jade'])if(D.f['with_'+g]&&!(P.dumped||{})[g]&&alive(g)){opts.push('Sit with '+K[g].n.split(' ')[0]+'.');acts.push(async()=>{
   scene('canteen',{[g]:[176,-1,{y:150,pose:'sit',ex:'blush'}],you:[150,1,{y:150,pose:'sit',hold:'tray'}]},true);

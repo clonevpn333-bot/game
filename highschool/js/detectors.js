@@ -97,7 +97,7 @@ async function lockedRoom(room,t){
  await say(t,'Lockdown drill, {PETS}. {ME} locks the door. {ME} goes to the staff room. You sit in perfect silence for forty minutes.','evil');
  await walk(t,-20,70);SFX.door();SFX.locker();if(A[t])delete A[t];
  await N('The key turns from the outside. Then footsteps going away. Then nothing.');
- await N('Everybody looks at each other. Then, one by one, everybody takes something out of their bag. A box cutter. Nunchucks. A screwdriver sharpened on a curb. They all came in the back way.');
+ await N('One by one, everybody takes something out of their bag. A box cutter. Nunchucks. A screwdriver sharpened on a curb. They all came in the back way.');
  for(const k of c.kids.filter(here_).slice(0,4))hold(k,pick(['knife','chucks','tape']));
  if(A.jaxon){hold('jaxon','knife');A.jaxon.pose=null;await say('jaxon','(to the sophomore) That’s my vape you’re holding. That’s MY vape.','angry')}
  if(A.kid4){hold('kid4','pistol');A.kid4.pose=null;await say('kid4','It’s not your vape. Nothing in this room is yours. Sit DOWN, Jaxon.','angry')}
@@ -123,7 +123,7 @@ async function lockedRoom(room,t){
  if(tidy[0]){await walk(tidy[0],240,50);await N(K[tidy[0]].n+' gets the mop out of the corner and does the floor. Properly. In the little figure eights, like his mom taught him.')}
  if(tidy[1]&&A.jaxon){pose(tidy[1],'drag');await Promise.all([walk(tidy[1],340,30),tw(A.jaxon,{x:330},2600)]);pose(tidy[1],null);A.jaxon.vis=false}
  if(tidy[2]&&A.kid4){pose(tidy[2],'drag');await Promise.all([walk(tidy[2],340,30),tw(A.kid4,{x:332},2600)]);pose(tidy[2],null);A.kid4.vis=false}
- await N('Two of them carry the bodies into the stationery cupboard and close the door gently, like they’re trying not to wake somebody. Somebody wipes the desks. Somebody straightens all the chairs. Somebody opens the window.');
+ await N('They carry the bodies into the stationery cupboard and shut it gently, like someone’s asleep in there. Somebody wipes the desks. Somebody opens a window.');
  const c2=await choose(['Help them clean.','Sit there and shake.']);
  if(c2===0){hold('you','mop');await N('You do the bit by the door. It takes a long time. When you’re finished it looks better than it did before.');hold('you',null)}
  SFX.locker();SFX.door();if(t){put(t,-14,1,{y:146});await walk(t,60,60)}

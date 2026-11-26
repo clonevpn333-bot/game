@@ -61,12 +61,12 @@ hook({mis:'darren',period:2,room:'canteen',who:'hasan',label:'Line with Hasan',l
 }});
 hook({mis:'darren',period:4,room:'canteen',who:'hasan',label:'Ask Hasan why he’s staring at his phone',look:{pose:'phone',ex:'shock'},cond:()=>D.f.dar2&&!D.done.darren,run:async()=>{
  scene('canteen',{hasan:[176,1,{y:146,pose:'phone',ex:'shock'}],you:[150,1,{y:152}]});
- await say('hasan','He’s texted. “Field. Now. Step nine.” What’s step nine. WHAT’S STEP NINE.','scared');
+ await say('hasan','He’s texted. “Field. Now. Step nine.” What’s step nine. WHAT THE FUCK IS STEP NINE.','scared');
  scene('field',{hasan:[60,1,{y:150}],you:[40,1,{y:154}],darren:[150,-1,{y:146}],kid1:[180,-1,{y:146}],kid2:[200,-1,{y:146}],kid3:[220,-1,{y:146}],kid4:[240,-1,{y:146}],coach:[300,-1,{y:140,hold:'javelin'}]},true);
  cue('field');
  const letters=['H','A','S','A','N','?'];const signs=letters.map((s,i)=>prop({t:'sign',s,x:150+i*20,y:130,layer:20}));
  for(const k of['kid1','kid2','kid3','kid4'])pose(k,'up');pose('darren','up');
- await N('The swim team is standing on the field in a line, holding up one big letter each. H. A. S. A. N. And Darren, at the end, holding a question mark over his head with both arms, shaking a little.');
+ await N('The swim team in a line on the field, one big letter each. H. A. S. A. N. And Darren at the end, holding up a question mark, shaking a little.');
  await say('darren','(shouting across the field) Do you want to get a milkshake! As a thing! Or not as a thing! Either! The question mark covers both!','blush');
  await say('coach','JAVELIN PRACTICE.','yell');
  SFX.whoosh();const j=prop({t:'javelin',x:300,y:100,rot:.3});await tw(j,{x:252,y:124},260,'in');SFX.thud();

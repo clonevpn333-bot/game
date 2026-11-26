@@ -52,7 +52,7 @@ hook({mis:'toby',period:2,room:'library',who:'sean',label:'Ask Sean why he’s h
  await say('sean','(whispering) Don’t look at me. Stella’s over there. If she looks at me she’ll KNOW.','scared');
  await say('you','Know what?');
  await say('sean','I don’t KNOW what she’ll know. That’s the problem.','scared');
- await N('He shows you his phone. Forty-one tabs. “what does it mean if a guy says you have nice hair”. “is a bracelet legally binding”. “ohio boys what are they like”. “how to tell your girlfriend a guy likes you without dying”. “fake your own death free no download”.');
+ await N('Forty-one tabs. “is a bracelet legally binding”. “ohio boys what are they like”. “fake your own death free no download”.');
  await say('sean','I’m forty tabs deep. Forty-one. I’ve watched a video of a man explaining feelings with a whiteboard. I took a quiz that said I’m a Capricorn. I’m not a Capricorn.','scared');
  await say('sean','I made a group chat. I need advice. Everyone’s answering at once.','sad');
  await dms('SEAN HELP (urgent)','Sean, Nivaan, Kenneth, Paul, Hasan, Arjun',[
@@ -147,7 +147,7 @@ hook({mis:'toby',period:4,room:'field',who:'sean',label:'Ask Sean what the plan 
  if(c===1){
   A.sean.ex='scared';
   const m=pprop({t:'mower',x:340,y:150,on:1,layer:2});
-  await N('Sean makes a noise like a kettle and runs. Across the field. Away from all of it. Straight across the path of the big ride-on mower, which nobody is driving, because the groundskeeper is having his lunch.');
+  await N('Sean makes a kettle noise and runs. Straight across the path of the ride-on mower. Nobody’s driving it. The groundskeeper’s at lunch.');
   await Promise.all([walk('sean',300,140),tw(m,{x:290},900)]);
   SFX.scream();m.red=1;shake(1.6);
   for(let i=0;i<5;i++){SFX.squelch();blood(296,130,40,1,140,152);await wait(220)}
@@ -161,7 +161,7 @@ hook({mis:'toby',period:4,room:'field',who:'sean',label:'Ask Sean what the plan 
  A.sean.pose='sit';
  await say('sean','(sitting down on the grass next to them) …Do you guys want to talk to me, or—','sad');
  await say('stella','(to Toby) Wait, so what did the ex in Ohio SAY.','smirk');
- await N('Nobody answers him. Sean sits there for the rest of lunch, slightly behind them, like a bodyguard nobody hired. They have a group chat by the end of lunch. It’s called SEAN’S HAIR SUPPORT GROUP. He isn’t in it.');
+ await N('Sean sits slightly behind them for the rest of lunch, like a bodyguard nobody hired. By the bell they have a group chat: SEAN’S HAIR SUPPORT GROUP. He isn’t in it.');
  D.f.thirdWheel=1;await complete('toby','third');
 }});
 hook({mis:'toby',period:8,room:'arcade',who:'sean',label:'Ask Sean why he’s holding three bags',look:{ex:'sad'},cond:()=>D.f.thirdWheel&&!D.dead.sean,run:async()=>{
@@ -198,7 +198,7 @@ hook({mis:'phone',period:2,room:'corridor',who:'arjun',label:'Stand with Arjun',
  await say('arjun','So I told him, I said, bro, your mom’s Facebook is the most dangerous website on the internet—','smirk');
  SFX.click();pose('arjun',null);
  const ph=pprop({t:'phone',x:114,y:130});await tw(ph,{y:150},250,'in');SFX.glass();
- await N('His phone slips out of his pocket, bounces once on the tiles, and lands screen-up between his feet. The screen lights up. His alarm. The alarm is a recording of his own voice going “ARJUN. YOU ARE HIM.”');
+ await N('His phone lands screen-up between his feet. His alarm goes off. It’s a recording of his own voice: “ARJUN. YOU ARE HIM.”');
  for(const n of['nivaan','kenneth','dheva'])if(A[n])A[n].ex='laugh';SFX.cheer();
  await walk('shermian',128,70);pose('shermian','reach');ph.hide=1;hold('shermian','phone');pose('shermian',null);
  await say('shermian','No phones, sweetie. Policy. Policy is love.','happy');
@@ -245,7 +245,7 @@ hook({mis:'phone',period:4,room:'canteen',who:'arjun',label:'Ask Arjun what the 
  else{
   await say('arjun',mean('(standing on a chair) JACOB EATS WITH HIS MOUTH OPEN AND I’M SICK OF IT. FOOD FIIIIGHT!'),'yell');
   SFX.splat();if(A.jacob){A.jacob.bloody=1;A.jacob.ex='angry'}
-  await N('He throws a whole tray of spaghetti at Jacob. Jacob was not involved in anything. Jacob was just eating. Now the whole cafeteria is throwing things, and none of them are aimed at Arjun, because nobody wants to touch him.');
+  await N('He throws a whole tray of spaghetti at Jacob. Jacob was just eating. Now the whole cafeteria is throwing things. Nobody aims at Arjun. Nobody wants to touch him.');
  }
  if(A.shermian){pose('arjun','reach');SFX.pick();await wait(300);pose('arjun',null)}
  await N('In the chaos, Arjun unclips the lanyard. He doesn’t even look at the keys. He just runs, and you run after him.');
@@ -254,7 +254,7 @@ hook({mis:'phone',period:4,room:'canteen',who:'arjun',label:'Ask Arjun what the 
  const mc={arjun:[60,1,{y:146}],you:[30,1,{y:152}]};scene('maths',mc,true);cue('tension');
  await walk('arjun',56,60);pose('arjun','reach');SFX.locker();
  await N('Ms. Sherman’s desk. The forever drawer. The third key fits.');
- await N('Inside: Arjun’s phone. A cat collar that says MR. BISCUITS. A seating plan with eleven names crossed out in red pen. And phones. Dozens of them. Flip phones. A pager. A brick-sized thing with an antenna and a sticker dated 1987.');
+ await N('Inside: a cat collar that says MR. BISCUITS. A seating plan with eleven names crossed out. And phones. Dozens. Flip phones. A pager. A brick with a sticker that says 1987.');
  hold('arjun','phone');pose('arjun','phone');
  await say('arjun','(clutching it) Oh thank God. Oh, thank GOD. Hi, baby. Hi. Daddy’s here.','happy');
  await N('Then his face changes. He has 63 notifications. All from the same group chat. The class group chat.');
@@ -267,7 +267,7 @@ hook({mis:'phone',period:4,room:'canteen',who:'arjun',label:'Ask Arjun what the 
  await evil('shermian');
  const ch=await choose(['RUN with the phone.','Give it back. “Policy is policy, Miss.”','Push Arjun towards her and run.']);
  if(ch===2){
-  await say('arjun','WHAT ARE YOU— NO—','scared');
+  await say('arjun','WHAT THE FUCK ARE YOU— NO—','scared');
   await walk('you',300,110);
   await N('Behind you, the drawer opens and closes. Opens and closes. Opens and closes. It’s a heavy drawer. It wasn’t designed to fit a whole head. It does, eventually.');
   pose('shermian','slam');for(let i=0;i<4;i++){SFX.crunch();blood(A.arjun.x,A.arjun.y-24,30,null,90,A.arjun.y+2);shake(.8);await wait(320)}

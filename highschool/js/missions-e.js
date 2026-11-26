@@ -214,7 +214,7 @@ hook({mis:'striketwo',period:8,room:'arcade',who:'sean',label:'Hang out with Sea
  await say('sean','Number thirty-four.','blush');
  await walk('sean',290,40);await walk('stella',300,40);
  for(let i=0;i<4;i++){SFX.shutter();flash('#fff',.7);await wait(500)}
- await N('Four photos. In the first one they’re pulling faces. In the second, Stella is laughing. In the third, Sean is looking at her and not the camera. In the fourth, nobody’s looking at the camera at all.');
+ await N('Four photos. Faces. Stella laughing. Sean looking at her, not the camera. In the last one nobody’s looking at the camera at all.');
  await complete('striketwo');
 }});
 

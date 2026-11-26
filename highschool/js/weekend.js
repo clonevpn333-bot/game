@@ -60,7 +60,7 @@ weekend({id:'jade',name:'The Girl at the Food Court',icon:'🎭',room:'foodcourt
  await say('jade','Hi. I’m Jade. You hate pickles, you cried at Toy Story 3, and your locker combination is 12-31-07. Is that weird? I feel like that’s weird.','love');
  await say('you','…How do you know my locker combination?');
  await say('jade','Lucky guess. I’m a good guesser. Want to go to the arcade?','smirk');
- if(A.hasan)await say('hasan','(from the next table, mouthing very clearly) GO. GO. WHAT ARE YOU DOING. GO.','happy');
+ if(A.hasan)await say('hasan','(from the next table, mouthing very clearly) GO. GO. WHAT THE FUCK ARE YOU DOING. GO.','happy');
  scene('arcade',{you:[120,1,{y:154}],jade:[150,-1,{y:150}]},true);
  await N('At the arcade she plays the claw machine and wins every single time. Without looking. She gives you a little plush shark. Its eyes are stitched on slightly wrong.');
  await N('In the black screen of a broken machine you see her reflection. It isn’t her. It’s a tall grey man with no face. When you look back at her, she’s just Jade, smiling.');
@@ -86,7 +86,7 @@ weekend({id:'jade',name:'The Girl at the Food Court',icon:'🎭',room:'foodcourt
  }
  if(c===1){
   await walk('you',-16,140);
-  await N('You run down six floors of ramps. At the bottom, the security guard at the barrier smiles at you. It’s Jade. You run past. The bus driver on the 43 home smiles at you. It’s Jade. Your mom opens the front door. Your mom smiles at you.');
+  await N('Six floors of ramp. The guard at the barrier smiles at you. It’s Jade. The 43’s driver smiles at you. It’s Jade. Your mom opens the door. Your mom smiles.');
   await N('Your mom says, “Hi. Did you have a nice time?” Your mom has never once asked if you had a nice time.');
   await complete('wk_jade','ran');return;
  }
@@ -120,7 +120,7 @@ weekend({id:'party',name:'Marcus’s House Party',icon:'🎉',room:'party',who:[
  await say('cop','Evening. Officer… Dunmore. Noise complaint. Also I need to see everyone run a lap of this house. For the complaint.','angry');
  const c=await choose(['Run the lap.','Hide in the hot tub.','“Coach?”']);
  if(c===0){await N('The whole party runs a lap of the house. Coach times it. He says it’s the best effort he’s seen all year. He leaves happy.')}
- else if(c===1){await N('You hide in the hot tub, under the foam, next to the fridge and the mystery man. You hold your breath for nine minutes. When you come up, everybody has gone home and the mystery man is gone too. The fridge is still there.')}
+ else if(c===1){await N('You hide in the hot tub under the foam, next to the fridge and the mystery man. Nine minutes. When you come up, everybody’s gone. The fridge is still there.')}
  else{await say('cop','(peeling off the mustache) …I moonlight. Teachers don’t get paid. Tell anyone and I’ll make you do suicides till Christmas.','angry')}
  await say('marcus','(in the wreckage, at 2 a.m.) Best night of my life. My parents are going to come home and find a fridge in the hot tub and they’re going to feel SOMETHING.','happy');
  await complete('wk_party','party');
@@ -165,7 +165,7 @@ weekend({id:'premiere',name:'The Premiere',icon:'🎬',room:'foodcourt',who:['ch
  await say('clapper','It’s three hours and forty minutes. There is no intermission. There is no plot. There is only the slap.','closed');
  await N('The movie is three hours and forty minutes of two grown men slapping each other’s faces with their cheeks in slow motion, in different locations around Fair City, set to classical music.');
  if(A.arjun)await say('arjun','(two hours in) I hate that I’m invested. I hate that I need to know who wins.','angry');
- await N('In the final scene, Cheek-Clapper slaps so hard that one of his long yellow fingernails catches Cheeks across the face. On screen, blood sprays across the lens. In the front row, the blood was real, because it was filmed in the front row. Nobody noticed when they were filming.');
+ await N('Final scene: Cheek-Clapper’s slap catches Cheeks with a fingernail. Blood sprays the lens. It was real. Nobody noticed on set.');
  if(A.omer)await say('omer','(wiping his face) Is this the 4D version?','shock');
  await N('The lights come up. Mr. Voss is in the back row taking notes. He gives a slow clap. Then he leaves very quickly.');
  const c=await choose(['“Five stars. A masterpiece.”','“One star. What was that.”']);

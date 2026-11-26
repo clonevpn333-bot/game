@@ -62,7 +62,7 @@ hook({mis:'beef',period:4,room:'canteen',who:'arjun',label:'Ask Arjun why he’s
 hook({mis:'beef',period:7,room:'bus',who:'omer',label:'Go to the bus loop. 3:15.',look:{ex:'angry',pose:'cross'},cond:()=>D.f.bf2&&!D.done.beef&&!D.dead.omer&&!D.dead.arjun,run:async()=>{
  const cast={omer:[130,1,{y:150}],arjun:[190,-1,{y:150}],you:[90,1,{y:158}]};for(const [n,x] of[['hasan',230],['nivaan',260],['paul',60],['kenneth',280]])if(!D.dead[n])cast[n]=[x,-1,{y:144,pose:n==='nivaan'?'film':'cheer'}];
  scene('bus',cast,true);crowd={n:16,cheer:true,phones:true,front:6,gap:[90,220]};cue('fight');
- await N('Three fifteen. The bus loop. A ring of about a hundred and forty kids. Somebody brought a speaker. Somebody brought popcorn. A teacher is watching from the window and not coming out.');
+ await N('Three fifteen. A ring of a hundred and forty kids. Somebody brought a speaker. Somebody brought popcorn. A teacher watches from a window and stays there.');
  await say('arjun','(bouncing on his toes, no idea how to fight) Let’s go, let’s go, let’s go— wait, are we going? Are we doing it? Go.','yell');
  pose('omer','punch');A.omer.punchT=T+.4;SFX.punch();shake(.8);A.arjun.hurt=1;await tw(A.arjun,{x:A.arjun.x+8},120);blood(A.arjun.x,A.arjun.y-26,8,1,60,A.arjun.y+2);pose('omer',null);
  await N('Omer hits him once. It sounds like dropping a phone book.');
@@ -74,8 +74,8 @@ hook({mis:'beef',period:7,room:'bus',who:'omer',label:'Go to the bus loop. 3:15.
   SFX.punch();shake(1);A.you.hurt=2;blood(A.you.x,A.you.y-26,10,null,60,A.you.y+2);
   await N('You step in. Both of them hit you. At the same time. From both sides. Your ears ring like a fire alarm.');
   await say('omer','(staring at you on the ground) …Why would you DO that?','shock');
-  await say('arjun','(also staring) Bro, that was the dumbest thing I’ve ever seen. And I’m ME.','shock');
-  await N('They pick you up together. Omer brushes you off. Arjun says sorry to Omer’s mom, by voice note, on speaker, in front of everybody. It’s a really bad voice note. It’s also the first real sorry anyone’s heard from him.');
+  await say('arjun','(also staring) Bro, that was the dumbest shit I’ve ever seen. And I’m ME.','shock');
+  await N('They pick you up together. Arjun says sorry to Omer’s mom by voice note, on speaker. It’s a terrible voice note. It’s also the first real sorry he’s ever said.');
   pose('you',null);crowd=null;bond('omer',1);bond('arjun',1);await complete('beef','peace');return 'stay';
  }
  if(c===1){
@@ -93,7 +93,7 @@ hook({mis:'beef',period:7,room:'bus',who:'omer',label:'Go to the bus loop. 3:15.
  SFX.crunch();shake(1.8);flash('#a00010',.5);
  const h=await gHead('arjun',-1);crowd=null;
  await N('The head rolls across the bus loop and comes to a stop at Omer’s feet. Facing up. Still looking smug. It looks smug even now.');
- await say('omer','(staring down at it) …Bro.','shock');
+ await say('omer','(staring down at it) …Bro. What the fuck.','shock');
  await N('Omer has played soccer every day of his life since he was four. His body does it before his brain can say no.');
  await kickHead('omer',h,150);
  await N('It’s the cleanest strike of his life. It goes over the bus shelter. A hundred and forty phones follow it the whole way.');
@@ -128,7 +128,7 @@ spot({room:'bus',period:0,x:296,y:148,label:'Listen to the teachers shouting in 
  await say('shermian','I thought the L stood for “love,” sweetie. Everything in that fridge is love. Your yogurt was love. Now it’s in Miss.','happy');
  await say('loach','You ate my yogurt and you sat on Gerald Voss’s lap at the Christmas party for forty-five minutes, and it was NOT to read him a STORY.','yell');
  await say('shermian','(very calmly) He has very supportive thighs, sweetie. Everyone knows that. It’s in his file.','smirk');
- await N('Ms. Loach gets back into her Kia, slams the door, and sits there with both hands on the wheel, staring at nothing, for a full minute. Then she reverses into Mr. Voss’s car on purpose.');
+ await N('Ms. Loach sits in her Kia, both hands on the wheel, staring at nothing for a full minute. Then she reverses into Mr. Voss’s car. On purpose.');
  D.f.st1=1;part('staffroom',1);return 'stay';
 }});
 hook({mis:'staffroom',period:2,room:'canteen',who:'pat',label:'Ask Pat what the teachers are fighting about',look:{ex:'smirk'},cond:()=>D.f.st1&&!D.f.st2,run:async()=>{
@@ -156,7 +156,7 @@ spot({room:'corridor',period:4,x:132,y:148,label:'Sneak into the staff room',sho
  const c=await choose(['Swap the mugs when she turns round.','Warn Ms. Sherman.','Stay behind the couch. Do nothing.']);
  put('shermian',-14,1,{y:146});
  if(c===0){
-  await N('Ms. Loach turns to get the milk. You reach over the couch and switch the WORLD’S BEST TEACHER mug with hers. Your hands have never been steadier. Your heart has never been louder.');
+  await N('Ms. Loach turns for the milk. You swap the WORLD’S BEST TEACHER mug for hers. Steady hands. Very loud heart.');
   await walk('shermian',110,60);await say('shermian','(picking up the World’s Best mug) Ooh, Linda, you made Miss a coffee? That’s so sweet. Cheers, sweetie.','happy');
   await say('loach','(smiling, sipping her own) Cheers, Debra.','evil');
   await wait(600);A.loach.ex='shock';A.loach.shake=1;SFX.gasp();

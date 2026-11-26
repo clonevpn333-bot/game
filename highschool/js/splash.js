@@ -93,19 +93,19 @@ async function eatContest(){
  await spew('coach',row1,'puke',{n:120,dur:1800,arc:26,shake:1.3});
  if(typeof camZoom==='function')await camZoom();
  for(const k of row1)if(A[k]){A[k].ex='shock'}
- await N('It is not vomit. It’s a weather system. It comes out of Coach in one unbroken arc, like a fire hose with a grudge, and he SWEEPS it, left to right, across the entire front row, like he’s watering a lawn.');
+ await N('It isn’t vomit. It’s a weather system. One unbroken arc, a fire hose with a grudge, swept left to right across the whole front row.');
  if(A.arjun)await say('arjun','WHY IS IT ALWAYS IN MY MOUTH. WHY IS IT EVERY TIME IN MY ACTUAL MOUTH.','hurt');
  if(A.hasan)await say('hasan','(dripping, very calm) I came in here to eat my sandwich in peace. My sandwich is ham now. It was cheese.','closed');
  await pukeChain(row1.slice(0,4).concat(row2.slice(0,3)).filter(k=>A[k]),{lines:['','I’m— hrrk— I’m fine— HRRRK','','Oh, it’s HOT. Why is it HOT.']});
  if(A.voss){A.voss.shake=1;await say('voss','Don’t look at me. Nobody look at me. I can hold it. I have a DOCT—','scared');A.voss.shake=0;
-  if(A.adam){await spew('voss',['adam'],'puke',{n:60,dur:900,arc:10,shake:1});A.adam.ex='shock';await N('Mr. Voss turns his head to the side, very politely, and empties himself directly into Mr. Adam’s microphone. Every speaker in the building goes “BLORRRP”. In the Science Wing, a class that wasn’t even here screams.')}
+  if(A.adam){await spew('voss',['adam'],'puke',{n:60,dur:900,arc:10,shake:1});A.adam.ex='shock';await N('Mr. Voss turns his head, very politely, and empties himself into Mr. Adam’s microphone. Every speaker in the building goes “BLORRRP”.')}
   else await spew('voss',row2.slice(0,2),'puke',{n:60,dur:900})}
  if(A.nivaan)await say('nivaan','(phone up, dripping) Chat says this is the hardest thing they’ve ever seen. Chat is throwing up. Chat is throwing up IN chat.','laugh');
  /* Ms. Sherman takes control */
  put('shermian',336,-1,{y:150});await walk('shermian',290,90);
  await say('shermian','EVERYBODY. STAY. IN. YOUR—','angry');
  A.shermian.pose='lie';A.shermian.z=0;SFX.whoosh&&SFX.whoosh();
- await N('Ms. Sherman steps into the puddle. Her heels go up. She goes down. And then she just keeps going, flat on her back, sliding the whole length of the Main Hall through the puke like a curling stone.');
+ await N('Ms. Sherman steps in the puddle. Heels up. Down she goes, flat on her back, sliding the length of the Main Hall like a curling stone.');
  await tw(A.shermian,{x:24},1400,'out');
  for(const k of row2)if(A[k]&&Math.random()<.6){A[k].pose='lie';A[k].hurt=1}
  stain('shermian','puke',40);

@@ -224,7 +224,7 @@ hook({mis:'bully',period:4,room:'corridor',who:'auto',cond:()=>D.f.fight,run:asy
  await N('On the fifth slam something gives. It isn’t the locker door.');
  await say('paul','(very quietly) …fight? Fight?');
  await say('nivaan','Viewers went to zero. Stream got banned. I’ve been banned from the internet.','shock');
- await say('hasan','Bro. Bro. Bro. Bro.','shock');
+ await say('hasan','Bro. Bro. Bro. Oh, I’m so fucked.','shock');
  await say('omer','(looking at his hands) …He shouldn’t have said that about my mom.','sad');
  put('sherman',330,-1,{y:150});await walk('sherman',190,50);
  await say('sherman','WHAT is going on in my— oh.','shock');
@@ -473,7 +473,7 @@ hook({mis:'oldbat',period:4,room:'library',who:'david',label:'Ask David to help 
   await say('david','Ah— no— that’s the wrong—','shock');
   D.f.pitOpen=1;SFX.rumble();shake(1);
   A.you.ex='scared';await tw(A.you,{y:200},500,'in');A.you.vis=false;
-  await N('The floor opens under you. You fall for a long time. It’s a coal chute from when the school had a furnace. At the bottom there are other kids. Some of them have uniforms from the eighties. None of them are moving.');
+  await N('The floor opens. You fall a long way down an old coal chute. At the bottom there are other kids. Some in eighties uniforms. None of them moving.');
   await die('pit');
  }
  SFX.ding();

@@ -116,7 +116,7 @@ for(const F of FALL){
   await N('Two hundred kids stop eating at once. You can hear the vending machine.');
   await say(gid,'I left a guy who needed me to be his whole life. Then I picked a guy who needed me to be a trophy.','sad');
   await say(gid,F.trophy,'cold');
-  await say(gid,'We’re done. I’m telling you here so you can’t make it a secret thing. Secret things are how you two operate.','cold');
+  await say(gid,'We’re done. I’m telling you here so you can’t make it a secret thing. Secret things are how you two operate. You’re both full of shit.','cold');
   const c=await choose(['Beg.','Dump her first. Loudly.','“…Okay.”']);
   let v='took';
   if(c===0){v='begged';pose('you','beg');await mash('BEG',{need:18,time:3,info:'Out loud. In the cafeteria.'});
@@ -133,13 +133,13 @@ for(const F of FALL){
   await N('Somebody starts a slow clap.');
   for(const k of watch){pose(k,'slowclap');await wait(TEST?0:220)}
   await N('It catches. It goes round the whole cafeteria.');
-  if(alive_('pat')){put('pat',-14,1,{y:146});await walk('pat',60,70);face('pat',1);pose('pat','slowclap');await N('Lunch Lady Pat comes out from behind the counter to join in.')}
+  if(alive_('pat')){put('pat',-14,1,{y:146});await walk('pat',60,70);face('pat',1);pose('pat','slowclap');await N('Lunch Lady Pat comes out from behind the counter to join in.');await say('pat','(still clapping) Shit happens, sweetheart. Eat your nuggets.','cold')}
   if(A[bf]){await walk(bf,96,60);face(bf,1);
    await say(bf,'You know the worst part? I’m not even happy. I wanted to be so happy about this.','sad');
    await say(bf,'She left both of us. We’re the same now. Me and you. Two idiots.','cold');
    await walk(bf,-20,60);remove(bf)}
   if(F.friend&&K.arjun&&!D.dead.arjun){put('arjun',340,-1,{y:150});await walk('arjun',144,90);pose('arjun','sit');
-   await say('arjun','(taking one of your nuggets) You are, mathematically, the biggest loser in this school.','smirk');
+   await say('arjun','(taking one of your nuggets) You are, mathematically, the biggest fucking loser in this school.','smirk');
    await say('arjun','I’ll sit here a bit. Not because I like you. The view’s funny.','smirk')}
   else await N('You eat lunch alone. The nuggets still taste like nothing.');
   if(typeof repAdd==='function'){repAdd('liked',-2,'loser');repAdd('legend',-1)}

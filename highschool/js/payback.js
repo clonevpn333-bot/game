@@ -133,7 +133,7 @@ async function binDay(id,why,noWpn){
  await Promise.all([tw(A.you,{x:can.x},600)].concat(crew.map((k,i)=>A[k]?walk(k,can.x+(i-1)*9,70):0)));
  SFX.thud&&SFX.thud();shake(1);A.you.z=6;A.you.layer=-2;can.full=1;A.you.y=can.y-6;
  for(const k of crew)if(A[k]){pose(k,'cheer');A[k].ex='laugh'}
- await N('They carry you over their heads like a coffin at a very small funeral and drop you head-first into the big green trash bin. Your legs are sticking out. Somebody puts a juice box in your hand.');
+ await N('They carry you overhead like a very small funeral and drop you head-first into the big green bin. Somebody puts a juice box in your hand.');
  await say(crew[2]||crew[0],pick(['BIN. DAY.','Welcome home, trash.','Rate the bin. Five stars? Five stars.']),'laugh');
  await Promise.all(crew.map(k=>A[k]?walk(k,fromL?-30:350,110):0));
  await wait(TEST?0:500);A.you.z=0;A.you.pose=null;A.you.layer=0;A.you.y=can.y+4;can.full=0;

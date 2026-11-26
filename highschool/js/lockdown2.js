@@ -66,7 +66,7 @@ async function lockdownIntro(){
  SFX.door&&SFX.door();await walk('intruder',fromL?60:260,22);
  await N('The fire doors at the end of the hall swing open. Somebody walks in. Older. Black hoodie, hood up. He is holding something low, down by his leg. He hasn’t seen you yet.');
  if(typeof camZoom==='function')await camZoom(A.you.x,A.you.y-18,1.5,500);
- await N('Your heart is so loud you’re sure he can hear it. Think. Every exit is locked. The fire alarm is on the wall behind you, at the far end. And he has to turn his back sometime.');
+ await N('Your heart is so loud he must hear it. Every exit is locked. The fire alarm is at the far end. And he has to turn his back sometime.');
  if(typeof camZoom==='function')await camZoom();
 }
 /* ---------- 3: the hall, in real time ---------- */

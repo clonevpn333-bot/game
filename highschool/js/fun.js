@@ -117,7 +117,7 @@ hook({mis:'cheeks',period:8,room:'carpark',who:'cheeks',label:'“We’re here f
  scene('carpark',cast);cue('arcade');
  await say('cheeks','EXTRAS! Welcome to the set of FISTS OF FAIR CITY FOUR. I’m Cheeks. Director, writer, lead, catering.','happy');
  await say('clapper','And I’m Cheek-Clapper. Star. Stunts. Emotional core of the franchise.','happy');
- await N('They are both enormous in the back. Their tracksuits are working very hard. When they smile, their teeth are the color of a nicotine ceiling. Cheeks’ nails are long enough to have their own weather.');
+ await N('Two enormous men in straining tracksuits. Teeth the color of a nicotine ceiling. Cheeks’ nails are long enough to have their own weather.');
  if(A.paul)await say('paul','I’d like to be the stuntman. I’ve done my own stunts since the womb.','happy');
  await say('cheeks','Love the energy. Love the arms. YOU. Henchman Number Two. Here’s your line: “Boss, he’s too powerful!”','happy');
  await say('cheeks','SCENE ONE. The Clap of Doom. ACTION!','yell');
@@ -134,7 +134,7 @@ hook({mis:'cheeks',period:8,room:'carpark',who:'cheeks',label:'“We’re here f
  await say('cheeks','(from the car) …CUT. CUT. That was BEAUTIFUL. Did you get that? Tell me you got that.','laugh');
  if(A.nivaan)await say('nivaan','(shaking) I got it. I got it in 4K. I’m never going to be okay again.','laugh');
  A.cheeks.pose=null;await walk('cheeks',204,40);face('cheeks',-1);face('clapper',1);
- await N('They both start laughing so hard they can’t breathe. Then, because apparently this is how they celebrate, they start slapping each other on the cheeks with their hands. Their nails go click click click. They are howling.');
+ await N('They laugh until they can’t breathe, then celebrate the only way they know: slapping each other’s cheeks. Click click click go the nails.');
  for(let i=0;i<4;i++){pose(i%2?'clapper':'cheeks','punch');A[i%2?'clapper':'cheeks'].punchT=T+.25;SFX.smack();await wait(240)}
  pose('cheeks',null);pose('clapper',null);
  await say('clapper','SCENE TWO! The henchman gets clapped! That’s you!','happy');

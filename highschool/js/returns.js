@@ -64,12 +64,12 @@ ret({id:'key',room:'maths',name:'The Answer Key',who:['marcus','paul'],hint:'The
  blurb:'Ms. Sherman is teaching out in the Trailer, so her real classroom is empty. Marcus and Paul are in it, looking for the answer key.',
  variants:{key:'Got the key',cat:'Met Mr. Biscuits'},run:async()=>{
  put('marcus',150,1,{y:146,pose:'reach'});put('paul',196,-1,{y:150});
- await N('Ms. Sherman’s real classroom, with the lights off. She’s out in the Trailer. Marcus is going through her desk. Paul is holding the door shut with his whole body, even though nobody is trying to open it.');
+ await N('Ms. Sherman’s real classroom, lights off. Marcus goes through her desk. Paul holds the door shut with his whole body. Nobody is trying to open it.');
  await say('marcus','Answer key for Friday’s test. It’s in here. A woman like that keeps things close.','smirk');
  await say('paul','If she comes back I’m jumping out the window. I’ve decided. I’ve made peace with it.','scared');
  const c=await choose(['Check the top drawer.','Check the bottom drawer. The locked one.','Check the little fridge behind her desk.']);
  if(c===0){SFX.pick();await N('Top drawer: forty-one red pens. A photo of every kid in the school with their eyes colored in. A sandwich from what looks like last spring.');await say('marcus','Okay, so that’s normal for her.','shock')}
- if(c===1){SFX.locker();hold('marcus','plan');await N('The bottom drawer pops open. The answer key is right on top. Under it is another answer key. Under that one, a list of names called “NOT PASSING”. Some of them are crossed out. Tyler’s is crossed out.');await say('marcus','(very quietly) We’ve got the key. We’ve also got a murder list. That’s a two-for-one I didn’t ask for.','shock');intel('shermianList');await complete('ret_key','key');return}
+ if(c===1){SFX.locker();hold('marcus','plan');await N('The answer key, right on top. Under it, a list: NOT PASSING. Some names crossed out. Tyler’s is crossed out.');await say('marcus','(very quietly) We’ve got the key. We’ve also got a murder list. That’s a two-for-one I didn’t ask for.','shock');intel('shermianList');await complete('ret_key','key');return}
  SFX.door();await N('Inside the mini fridge, sitting on a little cushion, very cold, perfectly preserved, is a fluffy ginger cat. Its eyes are open. Its eyes are following you.');
  await say('paul','(screaming without making any noise)','scared');
  await say('marcus','Mr. Biscuits. Hi, Mr. Biscuits. We’re going to close the door now, Mr. Biscuits.','scared');
@@ -93,7 +93,7 @@ ret({id:'flasks',room:'chem',name:'Extra Credit',who:['voss','nivaan'],hint:'Mr.
   await die('extracredit');return;
  }
  if(c===1){D.f.infected=(D.f.infected||[]).concat(['you']);A.you.ex='hurt';await N('You turn green. Not a little green. Frog green. It will last until tomorrow. Your mom is going to have questions.');await say('voss','A+, green bean.','happy');await complete('ret_flasks','green');return}
- await N('Your brain goes cold and clear, like somebody opened a window in it. For about ninety seconds you understand everything. Algebra. Your parents. Why Aidan is like that. Then it’s gone, and all you remember is one thing.');
+ await N('Your brain goes cold and clear. For ninety seconds you understand everything: algebra, your parents, why Aidan is like that. Then it’s gone. Except one thing.');
  await N('Mr. Voss has fourteen jars in the back fridge, and the oldest one is from 1987.');
  await say('voss','A+! Smart cookie. Run along now. Don’t remember anything.','evil');
  await complete('ret_flasks','smart');

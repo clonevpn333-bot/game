@@ -129,7 +129,7 @@ hook({mis:'nursecal',period:4,room:'nurse',who:'auto',cond:()=>D.f.nc2&&!D.done.
  if(A.adam)await say('adam','(sitting down on the cot, already crying) I knew it. I knew Friday was a pity Friday.','cry');
  const c=await choose(['Stay hidden. Let it play out.','Pop out: “Surprise!”','Pull the privacy curtain round all four of them and leave.']);
  if(c===0){if(A.coach&&A.grieve){await hit('coach','grieve',{blood:6});await hit('grieve','coach',{blood:6,sfx:SFX.smack})}
-  await N('It turns into the worst fight you have ever seen. Coach swings a crutch. Mr. Grieve fixes a bayonet to a thermometer. Mr. Adam just keeps crying on the cot, getting stepped on. Nurse Pam takes everyone’s blood pressure, out of habit, while they fight.');await complete('nursecal','brawl')}
+  await N('The worst fight you’ve ever seen. Coach swings a crutch. Mr. Grieve fixes a bayonet to a thermometer. Nurse Pam takes everyone’s blood pressure anyway.');await complete('nursecal','brawl')}
  else if(c===1){A.you.pose=null;await walk('you',120,80);await say('nurse','(slowly turning to you) …Stomach ache. Lie down, sweetie. I’m going to give you a shot. A big one.','evil');
   await N('She chases you out of the office with a syringe the size of a flashlight. Three grown men watch you go, holding their flowers, and then look back at each other.');await complete('nursecal','caught')}
  else{await N('You pull the curtain round the four of them and walk out. Behind you there’s a long, long silence. Then Mr. Adam says “…so is this a group thing now?” and nobody says no.');
@@ -159,13 +159,13 @@ hook({mis:'gains',period:4,room:'canteen',who:'auto',cond:()=>D.f.gn1&&!D.done.g
  await N('Coach shakes his protein in front of the whole cafeteria like he always does. Shake shake shake. Eye contact. He drinks the whole thing in one go and slams the cup down.');
  await say('coach','THAT’S how a man refuels. Anybody want to see a man refuel AGAIN?','yell');
  const c=await choose(['Watch.','Tell him what was in it.','Offer Paul the second shake. For courage.']);
- if(c===1){await say('coach','(going very still) …Paul.','evil');await N('Coach doesn’t move. He just breathes, slowly, through his nose, like a dragon deciding something. Then he walks very calmly out of the cafeteria and nobody sees him again until Monday. Paul gets detention for the rest of the year.');await complete('gains','caught');return 'stay'}
+ if(c===1){await say('coach','(going very still) …Paul.','evil');await N('Coach breathes through his nose, like a dragon deciding something. Then he walks out, very calm. Nobody sees him till Monday. Paul gets detention for the year.');await complete('gains','caught');return 'stay'}
  if(c===2&&A.paul){await say('paul','(drinking it to prove a point) …Oh. Oh no. I forgot. I forgot that’s what it was.','scared');await walk('paul',-30,200);await complete('gains','paul');return 'stay'}
  A.coach.ex='shock';SFX.rumble&&SFX.rumble();await wait(TEST?0:400);
  await N('A sound comes out of Coach that you will hear in your dreams. A low, wet, tectonic rumble. Every kid in the cafeteria puts their fork down at the same time.');
  await camZoom(180,110,2,250);await say('coach','(very quietly) …Don’t. Nobody. Move.','scared');await camZoom();
  hold('coach',null);await walk('coach',360,240);
- await N('Coach runs. Coach has never run like this, not in college, not in the war he says he was in. He takes a door off its hinges on the way out. The whole cafeteria gives him a standing ovation.');
+ await N('Coach runs like he never ran in college, or in the war he says he was in. He takes a door off its hinges. The cafeteria gives him a standing ovation.');
  SFX.cheer();await complete('gains','sprint');return 'stay';
 }});
 
@@ -185,7 +185,7 @@ hook({mis:'rave',period:6,room:'courtyard',who:'auto',cond:()=>D.f.rv1&&!D.done.
  const cast={kayden:[212,-1,{y:110,pose:'cheer'}],you:[120,1,{y:154}]};const crowd=['jaxon','kaylee','tez','mia','brayden','kid1','kid2','kid3'];crowd.forEach((k,i)=>{if(!D.dead[k]&&K[k])cast[k]=[60+i*26,i%2?1:-1,{y:146+(i%3)*4,pose:'cheer'}]});
  scene('courtyard',cast,true);cue('fight');fxState.tint='#6a2a8a';fxState.tintA=.25;
  await beat('COURTYARD RAVE','PART TWO · THE PARTY');
- await N('Kayden is on the founder’s shoulders with a speaker strapped to the statue. Thirty kids. Smoke everywhere. The fountain has dish soap in it and the foam is up to everybody’s knees. It’s 2:40 on a Thursday.');
+ await N('Kayden on the founder’s shoulders, a speaker strapped to the statue. Thirty kids. Dish-soap foam up to everyone’s knees. It’s 2:40 on a Thursday.');
  const c=await choose(['Dance.','Climb the statue next to Kayden.','Keep watch by the door.']);
  if(c===1){await walk('you',200,90);await tw(A.you,{z:40,y:112},500);pose('you','cheer');await N('You’re on the founder’s other shoulder. The whole courtyard screams your name. You don’t know who started it. You don’t care.');D.f.rvStatue=1}
  else if(c===0){pose('you','cheer');await N('You dance like nobody’s watching. Everybody is watching. It’s fine. It’s great, actually.')}

@@ -96,7 +96,7 @@ spot({room:'hall',x:286,y:120,label:'Look inside Mr. Kim’s magic box',short:'B
  const box=pprop({t:'magicbox',x:286,y:122,layer:2});
  await walk('you',270,70);pose('you','reach');await tw(box,{open:1},300);
  await N('Behind the stage curtain, the black box. You open it. It’s empty. You knock on the floor of it. The floor knocks back hollow.');
- SFX.click();await N('A false bottom. Underneath: a trapdoor, straight down into the space under the stage. And on the edge of the hatch, caught on a nail, a strip of blue soccer jersey with a number 9 on it. And a red rubber nose.');
+ SFX.click();await N('A false bottom. A trapdoor down under the stage. Caught on a nail at the edge: a strip of blue soccer jersey, number 9. And a red rubber nose.');
  give('nose');pose('you',null);
  await N('Somewhere under the stage, very faint, something honks. Once.');
  D.f.kim3=1;part('kim',3);
@@ -109,7 +109,7 @@ hook({mis:'kim',period:8,room:'carpark',who:'auto',cond:()=>D.f.kim3&&!D.f.kim4,
  await walk('you',170,50);
  await N('It’s rocking. Just a little. From inside, every few seconds: honk. Honk. And somebody humming the times tables.');
  const c=await choose(['Look through the back window.','Bang on the door and shout for Alex.','Call the police.']);
- if(c===0){pose('you','reach');await N('Through the dirty glass: a mirror with lightbulbs round it. A makeup kit. A pile of blue soccer kit cut into strips. And a long row of photos of kids in clown makeup, all smiling the same smile.');pose('you',null)}
+ if(c===0){pose('you','reach');await N('Through the dirty glass: a lightbulb mirror. A makeup kit. Soccer kit cut into strips. A row of photos of kids in clown makeup, all smiling the same smile.');pose('you',null)}
  else if(c===1){SFX.bang&&SFX.bang();await say('you','ALEX! ALEX!');await N('The honking stops. The humming stops. Everything inside the van goes completely still.')}
  else{await N('You call. A bored voice asks if it’s an emergency. You say a man has your friend in a van. She asks if the man is a relative. You hang up.')}
  put('kim',340,-1,{y:150,hold:'flower'});await walk('kim',A.you.x+16,70);face('kim','you');
@@ -156,7 +156,7 @@ hook({mis:'kim',period:8,room:'carpark',who:'auto',cond:()=>D.f.alexBack&&D.f.al
   pose('alex','overhead');await wait(200);SFX.crunch();shake(1.5);flash('#a00010',.4);blood(A.kim.x,A.kim.y-26,60,1,120,A.kim.y+2);
   for(let i=0;i<8;i++)prop({t:'heart',x:A.kim.x+(i-4)*4,y:A.kim.y-30});
   kill('kim','lie',{pool:40,bleed:5});pose('alex',null);
-  await N('The first swing knocks Mr. Kim’s smile clean off. The second one sets off a confetti cannon in his pocket. There is blood and confetti all over the rooftop parking. It looks like a very bad birthday.');
+  await N('The first swing knocks Mr. Kim’s smile off. The second sets off a confetti cannon in his pocket. Blood and confetti everywhere. A very bad birthday.');
   await say('alex','(dropping the pin, the paint running) …Fifty-six.','cry');
   if(A.dheva){await walk('dheva',A.alex.x-10,90);await N('Dheva gets a pack of baby wipes out of his bag, because Dheva always has baby wipes, and starts wiping Alex’s face. Under the white, Alex is crying.');await say('alex','I’m still in here, bro. I’m still in here.','cry');await say('dheva','I know. Package. We’re a package.','cry')}
   SFX.bang&&SFX.bang();await N('Inside the van, something bangs on the wall. Then something else. Then a lot of voices, all honking, all at once, and then one of them shouts “HELP”.');
@@ -165,13 +165,13 @@ hook({mis:'kim',period:8,room:'carpark',who:'auto',cond:()=>D.f.alexBack&&D.f.al
  if(c===2){take('nose');await walk('you',A.kim.x-10,90);pose('you','reach');
   await N('You walk right up to him and push the red nose onto his face. It squeaks.');
   await say('kim','(very quietly, the smile slipping for the first time) …Oh. Oh no. You’ve made me a volunteer.','scared');
-  await N('Alex honks. Dheva honks. You honk. Then every voice inside the van honks back, and the back doors burst open, and eleven kids in clown makeup pour out of it like a magic trick in reverse.');
+  await N('Alex honks. Dheva honks. You honk. The van honks back. The back doors burst open and eleven kids in clown makeup pour out, like a magic trick in reverse.');
   await N('They don’t say anything. They just walk him into the van, very calmly, and close the doors. The van starts rocking. It doesn’t stop.');
   pose('you',null);await complete('kim','nose');return;
  }
  await walk('you',A.alex.x+6,110);pose('you','grab');
  await say('you','Alex. No. Not like this. We call somebody.');
- await N('Alex stops. The smile wobbles. Then he lets you pull him back. Mr. Kim waves, gets into the van, and drives down the ramp, honking all the way to the street. Two police cars pass him going the other way.');
+ await N('The smile wobbles. Alex lets you pull him back. Mr. Kim waves and drives down the ramp, honking. Two police cars pass him going the other way.');
  await say('alex','(very small) He’ll do a new town. He does a new town every year.','cry');
  pose('you',null);await complete('kim','police');
 }});

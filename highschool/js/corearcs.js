@@ -56,7 +56,7 @@ spot({mis:'crew',room:'hallb',period:[2,4],x:238,y:146,label:'Mr. Adam’s door 
  if(c===0){await walk('you',150,90);face('you',1);pose('you','crouch');
   const ok=await vgSimon(4,'DON’T MOVE');
   put('shermian',-14,1,{y:152,ex:'smirk'});await walk('shermian',120,50);
-  if(ok){await say('shermian','(looking round the room, slowly) …Just you, Gerald?','smirk');await say('adam','Just me. Just me and twenty-two years.','sad');
+  if(ok){await say('shermian','(looking round the room, slowly) …Just you, Gerald?','smirk');await say('adam','Just me. Just me and twenty-two shitty years.','sad');
    await say('shermian','Don’t stay late, Gerry-bear. Inspections are SO tiring.','smirk');await walk('shermian',-20,50);remove('shermian')}
   else{await N('Your shoe squeaks on the carpet. She doesn’t walk round the desk. She doesn’t need to. She just smiles at the corner of it, right where you are.');
    await say('shermian','(to the desk) See you Friday, sweetie.','evil');await walk('shermian',-20,50);remove('shermian');crew().sherSeen=1}

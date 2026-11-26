@@ -80,7 +80,7 @@ hook({mis:'loach',period:6,room:'science',who:'auto',cond:()=>MIS.loach&&has('fa
  await N('Swapped. Her real mug is in your hoodie, warm against your stomach. She picks up Angelo’s replica and takes a sip.');
  await N('She stops. She looks into it for a very long time.');
  await say('loach','…Page forty-seven.');
- if(A.hasan)await say('hasan','(whispering, ashen) Bro. She knows. She KNOWS.','scared');
+ if(A.hasan)await say('hasan','(whispering, ashen) Bro. She knows. She fucking KNOWS.','scared');
  D.f.loach3=1;part('loach',3);await classOut(c);
 }});
 

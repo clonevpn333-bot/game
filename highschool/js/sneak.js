@@ -106,7 +106,7 @@ hook({mis:'lunchrun',period:4,room:'field',who:'auto',cond:()=>D.f.lr2&&!D.done.
  D.items=D.items.filter(i=>i!=='burgers');
  if(c===0){const ok=await mash('RUN',{need:20,time:4,info:'Coach used to play college ball. MASH!'});
   if(ok){await walk('you',-20,150);scene('canteen',{paul:[170,-1,{y:150}],hasan:[200,-1,{y:150,pose:'sit'}],you:[140,1,{y:154,hold:'bag'}]},true);SFX.cheer();
-   await N('You come through the cafeteria doors like a war hero. The table stands up. Somebody starts the slow clap. Pat watches from behind the counter, holding a ladle, saying nothing, for a very long time.');
+   await N('You come through the cafeteria doors like a war hero. The table stands. Slow clap. Pat watches from behind the counter, ladle in hand, saying nothing.');
    if(A.hasan)await say('hasan','THE LITTLE RACCOON. HE GOT THE LITTLE RACCOON.','cry');await complete('lunchrun','fed')}
   else{pose('coach','grab');await N('Coach tackles you into the long-jump pit. Burgers everywhere. He eats four of them right there in the sand, looking you in the eye.');await complete('lunchrun','coach')}}
  else if(c===1){pose('you','throw');await N('You throw a Double Barn at him. He catches it one-handed without looking, like a dog with a frisbee. He’s too busy eating to chase you.');
@@ -151,7 +151,7 @@ hook({mis:'hotsub',period:4,room:'canteen',who:'auto',cond:()=>D.f.hs1&&!D.f.hs2
  const c=await choose(['Help your bet: tell '+K[bet].n.replace(/^(Ms\.|Mr\.)\s*/,'')+' he “loves a bold move”.','Sabotage the others: swap the sonnet for a parking ticket.','Pull the fire alarm. Let chaos decide.']);
  if(c===0){D.f.hsHelp=1;await N('You whisper it. '+K[bet].n+' goes very still, then very determined, like a shark that just heard a heartbeat.')}
  else if(c===1){D.f.hsHelp=1;await N('You make the swap. Ms. Balduf stands up, clears her throat, and reads him a parking ticket in iambic pentameter by accident. She runs out of the cafeteria.')}
- else{SFX.bell();SFX.bell();D.f.hsChaos=1;await N('The fire alarm goes. In the stampede, the casserole hits the floor, Coach drops the vending machine on Mr. Adam’s foot, and Ms. Balduf and Ms. Sherman both grab the sub’s arm at once and pull. He loses a sleeve.')}
+ else{SFX.bell();SFX.bell();D.f.hsChaos=1;await N('Fire alarm. The casserole hits the floor. Coach drops the vending machine on Mr. Adam’s foot. Ms. Balduf and Ms. Sherman both grab the sub. He loses a sleeve.')}
  D.f.hs2=1;part('hotsub',2);return 'stay';
 }});
 hook({mis:'hotsub',period:7,room:'bus',who:'auto',cond:()=>D.f.hs2&&!D.done.hotsub,run:async()=>{
@@ -159,7 +159,7 @@ hook({mis:'hotsub',period:7,room:'bus',who:'auto',cond:()=>D.f.hs2&&!D.done.hots
  await beat('THE HOT SUB','PART THREE · HOME TIME');
  const pool=['shermian','balduf','coach'].filter(k=>!D.dead[k]);
  const win=D.f.hsChaos?null:(D.f.hsHelp&&Math.random()<.75?D.f.hsBet:pick(pool));
- if(!win){await N('Nobody wins. The sub leaves alone, with one sleeve, in a red convertible, without looking back. Three teachers watch him go from three different windows. Ms. Balduf is crying. Coach is crying. Ms. Sherman is sharpening something.');
+ if(!win){await N('The sub leaves alone, one sleeve, red convertible, no looking back. Ms. Balduf is crying. Coach is crying. Ms. Sherman is sharpening something.');
   await say('arjun','The house keeps the money. I AM the house.','evil');await complete('hotsub','chaos');return 'stay'}
  put(win,-20,1,{y:146});await walk(win,176,70);
  const lines={shermian:'(taking his arm) Miss is going to show you the town, sweetie. Miss knows ALL the shortcuts. Some of them are underground.',balduf:'(taking his arm, shaking) I have never done anything impulsive in my life. Please drive before I correct something.',coach:'(clapping him on the back so hard he staggers) Grab a protein shake with me. As bros. As BROS. (it is not as bros)'};
@@ -181,7 +181,7 @@ mission('swipe',{name:'Swipe Right, Ms. Balduf',icon:'💘',who:['balduf','griev
 hook({mis:'swipe',period:[2,4],room:'library',who:'nivaan',label:'Ask Nivaan what he’s laughing at',look:{pose:'phone',ex:'laugh'},cond:()=>!D.f.sw1&&!D.dead.balduf&&!D.dead.grieve&&!D.dead.nivaan,run:async()=>{
  scene('library',{nivaan:[180,-1,{y:146,pose:'phone',ex:'laugh'}],you:[150,1,{y:154}]});
  await beat('SWIPE RIGHT, MS. BALDUF','PART ONE · THE PROFILE');
- await say('nivaan','(wheezing) Bro. BRO. Ms. Balduf has a dating profile. Look at her photo. She’s holding a dictionary. In the SEA.','laugh');
+ await say('nivaan','(wheezing) Bro. BRO. Ms. Balduf has a dating profile. Look at her photo. She’s holding a dictionary. In the SEA. What the fuck.','laugh');
  await say('nivaan','“Turn-ons: the Oxford comma. Turn-offs: ‘could of’. Seeking a gentleman of letters. Must own a cardigan. Must be able to handle a strong woman and a stronger thesaurus.”','laugh');
  await say('you','…Mr. Grieve owns like nine cardigans.');
  await say('nivaan','(slowly putting the phone down) Oh no. Oh no. We’re doing this. We’re making history. Literally. He teaches history.','evil');

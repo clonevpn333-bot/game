@@ -39,7 +39,7 @@ async function clappening(){
  await walk('you',140,90);face('you',1);
  await N('Home time. Two enormous men in matching tracksuits, filming a movie in your bus loop.');
  if(A.nivaan)await say('nivaan','(filming them filming) Cheeks and Cheek-Clapper. IN OUR BUS LOOP. I’m going to cry.','laugh');
- await say('cheeks','You! Kid! You’ve got a steady face. Stand by the camera. Don’t breathe on it.','happy');
+ await say('cheeks','You! Kid! You’ve got a steady fucking face. Stand by the camera. Don’t breathe on it.','happy');
  await walk('you',152,50);
  prop({t:'clapboard',x:204,y:132});SFX.smack();
  await say('cheeks','FISTS OF FAIR CITY FOUR. Scene nine. The Bus Loop Showdown. ACTION!','yell');
@@ -47,7 +47,7 @@ async function clappening(){
  SFX.whistle?SFX.whistle():SFX.beep&&SFX.beep();
  put('coach',-14,1,{y:148,ex:'angry'});await walk('coach',96,120);
  await say('coach','NOT. IN. MY. BUS LOOP.','yell');
- await say('cheeks','(not turning round) Keep rolling. KEEP ROLLING. He’s perfect. He’s the villain.','happy');
+ await say('cheeks','(not turning round) Keep rolling. KEEP FUCKING ROLLING. He’s perfect. He’s the villain.','happy');
  const c=await choose(['Keep rolling.','Grab the camera and hide it.','Run for the bus.'],'COACH IS COMING');
  if(c===2){await walk('you',40,140);face('you',1)}
  else if(c===1){pose('you','reach');await wait(250);pose('you',null);hold('you','laptop');{const i=props.indexOf(tri);if(i>=0)props.splice(i,1)}await walk('you',120,80);face('you',1)}
@@ -61,13 +61,13 @@ async function clappening(){
  if(c===0)await say('cheeks',held?'(whispering, eyes wet) Did you get that. Tell me you got that.':'(watching you wobble) …It’s fine. It’s art. Shaky is art.','laugh');
  if(A.nivaan)await say('nivaan','I got it. I got it from the other side. I’m never going to be okay again.','laugh');
  pose('coach',null);A.coach.ex='evil';
- await say('coach','(getting up, very slowly, looking only at you) I know your bus number.','evil');
+ await say('coach','(getting up, very slowly, looking only at you) I know your bus number, you little shit.','evil');
  await walk('coach',-20,70);remove('coach');cue('tension',true);
  if(A.nivaan){
   await say('nivaan','(walking up to Cheeks) You two want subscribers? Like, real ones?','cold');
-  await say('cheeks','We have three hundred and twelve.','smirk');
+  await say('cheeks','We have three hundred and twelve. Three hundred and twelve motherfuckers who believe in us.','smirk');
   await say('nivaan','Friday week. Inspection Day. Something’s going to happen in that hall, and somebody needs to film it who can’t be stopped by a teacher.','cold');
-  await say('cheeks','…Is there fighting?','shock');
+  await say('cheeks','…Is there fucking fighting?','shock');
   await say('you','Probably.');
   await say('clapper','(slowly, like a man seeing God) Then Fists of Fair City Five is a documentary.','happy')}
  else{await say('cheeks','(handing you a business card covered in fingerprints) Whatever that man is, kid, he needs to be on camera. Call us.','cold')}
@@ -84,9 +84,9 @@ async function dailies(){
  await say('cheeks','DAILIES. From the bus loop shoot. Don’t look at the clap. Look BEHIND the clap.','shock');
  const tv=prop({t:'dailies',x:160,y:96,layer:40});SFX.click&&SFX.click();
  await N('Behind the school, small and grainy: Coach’s car at the old boiler hatch. Boot open. Coach carrying a black bin bag. Then another. 15:20.');
- await say('clapper','We zoomed. We ENHANCED. Is that… is that a SHOE coming out of the bag?','scared');
+ await say('clapper','We zoomed. We ENHANCED. Is that… holy shit, is that a SHOE coming out of the bag?','scared');
  const c=await choose(['“Send me that file. Right now.”','“Delete it. They’ll come for you.”'],'THE FOOTAGE');
- if(c===1){await say('cheeks','DELETE it? This is our Citizen Kane. We’re putting it in the trailer.','angry');await say('you','…Send me a copy, then.')}
+ if(c===1){await say('cheeks','DELETE it? This is our fucking Citizen Kane. We’re putting it in the trailer.','angry');await say('you','…Send me a copy, then.')}
  await N('Across the bus loop, a pink cardigan. Ms. Sherman, crossing to the front doors with a coffee. She slows down.');
  put('shermian',-14,1,{y:148,ex:'smirk'});await walk('shermian',110,50);face('shermian',1);
  await say('shermian','Lovely morning, gentlemen.','smirk');
@@ -95,7 +95,7 @@ async function dailies(){
  if(ok){hold('cheeks',null);await say('cheeks','(very high voice) MORNING.','scared')}
  else{await N('She sees the screen. Just for a second. She smiles at it like it’s a baby photo.');await say('shermian','Coach always did have a lovely car.','evil');crew().sherSawCam=1}
  await walk('shermian',340,50);remove('shermian');
- await say('clapper','(watching her go) …I’ve been in four fights this year and I have never been that scared.','scared');
+ await say('clapper','(watching her go) …I’ve been in four fights this year and I have never been that scared. I think I shit a little.','scared');
  crew().ev=crew().ev||{};crew().ev.cheekscam=1;save&&save();
  toast('🎁 EVIDENCE: the background of Fists of Fair City 4. Coach, the hatch, 3:20.');
  return 'stay'}

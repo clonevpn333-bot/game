@@ -76,7 +76,7 @@ hook({mis:'dopple',period:[0,2,4],room:'corridor',who:'auto',cond:()=>cal()>=3&&
  await N('The one at the right end is wrong. Too tall. Arms down past its knees. Its head is on one side, like it’s listening to something in the floor. It has its other hand in its mouth.');
  SFX.crunch();await wait(300);SFX.crunch();
  await N('It’s chewing. You can hear it from here.');
- if(A.hasan)await say('hasan','(not moving his lips) Bro. Bro. Do you see— tell me you see the second one. Tell me I’m not having a stroke.','scared');
+ if(A.hasan)await say('hasan','(not moving his lips) Bro. Bro. Do you see— tell me you see the second one. Tell me I’m not having a fucking stroke.','scared');
  await say('dopple','(in her voice, but slower, and wet) Hungry, sweeties. Miss is so… hungry.','evil');
  A.dopple.pose='crawl';SFX.scream();await walk('dopple',340,220);remove('dopple');
  await N('It drops onto all fours and goes round the corner faster than anything with that many joints should move. The lights flicker. Then everything is normal.');
@@ -138,7 +138,7 @@ hook({mis:'dopple',period:[0,1,2,3,4,5,6],room:'wing_sci',who:'auto',cond:()=>dp
  SFX.scream();SFX.squelch();SFX.crunch();shake(2);flash('#a00010',.5);
  for(let i=0;i<3;i++){blood(A.kid2.x,A.kid2.y-16,40,null,100,A.kid2.y+2);await wait(TEST?0:220)}
  kill('kid2','lie',{pool:44,bleed:6});D.dead.kid2=1;
- await N('It doesn’t kill him first. It just starts eating. The whole hallway screams at once. The seventh grader next to him doesn’t scream. She just stands there with her mouth open and no sound coming out.');
+ await N('It doesn’t kill him first. It just starts eating. The whole hallway screams. The seventh grader next to him doesn’t. Her mouth is open. Nothing comes out.');
  await say('dopple','(chewing, crying, polite) Thank you, sweetie. Thank you. Miss was so hungry. Miss is still so hungry.','cry');
  A.dopple.stretch=10;await N('You watch it get taller. Its arms crack and get longer. Its neck stretches like chewing gum. It doesn’t stop eating while it grows.');
  if(A.aidan){await say('aidan','(not scared at all, standing next to his locker) She comes to locker 217 at night. She sits in there with me. She sings. She’s nice to me.','sad');await say('aidan','She’s not nice to them.','sad')}

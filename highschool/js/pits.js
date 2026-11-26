@@ -34,7 +34,7 @@ hook({mis:'pits',period:0,room:'bus',who:'aidan',label:'Ask Aidan what’s in th
  await say('you','Aidan, don’t—');
  pose('aidan','up');SFX.static();
  for(let i=0;i<40;i++)parts.push({x:A.aidan.x+rand(-8,8),y:A.aidan.y-rand(10,34),vx:rand(-20,20),vy:rand(-30,10),c:i%2?'#a8f060':'#e8f8d8',s:2,fy:A.aidan.y+2,life:1.2});
- await N('He sprays it under one arm. Then the other. Then all over. Then in his hair. Then he shakes the empty can and sprays the last bit up his sleeves like he’s refilling them.');
+ await N('Under one arm. The other. All over. His hair. Then the last of the can up his sleeves, like he’s refilling them.');
  pose('aidan',null);hold('aidan',null);
  prop({t:'stink',follow:'aidan',x:0,y:0,dress:0});
  await N('It smells like the inside of a pumpkin that someone has been living in.');
@@ -48,7 +48,7 @@ hook({mis:'pits',period:2,room:'corridor',who:'aidan',label:'Ask Aidan why every
  scene('corridor',cast);prop({t:'stink',follow:'aidan',x:0,y:0});
  cue('tension');
  for(const k of Object.keys(A))if(k!=='aidan'&&k!=='you'){A[k].pose='cover';A[k].ex='scared'}
- await N('Everyone in the corridor has their hand over their nose. Someone’s eyes are streaming. A seventh grader has passed out against a locker and nobody has moved him in case they have to breathe in.');
+ await N('Hands over noses all down the corridor. A seventh grader has passed out against a locker. Nobody moves him. They’d have to breathe in.');
  await say('aidan','I don’t know why everyone keeps walking away. Look — look at the trophy cabinet. 1987. There’s a boy in the back row.','smirk');
  pose('aidan','point');SFX.whoosh();shake(.6);
  const cl=pprop({t:'cloud',x:A.aidan.x-6,y:A.aidan.y-26,r:6,layer:40});
@@ -90,7 +90,7 @@ hook({mis:'pits',period:2,room:'corridor',who:'aidan',label:'Ask Aidan why every
  cue('fight');pose('fema1','saw');A.aidan.ex='scared';
  for(let i=0;i<4;i++){SFX.squelch();blood(A.aidan.x+4,A.aidan.y-20,24,1,90,A.aidan.y+2);shake(.6);await wait(260)}
  SFX.scream();
- await N('They take his arms off at the pits. It is not quick. It is the bloodiest thing that has ever happened on this field, and this field has hosted Coach’s javelin practice for nineteen years.');
+ await N('They take his arms off at the pits. It isn’t quick. Bloodiest thing that’s ever happened on this field, and Coach has run javelin practice here for nineteen years.');
  kill('aidan','lie',{pool:46,bleed:5,spray:60});pose('fema1',null);
  await say('fema2','Source neutralized. Bag it. Bag the arms separately.','angry');
  await N('The smell lifts, slowly, like weather. Hasan, Nivaan and Kenneth are still green. They’re humming something. All three of them. The same tune. None of them know it.');
@@ -120,11 +120,11 @@ hook({mis:'darren',period:2,room:'canteen',who:'hasan',label:'Get in the lunch l
  for(const [n,x] of[['kid1',40],['kid2',70],['kid3',230],['kid4',260]]){put(n,x<160?-14:334,x<160?1:-1,{y:150});walk(n,x,120)}
  await wait(500);
  for(const n of['kid1','kid2','kid3','kid4'])if(A[n]){A[n].pose='swim';hop(n,10,500)}
- await N('The swim team bursts in through both doors at once, in goggles, and starts doing synchronized swimming moves across the cafeteria tables. In silence. In formation. On top of people’s lunches.');
+ await N('The swim team bursts in, goggles on, and does synchronized swimming across the cafeteria tables. In silence. On top of people’s lunches.');
  await say('pat','NOT ON MY TABLES—','yell');
  put('darren',334,-1,{y:150});
  await walk('darren',170,140);A.darren.z=0;hop('darren',6,300);
- await N('A boy with ginger curls and prescription goggles on his forehead slides the full length of the table on a lunch tray and stops exactly in front of Hasan. He has practiced the stop. You can tell.');
+ await N('A boy in prescription goggles slides the full length of the table on a lunch tray and stops exactly in front of Hasan. He practiced the stop. You can tell.');
  await say('darren','Hi. Darren. Swim team. Step five: the entrance. Eighth grade, the pool — you went into the deep end for my goggles when nobody else would.','love');
  await say('hasan','I don’t SWIM. I just didn’t want you to lose your goggles—','shock');
  await say('darren','Exactly. EXACTLY. There are eleven steps. This is five. Nine is at lunch.','love');
@@ -144,7 +144,7 @@ hook({mis:'darren',period:4,room:'canteen',who:'hasan',label:'Ask Hasan why he�
  const letters=['H','A','S','A','N','?'],signs=letters.map((s,i)=>pprop({t:'sign',s,x:150+i*20,y:130,layer:20}));
  for(const k of['kid1','kid2','kid3','kid4','darren'])pose(k,'up');
  const dr=pprop({t:'drone',x:340,y:30,banner:1});SFX.static();await tw(dr,{x:150},1600);
- await N('Step nine: the whole swim team, holding up giant letters that spell HASAN, with Darren at the end holding a question mark. Above them, a drone is towing a banner that also says HASAN, in case the letters weren’t clear.');
+ await N('Step nine: the whole swim team holding letters that spell HASAN, and Darren at the end with a question mark. Subtle was step eight.');
  await say('darren','(shouting) DO YOU WANT TO GET A MILKSHAKE! AS A THING! OR NOT AS A THING! THE QUESTION MARK COVERS BOTH!','love');
  await say('coach','INCOMING AIRCRAFT. JAVELIN PRACTICE.','yell');
  SFX.whoosh();const j=pprop({t:'javelin',x:300,y:100,rot:-.5});await tw(j,{x:dr.x,y:dr.y},300,'in');j.hide=1;
@@ -190,7 +190,7 @@ hook({mis:'darren',period:4,room:'canteen',who:'hasan',label:'Ask Hasan why he�
   for(let i=0;i<3;i++){SFX.squelch();blood(A.darren.x,A.darren.y-24,30,null,90,A.darren.y+2);shake(.7);await wait(300)}
   kill('darren','lie',{pool:44,bleed:5,spray:50});
   fxState.red=0;for(const n of['hasan','nivaan','kenneth'])if(A[n]){A[n].pose=null;A[n].ex='shock'}
-  await say('hasan','(snapping out of it) …What did we just sing. WHAT DID WE JUST SING.','shock');
+  await say('hasan','(snapping out of it) …What did we just sing. WHAT THE HELL DID WE JUST SING.','shock');
   await say('nivaan','(green, wiping his mouth) Chat says that was hard. Chat is being weird about it.','scared');
   await complete('darren','choir');return;
  }else{

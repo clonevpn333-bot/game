@@ -96,7 +96,7 @@ spot({room:'corridor',period:[0,1,2,3,4,5,6],x:206,y:150,label:'Knock on Mr. Ada
  if(c===0){await say('adam','…Yes. Yes. Thirty-nine years. Use my name. Mr. Adam. Principal of Highgate High. Write it down.','sad');crew().adamNamed=1;intel('adamKey')}
  else await say('adam','Thank you. I’m a coward. I know I’m a coward. Thank you.','sad');
  pose('you',null);
- SFX.door();await N('When you open the door, Ms. Sherman is standing in the corridor right outside it, holding a cup of tea. She smiles at you. You don’t know how long she’s been there. She doesn’t say anything at all.');
+ SFX.door();await N('Ms. Sherman is right outside the door with a cup of tea. She smiles. You don’t know how long she’s been there. She doesn’t say a word.');
  evidence('confession','Mr. Adam’s confession');await complete('crew_record',c===0?'named':'anon');
  D.room='corridor';buildRoom('corridor');return 'stay';
 }});

@@ -64,7 +64,7 @@ DEATHS.backseat={name:'Back Seat',desc:'You grabbed for it. You weren’t fast e
 const pjKind=()=>D.f.pjKind||0;
 const RIDE=[
  {id:'pj1',w:9,cond:()=>!D.f.pj1&&onBus('pauljones'),run:async()=>{
-  await N('At the back of the bus, a kid with a big afro squashed under his hood sits on his own. Paul Jones. He moved here in October. He has a seat to himself every day, and he isn’t lucky about it.');
+  await N('Back row, by the window: Paul Jones, afro squashed under his hood. He has a whole seat to himself every day. Not because he’s lucky.');
   if(onBus('arjun'))await say('arjun','(loud enough) Ayo, Off-Brand Paul. Real Paul’s at the front. You’re the knockoff. You’re the Paul from Wish.','smirk');
   classLaugh(500);
   const c=await choose(['Go and sit next to Paul Jones.','Laugh. It was kind of funny.','Stay where you are.']);
@@ -139,7 +139,7 @@ const RIDE=[
    for(const k of['you'])A[k].pose='kneel';
    SFX.bang&&SFX.bang();shake(1.5);flash('#a00010',.4);
    if(target&&A[target]){blood(A[target].x,A[target].y-20,40,null,80,A[target].y+2);kill(target,'lie',{pool:30});D.dead[target]=1}
-   await N('One shot. Then nothing. Paul Jones sits down in the aisle, puts the gun on the floor in front of him, and puts his hands on his head. He looks like he’s known for a while.');
+   await N('One shot. Then nothing. Paul sits down in the aisle, puts the gun on the floor, hands on his head. Like he’s known for a while how this goes.');
    if(target)await N(K[target].n+' doesn’t get up. Nobody on the 43 says anything all the way to the hospital stop, where an ambulance is already waiting, lights on, no siren.');
    await complete('pauljones','shot');
   }
@@ -194,7 +194,7 @@ const RIDE=[
  }},
  {id:'raccoon',w:2,cond:()=>!!P.done.lockdown||cal()>=4,run:async()=>{
   const r=pprop({t:'raccoon',x:300,y:100,dir:-1,layer:40});
-  await N('Something moves in the luggage rack. A raccoon. It looks at you. It takes the sandwich out of a seventh grader’s hand, very politely, and gets off at the next stop.');
+  await N('A raccoon in the luggage rack. It takes a seventh grader’s sandwich, very politely, and gets off at the next stop.');
   await tw(r,{x:-20},1200);r.hide=1;
  }},
  /* stories, deeper */
@@ -235,7 +235,7 @@ const RIDE=[
  }},
  {id:'adamCar',w:8,cond:()=>P.crew&&P.crew.ev&&P.crew.ev.confession&&!P.crew.rideAd,run:async()=>{
   crew().rideAd=1;save();
-  await N('Mr. Adam’s car is parked at the side of the road near the arcade. He’s just sitting in it with the engine off. As the bus goes past, he looks up at your window and nods. He looks lighter.');
+  await N('Mr. Adam, parked by the arcade, engine off. As the bus passes he looks up at your window and nods. He looks lighter.');
  }}
 ];
 async function busRide(fromMall){
@@ -313,7 +313,7 @@ RIDE.push(
  }},
  {id:'tobyBus',w:7,cond:()=>D.done.toby&&!D.f.rideTo&&onBus('sean'),run:async()=>{
   if(!onBus('sean'))return;D.f.rideTo=1;put('toby',A.sean.x+14,-1,{y:A.sean.y,pose:'sit'});
-  await N('Toby from Ohio has started riding the 43. He sits behind Sean and Stella and gives them both friendship bracelets every Thursday. Nobody asked him to. Everybody wears them.');
+  await N('Toby from Ohio rides the 43 now. He leans over Sean and Stella’s seat and hands out friendship bracelets. Nobody asked. Everybody wears them.');
   await say('toby','(leaning over the seat) Sean. Your hair. Today. Ten out of ten. Stella. Your hair. Eleven.','happy');
  }},
  {id:'davidList',w:8,cond:()=>P.crew&&P.crew.beat2&&!P.crew.rideDL&&onBus('david'),run:async()=>{

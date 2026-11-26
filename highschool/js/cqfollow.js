@@ -198,7 +198,7 @@ fu('as_pledge',['arjun'],async c=>{await say('adam','(at the podium, very calmly
  classLaugh(1000);await N('He gets through it. Barely. He sits down to the loudest round of applause of his life, and doesn’t understand it at all.');await tw(A.arjun,{y:150},300)});
 fu('as_helium',[],async c=>{await say('adam','(in a tiny squeaky voice, over the PA, on purpose) GOOD MORNING, HIGHGATE.','happy');
  classLaugh(1400);await N('Mr. Adam has done the entire assembly on helium. It’s the first time anyone has seen him smile since September.')});
-fu('as_cry',[],async c=>{await N('Mr. Adam doesn’t cry this time. He reads the names, all of them, all the way through, and then he stops, and looks up, and says “We’re going to find out.” He’s looking at you.')});
+fu('as_cry',[],async c=>{await N('Mr. Adam doesn’t cry this time. He reads every name. Then he looks up: “We’re going to find out.” He’s looking at you.')});
 fu('as_spot',[],async c=>{await say('marcus','(whispering) The spotlight’s been unplugged. Someone cut the cable. With something sharp. Like a cleaver.','scared')});
 fu('as_chairs',[],async c=>{await say('adam','(at the podium) Every chair in this hall is now zip-tied to its neighbor. Physics is CANCELLED, Highgate.','angry')});
 fu('as_tuba',[],async c=>{const t=D.dead.voss?'coach':'voss';put(t,230,-1,{y:146});

@@ -99,11 +99,11 @@ hook({mis:'pickupline',period:7,room:'bus',who:'auto',_bomb:1,cond:()=>D.f.pl1&&
  for(const [k,x] of[['kayden',40],['tez',60],['jaxon',290],['kaylee',306],['arjun',100]])if(K[k]&&!D.dead[k])cast[k]=[x,x<160?1:-1,{y:156}];
  scene('bus',cast,true);if(typeof beat==='function')await beat('PICKUP LINE','PART TWO · THE BUS LOOP');
  if(A.tez)pose('tez','cross');if(A.kayden)pose('kayden','phone');
- await N('Home time. The bus loop. Mr. Valentino is eating a croissant by the curb. Ms. Loach and Ms. Sherman have him surrounded like two lions around a very relaxed gazelle. Behind you, Kayden is still taking bets.');
+ await N('Mr. Valentino eats a croissant by the curb. Ms. Loach and Ms. Sherman circle him like two lions round a very relaxed gazelle. Kayden is still taking bets.');
  await say('loach','So. You were a PASTRY chef, Mr. Valentino. That must mean you’re very good with your hands.','love');
  await say('valentino','I can make a croissant with eighty-one layers, Linda. Each one by hand. Slowly.','smirk');
  await say('loach','(fanning herself with a detention slip) My ex-husband couldn’t make toast. He couldn’t make anything. He couldn’t make it past the first commercial break, if you know what I mean.','love');
- if(A.jaxon)await say('jaxon','(seventh grader, horrified) WHAT DOES THAT MEAN. WHAT COMMERCIAL BREAK.','shock');
+ if(A.jaxon)await say('jaxon','(seventh grader, horrified) WHAT THE FUCK DOES THAT MEAN. WHAT COMMERCIAL BREAK.','shock');
  await say('shermian','(stepping between them) Linda. You are wearing lipstick on bus duty. That is a uniform violation. I could write you up.','cold');
  await say('shermian','(to Valentino, flatly) I have a set of handcuffs and the keys to every room in this building. Including the ones with no windows.','smirk');
  if(A.kaylee)await say('kaylee','(eighth grader, filming) SHE SAID NO WINDOWS. SHE SAID NO WINDOWS, CHAT.','laugh');
@@ -114,12 +114,12 @@ hook({mis:'pickupline',period:7,room:'bus',who:'auto',_bomb:1,cond:()=>D.f.pl1&&
  if(c===0){await say('you','Mr. Valentino! Is that pastry rash still contagious? The one on your— you know. Your cream horn.');
   for(const m of['loach','shermian'])if(A[m])A[m].ex='shock';await say('valentino','(very slowly lowering his croissant) …It’s mostly cleared up.','cold');
   await Promise.all([walk('loach',-20,120),walk('shermian',340,100)]);
-  await N('Both teachers are gone before the sentence is over. Ms. Loach leaves so fast she forgets her cardigan on the bench. Mr. Valentino looks at you for a long time and eats the rest of the croissant without breaking eye contact.');
+  await N('Both teachers are gone before you finish the sentence. Ms. Loach leaves her cardigan behind. Mr. Valentino finishes the croissant without breaking eye contact.');
   if(A.kayden)await say('kayden','(closing the book) Nobody wins. House wins. I’m the house.','smirk');
   pay('run');if(typeof repAdd==='function')repAdd('liked',1);await complete('pickupline','rash');return 'stay'}
  if(c===1){SFX.horn?SFX.horn():SFX.bell&&SFX.bell();shake(.8);
   for(const m of['loach','shermian','valentino'])if(A[m])A[m].ex='shock';hold('valentino',null);
-  await N('You lean on the bus horn. The bus horn is the loudest thing in the state. Ms. Loach drops her lipstick. Ms. Sherman drops her dignity. Mr. Valentino drops his coffee.');
+  await N('You lean on the bus horn. Ms. Loach drops her lipstick. Ms. Sherman drops her dignity. Mr. Valentino drops his coffee.');
   if(typeof spew==='function'&&A.arjun)await spew({x:A.valentino.x,y:A.valentino.y-22},['arjun'],'milk',{n:40,dur:700,arc:20});
   if(A.arjun)await say('arjun','(dripping coffee) …Why is it always me. I wasn’t even in this one.','closed');
   await Promise.all([walk('loach',-20,100),walk('shermian',340,100),walk('valentino',340,60)]);

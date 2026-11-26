@@ -72,7 +72,7 @@ chaos('reallockdown',HALLS_F,[1,3,5,6,2,4],.3,async()=>{
   await say('intruder','(not looking at you) Nobody here ever listened to me. Not once. Four years.','cold');
   const c2=await choose(['“I’m listening right now. I’m right here.”','“Then why are you doing THIS?”','“Put it down or you’re gonna regret it.”']);
   if(c2===0){await say('intruder','(long pause, voice breaking) …I don’t even know why I came here.','sad');
-   await N('His arm drops. He sits down on the floor against the lockers and puts it on the ground next to him, and he cries. You stay where you are and keep talking until the police come round the corner, slow, hands up.');
+   await N('His arm drops. He sits against the lockers, puts it on the floor, and cries. You keep talking until the police come round the corner, slow, hands up.');
    hold('intruder',null);A.intruder.pose='sit';if(typeof repAdd==='function')repAdd('liked',2,'talked him down');await wait(TEST?0:600);await end();return}
   await say('intruder','(turning to you) …Wrong answer.','evil');
   return lockdownStruggle(true,end)}
@@ -91,7 +91,7 @@ async function lockdownStruggle(seen,end){
  hold('intruder',null);hold('you','pistol');a.pose='lie';a.ex='shock';SFX.smack&&SFX.smack();shake(1);
  await N('You twist his wrist until it bends wrong and the gun comes loose into your hand. He goes down on his back on the hall floor. Now you’re standing over him, and you’re the one holding it.');
  const c=await choose([{t:'Kick him onto his front and sit on him till the cops come.',tag:'🚔'},{t:'Knock him out cold with it.',tag:'💥'},{t:'Pull the trigger.',tag:'🩸'}],'He’s on the floor. You have the gun.');
- if(c===0){pose('you','kneel');await N('You put a knee in his back and hold his arms and don’t let go for six minutes, which is the longest six minutes there have ever been. When the police come round the corner, you put the gun on the floor and slide it to them.');
+ if(c===0){pose('you','kneel');await N('Knee in his back, his arms pinned, six minutes. The longest six minutes there have ever been. When the police come, you slide the gun across the floor to them.');
   if(typeof repAdd==='function')repAdd('legend',3,'stopped the lockdown');hold('you',null);pose('you',null)}
  else if(c===1){pose('you','overhead');await wait(TEST?0:200);SFX.smack&&SFX.smack();shake(1.2);a.ex='dead';pose('you',null);
   await N('One swing, flat side, right on the temple. He’s out. You drop the gun like it’s hot and back away from it until you hit the lockers.');
@@ -99,7 +99,7 @@ async function lockdownStruggle(seen,end){
  else{pose('you','point');await wait(TEST?0:500);SFX.bang&&SFX.bang();shake(1.8);flash('#ffffff',.6);
   kill('intruder','lie',{pool:40,bleed:4,spray:30});pose('you',null);
   await N('It’s so loud your ears stop working. When they come back there’s a ringing, and the hall, and him, and you. You don’t remember deciding. You just remember the sound.');
-  await N('The police find you sitting against the lockers with the gun on the floor a long way from your hand. They’re gentle about it. Everybody is gentle about it, for weeks. It doesn’t help as much as they think.');
+  await N('The police find you against the lockers, the gun far from your hand. Everybody is gentle with you for weeks. It helps less than they think.');
   if(typeof repAdd==='function'){repAdd('feared',3,'the lockdown');repAdd('legend',1)}hold('you',null)}
  await wait(TEST?0:500);await end();
 }

@@ -96,7 +96,7 @@ hook({mis:'codebrown',_bomb:1,period:[3,5,6],get room(){return D&&myClassFor(D.p
   await N('Nine hundred kids file out to the parking lot past the staff, who are standing completely still in the rain, ruined, looking at nothing.');
   fxState.tintA=0;if(typeof repAdd==='function')repAdd('legend',1);await complete('codebrown','alarm');return 'stay'}
  pose('you','phone');await N('You film the whole thing. Coach. The tide. Mr. Voss climbing onto a radiator. Ms. Sherman, perfectly still, a single tear rolling down her face.');
- await N('By lunch it’s on every phone in the school with the caption “staff meeting”. By home time Mr. Adam has sent an email with the subject line “REGARDING THIS MORNING’S INCIDENT” and nothing in the body.');
+ await N('By lunch it’s on every phone, captioned “staff meeting”. By home time Mr. Adam emails everyone: “REGARDING THIS MORNING’S INCIDENT.” The body is empty.');
  pose('you',null);if(typeof repAdd==='function')repAdd('legend',2,'Code Brown');await complete('codebrown','filmed');return 'stay';
 }});
 
@@ -147,7 +147,7 @@ spot({room:'carpark',x:236,y:150,label:'Deliver the key bowl to the rocking whit
  if(c===1){await walk('shermian',250,50);remove('shermian');await walk('you',270,60);pose('you','reach');SFX.door&&SFX.door();pose('you',null);await walk('you',150,90);
   v.rock=2;await N('Click. The van rolls. It rolls slowly at first, still rocking, still squeaking on the beat, and then it hits the ramp.');
   await tw(v,{x:420},1400,'in');SFX.crash&&SFX.crash();shake(1.2);
-  await N('It goes down three floors of parking ramp at forty miles an hour with nine teachers inside screaming in harmony and comes to a stop in the mall fountain. The doors fly open. Steam comes out. So does Coach. He is wearing only the whistle. He is still blowing it.');
+  await N('Three floors of ramp at forty miles an hour, nine teachers screaming in harmony, into the mall fountain. Steam. Then Coach, wearing only the whistle. Still blowing it.');
   if(typeof repAdd==='function')repAdd('legend',2,'The Key Bowl');await complete('keybowl','brake');return 'stay'}
  await say('shermian','(taking the bowl) Good. Smart. You’ll go far. Not tonight. Tonight you go home.','cold');await walk('shermian',250,50);remove('shermian');
  D.money=(D.money||0)+(D.f.kb40?40:20);updateLoc();toast('+$'+(D.f.kb40?40:20));
@@ -184,7 +184,7 @@ spot({room:'corridor',x:30,y:150,label:'Punch 6969 into the boiler room keypad',
  scene('boiler',cast,true);fxState.tint='#a01020';fxState.tintA=.16;
  prop({t:'swing',x:150,y:150,layer:-30});prop({t:'whips',x:80,y:110,layer:-40});
  if(typeof beat==='function')await beat('THE BOILER ROOM','PART TWO · NOT THE BODIES');
- await N('It is not the bodies. The bulb is red. There is a leather swing on chains hanging from the boiler pipes. There is a pegboard of whips, labeled, like a woodwork room. And in the middle of the floor, in a full black leather suit with a zipper for a mouth, is somebody shaped exactly like Coach.');
+ await N('Not bodies. A red bulb. A leather swing chained to the boiler pipes. A pegboard of labeled whips. And in the middle, zipped into black leather: something shaped exactly like Coach.');
  A.gimp.shake=1;await say('gimp','MMMPH. MMMMPH.','scared');A.gimp.shake=0;
  if(A.kenneth){await say('kenneth','Is that… is that a SWING? Like for babies?','scared');await say('gimp','MMMMMMPH.','angry');await say('kenneth','He says it’s not for babies.','scared')}
  const c0=await choose(['Unzip the mouth.','Walk around him once, slowly.']);
@@ -194,7 +194,7 @@ spot({room:'corridor',x:30,y:150,label:'Punch 6969 into the boiler room keypad',
  await say('gimp','Pam was supposed to check on me at lunch. Pam forgot. Pam’s at a KEY PARTY.','angry');
  const c=await choose([{t:'Unzip him all the way. Get him out.',tag:'🔓'},{t:'Take a photo. Zip the mouth back up.',tag:'📸'},{t:'Run upstairs and say “PROTEIN” over the PA.',tag:'🎙️'}]);
  if(c===0){pose('you','reach');await wait(400);pose('you',null);
-  await N('It takes four minutes. There are a lot of zippers. Some of them don’t go anywhere. Coach steps out of the suit in his tracksuit, which he was wearing UNDER the leather, the whole time, for two days.');
+  await N('Four minutes. A lot of zippers, some going nowhere. Coach steps out in his tracksuit. He was wearing it under the leather. For two days.');
   await say('gimp','A in PE. Forever. Both of you. And if this leaves this room I will make you run until your ancestors are tired.','cold');
   fxState.tintA=0;if(typeof repAdd==='function')repAdd('liked',1);await complete('dungeon','free');return 'stay'}
  if(c===1){pose('you','phone');SFX.click&&SFX.click();flash('#fff',.5);await wait(300);pose('you','reach');await wait(250);pose('you',null);
@@ -275,7 +275,7 @@ const STAFFCHAT=[
 hook({mis:'replyall',period:[2,4],room:'corridor',who:'nivaan',label:'Ask Nivaan why he looks haunted',look:{ex:'shock',pose:'phone'},_here:1,cond:()=>!D.f.ra1&&cal()>=2&&!D.dead.nivaan,run:async()=>{
  scene('corridor',{nivaan:[180,-1,{y:146,ex:'shock',pose:'phone'}],you:[152,1,{y:152}]});
  if(typeof beat==='function')await beat('REPLY ALL','PART ONE · THE CHAT');
- await say('nivaan','I got into the staff group chat. Mr. Adam’s password is “password1”. Bro. Bro. I’ve read all of it. I haven’t slept. I can’t look Coach in the eye. I can’t look ANYONE in the eye.','shock');
+ await say('nivaan','I got into the staff group chat. Mr. Adam’s password is “password1”. Bro. I’ve read all of it. Every disgusting fucking word. I haven’t slept. I can’t look Coach in the eye. I can’t look ANYONE in the eye.','shock');
  await dms('Highgate Staff 🍎 (NO STUDENTS!!)','14 members',STAFFCHAT.slice(0,7));
  await say('nivaan','It goes on like that for FOUR HUNDRED MESSAGES. There’s a whole thread about Mr. Grieve’s “bayonet”. It’s not about a bayonet.','shock');
  await say('nivaan','The whole school needs to see this. The cafeteria’s got a TV. I need a cable. ICT’s got cables. Go. I’ll be in there at lunch.','evil');

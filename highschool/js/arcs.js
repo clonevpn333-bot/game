@@ -65,7 +65,7 @@ freeHooks({mis:'steptwelve',label:'Go and find Darren',look:{},cond:()=>D.f.s12a
  const cast={darren:[230,-1,{y:146,pose:'cross',ex:'cold'}],kid1:[260,-1,{y:144,pose:'cross'}],kid3:[282,-1,{y:146,pose:'cross'}],hasan:[110,1,{y:148,ex:'scared'}],you:[140,1,{y:154}]};
  scene('wing_sports',cast,true);
  await beat('STEP TWELVE','PART TWO · THE POOL DOORS');
- await N('Darren is waiting outside the pool doors with two swimmers behind him. Wet hair. Towels around their necks like boxers. He’s been crying. He’s been crying for a while and then decided to be scary instead.');
+ await N('Darren, outside the pool doors, two swimmers behind him in towels. He’s been crying. Then he decided to be scary instead.');
  await say('darren','Hasan. Hey. You came. That’s step twelve, part one. You coming to me.','evil');
  await walk('darren',150,60);
  await say('darren','You know what you did? You made me look like a fucking idiot. In front of a DRONE.','yell');
@@ -90,7 +90,7 @@ hook({mis:'steptwelve',period:7,room:'bus',who:'auto',cond:()=>D.f.s12b&&!D.done
  cue('tension');
  await beat('STEP TWELVE','PART THREE · THE DEEP END');
  A.hasan._drown=1;
- await N('Hasan is in the deep end in his clothes. Every time he comes up for air, Darren pushes him back down with the long pool hook. Calmly. Like he’s cleaning leaves out of the filter.');
+ await N('Hasan, in the deep end, in his clothes. Every time he comes up, Darren pushes him back down with the pool hook. Calmly. Like he’s cleaning the filter.');
  await say('darren','Step twelve: you find out what it feels like. To go under. To have nobody pull you out.','evil');
  await walk('you',110,140);
  const c=await choose([{t:'Dive in for Hasan.',tag:'🌊'},{t:'Grab the pool hook out of Darren’s hands.',tag:'🩸'},{t:'Beg Darren to stop.'}]);
@@ -130,7 +130,7 @@ freeHooks({mis:'jade',label:'Watch Brayden scream at Jade',look:{ex:'angry'},con
   await N('Somebody at the back table says “OHHHH”. Then everybody does. Brayden’s ears go red. He kicks a chair over and leaves.');await walk('brayden',340,100)}
  else if(c===1){await walk('you',134,70);face('you','brayden');await N('You don’t say anything. You just stand there next to her. It’s enough. Brayden looks at you, looks at her, and laughs like it’s a joke he doesn’t get.');
   await say('brayden','Whatever. She’ll be back. She always comes back.','smirk');await walk('brayden',340,100)}
- else{await N('You eat your nuggets. Brayden keeps going for another two minutes. When he leaves, Jade walks past your table and drops a napkin in your tray. It says LIBRARY. LUNCH.');}
+ else{await N('Brayden keeps going for two more minutes. When he leaves, Jade drops a napkin on your tray. LIBRARY. LUNCH.');}
  remove('brayden');
  if(c!==2){await say('jade','(quietly) …Thanks. Nobody ever does that. Back of the library. I hide there. Come find me if you want.','blush')}
  D.f.jd1=1;part('jade',1);return 'stay';
@@ -226,7 +226,7 @@ hook({mis:'closet',period:4,room:'corridor',who:'auto',cond:()=>!D.f.cl1&&!D.dea
  if(c===2){await N('You walk away. Behind you, Arjun opens the door. The scream is two people at once. Arjun doesn’t speak for the rest of the day.');D.f.cl1=1;return 'stay'}
  if(c===1){SFX.click();await N('You knock. The noise stops instantly. Total silence. Then Pat’s voice, very high: “OCCUPIED. INVENTORY.”');}
  put('coach',236,1,{y:150,ex:'shock'});put('pat',248,-1,{y:150,ex:'shock'});
- SFX.door();await N('The door bangs open. Coach comes out with his shirt on inside out and Pat’s hairnet on his head. Pat comes out holding the ladle like a weapon and her apron on backwards. Neither of them is out of breath, in a way that is extremely out of breath.');
+ SFX.door();await N('The door bangs open. Coach: shirt inside out, Pat’s hairnet on. Pat: apron on backwards, ladle raised. Neither of them is out of breath. Extremely.');
  await camZoom(242,110,1.9,400);
  await say('coach','INVENTORY. We were doing. Inventory.','yell');
  await say('pat','Forty-one rolls of paper towel. Counted ’em. Twice. Thoroughly.','angry');
@@ -269,7 +269,7 @@ async function readBayonet(){
 spot({room:'history',period:[2,4],x:58,y:150,label:'Read the leather notebook on Mr. Grieve’s desk',short:'NOTEBOOK',mis:'bayonet',cond:()=>!D.f.bay1&&!A.grieve,run:async()=>readBayonet()});
 freeHooks({mis:'bayonet',label:'“I found something of Mr. Grieve’s…”',look:{ex:'smirk'},cond:()=>D.f.bay1&&has('notebook')&&!D.done.bayonet&&!D.dead.arjun,run:async()=>{
  scene(D.room||'corridor',{arjun:[190,-1,{y:146,ex:'smirk'}],nivaan:[214,-1,{y:146,pose:'phone'}],you:[160,1,{y:154}]});
- await say('arjun','(flipping pages, going pale, then delighted) “He loaded the cannon with the tenderness of a man who has read the manual twice.” Bro. BRO. This is the best day of my life.','laugh');
+ await say('arjun','(flipping pages, going pale, then delighted) “He loaded the cannon with the tenderness of a man who has read the manual twice.” Bro. BRO. This is the best fucking day of my life.','laugh');
  const c=await choose(['Let Arjun read it out in History.','Sell it to Nivaan for $10.','Give it back to Mr. Grieve.']);
  if(c===1){D.items=D.items.filter(i=>i!=='notebook');D.money=(D.money||0)+10;updateLoc();await say('nivaan','Chat is getting an audiobook tonight. I’m doing the voices. I’m doing ALL the voices.','evil');await complete('bayonet','sold');return 'stay'}
  if(c===2){scene('history',{grieve:[60,1,{y:146,pose:'sit'}],you:[110,-1,{y:154}]},true);D.items=D.items.filter(i=>i!=='notebook');

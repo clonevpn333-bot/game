@@ -119,7 +119,7 @@ async function sitBeside(id,other){const o=A[other];if(!o||!o.bslot)return;const
 /* ---------- the ride events, restaged for the aisle ---------- */
 const RE=id=>RIDE.find(e=>e.id===id);
 if(RE('pj1'))RE('pj1').run=async()=>{
- await N('At the very back of the bus, by the window, a kid with a big afro squashed under his hood sits on his own. Paul Jones. He moved here in October. He has a whole seat to himself every day, and not because he’s lucky.');
+ await N('Back row, by the window: Paul Jones, afro squashed under his hood. He has a whole seat to himself every day. Not because he’s lucky.');
  if(onBus('arjun'))await say('arjun','(kneeling backwards on his seat, loud) Ayo, Off-Brand Paul. Real Paul’s up front. You’re the knockoff. You’re the Paul from Wish.','smirk');
  classLaugh(500);
  const c=await choose(['Go and sit next to Paul Jones.','Laugh. It was kind of funny.','Stay where you are.']);
@@ -164,7 +164,7 @@ if(RE('pjLast'))RE('pjLast').run=async()=>{
  cue('tension');
  await N('The last ride home before the weekend. Inspection Day. Everyone is loud. At the back, Paul Jones stands up and steps out into the aisle.');
  await busMove('pauljones',{x:VPX,y:BROWS[3].fy-12});A.pauljones.back=0;hold('pauljones','pistol');
- await N('He’s standing in the middle of the aisle, right next to you, holding his dad’s pistol. He isn’t pointing it at anybody yet. He’s holding it like it’s heavy. Like he’s surprised it’s real.');
+ await N('He’s in the aisle, right next to you, holding his dad’s pistol. Not pointing it. Holding it like it’s heavy. Like he’s surprised it’s real.');
  for(const k in A)if(k!=='you'&&k!=='pauljones'&&k!=='driver'&&A[k]&&!A[k].dead){A[k].ex='scared';A[k].back=0;A[k].blean=0}
  SFX.sting();D.f.busStopped=1;
  await say('driver','(eyes in the big mirror, braking slowly) Son. Son. Easy.','scared');
@@ -178,7 +178,7 @@ if(RE('pjLast'))RE('pjLast').run=async()=>{
   hold('pauljones',null);hold('you','pistol');
   await N('He holds it out flat on his hand, the way you’d give somebody a bird. You take it. Your hands are shaking worse than his.');
   A.pauljones.pose='sit';A.pauljones.y+=6;
-  await N('Then he sits down on the floor of the aisle with his head in his hands. The whole bus is silent. The driver opens the door, puts on the hazard lights and doesn’t say a single word.');
+  await N('He sits down in the aisle, head in his hands. The bus is silent. The driver opens the door, puts the hazards on, and says nothing.');
   hold('you',null);await N('When the police come, Paul Jones tells them everything before they ask. On his way off the bus he looks back at you and nods. Once.');
   await complete('pauljones','given');
  }else if(c===1){
@@ -190,7 +190,7 @@ if(RE('pjLast'))RE('pjLast').run=async()=>{
  }else{
   A.you.pose='sit';A.you.y+=8;SFX.bang&&SFX.bang();shake(1.5);flash('#a00010',.4);
   if(target&&A[target]){blood(A[target].x,A[target].y-20,40,null,80,A[target].y+2);kill(target,'lie',{pool:20});D.dead[target]=1}
-  await N('One shot. Then nothing. Paul Jones sits down in the aisle, puts the gun on the floor in front of him, and puts his hands on his head. He looks like he’s known for a while what happens next.');
+  await N('One shot. Then nothing. Paul sits down in the aisle, puts the gun on the floor, hands on his head. Like he’s known for a while how this goes.');
   if(target)await N(K[target].n+' doesn’t get up. Nobody on the 43 says anything all the way to the hospital stop, where an ambulance is already waiting, lights on, no siren.');
   await complete('pauljones','shot');
  }
@@ -237,11 +237,11 @@ if(RE('alexClown')){RE('alexClown').run=async()=>{if(!onBus('dheva'))return;D.f.
  await say('dheva','Don’t. Don’t do the honk, bro. Please.','sad');}}
 if(RE('tobyBus')){RE('tobyBus').run=async()=>{if(!onBus('sean'))return;D.f.rideTo=1;
  const s=A.sean.bslot,sl=s?slotAt(Math.min(4,s.r+1),s.side,'a'):null;if(sl){put('toby',sl.x,-1,{y:sl.y,pose:'sit'});A.toby.back=0;A.toby.bslot=sl}
- await N('Toby from Ohio rides the 43 now. He sits right behind Sean and Stella and leans over the seat to talk. He gives them both friendship bracelets every Thursday. Nobody asked him to. Everybody wears them.');
+ await N('Toby from Ohio rides the 43 now. He leans over Sean and Stella’s seat and hands out friendship bracelets. Nobody asked. Everybody wears them.');
  await say('toby','(chin on the seat back) Sean. Your hair. Today. Ten out of ten. Stella. Eleven.','happy');}}
 if(RE('raccoon'))RE('raccoon').run=async()=>{
  const r=pprop({t:'raccoon',x:300,y:30,dir:-1,layer:200});
- await N('Something moves in the luggage rack over the windows. A raccoon. It looks at you. It reaches down, takes the sandwich out of a seventh grader’s hand, very politely, and gets off at the next stop.');
+ await N('A raccoon in the luggage rack. It takes a seventh grader’s sandwich, very politely, and gets off at the next stop.');
  await tw(r,{x:150,y:60},900);await tw(r,{x:-20,y:40},700);r.hide=1;
 };
 

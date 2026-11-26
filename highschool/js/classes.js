@@ -132,7 +132,7 @@ const PLANS={
  loach:[{
   open:async c=>{await say('loach','Page forty-seven.');await scrawl('science',['P.47'],'#3a4a3a');await N('She sits back down. She doesn’t write anything else. She hasn’t written anything else since 2009.')},
   q:['Actually read page forty-seven.','Make a paper aeroplane.','Put your head down and sleep.'],
-  a:[async c=>{hold('you','book');await N('Page forty-seven is a diagram of a mug. Someone has written in the margin, in old blue ballpoint, small and neat: “again again again again”. Then underneath, in different handwriting: “me too”. Then a third: “1987”.');hold('you',null);if(typeof lore==='function')lore('again')},
+  a:[async c=>{hold('you','book');await N('Page forty-seven: a diagram of a mug. In the margin, old blue ballpoint: “again again again”. Under it: “me too”. Under that: “1987”.');hold('you',null);if(typeof lore==='function')lore('again')},
      async c=>{hold('you','paper');await wait(300);hold('you',null);pose('you','throw');const pl=prop({t:'plane',x:A.you.x,y:A.you.y-26});await Promise.all([tw(pl,{x:84},1300),tw(pl,{y:112},1300,'in')]);SFX.click();await N('It glides the length of the room and lands one inch from her mug.');ex('loach','evil');await wait(700);ex('loach',null);await N('She looks at the plane. She looks at you. She turns a page. Your heart doesn’t start again until the bell.');pl.hide=1;pose('you',null)},
      async c=>{A.you.ex='closed';await N('You sleep. You dream about a corridor where every clock says 3:15. When you wake up, there’s a sticky note on your arm in her handwriting: “Mm.”');A.you.ex=null}]}],
  coach:[{
@@ -152,7 +152,7 @@ const PLANS={
   q:['Knead it properly.','Let Tez do it.','Eat the dough.'],
   a:[async c=>{const ok=await mash('Knead!',{need:16,time:4.5});await say('kettle',ok?'Oh, that’s a scone with a SOUL.':'That’s a scone with a criminal record.',ok?'happy':'evil')},
      async c=>{if(A.tez){await say('tez','Six years. I can do these with my eyes shut. I DO do them with my eyes shut.','smirk');await say('kettle','Tez, petal. Eyes open. Last year you scone’d a thumb.','evil')}else await say('kettle','Tez isn’t in today. He’s twenty-one. He has errands.')},
-     async c=>{await say('kettle','DID YOU JUST EAT RAW DOUGH IN MY KITCHEN?','evil');await N('She takes the dough out of your hand very gently, the way you take something off a toddler, and puts it in the oven. Then she looks at you, and then at the oven, for a long, thoughtful time.');await sweet('kettle')}]}],
+     async c=>{await say('kettle','DID YOU JUST EAT RAW DOUGH IN MY KITCHEN?','evil');await N('She takes the dough off you the way you take something off a toddler, and puts it in the oven. Then she looks at you. Then the oven. For a long time.');await sweet('kettle')}]}],
  pratt:[{
   open:async c=>{await say('pratt','FREEZE FRAMES. When I clap, you freeze. If you move, you’re not an actor. You’re furniture.','yell');SFX.smack()},
   q:['Freeze like a statue.','Freeze mid-sneeze.','Don’t freeze. Dance.'],

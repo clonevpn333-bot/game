@@ -51,7 +51,7 @@ chaos('vending',['corridor','hallb'],[0,2,4],.2,async()=>{
   await tw(vm,{rot:-.4},300);SFX.crunch();SFX.thud();shake(1.6);await tw(vm,{rot:-1.5,x:212},250);
   blood(A[v].x,A[v].y-4,40,null,70,A[v].y+2);kill(v,'crush',{pool:30});D.dead[v]=1;
   await N('It comes down on him like a tree. All of it. You hear something go that shouldn’t go.')}
- SFX.cheer();await N('Snacks everywhere. For a second nobody moves. Then every kid in the hall is on their knees grabbing chips, stepping over him, saying sorry with their mouths full.');
+ SFX.cheer();await N('Snacks everywhere. Then every kid in the hall is on their knees, grabbing chips, stepping over him, saying sorry with their mouths full.');
  const c=await choose(['Grab some chips.','Try to lift the machine off him.']);
  if(c===0){D.money=(D.money||0)+1;updateLoc();await N('Takis. Of course. The bag is a little bit wet. You don’t look at why.')}
  else{const ok=await mash('Lift!',{need:16,time:4});await N(ok?'You get it up an inch. Paul shows up from nowhere and lifts the rest. Too late. Paul says a prayer he made up himself.':'It’s six hundred pounds. You get it up nothing. Paul shows up and lifts it with one hand. Too late.')}
@@ -87,7 +87,7 @@ chaos('brawl',['corridor','hallb'],[0,2,4],.15,async()=>{
  await N('Two grown men fight with a javelin and a sword in the main hallway over a parking space. Kids press themselves flat against the lockers. Nivaan gets it in 4K.');
  const v=extra('kid3',160,1,{y:156});if(v){SFX.squelch();blood(A[v].x,A[v].y-22,20,null,50,A[v].y+2);A[v].ex='hurt';await N('A seventh grader walks right between them looking at her phone and loses the tip of her ponytail to the sword. And a bit of ear. She doesn’t look up.')}
  const c=await choose(['Break it up.','Cheer.','Steal Coach’s whistle while he’s busy.']);
- if(c===0){await N('You walk between them. They both stop and look at you. Then they both look at each other. Then they shake hands and go to the staff room together like nothing happened. You did that.')}
+ if(c===0){await N('You walk between them. They look at you. Then at each other. Then they shake hands and go to the staff room together. You did that.')}
  else if(c===1){SFX.cheer();await N('You cheer. Everybody cheers. Grieve wins on points. Coach demands a rematch. The rematch is scheduled for Friday in the gym. Tickets are a dollar.')}
  else{hold('you','whistle');await N('You get it. Coach doesn’t notice for two days. You blow it at random in the hallway and watch every kid drop and do push-ups.');hold('you',null)}
  pose('coach',null);pose('grieve',null);await Promise.all([walk('coach',-20,80),walk('grieve',340,80)]);remove('coach');remove('grieve');
@@ -97,7 +97,7 @@ chaos('raccoons',['corridor','hallb','upper','wing_arts','library'],[1,2,3,4,5,6
  await N('A ceiling tile falls. Then all of them do. Fourteen raccoons come out of the ceiling and run down the hall like they’ve been planning it for a year.');
  for(const k in A)if(A[k]&&k!=='you'&&!A[k].dead){A[k].ex='scared';A[k].pose='cover'}
  await wait(TEST?0:1600);
- await N('One of them is holding a phone. One of them is wearing a lanyard. One of them has a Highgate hoodie on. Nobody knows what to do. Somebody from the office calls the police. The police laugh.');
+ await N('One has a phone. One has a lanyard. One has a Highgate hoodie on. The office calls the police. The police laugh.');
  r.hide=1;for(const k in A)if(A[k]&&!A[k].dead)A[k].pose=null;
 });
 chaos('sprinklers',['corridor','hallb','wing_sci','wing_arts','upper'],[0,1,2,3,4,5,6],.12,async()=>{

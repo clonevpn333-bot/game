@@ -83,7 +83,7 @@ async function sherCatch(fromPass){
   const c=await choose(['Let her take you to class.','Run.']);
   if(c===1&&await runFrom(20)){await say(sid,'(not chasing, just watching) Miss doesn’t run, sweetie. Miss doesn’t have to.','evil');await leave();return 'stay'}
   pose(sid,'grab');A.you.ex='hurt';SFX.smack();
-  await N('She gets you by the ear. Not the earlobe. The whole ear. She walks you down the hallway like that, and every kid you pass goes very quiet and very interested in their locker.');
+  await N('She gets you by the ear. The whole ear. Every kid you pass gets very interested in their locker.');
   const per=D.period,cls=PERIODS[per].lesson?myClassFor(per):null;
   await Promise.all([walk(sid,-30,60),walk('you',-14,60)]);remove(sid);
   D.apples=Math.max(0,(D.apples||0)-1);updateLoc();
@@ -152,7 +152,7 @@ const PARENT_TALKS=[
   const c=await choose(['“Dad. Ms. Sherman is still there.”','“Please stop talking.”']);
   if(c===0)await N('Dad, after a long time: “…No she isn’t. She was old in 1994.” He drives the rest of the way home with both hands on the wheel and the doors locked.');
   else await N('Dad: “And she said, ‘Is that a hall pass or a gum wrapper?’ and I said—” You put your headphones in. You can still hear him. He’s doing the voices.')},
- async()=>{await N('Mom is on speakerphone with Grandma the whole ride. She mouths “sorry” at you and hands you one cold fry from the cupholder. You don’t know how old the fry is. You eat it.');
+ async()=>{await N('Mom’s on speakerphone the whole ride. She mouths “sorry” and hands you one cold fry from the cupholder. You don’t know how old it is. You eat it.');
   await N('Grandma, on speaker: “Is that the baby? Is the baby still going to that school? The school with the boiler?” Mom hangs up on her.')},
  async()=>{await N('Mom checks the rearview mirror at every light.');await N('Mom: “Don’t look. There’s a man following us. Oh— no, it’s just your principal. He waves at me at every light. Every day. I don’t know how he knows my car.”');
   const c=await choose(['Wave back at Mr. Adam.','Slide down in your seat.']);
@@ -258,7 +258,7 @@ const LATE=[
   const c=await choose(['Hand over a dollar.','“Kayden. I can see your whole face.”','Point at the guy with the knife.']);
   if(c===0){D.money=Math.max(0,(D.money||0)-1);updateLoc();await say('kayden','(taking it) Respect. You want a phone case? I got forty phone cases.','happy')}
   else if(c===1)await say('kayden','(pulling the mask down further, which makes it worse) No you can’t.','angry');
-  else{await N('Kayden turns round. The guy with the knife smiles at him with all of his teeth.');await say('jaxon','Bro. Bro. Bro. BRO.','scared');}
+  else{await N('Kayden turns round. The guy with the knife smiles at him with all of his teeth.');await say('jaxon','Bro. Bro. Bro. BRO. Holy shit.','scared');}
   SFX.door();await N('They get off at the next stop and sprint into the dark. The driver doesn’t even turn round. He’s seen it. He sees it every night.');
   hold('kayden',null);hold('jaxon',null);
   await Promise.all([busMove('kayden',{x:140,y:88},110),busMove('jaxon',{x:140,y:86},110)]);await Promise.all([tw(A.kayden,{alpha:0},250),tw(A.jaxon,{alpha:0},250)]);remove('kayden');remove('jaxon');
@@ -375,7 +375,7 @@ chaos('auction',['canteen'],[2,4],.25,async()=>{
  for(const k of kidsHere().slice(0,4))if(k!=='angelo'){A[k].pose='up';A[k].ex='laugh'}
  SFX.cheer();
  const c=await choose(['Bid a dollar on the mystery backpack.','Ask whose stuff this is.','Tell Pat.']);
- if(c===0&&(D.money||0)>=1){D.money--;updateLoc();SFX.pick();await say('angelo','SOLD. To the kid with the face.','happy');await N('You open the backpack. Half a sandwich, a permission slip for a trip that already happened, and a note that says “if you’re reading this i didn’t make it to friday.” You close the backpack.')}
+ if(c===0&&(D.money||0)>=1){D.money--;updateLoc();SFX.pick();await say('angelo','SOLD. To the kid with the face.','happy');await N('Half a sandwich. A permission slip for a trip that already happened. A note: “if you’re reading this i didn’t make it to friday.” You close the backpack.')}
  else if(c===0)await say('angelo','No money, no bid. This is capitalism, not a hug.','angry');
  else if(c===1)await say('angelo','(checking a list) Tyler M., Ryan, the kid who sat by the window in Chem… Look. They’re not using it. That’s the whole pitch.','smirk');
  else{if(A.pat)await say('pat','(from the counter) Is there a ladle? I lost a ladle. If there’s a ladle I want it.','angry');else await N('Pat leans out of the kitchen, looks at the table, and puts in a bid on the retainer.')}
@@ -402,7 +402,7 @@ chaos('trashbowl',['wing_sports','corridor'],[0,2,4],.2,async()=>{
  for(const [i,k] of ks.entries())extra(k,40+i*20,1,{y:150});
  const pins=[];for(let i=0;i<6;i++){const id=['kid1','kid2','kid3','tez','mia','ollie'][i];if(!D.dead[id]&&extra(id,250+(i%3)*12,-1,{y:144+Math.floor(i/3)*8}))pins.push(id)}
  const can=pprop({t:'trashcan',x:70,y:156,head:1,rot:0,layer:3,skin:'#f0d0b0',hair:'#c8a050'});
- await N('Somebody has put a sixth grader in a trash can, head sticking out the top. Down the other end, six kids are standing in a triangle like bowling pins. They volunteered. They’re very excited.');
+ await N('A sixth grader in a trash can, head out the top. At the other end, six kids in a triangle like bowling pins. They volunteered. They’re thrilled.');
  if(ks[0])await say(ks[0],'TRASH. CAN. BOWLING. Three points for a strike. Minus one if he cries.','yell');
  const c=await choose(['Roll him.','Get the kid out of the can.','Put money on a strike.']);
  if(c===1){can.head=0;put('kid4',72,1,{y:150});SFX.thud();await N('You tip the can and the kid slides out, pale, dizzy, holding his lunch box. He says “I was gonna win” and walks into a wall.');await walk('kid4',-20,60);remove('kid4')}
@@ -434,7 +434,7 @@ chaos('gradewar',['field'],[2,4],.2,async()=>{
  const seven=['kid3','mia','tez'].filter(k=>!D.dead[k]),eight=['kid1','kid2','brayden'].filter(k=>!D.dead[k]);
  seven.forEach((k,i)=>extra(k,40+i*14,1,{y:150}));eight.forEach((k,i)=>extra(k,280-i*14,-1,{y:150}));
  seven.forEach(k=>A[k]&&hold(k,'mop'));eight.forEach(k=>A[k]&&hold(k,'shovel'));
- await N('The seventh grade and the eighth grade are facing each other across the field like two armies. The seventh grade has mops. The eighth grade has the groundskeeper’s shovels. Nobody remembers what it’s about.');
+ await N('Seventh grade and eighth grade, facing off across the field. Seventh has mops. Eighth has the groundskeeper’s shovels. Nobody remembers why.');
  SFX.chant();await Promise.all([...seven.map((k,i)=>A[k]?walk(k,140-i*6,120):0),...eight.map((k,i)=>A[k]?walk(k,175+i*6,120):0)]);
  for(const k of [...seven,...eight])if(A[k])A[k].pose='overhead';
  SFX.smack();shake(1.2);cue('fight');

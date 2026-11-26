@@ -42,7 +42,7 @@ spot({room:'corridor',period:[0,2,4],x:148,y:150,label:'Look properly at the tro
 spot({room:'library',x:290,y:150,label:'Look through the old newspapers',short:'PAPERS',cond:()=>!(P.lore&&P.lore.gazette),run:async()=>{
  hold('you','paper');
  await N('There’s a box of old Highgate Gazettes under the computers. Most are about bake sales. One from March 1987 has been folded so many times it’s gone soft.');
- await N('“BOILER FIRE AT HIGHGATE: NO ONE HURT, SAYS HEAD.” The photo is of the school gate. A young teacher with a big perm is crying into her hands. The caption doesn’t name her. It doesn’t name anyone.');
+ await N('“BOILER FIRE AT HIGHGATE: NO ONE HURT, SAYS HEAD.” A young teacher with a perm, crying into her hands at the gate. The caption names nobody.');
  hold('you',null);lore('gazette');return 'stay';
 }});
 /* the pit, the oldbat finale, and the Monday rant all feed the archive */

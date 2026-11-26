@@ -530,7 +530,7 @@ hook({mis:'stepeleven',period:4,room:'canteen',who:'hasan',label:'Ask Hasan why 
  SFX.thud();await wait(300);A.darren.ex='hurt';SFX.gasp();
  await N('Darren coughs up about half the deep end, and his goggles, and then opens his eyes.');
  await say('darren','(hoarse) …Step eleven.','hurt');
- await say('hasan','WHAT. WHAT IS STEP ELEVEN. Tell me. You have to tell me right now.','cry');
+ await say('hasan','WHAT. WHAT THE FUCK IS STEP ELEVEN. Tell me. You have to tell me right now.','cry');
  await say('darren','It was blank because I didn’t know. I didn’t know what you’d do when it mattered.','hurt');
  await say('darren','You jumped in. You can’t swim.','love');
  await say('hasan','I can’t swim.','cry');

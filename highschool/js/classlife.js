@@ -88,7 +88,7 @@ const CLASS_EVENTS=[
  async c=>{if(D.dead.aidan||D.f.aidanDead)return;await N('In the little window in the classroom door: Aidan. Just his face. He isn’t in this class. He waves. Slowly. Everyone sees. Everyone decides not to have seen.');const ks=kidsIn(c);if(ks.length)await say(pick(ks),'(not looking at the door) Don’t look at the door.','scared')},
  async c=>{const ks=kidsIn(c);if(ks.length<2)return;const v=pick(ks);SFX.splat();await N(K[v].n+' throws up. Into their own backpack. With incredible accuracy. The smell gets to the next desk, and then the next one, and it becomes a chain.');for(const k of ks.filter(k=>k!==v).slice(0,2)){A[k].ex='hurt';SFX.splat();await wait(300)}const t=teacherOf(c);if(t)await say(t,'(not looking up) Bodies are beautiful, {PETS}. Keep working.','happy')},
  async c=>{const ks=kidsIn(c);if(!ks.length)return;const v=pick(ks);blood(A[v].x,A[v].y-24,14,null,40,A[v].y+2);A[v].ex='shock';await N(K[v].n+'’s nose starts bleeding all over the worksheet, out of nowhere, like a tap.');const t=teacherOf(c);if(t)await say(t,'(taking the bloody worksheet, delighted) Extra credit! That’s commitment.','happy')},
- async c=>{SFX.bell();SFX.bell();await N('The fire alarm. Everyone files out into the rain and stands in lines on the field for twenty minutes. Nobody was on fire. When you file back in, the teacher counts heads twice and gets a different number each time.');}
+ async c=>{SFX.bell();SFX.bell();await N('Fire alarm. Twenty minutes in lines on the wet field. Nobody was on fire. Back inside, the teacher counts heads twice and gets two different numbers.');}
 ];
 
 {const _w=whisper;whisper=async function(c){
@@ -169,7 +169,7 @@ for(const id of['brayden','kaylee','jaxon'])for(const room of['toilets','field',
    await say(id,'WAIT. WAIT WAIT WAIT. I’LL STOP. I’LL STOP VAPING.','scared');
    await toes(id,'you');
    await say(id,'(from the floor, very small) …I’m switching to gum.','hurt');
-   await N('You leave them alive. Five toes in a little line on the floor, like they were waiting for a bus. Every kid who walks past for the rest of the day steps around them very carefully.');
+   await N('Five toes in a little line on the floor, like they’re waiting for a bus. All day, everyone steps around them very carefully.');
    D.f.vapeDone[id]=1;vapeScore('clean');return 'stay';
   }else await VKILL[room].run(id);
   D.f.vapeDone[id]=1;vapeScore('kill');

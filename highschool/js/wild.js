@@ -25,7 +25,7 @@ spot({room:'gym',period:[2,4],x:286,y:140,label:'Look up at the gym doors',short
  await say('kayden','(whispering) Pig’s blood. Well. Ketchup, corn syrup and one actual pig’s heart from Pat’s freezer. It’s for Brayden. He’s coming through those doors in like a minute.','smirk');
  const c=await choose(['Let Kayden do it.','Warn Brayden.','Take the rope. Wait for somebody better.']);
  D.f.bucketDone=1;
- if(c===1){await N('You catch Brayden in the hall and tell him. He looks at you for a long time. Then he goes in through the OTHER door, walks up behind Kayden, and pulls the rope himself. Kayden was standing under it to check the aim.');
+ if(c===1){await N('Brayden listens. Then he goes in the other door, walks up behind Kayden, and pulls the rope himself. Kayden was standing under it, checking the aim.');
   stain('kayden','blood',14);A.kayden.ex='shock';SFX.squelch&&SFX.squelch();prop({t:'bloodpool',x:250,y:150,layer:-1});await say('kayden','(dripping, very calm) …There’s a heart in my hood.','shock');return 'stay'}
  if(c===0){put('brayden',334,-1,{y:150});await walk('brayden',292,70);bk.tip=1;SFX.squelch&&SFX.squelch();shake(.6);stain('brayden','blood',16);A.brayden.ex='scream';prop({t:'bloodpool',x:292,y:152,layer:-1});
   await say('brayden','AAAAAAAAAAAAAAAA','scream');await N('The whole gym goes silent. Then the whole gym films it. Brayden walks out with a pig’s heart on his shoulder like a parrot. By sixth period he’s a legend.');
@@ -65,7 +65,7 @@ const VVIC={on:false,x:0,say:'',until:0};
  if(!ok){SFX.thud&&SFX.thud();await N('Your knee hits the cardboard moon. The honking stops. A strip of light: the trapdoor opening. A white-painted face, upside down, smiling.');
   const ran=await mash('CRAWL OUT THE OTHER SIDE',{need:24,time:4});if(!ran){fxState.dark=0;await die('honk')}
   await N('You squeeze out under the stage skirt and run. Behind you, very cheerfully: “Seven fours are twenty-eight!”');fxState.dark=0;return r}
- await N('He walks away. Your phone light finds the back wall. Photos. School photos, dozens, each one with a red clown nose drawn on in marker. Across the top, in perfect teacher handwriting: VOLUNTEERS.');
+ await N('Your light finds the back wall. School photos, dozens, each with a red clown nose drawn on in marker. Across the top, in perfect teacher handwriting: VOLUNTEERS.');
  const names=Object.keys((typeof crew==='function'&&crew().gone)||{}).map(v=>K[v]&&K[v].n).filter(Boolean);
  await N('ALEX is there. TYLER is there.'+(names.length?' So are '+names.join(', ')+'. The kids from this week. The ones you didn’t get to.':' And there are empty spaces. With this week’s dates on them.'));
  if(typeof crew==='function'){const cr=crew();cr.ev=cr.ev||{};cr.ev.volunteers=1;save&&save();toast('🎁 EVIDENCE: Mr. Kim’s VOLUNTEERS wall. The file gets thicker.')}

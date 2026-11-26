@@ -75,7 +75,7 @@ hook({mis:'hotmic',period:[5,6],get room(){return D&&myClassFor(D.period)},set r
  await say('balduf','(on the speaker) Did I SAY fold them? Throw them in the shredder. You’re going home in a trash bag like last time.');
  if(A.hasan){pose('hasan','drink');await N('Hasan, frozen, takes a slow sip of his chocolate milk so his face has something to do.')}
  SFX.thud&&SFX.thud();shake(.4);
- await N('A desk creaks. Then it creaks again. Then it starts creaking on a rhythm, and the rhythm is not a good rhythm, and the whole school is now hearing it in surround sound.');
+ await N('A desk creaks. Then again. Then on a rhythm. A bad rhythm. The whole school hears it in surround sound.');
  await say('adam','(on the speaker) Oh God, Doris. Oh GOD. Talk dirty to me. Talk about the budget.');
  await say('balduf','(on the speaker) Forty percent cut to the arts department, Gerald.');
  await say('adam','(on the speaker) NNNGH—');
@@ -119,7 +119,7 @@ hook({mis:'hotmic',period:[5,6],get room(){return D&&myClassFor(D.period)},set r
  }
  if(c===1){
   pose('you','phone');await N('You hold your phone up next to Nivaan’s. It goes on for four more minutes. Somebody on the floor below starts a slow clap that spreads through the whole building.');
-  await N('By home time it has a remix. By tomorrow it has a dance where you go limp after four seconds. For the rest of your life, someone in a hallway will yell “THE TUBA” and you will think of this.');
+  await N('By home time it has a remix. By tomorrow it has a dance where you go limp after four seconds. Someone will yell “THE TUBA” at you for the rest of your life.');
   pose('you',null);if(typeof repAdd==='function'){repAdd('legend',2,'Hot Mic went viral')}
   await complete('hotmic','viral');return 'stay';
  }

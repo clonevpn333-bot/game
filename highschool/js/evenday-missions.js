@@ -428,11 +428,11 @@ hook({mis:'talent',day:'even',period:6,room:'hall',who:'auto',run:async()=>{
  if(heat>=3){
   for(const n of crowdIds)if(A[n])A[n].pose='cheer';SFX.cheer();
   await say('adam','(crying into the mic) Did you SEE that, inspectors? Did you SEE them?','cry');
-  await N('The Zoom call still says “Waiting for host”. Nobody minds. The whole hall is on its feet. Mr. Adam bows, even though nobody asked him to, and it’s the happiest you have ever seen him.');
+  await N('The Zoom still says “Waiting for host”. Nobody minds. The hall is on its feet. Mr. Adam bows. You’ve never seen him this happy.');
   await complete('talent','win');return;
  }
  await say('adam','(very quietly) …The inspectors look bored. I can feel it. Through the screen.','sad');
  await say('adam','I’ll do an act. I have an act. I’ve been rehearsing it for twenty-two years.','evil');
- await N('He sings “My Way”. All of it. The hall is silent. Halfway through, Aidan stands up in the back row and starts clapping, slowly, on his own. By the end, everyone is.');
+ await N('He sings “My Way”. All of it. Halfway through, Aidan stands in the back row and starts a slow clap on his own. By the end, everyone is.');
  await complete('talent','adam');
 }});

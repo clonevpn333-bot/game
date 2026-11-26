@@ -71,7 +71,7 @@ hook({mis:'tea',period:7,room:'bus',who:'david',label:'Confront David about @hig
   if(A.hasan)await say('hasan','You’ve been in our group chat for four years. Four years! You’ve been taking NOTES?','shock');
   if(A.stella){await walk('stella',162,80);SFX.smack();A.david.hurt=1;shake(.5);await say('stella','That one was for my dad. He doesn’t deserve it, but I do.','angry')}
   await say('david','(crying, glasses fogging) Nobody votes for the nice guy! Nobody even LOOKS at the nice guy! I thought if everyone else looked worse, I’d just… be there.','cry');
-  if(A.arjun)await say('arjun','And I’M the one people call cruel. Bro. BRO. You’re the final boss.','shock');
+  if(A.arjun)await say('arjun','And I’M the one people call cruel. Bro. BRO. You’re the final fucking boss.','shock');
   await N('Nobody sits with David on the 43. He sits at the back with his VOTE DAVID badge in his hand.');
   await N('He deletes the account before the roundabout. You see him do it. It doesn’t fix anything.');
   await complete('tea','exposed');return;
@@ -140,7 +140,7 @@ hook({mis:'catfish',period:8,room:'arcade',who:'kenneth',label:'Wait for Jess wi
  const c=await choose([{t:'Tell him the truth before she “arrives”.',dis:!D.f.jess2,why:'you don’t know anything yet'},{t:'Let it play out.'}]);
  if(c===0){
   await say('you','Ken. Jess is a perfume model from Spain. She’s thirty-four. The account’s Arjun’s.');
-  await N('Kenneth doesn’t say anything for a second. Then he takes his phone out and reads three months of messages back, scrolling up, very fast, like he can find the part where it was real.');
+  await N('Kenneth scrolls back through three months of messages, very fast, like he can find the part where it was real.');
   put('arjun',330,-1,{y:150,pose:'film'});await walk('arjun',270,60);
   await say('arjun','(filming) Kenneth! Over here! Jess couldn’t make it, she’s in SPAIN—','laugh');
   await walk('kenneth',258,60);face('kenneth',1);
@@ -326,7 +326,7 @@ hook({mis:'leaked',period:8,room:'carpark',who:'kayden',label:'Make Kayden ring 
  }
  const c=await choose(['“Report the screenshots. All of them.”','“Tell your dad, Ken. Tonight.”']);
  if(c===0){
-  await N('The three of you sit on the parking lot floor and report every screenshot you can find. It takes forty minutes. Twelve get taken down. Kayden reports one of his own posts by accident and doesn’t say anything.');
+  await N('Forty minutes on the parking lot floor, reporting screenshots. Twelve come down. Kayden reports one of his own posts by accident and says nothing.');
   await say('kenneth','Next time someone online says “it’s me”, I’m going to say “prove it” and then I’m going to log off and go outside.','sad');
   await complete('leaked','reported');return;
  }
@@ -349,7 +349,7 @@ mission('emergency',{name:'Emergencies Only',icon:'🧴',who:['corey','tez','abb
 hook({mis:'emergency',period:0,room:'corridor',who:'corey',label:'Nick Corey’s curl cream',cond:()=>!has('curl')&&!D.f.curlSwap,run:async()=>{
  scene('corridor',{corey:[150,1,{y:146}],kayden:[196,-1,{y:152}],abby:[240,-1,{y:146}],you:[176,-1,{y:154}]});
  face('corey',-1);
- await N('Corey is checking his curls in the window of the English door. Left side. Right side. Left side again. The tub of C.U.R.L. sits in the front pocket of his black hoodie, the zip half open.');
+ await N('Corey checks his curls in the English door window. Left. Right. Left again. A tub of C.U.R.L. pokes out of his hoodie pocket.');
  await say('corey','It’s not product. It’s maintenance.','smirk');
  await say('kayden','(whispering) Bro’s about to take the man’s lifeblood. I respect it. I fear for you.','shock');
  await walk('you',160,30);pose('you','reach');
@@ -358,7 +358,7 @@ hook({mis:'emergency',period:0,room:'corridor',who:'corey',label:'Nick Corey’s
  if(!r){
   face('corey',1);
   await say('corey','…That’s for emergencies.','angry');
-  await N('He zips the hoodie all the way up, looks at you like you’ve let him down personally, and walks off without a word. That’s worse than shouting. Corey knows it’s worse.');
+  await N('He zips the hoodie all the way up and walks off without a word. That’s worse than shouting. Corey knows it’s worse.');
   bond('corey',-1);
   return;
  }

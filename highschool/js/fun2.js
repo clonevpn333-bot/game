@@ -33,7 +33,7 @@ hook({mis:'flimbus',period:2,room:'corridor',who:'arjun',label:'Ask Arjun why he
   if(A.hasan)await say('hasan','It’s Italian. It’s a— it’s like a long one. With a hole in it. Mickther.','scared');
   const c=await choose(['“It’s a pasta, Miss. My nonna makes it.”','Say nothing. Look at the floor.','“Miss, they called YOU a mickther.”']);
   if(c===0){await say('you','It’s a pasta, Miss. My nonna makes it. Mickther alla vodka.');await say('shermian','(writing in a tiny notebook) Your nonna is going on a list too.','evil')}
-  else if(c===2){D.f.flimSnitch=1;await say('arjun','(in pure betrayal) WHAT?','shock');await say('shermian','(smiling with ALL of her teeth) Did they. Did they, now.','evil')}
+  else if(c===2){D.f.flimSnitch=1;await say('arjun','(in pure betrayal) WHAT THE FUCK?','shock');await say('shermian','(smiling with ALL of her teeth) Did they. Did they, now.','evil')}
   else await N('You look at the floor. The floor is the only thing in this corridor that has never been called a mickther.');
   await say('shermian','Miss is going to find out what that word means. And when Miss finds out, somebody is going to have a very long lunch.','evil');
   await walk('shermian',334,60);remove('shermian');

@@ -147,7 +147,7 @@ hook({mis:'window',period:3,room:'trailer',who:'auto',cond:()=>winAvail()&&winSt
  const b=await drawBird(1);
  await N('There it is. She breathes on the glass. The little bird.');
  await say('you','(whispering) Corey. Draw one back.');
- await say('corey','(whispering) Draw WHAT back? On WHAT? I’m nowhere near a window. I’m next to an empty chair.','scared');
+ await say('corey','(whispering) Draw WHAT back? On WHAT? I’m nowhere near a window. I’m next to an empty fucking chair.','scared');
  const ch=await choose(['“Fold her a bird. Out of paper. Pass it back.”','“Draw one on your hand. Hold it up.”']);
  if(ch===1){
   pose('corey','up');await N('Corey draws a tiny bird on the back of his hand in pen and holds it up. She can’t see it from there. He keeps holding it up anyway, until his arm shakes.');pose('corey','sit');
@@ -167,7 +167,7 @@ hook({mis:'window',period:3,room:'trailer',who:'auto',cond:()=>winAvail()&&winSt
  await evil('shermian');
  await say('shermian','(not turning round from the board) Somebody’s passing notes. Miss can HEAR paper.','evil');
  await walk('shermian',A.abby.x-12,70);
- await N('She walks to the back, picks up the paper bird from Abby’s desk, and holds it up so the whole class can see. Then she puts it in her mouth. She chews it. She keeps eye contact with Corey the whole time. She swallows.');
+ await N('She picks up Abby’s paper bird and holds it up for the class. Then she eats it. Chews. Eye contact with Corey the whole time. Swallows.');
  await say('shermian','Mmm. Paper. Paper is love, sweeties.','happy');
  await walk('shermian',28,70);A.shermian.pose='hips';face('shermian',1);await sweet('shermian');
  b2.hide=1;
@@ -225,7 +225,7 @@ hook({mis:'window',period:3,room:'trailer',who:'auto',cond:()=>winAvail()&&winSt
  put('shermian',A.abby.x-14,1,{y:A.abby.y-2,pose:'hips'});A.shermian.x=A.abby.x-14;
  await say('shermian','(one hand on Abby’s shoulder) Abby’s Miss’s now. Isn’t that lovely? Abby doesn’t need a window. Abby’s got Miss.','happy');
  face('corey',-1);
- await N('Corey sits by the window, where she always sits. There’s already something on the glass. Two birds and a tiny heart, faded, from last time. Nobody wiped them off. Nobody ever cleans the Trailer.');
+ await N('Corey takes the window seat. Two birds and a tiny heart are still on the glass from last time. Nobody ever cleans the Trailer.');
  pprop({t:'glassbird',x:182,y:66,n:2,heart:1,a:.5,layer:-300});
  await say('corey','(whispering) They’re still here. She never rubbed them out. She always rubs them out.','shock');
  pose('corey','reach');await wait(300);
@@ -241,7 +241,7 @@ hook({mis:'window',period:3,room:'trailer',who:'auto',cond:()=>winAvail()&&winSt
  SFX.scream();
  await say('abby','(standing up, knocking her chair over) LEAVE HIM ALONE!','yell');
  for(const k of['dheva','marcus','alex','tyler','arjun'])if(A[k]){A[k].pose=null;A[k].ex='shock'}
- await N('Nobody has ever shouted at Ms. Sherman. The room goes completely silent. Then everything happens at once. Marcus flips his desk for no reason. Alex starts crying. Dheva sprays something. Arjun films it.');
+ await N('Nobody has ever shouted at Ms. Sherman. Silence. Then everything at once: Marcus flips his desk, Alex cries, Dheva sprays something, Arjun films.');
  const ch=await choose([{t:'Throw the window open. Get them out.',tag:'run'},{t:'Grab her arm. Fight her.',tag:'🩸'},{t:'Stay in your seat.'}],'She’s still holding his hand on the sill.');
  if(ch===1){
   await walk('you',A.shermian.x-10,110);pose('you','grab');
@@ -251,7 +251,7 @@ hook({mis:'window',period:3,room:'trailer',who:'auto',cond:()=>winAvail()&&winSt
  }
  if(ch===2){
   await N('You stay in your seat. Everyone does. After a while, Ms. Sherman lets go of his hand, wipes the window with her cardigan sleeve, and carries on with the lesson.');
-  await N('Corey sits by the window for the rest of Period 3 holding his hand in his lap. Abby doesn’t turn round once. She doesn’t draw anything. It’s the first time in three years she hasn’t drawn the bird.');
+  await N('Corey holds his hand in his lap for the rest of Period 3. Abby doesn’t turn round. She doesn’t draw. First time in three years: no bird.');
   await sweet('shermian');
   await classOut(c);D.f.winToday=1;return;
  }
@@ -312,7 +312,7 @@ hook({mis:'window',period:7,room:'bus',who:'abby',label:'Get on the 43 behind Ab
  const k=await choose(['Kiss her.','Just hold her hand. It’s enough.'],'Corey. It’s your call.');
  if(k===0){
   pose('corey','kiss');pose('abby','kiss');SFX.kiss();fxState.romance=1;prop({t:'heart',x:204,y:110});
-  await N('The bus goes over the speed bump by the roundabout and they kiss anyway, badly, and then properly. Somebody at the front whoops. The driver honks the horn twice, which he has never done for anything.');
+  await N('Speed bump by the roundabout. They kiss anyway, badly, then properly. Somebody whoops. The driver honks twice. He has never honked for anything.');
  }else{
   await N('He holds her hand. Their knuckles are white because the bus is swerving and they’re both standing. Neither of them lets go. At the roundabout, she leans her head on his shoulder.');
  }

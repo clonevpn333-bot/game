@@ -31,7 +31,7 @@ hooks({mis:'brett',label:'Ask Corey why he’s got a black eye',look:{ex:'hurt',
  await Promise.all([walk('brett',-20,140),walk('kid4',-20,150)]);remove('brett');remove('kid4');
  await say('corey','(rubbing his arm) …Thanks, Aidan.','shock');
  await say('aidan','It’s my locker. You can come in if you want. It’s cold. It’s nice.','smirk');
- await say('corey','(to you, after) Bro. He laughed while he did it. He laughs at everything. He laughed when she cried. I saw it.','angry');
+ await say('corey','(to you, after) That piece of shit laughed while he did it. He laughs at everything. He laughed when she cried. I saw it.','angry');
  D.f.il1=1;toast('Intrusive Thoughts: something happened. Corey isn’t okay.');
  return 'stay';
 }},[[0,'corridor','corey'],[2,'canteen','corey'],[4,'chem','corey']]);
@@ -46,7 +46,7 @@ hooks({mis:'brett',label:'Ask Abby where her guitar is',look:{ex:'sad'},cond:()=
  SFX.whoosh();blood(A.brett.x,A.brett.y-28,8,null,30,A.brett.y+2);A.brett.ex='hurt';
  await N('He smashes it on the floor. One of the strings snaps back and whips him across the cheek. A thin red line, right under his eye.');
  if(!D.dead.corey){put('corey',334,-1,{y:146});await walk('corey',200,110);
-  await N('Corey’s in the doorway. He walked up the stairs for no reason, like he always does when Abby’s up here. He picks up the broken neck of the guitar. His knuckles go white.');
+  await N('Corey’s in the doorway. He picks up the broken neck of the guitar. His knuckles go white.');
   await say('abby','(very quietly) Corey. Don’t.','scared');
   await say('brett','(laughing, touching his cheek) Do it, Curls. Do it. My dad’s a cop.','smirk');
   await N('Corey puts it down. Slowly. Brett laughs all the way down the stairs.')}
@@ -56,7 +56,7 @@ hooks({mis:'brett',label:'Ask Abby where her guitar is',look:{ex:'sad'},cond:()=
 }},[[2,'canteen','abby'],[4,'canteen','abby']]);
 hook({mis:'brett',period:[2,4],room:'corridor',who:'nivaan',label:'Ask Nivaan what he found on Brett’s phone',look:{pose:'phone',ex:'shock'},cond:()=>D.f.br===3&&!D.f.il3&&!D.dead.nivaan,run:async()=>{
  scene('corridor',{nivaan:[140,-1,{y:146,pose:'phone'}],you:[110,1,{y:154}]},true);
- await say('nivaan','I wasn’t gonna. Then I did. His cloud password is “brett1”. Bro. Look at what he sends her.','scared');
+ await say('nivaan','I wasn’t gonna. Then I did. His cloud password is “brett1”. Bro. Look at the shit he sends her.','scared');
  await dms('Brett 🏈','to Abby',[['them','where r u','23:02'],['them','who is that','23:04'],['them','answer me','23:04'],['them','u think anyone else would want u','23:11'],['them','u owe me','23:11'],['them','pick up','23:30'],['them','im outside ur house','23:52']],{});
  if(!D.dead.corey){put('corey',334,-1,{y:146});await walk('corey',170,70);
   await N('Corey reads it over Nivaan’s shoulder. All of it. He doesn’t say anything. He just goes very, very still, like the second before a dog bites.');
@@ -205,7 +205,7 @@ const MAIN_IL=[
   put('tez',334,-1,{y:146});await walk('tez',190,70);
   await say('tez','Angelo. Your uncle called. He wants his lockpicks back. All of them. He said the word “ALL” in capitals.','scared');
   await say('angelo','(to you, through his teeth) That one you have is the good one. If he asks, you found it in a cereal box.','smirk');
-  SFX.door();await N('Down the hall, a man in a tracksuit walks in through the front doors, looks around, and asks a seventh grader where locker 13 is. Angelo is already gone. You didn’t see him go. He just went.');
+  SFX.door();await N('A man in a tracksuit walks in the front doors and asks a seventh grader where locker 13 is. Angelo is already gone. You didn’t see him go.');
   if(A.angelo){await walk('angelo',-20,160);remove('angelo')}
  }},
  {id:'il_ghost',after:()=>crew().ev.register,room:'toilets',run:async()=>{

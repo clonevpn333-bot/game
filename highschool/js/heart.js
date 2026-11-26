@@ -347,7 +347,7 @@ hook({mis:'quiet',period:8,room:'foodcourt',who:'nivaan',label:'Sit with Nivaan 
  await say('nivdad','I remember everything, buddy. I just wasn’t home enough to say any of it. That’s on me. That’s on me, not you.','cry');
  const c=await choose(['Nod at Nivaan. Go on.','Squeeze his shoulder. Let him decide.']);
  await walk('nivaan',186,40);
- await N('Nivaan stands up. He leaves his phone on the table. He walks off with his dad toward the dumpling place, and halfway there his dad puts a hand on the back of his neck, and Nivaan doesn’t shrug it off.');
+ await N('Nivaan leaves his phone on the table and walks off with his dad. Halfway there his dad puts a hand on his neck. Nivaan doesn’t shrug it off.');
  hold('you','phone');await N('You keep his phone safe. It buzzes the whole time. Two hundred viewers, waiting. He doesn’t come back for it for an hour.');hold('you',null);
  D.f.qu2=1;part('quiet',2);
  return 'stay';

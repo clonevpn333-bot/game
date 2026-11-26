@@ -36,7 +36,7 @@ updateLoc&&updateLoc();cue('tension',true);
  const pool=allyPool();if(pool.length)await N('Your phone buzzes. And buzzes. And buzzes. '+pool.slice(0,6).map(k=>K[k].n).join(', ')+(pool.length>6?' and more':'')+'. All the same message: “where do you need me”.');
  const OBS=[
   {room:'stairwell',t:'coach',label:'COACH ON THE STAIRS',pref:['jacob','mateo','paul','omer','kenneth'],ally:async(k)=>{await say(k,k==='mateo'?'(blowing a whistle right in his ear) EXTRA REPS, COACH.':'(walking straight at Coach) Hey, Coach. Remember me?','angry');pose('coach','hurt');await N(K[k].n+' takes Coach down the stairs in a heap. Neither of them gets up quickly. '+K[k].n+' gives you a thumbs-up from the bottom.')},
-   solo:async()=>{await say('coach','(blocking the stairs, whistle in his teeth) Nobody leaves the building. Drill rules.','evil');return vgRace('coach')}},
+   solo:async()=>{await say('coach','(blocking the stairs, whistle in his teeth) Nobody leaves the goddamn building. Drill rules.','evil');return vgRace('coach')}},
   {room:'corridor',t:null,label:'THE HALL DOORS, CHAINED',pref:['angelo','theo','zara','lily','david'],ally:async(k)=>{await say(k,k==='angelo'?'(already kneeling at the padlock) Thirty seconds. Twenty if nobody talks.':'(arriving with bolt cutters from the caretaker’s closet) I borrowed these. Forever.','smirk');SFX.click&&SFX.click();await N('The chain drops. The hall doors swing open an inch. Inside: the whole school, the inspectors, and the teachers in a row along the wall.')},
    solo:async()=>{await N('A chain through both handles and a padlock the size of your fist.');return vgLock()}},
   {room:'hall',t:'voss',label:'MR. VOSS IN THE PROJECTOR BOOTH',pref:['priya','devon','noah','hasan','arjun'],ally:async(k)=>{await say(k,k==='priya'||k==='devon'?'(at the booth door, very calm) Hi, sir. Remember me? Everyone’s going to.':'(yanking the booth door open) Sir, your fridge is ON FIRE.','angry');await N('Mr. Voss is out of the booth and halfway down the aisle before he realises. The booth is yours.')},
@@ -86,7 +86,7 @@ updateLoc&&updateLoc();cue('tension',true);
    else if(e.k==='seats'){if(!A.pauljones)put('pauljones',-14,1,{y:160});await walk('pauljones',36,60);await say('pauljones','(from the back, hood down for once) Every Friday a seat on the 43 goes empty. I drew them. Nobody else noticed. I notice where everyone is.','cold')}
    else if(e.k==='cheekscam'){put('cheeks',334,-1,{y:150,hold:'laptop'});put('clapper',354,-1,{y:150});await walk('cheeks',270,120);walk('clapper',292,120);
     await say('cheeks','(bursting through the side door, laptop held high) FISTS OF FAIR CITY FOUR. Scene nine. Look at the BACKGROUND.','yell');
-    await say('clapper','We ENHANCED it.','angry')}
+    await say('clapper','We ENHANCED the shit out of it.','angry')}
    else if(e.k==='hatchkey'&&A.jacob){await say('jacob','(standing up, all of him) I took that off him. He was dragging a seventh grader to the cupboard. I pushed him. First time in my life.','cold')}
    else await N('Click. '+e.t+'. On the big screen, in front of everyone.');
    SFX.sting&&SFX.sting();shake(.5);A[o.t].ex='shock';await N(o.crack);FIN.score+=2;FIN['cracked_'+o.t]=1;
@@ -173,7 +173,7 @@ const LOVE_ALLY={
  corey:async()=>{put('abby',-14,1,{y:140,hold:'guitar'});await walk('abby',174,140);face('abby',1);
   await N('Abby goes up two stairs past Corey with her dad’s guitar. The one Corey glued back together. She plays one chord, very loud, and it fills the whole stairwell.');
   await say('corey','(singing. Badly. As loud as he has ever done anything) —AND IF YOU WANT ME YOU KNOW WHERE I’LL BE—','yell');
-  await say('coach','NOISE. IN MY STAIRWELL.','angry');
+  await say('coach','NOISE. IN MY. FUCKING. STAIRWELL.','angry');
   await N('Coach charges. They run. Corey keeps singing all the way down to the gym, and Abby keeps playing, and you hear the equipment cupboard door slam, and a padlock, and Corey still singing on the other side of it.');
   remove('coach');remove('corey');remove('abby')},
  sean:async()=>{put('stella',-14,1,{y:152,hold:'cutters'});await walk('stella',270,140);

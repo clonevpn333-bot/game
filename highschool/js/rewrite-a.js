@@ -354,7 +354,7 @@ hook({mis:'seat',period:4,room:'maths',who:'dheva',label:'Ask Dheva about the pl
   await die('seat');
  }
  SFX.pick();pose('you',null);hold('you','plan');
- await N('Seating Plan, version fourteen. Every friend group in ninth grade, split down the middle. Little hearts next to the kids she’s “keeping an eye on”. Some of the hearts have been crossed out. Tyler’s has been crossed out, in different ink.');
+ await N('Seating Plan, version fourteen. Every friend group split down the middle. Little hearts by the kids she’s watching. Tyler’s heart is crossed out. Different ink.');
  await walk(look_,190,60);
  await say('dheva','Right. Back row, five seats. Rules.');
  await say('dheva','I’m not sitting next to Corey. His curl cream smells like grape and it makes me hungry.');

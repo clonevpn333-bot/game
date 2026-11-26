@@ -114,7 +114,7 @@ cq('ict',{id:'it_rank',name:'The Ranking',who:'david',need:['arjun'],hint:'(whis
  const s=prop({t:'screenmsg',x:160,y:46,s:'#24 ARJUN',s2:'(LAST)',c:'#3a1a1a',layer:-40});
  await say('arjun','(very calm) Last. Last out of twenty-four. Behind KAYDEN. Kayden types with his ELBOWS.','angry');
  await walk('arjun',A.arjun.x,10);pose('arjun','throw');SFX.crunch();shake(1);
- await N('He rips the keyboard off the desk and throws it at the screen. Keys go everywhere. They rain down for a long time. Somebody finds a Q in their hair a week later.');
+ await N('He throws the keyboard at the screen. Keys rain down for a long time. Somebody finds a Q in their hair a week later.');
  pose('arjun',null);s.hide=1;
 }});
 cq('ict',{id:'it_printer',name:'The Printer',who:'alex',hint:'(whispering) The printer only prints one thing now. Over and over. It started on Monday.',opt:'Go and see what the printer is printing.',run:async c=>{
