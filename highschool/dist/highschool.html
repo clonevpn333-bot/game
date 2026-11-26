@@ -24368,6 +24368,56 @@ if(typeof FEATURED!=='undefined')for(const m of['jade','stall','ringing','stain'
 
 </script>
 <script>
+/* js/cuts.js */
+'use strict';
+/* =====================================================================
+   HIGHSCHOOL REMASTERED — THE CUT
+   One place for every quest the remaster removes (approved list).
+   The code for them still exists in the old files; this switches them
+   off cleanly: no mission, no hooks, no spots, no jobs, no tips. To bring
+   one back, take it off CUT_MIS.
+   Kept on purpose as SIDE: Any Reaction (loach), The Staff Room, the
+   teacher lessons, the filthy quests. Cheeks & Cheek-Clapper's quest is
+   cut because they now live in the main story (js/cheeksmain.js).
+   ===================================================================== */
+const CUT_MIS=[
+ /* mid one-offs */
+ 'seat','group','beep','alex','dheva','marcus','paul','kenneth','bully','alone','pits','phone','flimbus','inhaler',
+ 'ladle','shorts','vapes','emergency','roast','cheeks','kaivibes','groupchat','leaked','beef',
+ /* fringe characters */
+ 'jade','stall','ringing','stain','steal_mia','bayonet','closet','ditch','lunchrun','hotsub','swipe','nursecal','gains','rave','lockedroom',
+ /* family */
+ 'quiet','omermum','omerscarf','grandad','ohio',
+ /* shops are places now, not quests */
+ 'angelo','armoury',
+ /* the raccoon "lockdown" */
+ 'lockdown'];
+const CUT_SET=new Set(CUT_MIS);
+for(const m of CUT_MIS){
+ delete MIS[m];
+ for(let i=HOOKS.length-1;i>=0;i--)if(HOOKS[i].mis===m)HOOKS.splice(i,1);
+ for(let i=SPOTS.length-1;i>=0;i--)if(SPOTS[i].mis===m)SPOTS.splice(i,1);
+ if(typeof JOBS!=='undefined')delete JOBS[m];
+}
+/* the raccoon lockdown never fires */
+if(typeof lockdownDue==='function')lockdownDue=function(){return false};
+/* old code that still mentions a cut quest can't crash or resurrect it */
+{const _c=complete;complete=async function(m){if(!MIS[m])return;return _c.apply(this,arguments)}}
+{const _p=part;part=function(m){if(!MIS[m])return;return _p.apply(this,arguments)}}
+if(typeof HEADLINERS!=='undefined')for(let i=HEADLINERS.length-1;i>=0;i--)if(CUT_SET.has(HEADLINERS[i]))HEADLINERS.splice(i,1);
+if(typeof FEATURED!=='undefined')for(const m of CUT_MIS)FEATURED.delete(m);
+/* hooks that start a cut quest without tagging it */
+for(let i=HOOKS.length-1;i>=0;i--){const h=HOOKS[i];if(h.mis&&!MIS[h.mis]&&!/^(cq_|gig|rescue|crew)/.test(h.mis))HOOKS.splice(i,1)}
+for(let i=SPOTS.length-1;i>=0;i--){const s=SPOTS[i];if(s.mis&&!MIS[s.mis]&&!/^(cq_|gig|rescue|crew)/.test(s.mis))SPOTS.splice(i,1)}
+
+/* daily challenges are cut: a checklist that pulls you out of the story */
+challToday=function(){return[]};
+
+/* live roam events: rarer (every ~90-150 s instead of 30-45 s) */
+{const _ls=liveSchedule;liveSchedule=function(s){_ls(s!=null?s:90+Math.random()*60)}}
+
+</script>
+<script>
 /* js/questtabs.js */
 'use strict';
 /* =====================================================================
@@ -24380,20 +24430,30 @@ if(typeof FEATURED!=='undefined')for(const m of['jade','stall','ringing','stain'
    • 🎲 SIDE & GIGS: everything shorter: side quests (incl. 🔞 filthy),
      today's side hustles and daily challenges. Playable, never nagging.
    ===================================================================== */
-const MAIN_GROUPS=[
- ['★ THE STORY','Tyler is missing. Inspection Day is coming.',['crew','crew_locker','crew_dark','crew_record']],
- ['💀 THE TEACHERS','What’s actually wrong with this school.',['kim','dopple','headcase','oldbat','voss','staffroom','lockdown','register','upthere']],
- ['♥ LOVE','The couples. In the full game, they’re the story too.',['window','brett','mended','instella','firstfight','toby','farewell','steal_stella','darren','stepeleven','steptwelve']],
- ['🎮 BIG GAMES','Whodunit. Catfish. Heist. Gang war.',['tea','catfish','bigscore','beef']],
- ['👥 YOUR PEOPLE','The ones nobody else looks out for.',['pauljones','giant']]];
-const MAINQ=new Set(MAIN_GROUPS.flatMap(g=>g[2]));
+/* REMASTERED: 14 main quests. Several old quests merge into one arc (they play as its chapters). */
+const ARCS=[
+ ['★ THE STORY','Tyler is missing. Inspection Day is coming.',[
+  ['story','The Crew','★',['crew','crew_locker','crew_dark','crew_record','oldbat','upthere']]]],
+ ['💀 THE TEACHERS','1987. The boiler. Ms. Sherman. Everything else is a symptom.',[
+  ['miss','The Other Miss','🪞',['dopple']],['c87','Class of ’87','👻',['register']],['kim','Mr. Kim','🤡',['kim']],
+  ['head','Head Case','💣',['headcase']],['fridge','The Back Fridge','🧪',['voss']]]],
+ ['♥ LOVE','The couples. In the full game, they’re the story too.',[
+  ['wseat','The Window Seat','🐦',['corey','window','brett','smallhours','mended']],
+  ['ldist','Long Distance','⚾',['instella','striketwo','firstfight','toby','farewell','steal_stella']],
+  ['steps','Eleven Steps','🥽',['hasanmia','darren','stepeleven','steptwelve']]]],
+ ['🎮 BIG GAMES','Whodunit. Catfish. Heist.',[
+  ['tea','@highgate.tea','☕',['tea']],['jess','Jess from Fair City','📱',['catfish']],['score','The Big Score','💎',['opps','bigscore']]]],
+ ['👥 YOUR PEOPLE','The ones nobody else looks out for.',[
+  ['paul','The Other Paul','🎒',['pauljones']],['giant','Giant','🧸',['jacob','jacobken','giant']]]]];
+const arcMis=a=>a[3].filter(m=>MIS[m]&&MIS[m].parts);
+const MAINQ=new Set(ARCS.flatMap(g=>g[2].flatMap(a=>a[3])));
+const MAIN_GROUPS=ARCS.map(g=>[g[0],g[1],g[2].flatMap(a=>a[3])]);
 const isMainQ=m=>MAINQ.has(m)||/^crew/.test(m);
 /* focus follows the main list */
 if(typeof FEATURED!=='undefined'){FEATURED.clear();for(const m of MAINQ)FEATURED.add(m)}
 if(typeof HEADLINERS!=='undefined'){for(let i=HEADLINERS.length-1;i>=0;i--)if(!isMainQ(HEADLINERS[i]))HEADLINERS.splice(i,1)}
 /* gigs and challenges are on by default now: they live in their own tab, not in your face */
 {const _g=gigsToday;gigsToday=function(){if(P&&P.set&&P.set.gigs==null)P.set.gigs=true;return _g.apply(this,arguments)}}
-{const _c=challToday;challToday=function(){if(P&&P.set&&P.set.challenges==null)P.set.challenges=true;return _c.apply(this,arguments)}}
 
 /* tabs */
 {const i=QTABS.findIndex(t=>t[0]==='quests');if(i>=0){QTABS[i]=['quests','📜','Main Quests'];QTABS.splice(i+1,0,['side','🎲','Side & Gigs'])}}
@@ -24408,20 +24468,39 @@ function qlFilterBar(body,list,key,extra){
  for(const [k,n] of names){const b=qel('button','',n+' '+groups[k].length);b.setAttribute('aria-pressed',String(QL[key]===k));b.onclick=()=>{QL[key]=k;openQuest()};bar.appendChild(b)}
  return groups}
 
-/* 📜 MAIN QUESTS */
+/* 📜 MAIN QUESTS: 14 arcs */
+const arcState=a=>{const ms=arcMis(a).map(m=>MIS[m]);if(!ms.length)return null;const st=ms.map(qlState);
+ if(st[st.length-1]==='done'||st.every(x=>x==='done'))return'done';if(st.includes('active')||st.includes('done'))return'active';if(st.includes('open'))return'open';return'later'};
+function arcRow(a,grp){
+ const ms=arcMis(a).map(m=>MIS[m]);if(ms.length===1)return questRow(ms[0],grp);
+ const cur=ms.find(M=>qlState(M)==='active')||ms.find(M=>qlState(M)==='open')||ms.find(M=>qlState(M)!=='done')||ms[ms.length-1];
+ const total=ms.reduce((n,M)=>n+M.parts.length,0);let got=0;for(const M of ms){const r=Math.max(P.parts[M.id]||0,D?(D.mp[M.id]||0):0);got+=qlState(M)==='done'?M.parts.length:Math.min(r,M.parts.length)}
+ const r=qel('div','qrow arc '+grp+(QL.open['arc_'+a[0]]?' open':''));const top=qel('div','qtop');r.appendChild(top);
+ top.appendChild(qel('div','ic',a[2]));const mid=qel('div','m');top.appendChild(mid);
+ const h4=qel('h4','',a[1]);h4.appendChild(chip(ms.length+' chapters',''));mid.appendChild(h4);
+ const pips=qel('div','pips');for(let i=0;i<total;i++)pips.appendChild(qel('i',i<got?'ok':i===got&&grp==='active'?'cur':''));mid.appendChild(pips);
+ if(D&&!D.weekend&&grp!=='done'){let line='';const st=qlState(cur);
+  if(st==='active'&&typeof stepLine==='function'){const s=stepLine(cur.id);line=cur.name+' · '+s.when+': '+s.text}
+  else{const n=typeof nextStep==='function'?nextStep(cur.id):null;line=cur.name+' · '+(n&&n.t?(n.now?'NOW':PERIODS[n.p].name+' '+PERIODS[n.p].time)+': '+(n.t.label||'')+' · '+shortName(n.t.room):((cur.tips||[])[D.mp[cur.id]||0]||'Comes later.'))}
+  mid.appendChild(qel('div','nx',line));top.appendChild(trackBtn(cur.id))}
+ top.onclick=()=>{QL.open['arc_'+a[0]]=!QL.open['arc_'+a[0]];openQuest()};
+ if(QL.open['arc_'+a[0]]){const det=qel('div','qdet arcs');r.appendChild(det);for(const M of ms)det.appendChild(questRow(M,qlState(M)))}
+ return r}
 qlQuests=function(body){
- const all=[...MAINQ].map(m=>MIS[m]).filter(listable);
- body.appendChild(qel('div','qlnote','The big ones. Every one of these is its own kind of game, and most of them end up in the File on Inspection Day.'));
- const groups=qlFilterBar(body,all,'filter');
- const pick=new Set(groups[QL.filter].map(m=>m.id));
- let shown=0;
- for(const [title,sub,ids] of MAIN_GROUPS){const ms=ids.map(i=>MIS[i]).filter(m=>listable(m)&&pick.has(m.id));if(!ms.length)continue;
+ const arcs=ARCS.flatMap(g=>g[2]).filter(a=>arcMis(a).length);
+ body.appendChild(qel('div','qlnote','The '+arcs.length+' main quests. Every one is its own kind of game, and every one ends up in the File on Inspection Day.'));
+ const groups={active:[],open:[],done:[],later:[]};for(const a of arcs)groups[arcState(a)].push(a);
+ const bar=qel('div','qfil');body.appendChild(bar);
+ for(const [k,n] of[['active','In progress'],['open','Can start today'],['done','Done'],['later','Not yet']]){const b=qel('button','',n+' '+groups[k].length);b.setAttribute('aria-pressed',String(QL.filter===k));b.onclick=()=>{QL.filter=k;openQuest()};bar.appendChild(b)}
+ if(!groups[QL.filter])QL.filter='open';
+ const pick=new Set(groups[QL.filter]);let shown=0;
+ for(const [title,sub,list] of ARCS){const as=list.filter(a=>pick.has(a));if(!as.length)continue;
   const h=qel('h3','qsec mg',title);h.appendChild(qel('small','',' '+sub));body.appendChild(h);
-  for(const M of ms){body.appendChild(questRow(M,QL.filter));shown++}}
+  for(const a of as){body.appendChild(arcRow(a,QL.filter));shown++}}
  if(!shown)body.appendChild(qel('p','qlnote',QL.filter==='active'?'Nothing in progress. Check “Can start today”.':QL.filter==='open'?'Nothing new to start today. Check “In progress” or come back tomorrow.':'Nothing here.'));
- const done=all.filter(m=>P.done[m.id]).length;
- body.appendChild(qel('div','qlnote',done+' of '+all.length+' main quests finished across all runs.'));
+ body.appendChild(qel('div','qlnote',arcs.filter(a=>arcMis(a).every(m=>P.done[m])||P.done[arcMis(a).slice(-1)[0]]).length+' of '+arcs.length+' main quests finished across all runs.'));
 };
+{const st=document.createElement('style');st.textContent='#quest.ql2 .qdet.arcs{padding-left:14px;border-left:2px solid #3a3450;margin:6px 0 4px 18px}#quest.ql2 .qdet.arcs .qrow{margin:4px 0}';document.head.appendChild(st)}
 
 /* 🎲 SIDE & GIGS */
 function qlSide(body){P.set=P.set||{};const fo=P.set.focus;P.set.focus=false;try{qlSide2(body)}finally{P.set.focus=fo}}

@@ -27,7 +27,7 @@ CHAT.corey=['I’m fine. My hair is fine. Everything’s fine.','Do you think pu
 ARJUN_AT.corey=['Corey, all that hair and still nothing upstairs.','Corey, you use more product than a hairdresser’s trash can.'];
 
 /* Corey’s curl-cream prank is about the curls, not about anyone watching */
-Object.assign(MIS.emergency,{who:['corey','tez'],
+Object.assign(MIS.emergency||{},{who:['corey','tez'],
  blurb:'Corey keeps a tub of purple C.U.R.L. curl cream in his black zip-up hoodie. He says it’s “for emergencies”. He has an emergency every hour. Today, the emergency is you.',
  parts:['Before school: nick the tub out of his hoodie','Break: Tez helps you “improve” it','Home time: Corey’s last touch-up, in front of everyone']});
 
