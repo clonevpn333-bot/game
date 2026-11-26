@@ -48,9 +48,9 @@ updateLoc&&updateLoc();cue('tension',true);
   const chainP=o.room==='corridor'?prop({t:'halldoors',x:286,y:108,layer:-60}):null;
   await card(o.label,'',900);
   const lv=typeof lovers==='function'?lovers():[];const lk={coach:'corey',null:'sean',voss:'hasan'}[String(o.t)];
-  const k=(lk&&lv.includes(lk)&&!FIN.used[lk]&&pool.includes(lk)?lk:null)||o.pref.find(p=>pool.includes(p)&&!FIN.used[p])||pool.find(p=>!FIN.used[p]&&!o.pref.includes('x'));
+  let k=(lk&&lv.includes(lk)&&!FIN.used[lk]&&pool.includes(lk)?lk:null)||o.pref.find(p=>pool.includes(p)&&!FIN.used[p])||pool.find(p=>!FIN.used[p]&&!o.pref.includes('x'));
   let ok;
-  if(k){const c2=await choose(['Send '+K[k].n+'.','Do it yourself.'],o.label);if(c2===0){FIN.used[k]=1;put(k,-14,1,{y:152});await walk(k,o.room==='corridor'?248:150,140);if(k==='jacob'&&(crew().ev||{}).hatchkey&&o.t==='coach'){await say('jacob','(walking up the stairs, slowly) Hey, Coach.','cold');await N('Jacob doesn’t push. He just stands on the step below Coach, all of him, and doesn’t move. Coach looks at him for a long time. Then Coach walks back up the stairs and out of the way.');remove('coach')}else if(LOVE_ALLY[k]&&loveOn(k)){FIN.used[LOVE[k].b]=1;await LOVE_ALLY[k](o)}else await o.ally(k);ok=true;FIN.score++}}
+  if(k){const pk=await finPickAlly(o,k,pool);if(pk){k=pk;FIN.used[k]=1;if(!A[k])put(k,-14,1,{y:152});await walk(k,o.room==='corridor'?248:150,140);if(k==='jacob'&&(crew().ev||{}).hatchkey&&o.t==='coach'){await say('jacob','(walking up the stairs, slowly) Hey, Coach.','cold');await N('Jacob doesn’t push. He just stands on the step below Coach, all of him, and doesn’t move. Coach looks at him for a long time. Then Coach walks back up the stairs and out of the way.');remove('coach')}else if(LOVE_ALLY[k]&&loveOn(k)){FIN.used[LOVE[k].b]=1;await LOVE_ALLY[k](o)}else await o.ally(k);ok=true;FIN.score++}}
   if(ok===undefined)ok=await o.solo();
   if(chainP){chainP.open=1;SFX.crunch&&SFX.crunch();shake(.3);await wait(TEST?0:500)}
   if(!ok){A.you.ex='hurt';await N(pick(['You get through. Barely. It costs you time, and the teachers know you’re coming now.','You make it, bleeding a bit, and late.']));FIN.late=(FIN.late||0)+1}
@@ -74,7 +74,7 @@ updateLoc&&updateLoc();cue('tension',true);
  for(const o of OBJ){if(!A[o.t])continue;
   await walk(o.t,A[o.t].x-12,60);face(o.t,-1);await say(o.t,o.line,'smirk');
   const opts=evs.map(e=>e.t).concat(['Say nothing. Let it go.']);
-  const pi=await choose(opts,'Present evidence against '+K[o.t].n+'.');
+  const pi=await finWitness(o,evs);
   if(pi>=evs.length){await N('You let it go. '+K[o.t].n+' sits back down. Somebody in the hall laughs. The inspectors write something down.');FIN.score--;continue}
   const e=evs[pi];if(typeof SLIDE!=='undefined')SLIDE.t=e.t.toUpperCase().replace(/[’']S\b/g,'').replace(/[’']/g,'');SFX.click&&SFX.click();
   if(o.beat.includes(e.k)){
@@ -115,11 +115,8 @@ updateLoc&&updateLoc();cue('tension',true);
   await say('insp2','(standing) Nobody leaves this hall.','angry');
   const helpers=allyPool().filter(k=>!A[k]).slice(0,5);let x=20;for(const k of helpers){put(k,x,1,{y:158,ex:'angry'});x+=14}
   if(helpers.length)await N('And then '+helpers.map(k=>K[k].n).join(', ')+' come over the chairs. Then the kids next to them. Then the whole hall. Everybody you helped for two weeks, all at once.');
-  if(c.cheeksIn&&A.coach){put('clapper',334,-1,{y:150,ex:'angry'});put('cheeks',354,-1,{y:150,hold:'laptop'});await walk('clapper',A.coach.x+16,160);face('clapper',1);
-   SFX.smack();shake(1);pose('coach','lie');await tw(A.coach,{x:A.coach.x-26},300);
-   await N('Through the side doors, at a full sprint: Cheek-Clapper. He turns round, sticks his backside out, and reverses Coach into the front row. Cheeks films it. Of course he does.')}
   {const lv=lovers().map(k=>({corey:'Corey and Abby at the front, holding hands so hard their knuckles go white',sean:'Sean with Stella right behind him, for once not leaving',hasan:'Hasan and Darren, shoulder to shoulder, exactly as planned'}[k]));if(lv.length)await N(lv.join('. ')+'.')}
-  const ok=await mash('HOLD THE LINE',{need:30,time:5,info:'Get between them and the inspectors. MASH!'});
+  const ok=await finHold(helpers);
   if(!ok&&!helpers.length){await N('You’re one kid against a wall of teachers. It doesn’t last.');return finEnd('bloodbath')}
   SFX.cheer&&SFX.cheer();shake(1);await N('It takes the whole school. It takes four minutes. When the police come in through the doors you unchained, the teachers are under a pile of kids two metres high, still smiling, underneath.');
   return finEnd('exposed')}
