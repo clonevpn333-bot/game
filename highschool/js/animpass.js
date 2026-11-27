@@ -29,3 +29,23 @@ if(ROOMS.party){const ob=ROOMS.party.bg;ROOMS.party.bg=function(){ob.apply(this,
  for(let i=0;i<4;i++){const x=150+i*20+Math.round(Math.sin(T*.6+i)*4),y=112+(i%2)*3;
   drawKid(crowdKid(i+11),x,y,{dir:i%2?-1:1,pose:'dance',ex:i%2?'happy':'laugh'})}}}
 }
+
+/* ---- chewing: anyone holding food chews (mouth opens and shuts) ---- */
+{const FOODS=new Set(['sandwich','crisps','cookie','tray','juice']);
+ const _dh=drawHead;drawHead=function(k,x,hy,d,o){_dh(k,x,hy,d,o);
+  try{if(!o||!o.hold||!FOODS.has(o.hold)||o.talk||o.crushed||o.back||o.ex==='dead')return;
+   const ph=(T*4+k.seed*.37)%3;if(ph>2)return; /* a pause between mouthfuls */
+   const open=Math.sin(T*14+k.seed)>0,mx=x+d-1,my=hy+(k.knob?9:8);
+   R(mx,my,3,open?2:1,open?'#5a2028':'#7a3a3a');if(open)R(mx+1,my,1,1,'#e8d0a0')}catch(e){}}}
+
+/* ---- a beating lasts all day; a face doesn't ---- */
+{const _hu=HOOK.update;HOOK.update=(dt,rdt)=>{_hu&&_hu(dt,rdt);
+ try{if(!D||!A.you)return;const day=typeof cal==='function'?cal():0,I=D.f.injury&&D.f.injury.day===day?D.f.injury:(D.f.injury={day,hurt:0,bloody:0,stain:null});
+  const a=A.you;
+  /* remember the worst of today */
+  if((a.hurt||0)>I.hurt)I.hurt=a.hurt;if(a.bloody&&!I.bloody)I.bloody=1;
+  /* and put it back whenever a new room or scene rebuilds you */
+  if((a.hurt||0)<I.hurt)a.hurt=I.hurt;if(I.bloody&&!a.bloody)a.bloody=1;
+  /* expressions fade back to neutral a few seconds after a scene */
+  if(!busy&&panelMode==='roam'&&a.ex){a._exT=(a._exT||0)+(rdt||dt||.016);if(a._exT>3.5){a.ex=null;a._exT=0}}else a._exT=0;
+ }catch(e){}}}
