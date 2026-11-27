@@ -15,7 +15,7 @@
    checks window.EDITION at run time (edition-safe.js loads after us).
    ===================================================================== */
 const fullEd=()=>window.EDITION!=='safe';
-const dvL=m=>(D&&D.done&&D.done[m])||(P&&P.done&&P.done[m]);
+const dvL=m=>!!(D&&D.done&&D.done[m]);
 const LOVE={
  corey:{a:'corey',b:'abby',ev:'sketchbook',name:'Corey & Abby',on:()=>dvL('window')||dvL('corey')==='kiss'||dvL('smallhours')||dvL('mended')},
  sean:{a:'sean',b:'stella',ev:'voicenote',name:'Sean & Stella',on:()=>dvL('instella')||dvL('striketwo')||dvL('farewell')},

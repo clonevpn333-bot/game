@@ -8,7 +8,7 @@ const STORY=[
  {t:'The boy who notices',goal:'Find Aidan and talk to him. He’s at the bus loop before school.',done:()=>P.story&&P.story.metAidan},
  {t:'Ode to Omer',goal:'Pick an ODD day. Go to English in Period 1 and hear Aidan’s poem.',done:()=>P.intel.aidanPoem},
  {t:'Fourteen jars',goal:'Lunch: get Mr. Voss’s fridge key in the chem lab. Period 7: open the back fridge.',done:()=>P.intel.aidanJars},
- {t:'The boy in the library',goal:'Bunk Period 1 in the library and talk to the sixth grade. Find his overdue book. Give it back.',done:()=>P.done.register},
+ {t:'The boy in the library',goal:'Bunk Period 1 in the library and talk to the sixth grade. Find his overdue book. Give it back.',done:()=>D&&D.done&&D.done.register},
  {t:'1987',goal:()=>'Find pages of the Highgate Archive (Quest log → Archive). '+(typeof loreCount==='function'?loreCount():0)+' of 8 so far.',done:()=>typeof loreCount==='function'&&loreCount()>=8},
  {t:'The Calling',goal:'Home time, bus loop: ask Aidan about Fridays. How you treated him today decides how it ends.',done:()=>Object.keys(P.endings).some(e=>e!=='saturday')},
  {t:'Saturday',goal:()=>'Secret: find every Archive page ('+(typeof loreCount==='function'?loreCount():0)+'/12), then tell Aidan what happened in 1987.',done:()=>P.endings.saturday}

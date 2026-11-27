@@ -527,7 +527,7 @@ function renderFeed(body){
   if(g==='willow'&&r.s>=2)post('willow','@willow.underneath','[the empty pool. 3:15]','.',4,['pool',[]]);
   if(g==='willow'&&r.s>=5)post('willow','@willow.underneath','[a matchbox on a bus stop bench]','tell ollie i said hi',0,['bus',[]])}
  if(K.corey)post('corey','@c.u.r.l.y','[a selfie, from below, by accident]',['deleting in 5 min','do NOT screenshot','humidity: 71%. pray for me'][d%3],3+d,['corridor',[['corey',160,168,1,'phone','scared']]]);
- if(P.dumped&&Object.keys(P.dumped).length)post('kaylee','@kaylee.tea','[you, on one knee, in the cafeteria]','LMAOOO somebody got DUMPED at LUNCH 💀💀💀',2104,['canteen',[['you',150,165,1,'beg','cry'],['stella',190,160,-1,'cross','cold']]]);
+ if(D.f.dumped&&Object.keys(D.f.dumped).length)post('kaylee','@kaylee.tea','[you, on one knee, in the cafeteria]','LMAOOO somebody got DUMPED at LUNCH 💀💀💀',2104,['canteen',[['you',150,165,1,'beg','cry'],['stella',190,160,-1,'cross','cold']]]);
  if(D.f.phoneTaken)post('arjun','@arjun.is.him','[your phone, in a teacher’s drawer]','RIP to my boy’s phone 🕊️ corey is texting it as we speak',61,['corridor',[['arjun',160,165,1,'cry','cry']]]);
  const daily=[['nivaan','@nivaan.live','[the raccoon in the ceiling tile, eyes glowing]','he’s been here longer than mr adam',340,['corridor',[['nivaan',150,165,1,'point','shock']]]],
   ['hasan','@hasan.official','[a lunch tray with one grey noodle on it]','pat really said “here’s ur pasta” and handed me a SINGLE noodle',122,['canteen',[['pat',120,150,1,'cross','evil'],['hasan',170,165,-1,'shrug','shock','tray']]]],

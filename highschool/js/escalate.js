@@ -98,7 +98,7 @@ ON_PERIOD.push(async(i,res)=>{if(!res&&i===0&&D&&!D.weekend&&PERK('hustler')){D.
 const HEADLINERS=['kim','dopple','headcase','brett','window','pauljones','darren','steptwelve','jade','steal_stella','beef','hotmic','codebrown','eatit','replyall','speeddate','pickupline','dungeon','keybowl','nursecal','swipe','bayonet','giant','grandad'];
 function headlinersToday(){if(!D||D.weekend)return[];if(D.f.heads&&D.f.headsDay===cal())return D.f.heads;
  const started=Object.keys(D.mp||{}).filter(m=>MIS[m]&&!D.done[m]&&D.mp[m]>0&&HEADLINERS.includes(m));
- const avail=HEADLINERS.filter(m=>MIS[m]&&!D.done[m]&&!P.done[m]&&!started.includes(m)&&!(typeof FILTHY!=='undefined'&&FILTHY.includes(m)&&typeof filthyOn==='function'&&!filthyOn()));
+ const avail=HEADLINERS.filter(m=>MIS[m]&&!D.done[m]&&!started.includes(m)&&!(typeof FILTHY!=='undefined'&&FILTHY.includes(m)&&typeof filthyOn==='function'&&!filthyOn()));
  const pickN=started.concat(avail.sort(()=>Math.random()-.5)).slice(0,2);D.f.heads=pickN;D.f.headsDay=cal();return pickN}
 if(typeof DAILY_F!=='undefined')DAILY_F.push('heads','headsDay');
 {const _qn=qlNow;qlNow=function(body){_qn(body);if(!D||D.weekend)return;
@@ -111,7 +111,7 @@ if(typeof DAILY_F!=='undefined')DAILY_F.push('heads','headsDay');
 if(typeof approachCandidate==='function'){const _ac=approachCandidate;approachCandidate=function(){const c=_ac();if(!c)return c;const hs=headlinersToday();if(c.started||c.track||hs.includes(c.h.mis)||/^crew/.test(c.h.mis))return c;return Math.random()<.35?c:null}}
 
 /* ================= 5. MAIN STORY SET PIECES ================= */
-function relPair(){const c=[['hasan','darren',()=>D.done.darren||P.done.darren],['corey','abby',()=>D.done.window||P.done.window||D.done.brett||P.done.brett],['sean','stella',()=>D.done.farewell||P.done.farewell||D.done.instella||P.done.instella],['hasan','mia',()=>D.done.hasanmia||P.done.hasanmia]];
+function relPair(){const c=[['hasan','darren',()=>D.done.darren],['corey','abby',()=>D.done.window||D.done.brett],['sean','stella',()=>D.done.farewell||D.done.instella],['hasan','mia',()=>D.done.hasanmia]];
  for(const [a,b,f] of c)if(K[a]&&K[b]&&!D.dead[a]&&!D.dead[b]&&!(window.EDITION_CUT||[]).includes(b)&&f())return[a,b];return null}
 function bestFriend(){let b=null,bv=0;for(const k of FRIENDS)if(K[k]&&!D.dead[k]&&(P.bond[k]||0)>bv&&!A[k]){b=k;bv=P.bond[k]}return b||['hasan','nivaan','david'].find(k=>K[k]&&!D.dead[k]&&!A[k])}
 let SPC=null;

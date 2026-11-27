@@ -127,8 +127,8 @@ OUTCOME_FIX['steal_stella:cold']='bad';OUTCOME_FIX['steal_mia:cold']='bad';OUTCO
 OUTCOME_FIX['steal_mia:you']='good';OUTCOME_FIX['steal_mia:bros']='good';OUTCOME_FIX['steal_mia:back']='bad';
 ARC_MIS.push('steal_stella','steal_mia');
 /* if she’s with you now, their couple stuff stops, and she’s with you around school */
-{const SS=['instella','striketwo','firstfight','farewell','toby'];for(const h of HOOKS)if(SS.includes(h.mis)){const c=h.cond;h.cond=()=>!(P.done.steal_stella==='you')&&(!c||c())}}
+{const SS=['instella','striketwo','firstfight','farewell','toby'];for(const h of HOOKS)if(SS.includes(h.mis)){const c=h.cond;h.cond=()=>!(D&&D.done&&D.done.steal_stella==='you')&&(!c||c())}}
 {const _br=buildRoom;buildRoom=function(room){const r=_br(room);if(!D||D.weekend)return r;
- for(const gid in STEAL){if(P.done['steal_'+gid]!=='you'||D.dead[gid])continue;
+ for(const gid in STEAL){if(D.done['steal_'+gid]!=='you'||D.dead[gid])continue;
   if(room==='canteen'&&[2,4].includes(D.period)&&A.you){if(!A[gid])put(gid,(A.you.x||40)+18,-1,{y:150,ex:'happy'});else{A[gid].ex='happy'}}}
  return r}}

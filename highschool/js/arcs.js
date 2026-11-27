@@ -204,8 +204,8 @@ hook({mis:'jade',period:8,room:'foodcourt',who:'auto',cond:()=>D.f.jd4&&!D.done.
 }});
 /* after: how it shows around school */
 {const _br=buildRoom;buildRoom=function(room){const r=_br(room);
- if(D&&!D.weekend&&D.done&&P.done.jade==='you'&&D.period>=2&&D.period<=4&&room==='canteen'&&!A.jade&&!D.dead.jade)put('jade',120,1,{y:150,pose:'sit',ex:'happy'});
- if(D&&!D.weekend&&P.done.jade==='back'&&room==='corridor'&&[2,4].includes(D.period)&&!A.brayden&&!D.dead.brayden){put('brayden',230,-1,{y:146,pose:'cross',ex:'smirk'});if(!D.dead.jade)put('jade',244,-1,{y:146,ex:'sad'})}
+ if(D&&!D.weekend&&D.done&&D.done.jade==='you'&&D.period>=2&&D.period<=4&&room==='canteen'&&!A.jade&&!D.dead.jade)put('jade',120,1,{y:150,pose:'sit',ex:'happy'});
+ if(D&&!D.weekend&&D.done.jade==='back'&&room==='corridor'&&[2,4].includes(D.period)&&!A.brayden&&!D.dead.brayden){put('brayden',230,-1,{y:146,pose:'cross',ex:'smirk'});if(!D.dead.jade)put('jade',244,-1,{y:146,ex:'sad'})}
  return r}}
 if(typeof CHAT!=='undefined'){CHAT.jade=['Brayden texted me “u up” at 4am. Like a psycho. Like a little psycho.','If you’re gonna stare, at least be weird about it in a cute way.','Kaylee films everything. Everything. She filmed her own grandma’s funeral.'];
  CHAT.brayden=['What are you looking at? Keep walking.','I’m not jealous. I’m PROTECTIVE. It’s different. Look it up.','Bro, you think you’re funny? You’re not funny.']}

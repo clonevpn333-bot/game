@@ -84,7 +84,7 @@ function winSet(n){P.win=P.win||{};P.win.stage=Math.max(winStage(),n);P.win.look
  if(p.t==='crane'){const x=Math.round(p.x),y=Math.round(p.y);R(x-3,y,7,1,'#f4f0e6');R(x-1,y-2,3,2,'#f4f0e6');R(x+3,y-2,1,2,'#e8e0d0');R(x-4,y-1,1,1,'#e8e0d0');return}
  return _dp(p)}}
 /* once they’re together, the two birds are always on the glass */
-{const mb=ROOMS.trailer.bg;ROOMS.trailer.bg=function(){mb();if(P&&P.done&&P.done.window&&!(typeof EDITION!=='undefined'&&window.EDITION==='safe')){drawProp({t:'glassbird',x:182,y:66,n:2,heart:1,a:.8})}}}
+{const mb=ROOMS.trailer.bg;ROOMS.trailer.bg=function(){mb();if(D&&D.done&&D.done.window&&!(typeof EDITION!=='undefined'&&window.EDITION==='safe')){drawProp({t:'glassbird',x:182,y:66,n:2,heart:1,a:.8})}}}
 
 mission('window',{name:'The Window Seat',icon:'🐦',who:['corey','abby','shermian'],
  blurb:'Period 3 is in the Trailer. Abby sits by the window. Corey sits across the room, looking at her. He has looked at her every day since seventh grade. Every odd day you’re there, he gets one more look.',
@@ -327,7 +327,7 @@ K.reilly=K.reilly||{n:'Mrs. Reilly',col:'#8a7aa8',skin:'#e8c8b0',hair:'#d8d8e0',
 
 /* if Seat Wars is waiting too, you choose which Period 3 this is */
 {const _er=enterRoom;enterRoom=async function(room){
- if(!TEST&&room==='trailer'&&D.period===3&&winAvail()&&winStage()<4&&(typeof winReady!=='function'||winReady())&&!P.done.seat&&!D.f.seat1){
+ if(!TEST&&room==='trailer'&&D.period===3&&winAvail()&&winStage()<4&&(typeof winReady!=='function'||winReady())&&!D.done.seat&&!D.f.seat1){
   const c=await choose(['Sit across from Corey (The Window Seat).','Line up along the back wall (Seat Wars).'],'Period 3, the Trailer.');
   if(c===1)D.f.seatPick=1;
  }

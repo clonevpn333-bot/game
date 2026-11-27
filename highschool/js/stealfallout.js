@@ -143,7 +143,7 @@ for(const F of FALL){
    await say('arjun','I’ll sit here a bit. Not because I like you. The view’s funny.','smirk')}
   else await N('You eat lunch alone. The nuggets still taste like nothing.');
   if(typeof repAdd==='function'){repAdd('liked',-2,'loser');repAdd('legend',-1)}
-  D.f['with_'+gid]=0;(P.dumped=P.dumped||{})[gid]=1;
+  D.f['with_'+gid]=0;(D.f.dumped=D.f.dumped||{})[gid]=1;
   toast('🐍 Everyone in Highgate thinks you’re a loser now. Fair, honestly.');
   await complete(id,v);return 'stay'}});
  for(const v of['begged','first','took'])OUTCOME_FIX[id+':'+v]='bad';
@@ -157,8 +157,8 @@ function TEST_SKIP(){return false}
 
 /* once she's dumped you, she stops turning up at your lunch table (every run) */
 {const _br=buildRoom;buildRoom=function(room){const sw=[];
- for(const F of FALL)if((P.dumped||{})[F.gid]&&P.done[F.steal]==='you'){sw.push(F.steal);P.done[F.steal]='_'}
- try{return _br(room)}finally{for(const m of sw)P.done[m]='you'}}}
+ if(D&&D.done)for(const F of FALL)if((D.f.dumped||{})[F.gid]&&D.done[F.steal]==='you'){sw.push(F.steal);D.done[F.steal]='_'}
+ try{return _br(room)}finally{for(const m of sw)D.done[m]='you'}}}
 
 /* in the quest tab, it's a chapter of the same love arc */
 if(typeof ARCS!=='undefined')for(const sec of ARCS)for(const a of (sec[2]||[]))if(a[0]==='ldist'&&!a[3].includes('after_stella'))a[3].push('after_stella');

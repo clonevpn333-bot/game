@@ -16,7 +16,7 @@ const FIN={};
 const EVL={cheekscam:'Fists of Fair City 4 (the background)',timesheets:'Mr. Adam’s sign-out sheets (Love, Miss)',seats:'Paul Jones’s seating plan of the 43',hatchkey:'Coach’s lanyard (the boiler hatch key)',sketchbook:'Abby’s sketchbook (nineteen Fridays)',voicenote:'Sean’s voice note to Stella',retainer:'Tyler’s retainer',jars:'The fourteen jars labelled AIDAN',ledger:'Mr. Voss’s ledger (GRAMS)',volunteers:'Mr. Kim’s VOLUNTEERS wall',boiler:'The four names from 1987',register:'The 1987 register',notebook:'Tyler’s notebook',footage:'The night camera footage',confession:'Mr. Adam, on the record',rota:'Pat’s staff rota',finch:'Oliver Finch, alive',sher87:'Ms. Sherman’s memory of 1987'};
 const evList=()=>{const c=crew(),out=[];for(const k in EVL)if(c.ev&&c.ev[k])out.push({k,t:EVL[k]});for(const v in (c.saved||{}))if(K[v])out.push({k:'saved_'+v,t:K[v].n+', who you rescued'});return out};
 const allyPool=()=>{const c=crew(),a=Object.keys(c.allies||{}).concat(Object.keys(c.saved||{}));return [...new Set(a)].filter(k=>K[k]&&!(D.dead&&D.dead[k])&&!(window.EDITION_CUT||[]).includes(k))};
-const doneV=m=>(D.done&&D.done[m])||(P.done&&P.done[m]);
+const doneV=m=>D.done&&D.done[m];
 
 inspectionDay=async function(){
  const c=crew();FIN.score=0;FIN.used={};FIN.on=1;document.body.classList.add('finale');
@@ -106,7 +106,7 @@ updateLoc&&updateLoc();cue('tension',true);
  const win=FIN.score>=5;
  if(FIN.confess){put('sherman',334,-1,{y:126,ex:'cry'});await walk('sherman',A.insp1.x+30,50);face('sherman',-1);
   await say('sherman','(holding her wrists out to the inspectors) It was me. In 1987. I left them in the boiler room and went for a coffee. I went back. I was too late for one of them. I have been too late every Friday since.','cry');
-  if(!(D.done.dopple||P.done.dopple))await N('Somewhere under the school, something that has been chewing for thirty-nine years stops. And doesn’t start again.');
+  if(!D.done.dopple)await N('Somewhere under the school, something that has been chewing for thirty-nine years stops. And doesn’t start again.');
   await N('Nobody moves. The smiles along the wall go out one by one, like someone walking down a corridor turning off lights. Nobody gets hurt. Not today.');
   return finEnd('confessed')}
  if(win){

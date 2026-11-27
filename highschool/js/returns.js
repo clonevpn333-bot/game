@@ -22,10 +22,10 @@ async function openReturns(){
  const byRoom={};for(const r of RETURNS){if(busyRooms.includes(r.room)||(r.cond&&!r.cond()))continue;(byRoom[r.room]=byRoom[r.room]||[]).push(r)}
  for(const room in byRoom){
   const list=byRoom[room],fresh=list.filter(r=>!retDone(r.id)),r=pick(fresh.length?fresh:list);
-  const b=document.createElement('button');b.className='loc';b.innerHTML='<b></b><span></span>'+(P.done[r.mis]?'':'<em></em>');
+  const b=document.createElement('button');b.className='loc';b.innerHTML='<b></b><span></span>'+(D&&D.done[r.mis]?'':'<em></em>');
   b.querySelector('b').textContent=ROOMS[room].name.split(' —')[0];
   b.querySelector('span').textContent=r.hint||'Empty. Probably.';
-  if(!P.done[r.mis])b.querySelector('em').textContent='🎟️ Something’s happening here';
+  if(!(D&&D.done[r.mis]))b.querySelector('em').textContent='🎟️ Something’s happening here';
   b.onclick=()=>{audio();SFX.door();o.hidden=true;runReturn(r)};grid.appendChild(b);
  }
 }
@@ -150,7 +150,7 @@ ret({id:'duet',room:'music',name:'The Duet',who:['sean','toby'],hint:'Someone is
  await N('Sean on the edge of the stage, same four chords over and over. He wrote Stella a song. It’s called “Stella (Stella)”.');
  await say('sean','♪ Stella… Stella… your ball is so round… ♪','closed');
  await say('sean','Is that bad? Be honest. Actually, don’t be honest.','scared');
- if(D.done.toby||P.done.toby){put('toby',-14,1,{y:146});await walk('toby',120,60);await say('toby','Oh, I can help with this. Try going up on the second Stella. Like this. ♪ Stel-LAAA ♪','happy')}
+ if(D.done.toby){put('toby',-14,1,{y:146});await walk('toby',120,60);await say('toby','Oh, I can help with this. Try going up on the second Stella. Like this. ♪ Stel-LAAA ♪','happy')}
  const r=await meter('Hit the harmony',{speed:1});
  if(r){SFX.ding();await N('You hit the harmony. It actually sounds good. Sean looks at you like you just pulled him out of a river.');await say('sean','That’s IT. That’s the song. I’m playing it for her at lunch. In front of everyone. I’m going to throw up.','happy')}
  else{SFX.bad();await N('You miss the note by about a mile. A window cracks. Sean doesn’t even notice. He’s crying a little at his own lyrics.')}

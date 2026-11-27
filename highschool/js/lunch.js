@@ -123,7 +123,7 @@ async function lunchRun(){
   scene('canteen',{aidan:[176,-1,{y:150,pose:'sit',ex:'sad'}],you:[150,1,{y:150,pose:'sit',hold:'tray'}]},true);
   await say('aidan',pick(['(not eating) I always sit here. The light’s good. It never changes.','(pushing a pea around) Pat used to give me two cookies. She doesn’t remember why.','You don’t have to sit with me. Nobody has to sit with me.','(staring at the pasta) This tastes like a wet fucking sock. (he looks shocked at himself) …Sorry. It does, though.']),'sad');
   await say('aidan','…Thanks, though.','happy')})}
- for(const g of['stella','mia','jade'])if(D.f['with_'+g]&&!(P.dumped||{})[g]&&alive(g)){opts.push('Sit with '+K[g].n.split(' ')[0]+'.');acts.push(async()=>{
+ for(const g of['stella','mia','jade'])if(D.f['with_'+g]&&!(D.f.dumped||{})[g]&&alive(g)){opts.push('Sit with '+K[g].n.split(' ')[0]+'.');acts.push(async()=>{
   scene('canteen',{[g]:[176,-1,{y:150,pose:'sit',ex:'blush'}],you:[150,1,{y:150,pose:'sit',hold:'tray'}]},true);
   await say(g,pick(['(stealing your fries one at a time) You weren’t eating these.','People are staring. Let them.']),'blush')})}
  opts.push('Eat alone. Fast.');acts.push(async()=>{await N('You eat the whole thing in four minutes, standing up, like a raccoon. You have time for one more thing. (+1 🍎)');D.apples=(D.apples||0)+1});

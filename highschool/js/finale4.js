@@ -116,7 +116,7 @@ function bub(id,txt){if(A[id]&&typeof bubbles!=='undefined'&&bubbles.push)bubble
 function lane(t){const i=(FH.teachers||[]).indexOf(t);return i<0?(Math.random()*3|0):i%3}
 function cameo(id,from,x,fn){if(!K[id])return;if(!A[id])put(id,from<0?-14:334,from<0?1:-1,{y:150});walk(id,x,170).then(fn)}
 function finCameos(){
- const c=crew(),ev=c.ev||{},L=[],dv=m=>(D.done&&D.done[m])||(P.done&&P.done[m]);
+ const c=crew(),ev=c.ev||{},L=[],dv=m=>D.done&&D.done[m];
  if(c.cheeksIn)L.push(()=>cameo('clapper',1,FH.X[lane('coach')]+14,()=>{bub('clapper','CHEEK CLAP');SFX.smack&&SFX.smack();shake(.8);FH.P[lane('coach')]=0;if(A.coach)pose('coach','lie')}));
  if(!D.dead.pat&&K.pat)L.push(()=>cameo('pat',-1,FH.X[lane('kim')]-14,()=>{hold('pat','ladle');bub('pat','NOT IN MY HALL');SFX.smack&&SFX.smack();FH.P[lane('kim')]=0}));
  if(dv('loach')==='fortyeight'&&K.loach)L.push(()=>cameo('loach',-1,40,()=>{bub('loach','PAGE FORTY-EIGHT');FH.freeze=T+2.5;SFX.sting&&SFX.sting();for(const t of FH.teachers)if(A[t])A[t].ex='shock'}));

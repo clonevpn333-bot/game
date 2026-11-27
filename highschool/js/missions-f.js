@@ -240,9 +240,9 @@ hook({mis:'groupchat',period:4,room:'canteen',who:'arjun',label:'Warn Arjun befo
  await say('you','Omer’s seen the chat. The thing about his mom.');
  await say('arjun','It was a JOKE. He knows it’s a joke. Everyone knows I’m joking. That’s my whole personality.','smirk');
  const o=[{t:'“Then apologise properly. Like you mean it.”'},{t:'Let Omer handle it.'}];
- if(P.done.alone)o.unshift({t:'“You told me what your dad says to you. You know exactly what that feels like.”',tag:'🌇'});
+ if(D.done.alone)o.unshift({t:'“You told me what your dad says to you. You know exactly what that feels like.”',tag:'🌇'});
  const c=await choose(o);
- const real=P.done.alone&&c===0, tried=real||(c===(P.done.alone?1:0));
+ const real=D.done.alone&&c===0, tried=real||(c===(D.done.alone?1:0));
  if(real){await say('you','You told me what your dad says to you at dinner. You know exactly what that feels like. You’re doing it to Omer.');ex('arjun','sad');await say('arjun','…That’s a low blow. That’s a really low blow. That’s… fair.','sad')}
  else if(tried){await say('you','Then apologise. Properly. Like you mean it.');await say('arjun','I don’t do “properly”. I do “jokes”. Properly is for people with nice dads.','smirk')}
  put('omer',330,-1,{y:150});await walk('omer',230,110);ex('omer','angry');

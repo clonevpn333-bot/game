@@ -129,7 +129,7 @@ const VKILL={
 };
 function vapeScore(how){P.vape=P.vape||{kill:0,clean:0,run:{}};const k=cal()+'_'+how;P.vape[how==='kill'?'kill':'clean']++;save();
  const n=P.vape.kill+P.vape.clean;if(n>=1)part('vapes',1);
- if(n>=3&&!P.done.vapes){complete('vapes',P.vape.clean===0?'killer':P.vape.kill===0?'clean':'mixed')}
+ if(n>=3&&!D.done.vapes){complete('vapes',P.vape.clean===0?'killer':P.vape.kill===0?'clean':'mixed')}
 }
 for(const id of['brayden','kaylee','jaxon'])for(const room of['toilets','field','corridor','bus','carpark'])
  hook({mis:'vapes',period:[0,2,4,8],room,who:id,label:'Walk up to '+K[id].n+' (vaping)',look:{hold:'vape'},cond:()=>vaperHere(id),run:async()=>{

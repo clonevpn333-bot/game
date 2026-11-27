@@ -1481,7 +1481,7 @@ async function boardBus(fromMall){
 async function talkTo(id){
  if(busy)return;
  const hooks=availableHooks(D.room,id);
- const shop=id==='angelo'&&P.done.angelo;
+ const shop=id==='angelo'&&D.done.angelo;
  const opts=[{t:'Chat'}];
  for(const h of hooks)opts.push({t:h.label,tag:MIS[h.mis]?MIS[h.mis].icon:'★'});
  if(shop)opts.push({t:'Buy something',tag:'💰'});
@@ -1650,7 +1650,7 @@ function openQuest(){
   body.appendChild(el('p','',done+' of '+Object.keys(MIS).length+' missions complete · Day '+(D?D.day:P.loops)));body.lastChild.style.cssText='margin:0 0 8px;color:#a99aa8;font-size:13px';
   const grid=el('div','qgrid');body.appendChild(grid);
   for(const m of Object.values(MIS)){
-   const reached=P.parts[m.id]||0,today=D?(D.mp[m.id]||0):0,isDone=!!P.done[m.id],locked=m.hidden&&!reached&&!isDone;
+   const reached=D?(D.mp[m.id]||0):0,today=reached,isDone=!!(D&&D.done[m.id]),locked=m.hidden&&!reached&&!isDone;
    const q=el('div','q'+(isDone?' done':'')+(locked?' lock':''));
    q.appendChild(el('div','ic',locked?'?':m.icon));
    const t=el('div');t.style.minWidth='0';q.appendChild(t);
@@ -2902,7 +2902,7 @@ mission('angelo',{name:'Locker 13',icon:'💰',who:['angelo','marcus'],
  tips:['Before school, main corridor.','Break, cafeteria. Pat’s left eye is glass. Marcus can talk to anyone about anything.'],
  doneTip:'Angelo’s shop is open every day now. Talk to him to buy things.'});
 
-hook({mis:'angelo',period:0,room:'corridor',who:'angelo',label:'Ask Angelo how business is',cond:()=>!D.f.angelo1&&!P.done.angelo,run:async()=>{
+hook({mis:'angelo',period:0,room:'corridor',who:'angelo',label:'Ask Angelo how business is',cond:()=>!D.f.angelo1&&!D.done.angelo,run:async()=>{
  scene('corridor',{angelo:[36,1,{pose:'lean',y:146}],you:[70,-1,{y:154}],corey:[150,1,{pose:'phone',y:146}]});
  await say('angelo','Angelo. Like the angel, but I charge.','smirk');
  await say('angelo','Locker 13 is the only functioning economy in this building. Cash, cookies or favours. And right now? I’m out of stock.','sad');
@@ -4349,9 +4349,9 @@ hook({mis:'groupchat',period:4,room:'canteen',who:'arjun',label:'Warn Arjun befo
  await say('you','Omer’s seen the chat. The thing about his mom.');
  await say('arjun','It was a JOKE. He knows it’s a joke. Everyone knows I’m joking. That’s my whole personality.','smirk');
  const o=[{t:'“Then apologise properly. Like you mean it.”'},{t:'Let Omer handle it.'}];
- if(P.done.alone)o.unshift({t:'“You told me what your dad says to you. You know exactly what that feels like.”',tag:'🌇'});
+ if(D.done.alone)o.unshift({t:'“You told me what your dad says to you. You know exactly what that feels like.”',tag:'🌇'});
  const c=await choose(o);
- const real=P.done.alone&&c===0, tried=real||(c===(P.done.alone?1:0));
+ const real=D.done.alone&&c===0, tried=real||(c===(D.done.alone?1:0));
  if(real){await say('you','You told me what your dad says to you at dinner. You know exactly what that feels like. You’re doing it to Omer.');ex('arjun','sad');await say('arjun','…That’s a low blow. That’s a really low blow. That’s… fair.','sad')}
  else if(tried){await say('you','Then apologise. Properly. Like you mean it.');await say('arjun','I don’t do “properly”. I do “jokes”. Properly is for people with nice dads.','smirk')}
  put('omer',330,-1,{y:150});await walk('omer',230,110);ex('omer','angry');
@@ -6527,7 +6527,7 @@ const STORY=[
  {t:'The boy who notices',goal:'Find Aidan and talk to him. He’s at the bus loop before school.',done:()=>P.story&&P.story.metAidan},
  {t:'Ode to Omer',goal:'Pick an ODD day. Go to English in Period 1 and hear Aidan’s poem.',done:()=>P.intel.aidanPoem},
  {t:'Fourteen jars',goal:'Lunch: get Mr. Voss’s fridge key in the chem lab. Period 7: open the back fridge.',done:()=>P.intel.aidanJars},
- {t:'The boy in the library',goal:'Bunk Period 1 in the library and talk to the sixth grade. Find his overdue book. Give it back.',done:()=>P.done.register},
+ {t:'The boy in the library',goal:'Bunk Period 1 in the library and talk to the sixth grade. Find his overdue book. Give it back.',done:()=>D&&D.done&&D.done.register},
  {t:'1987',goal:()=>'Find pages of the Highgate Archive (Quest log → Archive). '+(typeof loreCount==='function'?loreCount():0)+' of 8 so far.',done:()=>typeof loreCount==='function'&&loreCount()>=8},
  {t:'The Calling',goal:'Home time, bus loop: ask Aidan about Fridays. How you treated him today decides how it ends.',done:()=>Object.keys(P.endings).some(e=>e!=='saturday')},
  {t:'Saturday',goal:()=>'Secret: find every Archive page ('+(typeof loreCount==='function'?loreCount():0)+'/12), then tell Aidan what happened in 1987.',done:()=>P.endings.saturday}
@@ -7896,7 +7896,7 @@ function winSet(n){P.win=P.win||{};P.win.stage=Math.max(winStage(),n);P.win.look
  if(p.t==='crane'){const x=Math.round(p.x),y=Math.round(p.y);R(x-3,y,7,1,'#f4f0e6');R(x-1,y-2,3,2,'#f4f0e6');R(x+3,y-2,1,2,'#e8e0d0');R(x-4,y-1,1,1,'#e8e0d0');return}
  return _dp(p)}}
 /* once they’re together, the two birds are always on the glass */
-{const mb=ROOMS.trailer.bg;ROOMS.trailer.bg=function(){mb();if(P&&P.done&&P.done.window&&!(typeof EDITION!=='undefined'&&window.EDITION==='safe')){drawProp({t:'glassbird',x:182,y:66,n:2,heart:1,a:.8})}}}
+{const mb=ROOMS.trailer.bg;ROOMS.trailer.bg=function(){mb();if(D&&D.done&&D.done.window&&!(typeof EDITION!=='undefined'&&window.EDITION==='safe')){drawProp({t:'glassbird',x:182,y:66,n:2,heart:1,a:.8})}}}
 
 mission('window',{name:'The Window Seat',icon:'🐦',who:['corey','abby','shermian'],
  blurb:'Period 3 is in the Trailer. Abby sits by the window. Corey sits across the room, looking at her. He has looked at her every day since seventh grade. Every odd day you’re there, he gets one more look.',
@@ -8139,7 +8139,7 @@ K.reilly=K.reilly||{n:'Mrs. Reilly',col:'#8a7aa8',skin:'#e8c8b0',hair:'#d8d8e0',
 
 /* if Seat Wars is waiting too, you choose which Period 3 this is */
 {const _er=enterRoom;enterRoom=async function(room){
- if(!TEST&&room==='trailer'&&D.period===3&&winAvail()&&winStage()<4&&(typeof winReady!=='function'||winReady())&&!P.done.seat&&!D.f.seat1){
+ if(!TEST&&room==='trailer'&&D.period===3&&winAvail()&&winStage()<4&&(typeof winReady!=='function'||winReady())&&!D.done.seat&&!D.f.seat1){
   const c=await choose(['Sit across from Corey (The Window Seat).','Line up along the back wall (Seat Wars).'],'Period 3, the Trailer.');
   if(c===1)D.f.seatPick=1;
  }
@@ -8331,10 +8331,10 @@ async function openReturns(){
  const byRoom={};for(const r of RETURNS){if(busyRooms.includes(r.room)||(r.cond&&!r.cond()))continue;(byRoom[r.room]=byRoom[r.room]||[]).push(r)}
  for(const room in byRoom){
   const list=byRoom[room],fresh=list.filter(r=>!retDone(r.id)),r=pick(fresh.length?fresh:list);
-  const b=document.createElement('button');b.className='loc';b.innerHTML='<b></b><span></span>'+(P.done[r.mis]?'':'<em></em>');
+  const b=document.createElement('button');b.className='loc';b.innerHTML='<b></b><span></span>'+(D&&D.done[r.mis]?'':'<em></em>');
   b.querySelector('b').textContent=ROOMS[room].name.split(' —')[0];
   b.querySelector('span').textContent=r.hint||'Empty. Probably.';
-  if(!P.done[r.mis])b.querySelector('em').textContent='🎟️ Something’s happening here';
+  if(!(D&&D.done[r.mis]))b.querySelector('em').textContent='🎟️ Something’s happening here';
   b.onclick=()=>{audio();SFX.door();o.hidden=true;runReturn(r)};grid.appendChild(b);
  }
 }
@@ -8459,7 +8459,7 @@ ret({id:'duet',room:'music',name:'The Duet',who:['sean','toby'],hint:'Someone is
  await N('Sean on the edge of the stage, same four chords over and over. He wrote Stella a song. It’s called “Stella (Stella)”.');
  await say('sean','♪ Stella… Stella… your ball is so round… ♪','closed');
  await say('sean','Is that bad? Be honest. Actually, don’t be honest.','scared');
- if(D.done.toby||P.done.toby){put('toby',-14,1,{y:146});await walk('toby',120,60);await say('toby','Oh, I can help with this. Try going up on the second Stella. Like this. ♪ Stel-LAAA ♪','happy')}
+ if(D.done.toby){put('toby',-14,1,{y:146});await walk('toby',120,60);await say('toby','Oh, I can help with this. Try going up on the second Stella. Like this. ♪ Stel-LAAA ♪','happy')}
  const r=await meter('Hit the harmony',{speed:1});
  if(r){SFX.ding();await N('You hit the harmony. It actually sounds good. Sean looks at you like you just pulled him out of a river.');await say('sean','That’s IT. That’s the song. I’m playing it for her at lunch. In front of everyone. I’m going to throw up.','happy')}
  else{SFX.bad();await N('You miss the note by about a mile. A window cracks. Sean doesn’t even notice. He’s crying a little at his own lyrics.')}
@@ -8728,7 +8728,7 @@ BEATS[8]=async()=>{
  await say('stella','Ms. Sherman stopped me in the corridor this morning. She said, “Nice FILE, sweetie.” She said File. With a capital F. You could HEAR the capital.','angry');
  await say('kenneth','Someone leaked. Someone’s phone. She’s got someone’s phone.','scared');
  await say('omer','(turning to Arjun) Whose phone does she ALWAYS take? Whose phone is in that drawer RIGHT NOW?','angry');
- await say('arjun',(P.done.phone||D.f.ph1)?'It FELL. It fell out of my pocket. That’s not leaking, that’s GRAVITY.':'She took it off my desk last week. I didn’t even have it OUT. It was RESTING.','angry');
+ await say('arjun',(D.done.phone||D.f.ph1)?'It FELL. It fell out of my pocket. That’s not leaking, that’s GRAVITY.':'She took it off my desk last week. I didn’t even have it OUT. It was RESTING.','angry');
  const c=await choose(['Defend Arjun. It wasn’t his fault.','“Arjun, it was your phone. Own it.”','Blame Aidan. Somehow.']);
  if(c===0){await say('you','Anyone’s phone could’ve fallen out. She takes everyone’s. This is on her, not him.');await say('arjun','(quietly, surprised) …Thanks.','sad');crew().arjunOk=1}
  else if(c===1){await say('arjun','Fine. FINE. It was my phone. I’m sorry. Okay? I’m sorry. I’ll fix it.','sad');crew().arjunOk=1}
@@ -8923,7 +8923,7 @@ async function inspectionDay(){
   if(c.ev.sher87&&K.sherman&&!D.dead.sherman){const who='sherman';if(typeof SLIDE!=='undefined')SLIDE.t='';if(!A.sherman){put('sherman',334,-1,{y:126,ex:'cry'});await walk('sherman',A.insp1.x+40,50)}
    await walk(who,A.insp1.x+16,60);face(who,-1);
    await say(who,'(holding her wrists out to the inspectors, very quietly) It was me. In 1987. I left them in the boiler room and went for a coffee. I went back. I was too late for one of them. I have been too late every Friday since.','cry');
-   if(!(D.done.dopple||P.done.dopple))await N('Somewhere under the school, under the pool, under the boiler, something that has been chewing for thirty-nine years stops. And doesn’t start again.');
+   if(!D.done.dopple)await N('Somewhere under the school, under the pool, under the boiler, something that has been chewing for thirty-nine years stops. And doesn’t start again.');
    await N('Nobody moves. The smiles along the wall go out one by one, like someone walking down a corridor turning off lights.');
    c.finale='confessed';
   }else if(A.shermian){
@@ -9569,7 +9569,7 @@ const VKILL={
 };
 function vapeScore(how){P.vape=P.vape||{kill:0,clean:0,run:{}};const k=cal()+'_'+how;P.vape[how==='kill'?'kill':'clean']++;save();
  const n=P.vape.kill+P.vape.clean;if(n>=1)part('vapes',1);
- if(n>=3&&!P.done.vapes){complete('vapes',P.vape.clean===0?'killer':P.vape.kill===0?'clean':'mixed')}
+ if(n>=3&&!D.done.vapes){complete('vapes',P.vape.clean===0?'killer':P.vape.kill===0?'clean':'mixed')}
 }
 for(const id of['brayden','kaylee','jaxon'])for(const room of['toilets','field','corridor','bus','carpark'])
  hook({mis:'vapes',period:[0,2,4,8],room,who:id,label:'Walk up to '+K[id].n+' (vaping)',look:{hold:'vape'},cond:()=>vaperHere(id),run:async()=>{
@@ -18405,8 +18405,8 @@ hook({mis:'jade',period:8,room:'foodcourt',who:'auto',cond:()=>D.f.jd4&&!D.done.
 }});
 /* after: how it shows around school */
 {const _br=buildRoom;buildRoom=function(room){const r=_br(room);
- if(D&&!D.weekend&&D.done&&P.done.jade==='you'&&D.period>=2&&D.period<=4&&room==='canteen'&&!A.jade&&!D.dead.jade)put('jade',120,1,{y:150,pose:'sit',ex:'happy'});
- if(D&&!D.weekend&&P.done.jade==='back'&&room==='corridor'&&[2,4].includes(D.period)&&!A.brayden&&!D.dead.brayden){put('brayden',230,-1,{y:146,pose:'cross',ex:'smirk'});if(!D.dead.jade)put('jade',244,-1,{y:146,ex:'sad'})}
+ if(D&&!D.weekend&&D.done&&D.done.jade==='you'&&D.period>=2&&D.period<=4&&room==='canteen'&&!A.jade&&!D.dead.jade)put('jade',120,1,{y:150,pose:'sit',ex:'happy'});
+ if(D&&!D.weekend&&D.done.jade==='back'&&room==='corridor'&&[2,4].includes(D.period)&&!A.brayden&&!D.dead.brayden){put('brayden',230,-1,{y:146,pose:'cross',ex:'smirk'});if(!D.dead.jade)put('jade',244,-1,{y:146,ex:'sad'})}
  return r}}
 if(typeof CHAT!=='undefined'){CHAT.jade=['Brayden texted me “u up” at 4am. Like a psycho. Like a little psycho.','If you’re gonna stare, at least be weird about it in a cute way.','Kaylee films everything. Everything. She filmed her own grandma’s funeral.'];
  CHAT.brayden=['What are you looking at? Keep walking.','I’m not jealous. I’m PROTECTIVE. It’s different. Look it up.','Bro, you think you’re funny? You’re not funny.']}
@@ -18732,9 +18732,9 @@ OUTCOME_FIX['steal_stella:cold']='bad';OUTCOME_FIX['steal_mia:cold']='bad';OUTCO
 OUTCOME_FIX['steal_mia:you']='good';OUTCOME_FIX['steal_mia:bros']='good';OUTCOME_FIX['steal_mia:back']='bad';
 ARC_MIS.push('steal_stella','steal_mia');
 /* if she’s with you now, their couple stuff stops, and she’s with you around school */
-{const SS=['instella','striketwo','firstfight','farewell','toby'];for(const h of HOOKS)if(SS.includes(h.mis)){const c=h.cond;h.cond=()=>!(P.done.steal_stella==='you')&&(!c||c())}}
+{const SS=['instella','striketwo','firstfight','farewell','toby'];for(const h of HOOKS)if(SS.includes(h.mis)){const c=h.cond;h.cond=()=>!(D&&D.done&&D.done.steal_stella==='you')&&(!c||c())}}
 {const _br=buildRoom;buildRoom=function(room){const r=_br(room);if(!D||D.weekend)return r;
- for(const gid in STEAL){if(P.done['steal_'+gid]!=='you'||D.dead[gid])continue;
+ for(const gid in STEAL){if(D.done['steal_'+gid]!=='you'||D.dead[gid])continue;
   if(room==='canteen'&&[2,4].includes(D.period)&&A.you){if(!A[gid])put(gid,(A.you.x||40)+18,-1,{y:150,ex:'happy'});else{A[gid].ex='happy'}}}
  return r}}
 
@@ -19950,7 +19950,7 @@ function nowCard(t){
 /* ---------- 📜 QUESTS ---------- */
 function qlQuests(body){
  const all=Object.values(MIS).filter(m=>m.parts&&!['passing','robbery','lockedroom','calling'].includes(m.id)&&!(m.id||'').startsWith('wk_'));
- const st=m=>{if(D&&D.done[m.id])return'done';if(D&&(D.mp[m.id]||0)>0)return'active';if(P.done[m.id])return'done';if(D&&!D.weekend&&[0,1,2,3,4,5,6,7,8].some(p=>thingsAt(p).some(t=>t.mis===m.id)))return'open';return'later'};
+ const st=m=>{if(D&&D.done[m.id])return'done';if(D&&(D.mp[m.id]||0)>0)return'active';if(D&&!D.weekend&&[0,1,2,3,4,5,6,7,8].some(p=>thingsAt(p).some(t=>t.mis===m.id)))return'open';return'later'};
  const groups={active:[],open:[],done:[],later:[]};for(const m of all)groups[st(m)].push(m);
  const bar=qel('div','qfil');body.appendChild(bar);
  groups.filthy=all.filter(m=>m.filthy);
@@ -19964,7 +19964,7 @@ function qlQuests(body){
  for(const M of list)body.appendChild(questRow(M,QL.filter==='filthy'?st(M):QL.filter));
 }
 function questRow(M,grp){
- const reached=Math.max(P.parts[M.id]||0,D?(D.mp[M.id]||0):0),isDone=grp==='done',locked=grp==='later'&&M.hidden&&!reached;
+ const reached=D?(D.mp[M.id]||0):0,isDone=grp==='done',locked=grp==='later'&&M.hidden&&!reached;
  const r=qel('div','qrow '+grp+(QL.open[M.id]?' open':''));
  const top=qel('div','qtop');r.appendChild(top);
  top.appendChild(qel('div','ic',locked?'?':M.icon));
@@ -22651,7 +22651,7 @@ ON_PERIOD.push(async(i,res)=>{if(!res&&i===0&&D&&!D.weekend&&PERK('hustler')){D.
 const HEADLINERS=['kim','dopple','headcase','brett','window','pauljones','darren','steptwelve','jade','steal_stella','beef','hotmic','codebrown','eatit','replyall','speeddate','pickupline','dungeon','keybowl','nursecal','swipe','bayonet','giant','grandad'];
 function headlinersToday(){if(!D||D.weekend)return[];if(D.f.heads&&D.f.headsDay===cal())return D.f.heads;
  const started=Object.keys(D.mp||{}).filter(m=>MIS[m]&&!D.done[m]&&D.mp[m]>0&&HEADLINERS.includes(m));
- const avail=HEADLINERS.filter(m=>MIS[m]&&!D.done[m]&&!P.done[m]&&!started.includes(m)&&!(typeof FILTHY!=='undefined'&&FILTHY.includes(m)&&typeof filthyOn==='function'&&!filthyOn()));
+ const avail=HEADLINERS.filter(m=>MIS[m]&&!D.done[m]&&!started.includes(m)&&!(typeof FILTHY!=='undefined'&&FILTHY.includes(m)&&typeof filthyOn==='function'&&!filthyOn()));
  const pickN=started.concat(avail.sort(()=>Math.random()-.5)).slice(0,2);D.f.heads=pickN;D.f.headsDay=cal();return pickN}
 if(typeof DAILY_F!=='undefined')DAILY_F.push('heads','headsDay');
 {const _qn=qlNow;qlNow=function(body){_qn(body);if(!D||D.weekend)return;
@@ -22664,7 +22664,7 @@ if(typeof DAILY_F!=='undefined')DAILY_F.push('heads','headsDay');
 if(typeof approachCandidate==='function'){const _ac=approachCandidate;approachCandidate=function(){const c=_ac();if(!c)return c;const hs=headlinersToday();if(c.started||c.track||hs.includes(c.h.mis)||/^crew/.test(c.h.mis))return c;return Math.random()<.35?c:null}}
 
 /* ================= 5. MAIN STORY SET PIECES ================= */
-function relPair(){const c=[['hasan','darren',()=>D.done.darren||P.done.darren],['corey','abby',()=>D.done.window||P.done.window||D.done.brett||P.done.brett],['sean','stella',()=>D.done.farewell||P.done.farewell||D.done.instella||P.done.instella],['hasan','mia',()=>D.done.hasanmia||P.done.hasanmia]];
+function relPair(){const c=[['hasan','darren',()=>D.done.darren],['corey','abby',()=>D.done.window||D.done.brett],['sean','stella',()=>D.done.farewell||D.done.instella],['hasan','mia',()=>D.done.hasanmia]];
  for(const [a,b,f] of c)if(K[a]&&K[b]&&!D.dead[a]&&!D.dead[b]&&!(window.EDITION_CUT||[]).includes(b)&&f())return[a,b];return null}
 function bestFriend(){let b=null,bv=0;for(const k of FRIENDS)if(K[k]&&!D.dead[k]&&(P.bond[k]||0)>bv&&!A[k]){b=k;bv=P.bond[k]}return b||['hasan','nivaan','david'].find(k=>K[k]&&!D.dead[k]&&!A[k])}
 let SPC=null;
@@ -23817,7 +23817,7 @@ const FIN={};
 const EVL={cheekscam:'Fists of Fair City 4 (the background)',timesheets:'Mr. Adam’s sign-out sheets (Love, Miss)',seats:'Paul Jones’s seating plan of the 43',hatchkey:'Coach’s lanyard (the boiler hatch key)',sketchbook:'Abby’s sketchbook (nineteen Fridays)',voicenote:'Sean’s voice note to Stella',retainer:'Tyler’s retainer',jars:'The fourteen jars labelled AIDAN',ledger:'Mr. Voss’s ledger (GRAMS)',volunteers:'Mr. Kim’s VOLUNTEERS wall',boiler:'The four names from 1987',register:'The 1987 register',notebook:'Tyler’s notebook',footage:'The night camera footage',confession:'Mr. Adam, on the record',rota:'Pat’s staff rota',finch:'Oliver Finch, alive',sher87:'Ms. Sherman’s memory of 1987'};
 const evList=()=>{const c=crew(),out=[];for(const k in EVL)if(c.ev&&c.ev[k])out.push({k,t:EVL[k]});for(const v in (c.saved||{}))if(K[v])out.push({k:'saved_'+v,t:K[v].n+', who you rescued'});return out};
 const allyPool=()=>{const c=crew(),a=Object.keys(c.allies||{}).concat(Object.keys(c.saved||{}));return [...new Set(a)].filter(k=>K[k]&&!(D.dead&&D.dead[k])&&!(window.EDITION_CUT||[]).includes(k))};
-const doneV=m=>(D.done&&D.done[m])||(P.done&&P.done[m]);
+const doneV=m=>D.done&&D.done[m];
 
 inspectionDay=async function(){
  const c=crew();FIN.score=0;FIN.used={};FIN.on=1;document.body.classList.add('finale');
@@ -23907,7 +23907,7 @@ updateLoc&&updateLoc();cue('tension',true);
  const win=FIN.score>=5;
  if(FIN.confess){put('sherman',334,-1,{y:126,ex:'cry'});await walk('sherman',A.insp1.x+30,50);face('sherman',-1);
   await say('sherman','(holding her wrists out to the inspectors) It was me. In 1987. I left them in the boiler room and went for a coffee. I went back. I was too late for one of them. I have been too late every Friday since.','cry');
-  if(!(D.done.dopple||P.done.dopple))await N('Somewhere under the school, something that has been chewing for thirty-nine years stops. And doesn’t start again.');
+  if(!D.done.dopple)await N('Somewhere under the school, something that has been chewing for thirty-nine years stops. And doesn’t start again.');
   await N('Nobody moves. The smiles along the wall go out one by one, like someone walking down a corridor turning off lights. Nobody gets hurt. Not today.');
   return finEnd('confessed')}
  if(win){
@@ -24024,7 +24024,7 @@ const LOVE_ALLY={
    checks window.EDITION at run time (edition-safe.js loads after us).
    ===================================================================== */
 const fullEd=()=>window.EDITION!=='safe';
-const dvL=m=>(D&&D.done&&D.done[m])||(P&&P.done&&P.done[m]);
+const dvL=m=>!!(D&&D.done&&D.done[m]);
 const LOVE={
  corey:{a:'corey',b:'abby',ev:'sketchbook',name:'Corey & Abby',on:()=>dvL('window')||dvL('corey')==='kiss'||dvL('smallhours')||dvL('mended')},
  sean:{a:'sean',b:'stella',ev:'voicenote',name:'Sean & Stella',on:()=>dvL('instella')||dvL('striketwo')||dvL('farewell')},
@@ -24606,7 +24606,7 @@ function bub(id,txt){if(A[id]&&typeof bubbles!=='undefined'&&bubbles.push)bubble
 function lane(t){const i=(FH.teachers||[]).indexOf(t);return i<0?(Math.random()*3|0):i%3}
 function cameo(id,from,x,fn){if(!K[id])return;if(!A[id])put(id,from<0?-14:334,from<0?1:-1,{y:150});walk(id,x,170).then(fn)}
 function finCameos(){
- const c=crew(),ev=c.ev||{},L=[],dv=m=>(D.done&&D.done[m])||(P.done&&P.done[m]);
+ const c=crew(),ev=c.ev||{},L=[],dv=m=>D.done&&D.done[m];
  if(c.cheeksIn)L.push(()=>cameo('clapper',1,FH.X[lane('coach')]+14,()=>{bub('clapper','CHEEK CLAP');SFX.smack&&SFX.smack();shake(.8);FH.P[lane('coach')]=0;if(A.coach)pose('coach','lie')}));
  if(!D.dead.pat&&K.pat)L.push(()=>cameo('pat',-1,FH.X[lane('kim')]-14,()=>{hold('pat','ladle');bub('pat','NOT IN MY HALL');SFX.smack&&SFX.smack();FH.P[lane('kim')]=0}));
  if(dv('loach')==='fortyeight'&&K.loach)L.push(()=>cameo('loach',-1,40,()=>{bub('loach','PAGE FORTY-EIGHT');FH.freeze=T+2.5;SFX.sting&&SFX.sting();for(const t of FH.teachers)if(A[t])A[t].ex='shock'}));
@@ -25923,7 +25923,7 @@ if(typeof HEADLINERS!=='undefined'){for(let i=HEADLINERS.length-1;i>=0;i--)if(!i
 /* tabs */
 {const i=QTABS.findIndex(t=>t[0]==='quests');if(i>=0){QTABS[i]=['quests','📜','Main Quests'];QTABS.splice(i+1,0,['side','🎲','Side & Gigs'])}}
 QL.sfilter=QL.sfilter||'open';
-const qlState=m=>{if(D&&D.done[m.id])return'done';if(D&&(D.mp[m.id]||0)>0)return'active';if(P.done[m.id])return'done';if(D&&!D.weekend&&[0,1,2,3,4,5,6,7,8].some(p=>thingsAt(p).some(t=>t.mis===m.id)))return'open';return'later'};
+const qlState=m=>{if(D&&D.done[m.id])return'done';if(D&&(D.mp[m.id]||0)>0)return'active';if(D&&!D.weekend&&[0,1,2,3,4,5,6,7,8].some(p=>thingsAt(p).some(t=>t.mis===m.id)))return'open';return'later'};
 const listable=m=>m&&m.parts&&!['passing','robbery','lockedroom','gigs'].includes(m.id)&&!(m.id||'').startsWith('wk_')&&!(m.id||'').startsWith('cq_')&&!(m.id||'').startsWith('ret_');
 function qlFilterBar(body,list,key,extra){
  const groups={active:[],open:[],done:[],later:[]};for(const m of list)groups[qlState(m)].push(m);
@@ -25939,7 +25939,7 @@ const arcState=a=>{const ms=arcMis(a).map(m=>MIS[m]);if(!ms.length)return null;c
 function arcRow(a,grp){
  const ms=arcMis(a).map(m=>MIS[m]);if(ms.length===1)return questRow(ms[0],grp);
  const cur=ms.find(M=>qlState(M)==='active')||ms.find(M=>qlState(M)==='open')||ms.find(M=>qlState(M)!=='done')||ms[ms.length-1];
- const total=ms.reduce((n,M)=>n+M.parts.length,0);let got=0;for(const M of ms){const r=Math.max(P.parts[M.id]||0,D?(D.mp[M.id]||0):0);got+=qlState(M)==='done'?M.parts.length:Math.min(r,M.parts.length)}
+ const total=ms.reduce((n,M)=>n+M.parts.length,0);let got=0;for(const M of ms){const r=D?(D.mp[M.id]||0):0;got+=qlState(M)==='done'?M.parts.length:Math.min(r,M.parts.length)}
  const r=qel('div','qrow arc '+grp+(QL.open['arc_'+a[0]]?' open':''));const top=qel('div','qtop');r.appendChild(top);
  top.appendChild(qel('div','ic',a[2]));const mid=qel('div','m');top.appendChild(mid);
  const h4=qel('h4','',a[1]);h4.appendChild(chip(ms.length+' chapters',''));mid.appendChild(h4);
@@ -26461,7 +26461,7 @@ for(const F of FALL){
    await say('arjun','I’ll sit here a bit. Not because I like you. The view’s funny.','smirk')}
   else await N('You eat lunch alone. The nuggets still taste like nothing.');
   if(typeof repAdd==='function'){repAdd('liked',-2,'loser');repAdd('legend',-1)}
-  D.f['with_'+gid]=0;(P.dumped=P.dumped||{})[gid]=1;
+  D.f['with_'+gid]=0;(D.f.dumped=D.f.dumped||{})[gid]=1;
   toast('🐍 Everyone in Highgate thinks you’re a loser now. Fair, honestly.');
   await complete(id,v);return 'stay'}});
  for(const v of['begged','first','took'])OUTCOME_FIX[id+':'+v]='bad';
@@ -26475,8 +26475,8 @@ function TEST_SKIP(){return false}
 
 /* once she's dumped you, she stops turning up at your lunch table (every run) */
 {const _br=buildRoom;buildRoom=function(room){const sw=[];
- for(const F of FALL)if((P.dumped||{})[F.gid]&&P.done[F.steal]==='you'){sw.push(F.steal);P.done[F.steal]='_'}
- try{return _br(room)}finally{for(const m of sw)P.done[m]='you'}}}
+ if(D&&D.done)for(const F of FALL)if((D.f.dumped||{})[F.gid]&&D.done[F.steal]==='you'){sw.push(F.steal);D.done[F.steal]='_'}
+ try{return _br(room)}finally{for(const m of sw)D.done[m]='you'}}}
 
 /* in the quest tab, it's a chapter of the same love arc */
 if(typeof ARCS!=='undefined')for(const sec of ARCS)for(const a of (sec[2]||[]))if(a[0]==='ldist'&&!a[3].includes('after_stella'))a[3].push('after_stella');
@@ -26611,7 +26611,7 @@ async function lunchRun(){
   scene('canteen',{aidan:[176,-1,{y:150,pose:'sit',ex:'sad'}],you:[150,1,{y:150,pose:'sit',hold:'tray'}]},true);
   await say('aidan',pick(['(not eating) I always sit here. The light’s good. It never changes.','(pushing a pea around) Pat used to give me two cookies. She doesn’t remember why.','You don’t have to sit with me. Nobody has to sit with me.','(staring at the pasta) This tastes like a wet fucking sock. (he looks shocked at himself) …Sorry. It does, though.']),'sad');
   await say('aidan','…Thanks, though.','happy')})}
- for(const g of['stella','mia','jade'])if(D.f['with_'+g]&&!(P.dumped||{})[g]&&alive(g)){opts.push('Sit with '+K[g].n.split(' ')[0]+'.');acts.push(async()=>{
+ for(const g of['stella','mia','jade'])if(D.f['with_'+g]&&!(D.f.dumped||{})[g]&&alive(g)){opts.push('Sit with '+K[g].n.split(' ')[0]+'.');acts.push(async()=>{
   scene('canteen',{[g]:[176,-1,{y:150,pose:'sit',ex:'blush'}],you:[150,1,{y:150,pose:'sit',hold:'tray'}]},true);
   await say(g,pick(['(stealing your fries one at a time) You weren’t eating these.','People are staring. Let them.']),'blush')})}
  opts.push('Eat alone. Fast.');acts.push(async()=>{await N('You eat the whole thing in four minutes, standing up, like a raccoon. You have time for one more thing. (+1 🍎)');D.apples=(D.apples||0)+1});
@@ -27234,7 +27234,7 @@ function renderFeed(body){
   if(g==='willow'&&r.s>=2)post('willow','@willow.underneath','[the empty pool. 3:15]','.',4,['pool',[]]);
   if(g==='willow'&&r.s>=5)post('willow','@willow.underneath','[a matchbox on a bus stop bench]','tell ollie i said hi',0,['bus',[]])}
  if(K.corey)post('corey','@c.u.r.l.y','[a selfie, from below, by accident]',['deleting in 5 min','do NOT screenshot','humidity: 71%. pray for me'][d%3],3+d,['corridor',[['corey',160,168,1,'phone','scared']]]);
- if(P.dumped&&Object.keys(P.dumped).length)post('kaylee','@kaylee.tea','[you, on one knee, in the cafeteria]','LMAOOO somebody got DUMPED at LUNCH 💀💀💀',2104,['canteen',[['you',150,165,1,'beg','cry'],['stella',190,160,-1,'cross','cold']]]);
+ if(D.f.dumped&&Object.keys(D.f.dumped).length)post('kaylee','@kaylee.tea','[you, on one knee, in the cafeteria]','LMAOOO somebody got DUMPED at LUNCH 💀💀💀',2104,['canteen',[['you',150,165,1,'beg','cry'],['stella',190,160,-1,'cross','cold']]]);
  if(D.f.phoneTaken)post('arjun','@arjun.is.him','[your phone, in a teacher’s drawer]','RIP to my boy’s phone 🕊️ corey is texting it as we speak',61,['corridor',[['arjun',160,165,1,'cry','cry']]]);
  const daily=[['nivaan','@nivaan.live','[the raccoon in the ceiling tile, eyes glowing]','he’s been here longer than mr adam',340,['corridor',[['nivaan',150,165,1,'point','shock']]]],
   ['hasan','@hasan.official','[a lunch tray with one grey noodle on it]','pat really said “here’s ur pasta” and handed me a SINGLE noodle',122,['canteen',[['pat',120,150,1,'cross','evil'],['hasan',170,165,-1,'shrug','shock','tray']]]],

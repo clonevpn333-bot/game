@@ -451,7 +451,7 @@ mission('angelo',{name:'Locker 13',icon:'💰',who:['angelo','marcus'],
  tips:['Before school, main corridor.','Break, cafeteria. Pat’s left eye is glass. Marcus can talk to anyone about anything.'],
  doneTip:'Angelo’s shop is open every day now. Talk to him to buy things.'});
 
-hook({mis:'angelo',period:0,room:'corridor',who:'angelo',label:'Ask Angelo how business is',cond:()=>!D.f.angelo1&&!P.done.angelo,run:async()=>{
+hook({mis:'angelo',period:0,room:'corridor',who:'angelo',label:'Ask Angelo how business is',cond:()=>!D.f.angelo1&&!D.done.angelo,run:async()=>{
  scene('corridor',{angelo:[36,1,{pose:'lean',y:146}],you:[70,-1,{y:154}],corey:[150,1,{pose:'phone',y:146}]});
  await say('angelo','Angelo. Like the angel, but I charge.','smirk');
  await say('angelo','Locker 13 is the only functioning economy in this building. Cash, cookies or favours. And right now? I’m out of stock.','sad');

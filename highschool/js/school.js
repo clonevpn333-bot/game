@@ -204,7 +204,7 @@ async function boardBus(fromMall){
 async function talkTo(id){
  if(busy)return;
  const hooks=availableHooks(D.room,id);
- const shop=id==='angelo'&&P.done.angelo;
+ const shop=id==='angelo'&&D.done.angelo;
  const opts=[{t:'Chat'}];
  for(const h of hooks)opts.push({t:h.label,tag:MIS[h.mis]?MIS[h.mis].icon:'★'});
  if(shop)opts.push({t:'Buy something',tag:'💰'});
@@ -373,7 +373,7 @@ function openQuest(){
   body.appendChild(el('p','',done+' of '+Object.keys(MIS).length+' missions complete · Day '+(D?D.day:P.loops)));body.lastChild.style.cssText='margin:0 0 8px;color:#a99aa8;font-size:13px';
   const grid=el('div','qgrid');body.appendChild(grid);
   for(const m of Object.values(MIS)){
-   const reached=P.parts[m.id]||0,today=D?(D.mp[m.id]||0):0,isDone=!!P.done[m.id],locked=m.hidden&&!reached&&!isDone;
+   const reached=D?(D.mp[m.id]||0):0,today=reached,isDone=!!(D&&D.done[m.id]),locked=m.hidden&&!reached&&!isDone;
    const q=el('div','q'+(isDone?' done':'')+(locked?' lock':''));
    q.appendChild(el('div','ic',locked?'?':m.icon));
    const t=el('div');t.style.minWidth='0';q.appendChild(t);

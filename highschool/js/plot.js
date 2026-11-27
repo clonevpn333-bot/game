@@ -131,7 +131,7 @@ BEATS[8]=async()=>{
  await say('stella','Ms. Sherman stopped me in the corridor this morning. She said, “Nice FILE, sweetie.” She said File. With a capital F. You could HEAR the capital.','angry');
  await say('kenneth','Someone leaked. Someone’s phone. She’s got someone’s phone.','scared');
  await say('omer','(turning to Arjun) Whose phone does she ALWAYS take? Whose phone is in that drawer RIGHT NOW?','angry');
- await say('arjun',(P.done.phone||D.f.ph1)?'It FELL. It fell out of my pocket. That’s not leaking, that’s GRAVITY.':'She took it off my desk last week. I didn’t even have it OUT. It was RESTING.','angry');
+ await say('arjun',(D.done.phone||D.f.ph1)?'It FELL. It fell out of my pocket. That’s not leaking, that’s GRAVITY.':'She took it off my desk last week. I didn’t even have it OUT. It was RESTING.','angry');
  const c=await choose(['Defend Arjun. It wasn’t his fault.','“Arjun, it was your phone. Own it.”','Blame Aidan. Somehow.']);
  if(c===0){await say('you','Anyone’s phone could’ve fallen out. She takes everyone’s. This is on her, not him.');await say('arjun','(quietly, surprised) …Thanks.','sad');crew().arjunOk=1}
  else if(c===1){await say('arjun','Fine. FINE. It was my phone. I’m sorry. Okay? I’m sorry. I’ll fix it.','sad');crew().arjunOk=1}
@@ -326,7 +326,7 @@ async function inspectionDay(){
   if(c.ev.sher87&&K.sherman&&!D.dead.sherman){const who='sherman';if(typeof SLIDE!=='undefined')SLIDE.t='';if(!A.sherman){put('sherman',334,-1,{y:126,ex:'cry'});await walk('sherman',A.insp1.x+40,50)}
    await walk(who,A.insp1.x+16,60);face(who,-1);
    await say(who,'(holding her wrists out to the inspectors, very quietly) It was me. In 1987. I left them in the boiler room and went for a coffee. I went back. I was too late for one of them. I have been too late every Friday since.','cry');
-   if(!(D.done.dopple||P.done.dopple))await N('Somewhere under the school, under the pool, under the boiler, something that has been chewing for thirty-nine years stops. And doesn’t start again.');
+   if(!D.done.dopple)await N('Somewhere under the school, under the pool, under the boiler, something that has been chewing for thirty-nine years stops. And doesn’t start again.');
    await N('Nobody moves. The smiles along the wall go out one by one, like someone walking down a corridor turning off lights.');
    c.finale='confessed';
   }else if(A.shermian){

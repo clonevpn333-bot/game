@@ -37,7 +37,7 @@ if(typeof HEADLINERS!=='undefined'){for(let i=HEADLINERS.length-1;i>=0;i--)if(!i
 /* tabs */
 {const i=QTABS.findIndex(t=>t[0]==='quests');if(i>=0){QTABS[i]=['quests','📜','Main Quests'];QTABS.splice(i+1,0,['side','🎲','Side & Gigs'])}}
 QL.sfilter=QL.sfilter||'open';
-const qlState=m=>{if(D&&D.done[m.id])return'done';if(D&&(D.mp[m.id]||0)>0)return'active';if(P.done[m.id])return'done';if(D&&!D.weekend&&[0,1,2,3,4,5,6,7,8].some(p=>thingsAt(p).some(t=>t.mis===m.id)))return'open';return'later'};
+const qlState=m=>{if(D&&D.done[m.id])return'done';if(D&&(D.mp[m.id]||0)>0)return'active';if(D&&!D.weekend&&[0,1,2,3,4,5,6,7,8].some(p=>thingsAt(p).some(t=>t.mis===m.id)))return'open';return'later'};
 const listable=m=>m&&m.parts&&!['passing','robbery','lockedroom','gigs'].includes(m.id)&&!(m.id||'').startsWith('wk_')&&!(m.id||'').startsWith('cq_')&&!(m.id||'').startsWith('ret_');
 function qlFilterBar(body,list,key,extra){
  const groups={active:[],open:[],done:[],later:[]};for(const m of list)groups[qlState(m)].push(m);
@@ -53,7 +53,7 @@ const arcState=a=>{const ms=arcMis(a).map(m=>MIS[m]);if(!ms.length)return null;c
 function arcRow(a,grp){
  const ms=arcMis(a).map(m=>MIS[m]);if(ms.length===1)return questRow(ms[0],grp);
  const cur=ms.find(M=>qlState(M)==='active')||ms.find(M=>qlState(M)==='open')||ms.find(M=>qlState(M)!=='done')||ms[ms.length-1];
- const total=ms.reduce((n,M)=>n+M.parts.length,0);let got=0;for(const M of ms){const r=Math.max(P.parts[M.id]||0,D?(D.mp[M.id]||0):0);got+=qlState(M)==='done'?M.parts.length:Math.min(r,M.parts.length)}
+ const total=ms.reduce((n,M)=>n+M.parts.length,0);let got=0;for(const M of ms){const r=D?(D.mp[M.id]||0):0;got+=qlState(M)==='done'?M.parts.length:Math.min(r,M.parts.length)}
  const r=qel('div','qrow arc '+grp+(QL.open['arc_'+a[0]]?' open':''));const top=qel('div','qtop');r.appendChild(top);
  top.appendChild(qel('div','ic',a[2]));const mid=qel('div','m');top.appendChild(mid);
  const h4=qel('h4','',a[1]);h4.appendChild(chip(ms.length+' chapters',''));mid.appendChild(h4);

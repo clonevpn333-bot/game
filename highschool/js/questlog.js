@@ -132,7 +132,7 @@ function nowCard(t){
 /* ---------- 📜 QUESTS ---------- */
 function qlQuests(body){
  const all=Object.values(MIS).filter(m=>m.parts&&!['passing','robbery','lockedroom','calling'].includes(m.id)&&!(m.id||'').startsWith('wk_'));
- const st=m=>{if(D&&D.done[m.id])return'done';if(D&&(D.mp[m.id]||0)>0)return'active';if(P.done[m.id])return'done';if(D&&!D.weekend&&[0,1,2,3,4,5,6,7,8].some(p=>thingsAt(p).some(t=>t.mis===m.id)))return'open';return'later'};
+ const st=m=>{if(D&&D.done[m.id])return'done';if(D&&(D.mp[m.id]||0)>0)return'active';if(D&&!D.weekend&&[0,1,2,3,4,5,6,7,8].some(p=>thingsAt(p).some(t=>t.mis===m.id)))return'open';return'later'};
  const groups={active:[],open:[],done:[],later:[]};for(const m of all)groups[st(m)].push(m);
  const bar=qel('div','qfil');body.appendChild(bar);
  groups.filthy=all.filter(m=>m.filthy);
@@ -146,7 +146,7 @@ function qlQuests(body){
  for(const M of list)body.appendChild(questRow(M,QL.filter==='filthy'?st(M):QL.filter));
 }
 function questRow(M,grp){
- const reached=Math.max(P.parts[M.id]||0,D?(D.mp[M.id]||0):0),isDone=grp==='done',locked=grp==='later'&&M.hidden&&!reached;
+ const reached=D?(D.mp[M.id]||0):0,isDone=grp==='done',locked=grp==='later'&&M.hidden&&!reached;
  const r=qel('div','qrow '+grp+(QL.open[M.id]?' open':''));
  const top=qel('div','qtop');r.appendChild(top);
  top.appendChild(qel('div','ic',locked?'?':M.icon));
