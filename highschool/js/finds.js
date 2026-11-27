@@ -17,7 +17,7 @@ spot({room:'toilets',x:270,y:150,label:'Look at the blood under the last stall',
  await say('brandon','(through the door) Go away. I’m fine. I’m— it’s fine. Don’t get a teacher. DON’T get a teacher.','scared');
  const c=await choose(['“Brandon? Open the door.”','Slide your hoodie under the door.']);
  pose('you',null);SFX.door();put('brandon',272,-1,{y:150,pose:'sit',hurt:2,ex:'hurt'});
- await N('He opens it. Brandon, from Food Tech, sitting on the toilet lid, holding his side. There’s a line of stitches under his shirt. Fishing line. Some of them have come out.');
+ await N('Brandon from Food Tech, on the toilet lid, holding his side. Stitches under his shirt. Fishing line. Some have come out.');
  await say('brandon','Mr. Voss said it was extra credit. He said I’d get an A in chem for the rest of my life. I just woke up in here.','cry');
  await say('brandon','Pat. Pat has a first aid kit. A real one. Not the school one. Please. I can’t walk.','cry');
  D.f.st1=1;part('stall',1);return 'stay';
@@ -79,7 +79,7 @@ spot({room:'upper',x:300,y:140,label:'Read the note taped to the roof hatch',sho
  scene('roof',{you:[60,1,{y:156}]},true);cue('sad');
  await N('The roof. Wind. Gravel. In the corner, behind an air vent, somebody made a little camp. A sleeping bag. Empty juice boxes. A flashlight with dead batteries.');
  await walk('you',220,50);pose('you','kneel');
- await N('A math textbook with all the answers filled in. An inhaler. And a drawing of the Trailer from above, with an X on it, and the words “SHE KEEPS THE KEY IN HER BRA”.');
+ await N('A textbook with every answer filled in. An inhaler. A drawing of the Trailer from above, an X on it: “SHE KEEPS THE KEY IN HER BRA”.');
  pose('you',null);intel('tylerRoof');
  await N('He was hiding up here. Before. For a while. From her. He came down eventually. Everybody always has to come down eventually.');
  await complete('upthere','found');

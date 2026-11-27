@@ -41,7 +41,7 @@ hooks({mis:'mended',label:'Ask Abby what’s in the shoebox',look:{hold:'paper',
 }},[[2,'canteen','abby'],[4,'canteen','abby']]);
 hook({mis:'mended',period:ANYP,room:'woodwork',who:'auto',cond:()=>D.f.md1&&!D.f.md2&&has('shoebox')&&!D.dead.corey&&!(TEACH[D.period]&&TEACH[D.period].woodwork),run:async()=>{
  scene('woodwork',{oakes:[220,-1,{y:146,goggles:1}],corey:[150,1,{y:150}],you:[120,1,{y:154}]},true);cue('sad');
- await N('The Woodwork room. Corey is already here, standing in the doorway with the shoebox, like he’s waiting to be told off. Mr. Oakes is planing a coffin lid. He doesn’t look up.');
+ await N('Woodwork. Corey’s in the doorway with the shoebox like he’s waiting to be told off. Mr. Oakes is planing a coffin lid. He doesn’t look up.');
  await say('oakes','(not looking up) What.','angry');
  await say('corey','Sir. It’s a guitar. It got— somebody broke it. It was her dad’s. Can you— can wood be fixed?','scared');
  take('shoebox');await N('Mr. Oakes puts the plane down. He takes the lid off the box and looks at the pieces for a long, long time.');
@@ -68,7 +68,7 @@ spot({room:'upper',x:160,y:150,label:'Ask Mr. Fenwick for guitar strings',short:
 }});
 hook({mis:'mended',period:8,room:'foodcourt',who:'abby',label:'Watch Corey give Abby the guitar',look:{ex:'sad'},cond:()=>D.f.md3&&!D.done.mended&&!D.dead.corey&&!D.dead.abby,run:async()=>{
  scene('foodcourt',{abby:[196,-1,{y:150}],corey:[150,1,{y:150,hold:'guitar'}],you:[110,1,{y:156}]},true);cue('romance');
- await N('Corey walks up to Abby by the fountain holding the guitar in both arms like a baby he’s scared he’ll drop. There’s a pale line across the top where it broke. You can see it from here.');
+ await N('Corey walks up to Abby at the fountain, holding the guitar like a baby he might drop. A pale line across the top where it broke.');
  await say('corey','It’s got a scar. I’m sorry. I couldn’t make it go away. Mr. Oakes says it never goes away.','scared');
  hold('corey',null);hold('abby','guitar');A.abby.pose='sit';
  await N('Abby turns it over. She runs her thumb along the line. She doesn’t say anything for a really long time.');
@@ -126,7 +126,7 @@ hook({mis:'firstfight',period:7,room:'bus',who:'sean',label:'Stand with Sean whi
  await say('sean','(staring) You just snorted.','shock');
  await say('stella','Don’t you DARE.','laugh');
  pose('sean','hug');pose('stella','hug');SFX.heart();fxState.romance=1;
- await N('They hold onto each other in the bus loop with the 43 honking at them. It’s not a movie hug. It’s awkward and her ball is digging into his back. Neither of them lets go.');
+ await N('They hold on in the bus loop while the 43 honks. Not a movie hug. Awkward, her ball digging into his back. Neither lets go.');
  await say('stella','(into his shoulder) Next time just text me back. Even if it’s just “I’m being weird”.','cry');
  await say('sean','I’m being weird.','cry');
  await say('stella','I know, babe.','love');
@@ -253,7 +253,7 @@ hook({mis:'omerscarf',period:[0,2,4],room:'corridor',who:'angelo',label:'Ask Ang
  const ok=await mash('Get it past Coach in the corridor',{need:14,time:4,info:'Walk normal. NORMAL.'});
  hold('you',null);
  if(ok)await N('You walk it to the bathroom like a normal person. Tez takes it without a word and gives you a ten-dollar bill that is very, very crumpled.');
- else await N('Coach stops you. He looks in the bag. He looks at you. He takes one thing out of the bag and puts it in his pocket and walks away. Tez pays you anyway. Tez says that’s “a tax”.');
+ else await N('Coach checks the bag, looks at you, pockets one thing and walks off. Tez pays you anyway. He calls it “a tax”.');
  D.money=(D.money||0)+10;updateLoc();
  await say('angelo','(to you, later) Tell Omer we’re even. Tell him his mom raised him wrong but she raised him loyal.','smirk');
  D.f.os2=1;part('omerscarf',2);

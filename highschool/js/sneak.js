@@ -43,13 +43,13 @@ hook({mis:'ditch',period:[2,4],room:'corridor',who:'angelo',label:'“Angelo. I 
 spot({room:'forest',period:LESSONP,x:300,y:150,label:'Climb the back fence into town',short:'FENCE',mis:'ditch',cond:()=>has('pass')&&!D.done.ditch,run:async()=>{
  scene('forest',{you:[250,1,{y:154}]},true);const f=pprop({t:'fence',x:0,y:140,layer:-20});
  await beat('DITCH DAY','PART TWO · OVER THE FENCE');
- await N('The back fence. Chain link, eight feet, a little bit of barbed wire on top that somebody already cut a gap in. There’s a sneaker stuck up there. Somebody didn’t make it.');
+ await N('The back fence. Eight feet of chain link, barbed wire with a gap already cut. A sneaker stuck up there. Somebody didn’t make it.');
  const ok=await mash('Climb!',{need:14,time:3.5});
  if(!ok){A.you.hurt=1;await N('Your hoodie catches on the top. You hang there for a bit like laundry. Then it rips and you fall into a bush on the other side. You’re out. Your dignity isn’t.')}
  else await N('Up, over, down. You land in somebody’s backyard. A man in a bathrobe watches you from his deck, drinking coffee. He raises the mug. You raise a hand. Respect.');
  f.hide=1;
  scene('foodcourt',{you:[40,1,{y:154}],kayden:[200,-1,{y:146,pose:'phone'}],kid4:[240,-1,{y:150,pose:'sit'}]},true);
- await N('Fair City Mall at 11:40 on a school day is a different planet. It’s quiet. It smells like pretzels and freedom. The only other kids here are kids who are also not supposed to be here.');
+ await N('Fair City Mall at 11:40 on a school day. Quiet. Smells like pretzels and freedom. The only other kids here aren’t supposed to be either.');
  await say('kayden','(not looking up) First time? Don’t go near the Cinnabon. Truant officer gets his coffee there at noon. Every day. Like a shark.','smirk');
  const c=await choose(['Get a pretzel. Live a little.','Hit the arcade for one game.','Buy a really stupid hat from the kiosk.']);
  if(c===2){give('hat');ITEMS.hat='A stupid hat from the mall kiosk';await N('It says I’D RATHER BE AT SCHOOL across the front. It’s ironic. It’s the best thing you’ve ever owned.');D.f.ditchHat=1}
@@ -60,7 +60,7 @@ spot({room:'forest',period:LESSONP,x:300,y:150,label:'Climb the back fence into 
  scene('bus',{you:[300,-1,{y:154}]},true);cue('tension');
  await beat('DITCH DAY','PART THREE · GETTING BACK IN');
  const car=pprop({t:'car',x:-80,y:150,col:'#5a5a62',driver:1,layer:-4});SFX.rumble();
- await N('You’re walking back along the bus loop road when a beige car slows down behind you. Very slowly. Mr. Adam is driving it. Mr. Adam has his window down. Mr. Adam has binoculars.');
+ await N('A beige car slows down behind you on the bus loop road. Very slowly. Mr. Adam, window down, with binoculars.');
  await tw(car,{x:60},1400,'out');
  const k=await choose(['Run for the woods.','Walk normal. Wave. Show him the pass.','Lie on the ground and pretend to be a log.']);
  if(k===0){const ok2=await mash('RUN',{need:18,time:3.5});if(ok2){await walk('you',360,150);await N('You’re through the trees and over the fence and back in Period '+(D.period===1?'1':D.period===3?'3':D.period===5?'6':'7')+' before he finds reverse. He drives around the school for forty minutes, looking.');await complete('ditch',D.f.ditchHat?'legend':'clean')}
@@ -111,7 +111,7 @@ hook({mis:'lunchrun',period:4,room:'field',who:'auto',cond:()=>D.f.lr2&&!D.done.
   else{pose('coach','grab');await N('Coach tackles you into the long-jump pit. Burgers everywhere. He eats four of them right there in the sand, looking you in the eye.');await complete('lunchrun','coach')}}
  else if(c===1){pose('you','throw');await N('You throw a Double Barn at him. He catches it one-handed without looking, like a dog with a frisbee. He’s too busy eating to chase you.');
   scene('canteen',{paul:[170,-1,{y:150}],you:[140,1,{y:154}]},true);await say('paul','…Eleven? There are eleven. Who didn’t get one. (looks at Hasan) It’s Hasan. It’s always Hasan.','smirk');await complete('lunchrun','fed')}
- else{pose('you','sit');await N('You sit down on the grass and eat twelve Burger Barns in front of Coach. It takes eleven minutes. Coach watches the whole thing in silence. At the end, he salutes you.');
+ else{pose('you','sit');await N('You eat twelve Burger Barns on the grass in front of Coach. Eleven minutes. He watches in silence. At the end, he salutes you.');
   D.apples=(D.apples||0)+3;updateLoc();await N('+3 🍎. Paul will never, ever forgive you.');(P.grudge=P.grudge||{}).paul=cal()+3;await complete('lunchrun','ate')}
  return 'stay';
 }});
@@ -199,20 +199,20 @@ freeHooks({mis:'swipe',label:'Write Ms. Balduf a message “from Mr. Grieve”',
 hook({mis:'swipe',period:8,room:'foodcourt',who:'auto',cond:()=>D.f.sw2&&!D.done.swipe&&!D.dead.balduf&&!D.dead.grieve,run:async()=>{
  scene('foodcourt',{balduf:[140,1,{y:150,pose:'sit',ex:'blush'}],grieve:[180,-1,{y:150,pose:'sit',ex:'shock'}],nivaan:[262,-1,{y:150,pose:'kneel'}],you:[280,-1,{y:152,pose:'kneel'}]},true);
  await beat('SWIPE RIGHT, MS. BALDUF','PART THREE · THE DATE');
- await N('You and Nivaan are crouched behind a fake palm tree. Ms. Balduf and Mr. Grieve are at the same small table, both in brown cardigans, both very confused, both pretending they aren’t.');
+ await N('You and Nivaan behind a fake palm tree. Ms. Balduf and Mr. Grieve at one small table, both in brown cardigans, both very confused.');
  await say('balduf','So. Your… semicolons.','blush');
  await say('grieve','My what? I— yes. I have many. Hundreds. I use them in battle reports. Tactically.','scared');
  await camZoom(160,108,2,500);
  await say('balduf','(leaning in) Say something tactical.','blush');
  await say('grieve','(sweating through the cardigan) …Flanking maneuver.','blush');await camZoom();
  const c=await choose(['Stay hidden. Let it happen.','Nivaan sneezes. (Don’t stop him.)','Send Ms. Balduf another text “from Grieve”: “nice cardigan 😏”.']);
- if(c===0){fxState.romance=.5;await N('They kiss. Over a pretzel. It’s the most horrifying, beautiful thing you have ever seen. A child at the next table starts crying. Nivaan is streaming it. Chat is screaming.');fxState.romance=0;
+ if(c===0){fxState.romance=.5;await N('They kiss. Over a pretzel. Horrifying and beautiful. A child at the next table starts crying. Nivaan is streaming. Chat is screaming.');fxState.romance=0;
   await say('nivaan','(whispering, crying) Ninety-one viewers. NINETY-ONE. We did it. We’re matchmakers. We’re gods.','cry');await complete('swipe','love')}
  else if(c===1){SFX.gasp&&SFX.gasp();A.nivaan.pose=null;A.you.pose=null;await N('Nivaan sneezes. The palm tree falls over. Both teachers turn round and see you. Then they look at each other. Then they understand everything.');
   await say('balduf','(standing up, very slowly) Who. Sent. The. Message.','evil');await say('grieve','(also standing) Flanking maneuver.','evil');
   await N('You and Nivaan run for your lives through Fair City Mall with two teachers in matching cardigans chasing you. They’re holding hands the whole time.');await complete('swipe','caught')}
- else{pose('you','phone');await N('Ms. Balduf’s phone buzzes. She reads it. She looks at Mr. Grieve, who is very obviously not holding his phone. Her face goes from pink to white to Old Testament.');
-  await say('balduf','(standing, grabbing her soda) You MOCK me?','yell');SFX.splat();await N('Soda in his face. He throws his pretzel. It escalates. Within a minute it’s the cafeteria food fight all over again, but with adults, and with the whole food court joining in.');
+ else{pose('you','phone');await N('Ms. Balduf’s phone buzzes. She looks at Mr. Grieve, who is clearly not holding his phone. Her face goes pink, then white, then Old Testament.');
+  await say('balduf','(standing, grabbing her soda) You MOCK me?','yell');SFX.splat();await N('Soda in his face. He throws his pretzel. Within a minute it’s the cafeteria food fight again, with adults, and the whole food court joins in.');
   for(let i=0;i<10;i++)prop({t:'food',x:100+Math.random()*120,y:120+Math.random()*20,vx:(Math.random()-.5)*60,floor:150+Math.random()*20,land:1+Math.random(),c:pick(['#e8c040','#c04030','#f4f0e6'])});await complete('swipe','fight')}
  return 'stay';
 }});

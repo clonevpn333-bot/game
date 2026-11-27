@@ -65,3 +65,16 @@ const _say=say;say=async function(who,t){
    put(id,x0,fromLeft?1:-1,{y:148});await walk(id,x1,90);break}}}catch(e){}
  return _say.apply(this,arguments)};
 }
+
+/* shoving at home is a family matter: no detention, no apple, the day doesn't start */
+if(typeof freeShove==='function'){const _fs=freeShove;freeShove=function(){
+ if(!(typeof atHome==='function'&&atHome()))return _fs.apply(this,arguments);
+ if(!D||busy||panelMode!=='roam'||!A.you)return;
+ const id=typeof nearestPerson==='function'?nearestPerson(24):null;if(!id){toast('Nobody close enough to shove.');return}
+ busy=true;(async()=>{try{
+  if(typeof doShove==='function')await doShove(id,{});
+  const L={mom:['(steadying herself on the counter) Did you just… shove me? In my own kitchen?','I made you a lunch. I put a YOGURT in it.','Go to school. Go. Before I tell your father.'],
+           dad:['(not looking up from his phone) Okay, champ. 7 AM and we’re doing this. We’re doing this.','…I’m not mad. I’m disappointed. I’m also a little proud. Go to school.']}[id]||['…Rude.'];
+  for(const l of L)await say(id,l,'angry');
+  if(id==='mom'&&(D.money||0)>0){const n=Math.min(2,D.money);D.money-=n;updateLoc&&updateLoc();toast('💸 Mom confiscates $'+n+' of your lunch money.')}
+ }catch(e){if(e===DEATH)throw e;console.error(e)}busy=false;roam()})()}}

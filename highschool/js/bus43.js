@@ -208,7 +208,7 @@ if(RE('reilly'))RE('reilly').run=async()=>{
  await say('arjun','(looking at his sock) …I respect it. I hate it. I respect it.','shock');
 };
 if(RE('coreyGuilt')){const old=RE('coreyGuilt').run;RE('coreyGuilt').run=async()=>{if(!onBus('corey'))return;D.f.rideCG=1;await sitBeside('you','corey');A.corey.blean=A.corey.bslot&&A.corey.bslot.seat==='w'?(A.corey.bslot.side<0?-.3:.3):0;
- await N('Corey has his forehead against the window. He’s not looking at anything. His hands are in his lap, palms up, like he’s waiting for somebody to put something in them.');
+ await N('Corey, forehead on the window, hands in his lap, palms up. Like he’s waiting for somebody to put something in them.');
  await say('corey','I keep waiting to feel like a murderer. Like, there’s supposed to be a feeling. I keep checking for it.','sad');
  await say('corey','I just feel like a guy on a bus. Is that worse? I think that’s worse.','sad');
  const c=await choose(['“You did it for her.”','“We did it. Not you. We.”','Say nothing. Sit with him.']);

@@ -32,7 +32,7 @@ function y87Dress(){prop({t:'disco',x:15,y:52,layer:-60});prop({t:'disco',x:248,
 /* the clue in the stall */
 spot({room:'toilets',period:[0,2,4],x:150,y:140,label:'Read the scratches on the stall door',short:'?',cond:()=>!D.weekend&&!P.f87combo,run:async()=>{
  pose('you','reach');await wait(250);pose('you',null);
- await N('Scratched deep into the paint, the oldest thing on the door: 13 · 3 · 87. Under it, in a different hand: DON’T OPEN 217. Under THAT, in pencil, newer: “or do lol”.');
+ await N('Scratched deep in the paint: 13 · 3 · 87. Under it, another hand: DON’T OPEN 217. Under that, in pencil: “or do lol”.');
  (P.f=P.f||{}).f87=1;P.f87combo=1;save&&save();return 'stay'}});
 /* the locker */
 {const _br=buildRoom;buildRoom=function(room){const r=_br(room);try{if(room==='corridor'&&!TEST&&!Y87.on)prop({t:'frost',x:18,y:132,layer:-70})}catch(e){}return r}}
@@ -50,7 +50,7 @@ async function y87Go(){
  for(const id in A)if(!['you','ollie87','y87a','y87b','y87c','sher87'].includes(id))remove(id);
  prop({t:'boiler87',x:290,y:112,layer:-60});y87Dress();
  fxState.tint='#8a6030';fxState.tintA=.32;cue('sad',true);await tw(fxState,{dark:0},600);
- await N('The corridor, but wrong. Brown carpet tiles. A poster for a disco. A clock over the stairs door that says five past three. Friday. Somebody’s Walkman is playing very quietly.');
+ await N('The corridor, but wrong. Brown carpet tiles. A disco poster. The clock says five past three. Friday. A Walkman playing somewhere, very quietly.');
  await say('sher87','(young, tired, a perm) Downstairs, all four of you. Boiler room. My office is being painted and I am NOT giving up my Friday. Wait for me. I’m getting a coffee.','cold');
  await walk('sher87',-30,60);remove('sher87');Y87.sherGone=true;Y87.min=6;
  while(Y87.min<15){
@@ -82,7 +82,7 @@ async function y87Go(){
    else await N('She drinks the coffee in six slow sips. You watch the clock. She watches the clock. Neither of you moves.');
    scene('corridor',{you:[60,1,{y:154}]},true);for(const id in A)if(id!=='you')remove(id);fxState.tint='#8a6030';fxState.tintA=.32;prop({t:'boiler87',x:290,y:112,layer:-60});y87Dress();
    await N('Back in the corridor. The four of them are gone. The stairs door is swinging.')}
-  if(k==='down'){Y87.min+=2;Y87.down=true;await walk('you',300,110);await tw(fxState,{dark:.6},400);await N('The boiler room. It’s so hot the air bends. The boiler is ticking like it’s counting. The kids are sitting in a row on the coal chute steps, swinging their legs.');
+  if(k==='down'){Y87.min+=2;Y87.down=true;await walk('you',300,110);await tw(fxState,{dark:.6},400);await N('The boiler room, so hot the air bends. The boiler ticks like it’s counting. Four kids in a row on the coal chute steps, swinging their legs.');
    if(Y87.sherStay){put('sher87',330,-1,{y:146,ex:'scared'});await walk('sher87',250,160);await say('sher87','Up. UP. Everyone up the chute, out, NOW—','scream');await N('She gets them moving. She’s pushing the last one up when the clock over the door says 3:14.');Y87.min=Math.max(Y87.min,14)}
    else await N('The boy with the bowl cut looks at you and shakes his head. Go, he mouths. Go.');
    await tw(fxState,{dark:0},300)}

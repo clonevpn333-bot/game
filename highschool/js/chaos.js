@@ -128,9 +128,9 @@ chaos('dodge',['wing_sports'],[2,4],.25,async()=>{
 });
 chaos('trailerTip',['walkway'],[0,2,4],.15,async()=>{
  SFX.rumble();shake(1.6);
- await N('The Trailer tips. Not all the way. Just enough. From inside, the sound of every desk sliding to one side at once, and a lot of kids screaming, and Ms. Sherman humming.');
+ await N('The Trailer tips. Not all the way. Every desk slides to one side at once. Kids scream. Ms. Sherman hums.');
  const v=extra('kid3',250,-1,{y:150});
- if(v){A[v].pose='lie';await tw(A[v],{x:200,y:158},400);SFX.thud();await N('A seventh grader comes out of the Trailer’s window like toothpaste out of a tube, lands on the grass, gets up, and walks straight to the bus loop. She’s going home. She’s done.');A[v].pose=null;await walk(v,-20,80)}
+ if(v){A[v].pose='lie';await tw(A[v],{x:200,y:158},400);SFX.thud();await N('A seventh grader squeezes out of the Trailer window like toothpaste, lands on the grass, and walks straight to the bus loop. She’s done.');A[v].pose=null;await walk(v,-20,80)}
 });
 
 /* when you walk in, maybe it’s already going off */

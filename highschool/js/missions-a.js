@@ -336,7 +336,7 @@ hook({mis:'seat',period:4,room:'maths',who:'dheva',label:'Steal the seating plan
   await die('seat');
  }
  SFX.pick();pose('you',null);hold('you','plan');
- await N('Seating Plan v14. Every friend group in ninth grade is split up. She’s drawn little hearts next to the kids she’s “keeping an eye on”. Some of the hearts are crossed out.');
+ await N('Seating Plan v14. Every friend group split up. Little hearts by the kids she’s “keeping an eye on”. Some hearts crossed out.');
  await walk(look,170,60);
  await say('dheva','Okay. Back row. Five seats. Let’s do this properly.');
  await say('dheva','Rules. I’m not sitting next to Corey. His curl cream smells like grape and it makes me hungry.');
@@ -554,7 +554,7 @@ hook({mis:'loach',period:3,room:'science',who:'auto',run:async()=>{
  if(c===2){
   await walk('you',82,80);pose('you','reach');
   ex('loach','evil');SFX.sting();fxState.dark=.3;
-  await N('Her hand is round your wrist before you finish the thought. She doesn’t squeeze. She doesn’t need to. She looks at you like she’s deciding which drawer you’d fit in.');
+  await N('Her hand is round your wrist before you finish the thought. No squeeze. She doesn’t need one. She’s deciding which drawer you’d fit in.');
   await say('loach','Don’t.','evil');
   fxState.dark=0;ex('loach',null);pose('you',null);
   await say('loach','Page forty-seven.');

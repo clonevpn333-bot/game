@@ -130,7 +130,7 @@ hook({mis:'pickupline',period:7,room:'bus',who:'auto',_bomb:1,cond:()=>D.f.pl1&&
  if(typeof spew==='function')await spew({x:A.valentino.x,y:A.valentino.y-22},['loach','arjun'].filter(k=>A[k]),'milk',{n:50,dur:700,arc:16});
  await N('Ms. Sherman grabs the coffee out of Mr. Valentino’s hand and throws it at Ms. Loach. Most of it misses and hits Arjun.');
  for(const m of['loach','shermian'])if(A[m]){A[m].pose='lie';A[m].shake=1}SFX.smack&&SFX.smack();shake(.8);
- await N('Ms. Loach grabs Ms. Sherman’s lanyard. They go down on the curb like two raccoons in a bag. The seventh graders start chanting. The eighth graders start a livestream.');
+ await N('Ms. Loach grabs Ms. Sherman’s lanyard. They go down on the curb like two raccoons in a bag. Seventh graders chant. Eighth graders go live.');
  if(A.jaxon){pose('jaxon','cheer');await say('jaxon','LOACH! LOACH! LOACH! I GOT FORTY BUCKS ON YOU, MISS!','laugh')}
  await say('valentino','(stepping over them) …I’ll be in the Corolla. Whoever’s still standing.','smirk');await walk('valentino',340,60);
  for(const m of['loach','shermian'])if(A[m])A[m].shake=0;

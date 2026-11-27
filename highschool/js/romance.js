@@ -150,7 +150,7 @@ hook({mis:'brett',period:[2,4],room:'corridor',who:'nivaan',label:'Ask Nivaan to
  A.nivaan.pose=null;intel('brettRun');
  put('abby',334,-1,{y:146,hold:'book'});put('brett',350,-1,{y:146});
  await Promise.all([walk('abby',-20,45),walk('brett',-6,45)]);
- await N('Abby walks past with her books held against her chest. Brett is right behind her, one hand on the back of her neck, steering her down the corridor like a shopping cart. She doesn’t look up.');
+ await N('Abby walks past, books against her chest. Brett is right behind her, one hand on the back of her neck, steering her like a shopping cart.');
  remove('abby');remove('brett');
  await say('corey','(watching the end of the corridor) The groundskeeper’s shed by the field is never locked. There’s a shovel in it.','angry');
  await say('corey','I’m just saying where things are.','angry');
@@ -519,7 +519,7 @@ hook({mis:'stepeleven',period:4,room:'canteen',who:'hasan',label:'Ask Hasan why 
  SFX.splat();await walk('hasan',24,90);A.hasan.y=150;A.hasan.pose='swim';prop({t:'splash',x:24,y:128});
  const ok=await mash('Pull him off the drain!',{need:24,time:6,info:'Hasan can’t swim. He’s doing it anyway. MASH!'});
  if(!ok){
-  await N('It isn’t enough. You go in after them. Between the three of you, kicking and pulling and swallowing half the pool, his ankle comes free with a sound you will hear for the rest of the week.');
+  await N('Not enough. You go in too. Between the three of you, kicking and pulling, his ankle comes free with a sound you’ll hear all week.');
   await walk('you',30,80);A.you.y=150;SFX.splat();
  }else await N('Hasan pulls. He pulls like his whole life is a rope. Darren’s ankle comes off the drain with a wet, awful sound and a cloud of red.');
  SFX.squelch();blood(20,150,30,null,60,160);
@@ -638,7 +638,7 @@ if(window.EDITION==='safe'){dropHooks('brett');delete MIS.brett;PAIRS.splice(2,2
  try{
   if(D&&D.done){
    if(D.done.window&&D.done.brett)await N('Corey and Abby still sit by the window in the Trailer. Nobody ever found Brett. The woods behind the field keep what you give them.');
-   if(D.done.farewell)await N('Stella moved to Portland. Sean calls her every night at nine. The chalk on the bus loop lasted until the first rain. Somebody took a photo of voicemail six first.');
+   if(D.done.farewell)await N('Stella moved to Portland. Sean calls her every night at nine. The chalk lasted until the first rain. Somebody photographed voicemail six first.');
    if(D.done.stepeleven)await N('Darren walks with a limp now. Hasan walks slower so they match. Hasan’s dad keeps a dried flower on his dashboard.');
   }
  }catch(e){}

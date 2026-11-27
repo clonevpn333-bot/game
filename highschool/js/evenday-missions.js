@@ -151,7 +151,7 @@ hook({mis:'pitch',day:'even',period:2,room:'gym',who:'kenneth',label:'Ask Kennet
  await say('kenneth','(humming, badly) Fenwick gave me the solo in the school song. ME. On purpose. As a punishment.','scared');
  await say('kenneth','Last year he tuned Gareth Price. With the fork. Gareth Price can only hear in B flat now.','scared');
  const c=await choose(['“Get Sean to coach you. His voice is disgustingly good.”','“Just mime.”','“Sing it for me now.”']);
- if(c===0){D.f.pitchCoach=1;await N('You drag Sean in from the corridor. He sits Kenneth on the bench and makes him breathe into his stomach for ten minutes. By the end Kenneth can hit nearly three notes.');await say('kenneth','I’m a tenor. I didn’t know I was a tenor. I thought I was a kind of shout.','happy')}
+ if(c===0){D.f.pitchCoach=1;await N('Sean makes Kenneth breathe into his stomach on the bench for ten minutes. By the end, Kenneth can hit nearly three notes.');await say('kenneth','I’m a tenor. I didn’t know I was a tenor. I thought I was a kind of shout.','happy')}
  if(c===1){D.f.pitchMime=1;await say('kenneth','Mime. Yeah. He’ll never— he’ll definitely notice. He notices if you breathe in the wrong key.','scared')}
  if(c===2){await say('kenneth','(singing) “Highgate, oh Highgate, our hearts and our—”','closed');SFX.bad();await N('A pigeon outside the window takes off in a hurry.');await say('you','…Okay.')}
  D.f.pitch1=1;part('pitch',1);
@@ -161,7 +161,7 @@ hook({mis:'pitch',day:'even',period:3,room:'music',who:'auto',run:async()=>{
  const fx={};kids.forEach((n,i)=>fx[n]=i<3?i:i+1);
  const c=await classIn('music',{kids,fixed:fx,you:3});
  cue('music');hold('fenwick','baton');
- await N('Period 4. Music. The foam on the walls eats every sound that isn’t music. Mr. Fenwick is holding a tuning fork in his left hand the way some people hold a cigarette.');
+ await N('Period 4. Music. The foam eats every sound that isn’t music. Mr. Fenwick holds his tuning fork like a cigarette.');
  await say('fenwick','The school song. From the top. And Kenneth will take the solo at bar sixteen.','smirk');
  await say('fenwick','If anybody sings flat, I will find them. I always find them.','evil');
  SFX.ding();pose('fenwick','conduct');for(const k of kids)if(A[k])A[k].ex='closed';

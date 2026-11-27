@@ -91,7 +91,7 @@ hook({mis:'toby',period:4,room:'field',who:'sean',label:'Ask Sean what the plan 
  await say('sean','I wasn’t waving, I was— okay. Okay. It’s happening. It’s happening now.','scared');
  if(plan==='honest'){
   pose('sean','phone');
-  await N('Sean takes out his phone and turns the screen round. It is a slideshow. He has made a slideshow. The first slide says WHY I AM UNAVAILABLE: A PRESENTATION in WordArt.');
+  await N('Sean turns his phone round. He made a slideshow. Slide one, in WordArt: WHY I AM UNAVAILABLE: A PRESENTATION.');
   await say('sean','Slide one. I have a girlfriend. Slide two: here she is. Slide three is just her baseball, because she always has it. Slide four—','scared');
   await say('toby','Did you make me a PowerPoint?','shock');
   await say('sean','It’s fourteen slides. There’s a transition. The transition is a star wipe.','scared');
@@ -161,7 +161,7 @@ hook({mis:'toby',period:4,room:'field',who:'sean',label:'Ask Sean what the plan 
  A.sean.pose='sit';
  await say('sean','(sitting down on the grass next to them) …Do you guys want to talk to me, or—','sad');
  await say('stella','(to Toby) Wait, so what did the ex in Ohio SAY.','smirk');
- await N('Sean sits slightly behind them for the rest of lunch, like a bodyguard nobody hired. By the bell they have a group chat: SEAN’S HAIR SUPPORT GROUP. He isn’t in it.');
+ await N('Sean sits slightly behind them all lunch, like a bodyguard nobody hired. By the bell they have a group chat: SEAN’S HAIR SUPPORT GROUP. He isn’t in it.');
  D.f.thirdWheel=1;await complete('toby','third');
 }});
 hook({mis:'toby',period:8,room:'arcade',who:'sean',label:'Ask Sean why he’s holding three bags',look:{ex:'sad'},cond:()=>D.f.thirdWheel&&!D.dead.sean,run:async()=>{
@@ -245,7 +245,7 @@ hook({mis:'phone',period:4,room:'canteen',who:'arjun',label:'Ask Arjun what the 
  else{
   await say('arjun',mean('(standing on a chair) JACOB EATS WITH HIS MOUTH OPEN AND I’M SICK OF IT. FOOD FIIIIGHT!'),'yell');
   SFX.splat();if(A.jacob){A.jacob.bloody=1;A.jacob.ex='angry'}
-  await N('He throws a whole tray of spaghetti at Jacob. Jacob was just eating. Now the whole cafeteria is throwing things. Nobody aims at Arjun. Nobody wants to touch him.');
+  await N('He throws a tray of spaghetti at Jacob, who was just eating. Now the whole cafeteria’s throwing things. Nobody aims at Arjun. Nobody wants to touch him.');
  }
  if(A.shermian){pose('arjun','reach');SFX.pick();await wait(300);pose('arjun',null)}
  await N('In the chaos, Arjun unclips the lanyard. He doesn’t even look at the keys. He just runs, and you run after him.');
@@ -254,7 +254,7 @@ hook({mis:'phone',period:4,room:'canteen',who:'arjun',label:'Ask Arjun what the 
  const mc={arjun:[60,1,{y:146}],you:[30,1,{y:152}]};scene('maths',mc,true);cue('tension');
  await walk('arjun',56,60);pose('arjun','reach');SFX.locker();
  await N('Ms. Sherman’s desk. The forever drawer. The third key fits.');
- await N('Inside: a cat collar that says MR. BISCUITS. A seating plan with eleven names crossed out. And phones. Dozens. Flip phones. A pager. A brick with a sticker that says 1987.');
+ await N('Inside: a cat collar, MR. BISCUITS. A seating plan, eleven names crossed out. And phones. Flip phones. A pager. A brick with a sticker: 1987.');
  hold('arjun','phone');pose('arjun','phone');
  await say('arjun','(clutching it) Oh thank God. Oh, thank GOD. Hi, baby. Hi. Daddy’s here.','happy');
  await N('Then his face changes. He has 63 notifications. All from the same group chat. The class group chat.');
@@ -296,7 +296,7 @@ hook({mis:'phone',period:4,room:'canteen',who:'arjun',label:'Ask Arjun what the 
  const ap=await choose(['“Say sorry. In the chat. Properly.”','Leave it.']);
  if(ap===0){
   pose('arjun','phone');
-  await say('arjun','(typing slowly, deleting, typing) …“sorry. it was me. i wrote all of that. i say stuff so people laugh at them before they can laugh at me. that’s not an excuse. i’m sorry kenneth. i’m sorry dheva. i’m sorry everyone.”','sad');
+  await say('arjun','(typing, deleting, typing) …“it was me. i wrote all of it. i say stuff so people laugh at them before they laugh at me. not an excuse. sorry kenneth. sorry dheva. sorry everyone.”','sad');
   const r=[['arjun','sorry. it was me. i say stuff so people laugh at them before they laugh at me. thats not an excuse. im sorry kenneth. im sorry dheva. im sorry everyone']];
   if(m>=3)r.push(['note','Seen by 22']);else{r.push(['kenneth','ok']);r.push(['kenneth','thanks for saying it']);r.push(['hasan','proud of u bro. still mad. but proud'])}
   await dms('MATH P3 🧮','23 members',r,{live:r.length});

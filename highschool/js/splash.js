@@ -85,7 +85,7 @@ async function eatContest(){
  await spew('coach',['arjun'],'puke',{n:6,dur:200,arc:4,shake:.1});
  await say('voss','(unhinging his jaw like a snake) Thirty-three. A party trick from grad school. It’s why I was never invited to a second party.','evil');
  for(let i=0;i<2;i++){pose('coach','drink');pose('voss','drink');await wait(TEST?0:150);pose('coach',null);pose('voss',null);tb.cl+=3;tb.cr+=3}
- await N('At hot dog thirty-eight, 2019 arrives. Coach’s face goes the exact color of the gym floor. Mr. Voss starts sweating something that smells like vinegar and regret.');
+ await N('Hot dog thirty-eight: 2019 arrives. Coach turns the color of the gym floor. Mr. Voss sweats something that smells like vinegar and regret.');
  A.coach.ex='hurt';A.coach.shake=1;A.voss.ex='scared';
  await say('coach','(very, very quietly) …Front row. Lean back.','scared');
  A.coach.shake=0;pose('coach','hurt');
@@ -114,12 +114,12 @@ async function eatContest(){
  const c=await choose([{t:'Climb on stage. Raise both their hands. “IT’S A TIE.”',tag:'🏆'},{t:'Grab two fistfuls of leftover hot dogs. FOOD FIGHT.',tag:'🌭'},{t:'Walk up. Take a bite of hot dog thirty-nine.',tag:'🤢'}]);
  if(c===0){await walk('you',160,90);pose('you','up');if(A.paul){A.paul.ex='laugh';pose('paul','cheer')}
   await say('you','IT’S A TIE. IT’S A TIE. EVERYBODY GO HOME.');
-  await N('Coach and Mr. Voss, both kneeling in it, both too weak to argue, let you hold their hands up. Somewhere at the back, Paul wins forty dollars and gives you twenty of it, damp.');
+  await N('Coach and Mr. Voss kneel in it, too weak to argue, and let you raise their hands. At the back, Paul wins forty dollars and gives you twenty. Damp.');
   D.money=(D.money||0)+20;updateLoc();pose('you',null);if(typeof repAdd==='function')repAdd('legend',1);await complete('eatit','tie');return 'stay'}
  if(c===1){hold('you','J:box');pose('you','throw');await wait(200);pose('you',null);hold('you',null);
   for(const k of row2.concat(row1))if(A[k]&&A[k].pose!=='lie'){A[k].pose='throw';A[k].ex='laugh'}
   await spew({x:A.you.x,y:A.you.y-30},['coach','voss'],'chili',{n:30,dur:800,arc:30});
-  await N('Forty-one expired hot dogs go up at once. The whole school stands up, coated in teacher, and starts throwing them at the stage. Coach takes one to the eye and says “that’s fair”.');
+  await N('Forty-one expired hot dogs go up at once. The whole school, coated in teacher, throws them at the stage. Coach takes one to the eye: “that’s fair”.');
   if(typeof repAdd==='function')repAdd('legend',2,'The Faculty Hot Dog Classic');await complete('eatit','foodfight');return 'stay'}
  await walk('you',150,80);pose('you','drink');await wait(400);A.you.ex='hurt';A.you.shake=1;
  await N('You don’t know why you did it. Nobody will ever know why you did it. You chew twice. It’s fizzy. A hot dog should not be fizzy.');

@@ -236,7 +236,7 @@ cq('gym',{id:'pe_hole',name:'The Hole in the Wall',who:'hasan',hint:'(whispering
  await say('you','It’s shaped like a person, Coach.');
  hold(c.t,'medball');pose(c.t,'throw');await wait(250);hold(c.t,null);
  const b=prop({t:'medball',x:A[c.t].x,y:118});await tw(b,{x:A.you.x+22,y:96},280,'in');b.hide=1;prop({t:'ballhole',x:A.you.x+22,y:96,layer:-79});SFX.crunch();shake(1.4);
- pose(c.t,null);await N('The medicine ball goes into the wall right next to your head. It leaves a hole. The hole is the exact shape of a medicine ball. The old hole is still the exact shape of a kid.');
+ pose(c.t,null);await N('The medicine ball hits the wall by your head and leaves a hole shaped like a medicine ball. The old hole next to it is shaped like a kid.');
  await say(c.t,'Pay attention.','angry');
 }});
 cq('gym',{id:'pe_dunk',name:'The Dunk',who:'corey',need:['kenneth'],hint:'(whispering) Kenneth says he can dunk. Kenneth is four foot eleven.',opt:'Give Kenneth a boost for the dunk.',run:async c=>{
@@ -303,7 +303,7 @@ cq('chem',{id:'ch_mix',name:'Blue and Clear',who:'david',hint:'(whispering) “N
 }});
 cq('chem',{id:'ch_rat',name:'The Rat',who:'nivaan',hint:'(whispering) There’s a rat in a cage by the sink. It’s been alive since 1987. Voss feeds it things.',opt:'Feed the rat.',run:async c=>{
  const r=prop({t:'rat',x:286,y:118,layer:6});await walk('you',274,70);pose('you','reach');await wait(300);pose('you',null);
- await N('You push a pencil through the bars. The rat takes it in both hands and eats the whole thing, eraser first, staring at you. Its eyes are completely white. It’s very, very old.');
+ await N('You push a pencil through the bars. The rat eats it, eraser first, staring at you with completely white eyes. It’s very, very old.');
  await N('When it’s done, it lies down, faces the wall, and taps on the bars. Four taps. Pause. Four taps. Like it’s counting something.');
 }});
 cq('chem',{id:'ch_david',name:'Perfect',who:'nivaan',need:['david'],hint:'(whispering) David’s lab reports are perfect. Too perfect. I think he’s a robot. Pinch him.',opt:'Pinch David to see if he’s a robot.',run:async c=>{

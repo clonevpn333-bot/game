@@ -160,7 +160,7 @@ hook({mis:'cheeks',period:8,room:'carpark',who:'cheeks',label:'“We’re here f
   SFX.smack();shake(1);await tw(A.you,{x:96},300);A.you.pose='lie';await wait(600);A.you.pose=null;
   await say('cheeks','PERFECT. You’ve got a face made for being clapped. That’s a compliment in this industry.','happy');
  }
- await N('Half an hour later, the premiere: everyone round Nivaan’s phone on the roof of the parking lot. It is three minutes long. It is terrible. Nobody has ever been happier.');
+ await N('The premiere: everyone round Nivaan’s phone on the parking lot roof. Three minutes. Terrible. Nobody has ever been happier.');
  await say('clapper','(wiping his eyes with a long, long nail) Henchman Number Two… you were the heart of it.','cry');
  await say('cheeks','Credits roll! Look! Look at your name!','happy');
  await N('Under “HENCHMAN #2”, in Comic Sans, is your name. Spelt wrong.');

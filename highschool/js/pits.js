@@ -69,7 +69,7 @@ hook({mis:'pits',period:2,room:'corridor',who:'aidan',label:'Ask Aidan why every
  for(const [n,x] of[['hasan',40],['nivaan',62],['kenneth',84],['arjun',106],['omer',206],['david',226]])if(!D.dead[n])fcast[n]=[x,1,{y:142}];
  scene('field',fcast,true);crowd={n:12,cheer:false,phones:true,front:4};fxState.red=0;
  prop({t:'van',x:236,y:122,layer:-40});prop({t:'stink',follow:'aidan',x:0,y:0});cue('evil');
- await N('Twenty minutes later the entire school is standing on the field. Two black vans have driven straight over the running track. People in yellow suits and gas masks are getting out.');
+ await N('Twenty minutes later the whole school is on the field. Two black vans across the track. People in yellow suits and gas masks getting out.');
  await say('fema2','(through the mask) Federal Emergency Management. Nobody move. Who is patient zero?','angry');
  for(const n of['hasan','nivaan','kenneth','arjun','omer','david'])if(A[n]){A[n].pose='point';face(n,'aidan')}
  await N('Every single finger in the school points at Aidan. Even the teachers. Even Mrs. Loach, who looks up from her grading for the first time this year to do it.');
@@ -82,7 +82,7 @@ hook({mis:'pits',period:2,room:'corridor',who:'aidan',label:'Ask Aidan why every
   await walk('you',160,140);pose('you','grab');
   const ok=await mash('Drag Aidan to the fence!',{need:20,time:5,info:'He weighs nothing and smells like everything. MASH!'});
   pose('you',null);
-  if(ok){await Promise.all([walk('aidan',-16,140),walk('you',-10,140)]);await N('You get him over the fence and into the hedge behind the houses. The vans can’t follow. He sits in the hedge and lowers his arms, very slowly, like a man putting down a bomb.');await say('aidan','(from the hedge) Thank you. Nobody’s ever smelled this bad for me before.','happy');await complete('pits','escape');return}
+  if(ok){await Promise.all([walk('aidan',-16,140),walk('you',-10,140)]);await N('Over the fence and into a hedge. The vans can’t follow. He lowers his arms very slowly, like a man putting down a bomb.');await say('aidan','(from the hedge) Thank you. Nobody’s ever smelled this bad for me before.','happy');await complete('pits','escape');return}
  }
  if(c===0){await walk('you',166,90);face('you',1);pose('you','hips');await say('you','He’s not a disease. He’s just Aidan.');await say('fema2','Step aside, kid, or you’re coming in the van too.','angry');A.you.pose=null;await tw(A.you,{x:200},300)}
  hold('fema1','bonesaw');await walk('fema1',A.aidan.x+12,70);face('fema1',-1);
@@ -90,10 +90,10 @@ hook({mis:'pits',period:2,room:'corridor',who:'aidan',label:'Ask Aidan why every
  cue('fight');pose('fema1','saw');A.aidan.ex='scared';
  for(let i=0;i<4;i++){SFX.squelch();blood(A.aidan.x+4,A.aidan.y-20,24,1,90,A.aidan.y+2);shake(.6);await wait(260)}
  SFX.scream();
- await N('They take his arms off at the pits. It isn’t quick. Bloodiest thing that’s ever happened on this field, and Coach has run javelin practice here for nineteen years.');
+ await N('They take his arms off at the pits. It isn’t quick. Bloodiest thing this field has seen, and Coach has run javelin here for nineteen years.');
  kill('aidan','lie',{pool:46,bleed:5,spray:60});pose('fema1',null);
  await say('fema2','Source neutralized. Bag it. Bag the arms separately.','angry');
- await N('The smell lifts, slowly, like weather. Hasan, Nivaan and Kenneth are still green. They’re humming something. All three of them. The same tune. None of them know it.');
+ await N('The smell lifts like weather. Hasan, Nivaan and Kenneth are still green, humming the same tune. None of them know it.');
  await say('hasan','(humming, eyes unfocused) …lift your arms… lift them high…','closed');
  await say('kenneth','(humming) …smell the Friday… watch it die…','closed');
  D.f.choir=1;D.f.aidanDead=1;P.killedAidan=1;save();

@@ -116,7 +116,7 @@ hook({mis:'farewell',period:ANYP,room:'wing_sports',who:'auto',cond:()=>D.f.fw==
  await say('coach','WHO TOOK MY CHALK. Nobody leaves this hallway until somebody gives me back my CHALK.','yell');
  await N('Coach is going down the hall turning out kids’ pockets. Your bag is right there, with a whole bucket of field chalk in it, leaving a white trail.');
  const c=await choose(['Blame the freshman.','Say it was for a science project.','Run.']);
- if(c===0&&A.kid2){pose('you','point');await walk('coach',A.kid2.x+10,120);pose('coach','grab');await N('Coach picks the freshman up by the backpack and puts him headfirst in the trash can by the water fountain. The freshman doesn’t even argue. He’s been here before.');await tw(A.kid2,{y:130},300);A.kid2.pose='lie';pose('coach',null);pose('you',null)}
+ if(c===0&&A.kid2){pose('you','point');await walk('coach',A.kid2.x+10,120);pose('coach','grab');await N('Coach puts the freshman headfirst in the trash can by the water fountain. The freshman doesn’t argue. He’s been here before.');await tw(A.kid2,{y:130},300);A.kid2.pose='lie';pose('coach',null);pose('you',null)}
  else if(c===1){await say('coach','SCIENCE. You know what science is, champ? Science is when I stop being nice. Go.','angry')}
  else{const ok=await mash('Run!',{need:14,time:3});if(!ok){await N('Coach catches you by the hood with one hand. He shakes the bag. A cloud of white chalk goes up and settles on both of you like snow.');await say('coach','…Keep it. I don’t want to know. Whatever it’s for, do it right.','sad')}}
  D.f.fwil2=1;return 'stay';
@@ -149,7 +149,7 @@ hook({mis:'stepeleven',period:[2,4],room:'canteen',who:'hasan',label:'Ask Hasan 
 }});
 hook({mis:'stepeleven',period:[2,4],room:'canteen',who:'hasan',label:'Ask Hasan why he’s wearing armbands',look:{ex:'scared'},cond:()=>D.f.s11===2&&!D.f.s11b&&!D.dead.hasan,run:async()=>{
  scene('pool',{hasan:[90,1,{y:110}],paul:[140,-1,{y:150,pose:'swim'}],you:[60,1,{y:112}]},true);cue('pool');
- await N('The pool, at lunch. Hasan is wearing two orange armbands from the lost property box. Paul is in the water, waiting to teach him. Paul has never taught anybody anything.');
+ await N('The pool at lunch. Hasan in two orange armbands from lost property. Paul in the water, ready to teach him. Paul has never taught anyone anything.');
  await say('paul','Just jump. Water holds you up. I read that.','happy');
  SFX.splat();await walk('hasan',120,60);A.hasan.y=160;A.hasan.pose='swim';prop({t:'splash',x:120,y:128});
  await N('Hasan jumps. The armbands come off immediately. He sinks like a dropped phone.');

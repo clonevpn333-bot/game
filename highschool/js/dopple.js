@@ -73,7 +73,7 @@ hook({mis:'dopple',period:[0,2,4],room:'corridor',who:'auto',cond:()=>cal()>=3&&
  await wait(400);cue('evil');SFX.sting();
  put('dopple',300,-1,{y:146});
  await N('Ms. Sherman just walked out of the left end of the corridor. Ms. Sherman is also standing at the right end of the corridor.');
- await N('The one at the right end is wrong. Too tall. Arms down past its knees. Its head is on one side, like it’s listening to something in the floor. It has its other hand in its mouth.');
+ await N('The one on the right is wrong. Too tall. Arms past its knees. Head tilted, listening to the floor. Its other hand is in its mouth.');
  SFX.crunch();await wait(300);SFX.crunch();
  await N('It’s chewing. You can hear it from here.');
  if(A.hasan)await say('hasan','(not moving his lips) Bro. Bro. Do you see— tell me you see the second one. Tell me I’m not having a fucking stroke.','scared');
@@ -98,7 +98,7 @@ hook({mis:'dopple',period:[0,1,2,3,4,5,6],room:'stairwell',who:'auto',cond:()=>d
  await N('The stairwell is dark. Somebody has unscrewed every bulb. Under the stairs, where the steps go up over your head, something is chewing.');
  put('dopple',112,-1,{y:166,pose:'crawl'});A.dopple.dir=1;
  for(let i=0;i<3;i++){SFX.crunch();await wait(TEST?0:350)}
- await N('It’s folded up under the bottom steps like a spider in a shoe. It has its own forearm in its mouth. There isn’t much forearm left. There’s bone, and it’s gnawing the bone.');
+ await N('Folded under the bottom step like a spider in a shoe, gnawing its own forearm. There isn’t much forearm left.');
  await say('dopple','(not looking at you) Sorry, sweetie. Sorry. Miss can’t stop. Miss has to eat something. There was nothing else.','cry');
  await say('dopple','(turning its head all the way round to look at you) …There’s you.','evil');
  SFX.scream();shake(1.4);A.dopple.dir=-1;
@@ -159,14 +159,14 @@ spot({room:'corridor',x:40,y:150,label:'Go down the old hatch with Pat’s meat'
   put('dopple',300,-1,{y:150,pose:'crawl',stretch:12});await walk('dopple',A.you.x+8,240);SFX.crunch();SFX.squelch();shake(2);flash('#a00010',.6);blood(A.you.x,A.you.y-22,80,null,120,A.you.y+2);fxState.dark=0;await die('boiled');
  }
  take('meat');
- await N('Down the ladder. Under the pool. The old boiler, split open. On the wall, the four names. And all over the floor, in a circle, bones. Small ones. Some of them are very old.');
+ await N('Down the ladder, under the pool. The split boiler. The four names. And on the floor, in a circle, small bones. Some very old.');
  await N('The circle of bones is in the middle of the floor. That’s where it eats. That’s where the meat has to land. Something in the coal chute is already moving.');
  if(!TEST){const ok=await vgThrow('THROW THE MEAT INTO THE CIRCLE');if(!ok){put('dopple',300,-1,{y:150,pose:'crawl',stretch:12});await N('It lands short. Right at your own feet. Something comes out of the coal chute, very fast, towards the smell. Towards you.');const ran=await mash('BACK AWAY. NOW.',{need:24,time:3.5});if(!ran){await walk('dopple',A.you.x+8,240);SFX.crunch();SFX.squelch();shake(2);flash('#a00010',.6);blood(A.you.x,A.you.y-22,80,null,120,A.you.y+2);fxState.dark=0;await die('boiled')}await walk('you',40,160);remove('dopple')}}
  pprop({t:'bucket',x:150,y:156,layer:2});
  await N('The bucket lands in the middle of the bones with a wet thump. You back away from it until your shoulders hit the ladder.');
  SFX.crunch();put('dopple',300,-1,{y:150,pose:'crawl',stretch:12});await walk('dopple',160,90);
  await N('It comes out of the coal chute. It’s huge now. Its back scrapes the ceiling. It goes straight to the bucket and pushes its whole head in.');
- if(A.sherman){await walk('sherman',70,50);await N('Behind you, someone comes down the ladder. Ms. Sherman. The real one. In her cardigan. Holding a coffee cup. Her hands are shaking so much the coffee is going everywhere.')}
+ if(A.sherman){await walk('sherman',70,50);await N('Someone comes down the ladder behind you. Ms. Sherman. The real one. Cardigan, coffee cup, hands shaking so hard it spills everywhere.')}
  const opts=[{t:'Light the boiler. Burn it.',tag:'🔥'},{t:'Keep feeding it. All of it. Until it can’t.'}];
  if(A.sherman)opts.push({t:'Let Ms. Sherman go to it.'});
  const c=await choose(opts,'It’s eating. It isn’t watching you.');
@@ -180,7 +180,7 @@ spot({room:'corridor',x:40,y:150,label:'Go down the old hatch with Pat’s meat'
   await complete('dopple','burned');
  }else if(c===1){
   props=props.filter(p=>p.t!=='bucket');
-  await N('You kick the bucket over. It eats the meat. It eats the bucket. It eats Pat’s cleaver out of the bottom of the bucket. Then it starts on its own fingers. It doesn’t know how to stop.');
+  await N('You kick the bucket over. It eats the meat. Then the bucket. Then Pat’s cleaver. Then its own fingers. It doesn’t know how to stop.');
   A.dopple.stretch=22;await wait(500);SFX.squelch();SFX.splat();shake(2.2);flash('#a00010',.7);
   for(let i=0;i<4;i++)blood(A.dopple.x,A.dopple.y-20,70,null,140,A.dopple.y+2);
   kill('dopple','lie',{pool:60});
@@ -212,5 +212,5 @@ if(typeof MOREGOSSIP==='function'){const _mg=MOREGOSSIP;MOREGOSSIP=function(){co
  if(PAT&&PAT.id==='dopple'){PAT.state='chase';PAT.knows=1}
  if(Math.random()<rdt*2.5){SFX.crunch&&SFX.crunch()}
  if(A.you&&PAT&&PAT.state==='chase'){const d=A.you.x-t.x;if(Math.abs(d)>4)t.x+=Math.sign(d)*30*rdt}
- if(A.you&&A.you.x>=304){DPCH.on=false;PAT=null;runHook({run:async()=>{fxState.dark=0;await N('You hit the top of the stairs at full speed. Behind you it stops at the bottom step, like there’s a line it can’t cross. It goes back under the stairs, and the chewing starts again.');remove('dopple');D.f.dp=3;part('dopple',3);D.room='upper';buildRoom('upper');return 'stay'}})}}}
+ if(A.you&&A.you.x>=304){DPCH.on=false;PAT=null;runHook({run:async()=>{fxState.dark=0;await N('You hit the top step at full speed. It stops at the bottom, like there’s a line it can’t cross, and slides back under. The chewing starts again.');remove('dopple');D.f.dp=3;part('dopple',3);D.room='upper';buildRoom('upper');return 'stay'}})}}}
 {const _er=enterRoom;enterRoom=async function(r){if(DPCH.on&&r!=='stairwell'){DPCH.on=false;PAT=null;const res=await _er(r);D.f.dp=3;part('dopple',3);toast('It didn’t follow you out. Behind the door: chewing.');return res}return _er(r)}}

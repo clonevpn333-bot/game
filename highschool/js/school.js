@@ -324,7 +324,7 @@ async function dayIntro(died){
   await N('Friday. The 43 drops you at Highgate High at 8:25, the same as every day.');
   await N('It’s a normal school with normal teachers. Until it isn’t.');
   await say('you','(Right. Last day before the weekend. Nothing’s going to happen.)');
-  await N('Tip: talk to people, pick where to go each period, and do what they need. When the day ends — or you die — it starts again. You remember everything. Nobody else does.');
+  await N('Tip: talk to people, pick where to go, do what they need. When the day ends, or you die, it starts again. You remember. Nobody else does.');
  }else if(died){
   await N(pick(['You gasp awake on the 43, both hands on your neck. Still attached.','You wake up on the bus. The radio’s playing the same song. Your body remembers how it died.','The bus. The bell. Friday. Your mouth tastes like pennies.']));
   if(D.day===3)await N('It’s Friday again. Maybe it always will be.');

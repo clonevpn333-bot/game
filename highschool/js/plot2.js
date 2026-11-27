@@ -36,7 +36,7 @@ spot({room:'corridor',period:[0,2,4],x:96,y:150,label:'Help the woman at locker 
   evidence('notebook','Tyler’s notebook');await complete('crew_locker','kept');
  }else{
   await say('you','(quietly, to Tyler’s mom) Read the last page. Tonight. Not here.');
-  await N('She looks at you for a long time. Then she puts the notebook inside her coat, buttons it up, and says, “No thank you,” to Ms. Sherman, and walks out of the building without the tea.');
+  await N('She looks at you a long time. Then the notebook goes inside her coat. “No thank you,” she tells Ms. Sherman, and walks out without the tea.');
   crew().momKnows=1;evidence('notebook','Tyler’s mom has the notebook');await complete('crew_locker','gave');
  }
  await walk('sherman',334,60);remove('sherman');
@@ -64,7 +64,7 @@ hook({mis:'crew_dark',period:8,room:'foodcourt',who:'nivaan',label:'Ask Nivaan w
  const tech=A.kenneth?'kenneth':'nivaan';
  await N('The security office. One monitor. A recorder the size of a microwave. '+K[tech].n+' plugs in a USB stick and starts copying.');
  await say(tech,'Last two weeks. Every camera. Every night. It’s going to take four minutes. Four very long minutes.','scared');
- await N('On the monitor, while it copies, the nights flicker past. 3:12 a.m.: Mr. Voss wheeling a laundry cart into the Chem Lab. It’s heavy. It drips. 4:40 a.m.: Coach, on the field, with a shovel.');
+ await N('The nights flicker past while it copies. 3:12 a.m.: Mr. Voss wheels a dripping laundry cart into Chem. 4:40 a.m.: Coach, on the field, with a shovel.');
  await N('Every night, all night, every teacher in the building sits in their room in the dark, not moving. Like someone switched them off.');
  SFX.thud();await say(tech,'…Done. GO. Go go go.','yell');
  scene('corridor',{you:[60,1,{y:156}],coach:[300,-1,{y:146,hold:'javelin'}]},true);fxState.dark=.6;cue('fight');
@@ -72,7 +72,7 @@ hook({mis:'crew_dark',period:8,room:'foodcourt',who:'nivaan',label:'Ask Nivaan w
  pose('coach','throw');
  const ok=await mash('RUN for the window',{need:20,time:4,info:'He’s already throwing. MASH!'});
  if(!ok){SFX.whoosh();SFX.squelch();blood(A.you.x,A.you.y-24,50,1,100,A.you.y+2);await N('The javelin catches you between the shoulders. Coach jogs over, pulls it out, and checks his stopwatch.');await die('afterdark');return}
- SFX.whoosh();await N('The javelin goes past your ear and through a trophy cabinet. You go through the window. The USB stick goes with you, in your fist, the whole way to the bus stop.');
+ SFX.whoosh();await N('The javelin goes past your ear into a trophy cabinet. You go out the window, the USB stick in your fist the whole way to the bus stop.');
  fxState.dark=0;evidence('footage','The night footage');await complete('crew_dark','footage');
  await boardBus(true);return 'ended';
 }});
@@ -90,7 +90,7 @@ spot({room:'corridor',period:[0,1,2,3,4,5,6],x:206,y:150,label:'Knock on Mr. Ada
  await say('adam','I skipped it. I went to the arcade instead. Ollie went. He always did what he was told. He brought his library book so he’d have something to read.','cry');
  await say('adam','At 3:15 the boiler went. Ms. Sherman was getting a coffee. She was twenty-three. She came back and the door was too hot to open. She never said a word to anybody about it. Neither did I.','cry');
  await say('adam','(very quietly) Have you looked at her? Really looked? She was twenty-three that day. She’s still twenty-three. Thirty-nine years and not one gray hair. The building keeps her too.','scared');
- await say('adam','I came back here to teach because I thought if I stayed close, I could… I don’t know what I thought. Then I got old here. Then they all got… like they are. And kids keep disappearing, and I keep writing letters home that say “ran away.”','cry');
+ await say('adam','I came back to teach here because I thought if I stayed close I could… I don’t know. Then I got old here. Then they all got like they are. And I keep writing letters home that say “ran away.”','cry');
  await say('adam','(wiping his face) Do you want my name on it?','sad');
  const c=await choose(['“Yes. Your name. You have to stand behind it.”','“No. We’ll keep you anonymous.”']);
  if(c===0){await say('adam','…Yes. Yes. Thirty-nine years. Use my name. Mr. Adam. Principal of Highgate High. Write it down.','sad');crew().adamNamed=1;intel('adamKey')}

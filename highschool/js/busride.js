@@ -152,7 +152,7 @@ const RIDE=[
   for(const k in A){if(k==='driver')continue;const a=A[k];if(!a||a.dead)continue;a.pose='lie';tw(a,{x:a.x+(Math.random()*40-20),y:Math.min(170,a.y+Math.random()*12)},400)}
   await wait(600);
   const v=['kid4','kid2'].find(k=>!D.dead[k]);if(v){put(v,240,-1,{y:150});blood(240,140,40,null,90,152);kill(v,'lie',{pool:30});D.dead[v]=1}
-  await N('The 43 goes over on its side. Everyone ends up on the windows. Somebody’s phone is still playing music. A sophomore who was standing up in the aisle isn’t moving.');
+  await N('The 43 goes over on its side. Everyone ends up on the windows. Somebody’s phone keeps playing music. A sophomore in the aisle isn’t moving.');
   D.f.busTilt=0;await wait(400);
   for(const k in A)if(A[k]&&!A[k].dead&&k!=='driver')A[k].pose=null;
   if(onBus('hasan'))await say('hasan','(climbing out through a window, glasses gone) Is everyone okay? Is everybody— oh. Oh no. Okay. Okay.','scared');
@@ -200,7 +200,7 @@ const RIDE=[
  /* stories, deeper */
  {id:'coreyGuilt',w:12,cond:()=>D.f.brettDead&&cal()>D.f.brettDead&&!D.f.rideCG&&onBus('corey'),run:async()=>{
   if(!onBus('corey'))return;D.f.rideCG=1;A.you.pose=null;await walk('you',A.corey.x+14,60);A.you.pose='sit';
-  await N('Corey has his forehead against the window. He’s not looking at anything. His hands are in his lap, palms up, like he’s waiting for someone to put something in them.');
+  await N('Corey, forehead on the window, hands in his lap, palms up. Like he’s waiting for somebody to put something in them.');
   await say('corey','I keep waiting to feel like a murderer. Like, there’s supposed to be a feeling. I keep checking for it.','sad');
   await say('corey','I just feel like a guy on a bus. Is that worse? I think that’s worse.','sad');
   const c=await choose(['“You did it for her.”','“We did it. Not you. We.”','Say nothing. Sit with him.']);
@@ -294,7 +294,7 @@ async function nightPhone(){
 RIDE.push(
  {id:'alexClown',w:10,cond:()=>typeof alexClown==='function'&&alexClown()&&!D.f.rideAC&&onBus('dheva'),run:async()=>{
   if(!onBus('dheva'))return;D.f.rideAC=1;if(!onBus('alex')){put('alex',A.dheva.x+14,-1,{y:A.dheva.y,pose:'sit'})}
-  await N('Alex is sitting next to Dheva. There’s still a little white paint in his ears. Dheva keeps checking. Every time the bus goes over a bump, Alex flinches and says a number.');
+  await N('Alex sits next to Dheva, a little white paint still in his ears. Every bump, he flinches and says a number. Dheva keeps checking.');
   await say('dheva','(not looking away from him) I’m walking him to his door. Every day. His mom thinks it’s sweet. It’s not sweet. It’s a job.','sad');
   await say('alex','(very quietly, smiling at the window) …honk.','happy');
   await say('dheva','Don’t. Don’t do the honk, bro. Please.','cry');

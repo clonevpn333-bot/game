@@ -133,7 +133,7 @@ ret({id:'model',room:'art',name:'Life Drawing',who:['alex','dheva','dahl'],hint:
  await say('alex','We take returns on the same day. Every time. It’s our thing. Don’t make it weird.','smirk');
  await say('dahl','A volunteer! Strip down to your T-shirt and hold this skull. For art.','happy');
  pose('you','hold');
- await N('You stand on a stool holding a skull for twenty minutes. It is cold, and much heavier than a plastic one would be. Miss Dahl keeps saying “Perfect. Perfect. Don’t blink.”');
+ await N('Twenty minutes on a stool holding a skull. It’s cold, and much heavier than plastic would be. Miss Dahl: “Perfect. Perfect. Don’t blink.”');
  await say('alex','(whispering) Is that skull real?','scared');
  await say('dheva','(whispering) Don’t. Don’t ask. Just draw him as a horse.','scared');
  pose('you',null);
@@ -147,7 +147,7 @@ ret({id:'duet',room:'music',name:'The Duet',who:['sean','toby'],hint:'Someone is
  blurb:'Sean is in the music room practicing a song for Stella. It is not going well.',
  variants:{song:'The song'},run:async()=>{
  put('sean',150,1,{y:146,pose:'guitar',hold:null});
- await N('Sean is sitting on the edge of the stage with a guitar, playing the same four chords over and over. He has written a song for Stella. It is called “Stella (Stella)”.');
+ await N('Sean on the edge of the stage, same four chords over and over. He wrote Stella a song. It’s called “Stella (Stella)”.');
  await say('sean','♪ Stella… Stella… your ball is so round… ♪','closed');
  await say('sean','Is that bad? Be honest. Actually, don’t be honest.','scared');
  if(D.done.toby||P.done.toby){put('toby',-14,1,{y:146});await walk('toby',120,60);await say('toby','Oh, I can help with this. Try going up on the second Stella. Like this. ♪ Stel-LAAA ♪','happy')}
@@ -167,7 +167,7 @@ ret({id:'stream',room:'ict',name:'Live From the ICT Room',who:['nivaan'],hint:'N
  if(c===0){SFX.slurp();await N('You lick the keyboard. The whole row from Q to P. It tastes like eleven years of hands.');await say('nivaan','CHAT IS GOING CRAZY. 40 viewers. FORTY. Do the spacebar.','happy');await complete('ret_stream','viral');return}
  if(c===1){
   await say('you','The teachers here are killing kids. Ms. Sherman. Mr. Voss. Coach. All of them.');
-  SFX.static();await N('The stream cuts out. Every monitor in the room goes blue. Then, one at a time, they all show the same thing: a webcam image of you, from behind. Taken right now.');
+  SFX.static();await N('The stream cuts out. Every monitor goes blue. Then, one by one, they all show a webcam shot of you, from behind. Right now.');
   await say('byte','(over the speakers, sweetly) Learners! Livestreaming is against the acceptable use policy. Your account has been deleted. Nivaan, you’re next, sweetie.','evil');
   await say('nivaan','(unplugging everything) Chat, I love you, if I die tell my mom I had 14 viewers.','scared');
   intel('byteWatching');await complete('ret_stream','banned');return;
@@ -201,7 +201,7 @@ ret({id:'shelf',room:'woodwork',name:'The Trophy Shelf',who:['omer','oakes'],hin
  blurb:'Omer uses his returns to build a shelf for his one trophy. It is a participation trophy. It is the most important thing he owns.',
  variants:{shelf:'The shelf'},run:async()=>{
  put('omer',160,1,{y:146,pose:'saw'});put('oakes',280,-1,{y:142,pose:'hips'});
- await N('Omer is feeding a plank through the band saw with his tongue out in concentration. On the bench next to him is a little gold trophy that says “PARTICIPANT, U12 FOOTBALL, 2017”.');
+ await N('Omer feeds a plank through the band saw, tongue out. Next to him, a little gold trophy: “PARTICIPANT, U12 FOOTBALL, 2017”.');
  await say('omer','It’s getting a shelf. A proper shelf. Mahogany. Well, it’s pine. I’m calling it mahogany.','happy');
  await say('oakes','Keep your fingers away from the blade, son. It doesn’t know the difference between pine and you.','evil');
  SFX.crunch();shake(1);blood(A.omer.x+6,A.omer.y-22,30,1,90,A.omer.y+2);A.omer.hurt=2;

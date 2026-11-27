@@ -77,7 +77,7 @@ async function teaTrial(){cue('tension',true);
  await say('david','(crying, glasses fogging) FINE. It was me. Nobody votes for the nice guy! Nobody even LOOKS at the nice guy! I thought if everyone else looked worse, I’d just… be there.','cry');
  const c=await choose(['Make him delete it and tell Stella himself.','Screenshot the confession. Post it on HIS account.']);
  if(c===1){await N('You post it from his own account: “it was me. david. vote for literally anyone else.” 4,211 followers see it in eleven minutes.');await say('david','…That’s actually a very good post.','sad');await complete('tea','exposed');return 'stay'}
- await N('He deletes @highgate.tea while you watch. Then he goes to find Stella. You see them through the window: him talking, her not looking at him, then looking at him.');await complete('tea','apology');return 'stay'}
+ await N('He deletes @highgate.tea while you watch, then goes to find Stella. Through the window: him talking, her not looking. Then looking.');await complete('tea','apology');return 'stay'}
 }
 
 /* =================== 2. THE BIG SCORE — HEIST =================== */

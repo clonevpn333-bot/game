@@ -88,7 +88,7 @@ hook({mis:'flimbus',period:7,room:'bus',who:'arjun',label:'Ask Arjun why he’s 
  await N('There is a very long pause on the PA. You can hear him breathing.');
  await say('adam','(on the PA, with his whole chest, by accident) MICKTHER IS BANNED.','yell');
  SFX.cheer();shake(.8);
- await N('The bus loop goes off like a football match. Kids are hugging. A seventh grader is crying. The bus driver honks the horn three times, then says it out of his window.');
+ await N('The bus loop goes off like a football match. Hugging. A seventh grader crying. The driver honks three times, then yells it out the window.');
  if(A.hasan){pose('arjun','hug');pose('hasan','hug');await say('hasan','(holding onto Arjun, sobbing) We did it. Sixth grade us would be SO proud.','cry')}
  const c=D.f.flimSnitch?1:0;
  if(c===1&&!D.dead.sherman){

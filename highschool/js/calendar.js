@@ -35,7 +35,7 @@ dayIntro=async function(died){
   await card('HIGHSCHOOL','A CALLING OF AIDAN STORY',2600);
   await N('Monday. Week one. The 43 drops you at Highgate High at 8:25.');
   await N('Two weeks until the school inspection. Two weeks of a normal school with normal teachers. Until it isn’t.');
-  await N('Tip: the bell takes you to your class, but you can skip. Talk to people. Do what they need. If you die, you live the same day again. You remember. Nobody else does.');
+  await N('Tip: the bell sends you to class, but you can skip. Talk to people. Do what they need. Die, and you live the day again. Only you remember.');
  }else if(died){
   await N(pick(['You gasp awake on the 43, both hands on your neck. Still attached.','You wake up on the bus. The radio’s playing the same song. Your body remembers how it died.','The bus. The bell. Your mouth tastes like pennies.']));
   await N('It’s still '+dayName()+'. The building gave you the day back. It does that.');

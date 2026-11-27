@@ -63,14 +63,14 @@ hook({mis:'loach',period:3,room:'science',who:'auto',run:async()=>{
  if(p===2){
   A.you.pose=null;await Promise.all([walk('you',84,80),tw(A.you,{y:140},400)]);pose('you','reach');
   ex('loach','evil');SFX.sting();fxState.dark=.3;
-  await N('Her hand is round your wrist before you finish the thought. She doesn’t squeeze. She doesn’t need to. She looks at you like she’s working out which drawer you’d fit in.');
+  await N('Her hand is round your wrist before you finish the thought. No squeeze. She doesn’t need one. She’s working out which drawer you’d fit in.');
   await say('loach','Don’t.','evil');
   fxState.dark=0;ex('loach',null);pose('you',null);
   await say('loach','Page forty-seven.');
   await Promise.all([walk('you',c.mine.x,80),tw(A.you,{y:c.mine.y},400)]);A.you.dir=-1;
  }else if(A.abby){await say('abby','(whispering) Wait. Earlier. Kenneth’s cone nearly knocked her mug. She LOOKED. Like, really looked.','shock')}
  intel('loachMug');
- await N('Under the dust on her desk there’s a ring where the mug always goes. It’s worn into the wood, perfectly round, like it’s been put back in exactly the same place ten thousand times.');
+ await N('A ring worn into her desk where the mug goes. Perfectly round. Like it’s been put back in the same spot ten thousand times.');
  if(typeof lore==='function')lore('mugring');
  await classOut(c);
  D.f.loach1=1;part('loach',1);

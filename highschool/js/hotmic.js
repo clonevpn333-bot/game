@@ -118,7 +118,7 @@ hook({mis:'hotmic',period:[5,6],get room(){return D&&myClassFor(D.period)},set r
   await complete('hotmic','zap');return 'stay';
  }
  if(c===1){
-  pose('you','phone');await N('You hold your phone up next to Nivaan’s. It goes on for four more minutes. Somebody on the floor below starts a slow clap that spreads through the whole building.');
+  pose('you','phone');await N('You hold your phone up next to Nivaan’s. Four more minutes of it. Somebody downstairs starts a slow clap. It spreads through the whole building.');
   await N('By home time it has a remix. By tomorrow it has a dance where you go limp after four seconds. Someone will yell “THE TUBA” at you for the rest of your life.');
   pose('you',null);if(typeof repAdd==='function'){repAdd('legend',2,'Hot Mic went viral')}
   await complete('hotmic','viral');return 'stay';

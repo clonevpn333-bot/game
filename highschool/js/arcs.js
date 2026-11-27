@@ -100,7 +100,7 @@ hook({mis:'steptwelve',period:7,room:'bus',who:'auto',cond:()=>D.f.s12b&&!D.done
    await say('darren','(the hook slipping out of his hands, staring) …I wasn’t gonna. I wasn’t really gonna.','sad');
    await say('hasan','(between coughs) YES. YOU. WERE.','yell');
    await N('Darren sits down on the wet tiles and cries like a little kid. His swimmers walk out on him.');await complete('steptwelve','saved')}
-  else{await N('You’re too slow. The water is too cold. By the time you get to him, he’s not fighting anymore. You and Nivaan drag him out together. The ambulance takes eleven minutes.');
+  else{await N('Too slow. The water’s too cold. By the time you reach him he’s stopped fighting. You and Nivaan drag him out. The ambulance takes eleven minutes.');
    A.hasan.pose='lie';A.hasan.ex='closed';D.f.hasanHosp=cal();await say('darren','(backing away) He’s fine. He’s FINE. He’s being dramatic. He’s always dramatic—','scared');await complete('steptwelve','drowned')}}
  else if(c===1){await walk('you',140,120);pose('you','grab');SFX.smack();await N('You rip the hook out of his hands. It swings. You didn’t mean for it to swing.');
   SFX.crunch();shake(1.2);blood(A.darren.x,A.darren.y-24,40,1,90,A.darren.y+2);A.darren.pose='lie';A.darren.ex='hurt';
@@ -283,7 +283,7 @@ freeHooks({mis:'bayonet',label:'“I found something of Mr. Grieve’s…”',lo
  await camZoom(50,110,2,300);await N('Mr. Grieve’s face does something you have never seen a face do. It goes white, then red, then a sort of military green.');await camZoom();
  await say('arjun','“Again and again the cannon fired—”','laugh');classLaugh&&classLaugh(400);
  await say('grieve','SIT. DOWN.','yell');SFX.bang();shake(1.4);flash('#fff',.6);
- await N('He fires a musket into the ceiling. A real one. From the display case. Plaster comes down on everyone. Arjun sits down. The class does not stop laughing for nine minutes.');
+ await N('He fires a musket into the ceiling. A real one, from the display case. Plaster everywhere. Arjun sits down. The class laughs for nine minutes.');
  await say('grieve','(shaking) Everybody fails. Everybody. Forever. For the rest of your lives.','evil');
  D.items=D.items.filter(i=>i!=='notebook');await complete('bayonet','read');return 'stay';
 }},[[2,'corridor','arjun'],[4,'canteen','arjun'],[2,'canteen','arjun'],[4,'corridor','arjun']]);

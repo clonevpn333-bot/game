@@ -38,7 +38,7 @@ cq('history',{id:'hi_medals',name:'The Medals',who:'david',hint:'(whispering) Gr
 }});
 cq('history',{id:'hi_aidanbook',name:'Aidan’s Textbook',who:'hasan',need:['aidan'],hint:'(whispering) Aidan’s drawn himself into every old photo in his textbook. Every one. Even the Romans.',opt:'Look at Aidan’s textbook.',run:async c=>{
  await walk('you',A.aidan.x-10,60);
- await N('The Moon landing: Aidan, small, waving from behind the flag. The Titanic: Aidan, at a porthole. A school photo from 1987: Aidan, back row, end. That one isn’t drawn in. That one is printed.');
+ await N('The Moon landing: Aidan, waving. The Titanic: Aidan, at a porthole. School photo, 1987: Aidan, back row. That one isn’t drawn in. It’s printed.');
  await say('aidan','(not looking up) I didn’t draw that one.','smirk');lore('photo');
 }});
 cq('history',{id:'hi_1987',name:'The Missing Year',who:'omer',hint:'(whispering) The timeline on the wall goes 1986, then 1988. It just skips. Nobody’s ever noticed except me.',opt:'Write 1987 on the timeline.',run:async c=>{
@@ -166,7 +166,7 @@ cq('pool',{id:'po_lifeguard',name:'Lifeguard',who:'hasan',need:['kenneth'],hint:
 }});
 cq('pool',{id:'po_chicken',name:'Chicken Fight',who:'paul',need:['paul','omer'],hint:'(whispering) Chicken fight. Me and Jacob versus Omer and Hasan. Somebody has to referee. Somebody brave.',opt:'Referee the chicken fight.',run:async c=>{
  for(const k of['paul','omer'])if(A[k])await tw(A[k],{z:14},200);
- SFX.punch();shake(.8);await N('It gets violent within four seconds. Omer bites Paul’s ear. Paul throws Omer across two lanes. Omer comes back with a pool noodle he’s somehow made into a weapon.');
+ SFX.punch();shake(.8);await N('Four seconds in, Omer bites Paul’s ear. Paul throws him across two lanes. Omer comes back with a pool noodle he’s somehow made into a weapon.');
  blood(A.paul.x,A.paul.y-30,14,null,50,A.paul.y+2);for(const k of['paul','omer'])if(A[k])await tw(A[k],{z:0},200);
  await say('paul','(holding his ear, delighted) He BIT me. Nobody’s ever wanted to beat me enough to bite.','happy');
 }});

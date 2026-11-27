@@ -52,7 +52,7 @@ hook({mis:'robbery',period:8,room:'arcade',who:'auto',cond:()=>robRoll('arcade')
  await N('The glass comes in. Stuffed animals everywhere. A man in an Arcadia polo shirt starts running from very far away.');
  const c=await choose(['Grab a stuffed animal and run.','Help the polo-shirt man catch them.','Walk away. Not your claw machine.']);
  if(c===0){hold('you','flower');D.f.robbedToday=1;await walk('you',-20,140);await N('You got a one-eyed duck. It looks exactly like the one Sean won Stella. It might be its brother.');hold('you',null)}
- else if(c===1&&A.kid4){await walk('you',A.kid4.x+10,110);await hit('you','kid4',{blood:3});await N('You tackle one. The other one gets away with a dinosaur under each arm. The polo-shirt man arrives two minutes later, out of breath, and gives you a single ticket.')}
+ else if(c===1&&A.kid4){await walk('you',A.kid4.x+10,110);await hit('you','kid4',{blood:3});await N('You tackle one. The other gets away with a dinosaur under each arm. The polo-shirt man arrives out of breath and gives you one ticket.')}
  else await N('You walk away. Behind you there’s the sound of a second hammer.');
  return 'stay';
 }});
@@ -60,7 +60,7 @@ hook({mis:'robbery',period:8,room:'carpark',who:'auto',cond:()=>robRoll('carpark
  D.f['rob_cp'+cal()]=1;
  scene('carpark',{you:[60,1,{y:156}],kid1:[190,1,{y:150,pose:'reach'}]},true);
  const car=pprop({t:'car',x:170,y:170,col:'#c8c8d0',layer:20});
- await N('A kid is halfway through the window of a silver car, pulling out the stereo. The car alarm isn’t going off. That means it’s a teacher’s car. Teachers never set the alarm.');
+ await N('A kid is halfway through a silver car’s window, pulling out the stereo. No alarm. That means it’s a teacher’s car. Teachers never set the alarm.');
  SFX.door();put('voss',334,-1,{y:150});await walk('voss',240,60);
  await say('voss','(very pleased) Oh! A young scientist! In my car! Inside my car is where I keep the good jars!','happy');
  A.kid1.ex='scared';
@@ -118,7 +118,7 @@ hook({mis:'bigscore',period:8,room:'foodcourt',who:'auto',cond:()=>D.f.bs2&&!D.d
   if(!ok){await die('glen')}
   pose('glen',null);await N('You slip out of your hoodie and leave it in his hands like a lizard leaving its tail.');await walk('you',-20,160);await complete('bigscore','tased')}
  else{await walk('you',-20,150);SFX.zap&&SFX.zap();SFX.static();
-  await N('You leave. Behind you, there’s a crackle and a thump, and Kayden saying “ow” in a very high voice, over and over, on the floor of the food court, in a beanie that says WORLD’S BEST GRANDPA.');
+  await N('Behind you: a crackle, a thump, and Kayden saying “ow” in a very high voice, over and over, in a beanie that says WORLD’S BEST GRANDPA.');
   await complete('bigscore','bailed')}
  return 'stay';
 }});

@@ -180,7 +180,7 @@ BEATS[12]=async()=>{await inspectionDay()};
 const onOrAfter=d=>!!crew()['beat'+d]&&!crew().finale&&!(D&&D.weekend);   /* once the crew meeting has happened, any free time */
 spot({room:'maths',period:[0,1,2,3,4,5,6],x:60,y:150,label:'Search Ms. Sherman’s desk and bin',short:'DESK',cond:()=>onOrAfter(1)&&!crew().ev.retainer,run:async()=>{
  pose('you','reach');SFX.pick();await wait(400);pose('you',null);
- await N('Her desk is spotless. Her bin is not. Under a layer of red pen lids and pencil shavings there’s a little plastic retainer case. TYLER M., written on it in Sharpie.');
+ await N('Her desk is spotless. Her bin isn’t. Under the pen lids and shavings, a little retainer case. TYLER M., in Sharpie.');
  await N('The retainer is still inside. There’s dried blood on the wire.');
  evidence('retainer','Tyler’s retainer');
  if(A.dheva)await say('dheva','(from across the room, very quietly) Put it in a sandwich bag. Don’t let her see you leave.','scared');
@@ -204,7 +204,7 @@ hook({mis:'crew',period:[2,4],room:'corridor',who:'angelo',label:'Ask Angelo for
 }});
 Object.assign(ITEMS,{lockpick:'A lockpick from Angelo (for the crew)'});
 spot({room:'corridor',period:[0,1,2,3,4,5,6],x:278,y:150,label:'Pick the lock on Ms. Sherman’s office',short:'OFFICE',cond:()=>onOrAfter(4)&&crew().pick&&!crew().ev.register,run:async()=>{
- if(A.sherman&&!A.sherman.dead){if(!D.dead.sean){put('sean',334,-1,{y:146});await walk('sean',200,90)}await N('Ms. Sherman is patrolling right outside her own office. Then, on cue, Sean walks past her, says “Oh no,” and faints. Beautifully. Like a swan. She has to deal with it.');if(A.sean){A.sean.pose='lie';await walk('sherman',A.sean.x+12,60);pose('sherman','kneel')}}
+ if(A.sherman&&!A.sherman.dead){if(!D.dead.sean){put('sean',334,-1,{y:146});await walk('sean',200,90)}await N('Ms. Sherman patrols outside her own office. On cue, Sean walks past, says “Oh no,” and faints. Beautifully. Like a swan.');if(A.sean){A.sean.pose='lie';await walk('sherman',A.sean.x+12,60);pose('sherman','kneel')}}
  pose('you','reach');
  const ok=await mash('Pick the lock',{need:16,time:5,info:'Turn left until it clicks. Mash!'});
  pose('you',null);
@@ -212,7 +212,7 @@ spot({room:'corridor',period:[0,1,2,3,4,5,6],x:278,y:150,label:'Pick the lock on
  scene('office',{you:[120,1,{y:156}]},true);cue('tension');
  await N('Ms. Sherman’s office. It smells like old perfume and pencil shavings. The filing cabinet is older than everyone you know.');
  SFX.locker();pose('you','reach');await wait(300);pose('you',null);
- await N('Bottom drawer. On top, exactly like Aidan said: a detention register. FRIDAY 13 MARCH 1987. Four names. O. Finch. R. Patel. D. Mason. L. Okafor. Every one crossed out in red pen.');
+ await N('Bottom drawer, just like Aidan said: a detention register. FRIDAY 13 MARCH 1987. O. Finch. R. Patel. D. Mason. L. Okafor. All crossed out in red.');
  await N('In the margin, in very neat handwriting: “They were MY detention. My responsibility. I went to get a coffee.”');
  evidence('register','The 1987 detention register');lore('ollie');
  SFX.thud();await N('Heels in the corridor. You’re out the side door with the register under your hoodie and your heart trying to leave through your mouth.');
@@ -224,7 +224,7 @@ spot({room:'maths',period:[0,1,2,3,4,5,6],x:84,y:150,label:'Wipe the phones in M
  await N('Her drawer. Phones. Dozens of them. Flip phones, a pager, Arjun’s phone with the cracked case. They’re all still charged. She charges them.');
  const ok=await mash('Factory reset every phone',{need:18,time:6,info:'Hold power + volume on every single one. MASH!'});
  pose('you',null);
- if(ok){crew().wiped=1;save();await N('One by one the screens go black and come back saying “Hello” in fourteen languages. The File is gone from every one of them. She’ll know. She won’t know what she knows.');toast('🗂️ The leak is plugged.')}
+ if(ok){crew().wiped=1;save();await N('One by one the screens go black and come back saying “Hello” in fourteen languages. The File is gone. She’ll know. She won’t know what she knows.');toast('🗂️ The leak is plugged.')}
  else await N('You get through half of them before a sound in the corridor makes you shut the drawer. Half is better than nothing. It isn’t, really.');
  if(ok)return 'stay';crew().wiped=.5;save();return 'stay';
 }});
@@ -243,10 +243,10 @@ spot({room:'corridor',period:[0,1,2,3,4,5,6],x:40,y:150,label:'Go down the old h
  await N('Down the ladder, under the pool. Wet, warm air. Chlorine, and something much older. Your light finds the old boiler, split open like a burst can.');
  if(A.omer)await say('omer','(whispering) I said I wouldn’t come down here. I came down here. I hate that I came down here.','scared');
  await walk('you',220,50);
- await N('On the wall by the coal chute, scratched into the brick, low down, at kid height: four names. OLLIE. RAJ. DANNY. LOUISE. Underneath, smaller: “WE WAITED LIKE SHE SAID.”');
+ await N('Scratched into the brick by the coal chute, at kid height: OLLIE. RAJ. DANNY. LOUISE. Smaller, underneath: “WE WAITED LIKE SHE SAID.”');
  SFX.drip();await wait(600);
  if(!cut('ollie'))put('ollie',280,-1,{y:150});
- await N('Something at the end of the room. A boy, in a school uniform from a long time ago, holding a library book. He isn’t standing on the floor. He’s standing slightly above it.');
+ await N('At the end of the room, a boy in an old uniform, holding a library book. He isn’t standing on the floor. He’s standing slightly above it.');
  await say('ollie','You found us. Nobody ever comes down here. They put a swimming pool on us.','sad');
  await say('ollie','Tell them. On Friday. Say our names. Out loud. Nobody’s said them in thirty-nine years.','sad');
  await N('You blink. He isn’t there. The book is, on the floor, open. HOW TO BE BRAVE.');if(A.ollie)delete A.ollie;
@@ -317,7 +317,7 @@ async function inspectionDay(){
   await say('hasan','YOU’RE NOT IN THE CREW.','yell');
   await say('aidan','(holding up a jar) I brought one of mine. From Mr. Voss’s fridge. It’s got my name on it. I’d like it entered into evidence.','smirk');
   score++;
-  await N('He puts the jar down in front of Inspector Okafor. She looks at it. She looks at the name. She looks at Aidan, standing right there, alive. You can watch her brain fall over.');
+  await N('He sets the jar in front of Inspector Okafor. She reads the name. She looks at Aidan, standing right there, alive. You can watch her brain fall over.');
  }
  if(c.adamNamed&&A.adam){score++;await say('adam','(into the microphone, steady for the first time in two weeks) It’s me on that recording. Everything on it is true. I was there in 1987. I was supposed to be in that room.','sad')}
  if(score>=8){
@@ -332,19 +332,19 @@ async function inspectionDay(){
   }else if(A.shermian){
    await walk('shermian',A.insp1.x+12,120);
    SFX.squelch();blood(A.insp1.x,A.insp1.y-24,50,null,100,A.insp1.y+2);kill('insp1','lie',{pool:40,bleed:4,spray:60});
-   await N('Ms. Sherman gets to Inspector Hale before anyone can move. It takes her four seconds. His clipboard lands face-up in the blood. He had given the school a “Good”.');
+   await N('Ms. Sherman reaches Inspector Hale in four seconds. His clipboard lands face-up in the blood. He’d given the school a “Good”.');
    if(A.omer){SFX.punch();shake(1.2);await N('Then Omer, Marcus, Paul and about forty other kids land on her at the same time. It takes all of them. It takes the whole school.')}
   }
   await say('adam','(on the floor of the stage, crying with relief, into the microphone) Thank you. Thank you. Thank you. Everybody gets the rest of the day off. Everybody gets the rest of the YEAR off.','cry');
-  await N('By lunchtime there are fourteen police cars in the bus loop. By home time every teacher in that row is in the back of one. Highgate High is closed “pending investigation”.');
-  await N('The crew sits on the wall by the bus loop and watches them go. Nobody says anything for a long time. Then Hasan starts laughing, and he can’t stop, and then nobody can.');
+  await N('By lunch, fourteen police cars in the bus loop. By home time, every teacher in that row is in one. Highgate is closed “pending investigation”.');
+  await N('The crew sits on the wall and watches them go. Nobody talks for a long time. Then Hasan starts laughing and can’t stop. Then nobody can.');
  }else{
   c.finale='bloodbath';save();
   await say('insp1','(looking at the slideshow, then at his clipboard) Well. This is… some of this is concerning. Some of it is memes. We’ll need more than this.','sad');
   await N('Behind the inspectors, Ms. Sherman closes the hall doors. Gently. And locks them.');
   cue('fight');
   for(const t of teachers.slice(0,3)){const v=kids.find(k=>A[k]&&!A[k].dead&&k!==pa);if(!v||!A[t])continue;await walk(t,A[v].x+10,120);SFX.squelch();blood(A[v].x,A[v].y-24,40,null,100,A[v].y+2);kill(v,'lie',{pool:40,bleed:4,spray:50});await N(K[t].n+' gets to '+K[v].n+' first.')}
-  await N('The inspectors leave by the side door at 11:15 with a rating of “Requires Improvement”. The hall doors open again at 11:40. The crew that walks out is smaller than the crew that walked in.');
+  await N('The inspectors leave at 11:15: “Requires Improvement”. The hall doors open at 11:40. Fewer of you walk out than walked in.');
   await say('david','(on the steps outside, shaking) We should’ve had more. We should’ve had more in the File.','cry');
  }
  crowd=null;await complete('crew',c.finale);

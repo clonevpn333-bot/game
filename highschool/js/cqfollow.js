@@ -112,7 +112,7 @@ fu('ch_mix',['david'],async c=>{A.david.k=Object.assign({},A.david.k,{goggles:1}
  await say(c.t,'Wise woman. I’m adding her to the list of people I respect. It’s a short list. It’s mostly jars.','happy')});
 fu('ch_rat',[],async c=>{const r=prop({t:'rat',x:286,y:118,layer:6});await walk('you',274,60);
  const id_=prop({t:'paper',x:284,y:118,layer:7});await tw(id_,{x:A.you.x+6},300);
- await N('The rat is waiting at the bars. When you come close, it taps four times. Then it pushes something through to you: a tiny, rolled-up school ID, chewed at one corner. D. MASON. 7F. 1987.');
+ await N('The rat taps four times, then pushes something through the bars: a chewed, rolled-up school ID. D. MASON. 7F. 1987.');
  lore('kit')});
 fu('ch_david',['david'],async c=>{await N('David’s lab report has one mistake on it. On purpose. He’s circled it himself, in red, and written next to it: “I’m allowed.”');
  await say('david','(whispering) My dad made me redo it. I redid it with the same mistake. Twice. We’re at a standoff.','smirk')});
@@ -157,7 +157,7 @@ fu('it_type',['mia'],async c=>{await say('mia','(cracking her knuckles) Rematch.
  const ok=await mash('Type!',{need:30,time:5});await say('mia',ok?'…I quit typing. I’m going into the military properly. I need a WIN.':'One hundred and forty-three. Salute me.','shock')});
 fu('it_rank',['arjun'],async c=>{const s=prop({t:'screenmsg',x:160,y:46,s:'#23 ARJUN',s2:'(UP ONE)',c:'#1a3a1a',layer:-40});
  await say('arjun','(very quietly, tears in his eyes) Twenty-third. I’m twenty-third. I beat Kayden. I BEAT KAYDEN.','happy');s.hide=1});
-fu('it_printer',[],async c=>{await walk('you',290,60);const pp=prop({t:'paper',x:296,y:120});await tw(pp,{x:A.you.x+6,y:A.you.y-20},300);await N('The printer has stopped printing the photo. Now it prints one sheet, every few minutes. A seating plan for 1987. Four seats are circled. One of them has your name.')});
+fu('it_printer',[],async c=>{await walk('you',290,60);const pp=prop({t:'paper',x:296,y:120});await tw(pp,{x:A.you.x+6,y:A.you.y-20},300);await N('The printer stops printing the photo. Every few minutes, one sheet: a 1987 seating plan. Four seats circled. One has your name.')});
 fu('it_cable',[],async c=>{await say(c.t,'The blue cable has a padlock on it now, learner. And a sign. “TOUCH IT AGAIN.” Somebody drew a skull on the sign. Was that you?','evil')});
 fu('it_stream',['nivaan'],async c=>{await dms('NIVAAN LIVE 🔴','1,204 watching',[['them','EYEBROW KING'],['them','is he ok now'],['them','he looks better'],['them','nivaan we love u. eat ur lunch']]);
  await say('nivaan','(quietly) I eat lunch on stream now. Just eating. Twelve hundred people watch me eat. I’ve never felt less alone.','happy')});
@@ -178,7 +178,7 @@ fu('po_chicken',['paul','omer'],async c=>{await say('paul','(showing everyone hi
 fu('po_lane',[],async c=>{await say(c.t,'(handing you a stopwatch) Your turn. My lane. Beat nine minutes and eleven seconds.','evil');
  pose('you','swim');const ok=await mash('Hold your breath',{need:24,time:6});pose('you',null);
  await N(ok?'You make two minutes. You come up seeing every color at once. Mrs. Tarn writes something down. She looks impressed. She looks hungry.':'Forty seconds. You come up choking. She pats your head like a dog.')});
-fu('po_float',['kenneth'],async c=>{pose('kenneth','swim');await N('Kenneth swims a full length. Badly. Slowly. With his face out of the water the whole way, like a dog in a lake. When he touches the wall, the whole class cheers.');
+fu('po_float',['kenneth'],async c=>{pose('kenneth','swim');await N('Kenneth swims a full length, face out of the water like a dog in a lake. When he touches the wall, the whole class cheers.');
  pose('kenneth',null);await say('kenneth','(gripping the wall, crying a bit) I’m going to show my dad. I’m going to make him come and watch.','happy')});
 fu('po_board',[],async c=>{await say(c.t,'(not looking at you) The high board’s gone, swimmer. Taken down. Just the ladder left. Going up to nothing.','evil')});
 fu('po_red',[],async c=>{await say(c.t,'(pouring something in the pool from a brown bottle) New chemical, swimmers. It turns the water red around anyone who LIES.','evil');
@@ -189,7 +189,7 @@ fu('po_goggles',[],async c=>{if(!D.dead.darren){put('darren',334,-1,{y:146});awa
 
 /* ---------------- ASSEMBLY ---------------- */
 fu('as_mic',[],async c=>{await say('adam','(at the podium, looking straight at you) Somebody used my microphone, Highgate. I want them to know: it was the most honest thing anyone has said in this hall in thirty years.','sad')});
-fu('as_curtain',[],async c=>{prop({t:'paper',x:250,y:122,layer:5});await N('The curtain is open this time. There’s nobody behind it. Just a library book on the stage floor, open to the last page. Somebody has drawn a little bird in the margin.')});
+fu('as_curtain',[],async c=>{prop({t:'paper',x:250,y:122,layer:5});await N('The curtain’s open. Nobody behind it. A library book on the stage floor, open to the last page. A little bird drawn in the margin.')});
 fu('as_award',['aidan'],async c=>{prop({t:'photo',x:A.aidan.x+6,y:A.aidan.y-14,layer:30});await N('Aidan has the certificate framed. He brought the frame to assembly. He holds it on his lap the whole time, facing out, so everybody can see.');
  await say('aidan','(to you, very quietly) Nominate me again. For anything. I don’t care what.','happy')});
 fu('as_pledge',['arjun'],async c=>{await say('adam','(at the podium, very calmly) Today, Arjun will lead the pledge. Alone. Into the microphone. Correctly.','evil');

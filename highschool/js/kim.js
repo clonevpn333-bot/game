@@ -76,7 +76,7 @@ hook({mis:'kim',period:[2,4],room:'hallb',who:'kim',label:'Watch Mr. Kim’s mag
  const cast={you:[90,1,{y:156}],kim:[140,1,{y:146}]};
  for(const [k,x] of[['kid1',60],['kid2',260],['marcus',280],['kid3',300]])if(!D.dead[k])cast[k]=[x,-1,{y:146}];
  scene('hallb',cast,true);
- await N('A crowd in the Front Hall. A man in a sweater vest and a red tie is pulling a string of handkerchiefs out of a kid’s ear. They’re all the colors of a math textbook.');
+ await N('A crowd in the Front Hall. A man in a sweater vest and red tie pulls handkerchiefs out of a kid’s ear, all the colors of a math textbook.');
  await kimArrive({kids:Object.keys(cast)});
  return 'stay';
 }});
@@ -128,7 +128,7 @@ hook({mis:'kim',period:[0,2,4],room:'bus',who:'auto',cond:()=>D.f.alexGone&&!D.f
  const cast={you:[60,1,{y:156}],alex:[200,-1,{y:150,pose:'sit'}]};if(!D.dead.dheva)cast.dheva=[-14,1,{y:150}];
  scene('bus',cast,true);cue('evil');
  await N('There’s somebody sitting on the curb of the bus loop. Kids are walking a long way round him.');
- await N('It’s Alex. His jersey is ripped to ribbons. His shorts are torn. His face is painted white, with a big red smile drawn over his real mouth, and little blue diamonds over his eyes.');
+ await N('It’s Alex. Jersey in ribbons. Face painted white, a big red smile over his real mouth, blue diamonds over his eyes.');
  A.alex.pose=null;await tw(A.alex,{y:146},200);
  await say('alex','(smiling, not blinking) Honk.','happy');
  if(A.dheva){await walk('dheva',170,110);await say('dheva','ALEX. Alex, it’s me. It’s Dheva. Where were you? Where WERE you?','cry');

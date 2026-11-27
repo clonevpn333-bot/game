@@ -53,7 +53,7 @@ async function screening(){
  if(!D.f.mdSeen){
   D.f.mdSeen=1;
   put('kid2',40,1,{y:150});
-  await N('There’s a metal detector in the front doors. A big gray arch with a light on top. Coach is standing next to it holding a javelin. Ms. Sherman is holding a clipboard.');
+  await N('A metal detector in the front doors, a gray arch with a light on top. Coach beside it with a javelin. Ms. Sherman with a clipboard.');
   await say('sherman','New security for the inspection, children. Walk through. If it rings, Coach will help you.','evil');
   await walk('kid2',160,60);D.mdLight=2;SFX.beep();SFX.beep();
   await N('It rings. A freshman. His belt buckle.');
@@ -112,7 +112,7 @@ async function lockedRoom(room,t){
   await walk('jaxon',A.kid4.x-10,140);pose('jaxon','stab');SFX.squelch();blood(A.kid4.x,A.kid4.y-20,40,null,80,A.kid4.y+2);
   SFX.bang&&SFX.bang();shake(1.4);flash('#fff',.4);blood(A.jaxon.x,A.jaxon.y-22,40,null,80,A.jaxon.y+2);
   kill('jaxon','lie',{pool:34});kill('kid4','lie',{pool:34});D.dead.jaxon=1;D.dead.kid4=1;pose('jaxon',null);
-  await N('It takes about two seconds. The knife and the shot happen at the same time. Then there are two kids on the floor and the room is very, very quiet, and it smells like fireworks.');
+  await N('Two seconds. The knife and the shot at the same time. Two kids on the floor. The room goes very quiet. It smells like fireworks.');
  }
  for(const k of c.kids.filter(here_))hold(k,null);
  if(A.you)A.you.pose=null;

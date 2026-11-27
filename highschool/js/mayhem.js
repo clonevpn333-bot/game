@@ -108,7 +108,7 @@ async function sherCatch(fromPass){
   if(await runFrom(23)){await N('You make it round the corner. Behind you, her shoes stop. You hear her say, very calm, from very close: “Next time.”');await leave();return 'stay'}
   pose(sid,'grab');SFX.door();fxState.dark=0;await tw(fxState,{dark:1},500);
   await N('The supply closet. The door locks from the outside. It smells like bleach and pencil shavings, and something in the back is breathing slower than you are.');
-  await N('She lets you out when the bell goes. She doesn’t say a word. There are long scratches on the inside of the door, low down, kid height. Some of them are yours now.');
+  await N('She lets you out at the bell without a word. Long scratches inside the door, low down, kid height. Some of them are yours now.');
   remove(sid);hold(sid,null);await tw(fxState,{dark:0},400);busy=false;setTimeout(()=>endPeriod(),0);return 'ended';
  }
  await N('Ms. Sherman is at the end of the hallway. She isn’t smiling. She isn’t anything. Her jaw starts to open, and it keeps opening.');
@@ -252,7 +252,7 @@ const LATE=[
  }},
  {id:'rob',cond:()=>!D.dead.kayden&&!D.dead.jaxon,run:async()=>{
   put('kayden',140,1,{y:88});put('jaxon',140,1,{y:86});A.kayden.sitHigh=1;A.jaxon.sitHigh=1;hold('jaxon','knife');hold('kayden','soaker');
-  await N('At the mall stop, Kayden and Jaxon get on in ski masks. They’re not even trying. You can see Kayden’s whole face through the mouth hole. He’s holding a Super Soaker painted black.');
+  await N('At the mall stop Kayden and Jaxon get on in ski masks. You can see Kayden’s whole face through the mouth hole. Super Soaker, painted black.');
   await Promise.all([busMove('kayden',{x:165,y:A.you.y-4},70),busMove('jaxon',{x:150,y:A.you.y-10},60)]);face('kayden','you');A.kayden.back=0;A.jaxon.back=0;
   await say('kayden','PHONES AND WALLETS. Phones and wallets. Not you, you’re cool. …Actually yeah, you too. Times are hard.','yell');
   const c=await choose(['Hand over a dollar.','“Kayden. I can see your whole face.”','Point at the guy with the knife.']);
@@ -337,14 +337,14 @@ chaos('tripwire',['upper','wing_arts','hallb'],[0,2,4],.22,async()=>{
  const a=extra('brayden',60,1,{y:150}),b=extra('jade',250,-1,{y:150});
  const w=pprop({t:'tripwire',x:150,x2:190,y:148,layer:2});
  if(a){A.brayden.pose='kneel'}if(b){A.jade.pose='kneel'}
- await N('Two kids are crouched at either end of the hallway holding a length of fishing line at ankle height. They’re giggling. They’ve done this before. They have a tally on the wall.');
+ await N('Two kids crouch at either end of the hall with fishing line at ankle height, giggling. There’s a tally on the wall.');
  put(t,334,-1,{y:150});await walk(t,190,70);
  SFX.whoosh();A[t].pose='lie';shake(1);SFX.thud();blood(A[t].x-12,A[t].y-6,10,-1,50,A[t].y+2);A[t].ex='hurt';
  await N(K[t].n+' goes down face-first like a tree. His keys go one way. A tooth goes the other. The kids are already on him, going through his pockets like raccoons.');
  if(a){A.brayden.pose='kneel';await walk('brayden',A[t].x-14,120)}if(b){A.jade.pose='kneel';await walk('jade',A[t].x+14,120)}
  const c=await choose(['Help him up.','Grab his lanyard while they’re busy.','Walk away. Not your business.']);
  if(c===0){await say(t,'(spitting a tooth) Thank you. I’ll remember who helped. (looking at the kids) I’ll remember who didn’t.','evil');}
- else if(c===1){SFX.pick();D.money=(D.money||0)+2;updateLoc();await N('His lanyard has a staff keycard, two dollars and a photo of a woman with the face scratched out. You keep the two dollars. You put the photo back. You don’t want it.')}
+ else if(c===1){SFX.pick();D.money=(D.money||0)+2;updateLoc();await N('His lanyard: a keycard, two dollars, and a photo of a woman with the face scratched out. You keep the two dollars. You put the photo back.')}
  else await N('Behind you, the tally on the wall goes up by one.');
  if(a)pose('brayden',null);if(b)pose('jade',null);
  await Promise.all([a?walk('brayden',-20,120):0,b?walk('jade',340,120):0]);if(a)remove('brayden');if(b)remove('jade');
@@ -358,7 +358,7 @@ chaos('lockersub',['corridor','hallb','upper'],[1,2,3,4],.22,async()=>{
  await N('From inside the locker, a muffled voice: “I have a master’s degree. I have a MASTER’S DEGREE.”');
  if(b)await say('kaylee','It’s the sub. He said “alright, settle down” to us. Nobody tells us to settle down.','smirk');
  const c=await choose(['Open the locker.','Add your own padlock.','Slide a granola bar through the vents.']);
- if(c===0){put('sub',158,1,{y:150,pose:'lie'});SFX.locker();await N('You yank it open. The substitute pours out of the locker like laundry. He crawls three feet, gets up, and runs without looking back. He leaves his lanyard and his dignity.');
+ if(c===0){put('sub',158,1,{y:150,pose:'lie'});SFX.locker();await N('You yank it open. The sub pours out like laundry, crawls three feet, and runs. He leaves his lanyard and his dignity.');
   A.sub.pose=null;A.sub.ex='scared';await walk('sub',-30,130);remove('sub');
   if(a)await say('jaxon','(very quietly) You’re next, you know that? You’re on the list now.','angry')}
  else if(c===1){SFX.click();await N('Click. Two padlocks now. Jaxon gives you a slow nod of deep respect. The knocking gets faster.');D.f.subLocked=1}
@@ -370,7 +370,7 @@ chaos('auction',['canteen'],[2,4],.25,async()=>{
  if(D.dead.angelo)return;
  const t=pprop({t:'auctiontable',x:170,y:150,layer:2});
  if(!A.angelo)put('angelo',150,1,{y:146});await walk('angelo',170,80);await tw(A.angelo,{z:12},250);hold('angelo','gavel');pose('angelo','up');
- await N('Angelo is standing on a cafeteria table with a gavel he stole from the debate club. On the table: a backpack, a retainer, a pair of headphones, and a phone with a cracked lock screen.');
+ await N('Angelo on a cafeteria table with a gavel stolen from debate club. Up for auction: a backpack, a retainer, headphones, a cracked phone.');
  await say('angelo','LOT FOUR. Dead kid’s stuff. Everything must go. These headphones belonged to a seventh grader who looked at Mr. Voss wrong. Mint condition. One ear works. Do I hear a dollar.','yell');
  for(const k of kidsHere().slice(0,4))if(k!=='angelo'){A[k].pose='up';A[k].ex='laugh'}
  SFX.cheer();
@@ -389,7 +389,7 @@ chaos('carfire',['bus'],[0],.25,async()=>{
  await N('Mr. Voss’s car is on fire in the bus loop. Not a little. All the way. A circle of kids is standing round it roasting marshmallows on pencils.');
  if(ks[0])await say(ks[0],'He gave everybody a zero. EVERYBODY. Even the kid in the coma.','angry');
  put('voss',-20,1,{y:150});await walk('voss',130,60);A.voss.ex='cold';
- await N('Mr. Voss walks out of the front doors with his coffee. He looks at his car for a long time. He doesn’t say anything. He takes out a little notebook and starts writing down names.');
+ await N('Mr. Voss looks at his car for a long time, coffee in hand. Then he takes out a little notebook and starts writing names.');
  const c=await choose(['Roast a marshmallow.','Leave before he writes your name.','Film it.']);
  if(c===0){hold('you','marsh');pose('you','hold');D.apples=(D.apples||0)+1;updateLoc();await N('Golden brown. Perfect. Best marshmallow of your life. +1 🍎. Mr. Voss writes something down while looking straight at you.');pose('you',null);hold('you',null)}
  else if(c===1)await walk('you',20,110);

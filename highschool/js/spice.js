@@ -27,7 +27,7 @@ chaos('hallfight',HALLS_F,[0,1,2,3,4,5,6],.18,async()=>{
  const c=await choose([{t:'Watch from the ring.',tag:'👀'},{t:'Bet $2 on '+K[a].n+'.',tag:'💵'},{t:'Break it up.',tag:'✋'},{t:'Jump in on '+K[b].n+'’s side.',tag:'👊'}],'FIGHT! FIGHT! FIGHT!');
  if(c===1){if((D.money||0)<2){await N('You don’t have two dollars. You bet your dignity instead.')}else D.money-=2;updateLoc()}
  if(c===2){const ok=await mash('BREAK IT UP',{need:18,time:3.6,info:'Get between them! MASH!'});
-  if(ok){await walk('you',cx,120);for(const k of[a,b])if(A[k]){A[k].ex='cold';A[k].pose=null}await N('You get between them with your arms out. For a second it could go either way. Then they both decide it’s your fault and walk off in opposite directions, still yelling.');if(typeof repAdd==='function')repAdd('liked',1)}
+  if(ok){await walk('you',cx,120);for(const k of[a,b])if(A[k]){A[k].ex='cold';A[k].pose=null}await N('You get between them, arms out. It could go either way. Then they both decide it’s your fault and storm off in opposite directions.');if(typeof repAdd==='function')repAdd('liked',1)}
   else{await walk('you',cx,120);await hit(a,'you',{blood:5});A.you.hurt=Math.min(3,(A.you.hurt||0)+1);await N('You step in. You catch one from each side. The ring goes “OHHHHH” like it’s the best thing they’ve ever seen.')}}
  else if(c===3){const ok=await mash('FIGHT',{need:20,time:4});await walk('you',cx-14,120);
   if(ok){await hit('you',a,{blood:6});A[a].pose='lie';A[a].hurt=2;await N(K[a].n+' goes down. The ring loses its mind. '+K[b].n+' looks at you like you just became family.');if(typeof bond==='function'&&FRIENDS.includes(b))bond(b,1);if(typeof repAdd==='function')repAdd('feared',1)}
@@ -61,7 +61,7 @@ chaos('reallockdown',HALLS_F,[1,3,5,6,2,4],.3,async()=>{
  if(c===0){A.you.alpha=.35;A.you.back=1;
   await walk('intruder',A.you.x+(fromL?-60:60),40);
   await N('You press yourself into the door frame and stop breathing. He walks past close enough that you can hear him muttering. He doesn’t look left.');
-  await N('A minute later: shouting from the stairwell, radios, boots. Police. Somebody yells “GUN DOWN, GUN DOWN”, and then it’s over, and you’re still in the doorway, shaking.');
+  await N('Shouting from the stairwell. Radios. Boots. “GUN DOWN, GUN DOWN.” Then it’s over, and you’re still in the doorway, shaking.');
   A.you.alpha=1;A.you.back=0;await end();return}
  if(c===1){pose('you','reach');SFX.bell&&SFX.bell();shake(.6);pose('you',null);A.intruder.ex='shock';
   await N('You yank the fire alarm. The whole building screams. Doors burst open and nine hundred kids pour out of every exit at once.');
@@ -89,7 +89,7 @@ async function lockdownStruggle(seen,end){
  if(!ok){SFX.bang&&SFX.bang();shake(1.6);flash('#a00010',.5);blood(A.you.x,A.you.y-24,40,null,90,A.you.y+2);A.you.pose='lie';
   await N('You get one hand on it. Not two.');await end();await die('lockdown');return}
  hold('intruder',null);hold('you','pistol');a.pose='lie';a.ex='shock';SFX.smack&&SFX.smack();shake(1);
- await N('You twist his wrist until it bends wrong and the gun comes loose into your hand. He goes down on his back on the hall floor. Now you’re standing over him, and you’re the one holding it.');
+ await N('You twist his wrist until it bends wrong and the gun drops into your hand. He goes down on his back. Now you’re the one holding it.');
  const c=await choose([{t:'Kick him onto his front and sit on him till the cops come.',tag:'🚔'},{t:'Knock him out cold with it.',tag:'💥'},{t:'Pull the trigger.',tag:'🩸'}],'He’s on the floor. You have the gun.');
  if(c===0){pose('you','kneel');await N('Knee in his back, his arms pinned, six minutes. The longest six minutes there have ever been. When the police come, you slide the gun across the floor to them.');
   if(typeof repAdd==='function')repAdd('legend',3,'stopped the lockdown');hold('you',null);pose('you',null)}
@@ -98,7 +98,7 @@ async function lockdownStruggle(seen,end){
   if(typeof repAdd==='function'){repAdd('legend',2,'stopped the lockdown');repAdd('feared',1)}hold('you',null)}
  else{pose('you','point');await wait(TEST?0:500);SFX.bang&&SFX.bang();shake(1.8);flash('#ffffff',.6);
   kill('intruder','lie',{pool:40,bleed:4,spray:30});pose('you',null);
-  await N('It’s so loud your ears stop working. When they come back there’s a ringing, and the hall, and him, and you. You don’t remember deciding. You just remember the sound.');
+  await N('So loud your ears stop working. Then just ringing, and the hall, and him, and you. You don’t remember deciding. Only the sound.');
   await N('The police find you against the lockers, the gun far from your hand. Everybody is gentle with you for weeks. It helps less than they think.');
   if(typeof repAdd==='function'){repAdd('feared',3,'the lockdown');repAdd('legend',1)}hold('you',null)}
  await wait(TEST?0:500);await end();

@@ -65,7 +65,7 @@ const VVIC={on:false,x:0,say:'',until:0};
  if(!ok){SFX.thud&&SFX.thud();await N('Your knee hits the cardboard moon. The honking stops. A strip of light: the trapdoor opening. A white-painted face, upside down, smiling.');
   const ran=await mash('CRAWL OUT THE OTHER SIDE',{need:24,time:4});if(!ran){fxState.dark=0;await die('honk')}
   await N('You squeeze out under the stage skirt and run. Behind you, very cheerfully: “Seven fours are twenty-eight!”');fxState.dark=0;return r}
- await N('Your light finds the back wall. School photos, dozens, each with a red clown nose drawn on in marker. Across the top, in perfect teacher handwriting: VOLUNTEERS.');
+ await N('Your light finds the back wall. Dozens of school photos, each with a red clown nose in marker. Across the top, neat teacher writing: VOLUNTEERS.');
  const names=Object.keys((typeof crew==='function'&&crew().gone)||{}).map(v=>K[v]&&K[v].n).filter(Boolean);
  await N('ALEX is there. TYLER is there.'+(names.length?' So are '+names.join(', ')+'. The kids from this week. The ones you didn’t get to.':' And there are empty spaces. With this week’s dates on them.'));
  if(typeof crew==='function'){const cr=crew();cr.ev=cr.ev||{};cr.ev.volunteers=1;save&&save();toast('🎁 EVIDENCE: Mr. Kim’s VOLUNTEERS wall. The file gets thicker.')}

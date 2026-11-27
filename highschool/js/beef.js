@@ -189,7 +189,7 @@ spot({room:'corridor',period:4,x:132,y:148,label:'Sneak into the staff room',sho
  await say('shermian','(putting the mug down, licking her lips) Hmm. Hint of almond. Miss has been drinking worse than that since 1998, sweetie. Next time, use the whole bottle.','evil');
  SFX.door();
  if(!D.dead.coach&&!D.dead.pat){put('coach',300,-1,{y:146});put('pat',312,-1,{y:146});
-  await N('The supply cupboard door opens. Coach and Pat come out of it at the same time. Coach is buttoning his tracksuit top. Pat is fixing her hairnet. Nobody says anything.');
+  await N('The supply cupboard opens. Coach and Pat come out together. He’s buttoning his tracksuit. She’s fixing her hairnet. Nobody says anything.');
   await say('coach','(pointing at all of you) Inventory.','angry');
   await say('pat','(fixing her hairnet) Inventory, love. Very thorough inventory.','smirk')}
  await complete('staffroom','immune');return 'stay';

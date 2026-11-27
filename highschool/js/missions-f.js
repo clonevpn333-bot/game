@@ -249,7 +249,7 @@ hook({mis:'groupchat',period:4,room:'canteen',who:'arjun',label:'Warn Arjun befo
  await say('omer','“He’s not even in this chat.”','angry');
  if(real){
   await say('arjun','Omer. I’m sorry. Not a joke sorry. A real one.','sad');
-  await say('arjun','Your mom’s nice. She made me a sandwich in seventh grade when I didn’t have lunch, and she cut it into triangles, and I never said thank you. I say horrible stuff about everyone’s parents because mine are horrible about me.','cry');
+  await say('arjun','Your mom made me a sandwich in seventh grade when I didn’t have lunch. Cut it into triangles. I never said thanks. I talk trash about everyone’s parents because mine talk trash about me.','cry');
   await N('The whole table goes quiet. Hasan puts his chips down. Nobody has ever heard Arjun say anything true out loud before.');
   await say('omer','…Triangles?','shock');
   await say('arjun','Triangles.','cry');

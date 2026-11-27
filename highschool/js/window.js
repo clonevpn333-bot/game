@@ -116,10 +116,10 @@ async function drawBird(n,o){
 /* ---------------- FRIDAY ONE ---------------- */
 hook({mis:'window',period:3,room:'trailer',who:'auto',cond:()=>winAvail()&&winStage()===0,run:async()=>{
  const c=await winClass();
- await N('Period 3. The Trailer. The AC unit is dripping into a bucket. The whole room wobbles when anyone walks. Ms. Sherman is writing on the board in her loopy, frightening handwriting.');
- await N('Abby sits at the back, by the window. Corey sits at the front, on the other side of the room. To look at her, he has to turn all the way round in his chair. He does. Constantly.');
+ await N('Period 3. The Trailer. The AC drips into a bucket. The room wobbles when anyone walks. Ms. Sherman writes on the board in loopy, frightening handwriting.');
+ await N('Abby at the back by the window. Corey at the front, other side. To look at her he has to turn all the way round. He does. Constantly.');
  const b=await drawBird(1);
- await N('Abby breathes on the window. With one finger, she draws a little bird in the fog. She looks at it for a second. Then she rubs it out with her sleeve, before anyone can see.');
+ await N('Abby breathes on the window and draws a little bird in the fog. She looks at it a second, then wipes it away before anyone sees.');
  await say('corey','(whispering, to you, not looking away from her) She does that every day. The bird. Since seventh grade. Every single day. She never draws anything else.','blush');
  intel('abbyBird');b.hide=1;
  await glance(1,'Abby turns round. Just for a second. Their eyes meet across the room, over the desks and Tyler’s empty chair.');
@@ -153,7 +153,7 @@ hook({mis:'window',period:3,room:'trailer',who:'auto',cond:()=>winAvail()&&winSt
   pose('corey','up');await N('Corey draws a tiny bird on the back of his hand in pen and holds it up. She can’t see it from there. He keeps holding it up anyway, until his arm shakes.');pose('corey','sit');
  }
  pose('corey','write');await wait(400);pose('corey','sit');
- await N('Corey tears a page out of the back of his textbook and folds it into a paper bird, under the desk, with shaking hands. It takes him four tries. The fourth one is beautiful.');
+ await N('Corey folds a page from his textbook into a paper bird under the desk, hands shaking. Four tries. The fourth one is beautiful.');
  const cr=pprop({t:'crane',x:A.corey.x,y:A.corey.y-22,layer:20});
  const path=['dheva','marcus','alex','abby'].filter(n=>A[n]);
  for(const n of path){await tw(cr,{x:A[n].x,y:A[n].y-22},420);if(n==='dheva')await say('dheva','(passing it on) Cute. Disgusting. Cute.','smirk');if(n==='marcus')await say('marcus','(passing it on, holding it like a live grenade) For the record, I respect this.','smirk')}
@@ -180,7 +180,7 @@ hook({mis:'window',period:3,room:'trailer',who:'auto',cond:()=>winAvail()&&winSt
 /* ---------------- FRIDAY THREE ---------------- */
 hook({mis:'window',period:3,room:'trailer',who:'auto',cond:()=>winAvail()&&winStage()===2,run:async()=>{
  const c=await winClass();
- if(D.f.brettDead){pprop({t:'poster',x:300,y:34,stache:1,layer:-200});await N('There’s a MISSING poster taped to the inside of the Trailer door now. Brett, smiling with too many teeth. Abby walked past it this morning without looking at it.')}
+ if(D.f.brettDead){pprop({t:'poster',x:300,y:34,stache:1,layer:-200});await N('A MISSING poster inside the Trailer door now: Brett, smiling with too many teeth. Abby walked past it this morning without looking.')}
  await N('Period 3. The Trailer. This time, Abby moves first. Before Corey even turns round, a folded note lands on his desk. It flew the whole way across the room.');
  await say('corey','(unfolding it with two fingers like it might explode) It says: “do you ever feel like today already happened?”','shock');
  await say('corey','What do I say? What do I SAY?','scared');
@@ -205,7 +205,7 @@ hook({mis:'window',period:3,room:'trailer',who:'auto',cond:()=>winAvail()&&winSt
  }
  await N('The note gets to Abby anyway. Everyone in the room has heard it now. She reads it anyway, like nobody else is there.');
  await drawBird(2,{heart:1});
- await N('She draws the two birds again. And a very small heart between them. Then she turns all the way round in her chair, puts her chin on the back of it, and just looks at him.');
+ await N('She draws the two birds again, and a very small heart between them. Then she turns round, chin on the back of her chair, and just looks at him.');
  await glance(10,'Ten seconds. The whole class goes quiet and watches. Even Arjun. Ten whole seconds, which is a really long time to look at somebody.');
  await evil('shermian');
  await say('shermian','Ten seconds, Abby. Miss counted. Miss counts EVERYTHING.','evil');
@@ -221,7 +221,7 @@ hook({mis:'window',period:3,room:'trailer',who:'auto',cond:()=>winAvail()&&winSt
  const kids=['corey','arjun','alex','dheva','marcus','tyler','abby'].filter(n=>!D.dead[n]);
  const c=await classIn('trailer',{kids,fixed:only(kids,{corey:4,abby:5,arjun:7,tyler:1,alex:0,dheva:9,marcus:3}),you:6});
  cue('tension');
- await N('Period 3. The Trailer. Everything is wrong. The desks have moved. Corey is by the window now. Abby is at the front, right next to Ms. Sherman’s desk, where she can touch her.');
+ await N('Period 3. Everything’s wrong. The desks have moved. Corey by the window. Abby at the front, right next to Ms. Sherman’s desk.');
  put('shermian',A.abby.x-14,1,{y:A.abby.y-2,pose:'hips'});A.shermian.x=A.abby.x-14;
  await say('shermian','(one hand on Abby’s shoulder) Abby’s Miss’s now. Isn’t that lovely? Abby doesn’t need a window. Abby’s got Miss.','happy');
  face('corey',-1);
@@ -266,7 +266,7 @@ hook({mis:'window',period:3,room:'trailer',who:'auto',cond:()=>winAvail()&&winSt
  A.corey.pose=null;A.abby.pose=null;
  await Promise.all([walk('abby',334,120),walk('corey',334,120)]);
  await say('shermian','(very quietly, watching them go) …Monday, sweeties. Miss will see them Monday.','evil');
- await N('Through the window you watch them run across the field together, hand in hand. Coach throws a javelin at them out of habit. It misses by a lot. They don’t even notice. They are laughing.');
+ await N('Through the window: the two of them running across the field hand in hand. Coach throws a javelin out of habit. It misses by a lot. They’re laughing.');
  await N('Abby shouts something at him as they run. You only catch the end of it. “—the 43! The back seat! Don’t you DARE give it away!”');
  await sweet('shermian');
  D.f.winToday=1;D.f.win4=1;winSet(4);part('window',4);
@@ -276,13 +276,13 @@ hook({mis:'window',period:3,room:'trailer',who:'auto',cond:()=>winAvail()&&winSt
 hook({mis:'window',period:7,room:'bus',who:'abby',label:'Get on the 43 behind Abby and Corey',look:{ex:'blush'},cond:()=>D.f.win4&&!D.dead.corey&&!D.dead.abby,run:async()=>{
  scene('bus',{abby:[184,-1,{y:146}],corey:[166,1,{y:150,hurt:2}],you:[140,1,{y:154}]});
  cue('romance');
- await N('Home time. The 43. Corey gets on first and goes straight to the back seat. The good one, the one by the window. He sits in it like he’s guarding it. Abby sits down next to him.');
+ await N('Home time. Corey gets on the 43 first and takes the back seat by the window, guarding it. Abby sits down next to him.');
  await N('His hand is wrapped up in a whole roll of tissue from the nurse. There’s still some blood coming through. Abby holds the other one.');
  await say('abby','(quietly) Four hundred and twelve.','blush');
  await say('corey','Four hundred and twelve what?','blush');
  await say('abby','Times you’ve looked at me. Since seventh grade. I counted. I’ve got them in my notes app. There’s a graph.','blush');
  await say('corey','(laughing, dying) There’s a GRAPH?','happy');
- await say('abby','I moved here in seventh grade. Middle of the year. Nobody talks to the new girl in the middle of the year. I started drawing the bird on the window so there’d be one thing in that trailer that was mine.','sad');
+ await say('abby','I moved here in seventh grade. Middle of the year. Nobody talks to the new girl mid-year. I started drawing the bird so there’d be one thing in that trailer that was mine.','sad');
  await say('abby','Nobody ever drew one back. For three years. Then you did.','cry');
  if(D.f.brettDead){
   await say('abby','Can I say one more thing? Brett used to read my phone every night. He counted my messages the way you counted my looks. Except he wasn’t counting because he liked them.','sad');
@@ -296,7 +296,7 @@ hook({mis:'window',period:7,room:'bus',who:'abby',label:'Get on the 43 behind Ab
  SFX.door();
  put('reilly',-14,1,{y:150});
  await walk('reilly',120,40);
- await N('At the hospital stop, an old woman gets on with two bags of shopping and nowhere to sit. Mrs. Reilly. She gets on at this stop every day. Corey always gives her his seat.');
+ await N('At the hospital stop, Mrs. Reilly gets on with two bags of shopping and nowhere to sit. Same stop every day. Corey always gives her his seat.');
  await say('corey','(looking at Abby, then at Mrs. Reilly, then at Abby) …I’m sorry. I have to. I always—','sad');
  await say('abby','(smiling, already standing up) I know. That’s why.','happy');
  await walk('corey',196,40);await walk('abby',212,40);put('reilly',A.reilly.x,1,{y:150});await walk('reilly',176,30);A.reilly.pose='sit';
@@ -314,7 +314,7 @@ hook({mis:'window',period:7,room:'bus',who:'abby',label:'Get on the 43 behind Ab
   pose('corey','kiss');pose('abby','kiss');SFX.kiss();fxState.romance=1;prop({t:'heart',x:204,y:110});
   await N('Speed bump by the roundabout. They kiss anyway, badly, then properly. Somebody whoops. The driver honks twice. He has never honked for anything.');
  }else{
-  await N('He holds her hand. Their knuckles are white because the bus is swerving and they’re both standing. Neither of them lets go. At the roundabout, she leans her head on his shoulder.');
+  await N('They’re both standing, gripping hands through the swerves. Neither lets go. At the roundabout she leans her head on his shoulder.');
  }
  await say('abby','(quietly) Monday. Period 3. Ms. Sherman’s going to kill us.','blush');
  await say('corey','Then I’ll look at you first. Before the bell. Before anything. Before she kills us.','blush');

@@ -62,8 +62,8 @@ weekend({id:'jade',name:'The Girl at the Food Court',icon:'🎭',room:'foodcourt
  await say('jade','Lucky guess. I’m a good guesser. Want to go to the arcade?','smirk');
  if(A.hasan)await say('hasan','(from the next table, mouthing very clearly) GO. GO. WHAT THE FUCK ARE YOU DOING. GO.','happy');
  scene('arcade',{you:[120,1,{y:154}],jade:[150,-1,{y:150}]},true);
- await N('At the arcade she plays the claw machine and wins every single time. Without looking. She gives you a little plush shark. Its eyes are stitched on slightly wrong.');
- await N('In the black screen of a broken machine you see her reflection. It isn’t her. It’s a tall grey man with no face. When you look back at her, she’s just Jade, smiling.');
+ await N('She plays the claw machine and wins every time. Without looking. She gives you a plush shark. Its eyes are stitched on slightly wrong.');
+ await N('In a dead machine’s black screen, her reflection: a tall grey man with no face. You look back. She’s just Jade, smiling.');
  await say('jade','You’ve gone pale. Are you okay? Do you want to hold my hand? You can hold my hand.','love');
  if(!D.dead.nivaan){put('nivaan',-14,1,{y:150,pose:'film'});await walk('nivaan',90,80);await say('nivaan','Yo, chat wants to know who your friend—','happy');
   A.jade.k=K.nivaan;SFX.static();await N('Jade turns round. For one second, she has Nivaan’s face. Exactly his face. Down to the mustache he’s trying to grow.');
@@ -106,12 +106,12 @@ weekend({id:'party',name:'Marcus’s House Party',icon:'🎉',room:'party',who:[
  const ids=['marcus','omer','jacob','paul','kayden','stella','sean','hasan','arjun'].filter(n=>!D.dead[n]);
  const cast={you:[30,1,{y:156}]};ids.forEach((n,i)=>cast[n]=[60+i*28,i%2?-1:1,{y:140+(i%3)*6,pose:i%3===0?'cheer':null}]);
  scene('party',cast,true);cue('arcade');
- await N('Marcus’s house. Every light is on. The karaoke is on. Somebody has put dish soap in the hot tub and the foam is coming in through the back door like a slow white wave.');
+ await N('Marcus’s house. Every light on. Karaoke on. Dish soap in the hot tub, and the foam coming in the back door like a slow white wave.');
  await say('marcus','Welcome to my home. Touch nothing. Touch everything. I genuinely don’t care, my parents are in Cabo and I think they’ve left me.','smirk');
  for(let r=0;r<3;r++){
   const c=await choose(['Karaoke.','The kitchen.','The hot tub.'],'What now? ('+(r+1)+' of 3)');
   if(c===0){if(A.sean&&A.stella){pose('sean','sing');pose('stella','sing');await N('Sean and Stella do a duet of a song about a breakup, staring into each other’s eyes, completely missing the point of the song.');pose('sean',null);pose('stella',null)}else await N('You do karaoke alone. Nobody claps. Somebody throws a shoe. It’s a good throw.')}
-  if(c===1){if(A.paul){pose('paul','grab');SFX.crunch();shake(1.2);await N('In the kitchen, Paul has decided he can lift the fridge. He can. He does. He carries it outside and puts it in the hot tub. Nobody knows why. Paul doesn’t know why.');pose('paul',null)}else await N('The kitchen. There are four hundred cups and no drinks.')}
+  if(c===1){if(A.paul){pose('paul','grab');SFX.crunch();shake(1.2);await N('Paul decides he can lift the fridge. He can. He carries it outside and puts it in the hot tub. Nobody knows why. Paul doesn’t know why.');pose('paul',null)}else await N('The kitchen. There are four hundred cups and no drinks.')}
   if(c===2){if(A.jacob){await N('Jacob climbs onto the garage roof, shouts “WATCH THIS”, and backflips into the hot tub. The hot tub is two feet deep.');SFX.splat();blood(270,100,30,null,80,150);await say('jacob','(surfacing, face covered in blood) I’m FINE. I’m so fine. Is my nose on the front or the side?','happy')}else await N('The hot tub is full of strangers. One of them is a man in his forties. Nobody knows him. He seems happy.')}
  }
  if(A.kayden){await say('kayden','My cousin from Wales is here. He drove down. It’s an eleven-hour drive. He’s outside. He won’t come in. He’s just looking at the house.','smirk')}
@@ -163,7 +163,7 @@ weekend({id:'premiere',name:'The Premiere',icon:'🎬',room:'foodcourt',who:['ch
  scene('foodcourt',cast,true);prop({t:'screen',x:160,y:70,layer:-100});cue('mall');
  await say('cheeks','Welcome. To the premiere. Of a film. That changed us. As men.','cry');
  await say('clapper','It’s three hours and forty minutes. There is no intermission. There is no plot. There is only the slap.','closed');
- await N('The movie is three hours and forty minutes of two grown men slapping each other’s faces with their cheeks in slow motion, in different locations around Fair City, set to classical music.');
+ await N('Three hours forty of two grown men slapping each other with their cheeks in slow motion, all over Fair City, set to classical music.');
  if(A.arjun)await say('arjun','(two hours in) I hate that I’m invested. I hate that I need to know who wins.','angry');
  await N('Final scene: Cheek-Clapper’s slap catches Cheeks with a fingernail. Blood sprays the lens. It was real. Nobody noticed on set.');
  if(A.omer)await say('omer','(wiping his face) Is this the 4D version?','shock');
@@ -199,7 +199,7 @@ weekend({id:'karts',name:'The Shopping Cart Grand Prix',icon:'🛒',room:'carpar
   if(!save_){SFX.scream();await tw(me,{y:200},500);await N('The cart goes off the roof. You go with it. Four floors. It turns out shopping carts don’t have brakes and the ground doesn’t have mercy.');await die('cart');return}
   await N('You grab the barrier. The cart goes off the roof without you. Four floors down, it lands on Big Glen’s car.');
  }
- SFX.crunch();await N('Kayden’s cart clips a speed bump and launches. Kayden goes over the front, bounces off a Honda Civic, and lands on his face on the concrete. He gets up. He has fewer teeth.');
+ SFX.crunch();await N('Kayden’s cart hits a speed bump and launches. He bounces off a Civic and lands face-first. He gets up. He has fewer teeth.');
  blood(A.kayden.x,A.kayden.y-20,30,null,80,A.kayden.y+2);
  await say('kayden','(spitting out a tooth) STILL HITTAZ. STILL RACING.','yell');
  await walk('glen',A.kayden.x+12,90);pose('glen','point');SFX.static();shake(.8);

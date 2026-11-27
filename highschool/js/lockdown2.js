@@ -64,7 +64,7 @@ async function lockdownIntro(){
  const I=A.intruder;I.noPush=1;LDS.alarmX=fromL?308:12;
  if(typeof camZoom==='function')await camZoom(fromL?20:300,I.y-14,2.2,300);
  SFX.door&&SFX.door();await walk('intruder',fromL?60:260,22);
- await N('The fire doors at the end of the hall swing open. Somebody walks in. Older. Black hoodie, hood up. He is holding something low, down by his leg. He hasn’t seen you yet.');
+ await N('The fire doors at the end of the hall swing open. Older kid, hood up, holding something low by his leg. He hasn’t seen you yet.');
  if(typeof camZoom==='function')await camZoom(A.you.x,A.you.y-18,1.5,500);
  await N('Your heart is so loud he must hear it. Every exit is locked. The fire alarm is at the far end. And he has to turn his back sometime.');
  if(typeof camZoom==='function')await camZoom();
@@ -131,7 +131,7 @@ async function takedown(fromStruggle){
  kill('intruder','lie',{pool:42,bleed:4,spray:30});
  if(!TEST)await new Promise(r=>setTimeout(r,900));slowmo(1);pose('you',null);LDS.rate=0;LDS.beat=1e9;
  if(typeof camZoom==='function')await camZoom();
- await N('It’s so loud your ears stop working. When they come back there’s only ringing, and the hall, and him, and you. You don’t remember deciding. You only remember the sound.');
+ await N('So loud your ears stop working. Then just ringing, and the hall, and him, and you. You don’t remember deciding. Only the sound.');
  hold('you',null);return aftermath('shot')}
 async function lastStruggle(){
  const I=A.intruder;if(!I)return aftermath('waited');

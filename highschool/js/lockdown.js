@@ -175,7 +175,7 @@ async function lockRun(){
  await say('you','(whispering) …Please. I have a family. I have a— I have a very small family.');
  e.hide=1;
  await reveal(236,128,1,'It steps into the light.');
- await N('It’s a raccoon. It’s holding a cinnamon roll from Fair City Mall in both hands like a steering wheel. It looks at you like YOU’RE the one who’s in the wrong place.');
+ await N('A raccoon, holding a Fair City cinnamon roll like a steering wheel. It looks at you like YOU’RE the one in the wrong place.');
  await say('you','…Was that you? Was the whole school… you?');
  await N('It takes a bite of the cinnamon roll, maintaining eye contact, and waddles back into the trees.');
  await say('adam','(very faint, from the school PA, across the field) …all clear… all clear… it was a… it was a RACCOON… Coach, put the javelin DOWN—','shock');
@@ -211,7 +211,7 @@ async function lockFight(){
  await say('you','(whispering) On three. One… two…');
  e.hide=1;
  const r=await reveal(96,112,1,'Pat flips the cafeteria lights on.');
- await N('It’s a raccoon. It’s on the counter. It is holding a corn dog in both hands. It has knocked over eleven pots to get one corn dog. It is completely, perfectly calm.');
+ await N('A raccoon on the counter with a corn dog in both hands. Eleven pots knocked over for one corn dog. It is perfectly calm.');
  await N('Everybody looks at each other. Everybody is covered in blood, bleach, and fire extinguisher. Most of the blood is from each other.');
  if(A.omer)await say('omer','…I hit Angelo for a RACCOON?','shock');
  if(A.arjun)await say('arjun','(lowering the safety scissors) Nobody is telling anyone about today. Ever.','angry');
@@ -255,7 +255,7 @@ async function lockHide(){
  const r=pprop({t:'raccoon',x:-10,y:118,dir:1,still:1,layer:4});
  put('coach',-18,1,{y:150});await walk('coach',30,60);
  r.x=36;r.y=122;fxState.dark=0;SFX.power();flash('#fff',.3);
- await N('Coach walks past the library door with it in a headlock. It’s a raccoon. It’s a raccoon. The whole school was locked down for an hour and a half because of a raccoon.');
+ await N('Coach walks past the library door with it in a headlock. A raccoon. The whole school locked down for ninety minutes for a raccoon.');
  await say('coach','(to the raccoon) Good HUSTLE. Good effort. You’d make the team.','smirk');
  await N('Coach and the raccoon go off down the corridor together. Nobody moves for a while. Then everybody, very quietly, puts their weapons back in their bags.');
  for(const k in A)if(k!=='you'&&A[k]&&!A[k].dead){A[k].pose=null;A[k].hold=null}

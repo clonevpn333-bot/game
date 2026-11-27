@@ -141,7 +141,7 @@ hook({mis:'voss',period:6,room:'chem',who:'auto',cond:()=>has('key'),run:async()
  const kids=['david','nivaan'].filter(n=>!D.dead[n]);
  const c=await classIn('chem',{kids,fixed:Object.fromEntries(kids.map((n,i)=>[n,i+2])),you:0});
  cue('chem');
- await N('Period 7. The chem lab. The fridge at the back hums a note you can feel in your teeth. The key from his lanyard is in your pocket. It’s cold. It shouldn’t be cold.');
+ await N('Period 7. Chem. The back fridge hums a note you feel in your teeth. His key is in your pocket. It’s cold. It shouldn’t be cold.');
  await say('voss','Today: dissolving! Who wants to see something dissolve?','happy');
  hold('voss','drumstick');await walk('voss',256,40);pose('voss','throw');await wait(220);hold('voss',null);pose('voss',null);SFX.squelch();prop({t:'smoke',x:272,y:116});
  await N('He drops a chicken drumstick into the vat. It fizzes, goes white, and is gone in about the time it takes to blink twice.');

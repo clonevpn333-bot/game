@@ -88,7 +88,7 @@ const EP_english=[
   const a=inRoom(c,['arjun','marcus','hasan']);
   if(a){await walk(t,A[a].x-12,70);hold(t,'paper');
    await say(t,'(reading '+K[a].n+'’s out loud) “Dear Mr. Pizza Guy. I tip you three dollars because I am scared of you.” … Darling, that is the most honest thing anyone’s written in this room all year. Could OF been better spelled.','smirk');hold(t,null);await walk(t,TEACHER_SPOT.english[0],70);face(t,1)}
-  await N('On the corner of her desk there’s an envelope she didn’t take out of anyone’s bag. It says GERALD in her handwriting. When her phone buzzes, she turns it face down without looking.');
+  await N('On her desk, an envelope that isn’t from anyone’s bag: GERALD, in her handwriting. Her phone buzzes. She turns it face down without looking.');
   if(ch===2&&here_('aidan'))await say('aidan','(not looking up) I got a letter. From you. Just now. I’ll keep it forever.','happy');
  },
  /* 2: the phone call */
@@ -111,7 +111,7 @@ const EP_english=[
    await say(t,'Go and sit down. Thank you. Go and sit DOWN.','sad');D.f.baldufKind=(D.f.baldufKind||0)+1;
    await walk('you',c.mine.x,70);pose('you','sit')}
   else if(c2===1){await walk('you',TEACHER_SPOT.english[0]+12,80);pose('you','reach');hold('you','paper');
-   await N('“Gerald. They say a week now. I am bringing your crossword in tomorrow. You will pretend to know who I am. I will pretend to believe you. That is marriage, my love.”');
+   await N('“Gerald. A week, they say. I’ll bring your crossword tomorrow. You’ll pretend to know me. I’ll pretend to believe you. That’s marriage, my love.”');
    hold('you',null);pose('you',null);await walk('you',c.mine.x,80);pose('you','sit');D.f.baldufRead=1}
   A[t].pose=null;await walk(t,TEACHER_SPOT.english[0],60);A[t].pose='hips';face(t,1);
   await say(t,'(red eyes, perfectly calm) Page twelve.','sad');
@@ -149,7 +149,7 @@ const EP_english=[
    await say(t,'(sweetly) Of course, darling. I’ll walk you.','happy');
    await walk(t,A[v].x-10,70);pose(t,'grab');await Promise.all([walk(t,-20,60),walk(v,-12,60)]);
    SFX.door();await wait(500);SFX.scream();await wait(300);SFX.thud();
-   await N('They go out together. The scream from the supply closet is very short. A minute later, Ms. Balduf comes back alone. There’s something red on her cardigan and her pen is missing.');
+   await N('They go out together. The scream from the supply closet is very short. Ms. Balduf comes back alone. Red on her cardigan. No pen.');
    put(t,-14,1,{y:146});await walk(t,TEACHER_SPOT.english[0],60);D.dead[v]=1;delete A[v]}
   const ch=await choose(['Pass a card round the class. For her husband.','Write your obituary. Make it short.']);
   if(ch===0){hold('you','card');await N('You pass a blank card under the desks. By the time it gets back to you, everybody has signed it. Even Arjun. He wrote “sorry about your guy, miss”.');hold('you',null);D.f.baldufCard=1}
@@ -334,7 +334,7 @@ const EP_gym=[
    await Promise.all([walk(t,-20,70),walk(v,-12,70)]);SFX.door();await wait(500);SFX.crunch();SFX.thud();
    await N('Only Coach comes back. He’s carrying the cones. One of them is dripping.');put(t,-14,1,{y:146});await walk(t,TEACHER_SPOT.gym[0],70);D.dead[v]=1;delete A[v]}
   const ch=await choose(['Sign the #12 jersey he’s hung on the wall.','Stay out of his way.']);
-  if(ch===0){await N('Coach has hung Tommy’s #12 jersey on the climbing bars. You write “get up, Tommy” on the back in marker. Coach sees. He doesn’t say anything. He has to turn away.');D.f.tommy=(D.f.tommy||0)+1}
+  if(ch===0){await N('Tommy’s #12 jersey hangs on the climbing bars. You write “get up, Tommy” on the back. Coach sees. He says nothing. He has to turn away.');D.f.tommy=(D.f.tommy||0)+1}
   hold(t,null);
  },
  async(c,t)=>{
@@ -396,7 +396,7 @@ const EP_chem=[
  },
  async(c,t)=>{
   hold(t,'phone');
-  await N('Mr. Voss props his phone up against a beaker. On the screen: a very old woman in a hospital bed. He speaks to her very gently, in a language nobody in the room knows.');
+  await N('Mr. Voss props his phone on a beaker. A very old woman in a hospital bed. He talks to her gently, in a language nobody in the room knows.');
   await say(t,'This is Mama, young scientists. Say hello. Mama needs a kidney. Mama has been on the list for four years.','sad');
   await say(t,'Quick quiz! Hands up who has two kidneys!','happy');
   for(const k of c.kids.filter(here_))A[k].pose='up';
@@ -715,7 +715,7 @@ const EP_hall=[
   if((D.f.adamKind||0)>=2){
    await say(t,'Last assembly before the inspection, kids. I was going to read you the rules. I’m not going to.','sad');
    await say(t,'I just want to say: you’re all still here. That’s it. That’s the speech. That’s the hardest thing anybody does in this building and you all do it every day.','cry');
-   SFX.cheer();await N('Somebody starts clapping. It turns into a standing ovation. Mr. Adam takes off his tie and throws it into the crowd like a rock star. Arjun catches it. Arjun cries.');
+   SFX.cheer();await N('A standing ovation. Mr. Adam throws his tie into the crowd like a rock star. Arjun catches it. Arjun cries.');
    return;
   }
   await say(t,'(laughing at nothing) Last assembly! I’m going to sing! Nobody can stop me!','happy');

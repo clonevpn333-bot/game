@@ -105,7 +105,7 @@ hook({mis:'nursecal',period:[2,4],room:'nurse',who:'nurse',label:'“My stomach 
  await walk('nurse',340,70);remove('nurse');
  A.you.pose=null;await walk('you',300,70);A.you.back=1;
  await camZoom(305,76,2.4,500);
- await N('The heart-shaped calendar. Monday: COACH 💪 (cardio). Wednesday: MR. GRIEVE 📜 (“history lesson” — she drew a little wink). Friday: MR. ADAM (out of pity) (he cried last time).');
+ await N('The heart calendar. Mon: COACH 💪 (cardio). Wed: MR. GRIEVE 📜 (“history lesson”, little wink). Fri: MR. ADAM (out of pity) (he cried).');
  await N('Thursday has all three names on it, crossed out, then rewritten, then crossed out, and then just the word “WHY” in red pen.');
  await camZoom();A.you.back=0;
  D.f.nc1=1;part('nursecal',1);return 'stay';
@@ -132,7 +132,7 @@ hook({mis:'nursecal',period:4,room:'nurse',who:'auto',cond:()=>D.f.nc2&&!D.done.
   await N('The worst fight you’ve ever seen. Coach swings a crutch. Mr. Grieve fixes a bayonet to a thermometer. Nurse Pam takes everyone’s blood pressure anyway.');await complete('nursecal','brawl')}
  else if(c===1){A.you.pose=null;await walk('you',120,80);await say('nurse','(slowly turning to you) …Stomach ache. Lie down, sweetie. I’m going to give you a shot. A big one.','evil');
   await N('She chases you out of the office with a syringe the size of a flashlight. Three grown men watch you go, holding their flowers, and then look back at each other.');await complete('nursecal','caught')}
- else{await N('You pull the curtain round the four of them and walk out. Behind you there’s a long, long silence. Then Mr. Adam says “…so is this a group thing now?” and nobody says no.');
+ else{await N('You pull the curtain round the four of them and leave. A long silence. Then Mr. Adam: “…so is this a group thing now?” Nobody says no.');
   await N('By Friday the four of them are seen at the Fair City Applebee’s, sharing a blooming onion. Nobody at Highgate is ever, ever okay again.');await complete('nursecal','love')}
  return 'stay';
 }});
@@ -156,7 +156,7 @@ hook({mis:'gains',period:2,room:'weightroom',who:'paul',label:'Ask Paul why he�
 hook({mis:'gains',period:4,room:'canteen',who:'auto',cond:()=>D.f.gn1&&!D.done.gains&&!D.dead.coach,run:async()=>{
  const cast={coach:[180,-1,{y:146,hold:'mug'}],you:[90,1,{y:154}]};if(!D.dead.paul)cast.paul=[114,1,{y:150,pose:'cross'}];for(const k of['hasan','omer','jacob'])if(!D.dead[k])cast[k]=[230+['hasan','omer','jacob'].indexOf(k)*20,-1,{y:150,pose:'sit'}];
  scene('canteen',cast,true);await beat('GAINS','PART TWO · THE SHAKE');
- await N('Coach shakes his protein in front of the whole cafeteria like he always does. Shake shake shake. Eye contact. He drinks the whole thing in one go and slams the cup down.');
+ await N('Coach shakes his protein in front of the whole cafeteria. Shake shake shake. Eye contact. One gulp. Slams the cup down.');
  await say('coach','THAT’S how a man refuels. Anybody want to see a man refuel AGAIN?','yell');
  const c=await choose(['Watch.','Tell him what was in it.','Offer Paul the second shake. For courage.']);
  if(c===1){await say('coach','(going very still) …Paul.','evil');await N('Coach breathes through his nose, like a dragon deciding something. Then he walks out, very calm. Nobody sees him till Monday. Paul gets detention for the year.');await complete('gains','caught');return 'stay'}

@@ -65,14 +65,14 @@ hook({mis:'codebrown',_bomb:1,period:[3,5,6],get room(){return D&&myClassFor(D.p
  const T_=['coach','voss','balduf','grieve','shermian','loach'].filter(k=>K[k]&&!D.dead[k]);
  const hc={you:[40,1,{y:156}]};K.gimp.top='#2a2228';K.gimp.pants='#2a2228';T_.forEach((k,i)=>hc[k]=[200+i*18,-1,{y:146}]);for(const k of kids)hc[k]=[60+kids.indexOf(k)*16,1,{y:152}];
  scene('corridor',hc,true);const door=prop({t:'stalldoor',x:296,y:140,layer:-20});
- await N('You follow the screaming out into the Main Corridor. Every teacher in the building is in a line outside the one staff toilet, clenching like their lives depend on it, because they do.');
+ await N('Every teacher in the building is lined up outside the one staff toilet, clenching like their lives depend on it. They do.');
  for(const k of T_)if(A[k]){A[k].shake=1;A[k].ex='scared'}
  if(A.voss)await say('voss','I have a DOCTORATE. I will not shit myself in a hallway like a common undergraduate.','scared');
  if(A.balduf&&A.grieve){await say('balduf','Barnaby. Let me cut. I’ll do the thing you like. The thing with the stamp.','scared');await say('grieve','Not even for the stamp, Doris. Not TODAY.','scared')}
  if(A.shermian)await say('shermian','(through her teeth) If any of you children laugh I will pull your spines out through your mouths. AFTER.','scared');
  if(A.coach){await say('coach','I held it in through Desert Storm and two divorces. I can hold it in for— oh. Oh no. Oh no no no no.','scared');
   SFX.squelch&&SFX.squelch();shake(1);brownSpray(A.coach.x,A.coach.y-10);poop(A.coach.x,A.coach.y+2,90);poop(A.coach.x-30,A.coach.y+5,70);poop(A.coach.x-70,A.coach.y+8,50);A.coach.ex='closed';A.coach.shake=0;
-  await N('Coach does not hold it in. It comes out of his tracksuit leg like a fire hose. It pools. It SPREADS. It reaches Mr. Voss’s good shoes, and Mr. Voss makes a noise no human should make.');
+  await N('Coach doesn’t hold it in. It comes out his tracksuit leg like a fire hose. It SPREADS. It reaches Mr. Voss’s good shoes. Voss makes a noise.');
   await say('coach','(very calm, eyes closed) …Nobody says a goddamn word.','closed')}
  if(A.coach&&typeof spew==='function'){
   await N('Then the pressure builds back up. Coach turns, slowly, to face the wrong way, which is towards you.');
@@ -92,7 +92,7 @@ hook({mis:'codebrown',_bomb:1,period:[3,5,6],get room(){return D&&myClassFor(D.p
   await say('voss','(squatting over the recycling) This is going in the jars. ALL of you are going in the jars.','angry');
   if(typeof repAdd==='function')repAdd('feared',1);await complete('codebrown','locked');return 'stay'}
  if(c===1){await walk('you',20,140);pose('you','reach');SFX.bell&&SFX.bell();pose('you',null);fxState.tint='#6a8ab8';fxState.tintA=.18;
-  await N('The fire alarm goes off. The sprinklers come on. Eight inches of brown water starts moving down the Main Corridor like a tide, carrying three trash cans, a lanyard and Ms. Balduf’s cardigan.');
+  await N('Fire alarm. Sprinklers. Eight inches of brown water rolls down the Main Corridor carrying three trash cans, a lanyard and Ms. Balduf’s cardigan.');
   await N('Nine hundred kids file out to the parking lot past the staff, who are standing completely still in the rain, ruined, looking at nothing.');
   fxState.tintA=0;if(typeof repAdd==='function')repAdd('legend',1);await complete('codebrown','alarm');return 'stay'}
  pose('you','phone');await N('You film the whole thing. Coach. The tide. Mr. Voss climbing onto a radiator. Ms. Sherman, perfectly still, a single tear rolling down her face.');
@@ -134,7 +134,7 @@ spot({room:'carpark',x:236,y:150,label:'Deliver the key bowl to the rocking whit
  await N('The van starts rocking twice as fast. The left tire squeaks on every beat. A sock is pressed against the inside of the window and slowly slides down it.');
  v.rock=0;SFX.door&&SFX.door();
  put('shermian',250,-1,{y:150});await walk('shermian',222,50);face('shermian','you');
- await N('The side door slides open a foot and Ms. Sherman steps out, perfectly calm, buttoning her blouse up to the very top, with her hair completely flat on one side and somebody else’s glasses on.');
+ await N('The side door slides open and Ms. Sherman steps out, calm, buttoning her blouse to the top. Hair flat on one side. Someone else’s glasses on.');
  await say('shermian','(holding out her hand for the bowl, eyes dead) You saw nothing. You’re going to tell everyone you saw nothing. And if I hear “key party” in my hallway, I’ll find out whose key you are.','cold');
  const c=await choose([{t:'Hand her the bowl. Swap two keys first.',tag:'🔑'},{t:'Hand her the bowl. Then take off the handbrake.',tag:'🚐'},{t:'Hand her the bowl. Take your money. Leave.',tag:'💵'}]);
  take('keybowl');
@@ -147,7 +147,7 @@ spot({room:'carpark',x:236,y:150,label:'Deliver the key bowl to the rocking whit
  if(c===1){await walk('shermian',250,50);remove('shermian');await walk('you',270,60);pose('you','reach');SFX.door&&SFX.door();pose('you',null);await walk('you',150,90);
   v.rock=2;await N('Click. The van rolls. It rolls slowly at first, still rocking, still squeaking on the beat, and then it hits the ramp.');
   await tw(v,{x:420},1400,'in');SFX.crash&&SFX.crash();shake(1.2);
-  await N('Three floors of ramp at forty miles an hour, nine teachers screaming in harmony, into the mall fountain. Steam. Then Coach, wearing only the whistle. Still blowing it.');
+  await N('Three floors of ramp at forty mph, nine teachers screaming in harmony, straight into the mall fountain. Steam. Coach, in only the whistle. Still blowing it.');
   if(typeof repAdd==='function')repAdd('legend',2,'The Key Bowl');await complete('keybowl','brake');return 'stay'}
  await say('shermian','(taking the bowl) Good. Smart. You’ll go far. Not tonight. Tonight you go home.','cold');await walk('shermian',250,50);remove('shermian');
  D.money=(D.money||0)+(D.f.kb40?40:20);updateLoc();toast('+$'+(D.f.kb40?40:20));
@@ -184,7 +184,7 @@ spot({room:'corridor',x:30,y:150,label:'Punch 6969 into the boiler room keypad',
  scene('boiler',cast,true);fxState.tint='#a01020';fxState.tintA=.16;
  prop({t:'swing',x:150,y:150,layer:-30});prop({t:'whips',x:80,y:110,layer:-40});
  if(typeof beat==='function')await beat('THE BOILER ROOM','PART TWO · NOT THE BODIES');
- await N('Not bodies. A red bulb. A leather swing chained to the boiler pipes. A pegboard of labeled whips. And in the middle, zipped into black leather: something shaped exactly like Coach.');
+ await N('Not bodies. A red bulb. A leather swing on the boiler pipes. Labeled whips. And zipped into black leather: something shaped exactly like Coach.');
  A.gimp.shake=1;await say('gimp','MMMPH. MMMMPH.','scared');A.gimp.shake=0;
  if(A.kenneth){await say('kenneth','Is that… is that a SWING? Like for babies?','scared');await say('gimp','MMMMMMPH.','angry');await say('kenneth','He says it’s not for babies.','scared')}
  const c0=await choose(['Unzip the mouth.','Walk around him once, slowly.']);
@@ -203,7 +203,7 @@ spot({room:'corridor',x:30,y:150,label:'Punch 6969 into the boiler room keypad',
   fxState.tintA=0;if(typeof repAdd==='function')repAdd('feared',2,'you own Coach now');D.f.coachPhoto=1;await complete('dungeon','photo');return 'stay'}
  await walk('you',-20,170);scene('office',{you:[244,1,{y:152,pose:'phone'}]},true);prop({t:'pabox',x:262,y:120,layer:5,on:1});fxState.tintA=0;
  await say('you','(on every speaker in the school) PROTEIN. I repeat. PROTEIN. Somebody go get Coach out of the boiler room, he’s been in the leather since Tuesday.');
- await N('Every classroom goes silent. Then, from the science wing, the sound of Mr. Voss running. Then, from the gym, the PE class, chanting “PRO-TEIN” in unison, and it never, ever stops.');
+ await N('Silence. Then Mr. Voss running in the science wing. Then the PE class chanting “PRO-TEIN” in the gym. It never stops.');
  pose('you',null);if(typeof repAdd==='function')repAdd('legend',2,'PROTEIN');await complete('dungeon','safeword');return 'stay';
 }});
 /* the keypad is on the wall once you know about it */
@@ -304,7 +304,7 @@ hook({mis:'replyall',period:4,room:'canteen',who:'auto',_bomb:1,cond:()=>D.f.ra2
  await say('adam','(seeing the screen) That was ONE TIME. It was ONE TIME, Doris was being DRAMATIC—','yell');
  await N('The entire cafeteria, all at once, quietly: “budget.”');
  const c=await choose([{t:'Leave it on. Let it scroll.',tag:'📺'},{t:'“Sorry sir.” Then reply-all to the staff chat: “Hi it’s the students.”',tag:'💬'},{t:'Pull the plug. Screenshot everything first.',tag:'📸'}]);
- if(c===0){await N('Mr. Adam stands in front of the TV with his arms out like a goalkeeper. It’s a big TV. He’s not a big man. Everyone can see “for six years” over his left shoulder.');
+ if(c===0){await N('Mr. Adam stands in front of the TV with his arms out like a goalkeeper. Big TV. Small man. “for six years” is still visible over his shoulder.');
   if(typeof repAdd==='function')repAdd('legend',2,'Reply All');await complete('replyall','screen');return 'stay'}
  if(c===1){pose('you','phone');await dms('Highgate Staff 🍎 (NO STUDENTS!!)','14 members',[['me','hi it’s the students 👋','12:31'],['them','MS. SHERMAN: …','12:31'],['them','NURSE PAM: oh no','12:31'],['them','COACH: how long have you been in here','12:32'],['me','since the copier','12:32'],['them','MR. GRIEVE: Delete this chat. Delete this chat. Delete my LIFE.','12:32']]);
   pose('you',null);if(typeof repAdd==='function')repAdd('feared',2,'you’re in the staff chat');await complete('replyall','teachers');return 'stay'}
