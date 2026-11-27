@@ -12,7 +12,7 @@
 {
 /* [extra leg, extra body, width] */
 const BUILD={
- shermian:[9,6,10], sherman:[-1,3,18], loach:[7,5,12], voss:[13,7,9], coach:[0,8,21], pat:[0,5,21],
+ shermian:[3,5,12], sherman:[-1,3,17], loach:[7,5,12], voss:[13,7,9], coach:[0,8,21], pat:[0,5,21],
  balduf:[1,3,17], adam:[4,5,15], kim:[7,3,12], grieve:[11,5,11], dahl:[9,3,10], fenwick:[11,2,9],
  byte:[0,4,18], tarn:[3,5,16], oakes:[5,7,20], lyle:[8,5,11], cheeks:[3,8,22], clapper:[3,8,22],
  glen:[2,9,23], sub:[8,3,12], kettle:[1,4,18], pratt:[7,3,11]

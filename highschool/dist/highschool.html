@@ -27347,7 +27347,7 @@ ON_PERIOD.push(async()=>{try{badge()}catch(e){}});
 {
 /* [extra leg, extra body, width] */
 const BUILD={
- shermian:[9,6,10], sherman:[-1,3,18], loach:[7,5,12], voss:[13,7,9], coach:[0,8,21], pat:[0,5,21],
+ shermian:[3,5,12], sherman:[-1,3,17], loach:[7,5,12], voss:[13,7,9], coach:[0,8,21], pat:[0,5,21],
  balduf:[1,3,17], adam:[4,5,15], kim:[7,3,12], grieve:[11,5,11], dahl:[9,3,10], fenwick:[11,2,9],
  byte:[0,4,18], tarn:[3,5,16], oakes:[5,7,20], lyle:[8,5,11], cheeks:[3,8,22], clapper:[3,8,22],
  glen:[2,9,23], sub:[8,3,12], kettle:[1,4,18], pratt:[7,3,11]
@@ -27500,7 +27500,7 @@ const idOf=k=>k&&(k._id||(k._id=Object.keys(K).find(i=>K[i]===k)||Object.keys(K)
   const {hw,hd}=kidGeom(k,o);f(k,x,hy,d,hw,hd,x+d,hy+(k.knob?6:5))}catch(e){}}}
 
 /* walks: [speed, bounce, sway] */
-const GAIT={coach:[.75,2,0],voss:[.55,0,0],shermian:[1.35,0,1],sherman:[.7,1,1],pat:[.85,1,2],adam:[1.8,1,0],kim:[1.15,3,0],loach:[.6,0,0],
+const GAIT={coach:[.75,2,0],voss:[.55,0,0],shermian:[.5,1,1],sherman:[.45,1,1],pat:[.85,1,2],adam:[1.8,1,0],kim:[1.15,3,0],loach:[.6,0,0],
  balduf:[1.3,1,1],grieve:[.6,0,0],glen:[.7,2,1],cheeks:[.8,2,1],clapper:[.8,2,1],sub:[1,1,0]};
 {const _dk=drawKid;drawKid=function(k,x,y,o){
  const id=k&&k.adult&&idOf(k),G_=id&&GAIT[id];
@@ -27518,6 +27518,38 @@ const HABIT={coach:['hips',2],shermian:['cross',3],voss:['hold',2],pat:['cross',
   a._hb=(a._hb==null?4+Math.random()*6:a._hb-s);
   if(a._hb<=0){if(a._hbOn){if(a.pose===H_[0])a.pose=null;a._hbOn=0;a._hb=6+Math.random()*8}
    else if(!a.pose){a.pose=H_[0];a._hbOn=1;a._hb=H_[1]}}}}}
+}
+
+/* ---- Ms. Sherman is OLD. Both of her. Grey, hunched, a face like a walnut, and a crutch. ---- */
+{
+if(K.shermian)Object.assign(K.shermian,{hair:'#d4d0cc',old:1});
+if(K.sherman)Object.assign(K.sherman,{old:1});
+const OLDS=new Set(['shermian','sherman']);
+const idOf2=k=>k&&Object.keys(K).find(i=>K[i]===k);
+/* the walnut */
+{const _dh=drawHead;drawHead=function(k,x,hy,d,o){_dh(k,x,hy,d,o);
+ try{const id=idOf2(k);if(!OLDS.has(id)||!o||o.crushed||o.back||o.ex==='dead')return;
+  const {hw,hd}=kidGeom(k,o),hx=x-(hw>>1),ex=x+d,ey=hy+(k.knob?6:5),ln='rgba(70,40,30,.28)';
+  R(hx+3,hy+2,hw-6,1,ln);R(hx+4,hy+3,hw-8,1,ln);                                     /* forehead */
+  R(ex-6,ey,1,1,ln);R(ex-6,ey+1,1,1,ln);R(ex+5,ey,1,1,ln);R(ex+5,ey+1,1,1,ln);       /* crow’s feet */
+  R(ex-4,ey-1,2,1,'rgba(70,40,30,.35)');R(ex+2,ey-1,2,1,'rgba(70,40,30,.35)');       /* droopy lids */
+  R(ex-4,ey+2,2,1,ln);R(ex+2,ey+2,2,1,ln);                                           /* bags */
+  R(ex-5,ey+3,1,3,ln);R(ex+4,ey+3,1,3,ln);                                           /* sagging cheeks */
+  R(ex-1,ey+6,1,1,ln);R(ex+1,ey+6,1,1,ln);                                           /* lip lines */
+  R(hx+2,ey+4,1,1,'rgba(120,80,40,.45)');R(hx+hw-3,hy+3,1,1,'rgba(120,80,40,.45)');R(ex+3,ey+5,1,1,'rgba(120,80,40,.35)'); /* liver spots */
+  R(hx+1,hy+hd-1,hw-2,1,'rgba(70,40,30,.2)')}catch(e){}}}                           /* turkey neck line */
+/* the crutch, on the side she faces, swinging as she walks */
+{const _dk=drawKid;drawKid=function(k,x,y,o){const r=_dk(k,x,y,o);
+ try{const id=idOf2(k);if(!OLDS.has(id)||!o||!r||o.back||o.front||['sit','write','lie','kneel','beg','sob','crouch','swim'].includes(o.pose))return r;
+  const d=o.dir||1,G=kidGeom(k,o),sw=o.moving?Math.round(Math.sin((o.walk||0))*2):0;
+  const cx=Math.round(x)+d*((G.bw>>1)+3)+sw,top=r.by+5,bot=Math.round(y)-1;
+  R(cx-1,top,3,1,'#9a9aa2');R(cx-1,top+1,1,2,'#9a9aa2');                            /* arm cuff */
+  R(cx,top,1,bot-top,'#b8b8c0');R(cx,top,1,bot-top,'rgba(255,255,255,.15)');           /* the pole */
+  R(cx-1,top+6,3,1,'#7a7a82');                                                         /* hand grip */
+  R(cx-1,bot,3,1,'#2a2a2a')                                                            /* rubber foot */
+ }catch(e){}return r}}
+/* slower, with a hitch */
+if(typeof GAIT!=='undefined'){}
 }
 
 </script>
