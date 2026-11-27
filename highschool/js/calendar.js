@@ -49,7 +49,7 @@ dayIntro=async function(died){
 
 newDay=async function(died){
  busy=false;closeOverlays();
- if(!P.calStarted){P.cal=1;P.calStarted=1}
+ if(!P.calStarted){P.cal=1;P.calStarted=1;P.runId=(P.runId||0)+1;try{CARRY=null}catch(e){}P.dayStart=null}
  else if(!died)P.cal=(P.cal||1)+1;
  if(P.cal>14){save();return twoWeeksEnd()}
  P.loops++;D=freshD();P.cur=null;save();

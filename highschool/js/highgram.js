@@ -21,7 +21,11 @@
 const EMO=/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}\u{200D}\u{2190}-\u{21FF}\u{2300}-\u{23FF}]/gu;
 const noEmo=s=>String(s).replace(EMO,'').replace(/ {2,}/g,' ').replace(/^ | $/g,'');
 const toast=t=>window.toast(noEmo(t));
-const GR=()=>{D.f.gr=D.f.gr||{rel:{},th:{},unread:{},seen:{}};return D.f.gr};
+/* NOTHING CARRIES OVER: a new two weeks wipes the phone; a new week clears the threads (relationships keep going) */
+const GR=()=>{let G=D.f.gr;const run=P.runId||0,wk=typeof weekOf==='function'?weekOf():1;
+ if(!G||G.run!==run){G=D.f.gr={rel:{},th:{},unread:{},seen:{},ask:{},run,wk};try{CAM.length=0}catch(e){}}
+ if(G.wk!==wk){G.wk=wk;G.th={};G.unread={};G.ask={};G.nm={};G.cOpen=0;G.ign=0}
+ G.ask=G.ask||{};return G};
 const fullEd=()=>window.EDITION!=='safe'&&(typeof cal!=='function'||cal()>=3);
 const day=()=>typeof cal==='function'?cal():0;
 const perName=()=>(PERIODS[D.period]||{}).name||'';
@@ -194,11 +198,11 @@ function nextBeat(){const G=GR();G.cb=G.cb||{};for(const [k,c,L] of BEATS){try{i
 function coreyLine(){const G=GR(),lv=coreyLevel();const pool=lv>=3?COREY_HI:lv>=2?COREY_MID.concat(COREY_HI):lv>=1?COREY.concat(COREY_MID):COREY;
  const t=pool[(G.ci=(G.ci||0)+1)%pool.length];
  if(lv>=3&&Math.random()<.4)return t.toUpperCase();return t}
-function coreyText(){if(!coreyOn())return;const G=GR();
+function coreyText(){if(!coreyOn())return;const G=GR();if(G.quiet===day())return;
  if(G.cOpen)G.ign=(G.ign||0)+1;  /* he texted last time and you left him on read */
  const b=nextBeat();let first;
- if(b){G.cb[b[0]]=1;b[1].forEach((t,i)=>{if(!i)first=t;push('corey','corey',t)})}
- else{const lv=coreyLevel(),n=1+(Math.random()<.15+lv*.2?1+Math.floor(Math.random()*(1+lv)):0);for(let i=0;i<n;i++){const t=coreyLine();if(!i)first=t;push('corey','corey',t)}}
+ if(b){G.cb[b[0]]=1;G.ask.corey={k:b[0]};b[1].forEach((t,i)=>{if(!i)first=t;push('corey','corey',t)})}
+ else{G.ask.corey={k:coreyLevel()>=2?'anx':'curl'};const lv=coreyLevel(),n=1+(Math.random()<.15+lv*.2?1+Math.floor(Math.random()*(1+lv)):0);for(let i=0;i<n;i++){const t=coreyLine();if(!i)first=t;push('corey','corey',t)}}
  G.cOpen=1;G.cDay=day()+':'+D.period;notify('corey',first)}
 window.coreyText=coreyText;
 ON_PERIOD.push(async(i,resume)=>{if(resume||!D||D.weekend||TEST)return;if(typeof atHome==='function'&&atHome())return;
@@ -216,7 +220,7 @@ const GIRL_PING={
 {const _w=whisper;whisper=async function(c){
  const G=GR();
  if(coreyOn()&&!taken()&&!TEST&&day()>1&&Math.random()<.15+coreyLevel()*.07){
-  const t=coreyLine();push('corey','corey',t);G.cOpen=1;
+  const t=coreyLine();push('corey','corey',t);G.cOpen=1;G.ask.corey={k:coreyLevel()>=2?'anx':'curl'};
   SFX.beep&&SFX.beep();
   const ch=await choose(['Check your phone under the desk.','Ignore it.'],'BZZT. BZZT. BZZT.');
   if(ch===0){
@@ -231,7 +235,7 @@ const GIRL_PING={
  }
  return _w(c)}}
 /* home time: you get it back */
-ON_PERIOD.push(async i=>{if(i===7&&D&&D.f.phoneTaken){D.f.phoneTaken=null;if(coreyOn()){const n=3+Math.floor(Math.random()*5);for(let k=0;k<n;k++)push('corey','corey',['?','??','hello','are u dead','if ur dead text me','be honest'][k%6]);GR().cOpen=1;setTimeout(()=>toast('📱 Your phone’s back. '+n+' texts from Corey.'),1500)}}});
+ON_PERIOD.push(async i=>{if(i===7&&D&&D.f.phoneTaken){D.f.phoneTaken=null;if(coreyOn()){const n=3+Math.floor(Math.random()*5);for(let k=0;k<n;k++)push('corey','corey',['?','??','hello','are u dead','if ur dead text me','be honest'][k%6]);GR().cOpen=1;GR().ask.corey={k:'pile'};setTimeout(()=>toast('📱 Your phone’s back. '+n+' texts from Corey.'),1500)}}});
 
 /* in the hall: Corey runs up and spirals */
 const SPIRAL=[
@@ -268,6 +272,76 @@ async function coreySpiral(){
  if(!A.corey||busy||!D||D.weekend)return;const a=A.corey,s=rdt||dt||.016;a._cc=(a._cc==null?6+Math.random()*6:a._cc-s);
  if(a._cc<=0){if(a.pose==='phone'&&a._ccOn){a.pose=null;a._ccOn=0;a._cc=7+Math.random()*8}
   else if(!a.pose&&!a.moving){a.pose='phone';a._ccOn=1;a._cc=1.8;if(typeof bubbles!=='undefined')bubbles.push({id:'corey',txt:pick(['humidity 71%','curl count: low','be honest','why is it flat','ok ok ok']),t:1.6})}}}}
+
+
+/* ---------------- WHAT YOU CAN SAY BACK ----------------
+   Every batch of texts sets what the replies are ABOUT (G.ask[thread]).
+   One answer per batch; every set has a rude one. fx: calm / worse / rude / track. */
+const R_=(label,lines,fx)=>[label,lines,fx];
+const ASK={
+ curl:[R_('your curls look fine. genuinely.',['ok ok ok ok','you’re right','…but are you SURE'],'calm'),R_('…now that you mention it',['WHY WOULD YOU SAY THAT','i’m in the bathroom now. i live here now'],'worse'),R_('send a pic of the curls',['[photo: one curl, extremely close up]','rate it','NOT THAT HONEST'],null),R_('corey nobody gives a shit about your fucking hair',['oh','ok','that’s worse actually','fuck you. no. sorry. fuck me'],'rude')],
+ anx:[R_('where are you. i’ll come find you',['bathroom by the stairs','ok you don’t have to come','come'],'calm'),R_('you’re not going missing. i’d notice',['you’d notice?','in like 4 minutes?','ok. ok. 4 minutes is good'],'calm'),R_('lol same',['don’t say lol','why would you say lol'],'worse'),R_('jesus christ corey shut the fuck up for one day',['ok','sorry for texting','i’ll stop','i’m sorry i’m like this'],'rude')],
+ pile:[R_('i’m alive. they took my phone',['THANK GOD','i made a whole plan to find your body','it had a map'],'calm'),R_('i was ignoring you dumbass',['oh','cool','cool cool cool','fuck you too then'],'rude')],
+ w0:[R_('just sit there and be normal',['what’s normal','what do i do with my HANDS'],'calm'),R_('14 feet is insane. you’re insane',['i KNOW','i know i know i know'],'worse'),R_('she doesn’t know you exist, you fucking weirdo',['ok','she might. by accident','fuck. ok'],'rude')],
+ w1:[R_('the bird meant something. draw one back',['DRAW one??','on the WINDOW??','…what kind of bird'],'calm'),R_('it was a pigeon corey',['pigeons can mean things','pigeons are the most meaning birds'],'worse'),R_('she was looking at the parking lot you absolute dumbass',['oh','ok yeah','probably'],'rude')],
+ b1:[R_('brett’s a tool. she’ll see it',['you think?','when. what day. give me a day'],'calm'),R_('his car IS nice tho',['i hate you','i hate his car','i hate that you’re right'],'worse'),R_('maybe she likes guys with cars and not a curly little bitch',['ok','that’s fair','i’m going to go sit in a bin'],'rude')],
+ b2:[R_('it’s a thought. thoughts aren’t things. you’re ok',['are you sure','ok','ok it’s quieter now'],'calm'),R_('what’s the thought',['NO','i said delete this','deleting you'],'worse'),R_('dude what the fuck. ur being creepy as shit',['i know','i know i am','i don’t know how to stop'],'rude')],
+ b3:[R_('don’t worry about it. i’ve got it',['ok','thank you','what did he find'],'calm'),R_('nivaan found A LOT',['A LOT?','what’s a lot','i’m going to be sick'],'worse'),R_('mind your own fucking business',['it’s literally my business','ok','sorry'],'rude')],
+ b4:[R_('we were at the arcade. you lost. like always',['…yeah','yeah. i always lose','thanks'],'calm'),R_('did you hear sirens last night',['STOP','don’t','i’m turning my phone off'],'worse'),R_('this is on you not me. don’t fucking text me about it',['ok','ok','ok'],'rude')],
+ w3:[R_('a round o is VERY flirty',['I KNEW IT','i’m framing it'],'calm'),R_('ok could mean anything',['anything?','ANYTHING??'],'worse'),R_('she wrote ok so you’d stop being a creepy fuck',['yeah','yeah that makes sense','i’ll stop'],'rude')],
+ w5:[R_('she’s not letting go. relax',['ok','she squeezed my hand at the stop','i think that means don’t worry'],'calm'),R_('maybe check tomorrow',['WHAT DOES THAT MEAN','what happens tomorrow'],'worse'),R_('a fish. LMAO. you sweaty fuck',['DON’T','i told you that in confidence','asshole'],'rude')],
+ ck:[R_('it wasn’t pity. she likes you, idiot',['you think?','ok','ok ok ok ok ok'],'calm'),R_('kinda was a pity kiss',['i’m going to put the medicine ball back in my face'],'worse'),R_('your nose looks fucked up rn',['i know','she said it looks “brave”','is brave good'],'rude')],
+ sh:[R_('sing quiet. she’ll play loud',['quiet i can do','i’m very good at quiet'],'calm'),R_('the pretzel guy will be watching',['WHY WOULD YOU SAY THAT'],'worse'),R_('you sing like a goat getting hit by a fucking bus',['i know','she said she likes goats','is that a yes'],'rude')],
+ m1:[R_('you won’t be brett. brett broke it. you’re fixing it',['…ok','ok that’s actually good','write that on my hand'],'calm'),R_('don’t mess it up then',['THANKS','very helpful'],'worse'),R_('just buy her a new one, cheap ass',['it’s her DAD’S','you don’t get it','fuck you, actually'],'rude')],
+ m2:[R_('good fault. best kind',['ok','ok i’m crying in woodwork'],'calm'),R_('everything is your fault tbh. every damn thing',['ok'],'rude')],
+ e1:[R_('i’ll keep an eye out for it',['THANK YOU','it’s purple. it smells like grapes and fear'],'calm'),R_('maybe you don’t need it',['i will DIE','my curls will die and then i will die'],'worse'),R_('it was me lol. cry about it',['WHAT','WHY','i trusted you, you piece of shit'],'rude')],
+ e2:[R_('i didn’t know. that’s messed up',['it was mayo','or glue','i don’t want to know which'],'calm'),R_('it was kinda funny',['oh','ok','i’ll laugh too then. haha'],'worse'),R_('yeah it was me. you looked like a jackass',['i KNEW it','you fucking asshole','i have nobody to tell. i have nobody'],'rude')],
+ v1:[R_('stay behind me. don’t look in the fridge',['deal','what if i look by accident'],'calm'),R_('it’s probably a head',['WHY','i’m out. i’m out of the quest'],'worse'),R_('stop being such a little bitch about it',['i’m not a baby','i’m a very scared teenager','fuck off'],'rude')],
+ v2:[R_('you’re ok. we got out',['we got out','we got out','ok'],'calm'),R_('it moved right',['IT MOVED??'],'worse'),R_('who gives a shit, the milk was fine',['the milk was fine','everything else is not fine'],'rude')],
+ st:[R_('i’ll guard your seat',['you’d do that??','you’re like a knight'],'calm'),R_('maybe it was a ghost',['IT’S ALWAYS A GHOST WITH THIS SCHOOL'],'worse'),R_('it’s not your seat, dumbass',['it IS','spiritually','fuck you spiritually'],'rude')],
+ s1:[R_('she smiles at everyone like that',['does she?','she doesn’t','does she?'],'calm'),R_('how does she know it',['THAT’S WHAT I’M ASKING'],'worse'),R_('who the fuck cares about your middle name',['me','i care','it starts with a G and that’s all you get'],'rude')],
+ s2:[R_('you’re not overthinking. watch the mug',['i knew it','i KNEW it','which one is the real one'],'calm'),R_('you’re overthinking',['ok','ok good','…right?'],'calm'),R_('there’s two of her. obviously',['WHAT','what do you mean obviously'],'worse'),R_('corey shut the fuck up about the mug',['ok','sorry','it was a nice mug'],'rude')],
+ gone:[R_('we’re not next. we stick together',['ok','together','don’t go to the bathroom alone. text me first'],'calm'),R_('move seats then',['i AM'],'worse'),R_('stop making it about you, selfish prick',['ok','sorry','they were nice'],'rude')],
+ dead:[R_('come out. i’ll walk you to class',['ok','wait outside the door','don’t look at me i’ve been crying'],'calm'),R_('it was bad',['how bad','no don’t tell me'],'worse'),R_('ur being so fucking dramatic',['someone DIED','someone fucking DIED'],'rude')],
+ caught:[R_('red pen is for grading',['grading WHAT'],'worse'),R_('it’s fine i can handle her',['ok','be careful','she smells like old perfume and pennies'],'calm'),R_('worry about your own damn self',['i am. i always am','that’s the problem'],'rude')],
+ det:[R_('you’re not metal. you’re just anxious',['anxious isn’t metal','ok good'],'calm'),R_('your fillings will set it off',['I’M PULLING MY TEETH OUT'],'worse'),R_('lmao you’re so fucking weird',['i know'],'rude')],
+ insp:[R_('they’re inspecting the teachers. not you',['oh','oh. ok. that’s worse but better'],'calm'),R_('you melted your hoodie??',['A BIT'],'worse'),R_('nobody’s looking at your shitty hoodie',['everyone is always looking at my hoodie','it’s not shitty. it’s melted'],'rude')]
+};
+function askOpts(id,G){const a=G.ask&&G.ask[id];if(!a)return null;let os=null;
+ if(ASK[a.k])os=ASK[a.k].map(o=>({label:o[0],mine:o[0],lines:o[1],fx:o[2]}));
+ else if(a.k==='quest')os=questOpts(id,a.m);
+ return os&&os.filter(o=>!(a.used||[]).includes(o.label))}
+function applyFx(id,fx,a){const G=GR();
+ if(id==='corey'){if(fx==='calm')G.ign=0;else if(fx==='worse')G.ign=(G.ign||0)+1;else if(fx==='rude'){G.ign=(G.ign||0)+2;G.rude=(G.rude||0)+1;if(G.rude%2===0){G.quiet=day();setTimeout(()=>{push('corey','note','Corey has stopped texting for today.');if(!ov.hidden)render()},TEST?0:3000)}}}
+ if(fx==='rude'&&id!=='corey'){(D.f.noApproach=D.f.noApproach||{})[id]=cal();if(typeof repAdd==='function'){repAdd('liked',-1);repAdd('feared',1)}}
+ if(fx==='track'&&a&&a.m){D.f.track=a.m;toast('Tracking: '+(MIS[a.m]?MIS[a.m].name:a.m));updateLoc&&updateLoc()}
+ if(fx==='calm'&&id!=='corey'&&typeof bond==='function')try{bond(id,1)}catch(e){}}
+
+/* ---------------- EVERYONE TEXTS: quest people text about THEIR quest ----------------
+   A started main quest whose first person is a kid: they text you about the
+   step you're on (once per step), and you can ask where to go, say you're on
+   it, have them track it, or tell them to leave you alone. */
+const QVOICE={
+ nivaan:['bro','BRO','ok so',''],david:['meeting notice:','re:','urgent (not urgent):'],hasan:['yo','ayo','listen'],arjun:['ayo','bro','respectfully'],
+ kayden:['YOOOO','yo','bro'],jacob:['hey. it’s jacob','hi','um'],paul:['.','hey','it’s paul'],kenneth:['yo','hey'],stella:['hiii','ok so'],sean:['yo','bro'],
+ darren:['Hello. It is Darren.','Update:'],tez:['yo','listen up'],dheva:['ok','hey'],alex:['HONK','hey'],marcus:['yo'],aidan:['hello','i’m in the walls. jk. hello']};
+function qStepName(m){const M=MIS[m];if(!M)return'';const n=D.mp[m]||0;const p=(M.parts||[])[Math.min(n,(M.parts||[]).length-1)]||M.name;return p}
+function tipFor(m){const M=MIS[m];if(!M)return null;let t=null;try{t=M.tipNow?M.tipNow():null}catch(e){}if(!t)t=(M.tips||[])[Math.min(D.mp[m]||0,(M.tips||[]).length-1)];return t?noEmo(t):null}
+function questText(){if(!D||D.weekend)return false;const G=GR();G.qt=G.qt||{};
+ const cand=Object.keys(D.mp||{}).filter(m=>MIS[m]&&!D.done[m]&&(D.mp[m]||0)>0&&G.qt[m]!==D.mp[m]&&!/^(cq_|wk_|ret_|gram_|after_|passing|gigs)/.test(m));
+ for(const m of cand){const who=(MIS[m].who||[]).find(k=>K[k]&&!K[k].adult&&k!=='corey'&&!(D.dead||{})[k]&&!GIRLS[k]);if(!who)continue;
+  G.qt[m]=D.mp[m];const v=QVOICE[who]||['hey'];const op=v[(D.mp[m]+day())%v.length];
+  const tip=tipFor(m);const lines=[(op?op+' ':'')+'about '+MIS[m].name.toLowerCase(),'next bit: '+qStepName(m).toLowerCase(),tip?'u coming or what':'when u free'];
+  lines.filter(Boolean).forEach(t=>push(who,who,t));G.ask[who]={k:'quest',m};notify(who,lines[0]);return true}
+ return false}
+window.questText=questText;
+function questOpts(id,m){const tip=tipFor(m)||'idk honestly. just find me';
+ return[{label:'where do i go?',mine:'where do i go?',lines:[tip.charAt(0).toLowerCase()+tip.slice(1)],fx:null,keep:1},
+  {label:'i’m on it',mine:'i’m on it',lines:[pick(['bet','ok good','finally','don’t be late'])],fx:'calm'},
+  {label:'track it for me',mine:'remind me',lines:['ok i’ll keep bugging u'],fx:'track'},
+  {label:'stop fucking texting me',mine:'stop fucking texting me',lines:[pick(['wow ok','damn ok. asshole','fine. do it ur damn self then','ok whatever, dick','screw you too'])],fx:'rude'}]}
+ON_PERIOD.push(async(i,resume)=>{if(resume||!D||D.weekend||TEST||(typeof atHome==='function'&&atHome())||day()<=1)return;
+ if(Math.random()<.45)setTimeout(()=>{try{questText()}catch(e){}},6000+Math.random()*5000)});
 
 /* ---------------- the girls: the DM steps ---------------- */
 const DM1={
@@ -615,11 +689,9 @@ function renderThread(p,body){
  if(LIVE&&LIVE.key===id){const more=LIVE.q.length||LIVE.busy;const b=h('button','cont',more?'Skip ahead (E)':'Done (E)');b.onclick=()=>more?liveFlush():liveDone();opts.appendChild(b);p.appendChild(opts);return}
  if(TYPING[id])return;
  const addOpt=(txt,fn)=>{any=true;const b=h('button',null,txt);b.onclick=fn;opts.appendChild(b)};
- /* Corey: one answer per new batch of texts. Once you've answered, the options go until he texts again. */
- if(id==='corey'&&G.cOpen&&th.length&&th[th.length-1][0]==='corey'){
-  addOpt('“you’re fine. genuinely.”',()=>{G.cOpen=0;G.ign=0;reply('corey','you’re fine. genuinely.',COREY_BACK.calm)});
-  addOpt('“…now that you mention it”',()=>{G.cOpen=0;G.ign=(G.ign||0)+1;reply('corey','…now that you mention it',COREY_BACK.worse)});
-  addOpt('“send a pic of the curls”',()=>{G.cOpen=0;reply('corey','send a pic of the curls',COREY_BACK.pic)})}
+ /* one answer per batch: the replies are about what they just said */
+ {const os=th.length&&th[th.length-1][0]===id?askOpts(id,G):null;
+  if(os)for(const o of os)addOpt('“'+o.label+'”',()=>{const a=G.ask[id];if(!o.keep)G.ask[id]=null;else a.used=(a.used||[]).concat(o.label);if(id==='corey')G.cOpen=0;applyFx(id,o.fx,a);reply(id,o.mine,o.lines)})}
  if(GIRLS[id]){const st=stepNow(id),r=rel(id);
   if(st==='busy')opts.appendChild(h('div','bub nt','You’re already in a whole thing with '+K[activeGirl()].n+'. One disaster at a time.'));
   if(st==='dm1')STEPS[id].open.forEach((o,i)=>addOpt(o,()=>{r.s=1;r.d=day();part('gram_'+id,1);reply(id,o.replace(/^“|”.*$/g,''),DM1[id](i).map(m=>m[1]),DM1[id](i))}));

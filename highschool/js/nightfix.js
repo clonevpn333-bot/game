@@ -114,12 +114,13 @@ function homeTodo(){
 /* at school: when nothing is tracked, say the one thing you can do right now */
 {const _ul=updateLoc;updateLoc=function(){_ul();try{
  const c=$('clock');if(!c||!D||D.weekend||panelMode==='talk'||homeTodo())return;
- const tb=c.querySelector('.trkbox');if(tb&&!/nothing today/.test(tb.textContent))return;
+ const tb=c.querySelector('.trkbox');if(tb&&!/nothing today|no step open/.test(tb.textContent))return;
+ const keep=tb&&/nothing today|no step open/.test(tb.textContent);
  const now=thingsAt(D.period).filter(t=>t.mis!=='passing');if(!now.length)return;
  const t=now.find(x=>x.main)||now.find(x=>x.started)||now[0];const d=describe(t);
  const box=document.createElement('div');box.className='story trkbox';box.innerHTML='<b>NOW: </b>';
  box.appendChild(document.createTextNode((d.label||d.name)+' · '+(D.room===t.room?'right here':d.where+' — '+(d.route||''))));
- if(tb)tb.replaceWith(box);else c.insertBefore(box,c.querySelector('.tapnote'))}catch(e){}}}
+ if(tb&&keep)tb.after(box);else if(tb)tb.replaceWith(box);else c.insertBefore(box,c.querySelector('.tapnote'))}catch(e){}}}
 
 /* ---------- 5. next steps that say WHICH quest is in the way ---------- */
 const oddNext=()=>{const t=(D&&D.dayType)||'odd';return t==='odd'&&D.period<=3?'today':'the next ODD day'};
@@ -149,4 +150,17 @@ if(typeof genericLesson==='function'){const _gl=genericLesson;genericLesson=asyn
    if(ROOM===room||ROOM===D.room)await N(head+'. '+(bits.join(' ')||'You kept your head down.')+' '+(res.length?'Result: '+res.join(', ')+'.':'Result: nothing changed. You survived it.'));}}catch(e){}}
  return out}}
 function busyDeath(){return false}
+
+/* ---------- 7. tracking follows the arc ----------
+   Track a quest and it stays tracked: when that chapter finishes, the pin moves
+   to the next chapter of the same main quest. Tracking something new always
+   replaces the old pin (HUD line, arrow, quest log). */
+function arcOf(m){try{return ARCS.flatMap(g=>g[2]).find(a=>arcMis(a).includes(m))}catch(e){return null}}
+if(typeof trackedMis==='function'){const _tm=trackedMis;trackedMis=function(){
+ const r=_tm();if(r||!D||!D.f)return r;const m=D.f.track;if(!m||!MIS[m]||!D.done[m])return r;
+ const a=arcOf(m);if(!a)return r;const nx=arcMis(a).find(x=>!D.done[x]);if(!nx)return r;
+ D.f.track=nx;setTimeout(()=>{try{toast('Now tracking: '+MIS[nx].name+' (next chapter)')}catch(e){}},300);return nx}}
+if(typeof setTrack==='function'){const _st=setTrack;setTrack=function(m){
+ if(D&&D.f&&D.f.track&&D.f.track!==m){D.f.track=m;updateLoc();toast('Tracking: '+MIS[m].name+' (replaces the old one)');return}
+ return _st(m)}}
 }

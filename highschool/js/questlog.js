@@ -184,7 +184,7 @@ function qlColl(body,pre){
  const tt=trackTarget();if(!tt)return;
  const box=qel('div','story trkbox');const M=MIS[tt.m];
  box.appendChild(qel('b','',(tt.auto?'➜ ':'📌 ')+(M?M.name:'Main story')+': '));
- if(tt.none)box.appendChild(document.createTextNode('nothing today. '+(((M&&M.tips)||[])[D.mp[tt.m]||0]||'')));
+ if(tt.none)box.appendChild(document.createTextNode('no step open right now. ' +(((M&&M.tips)||[])[D.mp[tt.m]||0]||'')));
  else{const d=describe(tt.t);box.appendChild(document.createTextNode((tt.now?'':PERIODS[tt.p].name+', '+PERIODS[tt.p].time+' · ')+(d.label||'')+' · '+(D.room===tt.t.room?'here':d.where)))}
  const n=thingsAt(D.period).length;if(n>1)box.appendChild(qel('i','',' (+'+(n-1)+' more: Q)'));
  c.appendChild(box);
