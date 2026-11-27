@@ -18,7 +18,7 @@
    ===================================================================== */
 {
 const GR=()=>{D.f.gr=D.f.gr||{rel:{},th:{},unread:{},seen:{}};return D.f.gr};
-const fullEd=()=>window.EDITION!=='safe';
+const fullEd=()=>window.EDITION!=='safe'&&(typeof cal!=='function'||cal()>=3);
 const day=()=>typeof cal==='function'?cal():0;
 const perName=()=>(PERIODS[D.period]||{}).name||'';
 const taken=()=>{const t=D.f.phoneTaken;return t&&t.day===day()&&D.period<7};
@@ -144,7 +144,7 @@ const SPIRAL_ROOMS=new Set(['corridor','hallb','canteen','field','library','wing
 {const _er=enterRoom;enterRoom=async function(room){const r=await _er(room);
  try{const G=GR();
   if(SPIRAL_ROOMS.has(room)&&coreyOn()&&!busy&&panelMode==='roam'&&!TEST&&!(typeof atHome==='function'&&atHome())&&!(D.pass&&T<D.pass.end)&&!(PERIODS[D.period]||{}).lesson
-   &&(G.spDay!==day()||(G.spN||0)<2)&&Math.random()<.22){G.spN=G.spDay===day()?(G.spN||0)+1:1;G.spDay=day();return runHook({run:coreySpiral})}
+   &&(G.spDay!==day()||(G.spN||0)<(G.curl?1:2))&&Math.random()<(G.curl?.1:.22)){G.spN=G.spDay===day()?(G.spN||0)+1:1;G.spDay=day();return runHook({run:coreySpiral})}
  }catch(e){console.error(e)}
  return r}}
 async function coreySpiral(){
@@ -353,7 +353,7 @@ for(const g of Object.keys(GIRLS)){
 
 /* ---------------- the app ---------------- */
 const css=document.createElement('style');css.textContent=`
-#gram{position:fixed;inset:0;z-index:22;background:#0b0912d9;display:flex;justify-content:center;align-items:center;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Helvetica,Arial,sans-serif}
+#gram{position:fixed;inset:0;z-index:300;background:#0b0912d9;display:flex;justify-content:center;align-items:center;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Helvetica,Arial,sans-serif}
 #gram[hidden]{display:none}
 #gram .gp{position:relative;width:min(370px,94vw);height:min(720px,90vh);background:#000;border:10px solid #1c1c1e;border-radius:46px;box-shadow:0 0 0 2px #3a3a3c,0 20px 60px #000c;display:flex;flex-direction:column;overflow:hidden;font-size:15px;color:#fff}
 #gram .sb{display:flex;justify-content:space-between;align-items:center;padding:12px 26px 4px;font-size:14px;font-weight:600;letter-spacing:.01em}
@@ -391,6 +391,7 @@ const css=document.createElement('style');css.textContent=`
 #gram .tabs button.on{color:#0a84ff}
 #gram .home{height:22px;display:flex;justify-content:center;align-items:center;background:#000}
 #gram .home i{width:130px;height:5px;border-radius:3px;background:#fff}
+#gram .hs.cursed{background:radial-gradient(circle at 30% 20%,#8a1a1a,#300808 55%,#100000)}
 #gram .hs{flex:1;display:flex;flex-direction:column;justify-content:space-between;background:radial-gradient(circle at 30% 20%,#5b3a8a,#1a1030 55%,#0a0614);padding:18px 14px 6px}
 #gram .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px 6px}
 #gram .app{background:none;border:0;color:#fff;font:inherit;font-size:11px;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer}
@@ -424,8 +425,8 @@ window.openGram=openGram;
 const h=(tag,cls,txt)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e};
 const APPS=[['feed','📸','Highgram','linear-gradient(135deg,#f9ce34,#ee2a7b,#6228d7)'],['dms','💬','Messages','linear-gradient(#5ff777,#1fbf3a)'],
  ['search','🔍','Searchy','linear-gradient(#fff,#dfe3ea)'],['arcade','🕹️','Arcade','linear-gradient(#ff7a59,#c2185b)'],['camera','📷','Camera','linear-gradient(#8e8e93,#3a3a3c)'],
- ['notes','📝','Notes','linear-gradient(#ffe37a,#f7c600)'],['weather','🌧️','Weather','linear-gradient(#5ac8fa,#1e6fd9)'],['clock','⏰','Clock','linear-gradient(#2c2c2e,#000)']];
-const TITLE={feed:'Highgram',dms:'Messages',search:'Searchy',arcade:'Arcade',camera:'Camera',notes:'Notes',weather:'Weather',clock:'Clock'};
+ ['shop','🛍️','Shop','linear-gradient(#ffd60a,#ff9f0a)'],['notes','📝','Notes','linear-gradient(#ffe37a,#f7c600)'],['weather','🌧️','Weather','linear-gradient(#5ac8fa,#1e6fd9)'],['clock','⏰','Clock','linear-gradient(#2c2c2e,#000)']];
+const TITLE={shop:'Shop',feed:'Highgram',dms:'Messages',search:'Searchy',arcade:'Arcade',camera:'Camera',notes:'Notes',weather:'Weather',clock:'Clock'};
 function render(){
  if(GAME&&GAME.stop)GAME.stop();
  ov.innerHTML='';const p=h('div','gp');ov.appendChild(p);
@@ -439,14 +440,15 @@ function render(){
  const x=h('button',null,'Done');x.onclick=()=>{ov.hidden=true};hd.appendChild(x);p.appendChild(hd);
  const body=h('div','gb');p.appendChild(body);
  if(THREAD)renderThread(p,body);
- else ({feed:renderFeed,dms:renderList,search:renderSearch,arcade:renderArcade,camera:renderCamera,notes:renderNotes,weather:renderWeather,clock:renderClock}[VIEW]||renderList)(body,p);
+ else ({shop:renderShop,feed:renderFeed,dms:renderList,search:renderSearch,arcade:renderArcade,camera:renderCamera,notes:renderNotes,weather:renderWeather,clock:renderClock}[VIEW]||renderList)(body,p);
  homeBar(p)}
 function homeBar(p){const hm=h('div','home');const i=h('i');hm.appendChild(i);hm.title='Home';hm.onclick=()=>{THREAD=null;VIEW='home';render()};p.appendChild(hm)}
 function renderHome(p){
- const wall=h('div','hs');p.appendChild(wall);
+ const wall=h('div','hs'+(GR().skin==='cursed'?' cursed':''));p.appendChild(wall);
  const grid=h('div','grid');wall.appendChild(grid);
  const G=GR();const unread=Object.values(G.unread).reduce((a,b)=>a+b,0);
- for(const [id,ic,name,bg] of APPS){const b=h('button','app');const icon=h('div','ico',ic);icon.style.background=bg;b.appendChild(icon);
+ const unl=id=>['dms','feed'].includes(id)||day()>=2;
+ for(const [id,ic,name,bg] of APPS.filter(a=>unl(a[0]))){const b=h('button','app');const icon=h('div','ico',ic);icon.style.background=bg;b.appendChild(icon);
   if(id==='dms'&&unread){const n=h('span','badge',unread);icon.appendChild(n)}
   b.appendChild(h('span',null,name));b.onclick=()=>{VIEW=id;render()};grid.appendChild(b)}
  const dock=h('div','dock');for(const id of['dms','feed','search','camera']){const A_=APPS.find(a=>a[0]===id);const b=h('button','app');const icon=h('div','ico',A_[1]);icon.style.background=A_[3];b.appendChild(icon);b.onclick=()=>{VIEW=id;render()};dock.appendChild(b)}
@@ -533,7 +535,18 @@ function renderFeed(body){
   ['kaylee','@kaylee.tea','[a blurry photo of Ms. Sherman holding something]','what is she holding. WHAT IS SHE HOLDING',1512,['corridor',[['shermian',160,160,-1,'hold','evil','knife']]]],
   ['david','@david.clipboard','[a clipboard]','meeting at break. bring evidence. bring snacks',2,['library',[['david',160,165,1,'hold','cold','clipboard']]]],
   ['nivaan','@nivaan.live','[the sub, laughing, holding a coffee]','the sub is so fucking hot it should be illegal for him to teach fractions',890,['corridor',[['sub',160,160,1,null,'laugh','mug']]]]];
- for(let i=0;i<4;i++){const p=daily[(d*3+i)%daily.length];if(K[p[0]])post(...p)}
+ const dn=m=>D.done&&D.done[m],cr=typeof crew==='function'?crew():{};
+ if(dn('instella'))post('stella','@stell.a','[Sean and Stella on the field]','official 🥎❤️ (he cried)',801,['field',[['sean',150,165,1,'hug','love'],['stella',166,165,-1,'hug','love']]]);
+ if(dn('window')||dn('mended'))post('abby','@abby.draws','[a bird drawn on a window, and a heart]','.',233,['trailer',[['corey',150,165,1,'sit','blush'],['abby',176,165,-1,'sit','smirk']]]);
+ if(dn('kim'))post('dheva','@dheva.mp4','[Alex in clown makeup, giving a thumbs up]','he’s ok. he honks now but he’s ok',1990,['bus',[['alex',150,165,1,'up','happy'],['dheva',176,165,-1,'cross','smirk']]]);
+ if(cr.cheeksIn)post('cheeks','@fistsoffaircity','[Coach on the ground, Cheek-Clapper standing over him]','FISTS OF FAIR CITY 5 COMING SOON 🍑👊 (we have 313 subscribers)',313,['bus',[['clapper',150,165,1,'hips','smirk'],['coach',180,168,-1,'hurt','shock']]]);
+ if(cr.closing)post('nivaan','@nivaan.live','[the food court with the shutters down and police lights]','free noodles for life. FOR LIFE.',4021,['foodcourt',[['nivaan',160,165,1,'film','shock']]]);
+ if(P.stats&&P.stats.deaths>0)post('kaylee','@kaylee.tea','[a chalk outline in the hallway]','rip to whoever that was. anyway there’s a sale at the mall',88+P.stats.deaths,['corridor',[['kaylee',170,165,-1,'film','smirk']]]);
+ if(D.done&&D.done.headcase)post('arjun','@arjun.is.him','[the office, blown open, Mr. Adam crying on the floor]','not even the craziest thing that happened today',540,['office',[['adam',160,168,1,'sob','cry']]]);
+ if(D.done&&D.done.pauljones)post('paul','@pauljones','[the 43 at sunset]','.',12,['bus',[['paul',160,165,1,null,'sad']]]);
+ if(P.endings&&Object.keys(P.endings).length)post('david','@david.clipboard','[the Main Hall, chairs everywhere]','inspection day. we did that. (meeting at break)',777,['hall',[['david',150,165,1,'hold','happy','clipboard'],['nivaan',176,165,-1,'film','laugh']]]);
+ if(D.f&&D.f['ate'+cal()])post('pat','@lunchladypat','[a tray of mystery nuggets]','eat your fucking vegetables',3,['canteen',[['pat',160,155,1,'cross','cold']]]);
+ for(let i=0;i<3;i++){const p=daily[(d*3+i)%daily.length];if(K[p[0]])post(...p)}
  for(const c of CAM.filter(c=>c.posted))F.unshift({who:'you',hd:'@you',pic:'',txt:c.cap,lk:c.lk,img:c.url,com:c.com});
  for(const f of F){const e=h('div','post');{const w=h('div','who',(f.who==='you'?'You':K[f.who]?K[f.who].n:f.who)+' ');w.appendChild(h('small',null,f.hd));e.appendChild(w)}{let src=f.img;if(!src&&f.shot&&ROOMS[f.shot[0]])src=snap(f.shot[0],f.shot[1].filter(c=>c[0]==='you'||K[c[0]]));if(src){const im=document.createElement('img');im.className='photo';im.src=src;im.alt=f.pic;e.appendChild(im)}else e.appendChild(h('div','pic',f.pic))}e.appendChild(h('div',null,f.txt));e.appendChild(h('div','lk','♡ '+f.lk+' likes'));if(f.com)for(const c of f.com){const cm=h('div','cm');cm.appendChild(h('b',null,c[0]+' '));cm.appendChild(h('span',null,c[1]));e.appendChild(cm)}body.appendChild(e)}}
 
@@ -634,6 +647,23 @@ function renderCamera(body){
   else card.appendChild(h('div','lk','♡ '+c.lk+' likes'));
   body.appendChild(card)}}
 
+/* ---------------- SHOP: what your money is for ---------------- */
+const SHOP=[
+ {id:'energy',ic:'🥤',n:'BLAST Energy (sugar free, somehow worse)',p:3,max:2,d:'+1 🍎 right now. Max two a day. Your heart has opinions.',buy(){D.apples=(D.apples||0)+1;updateLoc&&updateLoc();toast('🥤 +1 🍎. Your left eye is twitching.')}},
+ {id:'pass',ic:'🎫',n:'Forged hall pass',p:4,max:1,d:'+90 seconds on the second bell, this period only.',ok:()=>D.pass&&T<D.pass.end,why:'only works while the bell is counting down',buy(){D.pass.end+=90;D.pass.len+=90;toast('🎫 +90 s. Mr. Adam signs everything without reading it.')}},
+ {id:'curl',ic:'🧴',n:'C.U.R.L. (for Corey)',p:5,max:1,run:1,d:'He’ll calm down. A bit. For a while.',ok:()=>alive('corey'),why:'Corey isn’t here this week',buy(){GR().curl=1;push('corey','corey','YOU BOUGHT ME C.U.R.L.???');push('corey','corey','i’m crying. i’m actually crying in the bathroom');push('corey','corey','humidity cannot touch me now');toast('🧴 Corey is going to spiral a lot less.')}},
+ {id:'snack',ic:'🍪',n:'Vending machine cookie (delivered by a seventh grader)',p:2,max:3,d:'Hold it. Eat it. Chew loudly.',buy(){if(A.you)A.you.hold='cookie';toast('🍪 A seventh grader slides you a cookie and runs.')}},
+ {id:'skin',ic:'🎨',n:'Phone case: CURSED',p:6,max:1,run:1,d:'Your phone wallpaper turns blood red. Nothing else. That’s it.',buy(){GR().skin='cursed';toast('🎨 Your phone is cursed now. Purely cosmetic. Probably.')}}
+];
+function renderShop(body){
+ const G=GR();G.shop=G.shop||{};
+ body.appendChild(h('div','bub nt','You have $'+(D.money||0)+'. Money from gigs and side hustles goes here.'));
+ for(const it of SHOP){const key=it.run?it.id:it.id+':'+day(),n=G.shop[key]||0,can=(D.money||0)>=it.p&&n<it.max&&(!it.ok||it.ok());
+  const r=h('button','row');const av=h('div','av',it.ic);av.style.background='#2c2c2e';r.appendChild(av);
+  const t=h('div','t');t.appendChild(h('span',null,it.n));t.appendChild(h('i',null,n>=it.max?'Sold out'+(it.run?'':' today'):(it.ok&&!it.ok())?'Can’t: '+it.why:it.d));r.appendChild(t);
+  r.appendChild(h('span','dot','$'+it.p));if(!can)r.style.opacity=.45;
+  r.onclick=()=>{if(!can)return;D.money-=it.p;G.shop[key]=n+1;it.buy();updateLoc&&updateLoc();render()};body.appendChild(r)}}
+/* C.U.R.L. calms Corey: fewer hallway spirals */
 /* ---------------- the little ones ---------------- */
 function renderNotes(body){const N_=['☐ survive','☐ find out what’s in the back fridge','☐ do NOT text Corey back during a test','☐ stop DMing people','☑ eat lunch (sometimes)','☐ 13-3-87 ??? (from the stall)'];for(const n of N_)body.appendChild(h('div','note',n))}
 function renderWeather(body){const w=h('div','wx');w.appendChild(h('div','big','71°'));w.appendChild(h('div',null,'Fair City · Humid'));w.appendChild(h('div','small','Humidity 71%. Corey has been notified.'));

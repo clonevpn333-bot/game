@@ -67,9 +67,11 @@ const idOf=k=>k&&(k._id||(k._id=Object.keys(K).find(i=>K[i]===k)||Object.keys(K)
 
 /* walks: [speed, bounce, sway] */
 const GAIT={coach:[.75,2,0],voss:[.55,0,0],shermian:[.5,1,1],sherman:[.7,1,1],pat:[.85,1,2],adam:[1.8,1,0],kim:[1.15,3,0],loach:[.6,0,0],
- balduf:[1.3,1,1],grieve:[.6,0,0],glen:[.7,2,1],cheeks:[.8,2,1],clapper:[.8,2,1],sub:[1,1,0]};
+ balduf:[1.3,1,1],grieve:[.6,0,0],glen:[.7,2,1],cheeks:[.8,2,1],clapper:[.8,2,1],sub:[1,1,0],
+ /* the kids walk like themselves too */
+ corey:[1.45,1,0],arjun:[.85,1,2],aidan:[.7,0,0],kayden:[1.2,3,0],hasan:[1.15,1,1],nivaan:[1.05,1,0],david:[1.25,0,0],kenneth:[.8,0,1],sean:[1.3,2,0],paul:[.75,0,0],jacob:[.8,1,1],omer:[1,1,0],jaxon:[1.3,2,1]};
 {const _dk=drawKid;drawKid=function(k,x,y,o){
- const id=k&&k.adult&&idOf(k),G_=id&&GAIT[id];
+ const id=k&&idOf(k),G_=id&&K[id]===k&&GAIT[id];
  if(!G_||!o||!o.moving)return _dk(k,x,y,o);
  const ph=(o.walk||0)*G_[0];
  const by=-Math.round(Math.abs(Math.sin(ph))*G_[1]),sx=Math.round(Math.sin(ph*.5)*G_[2]);
@@ -77,7 +79,8 @@ const GAIT={coach:[.75,2,0],voss:[.55,0,0],shermian:[.5,1,1],sherman:[.7,1,1],pa
 
 /* idle habits */
 const HABIT={coach:['hips',2],shermian:['cross',3],voss:['hold',2],pat:['cross',3],adam:['facepalm',1.4],kim:['wave',1.2],loach:['drink',2.5],
- balduf:['write',2],grieve:['point',1.5],sherman:['cross',3],glen:['hips',2]};
+ balduf:['write',2],grieve:['point',1.5],sherman:['cross',3],glen:['hips',2],
+ arjun:['hips',2.5],nivaan:['film',3],david:['write',2.5],kayden:['dance',1.6],hasan:['shrug',1.2],abby:['cross',3],stella:['phone',2.5],paul:['cross',3],jacob:['cross',2.5],kenneth:['facepalm',1.2],sean:['phone',2],aidan:['cross',4],omer:['cross',2]};
 {const _hu=HOOK.update;HOOK.update=(dt,rdt)=>{_hu&&_hu(dt,rdt);
  if(busy||!D||panelMode!=='roam')return;const s=rdt||dt||.016;
  for(const id in A){const a=A[id],H_=HABIT[id];if(!H_||a.moving||a.dead)continue;
