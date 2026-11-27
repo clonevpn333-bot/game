@@ -60,7 +60,7 @@ const FACE={
  cheeks(k,x,hy,d,hw,hd,ex,ey){R(ex-3,ey+4,6,1,'#e8d868');R(ex-6,ey+2,2,2,'rgba(230,90,90,.4)');R(ex+4,ey+2,2,2,'rgba(230,90,90,.4)')},
  clapper(k,x,hy,d,hw,hd,ex,ey){R(ex-3,ey+4,6,1,'#e8d868');R(ex-5,ey-2,3,1,ink);R(ex+2,ey-2,3,1,ink)}
 };
-FACE.sherman=FACE.shermian;
+FACE.sherman=function(){};
 const idOf=k=>k&&(k._id||(k._id=Object.keys(K).find(i=>K[i]===k)||Object.keys(K).find(i=>K[i]&&K[i].n===k.n)));
 {const _dh=drawHead;drawHead=function(k,x,hy,d,o){_dh(k,x,hy,d,o);
  try{if(!k||!k.adult||!o||o.crushed||o.back||o.ex==='dead'||o.deadFace)return;const id=idOf(k),f=FACE[id];if(!f)return;
@@ -96,7 +96,7 @@ if(K.shermian)Object.assign(K.shermian,{hair:'#d4d0cc',old:1});
 /* both of her look the same now (the doppelgänger lore works better that way), and her name is Ms. Shermian */
 if(K.sherman&&K.shermian)Object.assign(K.sherman,{hair:K.shermian.hair,hs:K.shermian.hs,top:K.shermian.top,pants:K.shermian.pants,skirt:1,pearls:1,glasses:0,wide:0,old:1,col:K.shermian.col});
 for(const id of['sherman','shermian'])if(K[id])K[id].n='Ms. Shermian';
-const OLDS=new Set(['shermian','sherman']);
+const OLDS=new Set(['shermian','sherman']);window.OLD_IDS=OLDS;
 const idOf2=k=>k&&Object.keys(K).find(i=>K[i]===k);
 /* the walnut */
 {const _dh=drawHead;drawHead=function(k,x,hy,d,o){_dh(k,x,hy,d,o);

@@ -65,6 +65,7 @@ function stepNow(g){if(!fullEd()||!alive(g))return null;const r=rel(g),a=activeG
 
 /* ---------------- threads ---------------- */
 const push=(th,who,t)=>{const G=GR();(G.th[th]=G.th[th]||[]).push([who,t,perName()]);if(who!=='me'){G.unread[th]=(G.unread[th]||0)+1;badge()}};
+window.gramPush=(th,who,t)=>{push(th,who,t);if(who!=='me')notify(th,t)};
 function badge(){const b=$('bGram');if(!b)return;const n=Object.values(GR().unread).reduce((a,b)=>a+b,0)+(fullEd()?Object.keys(GIRLS).filter(g=>['dm1','dm3'].includes(stepNow(g))&&rel(g).s>0).length:0);b.textContent=n?'📱 '+n:'📱';b.classList.toggle('hot',!!n)}
 function notify(th,t){if(TEST)return;toast('📱 '+(K[th]?K[th].n:th)+': '+t.slice(0,60))}
 
