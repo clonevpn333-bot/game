@@ -33,3 +33,20 @@ setTimeout(()=>{for(const id of['gram','quest','phoneov'])if($(id))mo.observe($(
  s.appendChild(Object.assign(document.createElement('div'),{textContent:'🤬 Swearing'}));const w=document.createElement('div');w.className='opts';
  [[1,'Clean words (freaking, crap)'],[0,'The real ones']].forEach(([v,n])=>{const b=document.createElement('button');b.textContent=n;b.setAttribute('aria-pressed',String(+on()===v));b.onclick=()=>{P.set.clean=v;save&&save();openSettings()};w.appendChild(b)});s.appendChild(w)}}
 }
+
+/* ---- her name is Ms. Shermian (both editions) ---- */
+{
+const fix=t=>typeof t==='string'?t.replace(/\bMs\.? Sherman(’s|'s)?\b/g,(m,s)=>'Ms. Shermian'+(s||'')).replace(/\bMS\.? SHERMAN\b/g,'MS. SHERMIAN'):t;
+window.shermianName=fix;
+{const _s=say;say=function(who,t,e){return _s.call(this,who,fix(t),e)}}
+{const _c=choose;choose=function(opts,title){if(Array.isArray(opts))opts=opts.map(o=>typeof o==='string'?fix(o):(o&&o.t?Object.assign({},o,{t:fix(o.t)}):o));return _c.call(this,opts,fix(title))}}
+{const _t=toast;toast=function(t){return _t.call(this,fix(t))}}
+{const _d=dms;dms=function(title,sub,msgs,o){if(Array.isArray(msgs))msgs=msgs.map(m=>[m[0],fix(m[1])].concat(m.slice(2)));return _d.call(this,fix(title),fix(sub),msgs,o)}}
+if(typeof px==='function'){const _p=px;px=function(t,...a){return _p.call(this,fix(t),...a)}}
+/* labels, quest names, goals, tips */
+for(const h of (typeof HOOKS!=='undefined'?HOOKS:[]))if(h.label)h.label=fix(h.label);
+for(const s of (typeof SPOTS!=='undefined'?SPOTS:[]))if(s.label)s.label=fix(s.label);
+for(const m of Object.values(typeof MIS!=='undefined'?MIS:{})){for(const k of['name','goal','blurb'])if(m[k])m[k]=fix(m[k]);if(Array.isArray(m.tips))m.tips=m.tips.map(fix);if(Array.isArray(m.parts))m.parts=m.parts.map(fix);if(m.variants)for(const v in m.variants)m.variants[v]=fix(m.variants[v])}
+const mo=new MutationObserver(ms=>{for(const m of ms)for(const n of m.addedNodes){const w=document.createTreeWalker(n.nodeType===3?n.parentNode||n:n,NodeFilter.SHOW_TEXT);let x;while((x=w.nextNode())){const c=fix(x.nodeValue);if(c!==x.nodeValue)x.nodeValue=c}}});
+setTimeout(()=>{for(const id of['gram','quest','phoneov','backlog'])if($(id))mo.observe($(id),{childList:true,subtree:true})},1500);
+}

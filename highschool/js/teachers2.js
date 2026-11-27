@@ -29,7 +29,7 @@ const FACE={
   R(ex-2,ey+4,4,1,'#c0203a');R(ex-1,ey+5,2,1,'#a01830');                                           /* lipstick */
   R(ex+4,ey+3,1,1,'#3a2018');                                                                        /* beauty mark */
   R(ex-6,ey+2,2,1,'rgba(220,80,110,.35)');R(ex+4,ey+2,2,1,'rgba(220,80,110,.35)')},                   /* cheekbones */
- sherman(k,x,hy,d,hw,hd,ex,ey){const hx=x-(hw>>1);
+ _sherman_old(k,x,hy,d,hw,hd,ex,ey){const hx=x-(hw>>1);
   R(hx-1,hy+hd-5,1,3,k.skin);R(hx+hw,hy+hd-5,1,3,k.skin);R(hx,hy+hd-1,hw,1,k.skin);                 /* soft jowls */
   R(ex-6,ey+3,1,2,shade(0,.12));R(ex+5,ey+3,1,2,shade(0,.12));                                     /* smile lines */
   R(ex-2,ey+4,4,1,'#b86a6a')},
@@ -60,13 +60,14 @@ const FACE={
  cheeks(k,x,hy,d,hw,hd,ex,ey){R(ex-3,ey+4,6,1,'#e8d868');R(ex-6,ey+2,2,2,'rgba(230,90,90,.4)');R(ex+4,ey+2,2,2,'rgba(230,90,90,.4)')},
  clapper(k,x,hy,d,hw,hd,ex,ey){R(ex-3,ey+4,6,1,'#e8d868');R(ex-5,ey-2,3,1,ink);R(ex+2,ey-2,3,1,ink)}
 };
+FACE.sherman=FACE.shermian;
 const idOf=k=>k&&(k._id||(k._id=Object.keys(K).find(i=>K[i]===k)||Object.keys(K).find(i=>K[i]&&K[i].n===k.n)));
 {const _dh=drawHead;drawHead=function(k,x,hy,d,o){_dh(k,x,hy,d,o);
  try{if(!k||!k.adult||!o||o.crushed||o.back||o.ex==='dead'||o.deadFace)return;const id=idOf(k),f=FACE[id];if(!f)return;
   const {hw,hd}=kidGeom(k,o);f(k,x,hy,d,hw,hd,x+d,hy+(k.knob?6:5))}catch(e){}}}
 
 /* walks: [speed, bounce, sway] */
-const GAIT={coach:[.75,2,0],voss:[.55,0,0],shermian:[.5,1,1],sherman:[.7,1,1],pat:[.85,1,2],adam:[1.8,1,0],kim:[1.15,3,0],loach:[.6,0,0],
+const GAIT={coach:[.75,2,0],voss:[.55,0,0],shermian:[.5,1,1],sherman:[.5,1,1],pat:[.85,1,2],adam:[1.8,1,0],kim:[1.15,3,0],loach:[.6,0,0],
  balduf:[1.3,1,1],grieve:[.6,0,0],glen:[.7,2,1],cheeks:[.8,2,1],clapper:[.8,2,1],sub:[1,1,0],
  /* the kids walk like themselves too */
  corey:[1.45,1,0],arjun:[.85,1,2],aidan:[.7,0,0],kayden:[1.2,3,0],hasan:[1.15,1,1],nivaan:[1.05,1,0],david:[1.25,0,0],kenneth:[.8,0,1],sean:[1.3,2,0],paul:[.75,0,0],jacob:[.8,1,1],omer:[1,1,0],jaxon:[1.3,2,1]};
@@ -92,7 +93,10 @@ const HABIT={coach:['hips',2],shermian:['cross',3],voss:['hold',2],pat:['cross',
 /* ---- Ms. Sherman is OLD. Both of her. Grey, hunched, a face like a walnut, and a crutch. ---- */
 {
 if(K.shermian)Object.assign(K.shermian,{hair:'#d4d0cc',old:1});
-const OLDS=new Set(['shermian']);
+/* both of her look the same now (the doppelgänger lore works better that way), and her name is Ms. Shermian */
+if(K.sherman&&K.shermian)Object.assign(K.sherman,{hair:K.shermian.hair,hs:K.shermian.hs,top:K.shermian.top,pants:K.shermian.pants,skirt:1,pearls:1,glasses:0,wide:0,old:1,col:K.shermian.col});
+for(const id of['sherman','shermian'])if(K[id])K[id].n='Ms. Shermian';
+const OLDS=new Set(['shermian','sherman']);
 const idOf2=k=>k&&Object.keys(K).find(i=>K[i]===k);
 /* the walnut */
 {const _dh=drawHead;drawHead=function(k,x,hy,d,o){_dh(k,x,hy,d,o);
