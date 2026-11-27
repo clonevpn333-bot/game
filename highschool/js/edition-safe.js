@@ -49,7 +49,7 @@ if(typeof DAYSET!=='undefined')for(const t in DAYSET)for(const i in DAYSET[t]){c
 if(typeof WHISPER!=='undefined')delete WHISPER.abby;
 
 /* no Hasan & Darren, and no Sean & Stella: they’re friends, that’s all */
-{const CUT=['darren','steptwelve','steal_stella','after_stella','stepeleven','toby','instella','striketwo','firstfight','farewell'];
+{const CUT=['darren','steptwelve','steal_stella','after_stella','gram_brielle','gram_destiny','gram_mackenzie','gram_willow','stepeleven','toby','instella','striketwo','firstfight','farewell'];
  for(const m of CUT)delete MIS[m];
  for(const m in MIS){const w=MIS[m].who||[];if(w.includes('darren')||w.includes('toby'))delete MIS[m]}
  for(let i=HOOKS.length-1;i>=0;i--){const h=HOOKS[i];if(h.who==='darren'||h.who==='toby'||/A\.(darren|toby)\b/.test(String(h.run)))HOOKS.splice(i,1)}
