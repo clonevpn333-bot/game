@@ -66,7 +66,7 @@ const idOf=k=>k&&(k._id||(k._id=Object.keys(K).find(i=>K[i]===k)||Object.keys(K)
   const {hw,hd}=kidGeom(k,o);f(k,x,hy,d,hw,hd,x+d,hy+(k.knob?6:5))}catch(e){}}}
 
 /* walks: [speed, bounce, sway] */
-const GAIT={coach:[.75,2,0],voss:[.55,0,0],shermian:[.5,1,1],sherman:[.45,1,1],pat:[.85,1,2],adam:[1.8,1,0],kim:[1.15,3,0],loach:[.6,0,0],
+const GAIT={coach:[.75,2,0],voss:[.55,0,0],shermian:[.5,1,1],sherman:[.7,1,1],pat:[.85,1,2],adam:[1.8,1,0],kim:[1.15,3,0],loach:[.6,0,0],
  balduf:[1.3,1,1],grieve:[.6,0,0],glen:[.7,2,1],cheeks:[.8,2,1],clapper:[.8,2,1],sub:[1,1,0]};
 {const _dk=drawKid;drawKid=function(k,x,y,o){
  const id=k&&k.adult&&idOf(k),G_=id&&GAIT[id];
@@ -89,8 +89,7 @@ const HABIT={coach:['hips',2],shermian:['cross',3],voss:['hold',2],pat:['cross',
 /* ---- Ms. Sherman is OLD. Both of her. Grey, hunched, a face like a walnut, and a crutch. ---- */
 {
 if(K.shermian)Object.assign(K.shermian,{hair:'#d4d0cc',old:1});
-if(K.sherman)Object.assign(K.sherman,{old:1});
-const OLDS=new Set(['shermian','sherman']);
+const OLDS=new Set(['shermian']);
 const idOf2=k=>k&&Object.keys(K).find(i=>K[i]===k);
 /* the walnut */
 {const _dh=drawHead;drawHead=function(k,x,hy,d,o){_dh(k,x,hy,d,o);
