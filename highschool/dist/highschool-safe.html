@@ -26290,6 +26290,29 @@ if(ROOMS.lake){
 }
 }
 
+/* =====================================================================
+   CLASSROOMS + BATHROOM: small living touches over the existing paint
+   ===================================================================== */
+{
+const LIVE={
+ english:{clock:[42,7],win:[116,28,40,22]},
+ maths:{clock:[201,7],win:[278,39,36,13]},
+ history:{clock:[42,7]},
+ science:{clock:[42,7]}
+};
+for(const r of Object.keys(LIVE)){if(!ROOMS[r])continue;const L=LIVE[r],ob=ROOMS[r].bg;ROOMS[r].bg=function(){ob.apply(this,arguments);
+ try{
+  if(L.clock){const [cx,cy]=L.clock,a=(T%60)/60*Math.PI*2-Math.PI/2;R(Math.round(cx+Math.cos(a)*2),Math.round(cy+Math.sin(a)*2),1,1,'#c02020')}
+  if(L.win){const [wx,wy,ww,wh]=L.win;
+   for(let i=0;i<2;i++){const x=wx+((T*2+i*30)%(ww+12))-6;g.save();g.beginPath();g.rect(wx,wy,ww,wh);g.clip();R(x,wy+3+i*5,8,2,'rgba(255,255,255,.75)');g.restore()}
+   for(let i=0;i<8;i++){const q=(T*.04+i/8)%1;g.globalAlpha=.25*(1-q);R(wx+hsh(i+r.length)*ww-q*20,wy+wh+q*60,1,1,'#fff8e0');g.globalAlpha=1}}
+  if(Math.sin(T*17+r.length)>.985){g.globalAlpha=.12;R(0,0,W,112,'#000');g.globalAlpha=1}
+ }catch(e){}}}
+if(ROOMS.toilets){const ob=ROOMS.toilets.bg;ROOMS.toilets.bg=function(){ob.apply(this,arguments);
+ try{for(const x of[177,197,217]){const q=(T*.7+x*.013)%1;if(q<.6)R(x,131+q*10,1,2,'rgba(170,210,240,.9)');if(q>.6&&q<.7){g.globalAlpha=.5;R(x-2,138,5,1,'#cfeaff');g.globalAlpha=1}}
+  if(Math.sin(T*9)>.93){g.globalAlpha=.18;R(0,0,W,112,'#002')}g.globalAlpha=1}catch(e){}}}
+}
+
 </script>
 <script>
 /* js/stealfallout.js */
@@ -27355,6 +27378,29 @@ function renderWeather(body){const w=h('div','wx');w.appendChild(h('div','big','
 function renderClock(body){const w=h('div','wx');w.appendChild(h('div','big',(PERIODS[D.period]||{}).time||''));w.appendChild(h('div',null,(PERIODS[D.period]||{}).name||''));
  w.appendChild(h('div','small','Alarm: 3:15 PM · repeats every day · can’t be deleted'));body.appendChild(w)}
 
+
+/* ---- Corey's curls pay off: Abby tells him it was never the hair (full version, once they're together) ---- */
+spot({room:'walkway',period:[2,4],x:150,y:150,label:'Corey is hiding in his hood',short:'🌀',
+ cond:()=>D&&!D.weekend&&fullEd()&&alive('corey')&&alive('abby')&&D.done&&(D.done.window||D.done.mended)&&!GR().curlPay&&((GR().sp||0)>=1||(GR().ci||0)>=6),
+ run:async()=>{
+  scene('walkway',{corey:[160,1,{y:150,pose:'cover',ex:'scared'}],you:[110,1,{y:154}]},true);cue('love',true);
+  await N('Corey has his hood up and both hands on his head. It’s 71% humidity. He has given up.');
+  await say('corey','(from inside the hood) Don’t look. It’s a curl emergency. Code red. Code FLAT.','scared');
+  put('abby',340,-1,{y:150,ex:'n'});await walk('abby',180,70);face('abby',-1);
+  pose('abby','reach');await wait(300);pose('corey',null);A.corey.ex='shock';pose('abby',null);
+  await N('Abby pulls his hood down.');
+  await say('abby','Corey. I don’t like you for your hair.','cold');
+  await say('corey','(very small) …Then what for?','scared');
+  await say('abby','(looking at him for a long time) You draw birds back. Badly. Every single time.','smirk');
+  await say('corey','They’re not bad.','blush');
+  await say('abby','They’re so bad.','smirk');
+  const c=await choose(['Leave them to it.','“Corey. Text me less.”','Take a photo.']);
+  if(c===1){await say('corey','(not taking his eyes off her) Yeah. Yeah. Sure. Totally. …Can I text you about it though.','happy')}
+  else if(c===2){try{const url=$('c').toDataURL('image/jpeg',.8);CAM.unshift({url,who:['corey','abby'],cap:'they’re so annoying',posted:1,lk:612,com:[['Nivaan','reposting this'],['Corey','DELETE THIS'],['Abby','no']]})}catch(e){}SFX.click&&SFX.click();await N('Click. Abby looks right at the camera. Corey looks at Abby.')}
+  else await walk('you',40,60);
+  GR().curlPay=1;GR().curl=1;
+  push('corey','corey','she said it’s not the hair');push('corey','corey','what does that MEAN');push('corey','corey','ok i know what it means');push('corey','corey','i’m fine. i’m so fine. it’s humid and i’m FINE');
+  return 'stay'}});
 /* keep the badge fresh */
 {const _ul=updateLoc;updateLoc=function(){_ul();try{badge()}catch(e){}}}
 ON_PERIOD.push(async()=>{try{badge()}catch(e){}});
@@ -27630,6 +27676,31 @@ const LINES={
  return r}}
 }
 
+/* =====================================================================
+   SAFETY NET for "if the text says it, the screen shows it":
+   when narration says someone DOES something ("Coach grabs…",
+   "Ms. Sherman steps out…") and they aren't on screen, they walk in
+   from the nearest edge first. Montages ("In Math, …", "By lunch, …")
+   and past tense are left alone.
+   ===================================================================== */
+{
+const VERB='(walks|is|looks|stands|runs|holds|grabs|turns|sits|comes|pulls|puts|throws|starts|picks|hands|shouts|screams|laughs|cries|steps|leans|drops|slams|kicks|punches|bursts|appears|waves|nods|smiles|stares|points|gives|takes|eats|writes)';
+let NAMES=null;
+const build=()=>{NAMES=[];for(const id of Object.keys(K)){const k=K[id];if(!k||!k.n||id==='you')continue;
+ const n=k.n.replace(/\(.*\)/,'').trim();if(/^(Mr|Ms|Mrs|Miss|Dr)\.? /.test(n))NAMES.push([id,new RegExp('\\b'+n.replace('.','\\.')+' '+VERB+'\\b')]);
+ else{const f=n.split(' ')[0];if(f.length>=3&&/^[A-Z]/.test(f)&&!/^(Lunch|Nurse|Big|The|Officer)$/.test(f))NAMES.push([id,new RegExp('(^|[.!?] )'+f+' '+VERB+'\\b')])}}};
+const MONTAGE=/^(In [A-Z][a-z]+,|By |Next |Later|Tomorrow|That night|Every |Somewhere)/;
+const _say=say;say=async function(who,t){
+ try{if(who===''&&!TEST&&busy&&typeof t==='string'&&!MONTAGE.test(t)&&A.you){if(!NAMES)build();
+  const bare=t.replace(/“[^”]*”/g,'');
+  for(const [id,re] of NAMES){if(A[id]||(D.dead||{})[id]||!re.test(bare))continue;
+   if((id==='sherman'&&A.shermian)||(id==='shermian'&&A.sherman))continue;
+   if(id==='sherman'&&K.shermian&&!/real/i.test(bare))continue; /* plain “Ms. Sherman” = the one in the halls */
+   const fromLeft=A.you.x>160,x0=fromLeft?-14:334,x1=fromLeft?40:280;
+   put(id,x0,fromLeft?1:-1,{y:148});await walk(id,x1,90);break}}}catch(e){}
+ return _say.apply(this,arguments)};
+}
+
 </script>
 <script>
 /* js/edition-safe.js */
@@ -27691,7 +27762,7 @@ if(typeof WHISPER!=='undefined')delete WHISPER.abby;
  for(let i=HOOKS.length-1;i>=0;i--)if(HOOKS[i].mis&&!MIS[HOOKS[i].mis])HOOKS.splice(i,1);
  for(let i=SPOTS.length-1;i>=0;i--)if(SPOTS[i].mis&&!MIS[SPOTS[i].mis])SPOTS.splice(i,1);
  /* the couples' main-story scenes are full-version only */
- for(let i=SPOTS.length-1;i>=0;i--)if(/^(Abby is drawing on the Trailer steps|Sean and Stella are sharing earbuds|Darren has a new laminated list)$/.test(SPOTS[i].label||''))SPOTS.splice(i,1);
+ for(let i=SPOTS.length-1;i>=0;i--)if(/^(Abby is drawing on the Trailer steps|Sean and Stella are sharing earbuds|Darren has a new laminated list|Corey is hiding in his hood)$/.test(SPOTS[i].label||''))SPOTS.splice(i,1);
  if(typeof PASS!=='undefined')for(let i=PASS.length-1;i>=0;i--)if(PASS[i].id==='couple')PASS.splice(i,1);
  if(typeof NIGHT!=='undefined')for(let i=NIGHT.length-1;i>=0;i--)if(/darren|stella/i.test(JSON.stringify(NIGHT[i].msgs))&&/hasan|sean|stella/i.test(NIGHT[i].from))NIGHT.splice(i,1);
  if(typeof RIDE!=='undefined')for(let i=RIDE.length-1;i>=0;i--){const s=String(RIDE[i].run)+String(RIDE[i].cond);if(/darren|toby|firstfight|instella|striketwo|farewell/i.test(s))RIDE.splice(i,1)}

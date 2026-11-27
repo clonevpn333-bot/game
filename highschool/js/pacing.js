@@ -40,3 +40,28 @@ const LINES={
   if(t==='feared'&&A[k]&&A.you)A[k].x+=A[k].x<A.you.x?-10:10}catch(e){}
  return r}}
 }
+
+/* =====================================================================
+   SAFETY NET for "if the text says it, the screen shows it":
+   when narration says someone DOES something ("Coach grabs…",
+   "Ms. Sherman steps out…") and they aren't on screen, they walk in
+   from the nearest edge first. Montages ("In Math, …", "By lunch, …")
+   and past tense are left alone.
+   ===================================================================== */
+{
+const VERB='(walks|is|looks|stands|runs|holds|grabs|turns|sits|comes|pulls|puts|throws|starts|picks|hands|shouts|screams|laughs|cries|steps|leans|drops|slams|kicks|punches|bursts|appears|waves|nods|smiles|stares|points|gives|takes|eats|writes)';
+let NAMES=null;
+const build=()=>{NAMES=[];for(const id of Object.keys(K)){const k=K[id];if(!k||!k.n||id==='you')continue;
+ const n=k.n.replace(/\(.*\)/,'').trim();if(/^(Mr|Ms|Mrs|Miss|Dr)\.? /.test(n))NAMES.push([id,new RegExp('\\b'+n.replace('.','\\.')+' '+VERB+'\\b')]);
+ else{const f=n.split(' ')[0];if(f.length>=3&&/^[A-Z]/.test(f)&&!/^(Lunch|Nurse|Big|The|Officer)$/.test(f))NAMES.push([id,new RegExp('(^|[.!?] )'+f+' '+VERB+'\\b')])}}};
+const MONTAGE=/^(In [A-Z][a-z]+,|By |Next |Later|Tomorrow|That night|Every |Somewhere)/;
+const _say=say;say=async function(who,t){
+ try{if(who===''&&!TEST&&busy&&typeof t==='string'&&!MONTAGE.test(t)&&A.you){if(!NAMES)build();
+  const bare=t.replace(/“[^”]*”/g,'');
+  for(const [id,re] of NAMES){if(A[id]||(D.dead||{})[id]||!re.test(bare))continue;
+   if((id==='sherman'&&A.shermian)||(id==='shermian'&&A.sherman))continue;
+   if(id==='sherman'&&K.shermian&&!/real/i.test(bare))continue; /* plain “Ms. Sherman” = the one in the halls */
+   const fromLeft=A.you.x>160,x0=fromLeft?-14:334,x1=fromLeft?40:280;
+   put(id,x0,fromLeft?1:-1,{y:148});await walk(id,x1,90);break}}}catch(e){}
+ return _say.apply(this,arguments)};
+}

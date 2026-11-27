@@ -671,6 +671,29 @@ function renderWeather(body){const w=h('div','wx');w.appendChild(h('div','big','
 function renderClock(body){const w=h('div','wx');w.appendChild(h('div','big',(PERIODS[D.period]||{}).time||''));w.appendChild(h('div',null,(PERIODS[D.period]||{}).name||''));
  w.appendChild(h('div','small','Alarm: 3:15 PM · repeats every day · can’t be deleted'));body.appendChild(w)}
 
+
+/* ---- Corey's curls pay off: Abby tells him it was never the hair (full version, once they're together) ---- */
+spot({room:'walkway',period:[2,4],x:150,y:150,label:'Corey is hiding in his hood',short:'🌀',
+ cond:()=>D&&!D.weekend&&fullEd()&&alive('corey')&&alive('abby')&&D.done&&(D.done.window||D.done.mended)&&!GR().curlPay&&((GR().sp||0)>=1||(GR().ci||0)>=6),
+ run:async()=>{
+  scene('walkway',{corey:[160,1,{y:150,pose:'cover',ex:'scared'}],you:[110,1,{y:154}]},true);cue('love',true);
+  await N('Corey has his hood up and both hands on his head. It’s 71% humidity. He has given up.');
+  await say('corey','(from inside the hood) Don’t look. It’s a curl emergency. Code red. Code FLAT.','scared');
+  put('abby',340,-1,{y:150,ex:'n'});await walk('abby',180,70);face('abby',-1);
+  pose('abby','reach');await wait(300);pose('corey',null);A.corey.ex='shock';pose('abby',null);
+  await N('Abby pulls his hood down.');
+  await say('abby','Corey. I don’t like you for your hair.','cold');
+  await say('corey','(very small) …Then what for?','scared');
+  await say('abby','(looking at him for a long time) You draw birds back. Badly. Every single time.','smirk');
+  await say('corey','They’re not bad.','blush');
+  await say('abby','They’re so bad.','smirk');
+  const c=await choose(['Leave them to it.','“Corey. Text me less.”','Take a photo.']);
+  if(c===1){await say('corey','(not taking his eyes off her) Yeah. Yeah. Sure. Totally. …Can I text you about it though.','happy')}
+  else if(c===2){try{const url=$('c').toDataURL('image/jpeg',.8);CAM.unshift({url,who:['corey','abby'],cap:'they’re so annoying',posted:1,lk:612,com:[['Nivaan','reposting this'],['Corey','DELETE THIS'],['Abby','no']]})}catch(e){}SFX.click&&SFX.click();await N('Click. Abby looks right at the camera. Corey looks at Abby.')}
+  else await walk('you',40,60);
+  GR().curlPay=1;GR().curl=1;
+  push('corey','corey','she said it’s not the hair');push('corey','corey','what does that MEAN');push('corey','corey','ok i know what it means');push('corey','corey','i’m fine. i’m so fine. it’s humid and i’m FINE');
+  return 'stay'}});
 /* keep the badge fresh */
 {const _ul=updateLoc;updateLoc=function(){_ul();try{badge()}catch(e){}}}
 ON_PERIOD.push(async()=>{try{badge()}catch(e){}});

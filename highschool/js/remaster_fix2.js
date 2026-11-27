@@ -198,3 +198,26 @@ if(ROOMS.lake){
  if(typeof LIGHT!=='undefined')LIGHT.lake={amb:.9,tint:[90,60,40],src:[[256,22,220,.32,[255,210,160]]]};
 }
 }
+
+/* =====================================================================
+   CLASSROOMS + BATHROOM: small living touches over the existing paint
+   ===================================================================== */
+{
+const LIVE={
+ english:{clock:[42,7],win:[116,28,40,22]},
+ maths:{clock:[201,7],win:[278,39,36,13]},
+ history:{clock:[42,7]},
+ science:{clock:[42,7]}
+};
+for(const r of Object.keys(LIVE)){if(!ROOMS[r])continue;const L=LIVE[r],ob=ROOMS[r].bg;ROOMS[r].bg=function(){ob.apply(this,arguments);
+ try{
+  if(L.clock){const [cx,cy]=L.clock,a=(T%60)/60*Math.PI*2-Math.PI/2;R(Math.round(cx+Math.cos(a)*2),Math.round(cy+Math.sin(a)*2),1,1,'#c02020')}
+  if(L.win){const [wx,wy,ww,wh]=L.win;
+   for(let i=0;i<2;i++){const x=wx+((T*2+i*30)%(ww+12))-6;g.save();g.beginPath();g.rect(wx,wy,ww,wh);g.clip();R(x,wy+3+i*5,8,2,'rgba(255,255,255,.75)');g.restore()}
+   for(let i=0;i<8;i++){const q=(T*.04+i/8)%1;g.globalAlpha=.25*(1-q);R(wx+hsh(i+r.length)*ww-q*20,wy+wh+q*60,1,1,'#fff8e0');g.globalAlpha=1}}
+  if(Math.sin(T*17+r.length)>.985){g.globalAlpha=.12;R(0,0,W,112,'#000');g.globalAlpha=1}
+ }catch(e){}}}
+if(ROOMS.toilets){const ob=ROOMS.toilets.bg;ROOMS.toilets.bg=function(){ob.apply(this,arguments);
+ try{for(const x of[177,197,217]){const q=(T*.7+x*.013)%1;if(q<.6)R(x,131+q*10,1,2,'rgba(170,210,240,.9)');if(q>.6&&q<.7){g.globalAlpha=.5;R(x-2,138,5,1,'#cfeaff');g.globalAlpha=1}}
+  if(Math.sin(T*9)>.93){g.globalAlpha=.18;R(0,0,W,112,'#002')}g.globalAlpha=1}catch(e){}}}
+}
