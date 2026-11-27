@@ -353,31 +353,44 @@ for(const g of Object.keys(GIRLS)){
 
 /* ---------------- the app ---------------- */
 const css=document.createElement('style');css.textContent=`
-#gram{position:fixed;inset:0;z-index:22;background:#0b0912d9;display:flex;justify-content:center;align-items:center}
+#gram{position:fixed;inset:0;z-index:22;background:#0b0912d9;display:flex;justify-content:center;align-items:center;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Helvetica,Arial,sans-serif}
 #gram[hidden]{display:none}
-#gram .gp{width:min(380px,94vw);height:min(640px,88vh);background:#141018;border:4px solid #6b5a86;box-shadow:6px 6px #000;display:flex;flex-direction:column;font-size:14px}
-#gram .gh{display:flex;align-items:center;gap:8px;padding:10px 12px;background:linear-gradient(90deg,#5a2a6a,#a83a6a,#e0a040);color:#fff;font-size:18px;letter-spacing:.04em}
-#gram .gh b{flex:1;font-weight:normal}
-#gram .gh button,#gram .gt button{background:#0006;color:#fff;border:0;padding:4px 10px;font:inherit;font-size:13px;cursor:pointer}
-#gram .gt{display:flex;gap:4px;padding:6px;background:#1e1828}
-#gram .gt button.on{background:#e0a040;color:#1a1010}
-#gram .gb{flex:1;overflow:auto;padding:8px;display:flex;flex-direction:column;gap:8px}
-#gram .post{background:#1e1828;border:2px solid #3a3050;padding:8px}
-#gram .post .who{color:#f6cf8e;font-size:12px}
-#gram .post .pic{margin:6px 0;padding:18px 8px;text-align:center;color:#d8c8e8;font-size:12px;background:repeating-linear-gradient(45deg,#2a2238,#2a2238 6px,#30283f 6px,#30283f 12px)}
-#gram .post .lk{color:#8a7a92;font-size:11px}
-#gram .row{display:flex;align-items:center;gap:10px;padding:8px;background:#1e1828;border:2px solid #3a3050;cursor:pointer;text-align:left;color:inherit;font:inherit}
-#gram .row:hover{border-color:#e0a040}
-#gram .av{width:30px;height:30px;border-radius:50%;flex:none;border:2px solid #e0a040}
-#gram .row .t{flex:1;min-width:0}#gram .row .t i{display:block;font-style:normal;color:#8a7a92;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#gram .dot{background:#e0306a;color:#fff;font-size:11px;padding:1px 6px}
-#gram .bub{max-width:82%;padding:6px 9px;border:2px solid #4e4266;background:#2a2238;align-self:flex-start;white-space:pre-wrap;overflow-wrap:anywhere}
-#gram .bub.me{align-self:flex-end;background:#6b4a7a;border-color:#a98ac0}
-#gram .bub.nt{align-self:center;background:none;border:0;color:#8a7a92;font-size:11px}
-#gram .typing{color:#8a7a92;font-size:12px;align-self:flex-start}
-#gram .opts{display:flex;flex-direction:column;gap:6px;padding:8px;background:#1e1828}
-#gram .opts button{background:#2b2240;color:#ffe1a8;border:2px solid #6b5a86;padding:7px;font:inherit;text-align:left;cursor:pointer}
-#gram .opts button:hover{border-color:#e0a040}
+#gram .gp{position:relative;width:min(370px,94vw);height:min(720px,90vh);background:#000;border:10px solid #1c1c1e;border-radius:46px;box-shadow:0 0 0 2px #3a3a3c,0 20px 60px #000c;display:flex;flex-direction:column;overflow:hidden;font-size:15px;color:#fff}
+#gram .sb{display:flex;justify-content:space-between;align-items:center;padding:12px 26px 4px;font-size:14px;font-weight:600;letter-spacing:.01em}
+#gram .sb .isl{width:96px;height:26px;background:#000;border-radius:14px;box-shadow:0 0 0 1px #1c1c1e}
+#gram .sb .bt{display:flex;gap:5px;align-items:center;font-size:12px}
+#gram .sb .bat{width:24px;height:11px;border:1.5px solid #fffc;border-radius:3px;position:relative}
+#gram .sb .bat i{position:absolute;left:1px;top:1px;bottom:1px;background:#fff;border-radius:1px}
+#gram .gh{display:flex;align-items:center;gap:8px;padding:8px 16px 10px;border-bottom:.5px solid #2c2c2e;background:#000}
+#gram .gh b{flex:1;font-size:22px;font-weight:700;letter-spacing:-.01em}
+#gram .gh.th b{font-size:17px;font-weight:600;text-align:center}
+#gram .gh button{background:none;color:#0a84ff;border:0;padding:4px 2px;font:inherit;font-size:16px;cursor:pointer}
+#gram .gb{flex:1;overflow:auto;padding:10px 12px;display:flex;flex-direction:column;gap:6px;background:#000}
+#gram .post{background:#1c1c1e;border-radius:14px;padding:10px 12px}
+#gram .post .who{color:#fff;font-size:13px;font-weight:600}
+#gram .post .who small{color:#8e8e93;font-weight:400}
+#gram .post .pic{margin:8px -12px;padding:34px 14px;text-align:center;color:#d1d1d6;font-size:13px;font-style:italic;background:linear-gradient(135deg,#2c2c2e,#3a3a3c)}
+#gram .post .lk{color:#8e8e93;font-size:12px;margin-top:4px}
+#gram .row{display:flex;align-items:center;gap:12px;padding:10px 4px;background:none;border:0;border-bottom:.5px solid #2c2c2e;cursor:pointer;text-align:left;color:inherit;font:inherit;width:100%}
+#gram .av{width:46px;height:46px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:18px;color:#fff}
+#gram .row .t{flex:1;min-width:0}
+#gram .row .t span{font-weight:600}
+#gram .row .t small{color:#8e8e93;font-size:12px}
+#gram .row .t i{display:block;font-style:normal;color:#8e8e93;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#gram .dot{background:#0a84ff;color:#fff;font-size:12px;font-weight:600;min-width:20px;height:20px;border-radius:10px;display:flex;align-items:center;justify-content:center;padding:0 6px}
+#gram .bub{max-width:76%;padding:8px 13px;border-radius:19px;background:#3a3a3c;align-self:flex-start;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.3}
+#gram .bub.me{align-self:flex-end;background:#0a84ff}
+#gram .bub.nt{align-self:center;background:none;color:#8e8e93;font-size:12px;padding:4px}
+#gram .typing{align-self:flex-start;background:#3a3a3c;border-radius:19px;padding:8px 14px;color:#8e8e93;font-size:13px}
+#gram .opts{display:flex;flex-direction:column;gap:6px;padding:10px 12px;background:#0a0a0a;border-top:.5px solid #2c2c2e}
+#gram .opts button{background:#1c1c1e;color:#0a84ff;border:0;border-radius:18px;padding:9px 14px;font:inherit;text-align:left;cursor:pointer}
+#gram .opts button:hover{background:#2c2c2e}
+#gram .tabs{display:flex;justify-content:space-around;padding:8px 0 4px;background:#0a0a0acc;border-top:.5px solid #2c2c2e}
+#gram .tabs button{background:none;border:0;color:#8e8e93;font:inherit;font-size:11px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer}
+#gram .tabs button big{font-size:22px;line-height:1}
+#gram .tabs button.on{color:#0a84ff}
+#gram .home{height:22px;display:flex;justify-content:center;align-items:center;background:#000}
+#gram .home i{width:130px;height:5px;border-radius:3px;background:#fff}
 #bGram.hot{background:#e0306a;color:#fff}`;document.head.appendChild(css);
 const ov=document.createElement('div');ov.id='gram';ov.hidden=true;document.body.appendChild(ov);
 {const bq=$('bQuest');if(bq){const b=document.createElement('button');b.className='tb';b.id='bGram';b.title='Highgram (G)';b.textContent='📱';bq.parentNode.insertBefore(b,bq);b.onclick=()=>{audio&&audio();openGram()}}}
@@ -392,21 +405,25 @@ window.openGram=openGram;
 const h=(tag,cls,txt)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e};
 function render(){
  ov.innerHTML='';const p=h('div','gp');ov.appendChild(p);
- const hd=h('div','gh');hd.appendChild(h('b',null,THREAD?(K[THREAD]?K[THREAD].n:THREAD):'Highgram'));
- if(THREAD){const bk=h('button',null,'BACK');bk.onclick=()=>{THREAD=null;render()};hd.appendChild(bk)}
- const x=h('button',null,'✕');x.onclick=()=>{ov.hidden=true};hd.appendChild(x);p.appendChild(hd);
- if(taken()){const b=h('div','gb');b.appendChild(h('div','bub nt','📵 Confiscated. You get it back at home time.\nCorey doesn’t know. Corey is spiraling.'));p.appendChild(b);return}
- if(!THREAD){const t=h('div','gt');for(const [k,l] of [['feed','FEED'],['dms','DMS']]){const b=h('button',VIEW===k?'on':'',l);b.onclick=()=>{VIEW=k;render()};t.appendChild(b)}p.appendChild(t)}
+ const sb=h('div','sb');sb.appendChild(h('span',null,(PERIODS[D.period]||{}).time||'9:41'));sb.appendChild(h('div','isl'));
+ const bt=h('div','bt');bt.appendChild(h('span',null,'5G'));const bat=h('div','bat');const lvl=h('i');lvl.style.width=Math.max(10,90-D.period*9)+'%';bat.appendChild(lvl);bt.appendChild(bat);sb.appendChild(bt);p.appendChild(sb);
+ const hd=h('div','gh'+(THREAD?' th':''));
+ if(THREAD){const bk=h('button',null,'‹ Back');bk.onclick=()=>{THREAD=null;render()};hd.appendChild(bk)}
+ hd.appendChild(h('b',null,THREAD?(K[THREAD]?K[THREAD].n:THREAD):(VIEW==='feed'?'Highgram':'Messages')));
+ const x=h('button',null,THREAD?'':'Done');x.onclick=()=>{ov.hidden=true};hd.appendChild(x);p.appendChild(hd);
  const body=h('div','gb');p.appendChild(body);
- if(THREAD)return renderThread(p,body);
- if(VIEW==='feed')return renderFeed(body);
- renderList(body)}
+ if(taken()){body.appendChild(h('div','bub nt','📵 Confiscated. You get it back at home time.\nCorey doesn’t know. Corey is spiraling.'))}
+ else if(THREAD)renderThread(p,body);
+ else if(VIEW==='feed')renderFeed(body);
+ else renderList(body);
+ if(!THREAD){const t=h('div','tabs');for(const [k,ic,l] of [['feed','🏠','Feed'],['dms','💬','Messages']]){const b=h('button',VIEW===k?'on':'');b.appendChild(h('big',null,ic));b.appendChild(h('span',null,l));b.onclick=()=>{VIEW=k;render()};t.appendChild(b)}p.appendChild(t)}
+ const hm=h('div','home');hm.appendChild(h('i'));p.appendChild(hm)}
 function renderList(body){
  const rows=[];
  if(K.corey)rows.push(['corey','@c.u.r.l.y','curls first. questions later']);
  if(fullEd())for(const g of Object.keys(GIRLS))if(alive(g))rows.push([g,GIRLS[g].h,GIRLS[g].bio]);
  const G=GR();
- for(const [id,hd,bio] of rows){const r=h('button','row');const av=h('div','av');av.style.background=K[id].col||K[id].top;r.appendChild(av);
+ for(const [id,hd,bio] of rows){const r=h('button','row');const av=h('div','av',K[id].n[0]);av.style.background=K[id].col||K[id].top;r.appendChild(av);
   const t=h('div','t');t.appendChild(h('span',null,K[id].n+' '));t.appendChild(h('small',null,hd));const th=G.th[id]||[];
   const st=GIRLS[id]?stepNow(id):null;
   t.appendChild(h('i',null,th.length?th[th.length-1][1]:(st==='dm1'?'Slide in.':bio)));r.appendChild(t);
@@ -467,7 +484,7 @@ function renderFeed(body){
   ['david','@david.clipboard','[a clipboard]','meeting at break. bring evidence. bring snacks',2],
   ['nivaan','@nivaan.live','[the sub, laughing, holding a coffee]','the sub is so fucking hot it should be illegal for him to teach fractions',890]];
  for(let i=0;i<4;i++){const p=daily[(d*3+i)%daily.length];if(K[p[0]])post(...p)}
- for(const f of F){const e=h('div','post');e.appendChild(h('div','who',(K[f.who]?K[f.who].n:f.who)+' '+f.hd));e.appendChild(h('div','pic',f.pic));e.appendChild(h('div',null,f.txt));e.appendChild(h('div','lk','♥ '+f.lk+' likes'));body.appendChild(e)}}
+ for(const f of F){const e=h('div','post');{const w=h('div','who',(K[f.who]?K[f.who].n:f.who)+' ');w.appendChild(h('small',null,f.hd));e.appendChild(w)}e.appendChild(h('div','pic',f.pic));e.appendChild(h('div',null,f.txt));e.appendChild(h('div','lk','♡ '+f.lk+' likes'));body.appendChild(e)}}
 
 /* keep the badge fresh */
 {const _ul=updateLoc;updateLoc=function(){_ul();try{badge()}catch(e){}}}
