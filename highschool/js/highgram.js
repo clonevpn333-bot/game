@@ -17,6 +17,10 @@
      spiral about something tiny.
    ===================================================================== */
 {
+/* NO EMOJIS ON THE PHONE: everything the phone shows or toasts goes through noEmo */
+const EMO=/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}\u{200D}\u{2190}-\u{21FF}\u{2300}-\u{23FF}]/gu;
+const noEmo=s=>String(s).replace(EMO,'').replace(/ {2,}/g,' ').replace(/^ | $/g,'');
+const toast=t=>window.toast(noEmo(t));
 const GR=()=>{D.f.gr=D.f.gr||{rel:{},th:{},unread:{},seen:{}};return D.f.gr};
 const fullEd=()=>window.EDITION!=='safe'&&(typeof cal!=='function'||cal()>=3);
 const day=()=>typeof cal==='function'?cal():0;
@@ -63,11 +67,52 @@ function stepNow(g){if(!fullEd()||!alive(g))return null;const r=rel(g),a=activeG
  if(r.s===4)return day()>r.d?'m5':'wait';
  return null}
 
+/* ---------------- PIXEL ICONS (hand-drawn, 12x12 glyph on a 16x16 tile) ---------------- */
+const GLY={
+ feed:["............",".##########.",".#........#.",".#.....##.#.",".#..####..#.",".#.#....#.#.",".#.#....#.#.",".#.#....#.#.",".#..####..#.",".#........#.",".##########.","............"],
+ dms:["............","..########..",".##########.",".##########.",".##########.",".##########.",".##########.","..########..","..##........",".##.........","............","............"],
+ search:["............","...####.....","..#....#....",".#......#...",".#......#...",".#......#...",".#......#...","..#....#....","...#####....",".......###..","........###.",".........##."],
+ arcade:["............","....###.....","...#####....","...#####....","....###.....",".....#......",".....#......","..#######...",".#########..",".##o###o##..",".#########..","............"],
+ camera:["............","....###.....",".##########.",".####oo####.",".###o##o###.",".##o####o##.",".##o####o##.",".###o##o###.",".####oo####.",".##########.","............","............"],
+ shop:["............","....####....","...#....#...","...#....#...",".##########.",".##########.",".####oo####.",".##########.",".##########.",".##########.",".##########.","............"],
+ notes:["............",".##########.",".#........#.",".#.oooooo.#.",".#........#.",".#.oooooo.#.",".#........#.",".#.oooo...#.",".#........#.",".##########.","............","............"],
+ weather:["............","....###.....","..#######...",".#########..","############","############",".##########.","............","..o...o...o.",".o...o...o..","............","............"],
+ clock:["............","...######...","..#......#..",".#...o....#.",".#...o....#.",".#...o....#.",".#...ooo..#.",".#........#.",".#........#.","..#......#..","...######...","............"],
+ phone:["...######...","..#oooooo#..","..#oooooo#..","..#oooooo#..","..#oooooo#..","..#oooooo#..","..#oooooo#..","..#oooooo#..","..#oooooo#..","..#oooooo#..","..#..##..#..","...######..."],
+ heart:["............","............","..##..##....",".########...",".########...",".########...","..######....","...####.....","....##......","............","............","............"],
+ doc:["............","..######....","..#....##...","..#.....#...","..#.ooo.#...","..#.....#...","..#.ooo.#...","..#.....#...","..#.ooo.#...","..#######...","............","............"]
+};
+const ICOL={feed:['#e0407a','#7a2ad0','#fff','#fff'],dms:['#4ee86a','#1aa83a','#fff','#fff'],search:['#f4f4f8','#c0c6d4','#1a6ae0','#1a6ae0'],
+ arcade:['#ff7a59','#b0184a','#1a1a1a','#ff3030'],camera:['#a0a0a8','#4a4a52','#26262a','#d0d0dc'],shop:['#ffd23a','#ff9010','#fff','#e07000'],
+ notes:['#fff8c8','#f0c800','#8a6a00','#b09a50'],weather:['#5ac8fa','#1a5ad0','#fff','#bfe8ff'],clock:['#2c2c30','#000','#fff','#ff9f0a'],
+ phone:[null,null,'#fff','#5ac8fa'],heart:[null,null,'#ff3b5c','#ff3b5c'],doc:[null,null,'#fff','#8e8e93']};
+const ICACHE={};
+function iconURL(id){if(ICACHE[id])return ICACHE[id];
+ const c=document.createElement('canvas'),tile=ICOL[id][0]!=null,n=tile?16:12;c.width=c.height=n;const x=c.getContext('2d');const [a,b,gc,ac]=ICOL[id];
+ if(tile){for(let y=0;y<16;y++)for(let i=0;i<16;i++){const corner=(i<2&&y<1)||(i<1&&y<2)||(i>13&&y<1)||(i>14&&y<2)||(i<2&&y>14)||(i<1&&y>13)||(i>13&&y>14)||(i>14&&y>13);if(corner)continue;
+   x.fillStyle=y<7?a:y>8?b:((i+y)%2?a:b);x.fillRect(i,y,1,1)}
+  x.fillStyle='rgba(255,255,255,.25)';x.fillRect(2,0,12,1)}
+ const o=tile?2:0;GLY[id].forEach((row,y)=>[...row].forEach((ch,i)=>{if(ch==='.')return;x.fillStyle=ch==='o'?ac:gc;x.fillRect(i+o,y+o,1,1)}));
+ return ICACHE[id]=c.toDataURL()}
+function iconImg(id,px){const im=document.createElement('img');im.src=iconURL(id);im.width=im.height=px;im.style.imageRendering='pixelated';im.style.verticalAlign='middle';im.alt='';return im}
+const thName=id=>K[id]&&K[id].n?K[id].n:((GR().nm||{})[id])||String(id).replace(/^dm:/,'');
+/* a message that is a picture shows the picture: "[photo: ...]" -> a real pixel photo of whoever sent it */
+const PHOTO={corey:['toilets',[['corey',160,168,1,'phone','scared']]],brielle:['toilets',[['brielle',160,168,1,null,'cry']]]};
+function photoFor(who){const P_=PHOTO[who];if(P_)return snap(P_[0],P_[1]);if(K[who])return snap('corridor',[[who,160,168,1,'phone','happy']]);return snap('corridor',[])}
+function msgEl(who,t,id){
+ const m=/^\[(photo|pic|selfie)[^\]]*\]$/i.test(String(t).trim());
+ const b=h('div','bub'+(who==='me'?' me':who==='note'?' nt':'')+(m?' img':''));
+ if(who!=='me'&&who!=='note'&&who!==id&&K[who])b.appendChild(h('b',null,K[who].n));
+ if(m){const im=document.createElement('img');im.className='mphoto';im.src=photoFor(who==='me'?'you':who);b.appendChild(im)}
+ else if(/^\[[^\]]+\]$/.test(String(t).trim())){b.classList.add('file');b.appendChild(iconImg('doc',24));b.appendChild(h('span',null,' '+String(t).trim().slice(1,-1)))}
+ else b.appendChild(document.createTextNode(noEmo(t)));
+ return b}
+
 /* ---------------- threads ---------------- */
 const push=(th,who,t)=>{const G=GR();(G.th[th]=G.th[th]||[]).push([who,t,perName()]);if(who!=='me'){G.unread[th]=(G.unread[th]||0)+1;badge()}};
 window.gramPush=(th,who,t)=>{push(th,who,t);if(who!=='me')notify(th,t)};
-function badge(){const b=$('bGram');if(!b)return;const n=Object.values(GR().unread).reduce((a,b)=>a+b,0)+(fullEd()?Object.keys(GIRLS).filter(g=>['dm1','dm3'].includes(stepNow(g))&&rel(g).s>0).length:0);b.textContent=n?'📱 '+n:'📱';b.classList.toggle('hot',!!n)}
-function notify(th,t){if(TEST)return;toast('📱 '+(K[th]?K[th].n:th)+': '+t.slice(0,60))}
+function badge(){const b=$('bGram');if(!b)return;const n=Object.values(GR().unread).reduce((a,b)=>a+b,0)+(fullEd()?Object.keys(GIRLS).filter(g=>['dm1','dm3'].includes(stepNow(g))&&rel(g).s>0).length:0);b.innerHTML='';b.appendChild(iconImg('phone',18));if(n)b.appendChild(document.createTextNode(' '+n));b.classList.toggle('hot',!!n)}
+function notify(th,t){if(TEST)return;toast(thName(th)+': '+(/^\[photo/i.test(t)?'sent a photo':t.slice(0,60)))}
 
 /* ---------------- COREY ---------------- */
 const COREY=[
@@ -94,12 +139,12 @@ const COREY_BACK={
  pic:['[photo: one curl, extremely close up, slightly out of focus]','rate it','be honest','NOT THAT HONEST']
 };
 const coreyOn=()=>alive('corey')&&!D.weekend;
-function coreyText(){if(!coreyOn())return;const G=GR();G.ci=(G.ci||0);const t=COREY[G.ci%COREY.length];G.ci++;push('corey','corey',t);
+function coreyText(){if(!coreyOn())return;const G=GR();G.ci=(G.ci||0);const t=COREY[G.ci%COREY.length];G.ci++;push('corey','corey',t);G.cOpen=1;
  /* sometimes they come in a burst */
- if(Math.random()<.45){const t2=COREY[G.ci%COREY.length];G.ci++;push('corey','corey',t2)}
+ if(Math.random()<.2){const t2=COREY[G.ci%COREY.length];G.ci++;push('corey','corey',t2)}
  G.cDay=day()+':'+D.period;notify('corey',t)}
 ON_PERIOD.push(async(i,resume)=>{if(resume||!D||D.weekend||TEST)return;if(typeof atHome==='function'&&atHome())return;
- if(coreyOn()&&Math.random()<.7)setTimeout(()=>{try{coreyText()}catch(e){}},2500+Math.random()*4000);
+ if(coreyOn()&&Math.random()<.3&&!(day()<=1&&i<5))setTimeout(()=>{try{coreyText()}catch(e){}},2500+Math.random()*4000);
  /* the girl you're seeing texts too */
  const a=activeGirl();if(a&&Math.random()<.5)setTimeout(()=>{try{const L=GIRL_PING[a];push(a,a,L[(day()+i)%L.length]);notify(a,L[(day()+i)%L.length])}catch(e){}},5000)});
 const GIRL_PING={
@@ -112,12 +157,12 @@ const GIRL_PING={
 /* mid-class: the buzz under the desk */
 {const _w=whisper;whisper=async function(c){
  const G=GR();
- if(coreyOn()&&!taken()&&!TEST&&Math.random()<.55){
-  const t=COREY[(G.ci||0)%COREY.length];G.ci=(G.ci||0)+1;push('corey','corey',t);
+ if(coreyOn()&&!taken()&&!TEST&&day()>1&&Math.random()<.22){
+  const t=COREY[(G.ci||0)%COREY.length];G.ci=(G.ci||0)+1;push('corey','corey',t);G.cOpen=1;
   SFX.beep&&SFX.beep();
-  const ch=await choose(['Check your phone under the desk.','Ignore it.'],'📱 BZZT. BZZT. BZZT.');
+  const ch=await choose(['Check your phone under the desk.','Ignore it.'],'BZZT. BZZT. BZZT.');
   if(ch===0){
-   await dms('COREY 🌀','under the desk',[['corey',t],['corey',pick(['be honest','BE HONEST','reply','i can feel you not replying']) ]]);
+   await dms('Corey','under the desk',[['corey',t],['corey',pick(['be honest','BE HONEST','reply','i can feel you not replying']) ]]);
    const tch=c&&c.t||Object.keys(A).find(k=>K[k]&&K[k].adult);
    if(Math.random()<.35&&tch&&A[tch]){
     await walk(tch,A.you?A.you.x+14:160,90);face(tch,'you');pose(tch,'grab');
@@ -128,7 +173,7 @@ const GIRL_PING={
  }
  return _w(c)}}
 /* home time: you get it back */
-ON_PERIOD.push(async i=>{if(i===7&&D&&D.f.phoneTaken){D.f.phoneTaken=null;if(coreyOn()){const n=3+Math.floor(Math.random()*5);for(let k=0;k<n;k++)push('corey','corey',['?','??','hello','are u dead','if ur dead text me','be honest'][k%6]);setTimeout(()=>toast('📱 Your phone’s back. '+n+' texts from Corey.'),1500)}}});
+ON_PERIOD.push(async i=>{if(i===7&&D&&D.f.phoneTaken){D.f.phoneTaken=null;if(coreyOn()){const n=3+Math.floor(Math.random()*5);for(let k=0;k<n;k++)push('corey','corey',['?','??','hello','are u dead','if ur dead text me','be honest'][k%6]);GR().cOpen=1;setTimeout(()=>toast('📱 Your phone’s back. '+n+' texts from Corey.'),1500)}}});
 
 /* in the hall: Corey runs up and spirals */
 const SPIRAL=[
@@ -413,17 +458,48 @@ const css=document.createElement('style');css.textContent=`
 #gram .note{padding:10px 4px;border-bottom:.5px solid #2c2c2e;color:#fff}
 #gram .wx{text-align:center;padding:30px 10px;color:#fff}#gram .wx .big{font-size:64px;font-weight:200}#gram .wx .small{color:#8e8e93;font-size:13px;margin-top:6px}#gram .wd{display:flex;flex-direction:column;gap:6px;margin-top:18px;text-align:left}
 #bGram.hot{background:#e0306a;color:#fff}`;document.head.appendChild(css);
+
+/* PIXEL APPLE: same layout, drawn like the game (pixel font, stepped corners, no blur) */
+const pcx=n=>`polygon(0 ${n*2}px,${n}px ${n*2}px,${n}px ${n}px,${n*2}px ${n}px,${n*2}px 0,calc(100% - ${n*2}px) 0,calc(100% - ${n*2}px) ${n}px,calc(100% - ${n}px) ${n}px,calc(100% - ${n}px) ${n*2}px,100% ${n*2}px,100% calc(100% - ${n*2}px),calc(100% - ${n}px) calc(100% - ${n*2}px),calc(100% - ${n}px) calc(100% - ${n}px),calc(100% - ${n*2}px) calc(100% - ${n}px),calc(100% - ${n*2}px) 100%,${n*2}px 100%,${n*2}px calc(100% - ${n}px),${n}px calc(100% - ${n}px),${n}px calc(100% - ${n*2}px),0 calc(100% - ${n*2}px))`;
+{const c2=document.createElement('style');c2.textContent=`
+#gram{font-family:KenPixel,ui-monospace,monospace;image-rendering:pixelated}
+#gram .gp{border-radius:0;border:8px solid #2a2a30;box-shadow:none;clip-path:${pcx(8)};font-size:13px;line-height:1.45}
+#gram .sb{font-weight:normal;font-size:12px}#gram .sb .isl{border-radius:0;clip-path:${pcx(4)}}#gram .sb .bat,#gram .sb .bat i{border-radius:0}
+#gram .gh b{font-weight:normal;font-size:16px}#gram .gh.th b{font-size:14px}#gram .gh button{font-size:13px}
+#gram .bub{border-radius:0;clip-path:${pcx(3)};backdrop-filter:none}
+#gram .bub b{display:block;font-weight:normal;font-size:11px;color:#ffd60a;margin-bottom:2px}
+#gram .bub.img{padding:4px;background:#3a3a3c}#gram .bub.me.img{background:#0a84ff}
+#gram .mphoto{display:block;width:200px;max-width:100%;image-rendering:pixelated}
+#gram .bub.file{display:flex;align-items:center;gap:4px}
+#gram .typing{border-radius:0;clip-path:${pcx(3)};display:flex;gap:4px}#gram .typing span{animation:gdot 1s steps(2) infinite}#gram .typing span:nth-child(2){animation-delay:.33s}#gram .typing span:nth-child(3){animation-delay:.66s}
+@keyframes gdot{0%{opacity:.3}50%{opacity:1}}
+#gram .opts button,#gram .again,#gram .sinp,#gram .sclr{border-radius:0;clip-path:${pcx(3)}}
+#gram .opts .cont{background:#0a84ff;color:#fff;text-align:center}
+#gram .ico{width:48px;height:48px;border-radius:0;background:none!important;box-shadow:none}
+#gram .ico img{width:48px;height:48px}
+#gram .badge{border-radius:0;clip-path:${pcx(2)};font-weight:normal}
+#gram .dot{border-radius:0;clip-path:${pcx(2)};font-weight:normal}
+#gram .dock{border-radius:0;clip-path:${pcx(6)};backdrop-filter:none;background:#ffffff22}
+#gram .home i{border-radius:0}
+#gram .av{border-radius:0!important;clip-path:${pcx(3)}}
+#gram .sbox{display:flex;gap:6px}#gram .sclr{background:#2c2c2e;color:#0a84ff;border:0;padding:0 10px;font:inherit;cursor:pointer}
+#gram .lk{display:flex;align-items:center;gap:2px}
+#gram .wx .big{font-weight:normal}
+#gram .hs{background:linear-gradient(#3a2466 0 25%,#2e1c52 25% 50%,#22143e 50% 75%,#160c2a 75%)}
+#gram .hs.cursed{background:linear-gradient(#6a1010 0 25%,#4a0a0a 25% 50%,#300606 50% 75%,#180000 75%)}
+#bGram img{image-rendering:pixelated}
+`;document.head.appendChild(c2)}
 const ov=document.createElement('div');ov.id='gram';ov.hidden=true;document.body.appendChild(ov);
-{const bq=$('bQuest');if(bq){const b=document.createElement('button');b.className='tb';b.id='bGram';b.title='Highgram (G)';b.textContent='📱';bq.parentNode.insertBefore(b,bq);b.onclick=()=>{audio&&audio();openGram()}}}
+{const bq=$('bQuest');if(bq){const b=document.createElement('button');b.className='tb';b.id='bGram';b.title='Highgram (G)';b.appendChild(iconImg('phone',18));bq.parentNode.insertBefore(b,bq);b.onclick=()=>{audio&&audio();openGram()}}}
 {const _ao=anyOverlay;anyOverlay=function(){return _ao()||!ov.hidden}}
-{const _co=closeOverlays;closeOverlays=function(){_co();ov.hidden=true}}
-addEventListener('keydown',e=>{if(e.target&&e.target.tagName==='INPUT')return;if((e.key==='g'||e.key==='G')&&!e.repeat){if(!ov.hidden){ov.hidden=true;e.preventDefault();return}
+{const _co=closeOverlays;closeOverlays=function(){_co();if(LIVE)liveDone();ov.hidden=true}}
+addEventListener('keydown',e=>{if(e.target&&e.target.tagName==='INPUT')return;if((e.key==='g'||e.key==='G')&&!e.repeat){if(LIVE)return;if(!ov.hidden){ov.hidden=true;e.preventDefault();return}
  if(D&&!busy&&panelMode==='roam'&&!anyOverlay()&&!CH){e.preventDefault();openGram()}}
- else if(e.key==='Escape'&&!ov.hidden){ov.hidden=true}},true);
+ else if(e.key==='Escape'&&!ov.hidden){if(LIVE)liveDone();else ov.hidden=true}},true);
 let VIEW='home',THREAD=null;const TYPING={};
 function openGram(v){if(!D)return;VIEW=v||'home';THREAD=null;ov.hidden=false;render()}
 window.openGram=openGram;
-const h=(tag,cls,txt)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e};
+const h=(tag,cls,txt)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=noEmo(txt);return e};
 const APPS=[['feed','📸','Highgram','linear-gradient(135deg,#f9ce34,#ee2a7b,#6228d7)'],['dms','💬','Messages','linear-gradient(#5ff777,#1fbf3a)'],
  ['search','🔍','Searchy','linear-gradient(#fff,#dfe3ea)'],['arcade','🕹️','Arcade','linear-gradient(#ff7a59,#c2185b)'],['camera','📷','Camera','linear-gradient(#8e8e93,#3a3a3c)'],
  ['shop','🛍️','Shop','linear-gradient(#ffd60a,#ff9f0a)'],['notes','📝','Notes','linear-gradient(#ffe37a,#f7c600)'],['weather','🌧️','Weather','linear-gradient(#5ac8fa,#1e6fd9)'],['clock','⏰','Clock','linear-gradient(#2c2c2e,#000)']];
@@ -433,53 +509,59 @@ function render(){
  ov.innerHTML='';const p=h('div','gp');ov.appendChild(p);
  const sb=h('div','sb');sb.appendChild(h('span',null,(PERIODS[D.period]||{}).time||'9:41'));sb.appendChild(h('div','isl'));
  const bt=h('div','bt');bt.appendChild(h('span',null,'5G'));const bat=h('div','bat');const lvl=h('i');lvl.style.width=Math.max(10,90-D.period*9)+'%';bat.appendChild(lvl);bt.appendChild(bat);sb.appendChild(bt);p.appendChild(sb);
- if(taken()){const body=h('div','gb');p.appendChild(body);body.appendChild(h('div','bub nt','📵 Confiscated. You get it back at home time.\nCorey doesn’t know. Corey is spiraling.'));homeBar(p);return}
+ if(taken()&&!LIVE){const body=h('div','gb');p.appendChild(body);body.appendChild(h('div','bub nt','Confiscated. You get it back at home time.\nCorey doesn’t know. Corey is spiraling.'));homeBar(p);return}
  if(VIEW==='home'&&!THREAD){renderHome(p);homeBar(p);return}
  const hd=h('div','gh'+(THREAD?' th':''));
- const bk=h('button',null,'‹ '+(THREAD?'Back':'Home'));bk.onclick=()=>{if(THREAD)THREAD=null;else VIEW='home';render()};hd.appendChild(bk);
- hd.appendChild(h('b',null,THREAD?(K[THREAD]?K[THREAD].n:THREAD):TITLE[VIEW]||''));
- const x=h('button',null,'Done');x.onclick=()=>{ov.hidden=true};hd.appendChild(x);p.appendChild(hd);
+ const back=()=>{if(LIVE)return liveDone();if(THREAD)THREAD=null;else if(VIEW==='search'&&SQ)SQ='';else VIEW='home';render()};
+ const bk=h('button',null,'‹ '+(THREAD?'Back':VIEW==='search'&&SQ?'Search':'Home'));bk.onclick=back;hd.appendChild(bk);
+ hd.appendChild(h('b',null,THREAD?thName(THREAD):TITLE[VIEW]||''));
+ const x=h('button',null,'Done');x.onclick=()=>{if(LIVE)return liveDone();ov.hidden=true};hd.appendChild(x);p.appendChild(hd);
  const body=h('div','gb');p.appendChild(body);
  if(THREAD)renderThread(p,body);
  else ({shop:renderShop,feed:renderFeed,dms:renderList,search:renderSearch,arcade:renderArcade,camera:renderCamera,notes:renderNotes,weather:renderWeather,clock:renderClock}[VIEW]||renderList)(body,p);
  homeBar(p)}
-function homeBar(p){const hm=h('div','home');const i=h('i');hm.appendChild(i);hm.title='Home';hm.onclick=()=>{THREAD=null;VIEW='home';render()};p.appendChild(hm)}
+function homeBar(p){const hm=h('div','home');const i=h('i');hm.appendChild(i);hm.title='Home';hm.onclick=()=>{if(LIVE)return liveDone();THREAD=null;VIEW='home';render()};p.appendChild(hm)}
 function renderHome(p){
  const wall=h('div','hs'+(GR().skin==='cursed'?' cursed':''));p.appendChild(wall);
  const grid=h('div','grid');wall.appendChild(grid);
  const G=GR();const unread=Object.values(G.unread).reduce((a,b)=>a+b,0);
  const unl=id=>['dms','feed'].includes(id)||day()>=2;
- for(const [id,ic,name,bg] of APPS.filter(a=>unl(a[0]))){const b=h('button','app');const icon=h('div','ico',ic);icon.style.background=bg;b.appendChild(icon);
-  if(id==='dms'&&unread){const n=h('span','badge',unread);icon.appendChild(n)}
-  b.appendChild(h('span',null,name));b.onclick=()=>{VIEW=id;render()};grid.appendChild(b)}
- const dock=h('div','dock');for(const id of['dms','feed','search','camera']){const A_=APPS.find(a=>a[0]===id);const b=h('button','app');const icon=h('div','ico',A_[1]);icon.style.background=A_[3];b.appendChild(icon);b.onclick=()=>{VIEW=id;render()};dock.appendChild(b)}
+ const ico=(id,badgeN)=>{const icon=h('div','ico');icon.appendChild(iconImg(id,48));if(badgeN)icon.appendChild(h('span','badge',badgeN));return icon};
+ for(const [id,,name] of APPS.filter(a=>unl(a[0]))){const b=h('button','app');b.appendChild(ico(id,id==='dms'&&unread));
+  b.appendChild(h('span',null,name));b.onclick=()=>{VIEW=id;SQ='';render()};grid.appendChild(b)}
+ const dock=h('div','dock');for(const id of['dms','feed','search','camera'].filter(unl)){const b=h('button','app');b.appendChild(ico(id));b.onclick=()=>{VIEW=id;SQ='';render()};dock.appendChild(b)}
  wall.appendChild(dock)}
 function renderList(body){
- const rows=[];
- if(K.corey)rows.push(['corey','@c.u.r.l.y','curls first. questions later']);
- if(fullEd())for(const g of Object.keys(GIRLS))if(alive(g))rows.push([g,GIRLS[g].h,GIRLS[g].bio]);
- const G=GR();
- for(const [id,hd,bio] of rows){const r=h('button','row');const av=h('div','av',K[id].n[0]);av.style.background=K[id].col||K[id].top;r.appendChild(av);
-  const t=h('div','t');t.appendChild(h('span',null,K[id].n+' '));t.appendChild(h('small',null,hd));const th=G.th[id]||[];
-  const st=GIRLS[id]?stepNow(id):null;
-  t.appendChild(h('i',null,th.length?th[th.length-1][1]:(st==='dm1'?'Slide in.':bio)));r.appendChild(t);
+ const rows=[],G=GR(),seen=new Set();
+ if(K.corey&&(G.th.corey||[]).length){rows.push(['corey','@c.u.r.l.y','curls first. questions later']);seen.add('corey')}
+ if(fullEd())for(const g of Object.keys(GIRLS))if(alive(g)){rows.push([g,GIRLS[g].h,GIRLS[g].bio]);seen.add(g)}
+ /* everyone else who has texted you: the crew, the school, unknown numbers */
+ for(const id of Object.keys(G.th))if(!seen.has(id)&&(G.th[id]||[]).length)rows.push([id,'','']);
+ const last=id=>{const th=G.th[id]||[];return th.length?th.length+(G.unread[id]||0)*1000:0};
+ rows.sort((a,b)=>(G.unread[b[0]]||0)-(G.unread[a[0]]||0));
+ if(!rows.length)body.appendChild(h('div','bub nt','No messages yet.'));
+ for(const [id,hd,bio] of rows){const r=h('button','row');const av=h('div','av',thName(id)[0]);av.style.background=K[id]?(K[id].col||K[id].top):'#5a5a64';r.appendChild(av);
+  const t=h('div','t');t.appendChild(h('span',null,thName(id)+' '));if(hd)t.appendChild(h('small',null,hd));const th=G.th[id]||[];
+  const st=GIRLS[id]?stepNow(id):null;const lm=th.length?th[th.length-1][1]:'';
+  t.appendChild(h('i',null,lm?(/^\[photo/i.test(lm)?'Photo':lm):(st==='dm1'?'Slide in.':bio)));r.appendChild(t);
   const n=(G.unread[id]||0)+(st==='dm3'?1:0);if(n)r.appendChild(h('span','dot',n));
-  if(GIRLS[id]&&rel(id).s===5)r.appendChild(h('span','dot','💔'));
-  r.onclick=()=>{THREAD=id;G.unread[id]=0;badge();render()};body.appendChild(r)}
- if(!fullEd())body.appendChild(h('div','bub nt','(safe version: just Corey)'))}
+  if(GIRLS[id]&&rel(id).s===5)r.appendChild(h('span','dot','X'));
+  r.onclick=()=>{THREAD=id;G.unread[id]=0;badge();render()};body.appendChild(r)}}
 function renderThread(p,body){
  const G=GR(),id=THREAD,th=G.th[id]||[];
  if(GIRLS[id]&&!th.length)body.appendChild(h('div','bub nt',GIRLS[id].h+' · '+GIRLS[id].bio));
- for(const [who,t,when] of th){const b=h('div','bub'+(who==='me'?' me':who==='note'?' nt':''),t);body.appendChild(b)}
- if(TYPING[id])body.appendChild(h('div','typing',(K[id]?K[id].n:'')+' is typing…'));
+ for(const [who,t] of th)body.appendChild(msgEl(who,t,id));
+ if(TYPING[id]){const ty=h('div','typing');ty.appendChild(h('span',null,'•'));ty.appendChild(h('span',null,'•'));ty.appendChild(h('span',null,'•'));body.appendChild(ty)}
  setTimeout(()=>{body.scrollTop=body.scrollHeight},0);
- if(TYPING[id])return;
  const opts=h('div','opts');let any=false;
+ if(LIVE&&LIVE.key===id){const more=LIVE.q.length||LIVE.busy;const b=h('button','cont',more?'Skip ahead (E)':'Done (E)');b.onclick=()=>more?liveFlush():liveDone();opts.appendChild(b);p.appendChild(opts);return}
+ if(TYPING[id])return;
  const addOpt=(txt,fn)=>{any=true;const b=h('button',null,txt);b.onclick=fn;opts.appendChild(b)};
- if(id==='corey'&&th.length&&th[th.length-1][0]==='corey'){
-  addOpt('“you’re fine. genuinely.”',()=>reply('corey','you’re fine. genuinely.',COREY_BACK.calm));
-  addOpt('“…now that you mention it”',()=>reply('corey','…now that you mention it',COREY_BACK.worse));
-  addOpt('“send a pic of the curls”',()=>reply('corey','send a pic of the curls',COREY_BACK.pic))}
+ /* Corey: one answer per new batch of texts. Once you've answered, the options go until he texts again. */
+ if(id==='corey'&&G.cOpen&&th.length&&th[th.length-1][0]==='corey'){
+  addOpt('“you’re fine. genuinely.”',()=>{G.cOpen=0;reply('corey','you’re fine. genuinely.',COREY_BACK.calm)});
+  addOpt('“…now that you mention it”',()=>{G.cOpen=0;reply('corey','…now that you mention it',COREY_BACK.worse)});
+  addOpt('“send a pic of the curls”',()=>{G.cOpen=0;reply('corey','send a pic of the curls',COREY_BACK.pic)})}
  if(GIRLS[id]){const st=stepNow(id),r=rel(id);
   if(st==='busy')opts.appendChild(h('div','bub nt','You’re already in a whole thing with '+K[activeGirl()].n+'. One disaster at a time.'));
   if(st==='dm1')STEPS[id].open.forEach((o,i)=>addOpt(o,()=>{r.s=1;r.d=day();part('gram_'+id,1);reply(id,o.replace(/^“|”.*$/g,''),DM1[id](i).map(m=>m[1]),DM1[id](i))}));
@@ -487,7 +569,42 @@ function renderThread(p,body){
    D3.opts.forEach((o,i)=>addOpt(o,()=>{r.s=3;r.d=day();part('gram_'+id,3);reply(id,/^[A-Z]/.test(o)&&!/^“/.test(o)?null:o.replace(/^“|”$/g,''),null,D3.back[i])}))}
   if(st==='wait')opts.appendChild(h('div','bub nt','Nothing new. Give it a day.'));
  }
- if(any)p.appendChild(opts)}
+ if(!any&&!GIRLS[id]&&th.length)opts.appendChild(h('div','bub nt','Conversation’s over.'));
+ if(any||opts.childNodes.length)p.appendChild(opts)}
+
+/* ---------------- every text in the game lands on THIS phone ----------------
+   dms() used to pop up a separate grey box. Now it opens the phone straight
+   into that thread, history first, then new messages arrive live with the
+   typing dots. E / Space / Enter: skip ahead, then Done. */
+let LIVE=null;
+function keyFor(title){const t=noEmo(title).toLowerCase().trim();
+ const id=Object.keys(K).find(k=>K[k]&&K[k].n&&(K[k].n.toLowerCase()===t||K[k].n.toLowerCase().split(' ')[0]===t));
+ return id||'dm:'+t}
+function addTo(key,m){const G=GR();(G.th[key]=G.th[key]||[]).push([m[0]==='them'?key:m[0],m[1],perName()])}
+dms=function(title,sub_,msgs,opts){
+ opts=opts||{};msgs=msgs||[];
+ if(P&&P.calStarted&&typeof dayText==='function')msgs=msgs.map(m=>Array.isArray(m)&&typeof m[1]==='string'?[m[0],dayText(m[0],m[1]),...m.slice(2)]:m);const live=opts.live==null?msgs.length:opts.live;
+ msgs.forEach(m=>BACKLOG.push({n:'Phone · '+(m[0]==='me'?'You':m[0]==='them'?noEmo(title):m[0]==='note'?'':(K[m[0]]?K[m[0]].n:m[0])),t:m[1],c:'#6b4a7a'}));
+ const G=GR(),key=keyFor(title);G.nm=G.nm||{};G.nm[key]=noEmo(title)||'Unknown';
+ /* history goes in once (it's already on the phone), live messages arrive */
+ for(let i=0;i<live;i++){const m=msgs[i];if(!(G.th[key]||[]).some(x=>x[1]===m[1]))addTo(key,m)}
+ if(TEST){for(let i=live;i<msgs.length;i++)addTo(key,msgs[i]);return Promise.resolve()}
+ if(LIVE)liveDone();
+ setSkip(false);
+ return new Promise(res=>{
+  LIVE={key,q:msgs.slice(live),res,busy:0};VIEW='dms';THREAD=key;G.unread[key]=0;badge();ov.hidden=false;render();
+  setTimeout(liveStep,500)})};
+function liveStep(){const L=LIVE;if(!L||L.busy)return;
+ if(!L.q.length){if(!ov.hidden)render();return}
+ const m=L.q.shift();
+ if(m[0]==='me'||m[0]==='note'){addTo(L.key,m);SFX.blip&&SFX.blip(m[0]==='me'?620:400,'sine');render();setTimeout(liveStep,500);return}
+ L.busy=1;TYPING[L.key]=1;render();
+ setTimeout(()=>{if(LIVE!==L)return;TYPING[L.key]=0;L.busy=0;addTo(L.key,m);SFX.blip&&SFX.blip(880,'sine');render();setTimeout(liveStep,450)},Math.min(2200,500+String(m[1]).length*28))}
+function liveFlush(){const L=LIVE;if(!L)return;for(const m of L.q)addTo(L.key,m);L.q=[];L.busy=0;TYPING[L.key]=0;render()}
+function liveDone(){const L=LIVE;if(!L)return;for(const m of L.q)addTo(L.key,m);L.q=[];TYPING[L.key]=0;LIVE=null;ov.hidden=true;SFX.click&&SFX.click();L.res()}
+addEventListener('keydown',e=>{if(!LIVE||ov.hidden)return;const k=e.key;
+ if(k===' '||k==='Enter'||k==='e'||k==='E'||k==='Escape'||k==='g'||k==='G'){e.preventDefault();e.stopPropagation();if(e.repeat)return;
+  if((LIVE.q.length||LIVE.busy)&&k!=='Escape'&&k!=='g'&&k!=='G')liveFlush();else liveDone()}},true);
 /* you send, they type, they answer (Brielle answers instantly) */
 function reply(id,mine,lines,pairs){
  if(mine)push(id,'me',mine);
@@ -497,6 +614,7 @@ function reply(id,mine,lines,pairs){
  const step=()=>{if(i>=seq.length){TYPING[id]=0;GR().unread[id]=0;badge();if(!ov.hidden)render();return}
   const [w,t]=seq[i++];push(id,w,t);GR().unread[id]=0;if(!ov.hidden)render();setTimeout(step,TEST?0:fast+Math.random()*300)};
  setTimeout(step,TEST?0:fast)}
+
 
 /* ---------------- photos: the game draws them ---------------- */
 const SNAP={};
@@ -549,7 +667,7 @@ function renderFeed(body){
  if(D.f&&D.f['ate'+cal()])post('pat','@lunchladypat','[a tray of mystery nuggets]','eat your fucking vegetables',3,['canteen',[['pat',160,155,1,'cross','cold']]]);
  for(let i=0;i<3;i++){const p=daily[(d*3+i)%daily.length];if(K[p[0]])post(...p)}
  for(const c of CAM.filter(c=>c.posted))F.unshift({who:'you',hd:'@you',pic:'',txt:c.cap,lk:c.lk,img:c.url,com:c.com});
- for(const f of F){const e=h('div','post');{const w=h('div','who',(f.who==='you'?'You':K[f.who]?K[f.who].n:f.who)+' ');w.appendChild(h('small',null,f.hd));e.appendChild(w)}{let src=f.img;if(!src&&f.shot&&ROOMS[f.shot[0]])src=snap(f.shot[0],f.shot[1].filter(c=>c[0]==='you'||K[c[0]]));if(src){const im=document.createElement('img');im.className='photo';im.src=src;im.alt=f.pic;e.appendChild(im)}else e.appendChild(h('div','pic',f.pic))}e.appendChild(h('div',null,f.txt));e.appendChild(h('div','lk','♡ '+f.lk+' likes'));if(f.com)for(const c of f.com){const cm=h('div','cm');cm.appendChild(h('b',null,c[0]+' '));cm.appendChild(h('span',null,c[1]));e.appendChild(cm)}body.appendChild(e)}}
+ for(const f of F){const e=h('div','post');{const w=h('div','who',(f.who==='you'?'You':K[f.who]?K[f.who].n:f.who)+' ');w.appendChild(h('small',null,f.hd));e.appendChild(w)}{let src=f.img;if(!src&&f.shot&&ROOMS[f.shot[0]])src=snap(f.shot[0],f.shot[1].filter(c=>c[0]==='you'||K[c[0]]));if(!src)src=K[f.who]?snap('corridor',[[f.who,160,168,1,'phone','happy']]):(f.who==='you'?snap('corridor',[['you',160,168,1,'phone','happy']]):null);if(src){const im=document.createElement('img');im.className='photo';im.src=src;im.alt='';e.appendChild(im)}}e.appendChild(h('div',null,f.txt));{const lk=h('div','lk');lk.appendChild(iconImg('heart',14));lk.appendChild(document.createTextNode(' '+f.lk+' likes'));e.appendChild(lk)}if(f.com)for(const c of f.com){const cm=h('div','cm');cm.appendChild(h('b',null,c[0]+' '));cm.appendChild(h('span',null,c[1]));e.appendChild(cm)}body.appendChild(e)}}
 
 /* ---------------- SEARCHY ---------------- */
 const EGGS=[
@@ -576,26 +694,30 @@ const EGGS=[
  [/free money|money|cash/i,[['FREE MONEY CLICK HERE','totallylegit.biz','You clicked it. Somebody in Ohio now owns your lunch account.']],'scam'],
  [/porn|sex|nude/i,[['Search blocked','Highgate School Wi-Fi','This search has been sent to Mr. Adam. He has printed it. He has laminated it.']],'blocked']
 ];
+let SQ='';
 function renderSearch(body){
- const box=h('div','sbox');const inp=document.createElement('input');inp.placeholder='Search or type URL';inp.className='sinp';box.appendChild(inp);body.appendChild(box);
+ const box=h('div','sbox');const inp=document.createElement('input');inp.placeholder='Search or type URL';inp.className='sinp';inp.value=SQ;box.appendChild(inp);
+ const clr=h('button','sclr','Clear');clr.onclick=()=>{SQ='';render()};if(SQ)box.appendChild(clr);body.appendChild(box);
  const out=h('div','sres');body.appendChild(out);
- const sugg=h('div','sugg');for(const q of['is it humid','1987','how to get rid of a raccoon','locker 217','am i a loser','pat’s stew recipe'])sugg.appendChild(Object.assign(h('button',null,'🔍 '+q),{onclick:()=>{inp.value=q;go()}}));out.appendChild(sugg);
- const go=()=>{const q=inp.value.trim();if(!q)return;out.innerHTML='';const G=GR();G.srch=G.srch||{};
-  const hit=EGGS.find(e=>e[0].test(q));
-  const res=hit?hit[1]:[[q+' — No results','—','Did you mean: “'+q.split('').reverse().join('')+'”? (We didn’t either.)'],['People also searched: “how to delete search history”','—','So did you, in a second.']];
-  for(const [t,u,sn] of res){const r=h('div','res');r.appendChild(h('small',null,u));r.appendChild(h('b',null,t));r.appendChild(h('p',null,sn));out.appendChild(r)}
-  if(hit&&hit[2]&&!G.srch[hit[2]]){G.srch[hit[2]]=1;
-   if(hit[2]==='scam'){D.money=Math.max(0,(D.money||0)-3);toast('💸 −$3. You clicked the free money.')}
-   else if(hit[2]==='blocked'){toast('📵 Mr. Adam has laminated your search.')}
-   else{D.apples=(D.apples||0)+1;updateLoc&&updateLoc();toast('🔍 Easter egg found. +1 🍎')}}};
- inp.onkeydown=e=>{e.stopPropagation();if(e.key==='Enter')go()};setTimeout(()=>inp.focus(),0)}
+ const go=q=>{q=(q||'').trim();if(!q)return;SQ=q;render()};
+ inp.onkeydown=e=>{e.stopPropagation();if(e.key==='Enter')go(inp.value)};
+ if(!SQ){out.appendChild(h('div','bub nt','Try:'));const sugg=h('div','sugg');for(const q of['is it humid','1987','how to get rid of a raccoon','locker 217','am i a loser','pat’s stew recipe'])sugg.appendChild(Object.assign(h('button',null,q),{onclick:()=>go(q)}));out.appendChild(sugg);setTimeout(()=>inp.focus(),0);return}
+ const q=SQ,G=GR();G.srch=G.srch||{};
+ const hit=EGGS.find(e=>e[0].test(q));
+ const res=hit?hit[1]:[[q+' — No results','—','Did you mean: “'+q.split('').reverse().join('')+'”? (We didn’t either.)'],['People also searched: “how to delete search history”','—','So did you, in a second.']];
+ for(const [t,u,sn] of res){const r=h('div','res');r.appendChild(h('small',null,u));r.appendChild(h('b',null,t));r.appendChild(h('p',null,sn));out.appendChild(r)}
+ const bb=h('button','again','‹ New search');bb.onclick=()=>{SQ='';render()};out.appendChild(bb);
+ if(hit&&hit[2]&&!G.srch[hit[2]]){G.srch[hit[2]]=1;
+  if(hit[2]==='scam'){D.money=Math.max(0,(D.money||0)-3);toast('−$3. You clicked the free money.')}
+  else if(hit[2]==='blocked'){toast('Mr. Adam has laminated your search.')}
+  else{D.apples=(D.apples||0)+1;updateLoc&&updateLoc();toast('Easter egg found. +1 apple')}}}
 
 /* ---------------- ARCADE: two little games ---------------- */
 let GAME=null;
 function renderArcade(body){
  P.hi=P.hi||{};
  const list=[['curl','🌀','CURL KEEPER','Keep Corey’s curl up. Tap / SPACE to bounce. Dodge the humidity drops.'],['nug','🍗','NUGGET RUSH','Catch Pat’s nuggets on your tray. LEFT/RIGHT or tap a side. Not the stew.']];
- for(const [id,ic,name,info] of list){const r=h('button','row');const av=h('div','av',ic);av.style.background='#2c2c2e';r.appendChild(av);const t=h('div','t');t.appendChild(h('span',null,name));t.appendChild(h('i',null,info));r.appendChild(t);r.appendChild(h('span','dot','★ '+(P.hi[id]||0)));r.onclick=()=>playGame(body,id,name);body.appendChild(r)}
+ for(const [id,ic,name,info] of list){const r=h('button','row');const av=h('div','av');av.appendChild(iconImg('arcade',32));av.style.background='none';r.appendChild(av);const t=h('div','t');t.appendChild(h('span',null,name));t.appendChild(h('i',null,info));r.appendChild(t);r.appendChild(h('span','dot','best '+(P.hi[id]||0)));r.onclick=()=>playGame(body,id,name);body.appendChild(r)}
  body.appendChild(h('div','bub nt','Beat 15 in either one for +1 🍎 (once a day).'))}
 function playGame(body,id,name){
  body.innerHTML='';const cv=document.createElement('canvas');cv.width=180;cv.height=260;cv.className='gcv';body.appendChild(cv);const sc=h('div','gsc','');body.appendChild(sc);
@@ -660,15 +782,15 @@ function renderShop(body){
  const G=GR();G.shop=G.shop||{};
  body.appendChild(h('div','bub nt','You have $'+(D.money||0)+'. Money from gigs and side hustles goes here.'));
  for(const it of SHOP){const key=it.run?it.id:it.id+':'+day(),n=G.shop[key]||0,can=(D.money||0)>=it.p&&n<it.max&&(!it.ok||it.ok());
-  const r=h('button','row');const av=h('div','av',it.ic);av.style.background='#2c2c2e';r.appendChild(av);
+  const r=h('button','row');const av=h('div','av');av.appendChild(iconImg('shop',32));av.style.background='none';r.appendChild(av);
   const t=h('div','t');t.appendChild(h('span',null,it.n));t.appendChild(h('i',null,n>=it.max?'Sold out'+(it.run?'':' today'):(it.ok&&!it.ok())?'Can’t: '+it.why:it.d));r.appendChild(t);
   r.appendChild(h('span','dot','$'+it.p));if(!can)r.style.opacity=.45;
   r.onclick=()=>{if(!can)return;D.money-=it.p;G.shop[key]=n+1;it.buy();updateLoc&&updateLoc();render()};body.appendChild(r)}}
 /* C.U.R.L. calms Corey: fewer hallway spirals */
 /* ---------------- the little ones ---------------- */
-function renderNotes(body){const N_=['☐ survive','☐ find out what’s in the back fridge','☐ do NOT text Corey back during a test','☐ stop DMing people','☑ eat lunch (sometimes)','☐ 13-3-87 ??? (from the stall)'];for(const n of N_)body.appendChild(h('div','note',n))}
+function renderNotes(body){const N_=['- survive','- find out what’s in the back fridge','- do NOT text Corey back during a test','- stop DMing people','x eat lunch (sometimes)','- 13-3-87 ??? (from the stall)'];for(const n of N_)body.appendChild(h('div','note',n))}
 function renderWeather(body){const w=h('div','wx');w.appendChild(h('div','big','71°'));w.appendChild(h('div',null,'Fair City · Humid'));w.appendChild(h('div','small','Humidity 71%. Corey has been notified.'));
- const days=h('div','wd');['Mon 🌧️','Tue 🌧️','Wed ☁️','Thu 🌧️','Fri 🔥 (inspection)'].forEach(d=>days.appendChild(h('div',null,d)));w.appendChild(days);body.appendChild(w)}
+ const days=h('div','wd');['Mon · rain','Tue · rain','Wed · cloudy','Thu · rain','Fri · inspection'].forEach(d=>days.appendChild(h('div',null,d)));w.appendChild(days);body.appendChild(w)}
 function renderClock(body){const w=h('div','wx');w.appendChild(h('div','big',(PERIODS[D.period]||{}).time||''));w.appendChild(h('div',null,(PERIODS[D.period]||{}).name||''));
  w.appendChild(h('div','small','Alarm: 3:15 PM · repeats every day · can’t be deleted'));body.appendChild(w)}
 

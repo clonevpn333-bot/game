@@ -8,7 +8,7 @@
    • Dancers at Marcus's party; the cafeteria slow clap is staged.
    ===================================================================== */
 {
-const LONG={ponytail:[3,9,1.6],straight:[2,6,1],wavy:[2,5,1],wavyb:[3,6,1],limp:[2,9,1],braids:[1,10,1.3],bob:[2,5,.8],fringe:[2,6,1],curlyl:[3,8,1],perm:[2,5,.6]};
+const LONG={ponytail:[3,9,1.6]};
 {const _dh=drawHead;drawHead=function(k,x,hy,d,o){
  _dh(k,x,hy,d,o);
  if(o&&o.pose==='sob'&&!o.crushed){const sh=Math.sin(T*14)>.3?1:0;R(x-5+sh,hy+4,4,5,k.skin);R(x+1+sh,hy+4,4,5,k.skin);R(x-1+sh,hy+5,2,3,'rgba(0,0,0,.15)')}

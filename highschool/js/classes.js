@@ -110,10 +110,13 @@ async function whisper(c){
  D.chat['w_'+n]=1;const set=WHISPER[n][(P.loops+n.length)%WHISPER[n].length];
  face(n,'you');face('you',n);
  for(const [w,t] of set)await say(w,t,w===n?(t.includes('(')?null:null):null);
- const r=await choose(['Whisper back something real.','Make a joke.','“Shh. She’s looking.”']);
- if(r===0){await say(n,pick(['…Thanks. Genuinely.','Yeah. Yeah, okay. Same time tomorrow?','You’re alright, you know.']),'happy');bond(n,1)}
- else if(r===1){await say(n,pick(['(snorting into their sleeve)','Stop. STOP. I’m going to get detention.','That’s terrible. Do it again.']),'laugh')}
- else{await say(n,'…','sad')}
+ const REAL=['“Honestly? I’m glad you sit here.”','“Same. I didn’t sleep either.”','“You’re not as annoying as everyone says.”','“If she calls on me I’m faking a nosebleed.”'];
+ const JOKE=['“If this class was a person I’d fight it.”','“I think my pencil just gave up on life.”','“Blink twice if you’re being held here against your will.”','“The clock’s going backwards. I checked.”'];
+ const real=REAL[(P.loops+n.length)%REAL.length],joke=JOKE[(P.loops+n.length*3)%JOKE.length];
+ const r=await choose(['(whisper) '+real,'(whisper) '+joke,'“Shh. She’s looking.”'],'WHISPER BACK TO '+K[n].n.split(' ')[0].toUpperCase());
+ if(r===0){await say('you','(whispering) '+real.replace(/[“”]/g,''));await say(n,pick(['…Thanks. Genuinely.','Yeah. Yeah, okay. Same time tomorrow?','You’re alright, you know.']),'happy');bond(n,1);toast('♥ '+K[n].n.split(' ')[0]+' likes you a bit more.')}
+ else if(r===1){await say('you','(whispering) '+joke.replace(/[“”]/g,''));await say(n,pick(['(snorting into their sleeve)','Stop. STOP. I’m going to get detention.','That’s terrible. Do it again.']),'laugh')}
+ else{await say('you','(whispering) Shh. She’s looking.');await say(n,'(sitting up straight, eyes front) …','sad');toast('Nobody got caught. Nobody had fun.')}
 }
 
 /* ---------- the teachers actually teach ---------- */

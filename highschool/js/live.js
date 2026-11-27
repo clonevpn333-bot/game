@@ -154,10 +154,13 @@ addEventListener('keydown',e=>{const ev=RT.ev;if(!ev||ev.k!=='held'||panelMode!=
 {const _act=INPUT.act;INPUT.act=function(){const ev=RT.ev;if(ev&&ev.k==='held')return heldListen();return _act.apply(this,arguments)}}
 {const _hu=HOOK.update;HOOK.update=(dt,rdt)=>{_hu&&_hu(dt,rdt);const ev=RT.ev;if(!ev||ev.k!=='held')return;const a=A[ev.id],you=A.you;
  if(!a||!you||busy||panelMode!=='roam'){RT.ev=null;return}
- face(ev.id,'you');if(Math.abs(you.x-ev.x0)>16||Math.abs(a.x-you.x)>24)return heldPull();
- if(T-ev.t0>6)return heldPull()}}
+ face(ev.id,'you');
+ /* no timer, no walking off: you're held. Wrestle free: alternate LEFT/RIGHT (A/D, arrows or the pad) */
+ const dir=keys.l?-1:keys.r?1:0;if(dir&&dir!==ev.lastDir){ev.lastDir=dir;ev.pull=(ev.pull||0)+1;you.x=ev.x0+dir*2;if(typeof squash==='function'&&ev.pull%3===0)squash('you','jump');SFX.blip&&SFX.blip(300+ev.pull*30)}
+ else you.x=clamp(you.x,ev.x0-2,ev.x0+2);
+ if((ev.pull||0)>=10)return heldPull()}}
 {const _do=HOOK.drawOver;HOOK.drawOver=(...x)=>{_do&&_do(...x);const ev=RT.ev;if(!ev||ev.k!=='held'||TEST)return;
- const t=ev.n>=1?'E: HEAR THEM OUT · WALK AWAY: PULL FREE · X: SLAP':'E: HEAR THEM OUT · WALK AWAY: PULL FREE';const w=pxw(t)+10;R(W/2-w/2,98,w,12,'#141020');R(W/2-w/2,98,w,1,'#ffd27a');pxc(t,W/2,101,Math.sin(T*6)>0?'#ffd27a':'#ffffff')}}
+ const t=ev.n>=1?'E: HEAR THEM OUT · A D A D: WRESTLE FREE · X: SLAP':'E: HEAR THEM OUT · A D A D: WRESTLE FREE';const w=pxw(t)+10;R(W/2-w/2,94,w,16,'#141020');R(W/2-w/2,94,w,1,'#ffd27a');pxc(t,W/2,97,Math.sin(T*6)>0?'#ffd27a':'#ffffff');const f=Math.min(1,(ev.pull||0)/10);R(W/2-w/2+4,106,w-8,2,'#3a3040');R(W/2-w/2+4,106,(w-8)*f,2,'#9ad09a')}}
 /* tears */
 {const _do=HOOK.drawOver;HOOK.drawOver=(...x)=>{_do&&_do(...x);if(TEST)return;for(const id in A){const a=A[id];if(!a||!a._tears||T>a._tears||!a.k||a.vis===false)continue;let G;try{G=kidGeom(a.k,a)}catch(e){continue}
  const ey=a.y-G.legH-G.bodyH-G.hd+Math.round(G.hd*.55);for(let i=0;i<2;i++){const q=((T*1.6+i*.5)%1);R(a.x+(i?2:-2)*(a.dir||1),ey+q*7,1,2,'#7ac8f0')}}}}

@@ -105,7 +105,7 @@ async function lockdownStruggle(seen,end){
 }
 
 /* ================= START A NEW TWO WEEKS ================= */
-function newTwoWeeks(){P.cal=0;P.calStarted=0;P.weekType={};P.crew={};P.win={};P.wkRun={};P.calSeen=0;P.cur=null;P.runs=(P.runs||0)+1;P.grudge={};save();
+function newTwoWeeks(){P.dayStart=null;CARRY=null;P.cal=0;P.calStarted=0;P.weekType={};P.crew={};P.win={};P.wkRun={};P.calSeen=0;P.cur=null;P.runs=(P.runs||0)+1;P.grudge={};save();
  for(const id of['menu','quest','settings'])if($(id)){$(id).hidden=true}$('menu').className='ov';closePause&&closePause();busy=false;newDay()}
 function confirmBtn(b,label,fn){let armed=false;b.onclick=()=>{if(!armed){armed=true;b.querySelector('span').textContent='Sure? Click again: '+label;SFX.blip&&SFX.blip(440);setTimeout(()=>{armed=false;b.querySelector('span').textContent=label},3000);return}SFX.click&&SFX.click();fn()}}
 setInterval(()=>{try{const m=$('menu');if(m&&!m.hidden&&ROOM==='titlescreen'){const nav=m.querySelector('.ttl-menu');if(nav&&!nav.querySelector('.new2w')&&P.loops){const b=document.createElement('button');b.className='ttl-b new2w';b.innerHTML='<i>▸</i><span>Start a New Two Weeks</span>';confirmBtn(b,'Start a New Two Weeks',()=>{audio();newTwoWeeks()});const set=[...nav.children].find(x=>/Quest Log/.test(x.textContent));nav.insertBefore(b,set||null)}}

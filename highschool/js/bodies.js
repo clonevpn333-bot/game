@@ -29,7 +29,7 @@ const BUILD={
  return r}}
 
 /* ---------------- front / back ---------------- */
-const LONGH=new Set(['ponytail','straight','wavy','wavyb','limp','braids','bob','fringe','curlyl','perm','afro']);
+const LONGH=new Set(['ponytail','straight','wavy','wavyb','limp','braids','bob','fringe','curlyl','perm']);
 function drawFB(k,x,y,o){
  x=Math.round(x);y=Math.round(y);
  const G=kidGeom(k,o),{legH,bodyH,bw}=G,top=o.topC||k.top,sk=k.skin,back=!!o.back;

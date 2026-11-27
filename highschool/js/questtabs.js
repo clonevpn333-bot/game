@@ -37,7 +37,9 @@ if(typeof HEADLINERS!=='undefined'){for(let i=HEADLINERS.length-1;i>=0;i--)if(!i
 /* tabs */
 {const i=QTABS.findIndex(t=>t[0]==='quests');if(i>=0){QTABS[i]=['quests','📜','Main Quests'];QTABS.splice(i+1,0,['side','🎲','Side & Gigs'])}}
 QL.sfilter=QL.sfilter||'open';
-const qlState=m=>{if(D&&D.done[m.id])return'done';if(D&&(D.mp[m.id]||0)>0)return'active';if(D&&!D.weekend&&[0,1,2,3,4,5,6,7,8].some(p=>thingsAt(p).some(t=>t.mis===m.id)))return'open';return'later'};
+/* the log must agree with the world: if any of its scenes could start now (whoever's around), it's open */
+function canStartNow(id){if(!D||D.weekend)return false;const ok=o=>{try{return !o.cond||o.cond()}catch(e){return false}};return HOOKS.some(h=>h.mis===id&&ok(h))||SPOTS.some(s=>s.mis===id&&ok(s))}
+const qlState=m=>{if(D&&D.done[m.id])return'done';if(D&&(D.mp[m.id]||0)>0)return'active';if(D&&!D.weekend&&([0,1,2,3,4,5,6,7,8].some(p=>thingsAt(p).some(t=>t.mis===m.id))||(typeof canStartNow==='function'&&canStartNow(m.id))))return'open';return'later'};
 const listable=m=>m&&m.parts&&!['passing','robbery','lockedroom','gigs'].includes(m.id)&&!(m.id||'').startsWith('wk_')&&!(m.id||'').startsWith('cq_')&&!(m.id||'').startsWith('ret_');
 function qlFilterBar(body,list,key,extra){
  const groups={active:[],open:[],done:[],later:[]};for(const m of list)groups[qlState(m)].push(m);

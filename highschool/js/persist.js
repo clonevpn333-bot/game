@@ -16,7 +16,7 @@ let CARRY=null;
 const clone=o=>JSON.parse(JSON.stringify(o));
 {const _fd=freshD;freshD=function(){
  const d=_fd();
- if(!CARRY)return d;
+ if(!CARRY){P.dayStart=clone(d);return d}
  const c=CARRY;CARRY=null;
  if(c.replay){const r=clone(c.state);r.day=d.day;P.dayStart=clone(r);return r}
  Object.assign(d.f,c.f);d.items=c.items.slice();d.done=Object.assign({},c.done);d.mp=Object.assign({},c.mp);d.money=c.money;d.dead=Object.assign({},c.dead);
