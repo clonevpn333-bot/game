@@ -26854,12 +26854,70 @@ const COREY_BACK={
  pic:['[photo: one curl, extremely close up, slightly out of focus]','rate it','be honest','NOT THAT HONEST']
 };
 const coreyOn=()=>alive('corey')&&!D.weekend;
-function coreyText(){if(!coreyOn())return;const G=GR();G.ci=(G.ci||0);const t=COREY[G.ci%COREY.length];G.ci++;push('corey','corey',t);G.cOpen=1;
- /* sometimes they come in a burst */
- if(Math.random()<.2){const t2=COREY[G.ci%COREY.length];G.ci++;push('corey','corey',t2)}
- G.cDay=day()+':'+D.period;notify('corey',t)}
+/* ---- COREY GETS WORSE, AND HE TEXTS ABOUT WHAT'S ACTUALLY HAPPENING ----
+   Level 0-3 rises with the days, with being left on read, with having his
+   phone taken, and with what's happened in his story. Quest beats (BEATS)
+   jump the queue the period after they unlock, each sent once a run. */
+const COREY_MID=[
+ 'i haven’t slept properly since like monday','i keep hearing the bell when there isn’t one',
+ 'everyone in the hall looked at me at the same time. like a school of fish. a school of fish at school',
+ 'i’ve checked my curls 40 times today','that’s up from yesterday','is that a lot. don’t answer',
+ 'why does ms shermian always know where i am','she said “good morning corey” and i hadn’t even come round the corner yet',
+ 'i drafted a text to you 6 times and this is the one i sent','it’s bad. i know it’s bad'];
+const COREY_HI=[
+ 'what if i’m the next poster in the hallway','like what picture would they use. not my yearbook one. PLEASE not my yearbook one',
+ 'be honest would you notice if i went missing','i would notice if YOU went missing. in like 4 minutes. 3',
+ 'my hands won’t stop shaking','it’s the humidity','it’s not the humidity',
+ 'i counted the kids in history. there were less. nobody said anything. why does nobody SAY anything',
+ 'i keep my hood up now so she can’t see my face','she knows my face. she knows everyone’s face',
+ 'are you there','are you there','ok you’re in class. ok. ok. text me when you’re out. text me you’re alive'];
+const ABBY_ON=()=>window.EDITION!=='safe'&&alive('abby');
+const mp=m=>(D.mp&&D.mp[m])||0,dn=m=>D.done&&D.done[m];
+const BEATS=[
+ /* ---- Corey & Abby (full version) ---- */
+ ['w0',()=>ABBY_ON()&&!mp('window')&&D.dayType==='odd'&&D.period<3,['period 3 is in the trailer today','she sits by the window','i sit across. it’s 14 feet. i measured it with my shoes in 8th grade','don’t tell anyone i measured it']],
+ ['w1',()=>ABBY_ON()&&mp('window')>=1,['she looked out the window for like 11 minutes today','i counted','was she looking AT the window or THROUGH the window. there’s a difference. i looked it up','there was a bird. do you think the bird meant something. i think the bird meant something']],
+ ['b1',()=>ABBY_ON()&&(D.f.br||0)>=1,['brett has a CAR','he parks it in the teacher spot and nobody says anything','he had his hand on the back of her neck. like a handle. like she’s a suitcase','i’m not jealous','i’m just thinking about his car rolling into the reservoir. normal thought. everyone has that thought']],
+ ['b2',()=>ABBY_ON()&&(D.f.br||0)>=2,['the thought is back','it’s not a bad thought. it’s a very SPECIFIC thought','delete this','did you delete it','delete it again']],
+ ['b3',()=>ABBY_ON()&&(D.f.br||0)>=3,['why did you ask nivaan to look brett up','what did he find','actually don’t tell me','tell me','no don’t']],
+ ['b4',()=>ABBY_ON()&&!!D.f.brettDead,['i can’t sleep','every car that goes past my house sounds like his','if anyone asks we were at the arcade. you beat me at air hockey. you always beat me','i still have dirt under my nails. i’ve washed them 30 times','is it humid to you. i can’t tell anymore. everything feels wet']],
+ ['w3',()=>ABBY_ON()&&mp('window')>=3,['she wrote back','SHE WROTE BACK','it says “ok”','ok what. ok GOOD? ok STOP? ok BYE FOREVER?','i’ve read it 400 times. the o is very round. is a round o flirty']],
+ ['w5',()=>ABBY_ON()&&!!dn('window'),['we held hands on the 43','my hand was so sweaty she said “it’s like holding a fish”','she didn’t let go though','what if she lets go tomorrow','what if tomorrow she remembers i’m me']],
+ ['ck',()=>ABBY_ON()&&dn('corey')==='kiss',['she kissed me after i got hit in the face with a medicine ball','i have two tissues up my nose','my nose might be broken','best day of my life','what if it was a pity kiss. what if she pities me. what if i’m pitiful']],
+ ['sh',()=>ABBY_ON()&&dn('corey')==='kiss'&&!dn('smallhours'),['she wants me to SING','in the FOOD COURT','in front of the PRETZEL PLACE','i can’t sing. i can barely talk. i’m barely typing right now']],
+ ['m1',()=>ABBY_ON()&&mp('mended')>=1,['i said i’d fix her dad’s guitar','i don’t know how to fix a guitar','i don’t know how to fix ANYTHING. i once tried to fix a sandwich','if i mess this up i’m breaking the last thing her dad left her. AGAIN. like brett. i’d be brett']],
+ ['m2',()=>ABBY_ON()&&!!dn('mended'),['she played it','it sounded wrong in a good way','she cried and said it was my fault','in a good way?? is there a good way to be someone’s fault']],
+ /* ---- both versions: his own stuff ---- */
+ ['e1',()=>mp('emergency')>=1&&!dn('emergency'),['my C.U.R.L. is gone','someone took it out of my hoodie','that’s my emergency tub. this IS the emergency','do you know anything','why are you typing so slow']],
+ ['e2',()=>!!dn('emergency'),['someone put something in my curl cream','in front of EVERYONE','i don’t want to talk about it','i want to talk about it so much','was it you. it wasn’t you. was it you']],
+ ['v1',()=>mp('voss')>=1&&!dn('voss'),['why are we going near the back fridge','mr voss looked at me. not AT me. INTO me','i don’t want to know what’s in it','what’s in it']],
+ ['v2',()=>!!dn('voss'),['i saw what was in the fridge','i’m going vegetarian','i’m going air-itarian','i’m never opening a fridge again. i opened ours this morning and screamed. my mom screamed. the milk was fine']],
+ ['st',()=>mp('seat')>=1,['someone’s been in my seat','not my assigned seat. my SPIRITUAL seat','it was warm when i sat down. it’s never warm. who’s warming my seat']],
+ /* ---- the school (both versions) ---- */
+ ['s1',()=>day()>=2&&alive('shermian'),['ms shermian smiled at me in the hall','she has never smiled','she said my middle name. i don’t tell ANYONE my middle name']],
+ ['s2',()=>day()>=3,['ok weird question','was ms shermian holding a mug this morning','because she had a mug in period 1 and no mug in the hall 5 minutes later','and the hall one had lipstick','i’m overthinking. i’m overthinking right? tell me i’m overthinking']],
+ ['gone',()=>{try{return Object.keys((typeof crew==='function'&&crew().gone)||{}).length>0}catch(e){return false}},['did you see the poster in the hall','they were in my history class','i sat two seats away from them. two seats. that’s nothing. that’s like next to','i’m moving seats. i’m moving schools. i’m moving']],
+ ['dead',()=>Object.keys(D.dead||{}).some(k=>K[k]&&!K[k].adult&&k!=='corey'),['did you hear what happened','i heard it from the bathroom','i’m still in the bathroom','i live here now']],
+ ['caught',()=>(D.f.sherC||0)>=2,['she wrote your name down. i saw it','in RED','why would she have a red pen. teachers don’t use red pens for names. they use it for','i don’t know what they use it for. that’s the problem']],
+ ['det',()=>day()>=7,['metal detectors on monday','my hoodie zip is metal','my retainer is metal','the fillings in my teeth are metal','am i metal']],
+ ['insp',()=>day()>=11,['inspection is tomorrow','why do i feel like WE’RE being inspected','i ironed my hoodie. you can’t iron a hoodie. it melted a bit']]
+];
+function coreyLevel(){const G=GR();let l=day()<=2?0:day()<=5?1:day()<=8?2:3;
+ l+=Math.min(2,G.ign||0);if(D.f.phoneTaken)l++;if(D.f.brettDead)l++;if(G.curl)l--;
+ return Math.max(0,Math.min(3,l))}
+function nextBeat(){const G=GR();G.cb=G.cb||{};for(const [k,c,L] of BEATS){try{if(!G.cb[k]&&c())return[k,L]}catch(e){}}return null}
+function coreyLine(){const G=GR(),lv=coreyLevel();const pool=lv>=3?COREY_HI:lv>=2?COREY_MID.concat(COREY_HI):lv>=1?COREY.concat(COREY_MID):COREY;
+ const t=pool[(G.ci=(G.ci||0)+1)%pool.length];
+ if(lv>=3&&Math.random()<.4)return t.toUpperCase();return t}
+function coreyText(){if(!coreyOn())return;const G=GR();
+ if(G.cOpen)G.ign=(G.ign||0)+1;  /* he texted last time and you left him on read */
+ const b=nextBeat();let first;
+ if(b){G.cb[b[0]]=1;b[1].forEach((t,i)=>{if(!i)first=t;push('corey','corey',t)})}
+ else{const lv=coreyLevel(),n=1+(Math.random()<.15+lv*.2?1+Math.floor(Math.random()*(1+lv)):0);for(let i=0;i<n;i++){const t=coreyLine();if(!i)first=t;push('corey','corey',t)}}
+ G.cOpen=1;G.cDay=day()+':'+D.period;notify('corey',first)}
+window.coreyText=coreyText;
 ON_PERIOD.push(async(i,resume)=>{if(resume||!D||D.weekend||TEST)return;if(typeof atHome==='function'&&atHome())return;
- if(coreyOn()&&Math.random()<.3&&!(day()<=1&&i<5))setTimeout(()=>{try{coreyText()}catch(e){}},2500+Math.random()*4000);
+ if(coreyOn()&&!(day()<=1&&i<5)&&(nextBeat()||Math.random()<.25+coreyLevel()*.12))setTimeout(()=>{try{coreyText()}catch(e){}},2500+Math.random()*4000);
  /* the girl you're seeing texts too */
  const a=activeGirl();if(a&&Math.random()<.5)setTimeout(()=>{try{const L=GIRL_PING[a];push(a,a,L[(day()+i)%L.length]);notify(a,L[(day()+i)%L.length])}catch(e){}},5000)});
 const GIRL_PING={
@@ -26872,8 +26930,8 @@ const GIRL_PING={
 /* mid-class: the buzz under the desk */
 {const _w=whisper;whisper=async function(c){
  const G=GR();
- if(coreyOn()&&!taken()&&!TEST&&day()>1&&Math.random()<.22){
-  const t=COREY[(G.ci||0)%COREY.length];G.ci=(G.ci||0)+1;push('corey','corey',t);G.cOpen=1;
+ if(coreyOn()&&!taken()&&!TEST&&day()>1&&Math.random()<.15+coreyLevel()*.07){
+  const t=coreyLine();push('corey','corey',t);G.cOpen=1;
   SFX.beep&&SFX.beep();
   const ch=await choose(['Check your phone under the desk.','Ignore it.'],'BZZT. BZZT. BZZT.');
   if(ch===0){
@@ -27274,8 +27332,8 @@ function renderThread(p,body){
  const addOpt=(txt,fn)=>{any=true;const b=h('button',null,txt);b.onclick=fn;opts.appendChild(b)};
  /* Corey: one answer per new batch of texts. Once you've answered, the options go until he texts again. */
  if(id==='corey'&&G.cOpen&&th.length&&th[th.length-1][0]==='corey'){
-  addOpt('“you’re fine. genuinely.”',()=>{G.cOpen=0;reply('corey','you’re fine. genuinely.',COREY_BACK.calm)});
-  addOpt('“…now that you mention it”',()=>{G.cOpen=0;reply('corey','…now that you mention it',COREY_BACK.worse)});
+  addOpt('“you’re fine. genuinely.”',()=>{G.cOpen=0;G.ign=0;reply('corey','you’re fine. genuinely.',COREY_BACK.calm)});
+  addOpt('“…now that you mention it”',()=>{G.cOpen=0;G.ign=(G.ign||0)+1;reply('corey','…now that you mention it',COREY_BACK.worse)});
   addOpt('“send a pic of the curls”',()=>{G.cOpen=0;reply('corey','send a pic of the curls',COREY_BACK.pic)})}
  if(GIRLS[id]){const st=stepNow(id),r=rel(id);
   if(st==='busy')opts.appendChild(h('div','bub nt','You’re already in a whole thing with '+K[activeGirl()].n+'. One disaster at a time.'));
