@@ -18,7 +18,7 @@ const fullEd=()=>window.EDITION!=='safe';
 const dvL=m=>!!(D&&D.done&&D.done[m]);
 const LOVE={
  corey:{a:'corey',b:'abby',ev:'sketchbook',name:'Corey & Abby',on:()=>dvL('window')||dvL('corey')==='kiss'||dvL('smallhours')||dvL('mended')},
- sean:{a:'sean',b:'stella',ev:'voicenote',name:'Sean & Stella',on:()=>dvL('instella')||dvL('striketwo')||dvL('farewell')},
+ sean:{a:'sean',b:'stella',ev:'voicenote',name:'Sean & Stella',on:()=>(dvL('instella')&&D.done.instella!=='no')||dvL('striketwo')||dvL('farewell')},
  hasan:{a:'hasan',b:'darren',ev:'inside',name:'Hasan & Darren',on:()=>dvL('stepeleven')||dvL('darren')==='shake'}};
 /* a couple counts when they're together, both alive, and this is the full game */
 function loveOn(k){const l=LOVE[k];if(!l||!fullEd()||!K[l.a]||!K[l.b])return false;if(D&&D.dead&&(D.dead[l.a]||D.dead[l.b]))return false;if((window.EDITION_CUT||[]).includes(l.b))return false;return !!l.on()}

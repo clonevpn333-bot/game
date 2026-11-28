@@ -324,7 +324,7 @@ Object.assign(MIS.instella,{blurb:'Sean and Stella have only ever been a voice o
  tips:['Before school, bus loop. Sean is hiding behind people.','Break or lunch, main corridor. Arjun has something that isn’t his.','Lunch, the field. Coach throws javelins at 12:40. Trees are safe.']});
 Object.assign(MIS.striketwo,{blurb:'The day after the field, Sean and Stella go to the arcade. It’s their first date. It’s the first time either of them has said anything real out loud.',
  tips:['A day after “In Person”, after school: the Fair City Mall arcade.']});
-for(const h of HOOKS){if(h.mis==='striketwo'&&h.period===8){const c=h.cond;h.cond=()=>doneBefore('instella')&&!D.done.striketwo&&c()}
+for(const h of HOOKS){if(h.mis==='striketwo'&&h.period===8){const c=h.cond;h.cond=()=>doneBefore('instella')&&D.done.instella!=='no'&&!D.done.striketwo&&c()}
  if(h.mis==='toby'&&h.period===0){const c=h.cond;h.cond=()=>doneBefore('striketwo')&&c()}}
 MIS.toby.tips=MIS.toby.tips.map((t,i)=>i===0?'A day after Sean and Stella’s first date (Strike Two): before school, bus loop. Sit near Sean.':t);
 
@@ -547,7 +547,7 @@ hook({mis:'stepeleven',period:4,room:'canteen',who:'hasan',label:'Ask Hasan why 
    OUTCOMES YOU CAN SEE
    ===================================================================== */
 const PAIRS=[
- {a:'sean',b:'stella',on:()=>D.done.instella&&D.done.instella!=='javelin'},
+ {a:'sean',b:'stella',on:()=>D.done.instella&&!['javelin','no'].includes(D.done.instella)},
  {a:'hasan',b:'darren',on:()=>darDate()||D.done.stepeleven},
  {a:'abby',b:'corey',on:()=>D.done.window},
  {a:'abby',b:'brett',on:()=>D.f.br>=1&&!D.f.brettDead&&!(D.f.br===1&&stepToday('brett')),periods:[2,4]},
@@ -590,7 +590,7 @@ function MOREGOSSIP(){const g=[];if(!D||!D.f)return g;
  if(D.f.br>=1&&!D.f.brettDead)g.push('abby’s dating BRETT? brett with the car?','brett checks her phone like every period','brett named his car. his CAR');
  if(D.f.brettDead){const n=cal()-D.f.brettDead;if(n<=2)g.push('brett didn’t come home','his mom was on the news crying','his car’s still in the student lot');else g.push('still no brett','my mom says it was a drifter','nobody’s even looking in the woods lol');}
  if(D.done.window)g.push('corey and ABBY??','there’s two birds on the trailer window now. they don’t rub them out');
- if(D.done.instella)g.push('sean’s girlfriend transferred here for him. like a MOVIE');
+ if(D.done.instella&&D.done.instella!=='no')g.push('sean’s girlfriend transferred here for him. like a MOVIE');
  if(D.f.fw)g.push('stella’s moving?? to PORTLAND?');
  if(D.done.farewell)g.push('did you see the chalk on the bus loop','i read voicemail six and cried a little');
  if(darDate())g.push('hasan and the swim team guy?? the goggles guy??');

@@ -11,7 +11,7 @@ mission('instella',{name:'In Person',icon:'⚾',who:['sean','stella'],
  blurb:'Sean and Stella have only ever been a voice on the phone. Today she’s here. In 3D. Sean is not okay.',
  parts:['Before school: Stella gets off the bus','Break: get her lucky ball back','Lunch: the field'],
  tips:['Before school, bus loop. Sean is hiding behind people.','Break, main corridor. Arjun has something that isn’t his.','Lunch, the field. Coach throws javelins at 12:40. Trees are safe.'],
- variants:{kiss:'Strike one',javelin:'The javelin'}});
+ variants:{kiss:'Strike one',javelin:'The javelin',no:'Just the phone'}});
 
 hook({mis:'instella',period:0,room:'bus',who:'sean',label:'Ask Sean why he’s hiding',cond:()=>!D.f.stella1,run:async()=>{
  scene('bus',{sean:[170,1,{y:150,pose:'cover'}],you:[186,-1,{y:152}],hasan:[230,-1,{y:146}],arjun:[254,-1,{y:144,pose:'cross'}]});
@@ -119,6 +119,13 @@ hook({mis:'instella',period:4,room:'field',who:'sean',label:'Give Sean the ball'
  await say('sean','…I cried a bit.','blush');
  pose('sean','hold');
  await say('sean','Strike one. You said you’d only ever need one.');
+ if(!(TEST||D.f.ssYes)&&Math.random()>=.4){
+  hold('sean',null);pose('sean',null);A.stella.ex='sad';
+  await say('stella','(not taking his hand) …Sean. I like you on the phone. In person you’re like. A lot. I don’t know yet.','sad');
+  A.sean.ex='cry';await say('sean','(very quietly) Ball four. Cool. Cool cool. I’ll walk.','cry');
+  await walk('stella',230,50);face('stella',-1);fxState.romance=0;
+  await N('She sits on the bleachers. He stands under the tree holding a ball that’s still warm.');
+  D.f.ssNo=cal();toast('She said no. For now.');return 'stay'}
  hold('sean',null);pose('sean',null);hold('stella','ball');
  await say('stella','Strike one.','love');
  ex('sean','closed');ex('stella','closed');pose('sean','kiss');pose('stella','kiss');await tw(A.stella,{x:78},300);

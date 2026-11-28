@@ -12,7 +12,7 @@
 const rmCache=(id,draw)=>guCache('rm_'+id,'',draw);
 const rmMix=(a,b,t)=>{const A_=guRGB(a),B=guRGB(b);return`rgb(${A_[0]+(B[0]-A_[0])*t|0},${A_[1]+(B[1]-A_[1])*t|0},${A_[2]+(B[2]-A_[2])*t|0})`};
 /* ---- Strike Three gate ---- */
-const together=()=>!!(D&&D.done&&D.done.instella);
+const together=()=>!!(D&&D.done&&D.done.instella&&D.done.instella!=='no');
 for(const h of HOOKS)if(h.mis==='steal_stella'){const c=h.cond;h.cond=()=>together()&&(!c||c())}
 if(MIS.steal_stella&&MIS.steal_stella.tips)MIS.steal_stella.tips=['First, Sean and Stella have to be together (finish In Person). Then: break or lunch, the field. Stella is venting.'].concat(MIS.steal_stella.tips.slice(1));
 

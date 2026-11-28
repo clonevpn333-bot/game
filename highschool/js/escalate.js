@@ -111,7 +111,7 @@ if(typeof DAILY_F!=='undefined')DAILY_F.push('heads','headsDay');
 if(typeof approachCandidate==='function'){const _ac=approachCandidate;approachCandidate=function(){const c=_ac();if(!c)return c;const hs=headlinersToday();if(c.started||c.track||hs.includes(c.h.mis)||/^crew/.test(c.h.mis))return c;return Math.random()<.35?c:null}}
 
 /* ================= 5. MAIN STORY SET PIECES ================= */
-function relPair(){const c=[['hasan','darren',()=>D.done.darren],['corey','abby',()=>D.done.window||D.done.brett],['sean','stella',()=>D.done.farewell||D.done.instella],['hasan','mia',()=>D.done.hasanmia]];
+function relPair(){const c=[['hasan','darren',()=>D.done.darren],['corey','abby',()=>D.done.window||D.done.brett],['sean','stella',()=>D.done.farewell||(D.done.instella&&D.done.instella!=='no')],['hasan','mia',()=>D.done.hasanmia]];
  for(const [a,b,f] of c)if(K[a]&&K[b]&&!D.dead[a]&&!D.dead[b]&&!(window.EDITION_CUT||[]).includes(b)&&f())return[a,b];return null}
 function bestFriend(){let b=null,bv=0;for(const k of FRIENDS)if(K[k]&&!D.dead[k]&&(P.bond[k]||0)>bv&&!A[k]){b=k;bv=P.bond[k]}return b||['hasan','nivaan','david'].find(k=>K[k]&&!D.dead[k]&&!A[k])}
 let SPC=null;

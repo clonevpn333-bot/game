@@ -106,6 +106,7 @@ const WHISPER={
  ollie:[[['ollie','(whispering) Nobody else sits here. It’s been my seat since 1987.']]]
 };
 async function whisper(c){
+ if(window.classChaos)return window.classChaos(c);
  const n=c.nb.find(id=>WHISPER[id]&&!D.chat['w_'+id]);if(!n)return;
  D.chat['w_'+n]=1;const set=WHISPER[n][(P.loops+n.length)%WHISPER[n].length];
  face(n,'you');face('you',n);

@@ -198,7 +198,7 @@ hook({mis:'hasanmia',period:8,room:'foodcourt',who:'hasan',label:'Help Hasan wit
 mission('striketwo',{name:'Strike Two',icon:'📸',who:['sean','stella'],
  blurb:'After the field, after the kiss, Sean and Stella go to the arcade. It’s their first date. It’s the first time either of them has said anything real out loud.',
  parts:['After school: the arcade'],tips:['Finish “In Person” today, then go to the Fair City Mall arcade.']});
-hook({mis:'striketwo',period:8,room:'arcade',who:'sean',label:'Hang out with Sean and Stella',cond:()=>D.done.instella&&!D.dead.sean&&!D.dead.stella,run:async()=>{
+hook({mis:'striketwo',period:8,room:'arcade',who:'sean',label:'Hang out with Sean and Stella',cond:()=>D.done.instella&&D.done.instella!=='no'&&!D.dead.sean&&!D.dead.stella,run:async()=>{
  scene('arcade',{sean:[220,1,{y:150}],stella:[244,-1,{y:150}],you:[180,1,{y:156}]});
  cue('romance');
  await say('sean','We’re doing the claw machine. I’ve spent eleven dollars. I will spend my entire inheritance.','happy');

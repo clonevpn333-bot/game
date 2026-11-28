@@ -113,7 +113,14 @@ function msgEl(who,t,id){
  return b}
 
 /* ---------------- threads ---------------- */
-const push=(th,who,t)=>{const G=GR();(G.th[th]=G.th[th]||[]).push([who,t,perName()]);if(who!=='me'){G.unread[th]=(G.unread[th]||0)+1;badge()}};
+/* Corey types like a real kid: lowercase, no full stops, shortcuts, the odd typo */
+const KIDW=[[/\byou\b/g,'u'],[/\byour\b/g,'ur'],[/\bbecause\b/g,'bc'],[/\breally\b/g,'rly'],[/\bprobably\b/g,'prob'],[/\bthough\b/g,'tho'],[/\bpeople\b/g,'ppl'],[/\bsomething\b/g,'smth'],[/\bi don’t know\b/g,'idk'],[/\bright now\b/g,'rn'],[/\bwhat\b/g,'wat'],[/\bokay\b/g,'ok']];
+function kidify(t){if(/^\[/.test(t))return t;let s=String(t);const up=s===s.toUpperCase()&&/[A-Z]/.test(s);if(!up)s=s.toLowerCase();
+ for(const [re,to] of KIDW)if(Math.random()<.75)s=s.replace(re,up?to.toUpperCase():to);
+ s=s.replace(/[’']/g,Math.random()<.6?'':'’').replace(/\.(?=\s|$)/g,'').replace(/;/g,'').trim();
+ if(Math.random()<.12&&s.length>6){const i=1+Math.floor(Math.random()*(s.length-2));if(/[a-z]/.test(s[i])&&/[a-z]/.test(s[i+1]))s=s.slice(0,i)+s[i+1]+s[i]+s.slice(i+2)}
+ return s}
+const push=(th,who,t)=>{const G=GR();if(who==='corey')t=kidify(t);(G.th[th]=G.th[th]||[]).push([who,t,perName()]);if(who!=='me'){G.unread[th]=(G.unread[th]||0)+1;badge()}};
 window.gramPush=(th,who,t)=>{push(th,who,t);if(who!=='me')notify(th,t)};
 function badge(){const b=$('bGram');if(!b)return;const n=Object.values(GR().unread).reduce((a,b)=>a+b,0)+(fullEd()?Object.keys(GIRLS).filter(g=>['dm1','dm3'].includes(stepNow(g))&&rel(g).s>0).length:0);b.innerHTML='';b.appendChild(iconImg('phone',18));if(n)b.appendChild(document.createTextNode(' '+n));b.classList.toggle('hot',!!n)}
 function notify(th,t){if(TEST)return;toast(thName(th)+': '+(/^\[photo/i.test(t)?'sent a photo':t.slice(0,60)))}
@@ -785,7 +792,7 @@ function renderFeed(body){
   ['david','@david.clipboard','[a clipboard]','meeting at break. bring evidence. bring snacks',2,['library',[['david',160,165,1,'hold','cold','clipboard']]]],
   ['nivaan','@nivaan.live','[the sub, laughing, holding a coffee]','the sub is so fucking hot it should be illegal for him to teach fractions',890,['corridor',[['sub',160,160,1,null,'laugh','mug']]]]];
  const dn=m=>D.done&&D.done[m],cr=typeof crew==='function'?crew():{};
- if(dn('instella'))post('stella','@stell.a','[Sean and Stella on the field]','official 🥎❤️ (he cried)',801,['field',[['sean',150,165,1,'hug','love'],['stella',166,165,-1,'hug','love']]]);
+ if(dn('instella')&&D.done.instella!=='no')post('stella','@stell.a','[Sean and Stella on the field]','official 🥎❤️ (he cried)',801,['field',[['sean',150,165,1,'hug','love'],['stella',166,165,-1,'hug','love']]]);
  if(dn('window')||dn('mended'))post('abby','@abby.draws','[a bird drawn on a window, and a heart]','.',233,['trailer',[['corey',150,165,1,'sit','blush'],['abby',176,165,-1,'sit','smirk']]]);
  if(dn('kim'))post('dheva','@dheva.mp4','[Alex in clown makeup, giving a thumbs up]','he’s ok. he honks now but he’s ok',1990,['bus',[['alex',150,165,1,'up','happy'],['dheva',176,165,-1,'cross','smirk']]]);
  if(cr.cheeksIn)post('cheeks','@fistsoffaircity','[Coach on the ground, Cheek-Clapper standing over him]','FISTS OF FAIR CITY 5 COMING SOON 🍑👊 (we have 313 subscribers)',313,['bus',[['clapper',150,165,1,'hips','smirk'],['coach',180,168,-1,'hurt','shock']]]);
